@@ -1,7 +1,12 @@
 import os
+import sys
 import glob
 import urllib2
+import fnmatch
+import datetime
+import shutil
 from bs4 import BeautifulSoup
+import acme_diags
 from cdp.cdp_viewer import OutputViewer
 from acme_diags.driver.utils import get_output_dir
 
@@ -20,10 +25,29 @@ from acme_diags.driver.utils import get_output_dir
 # needed so we can have a cols in order of ANN, DJF, MAM, JJA, SON
 ROW_INFO = {}
 
-def _extras(path):
-    """Add extras (header, etc) to the generated html"""
+def _copy_acme_logo(root_dir):
+    """Copy over ACME_Logo.png to root_dir/viewer"""
+    src_pth = os.path.join(sys.prefix, "share", "acme_diags", "ACME_Logo.png")
+    dst_path = os.path.join(root_dir, "viewer")
+    shutil.copy(src_pth, dst_path)
 
-    # We're basically inserting the following in the body under navbar navbar-default
+def _get_acme_logo_path(current_dir):
+    """Based of the current directory of the html,
+    get the relative path of the ACME logo"""
+    # when current_dir = myresults-07-11/index.html, the image is in myresults-07-11/viewer/ACME_Logo.png
+    # so there's no need to move some number of directories up.
+    # That's why we have - 2
+    dirs_to_go_up = len(current_dir.split('/')) - 2
+    pth = os.path.join('.')
+    for _ in range(0, dirs_to_go_up):
+        pth = os.path.join(pth, '..')
+    pth = os.path.join(pth, 'viewer', 'ACME_Logo.png')
+    return pth
+
+def _add_header(path, version, model_name, time):
+    """Add the header to the html located at path"""
+
+    # We're inserting the following in the body under navbar navbar-default
     # <div id="acme-header" style="background-color:#dbe6c5; float:left; width:45%">
 	# 	<p style="margin-left:5em">
 	# 		<b>ACME Diagnostics Package [VERSION]</b><br>
@@ -34,32 +58,51 @@ def _extras(path):
 	# <div id="acme-header2" style="background-color:#dbe6c5; float:right; width:55%">
 	# 	<img src="ACME_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
 	# </div>
-
-    soup = BeautifulSoup(open(path), 'lxml')
+    
+    soup = BeautifulSoup(open(path), "lxml")
+    old_header = soup.find_all("nav", "navbar navbar-default")[0]
+    old_header.decompose()
 
     header_div = soup.new_tag("div", id="acme-header", style="background-color:#dbe6c5; float:left; width:45%")
-
     p = soup.new_tag("p", style="margin-left:5em")
+
     bolded_title = soup.new_tag("b")
-    bolded_title.append("ACME Diagnostics Package {}".format("VERSION"))
+    bolded_title.append("ACME Diagnostics Package {}".format(version))
     bolded_title.append(soup.new_tag("br"))
     p.append(bolded_title)
-    p.append("Test model name: {}".format('MODEL NAME'))
+
+    p.append("Model: {}".format(model_name))
     p.append(soup.new_tag("br"))
-    p.append("Date created: {}".format('DATE CREATED'))
+
+    p.append("Created {}".format(time))
 
     header_div.append(p)
-    soup.body.insert(1, header_div)
+    soup.body.insert(0, header_div)
 
     img_div = soup.new_tag("div", id="acme-header2", style="background-color:#dbe6c5; float:right; width:55%")
-    # TODO: remember to copy over the ACME_logo.png file during installation
-    img = soup.new_tag("img", src="ACME_logo.png", alt="logo", style="width:161px; height:70px; background-color:#dbe6c5")
+    img_path = _get_acme_logo_path(path)
+    img = soup.new_tag("img", src=img_path, alt="logo", style="width:161px; height:71px; background-color:#dbe6c5")
     img_div.append(img)
-    soup.body.insert(2, img_div)
+    soup.body.insert(1, img_div)
 
     html = soup.prettify("utf-8")
     with open(path, "wb") as f:
         f.write(html)
+
+def _extras(root_dir, parameters):
+    """Add extras (header, etc) to the generated htmls"""
+    _copy_acme_logo(root_dir)
+
+    index_files = []
+    for root, dirnames, filenames in os.walk(root_dir):
+        for filename in fnmatch.filter(filenames, 'index.html'):
+            pth = os.path.join(root, filename)
+            index_files.append(pth)
+    dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    img_path = os.path.join('viewer', 'ACME_Logo.png')
+
+    for f in index_files:
+        _add_header(f, acme_diags.__version__, parameters[0].test_name, dt)
 
 def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
@@ -157,6 +200,6 @@ def create_viewer(root_dir, parameters, ext):
                         viewer.add_col('-----', is_file=True)
 
     viewer.generate_viewer(prompt_user=False)
-    _extras(os.path.join(root_dir, 'index.html'))
+    _extras(root_dir, parameters)
 
 
