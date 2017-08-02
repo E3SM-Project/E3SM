@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # don't overwrite the sets keyword in the default json files.
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
-
+    
     for parameter in parameters:
         for pset in parameter.sets:
             pset = str(pset)
@@ -74,5 +74,10 @@ if __name__ == '__main__':
                 continue
             print('Starting to run ACME diags')
             run_diag(parameter)
-            
-    create_viewer(original_parameter.results_dir, parameters, parameters[0].output_format[0])
+    
+    pth = os.path.join(original_parameter.results_dir, 'viewer')
+    if not os.path.exists(pth):
+        os.makedirs(pth)
+
+    create_viewer(pth, parameters, parameters[0].output_format[0])
+    

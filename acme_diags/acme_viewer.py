@@ -34,10 +34,10 @@ def _copy_acme_logo(root_dir):
 def _get_acme_logo_path(current_dir):
     """Based of the current directory of the html,
     get the relative path of the ACME logo"""
-    # when current_dir = myresults-07-11/index.html, the image is in myresults-07-11/viewer/ACME_Logo.png
+    # when current_dir = myresults-07-11/viewer/index.html, the image is in myresults-07-11/viewer/viewer/ACME_Logo.png
     # so there's no need to move some number of directories up.
-    # That's why we have - 2
-    dirs_to_go_up = len(current_dir.split('/')) - 2
+    # That's why we have - 3
+    dirs_to_go_up = len(current_dir.split('/')) - 3
     pth = os.path.join('.')
     for _ in range(0, dirs_to_go_up):
         pth = os.path.join(pth, '..')
@@ -134,7 +134,7 @@ def _add_pages_and_top_row(viewer, parameters):
         for s in ['ANN', 'DJF', 'MAM', 'JJA', 'SON']:
             if s in seasons:
                 col_labels.append(s)
-        viewer.add_page("Set-{}".format(set_num), col_labels)
+        viewer.add_page("{}".format(set_num), col_labels)
 
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
@@ -146,7 +146,7 @@ def create_viewer(root_dir, parameters, ext):
 
     for parameter in parameters:
         for set_num in parameter.sets:
-            viewer.set_page("Set-{}".format(set_num))
+            viewer.set_page("{}".format(set_num))
             try:
                 viewer.set_group(parameter.case_id)
             except RuntimeError:
@@ -193,11 +193,11 @@ def create_viewer(root_dir, parameters, ext):
                 if row_name not in ROW_INFO[set_num][parameter.case_id]:
                     ROW_INFO[set_num][parameter.case_id][row_name] = {}
                 # format fnm to support relative paths
-                ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('set{}'.format(set_num), parameter.case_id, fnm)
+                ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('..', '{}'.format(set_num), parameter.case_id, fnm)
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for set_num in ROW_INFO:
-        viewer.set_page("Set-{}".format(set_num))
+        viewer.set_page("{}".format(set_num))
         for group in ROW_INFO[set_num]:
             viewer.set_group(group)
             for row_name in ROW_INFO[set_num][group]:
