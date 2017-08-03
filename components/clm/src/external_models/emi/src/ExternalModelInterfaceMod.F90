@@ -55,11 +55,9 @@ contains
     !
     ! !USES:
     use clm_varctl, only : use_ed
-#ifndef FATES_VIA_EMI
     use clm_varctl, only : use_betr
     use clm_varctl, only : use_pflotran
     use clm_varctl, only : use_vsfm
-#endif
     use clm_varctl, only : use_petsc_thermal_model
     !
     implicit none
@@ -80,10 +78,9 @@ contains
     if (use_ed) then
        num_em            = num_em + 1
        index_em_fates    = num_em
-       allocate(em_fates)
+       allocate(em_fates )
     endif
 
-#ifndef FATES_VIA_EMI
     ! Is BeTR active?
     if (use_betr) then
        num_em            = num_em + 1
@@ -113,8 +110,6 @@ contains
        allocate(em_ptm(nclumps))
 #endif
     endif
-
-#endif
 
     if ( masterproc ) then
        write(iulog,*) 'Number of Exteranl Models = ', num_em
@@ -154,17 +149,12 @@ contains
     use ExternalModelConstants, only : EM_ID_PFLOTRAN
     use ExternalModelConstants, only : EM_ID_VSFM
     use ExternalModelConstants, only : EM_ID_PTM
-#ifndef FATES_VIA_EMI
+
     use clm_instMod           , only : soilstate_vars
     use clm_instMod           , only : soilhydrology_vars
     use clm_instMod           , only : waterflux_vars
     use clm_instMod           , only : waterstate_vars
-#else
-    use clm_instMod           , only : soilstate_inst
-    use clm_instMod           , only : soilhydrology_inst
-    use clm_instMod           , only : waterflux_inst
-    use clm_instMod           , only : waterstate_inst
-#endif
+
     use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
     use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
     use decompMod             , only : get_clump_bounds

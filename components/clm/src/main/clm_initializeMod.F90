@@ -956,6 +956,7 @@ contains
     use ExternalModelInterfaceMod, only : EMI_Init_EM
     use ExternalModelConstants   , only : EM_ID_VSFM
     use ExternalModelConstants   , only : EM_ID_PTM
+    use ExternalModelConstants   , only : EM_ID_FATES
 
     implicit none
 
@@ -1004,6 +1005,10 @@ contains
 
     if (use_petsc_thermal_model) then
        call EMI_Init_EM(EM_ID_PTM)
+    endif
+
+    if (use_ed) then
+       call EMI_Init_EM(EM_ID_FATES)
     endif
 
     call t_stopf('clm_init3')

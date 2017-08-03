@@ -135,6 +135,12 @@ module clm_driver
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
 
+  !! External Model Interface (EMI)
+  !! ---------------------------------------------------------------------------
+  use ExternalModelInterfaceMod, only : EMI_Driver
+  use ExternalModelConstants   , only : EM_ID_FATES
+  use ExternalModelConstants   , only : EM_FATES_SUNFRAC_STAGE
+
   !!----------------------------------------------------------------------------
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface
@@ -475,7 +481,15 @@ contains
        ! over the patch index range defined by bounds_clump%begp:bounds_proc%endp
        
        if(use_ed) then
-          call alm_fates%wrap_sunfrac(bounds_clump,atm2lnd_vars, canopystate_vars)
+
+          call EMI_Driver(EM_ID_FATES,                        &
+                          EM_FATES_SUNFRAC_STAGE,             &
+                          dt =  dble(get_step_size()),        &
+                          number_step = get_nstep(),          &
+                          clump_rank = nc,                    &
+                          atm2lnd_vars = atm2lnd_vars,      &
+                          canopystate_vars = canopystate_vars )
+
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
                                        atm2lnd_vars, surfalb_vars, canopystate_vars,    &

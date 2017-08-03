@@ -223,10 +223,9 @@ contains
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
     use clm_varctl                , only : iulog
-#ifdef FATES_VIA_EMI
-    use clm_instMod               , only : clm_fates
+    use clm_instMod               , only : alm_fates
     use EDSurfaceRadiationMod     , only : ED_SunShadeFracs
-#endif
+
     !
     implicit none
     !
@@ -260,21 +259,20 @@ contains
     call e2l_list%GetPointerToReal1D(this%index_e2l_state_laisun     , e2l_laisun)
     call e2l_list%GetPointerToReal1D(this%index_e2l_state_laisha     , e2l_laisha)
 
-#ifdef FATES_VIA_EMI
-        ! -------------------------------------------------------------------------------
-        ! Convert input BC's
-        ! The sun-shade calculations are performed only on FATES patches
-        ! -------------------------------------------------------------------------------
+    ! -------------------------------------------------------------------------------
+    ! Convert input BC's
+    ! The sun-shade calculations are performed only on FATES patches
+    ! -------------------------------------------------------------------------------
 
-    do s = 1, clm_fates%fates(clump_rank)%nsites
-       c = clm_fates%f2hmap(clump_rank)%fcolumn(s)
+    do s = 1, alm_fates%fates(clump_rank)%nsites
+       c = alm_fates%f2hmap(clump_rank)%fcolumn(s)
        g = l2e_col_gridcell(c)
 
-       do ifp = 1, clm_fates%fates(clump_rank)%sites(s)%youngest_patch%patchno
+       do ifp = 1, alm_fates%fates(clump_rank)%sites(s)%youngest_patch%patchno
 
           p = ifp + l2e_col_patchi(c)
-          clm_fates%fates(clump_rank)%bc_in(s)%solad_parb(ifp,:) = l2e_solad(g,:)
-          clm_fates%fates(clump_rank)%bc_in(s)%solai_parb(ifp,:) = l2e_solai(g,:)
+          alm_fates%fates(clump_rank)%bc_in(s)%solad_parb(ifp,:) = l2e_solad(g,:)
+          alm_fates%fates(clump_rank)%bc_in(s)%solai_parb(ifp,:) = l2e_solai(g,:)
 
        end do
     end do
@@ -284,28 +282,25 @@ contains
     ! as well as total patch sun/shade fraction output boundary condition
     ! -------------------------------------------------------------------------------
 
-    call ED_SunShadeFracs(clm_fates%fates(clump_rank)%nsites, &
-          clm_fates%fates(clump_rank)%sites,  &
-          clm_fates%fates(clump_rank)%bc_in,  &
-          clm_fates%fates(clump_rank)%bc_out)
+    call ED_SunShadeFracs(alm_fates%fates(clump_rank)%nsites, &
+          alm_fates%fates(clump_rank)%sites,  &
+          alm_fates%fates(clump_rank)%bc_in,  &
+          alm_fates%fates(clump_rank)%bc_out)
 
     ! -------------------------------------------------------------------------------
     ! Transfer the FATES output boundary condition for canopy sun/shade fraction
     ! to the HLM
     ! -------------------------------------------------------------------------------
 
-    do s = 1, clm_fates%fates(clump_rank)%nsites
-       c = clm_fates%f2hmap(clump_rank)%fcolumn(s)
-       do ifp = 1, clm_fates%fates(clump_rank)%sites(s)%youngest_patch%patchno
+    do s = 1, alm_fates%fates(clump_rank)%nsites
+       c = alm_fates%f2hmap(clump_rank)%fcolumn(s)
+       do ifp = 1, alm_fates%fates(clump_rank)%sites(s)%youngest_patch%patchno
           p = ifp + l2e_col_patchi(c)
-          e2l_fsun(p)   = clm_fates%fates(clump_rank)%bc_out(s)%fsun_pa(ifp)
-          e2l_laisun(p) = clm_fates%fates(clump_rank)%bc_out(s)%laisun_pa(ifp)
-          e2l_laisha(p) = clm_fates%fates(clump_rank)%bc_out(s)%laisha_pa(ifp)
+          e2l_fsun(p)   = alm_fates%fates(clump_rank)%bc_out(s)%fsun_pa(ifp)
+          e2l_laisun(p) = alm_fates%fates(clump_rank)%bc_out(s)%laisun_pa(ifp)
+          e2l_laisha(p) = alm_fates%fates(clump_rank)%bc_out(s)%laisha_pa(ifp)
        end do
     end do
-#else
-       call endrun('FATES is on but code was not compiled with -DFATES_VIA_EMI')
-#endif
 
   end subroutine EM_FATES_Sunfrac_Solve
 
