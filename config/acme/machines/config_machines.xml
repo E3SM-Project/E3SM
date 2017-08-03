@@ -878,6 +878,15 @@
 	<command name="add">+mvapich2-2.2b-intel-15.0</command>
 	<command name="add">+mkl-11.2.1</command>
       </modules>
+      <modules compiler="pgi">
+        <command name="add">+pgi-15.7</command>
+        <command name="add">+binutils-2.27</command>
+        <command name="add">+netcdf-c-4.4.1-f77-4.4.4-pgi-15.7-serial</command>
+      </modules>
+      <modules compiler="pgi" mpilib="!mpi-serial">
+        <command name="add">+mvapich2-2.2-pgi-15.7</command>
+        <command name="add">+pnetcdf-1.7.0-pgi-15.7-mvapich2-2.2</command>
+      </modules>
     </module_system>
     <environment_variables compiler="gnu">
       <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
@@ -895,6 +904,12 @@
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mvapich">
       <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
+    </environment_variables>
+    <environment_variables compiler="pgi">
+      <env name="NETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/netcdf-4.4.1-4el54ak5ic4ukbfxknv64ejvlum2kmy7</env>
+    </environment_variables>
+    <environment_variables compiler="pgi" mpilib="mvapich">
+      <env name="PNETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/parallel-netcdf-1.7.0-htrulk5hgp3jjci2f72srr5ujkg6q4i6</env>
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
