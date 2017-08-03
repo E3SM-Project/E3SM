@@ -855,6 +855,12 @@
              <arg name="num_tasks"> -n $TOTALPES </arg>
            </arguments>
          </mpirun>
+         <mpirun mpilib="mpich">
+           <executable>mpiexec</executable>
+           <arguments>
+             <arg name="num_tasks"> -n $TOTALPES </arg>
+           </arguments>
+         </mpirun>
          <mpirun mpilib="mpi-serial">
              <executable></executable>
          </mpirun>
@@ -887,6 +893,15 @@
         <command name="add">+mvapich2-2.2-pgi-15.7</command>
         <command name="add">+pnetcdf-1.7.0-pgi-15.7-mvapich2-2.2</command>
       </modules>
+      <modules compiler="nag">
+        <command name="add">+nag-6.0</command>
+        <command name="add">+hdf5-1.8.12-serial-nag</command>
+        <command name="add">+netcdf-4.3.1-serial-nag</command>
+      </modules>
+      <modules compiler="nag" mpilib="!mpi-serial">
+        <command name="add">+mpich3-3.1.4-nag-6.0</command>
+        <command name="add">+pnetcdf-1.6.1-mpich-3.1.4-nag-6.0</command>
+      </modules>
     </module_system>
     <environment_variables compiler="gnu">
       <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
@@ -910,6 +925,12 @@
     </environment_variables>
     <environment_variables compiler="pgi" mpilib="mvapich">
       <env name="PNETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/parallel-netcdf-1.7.0-htrulk5hgp3jjci2f72srr5ujkg6q4i6</env>
+    </environment_variables>
+    <environment_variables compiler="nag">
+      <env name="NETCDFROOT">/soft/netcdf/4.3.1-serial/nag-6.0</env>
+    </environment_variables>
+    <environment_variables compiler="nag" mpilib="mpich">
+      <env name="PNETCDFROOT">/home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0</env>
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
