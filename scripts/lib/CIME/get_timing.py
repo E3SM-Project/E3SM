@@ -93,7 +93,11 @@ class _TimingParser:
         return (0, 0, False)
 
     def getTiming(self):
-        ninst = self.case.get_value("NINST_CPL")
+        ninst = 1
+        multi_coupler = self.case.get_value("MULTI_COUPLER")
+        if multi_coupler:
+            ninst = self.case.get_value("NINST_MAX")
+
         if ninst > 1:
             for inst in range(ninst):
                 self._getTiming(inst+1)

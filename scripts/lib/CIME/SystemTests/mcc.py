@@ -17,7 +17,7 @@ class MCC(SystemTestsCompareTwo):
         self._comp_classes = []
         self._test_instances = 3
         SystemTestsCompareTwo.__init__(self, case,
-                                       separate_builds = False,
+                                       separate_builds = True,
                                        run_two_suffix = 'single_instance',
                                        run_two_description = 'single instance',
                                        run_one_description = 'multi coupler')
