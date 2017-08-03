@@ -30,6 +30,7 @@
 <config_write_output_on_startup>false</config_write_output_on_startup>
 <config_test_case_diag>false</config_test_case_diag>
 <config_test_case_diag_type>'none'</config_test_case_diag_type>
+<config_full_abort_write>true</config_full_abort_write>
 
 <!-- decomposition -->
 <config_block_decomp_file_prefix>'graph.info.part.'</config_block_decomp_file_prefix>
@@ -83,6 +84,7 @@
 <config_unit_test_type>''</config_unit_test_type>
 <config_unit_test_subtype>''</config_unit_test_subtype>
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
+<config_testing_system_test>false</config_testing_system_test>
 
 <!-- velocity_solver -->
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>

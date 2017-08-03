@@ -16,7 +16,7 @@
 <config_calendar_type>'gregorian'</config_calendar_type>
 
 <!-- io -->
-<config_write_output_on_startup>.true.</config_write_output_on_startup>
+<config_write_output_on_startup>.false.</config_write_output_on_startup>
 <config_pio_num_iotasks>0</config_pio_num_iotasks>
 <config_pio_stride>1</config_pio_stride>
 
@@ -851,6 +851,8 @@
 <config_AM_waterMassCensus_maxTemperature>30.0</config_AM_waterMassCensus_maxTemperature>
 <config_AM_waterMassCensus_minSalinity>32.0</config_AM_waterMassCensus_minSalinity>
 <config_AM_waterMassCensus_maxSalinity>37.0</config_AM_waterMassCensus_maxSalinity>
+<config_AM_waterMassCensus_compute_predefined_regions>.true.</config_AM_waterMassCensus_compute_predefined_regions>
+<config_AM_waterMassCensus_region_group>''</config_AM_waterMassCensus_region_group>
 
 <!-- AM_layerVolumeWeightedAverage -->
 <config_AM_layerVolumeWeightedAverage_enable>.true.</config_AM_layerVolumeWeightedAverage_enable>
