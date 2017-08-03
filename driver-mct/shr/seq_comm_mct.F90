@@ -242,7 +242,6 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
     !----------------------------------------------------------
-
     ! make sure this is first pass and set comms unset
     if (seq_comm_mct_initialized) then
        write(logunit,*) trim(subname),' ERROR seq_comm_init already called '
@@ -337,7 +336,6 @@ contains
 
 
     !--- compute some other num_inst values
-
     num_inst_xao = max(num_inst_atm,num_inst_ocn)
     num_inst_frc = num_inst_ice
 
