@@ -127,7 +127,6 @@ CONTAINS
     character(len=CL)              :: rest_file  ! restart filename
     character(len=CL)              :: restfilm   ! model restart file namelist
     logical                        :: exists     ! filename existance
-    integer(IN)                    :: info_debug ! logging level
     integer(IN)                    :: nu         ! unit number
     integer(IN)                    :: CurrentYMD ! model date
     integer(IN)                    :: CurrentTOD ! model sec into model date
@@ -136,7 +135,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / desp_nml /                                                     &
-         desp_mode, info_debug, restfilm
+         desp_mode, restfilm
 
     !--- formats ---
     character(*), parameter :: subName = "(desp_comp_init) "
@@ -191,7 +190,6 @@ CONTAINS
 
       filename   = "desp_in"//trim(inst_suffix)
       desp_mode  = trim(nullstr)
-      info_debug = -1
       restfilm   = trim(nullstr)
       if (my_task == master_task) then
         nunit = shr_file_getUnit() ! get unused unit number
@@ -204,7 +202,6 @@ CONTAINS
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
         end if
-        write(logunit,F01) 'info_debug  = ',info_debug
         write(logunit,F00) 'restfilm    = ',trim(restfilm)
         write(logunit,F01) 'inst_index  = ',inst_index
         write(logunit,F00) 'inst_name   = ',trim(inst_name)
@@ -212,11 +209,10 @@ CONTAINS
         call shr_sys_flush(logunit)
       end if
       call shr_mpi_bcast(desp_mode,  mpicom, 'desp_mode')
-      call shr_mpi_bcast(info_debug, mpicom, 'info_debug')
       call shr_mpi_bcast(restfilm,   mpicom, 'restfilm')
 
       rest_file = trim(restfilm)
-      loglevel = info_debug
+      loglevel = 1 ! could be shrloglev
       call shr_file_setLogLevel(loglevel)
 
       !------------------------------------------------------------------------
@@ -235,7 +231,7 @@ CONTAINS
            (trim(desp_mode) == test_mode)) then
 
         if (my_task == master_task) then
-          write(logunit,F00) ' desp mode = ',trim(desp_mode)
+          write(logunit,F00) 'desp mode = ',trim(desp_mode)
           call shr_sys_flush(logunit)
         end if
         if (trim(desp_mode) /= null_mode) then
@@ -674,7 +670,7 @@ CONTAINS
         else
           unitn = shr_file_getUnit()
           if (loglevel > 0) then
-            write(logunit,"(3A)") subname,"read rpointer file ", rpointer_name
+            write(logunit,"(3A)") subname,"read rpointer file ", trim(rpointer_name)
           end if
           open(unitn, file=rpointer_name, form='FORMATTED', status='old',     &
                action='READ', iostat=ierr)
