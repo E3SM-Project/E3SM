@@ -428,9 +428,10 @@ CONTAINS
     call t_startf('desp_mode')
 
     if (.not. ANY(pause_sig)) then
-      if ((my_task == master_task) .and. (loglevel > 0)) then
+      if ( (my_task == master_task) .and.                                     &
+           ((loglevel > 1) .or. (trim(desp_mode) == test_mode))) then
         write(logunit, '(2a,i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
-             'WARNING: No pause signals found at',yy,mm,dd,CurrentTOD
+             'WARNING: No pause signals found at ',yy,mm,dd,CurrentTOD
       end if
     end if
 

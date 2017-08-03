@@ -57,7 +57,7 @@
       Level of debug output, 0=minimum, 1=normal, 2=more, 3=too much (default: 0)
     </desc>
     <values>
-      <value>0</value>
+      <value>1</value>
     </values>
   </entry>
 
