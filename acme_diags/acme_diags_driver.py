@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import datetime
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
@@ -47,7 +48,6 @@ if __name__ == '__main__':
     parser = ACMEParser()
     original_parameter = parser.get_parameter(default_vars=False)
     if not hasattr(original_parameter, 'results_dir'):
-        import datetime
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # don't overwrite the sets keyword in the default json files.
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
-
+    
     for parameter in parameters:
         for pset in parameter.sets:
             pset = str(pset)
@@ -74,5 +74,10 @@ if __name__ == '__main__':
                 continue
             print('Starting to run ACME diags')
             run_diag(parameter)
+    
+    pth = os.path.join(original_parameter.results_dir, 'viewer')
+    if not os.path.exists(pth):
+        os.makedirs(pth)
 
-    create_viewer(original_parameter.results_dir, parameters, parameters[0].output_format[0])
+    create_viewer(pth, parameters, parameters[0].output_format[0])
+    

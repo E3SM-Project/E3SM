@@ -187,8 +187,7 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
 
 def get_output_dir(set_num, parameter):
     """Get the directory of where to save the outputs for a run."""
-    pth = os.path.join(parameter.results_dir, 'set{}'.format(set_num), parameter.case_id)
+    pth = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
         os.makedirs(pth)
     return pth
-    
