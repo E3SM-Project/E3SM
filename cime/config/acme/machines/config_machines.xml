@@ -393,7 +393,6 @@
 	<command name="load">craype/2.5.10</command>
 	<command name="rm">cray-mpich</command>
 	<command name="load">cray-mpich/7.5.5</command>
-        <command name="load">craype-hugepages2M</command>
       </modules>
 
       <modules compiler="cray">

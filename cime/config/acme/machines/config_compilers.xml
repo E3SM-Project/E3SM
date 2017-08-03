@@ -594,7 +594,7 @@ for mct, etc.
 
 <compiler COMPILER="intel18" MACH="cori-knl">
   <!-- need base intel settings as well those for cori-knl -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL </ADD_CPPDEFS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </ADD_FFLAGS>
