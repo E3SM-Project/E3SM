@@ -62,13 +62,13 @@ if __name__ == '__main__':
 
             parameter.current_set = pset
             if pset == '3' or pset == 'zonal_mean_xy':
-                from acme_diags.driver.set3_driver import run_diag
+                from acme_diags.driver.zonal_mean_xy_driver import run_diag
             elif pset == '4' or pset == 'zonal_mean_2d':
-                from acme_diags.driver.set4_driver import run_diag
+                from acme_diags.driver.zonal_mean_2d_driver import run_diag
             elif pset == '5' or pset == 'lat_lon':
-                from acme_diags.driver.set5_driver import run_diag
+                from acme_diags.driver.lat_lon_driver import run_diag
             elif pset == '7' or pset == 'polar':
-                from acme_diags.driver.set7_driver import run_diag
+                from acme_diags.driver.polar_driver import run_diag
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 continue
