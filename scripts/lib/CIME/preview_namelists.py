@@ -4,6 +4,7 @@ API for preview namelist
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import run_sub_or_cmd
+from CIME.check_input_data import stage_refcase
 import glob, shutil
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,9 @@ def create_namelists(case, component=None):
 
     # Load modules
     case.load_env()
+
+    stage_refcase(case)
+
 
     logger.info("Creating component namelists")
 
