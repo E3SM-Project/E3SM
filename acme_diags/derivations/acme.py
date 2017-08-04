@@ -287,9 +287,9 @@ def cosp_histogram_standardize(cld):
             cld_hist = cld( modis_tau = (0.3, tau_high))  #MODIS obs
 
     if cld.id == 'CLD_MISR':        #MISR model
-        cld_hist = cld(cosp_tau = (0.3, tau_high))
+        cld_hist = cld(cosp_tau = (0.3, tau_high), cosp_htmisr=(0,prs_high))
     if cld.id == 'CLMISR':        #MISR obs
-        cld_hist = cld(misr_tau = (0.3, tau_high))
+        cld_hist = cld(misr_tau = (0.3, tau_high),misr_cth =(0,prs_high))
 
     return cld_hist
        
