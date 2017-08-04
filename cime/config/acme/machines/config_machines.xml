@@ -1065,11 +1065,12 @@
         <command name="load">cmake</command>
 	<command name="load">netcdf/4.4.1.1-prsuusl</command>
         <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
-        <command name="load" mpilib="!mpi-serial">parallel-netcdf/1.8.1</command>
+        <command name="load" mpilib="!mpi-serial">parallel-netcdf/1.6.1</command>
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
+      <env name="NETCDF_C_PATH">$SHELL{which nc-config | xargs dirname | xargs dirname}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
       <env name="PNETCDF_PATH" mpilib="!mpi-serial">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
       <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
