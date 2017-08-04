@@ -73,13 +73,11 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
     if var.id.find('MISR') != -1: 
         plt.axhline(y=6, linewidth=2, color='k')
         plt.axhline(y=9, linewidth=2, color='k')
-        #yticks = [0,0.5,1,1.5,2,2.5,3,4,5,7,9,11,13,15,17,23]
-        #ylabels = ['%.1f' %i for i in yticks]
-        #ax.set_yticklabels(ylabels)
-        ##yticks_position =np.linspace(0,15,16)
-        #plt.yticks(yticks_position, ylabels)
+        yticks = [0,0.5,1,1.5,2,2.5,3,4,5,7,9,11,13,15,17,23]
+        ylabels = ['%.1f' %i for i in yticks]
+        yticks_position =np.linspace(0,15,16)
+        plt.yticks(yticks_position,ylabels)
         ax.set_ylabel('Cloud Top Height (km)')
-        #plt.ylim(0,23)
     else:
         plt.axhline(y=2, linewidth=2, color='k')
         plt.axhline(y=4, linewidth=2, color='k')
@@ -99,7 +97,8 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
     #ax.set_yticklabels(ylabels)
     if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
     if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
-    ax.set_title('cloud frac: %.1f'%total_cf+'%', loc='right', fontdict=plotSideTitle)
+    #ax.set_title('cloud frac: %.1f'%total_cf+'%', loc='right', fontdict=plotSideTitle)
+    ax.set_title('%', loc='right', fontdict=plotSideTitle)
 #    if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
     #ax.set_ylabel('Cloud Top Height (km)')
 
