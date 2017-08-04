@@ -2678,6 +2678,8 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_block_write(manager, writeBlock, streamID, timeLevel, mgLevel, forceWriteNow, writeTime, ierr) !{{{
 
+        use mpas_dmpar, only : MPI_COMM_SELF
+
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
