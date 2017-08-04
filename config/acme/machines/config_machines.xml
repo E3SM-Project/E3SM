@@ -1497,7 +1497,7 @@
     <DIN_LOC_ROOT_CLMFORC>/projects/$PROJECT/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>$CIME_OUTPUT_ROOT/csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/projects/$PROJECT/acme/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/projects/$PROJECT/acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/$PROJECT/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>CNL</OS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
