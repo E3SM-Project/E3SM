@@ -1491,7 +1491,7 @@
     <NODENAME_REGEX>theta.*</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
-    <MPILIBS>mpt</MPILIBS>
+    <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/$PROJECT/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/$PROJECT/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1569,6 +1569,10 @@
         <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
         <command name="load">cray-hdf5-parallel/1.10.0.3</command>
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">cray-hdf5/1.10.0.3</command>
+        <command name="load">cray-netcdf/4.4.1.1.3</command>
       </modules>
     </module_system>
     <environment_variables>
