@@ -72,6 +72,7 @@ module cime_comp_mod
     use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
     use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
     use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
+    use seq_comm_mct, only: cpl_inst_tag
 
    ! clock & alarm routines and variables
    use seq_timemgr_mod, only: seq_timemgr_type
@@ -533,8 +534,6 @@ module cime_comp_mod
    logical  :: iamin_CPLALLROFID     ! pe associated with CPLALLROFID
    logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
 
-   ! suffix for log and timing files if multi coupler driver
-   character(len=seq_comm_namelen) :: cpl_inst_tag
 
    !----------------------------------------------------------------------------
    ! complist: list of comps on this pe
@@ -588,7 +587,7 @@ contains
 
 subroutine cime_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
-
+   use seq_comm_mct, only: num_inst_cpl
    !----------------------------------------------------------
    !| Initialize MCT and MPI communicators and IO
    !----------------------------------------------------------
@@ -597,7 +596,7 @@ subroutine cime_pre_init1()
    logical :: comp_iamin(num_inst_total)
    character(len=seq_comm_namelen) :: comp_name(num_inst_total)
    integer :: i, it
-   integer :: num_inst_cpl, cpl_id
+   integer :: cpl_id
    integer :: cpl_comm
 
    call mpi_init(ierr)
@@ -4067,7 +4066,7 @@ subroutine cime_comp_barriers(mpicom, timer)
 end subroutine cime_comp_barriers
 
 subroutine cime_cpl_init(comm_in, comm_out, num_inst_cpl, id)
-
+  use seq_comm_mct, only : cpl_inst_iamin
   !-----------------------------------------------------------------------
   !
   ! Initialize multiple coupler instances, if requested
