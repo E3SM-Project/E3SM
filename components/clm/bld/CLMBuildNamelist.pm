@@ -2540,6 +2540,7 @@ sub setup_logic_initial_conditions {
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
                     'glc_nec'=>$nl_flags->{'glc_nec'}, 'use_crop'=>$nl_flags->{'use_crop'},
+                    'nu_com'=>$nl_flags->{'nu_com'},
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     } elsif ($opts->{'ignore_ic_year'}) {
@@ -2561,6 +2562,7 @@ sub setup_logic_initial_conditions {
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
                     'glc_nec'=>$nl_flags->{'glc_nec'}, 'use_crop'=>$nl_flags->{'use_crop'},
+                    'nu_com'=>$nl_flags->{'nu_com'},
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     } else {
@@ -2582,6 +2584,7 @@ sub setup_logic_initial_conditions {
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
                     'glc_nec'=>$nl_flags->{'glc_nec'}, 'use_crop'=>$nl_flags->{'use_crop'},
+                    'nu_com'=>$nl_flags->{'nu_com'},
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     }
