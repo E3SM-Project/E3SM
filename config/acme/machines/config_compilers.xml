@@ -481,6 +481,7 @@ for mct, etc.
 
   <ADD_FFLAGS       DEBUG="TRUE"> -g -time -f2003 -ieee=stop </ADD_FFLAGS>
   <ADD_CFLAGS       DEBUG="TRUE"> -g </ADD_CFLAGS>
+  <ADD_CFLAGS> -std=c99 </ADD_CFLAGS>
 
   <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
   <!-- Runtime checks with OpenMP (in fact, all OpenMP cases) are WIP.       -->
@@ -1089,7 +1090,7 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <MPI_PATH MPILIB="mpich">/home/robl/soft/mpich-3.1.4-nag-6.0</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mpich"> mpi </MPI_LIB_NAME>
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) $(shell $(NETCDF_PATH)/bin/nc-config --libs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
