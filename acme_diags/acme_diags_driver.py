@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import datetime
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
@@ -47,7 +48,6 @@ if __name__ == '__main__':
     parser = ACMEParser()
     original_parameter = parser.get_parameter(default_vars=False)
     if not hasattr(original_parameter, 'results_dir'):
-        import datetime
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
@@ -55,26 +55,32 @@ if __name__ == '__main__':
     # don't overwrite the sets keyword in the default json files.
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
-
+    
     for parameter in parameters:
         for pset in parameter.sets:
             pset = str(pset)
 
             parameter.current_set = pset
             if pset == '3' or pset == 'zonal_mean_xy':
-                from acme_diags.driver.set3_driver import run_diag
+                from acme_diags.driver.zonal_mean_xy_driver import run_diag
             elif pset == '4' or pset == 'zonal_mean_2d':
-                from acme_diags.driver.set4_driver import run_diag
+                from acme_diags.driver.zonal_mean_2d_driver import run_diag
             elif pset == '5' or pset == 'lat_lon':
-                from acme_diags.driver.set5_driver import run_diag
+                from acme_diags.driver.lat_lon_driver import run_diag
             elif pset == '7' or pset == 'polar':
-                from acme_diags.driver.set7_driver import run_diag
+                from acme_diags.driver.polar_driver import run_diag
             elif pset == '13' or pset == 'cosp_histogram':
                 from acme_diags.driver.cosp_histogram_driver import run_diag
+
             else:
                 print('Plot set {} is not supported yet. Please give us time.'.format(pset))
                 continue
             print('Starting to run ACME diags')
             run_diag(parameter)
+    
+    pth = os.path.join(original_parameter.results_dir, 'viewer')
+    if not os.path.exists(pth):
+        os.makedirs(pth)
 
-    create_viewer(original_parameter.results_dir, parameters, parameters[0].output_format[0])
+    create_viewer(pth, parameters, parameters[0].output_format[0])
+    
