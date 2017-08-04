@@ -876,20 +876,24 @@
       <modules compiler="gnu">
 	<command name="add">+gcc-5.2</command>
 	<command name="add">+netcdf-4.3.3.1-gnu5.2-serial</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mvapich">
 	<command name="add">+mvapich2-2.2b-gcc-5.2</command>
       </modules>
       <modules compiler="intel">
 	<command name="add">+intel-15.0</command>
-	<command name="add">+pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0</command>
-	<command name="add">+mvapich2-2.2b-intel-15.0</command>
 	<command name="add">+mkl-11.2.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mvapich">
+	<command name="add">+mvapich2-2.2b-intel-15.0</command>
+	<command name="add">+pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0</command>
       </modules>
       <modules compiler="pgi">
         <command name="add">+pgi-15.7</command>
         <command name="add">+binutils-2.27</command>
         <command name="add">+netcdf-c-4.4.1-f77-4.4.4-pgi-15.7-serial</command>
       </modules>
-      <modules compiler="pgi" mpilib="!mpi-serial">
+      <modules compiler="pgi" mpilib="mvapich">
         <command name="add">+mvapich2-2.2-pgi-15.7</command>
         <command name="add">+pnetcdf-1.7.0-pgi-15.7-mvapich2-2.2</command>
       </modules>
@@ -898,17 +902,17 @@
         <command name="add">+hdf5-1.8.12-serial-nag</command>
         <command name="add">+netcdf-4.3.1-serial-nag</command>
       </modules>
-      <modules compiler="nag" mpilib="!mpi-serial">
+      <modules compiler="nag" mpilib="mvapich">
         <command name="add">+mpich3-3.1.4-nag-6.0</command>
         <command name="add">+pnetcdf-1.6.1-mpich-3.1.4-nag-6.0</command>
       </modules>
     </module_system>
     <environment_variables compiler="gnu">
       <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
-      <env name="LD_LIBRARY_PATH">/soft/mvapich2/2.2b_psm/gnu-5.2/lib:/soft/netcdf_serial/4.3.3.1/gnu-5.2/lib:/soft/gcc/5.2.0/lib64:/soft/gcc/5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0:/soft/python/2.7.3/lib:/soft/gcc/4.4.2/lib64:/soft/gcc/4.4.2/lib:/soft/lcrc/lib:/usr/lib64:/usr/lib:/soft/mvapich2/1.4-gcc-4.4.2/lib:/soft/tau/2.20.2/tau_latest/x86_64/lib</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mvapich">
       <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
+      <env name="LD_LIBRARY_PATH">/soft/mvapich2/2.2b_psm/gnu-5.2/lib:/soft/netcdf_serial/4.3.3.1/gnu-5.2/lib:/soft/gcc/5.2.0/lib64:/soft/gcc/5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0:/soft/python/2.7.3/lib:/soft/gcc/4.4.2/lib64:/soft/gcc/4.4.2/lib:/soft/lcrc/lib:/usr/lib64:/usr/lib:/soft/mvapich2/1.4-gcc-4.4.2/lib:/soft/tau/2.20.2/tau_latest/x86_64/lib</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
