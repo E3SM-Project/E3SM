@@ -1036,6 +1036,9 @@
         <arg name="num_tasks" > -n $TOTALPES</arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
     <module_system type="module">
       <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh</init_path>
       <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh</init_path>
@@ -1062,7 +1065,7 @@
         <command name="load">cmake</command>
 	<command name="load">netcdf/4.4.1.1-prsuusl</command>
         <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
-        <command name="load">parallel-netcdf/1.8.1</command>
+        <command name="load" mpilib="!mpi-serial">parallel-netcdf/1.8.1</command>
       </modules>
     </module_system>
     <environment_variables>
