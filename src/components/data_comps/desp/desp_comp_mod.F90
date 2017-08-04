@@ -18,6 +18,8 @@ module desp_comp_mod
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData
   use seq_timemgr_mod, only: seq_timemgr_RestartAlarmIsOn
   use seq_comm_mct,    only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+  use seq_comm_mct,    only: num_inst_cpl
+
 
   implicit none
   private
@@ -99,8 +101,6 @@ CONTAINS
 
   subroutine desp_comp_init(EClock, espid, mpicom_in, phase, read_restart,    &
        esp_present, esp_prognostic)
-    use pio,         only: iosystem_desc_t
-    use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -119,8 +119,6 @@ CONTAINS
     integer(IN)                    :: shrlogunit ! original log unit
     integer(IN)                    :: shrloglev  ! original log level
     integer(IN)                    :: nunit      ! unit number
-
-    type(iosystem_desc_t), pointer :: iosystem
 
     character(len=CL)              :: fileName   ! generic file name
 
@@ -219,8 +217,7 @@ CONTAINS
       ! Initialize PIO
       !------------------------------------------------------------------------
 
-      iosystem => shr_pio_getiosys(trim(inst_name))
-      call shr_strdata_pioinit(SDESP, iosystem, shr_pio_getiotype(trim(inst_name)))
+      call shr_strdata_pioinit(SDESP, COMPID)
 
       !------------------------------------------------------------------------
       ! Validate mode
@@ -349,7 +346,7 @@ CONTAINS
     character(len=CL), intent(inout) :: ice_resume(num_inst_ice)
     character(len=CL), intent(inout) :: glc_resume(num_inst_glc)
     character(len=CL), intent(inout) :: wav_resume(num_inst_wav)
-    character(len=CL), intent(inout) :: cpl_resume
+    character(len=CL), intent(inout) :: cpl_resume(num_inst_cpl)
 
                                                               !--- local ---
     integer(IN)                      :: CurrentYMD            ! model date
@@ -389,7 +386,7 @@ CONTAINS
     ice_resume(:) = ' '
     glc_resume(:) = ' '
     wav_resume(:) = ' '
-    cpl_resume    = ' '
+    cpl_resume(:)    = ' '
 
     !--------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -474,8 +471,8 @@ CONTAINS
           varname = 'T'
         case('drv')
           call get_restart_filenames(ind, cpl_resume, errcode)
-          allocate(rfilenames(1))
-          rfilenames(1) = cpl_resume
+          allocate(rfilenames(size(cpl_resume)))
+          rfilenames = cpl_resume
           varname = 'x2oacc_ox_Foxx_swnet'
         case default
           call shr_sys_abort(subname//'Unrecognized ind')
@@ -610,7 +607,7 @@ CONTAINS
 
   subroutine get_restart_filenames_a(comp_ind, filenames, retcode)
     use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID
-    use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix
+    use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix, cpl_inst_tag, num_inst_cpl
     use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
 
     ! Dummy arguments
@@ -657,7 +654,11 @@ CONTAINS
     rpointer_name = rpprefix//comp_names(comp_ind)
 
     do ind = 1, num_inst
-      rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
+      if (num_inst_cpl > 1) then
+         rpointer_name = rpprefix//comp_names(comp_ind)//trim(cpl_inst_tag)
+      else
+         rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
+      endif
       if (my_task == master_task) then
         inquire(file=rpointer_name, EXIST=file_exists)
         ! POP decided to not follow the convention

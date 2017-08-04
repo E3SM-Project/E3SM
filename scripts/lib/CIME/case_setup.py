@@ -45,7 +45,7 @@ def _build_usernl_files(case, model, comp):
             ninst = case.get_value("NINST_{}".format(model))
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
-        if ninst > 1:
+        if ninst > 1 and not comp.endswith("esp"):
             for inst_counter in xrange(1, ninst+1):
                 inst_nlfile = "{}_{:04d}".format(nlfile, inst_counter)
                 if not os.path.exists(inst_nlfile):

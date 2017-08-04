@@ -85,26 +85,40 @@ class PRE(SystemTestsCompareTwo):
         else:
             pause_comps = pause_comps.split(':')
 
+        multi_coupler = self._case.get_value("MULTI_COUPLER")
+
         for comp in pause_comps:
+            if comp == "cpl":
+                if multi_coupler:
+                    ninst = self._case.get_value("NINST_MAX")
+                else:
+                    ninst = 1
+            else:
+                ninst = self._case.get_value("NINST_{}".format(comp.upper()))
             comp_name = self._case.get_value('COMP_{}'.format(comp.upper()))
-            rname = '*.{}.r.*'.format(comp_name)
-            restart_files_1 = glob.glob(os.path.join(rundir1, rname))
-            expect((len(restart_files_1) > 0), "No case1 restart files for {}".format(comp))
-            restart_files_2 = glob.glob(os.path.join(rundir2, rname))
-            expect((len(restart_files_2) > len(restart_files_1)),
-                   "No pause (restart) files found in case2 for {}".format(comp))
-            # Do cprnc of restart files.
-            rfile1 = restart_files_1[len(restart_files_1) - 1]
-            # rfile2 has to match rfile1 (same time string)
-            parts = os.path.basename(rfile1).split(".")
-            glob_str = "*.{}".format(".".join(parts[len(parts)-4:]))
-            restart_files_2 = glob.glob(os.path.join(rundir2, glob_str))
-            expect((len(restart_files_2) == 1),
-                   "Missing case2 restart file, {}", glob_str)
-            rfile2 = restart_files_2[0]
-            ok = cprnc(comp, rfile1, rfile2, self._case, rundir2)[0]
-            logger.warning("CPRNC result for {}: {}".format(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
-            compare_ok = compare_ok and (should_match == ok)
+            for index in range(1,ninst+1):
+                if ninst == 1:
+                    rname = '*.{}.r.*'.format(comp_name)
+                else:
+                    rname = '*.{}_{:04d}.r.*'.format(comp_name, index)
+
+                restart_files_1 = glob.glob(os.path.join(rundir1, rname))
+                expect((len(restart_files_1) > 0), "No case1 restart files for {}".format(comp))
+                restart_files_2 = glob.glob(os.path.join(rundir2, rname))
+                expect((len(restart_files_2) > len(restart_files_1)),
+                       "No pause (restart) files found in case2 for {}".format(comp))
+                # Do cprnc of restart files.
+                rfile1 = restart_files_1[len(restart_files_1) - 1]
+                # rfile2 has to match rfile1 (same time string)
+                parts = os.path.basename(rfile1).split(".")
+                glob_str = "*.{}".format(".".join(parts[len(parts)-4:]))
+                restart_files_2 = glob.glob(os.path.join(rundir2, glob_str))
+                expect((len(restart_files_2) == 1),
+                       "Missing case2 restart file, {}", glob_str)
+                rfile2 = restart_files_2[0]
+                ok = cprnc(comp, rfile1, rfile2, self._case, rundir2)[0]
+                logger.warning("CPRNC result for {}: {}".format(os.path.basename(rfile1), "PASS" if (ok == should_match) else "FAIL"))
+                compare_ok = compare_ok and (should_match == ok)
 
         expect(compare_ok,
                "Not all restart files {}".format("matched" if should_match else "failed to match"))
