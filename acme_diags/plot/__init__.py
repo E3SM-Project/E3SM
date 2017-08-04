@@ -17,6 +17,8 @@ def _get_plot_fcn(backend, set_num):
             mod_str = 'acme_diags.plot.{}.lat_lon_plot'.format(backend)
         elif set_num in ['polar', '7']:
             mod_str = 'acme_diags.plot.{}.polar_plot'.format(backend)
+        elif set_num in ['cosp_histogram', '13']:
+            mod_str = 'acme_diags.plot.{}.cosp_histogram_plot'.format(backend)
         else:
             raise ImportError('There is no module {} for the {} backend'.format(set_num, backend))
 

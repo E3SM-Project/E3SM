@@ -4,6 +4,7 @@ from numbers import Number
 import cdms2
 from genutil import udunits
 import MV2
+import numpy as np
 
 
 def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
@@ -253,6 +254,44 @@ def cosp_bin_sum(cld, prs_low, prs_high, tau_low, tau_high):
 
     cld_bin_sum = MV2.sum(MV2.sum(cld_bin,axis=1),axis=0)
     return cld_bin_sum
+
+def cosp_histogram_standardize(cld):
+    """standarize cloud top pressure and cloud thickness bins to dimensions that suitable for plotting, input variable has dimention (cosp_prs,cosp_tau)"""
+    prs = cld.getAxis(0)
+    tau = cld.getAxis(1)
+
+    prs_low = prs[0]
+    prs_high = prs[-1]
+    tau_low = tau[0]
+    tau_high = tau[-1]
+
+    prs_bounds = getattr(prs,'bounds')
+    if prs_bounds is None:
+        cloud_prs_bounds = np.array([[1000.,800.],[800.,680.],[680.,560.],[560.,440.],[440.,310.],[310.,180.],[180.,0.]])  # length 7
+        prs.setBounds( np.array(cloud_prs_bounds,dtype=np.float32) )
+
+    tau_bounds =  getattr(tau,'bounds')
+    if tau_bounds is None:
+        cloud_tau_bounds = np.array([[0.3,1.3],[1.3,3.6],[3.6,9.4],[9.4,23],[23,60],[60,379]]) # length 6
+        tau.setBounds( np.array(cloud_tau_bounds,dtype=np.float32) )
+
+    if cld.id == 'FISCCP1_COSP':   #ISCCP model
+        cld_hist = cld(cosp_tau = (0.3, tau_high))
+    if cld.id == 'CLISCCP':        #ISCCP obs
+        cld_hist = cld(isccp_tau = (0.3, tau_high))
+
+    if cld.id == 'CLMODIS':   #MODIS 
+        try: 
+            cld_hist = cld( cosp_tau_modis = (0.3, tau_high)) #MODIS model
+        except:
+            cld_hist = cld( modis_tau = (0.3, tau_high))  #MODIS obs
+
+    if cld.id == 'CLD_MISR':        #MISR model
+        cld_hist = cld(cosp_tau = (0.3, tau_high), cosp_htmisr=(0,prs_high))
+    if cld.id == 'CLMISR':        #MISR obs
+        cld_hist = cld(misr_tau = (0.3, tau_high),misr_cth =(0,prs_high))
+
+    return cld_hist
        
 
 # derived_variables is a dictionary to accomodate user specified derived variables. 
@@ -509,7 +548,18 @@ derived_variables = {
         (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%")),
         (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%"))
     ]),
-     
+# COSP cloud fraction joint histogram     
+    'COSP_HISTOGRAM_MISR': OrderedDict([
+        (('CLD_MISR'),lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLMISR'),lambda cld: cosp_histogram_standardize(rename(cld)))
+    ]),
+    'COSP_HISTOGRAM_MODIS': OrderedDict([
+        (('CLMODIS'),lambda cld: cosp_histogram_standardize(rename(cld))),
+    ]),
+    'COSP_HISTOGRAM_ISCCP': OrderedDict([
+        (('FISCCP1_COSP'),lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLISCCP'),lambda cld: cosp_histogram_standardize(rename(cld)))
+    ]),
     'ICEFRAC': OrderedDict([
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
     ]),
