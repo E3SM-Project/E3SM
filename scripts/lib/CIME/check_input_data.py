@@ -73,6 +73,9 @@ def check_all_input_data(case):
     success = check_input_data(case=case, download=True)
     expect(success, "Failed to download input data")
 
+    stage_refcase(case)
+
+def stage_refcase(case):
     get_refcase  = case.get_value("GET_REFCASE")
     run_type     = case.get_value("RUN_TYPE")
     continue_run = case.get_value("CONTINUE_RUN")
@@ -113,17 +116,18 @@ and prestage the restart data to $RUNDIR manually
             logger.debug("Creating run directory: {}".format(rundir))
             os.makedirs(rundir)
 
-        for rcfile in glob.iglob(os.path.join(refdir,"*{}*".format(run_refcase))):
-            logger.debug("Staging file {}".format(rcfile))
-            rcbaseline = os.path.basename(rcfile)
-            if not os.path.exists("{}/{}".format(rundir, rcbaseline)):
-                os.symlink(rcfile, "{}/{}".format(rundir, rcbaseline))
-
         # copy the refcases' rpointer files to the run directory
-        for rpointerfile in  glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
+        for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.debug("Copy rpointer {}".format(rpointerfile))
             shutil.copy(rpointerfile, rundir)
 
+        # link everything else
+
+        for rcfile in glob.iglob(os.path.join(refdir,"*")):
+            rcbaseline = os.path.basename(rcfile)
+            if not os.path.exists("{}/{}".format(rundir, rcbaseline)):
+                logger.debug("Staging file {}".format(rcfile))
+                os.symlink(rcfile, "{}/{}".format(rundir, rcbaseline))
 
         for cam2file in  glob.iglob(os.path.join("{}","*.cam2.*").format(rundir)):
             camfile = cam2file.replace("cam2", "cam")
