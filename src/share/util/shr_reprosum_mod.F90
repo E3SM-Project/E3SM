@@ -38,6 +38,7 @@ module shr_reprosum_mod
    use shr_log_mod,   only: s_loglev  => shr_log_Level
    use shr_log_mod,   only: s_logunit => shr_log_Unit
    use shr_sys_mod,   only: shr_sys_abort
+   use shr_infnan_mod,only: shr_infnan_isnan, shr_infnan_isinf
    use perf_mod
 
 !-----------------------------------------------------------------------
@@ -338,8 +339,14 @@ module shr_reprosum_mod
       logical :: validate                ! flag indicating need to
                                          !  verify gmax and max_levels
                                          !  are accurate/sufficient
+      integer :: nan_check, inf_check    ! flag on whether there are
+                                         !  NaNs and INFs in input array
+
+      integer :: num_nans, num_infs      ! count of NaNs and INFs in
+                                         !  input array
       integer :: omp_nthreads            ! number of OpenMP threads
       integer :: mpi_comm                ! MPI subcommunicator
+      integer :: mypid                   ! MPI process ID (COMM_WORLD)
       integer :: tasks                   ! number of MPI processes
       integer :: ierr                    ! MPI error return
       integer :: ifld, isum, ithread     ! loop variables
@@ -389,6 +396,38 @@ module shr_reprosum_mod
 !
 !-----------------------------------------------------------------------
 !
+! check whether input contains NaNs or INFs, and abort if so
+
+      call t_startf('shr_reprosum_NaN_INF_Chk')
+      nan_check = .false.
+      inf_check = .false.
+      num_nans = 0
+      num_infs = 0
+
+      nan_check = any(shr_infnan_isnan(arr))
+      inf_check = any(shr_infnan_isinf(arr))
+      if (nan_check .or. inf_check) then
+         do ifld=1,nflds
+            do isum=1,nsummands
+               if (shr_infnan_isnan(arr(isum,ifld))) then
+                  num_nans = num_nans + 1
+               endif
+               if (shr_infnan_isinf(arr(isum,ifld))) then
+                  num_infs = num_infs + 1
+               endif
+            end do
+         end do
+      endif
+      call t_stopf('shr_reprosum_NaN_INF_Chk')
+
+      if ((num_nans > 0) .or. (num_infs > 0)) then
+         call mpi_comm_rank(MPI_COMM_WORLD, mypid, ierr)
+         write(s_logunit,37) real(num_nans,r8), real(num_infs,r8), mypid
+37 format("SHR_REPROSUM_CALC: Input contains ",e12.5, &
+          " NaNs and ", e12.5, " INFs on process ", i7)
+         call shr_sys_abort("shr_reprosum_calc ERROR: NaNs or INFs in input")
+      endif
+
 ! check whether should use shr_reprosum_ddpdd algorithm
       use_ddpdd_sum = repro_sum_use_ddpdd
       if ( present(ddpdd_sum) ) then
