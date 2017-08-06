@@ -805,8 +805,6 @@ contains
       if (.not. config_use_glp) then
          where (li_mask_is_floating_ice(cellMask))
             betaSolve = 0.0_RKIND
-         elsewhere
-            betaSolve = beta
          end where
       endif
 
