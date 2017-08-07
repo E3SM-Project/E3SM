@@ -24,6 +24,10 @@ from  CIME.case import Case
 from  CIME.code_checker import check_code, get_all_checkable_files
 from  CIME.test_status import *
 
+from  CIME.case_setup import case_setup
+from  CIME.case_submit import submit
+import CIME.build as build
+
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
 TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
 TEST_COMPILER = None
@@ -1393,6 +1397,29 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+
+    ###########################################################################
+    def test_cime_case_prereq(self):
+    ###########################################################################
+        testcase_name = 'Prereq_test'
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
+                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
+                              from_dir=SCRIPT_DIR)
+
+        with Case(testdir, read_only=False) as case:
+            case_setup(case, clean=False, test_mode=False, reset=False)
+            build.case_build(testdir, case=case, sharedlib_only=False, model_only=False)
+            submit_output = run_cmd_assert_result(self, "%s/case.submit" % (testdir), from_dir=testdir).split('\n')
+            submit_line_tag = 'Submitted job ids '
+            submit_line = [s for s in submit_output if submit_line_tag in s][0]
+            # Remove the tag used to identify the line, the brackets, and the quotations from the string-list
+            # This leaves us with a comma separated list of ids
+            submit_ids = submit_line.replace(submit_line_tag, '').replace('[', '').replace(']', '').replace('\'', '').split(',')
+            prereq_id = submit_ids[-1]
+            submit(case, prereq=prereq_id)
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
