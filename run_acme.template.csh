@@ -308,17 +308,19 @@ if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do
   exit 16
 endif
 
-if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
-  acme_print 'WARNING: It makes no sense to have chained submissions unless the run is producing appropriate restarts!'
-  acme_print '         The run length and restarts do not match exactly. '
-  acme_print '         It is hard to check definitively, so stopping just in case.'
-  acme_print '         If the settings are OK then deactivate this test.'
-  acme_print '         $stop_units     = '$stop_units
-  acme_print '         $stop_num       = '$stop_num
-  acme_print '         $restart_units  = '$restart_units
-  acme_print '         $restart_num    = '$restart_num
-  acme_print '         $num_resubmits  = '$num_resubmits
-  sleep $seconds_after_warning
+if ( $restart_num != 0 ) then
+  @ remaining_periods = $stop_num - ( $stop_num / $restart_num ) * $restart_num
+  if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $remaining_periods != 0 ) ) then
+    acme_print 'WARNING: run length is not divisible by the restart write frequency, or the units differ.'
+    acme_print 'If restart write frequency doesnt evenly divide the run length, restarts will simulate the same time period multiple times.'
+    acme_print '         $stop_units        = '$stop_units
+    acme_print '         $stop_num          = '$stop_num
+    acme_print '         $restart_units     = '$restart_units
+    acme_print '         $restart_num       = '$restart_num
+    acme_print '         $remaining_periods = '$remaining_periods
+    acme_print '         $num_resubmits     = '$num_resubmits
+    sleep $seconds_after_warning
+  endif
 endif
 
 #===========================================
