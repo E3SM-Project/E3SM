@@ -227,6 +227,14 @@
 			description="Variable name for the grounded land ice fraction in the land ice topography file."
 			possible_values="Variable name from input file."
 		/>
+		<nml_option name="config_global_ocean_use_constant_land_ice_cavity_temperature" type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if ocean temperature in land-ice cavities is set to a constant temperature."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_global_ocean_constant_land_ice_cavity_temperature" type="real" default_value="-1.8" units="C"
+					description="The constant temperature value to be used under land ice, typically something close to the freezing point."
+					possible_values="Any real number."
+		/>
 		<nml_option name="config_global_ocean_cull_inland_seas" type="logical" default_value=".true." units="unitless"
 			description="Logical flag that controls if inland seas should be removed."
 			possible_values=".true. or .false."
