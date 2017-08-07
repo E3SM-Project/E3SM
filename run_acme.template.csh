@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.14
+set script_ver = 3.0.13
 
 #===========================================
 # DEFINE ALIASES
@@ -772,7 +772,7 @@ endif
 #       https://acme-climate.atlassian.net/wiki/display/WORKFLOW/ACME+Input+Data+Repository
 
 #set input_data_dir = 'input_data_dir_NOT_SET'
-#if ( $machine == 'cori' || $machine == 'edison' ) then
+#if ( $machine == 'cori*' || $machine == 'edison' ) then
 #  set input_data_dir = '/project/projectdirs/m411/ACME_inputdata'    # PJC-NERSC
 ## set input_data_dir = '/project/projectdirs/ccsm1/inputdata'        # NERSC
 #else if ( $machine == 'titan' || $machine == 'eos' ) then
@@ -1013,7 +1013,7 @@ mkdir -p batch_output      ### Make directory that stdout and stderr will go int
 
 set batch_options = ''
 
-if ( $machine == cori || $machine == edison ) then
+if ( $machine =~ 'cori*' || $machine == edison ) then
     set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
 
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
@@ -1205,7 +1205,7 @@ endif
 
 #NOTE:  This section is for making specific changes to the run options (ie env_run.xml).
 
-#if ( $machine == cori ) then      ### fix pnetcdf problem on Cori. (github #593)
+#if ( $machine == 'cori*' ) then      ### fix pnetcdf problem on Cori. (github #593)
 #  $xmlchange_exe --id PIO_TYPENAME  --val "netcdf"
 #endif
 
@@ -1357,7 +1357,8 @@ acme_newline
 # 3.0.10   2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
 # 3.0.11   2017-07-14    Replace auto-chaining code with ACME's resubmit feature. Also fix Edison's qos setting (again...) (MD)
 # 3.0.12   2017-07-24    Supports setting the queue priority for anvil. Also move making machine lowercase up to clean some things up (MD)
-# 3.0.14   2017-08-07    Change the exit to a sleep for the warning where stop_num != restart_num (MD)
+# 3.0.13   2017-08-07    Verify that the number of periods between a restart evenly divides the number until the stop with the same units.
+#                        Update the machine check for cori to account for cori-knl (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
