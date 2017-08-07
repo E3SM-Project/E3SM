@@ -267,6 +267,8 @@ endif
 # BASIC ERROR CHECKING
 #===========================================
 
+set seconds_after_warning = 10
+
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
     acme_newline
@@ -297,6 +299,15 @@ if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0
   exit 15
 endif
 
+if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
+  acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
+  acme_print '       You should either use a different queue, or submit a single job without archiving.'
+  acme_print '       $debug_queue             = '$debug_queue
+  acme_print '       $num_resubmits           = '$num_resubmits
+  acme_print '       $do_short_term_archiving = '$do_short_term_archiving
+  exit 16
+endif
+
 if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
   acme_print 'WARNING: It makes no sense to have chained submissions unless the run is producing appropriate restarts!'
   acme_print '         The run length and restarts do not match exactly. '
@@ -307,16 +318,7 @@ if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $stop_num != $res
   acme_print '         $restart_units  = '$restart_units
   acme_print '         $restart_num    = '$restart_num
   acme_print '         $num_resubmits  = '$num_resubmits
-  exit 16
-endif
-
-if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
-  acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
-  acme_print '       You should either use a different queue, or submit a single job without archiving.'
-  acme_print '       $debug_queue             = '$debug_queue
-  acme_print '       $num_resubmits           = '$num_resubmits
-  acme_print '       $do_short_term_archiving = '$do_short_term_archiving
-  exit 17
+  sleep $seconds_after_warning
 endif
 
 #===========================================
