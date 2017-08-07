@@ -1,4 +1,401 @@
 ======================================================================
+Originator: Chris Fischer 
+Date: 8-07-2017
+Tag: cime5.3.0-alpha.30
+Answer Changes: None
+Tests: scripts_regression_tests.pr
+       SMS_D_Ln9.f19_g16_rx1.A.hobart_intel
+       PFS.f19_g17.B1850.cheyenne_intel
+       I compset
+       PET_Ln9.f09_f09_mg17.F2000_DEV.cheyenne_intel.cam-outfrq9s
+       ERS.f09_g17.AIAF.cheyenne_intel
+       ERS.f09_g17.B1850Ws.cheyenne_intel.allactive-defaultio
+       ERS_D.T62_t12.DTEST.cheyenne_intel.cice-default
+       WACCMX smoke tests on pleiades
+Dependencies:
+
+Brief Summary:
+    - Stage the refcase before calling buildnml.
+    - Add more default logging to desp.
+    - Revert to netcdf 4.3.3.1 on yellowstone.
+    - Fix to get PRE test working on ADESP_TEST on Cheyenne.
+    - Update cori-knl batch and fix xsd error.
+    - Updates for NAS pleiades systems.
+    - Fix long line.
+    - Refactored datamodels.
+    - Documentation updates.
+    - Update IO_format for data models.
+    - Don't use Machines object to get DIN_LOC_ROOT.
+    - Fix uninitialized variable.
+    - Replace cdf64 logical with PIO_NETCDF_FORMAT character variable.
+    - Fix documentation error.
+    - Machine and grid updates.
+    - Check flds for nan.
+    - Facilitate expected error unit tests.
+    - Revert the netcdf update on yellowstone for gnu and pgi compilers.
+    - Remove misleading text from the dependency string in config_batch.xml.
+    - Add new case.qstatus script.
+    - Removing extraneous whitespace from the mct driver code.
+    - Fix issues with ensemble.sh.
+    - Yellowstone update netcdf module for compatibility with cdf5
+    - Fix print statement in find_circular_dependecy.py.
+    - Documentation updates.
+    - More documentation updates.
+    - Implement NCR with SystemTestsCompareTwo.
+    - Fix pylint issue
+    - Clean up caseroot directory upon failed creation.
+    - Make xmlquery, xmlchange work with entry_id variables in the
+      env_mach_specific.xml file.
+    - Need to add description fields for new datasets.
+    - get_tasks_per_node should never return 0.
+    - Start a section on adding new components to cime.
+    - Cleanup botched rebase for config_batch.xml.
+    - Couple trivial changes to satisfy pylint.
+    - Add Support for Email Options.
+    - System tests compare two stage two.
+    - Add --pesfile option to create_test.
+    - Fix melvin.
+    - Update netcdf version for ACME.
+    - fix of test IME.tests.SystemTests.test_system_tests_compare_two.TestSystemTestsCompareTwo
+    - Change SIAF compset name in dice to IAF to be consistent with other components.
+    - Fix PRE test with the ADESP and ADESP_TEST compsets
+    - datm updates for clm.
+    - Build scripts in source mods.
+    - Update for hobart out-of-the-box support
+    - Eleminate --user-compset, allow longname in tests.
+    - Fix error in path to env_mach_specific.xml file.
+    - Apply OCN_NCPL setting to any version of CLM.
+    - Fix of PRE test failing in cdash.
+    - Avoids an error if the forcing description is missing from
+      config_compsets_cesm.xml.
+    - lcdf4 flag does apply to pnetcdf.
+    - Fix an issue with pio_numtasks setting and make sure that external
+      scripts are syncd with case.
+    - Remove cesm refs from cime driver.
+    - Description field error check of user compsets.
+    - Introduce version 3.0 schema for entry_id files
+    - Fix bug in case.run where arg skip-preview-namelist is out of sequence.
+    
+User interface changes: 
+    - New case.qstatus tool.
+    - Autodeletion of broken case dirs.
+    - Add --mail-user and --mail-type to case.submit.
+    - Add --pesfile option to create_test.
+    - Remove --user-compset from create_newcase, allow compset longname in
+      testname argument to create_test.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6db1569 Merge pull request #1795 from jedwards4b/stage_refcase
+2815ea6 Merge pull request #1790 from gold2718/PreFix
+c465923 Merge pull request #1791 from jedwards4b/yellowstone_netcdf_revert
+c4d50cc Merge pull request #1787 from gold2718/PreFix
+b65bfd6 Merge pull request #1784 from jedwards4b/misc_fixes
+05e576d Merge pull request #1783 from fvitt/pleiades_cime5.3.0-alpha.29
+397a62e Merge pull request #1786 from jedwards4b/fix_long_line
+38a88f1 Merge pull request #1767 from ESMCI/mvertens/refactored_datamodels
+b4c5cf7 Merge pull request #1782 from ESMCI/bertinia/doc
+a650e47 Merge pull request #1778 from jedwards4b/update_dmodel_ioformat
+999abc1 Merge pull request #1776 from jedwards4b/no_machines_in_check_input_data
+d5f0db6 Merge pull request #1780 from jedwards4b/fix_uninitialized_var
+919aee3 Merge pull request #1777 from jedwards4b/pio_netcdf_format
+2f9fa03 Fix documentation error
+32f9801 Merge pull request #1775 from ESMCI/fischer/machine_grid_updates
+9217c9b Merge pull request #1765 from jedwards4b/check_flds_for_nan
+8c61ea2 Merge pull request #1771 from billsacks/unittest_throw_exception
+25d82e6 Merge pull request #1772 from jedwards4b/revert_netcdf_for_secondary_compilers_yellowstone
+7a671be Merge pull request #1768 from ESMCI/mfdeakin-sandia/config_batch/remove_misleading_text
+df44c12 Merge pull request #1758 from ESMCI/jgfouca/case_qstatus
+bb1aec9 Merge pull request #1766 from jedwards4b/remove_whitespace_mct_driver
+b4419ef Merge pull request #1761 from allibco/master
+84aafd5 Merge pull request #1759 from jedwards4b/yellowstone_updates
+bdad4d9 Fixed print statement in find_circular_dependecy.py
+bb9c6f0 Merge pull request #1756 from ESMCI/bertinia/doc
+2e46704 Merge pull request #1752 from ESMCI/bertinia/doc
+e1db2f1 Merge pull request #1744 from ESMCI/mfdeakin-sandia/systemtestscomparetwo/ncr
+89fbd14 fix pylint issue
+154db7b Merge pull request #1750 from ESMCI/jgfouca/cleanup_caseroot_upon_failed_creation
+ffd327a Merge pull request #1748 from jedwards4b/run_exe_xmlquery
+37a6807 Merge pull request #1745 from jedwards4b/clm_datm_changesv3
+8652190 Merge pull request #1746 from ESMCI/jgfouca/fix_small_machines
+808774d Merge pull request #1742 from jedwards4b/adding_components
+1afee01 Cleanup botched rebase for config_batch.xml
+550ccc9 Couple trivial changes to satisfy pylint
+7a2739f Merge pull request #1719 from ESMCI/erichlf/batch/email
+16070a4 Merge pull request #1738 from jedwards4b/system_tests_compare_two_stage_two
+469156f Merge pull request #1735 from jedwards4b/add_pesfile_to_create_test 
+eceeaeb Merge pull request #1740 from ESMCI/jgfouca/update_netcdf_for_sandia_machines
+8c4828b Merge pull request #1739 from ESMCI/jgfouca/update_netcdf_for_sandia_machines
+d5a9d61 hot fix of test IME.tests.SystemTests.test_system_tests_compare_two.TestSystemTestsCompareTwo
+d5b7c48 Merge pull request #1736 from jedwards4b/dice_compset_fix
+fecd52e Merge pull request #1734 from gold2718/PreFix
+1fd77e8 Merge pull request #1728 from ESMCI/sacks/updates_for_clm_v2
+69f0128 Merge pull request #1730 from jedwards4b/build_scripts_in_SourceMods
+29d87f0 Merge pull request #1729 from bertinia/master
+095e84c Merge pull request #1721 from jedwards4b/remove_user_compset_arg
+a26d8b1 Merge pull request #1725 from jedwards4b/env_mach_specific_path_correction
+3d40552 Merge pull request #1688 from billsacks/ocn_ncpl_clm5
+e9c2f45 hot fix of PRE test failing in cdash
+a8d0993 Merge pull request #1716 from jedwards4b/missing_forcing_fix
+a170957 Merge pull request #1705 from jedwards4b/cpl_hist_64bit_mode
+2732eda Merge pull request #1712 from jedwards4b/pio_namelist_and_externals_fix
+02608e4 Merge pull request #1708 from ESMCI/rljacob/drv/de-cesmify
+fb3a6c5 Merge pull request #1697 from jedwards4b/description_field
+4b116ba Merge pull request #1703 from ESMCI/sarich/scripts/fix-skip-preview-namelist-parsing-order
+
+
+Modified files: git diff --name-status [previous_tag]
+M	CMakeLists.txt
+M	config/acme/config_files.xml
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_batch.xsd
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/template.case.run
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+D	config/cesm/machines/Depends.goldbach
+M	config/cesm/machines/Makefile
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/entry_id_base.xsd
+A	config/xml_schemas/entry_id_base_version3.xsd
+A	config/xml_schemas/entry_id_version3.xsd
+M	config/xml_schemas/env_mach_specific.xsd
+A	doc/.gitignore
+M	doc/Makefile
+A	doc/README
+A	doc/source/README
+A	doc/source/Tools_user/index.rst.template
+A	doc/source/build_cpl/adding-components.rst
+M	doc/source/build_cpl/index.rst
+M	doc/source/build_cpl/introduction.rst
+M	doc/source/conf.py
+D	doc/source/conf.py_old
+M	doc/source/driver_cpl/time-management.rst
+A	doc/source/glossary/index.rst
+M	doc/source/index.rst
+M	doc/source/users_guide/adding-cases.rst
+M	doc/source/users_guide/create-a-case.rst
+M	doc/source/users_guide/index.rst
+M	doc/source/users_guide/introduction-and-overview.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/what_cime/index.rst
+A	doc/source/xml_files/acme.rst
+A	doc/source/xml_files/atmosphere.rst
+A	doc/source/xml_files/cesm.rst
+A	doc/source/xml_files/common.rst
+A	doc/source/xml_files/components.rst
+A	doc/source/xml_files/drivers.rst
+A	doc/source/xml_files/esp.rst
+A	doc/source/xml_files/index.rst
+A	doc/source/xml_files/land.rst
+A	doc/source/xml_files/landice.rst
+A	doc/source/xml_files/ocean.rst
+A	doc/source/xml_files/river.rst
+A	doc/source/xml_files/seaice.rst
+A	doc/source/xml_files/wave.rst
+A	doc/tools_autodoc.cfg
+A	doc/tools_autodoc.py
+M	scripts/Tools/case.build
+A	scripts/Tools/case.qstatus
+M	scripts/Tools/case.submit
+M	scripts/Tools/check_input_data
+M	scripts/Tools/normalize_cases
+M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/ncr.py
+M	scripts/lib/CIME/SystemTests/pre.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/component.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/env_run.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/check_input_data.py
+M	scripts/lib/CIME/preview_namelists.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/manage_pes
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+A	src/build_scripts/buildlib.internal_components
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+D	src/components/data_comps/datm/atm_comp_mct.F90
+T	src/components/data_comps/datm/cime_config/buildlib
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/datm/datm_shr_mod.F90
+A	src/components/data_comps/datm/mct/atm_comp_mct.F90
+T	src/components/data_comps/desp/cime_config/buildlib
+M	src/components/data_comps/desp/cime_config/buildnml
+M	src/components/data_comps/desp/cime_config/config_component.xml
+M	src/components/data_comps/desp/cime_config/namelist_definition_desp.xml
+M	src/components/data_comps/desp/desp_comp_mod.F90
+D	src/components/data_comps/desp/esp_comp_mct.F90
+M	src/components/data_comps/desp/esp_utils.F90
+A	src/components/data_comps/desp/mct/esp_comp_mct.F90
+T	src/components/data_comps/dice/cime_config/buildlib
+M	src/components/data_comps/dice/cime_config/config_component.xml
+M	src/components/data_comps/dice/dice_comp_mod.F90
+A	src/components/data_comps/dice/dice_shr_mod.F90
+D	src/components/data_comps/dice/ice_comp_mct.F90
+A	src/components/data_comps/dice/mct/ice_comp_mct.F90
+T	src/components/data_comps/dlnd/cime_config/buildlib
+M	src/components/data_comps/dlnd/cime_config/config_component.xml
+M	src/components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml
+M	src/components/data_comps/dlnd/dlnd_comp_mod.F90
+A	src/components/data_comps/dlnd/dlnd_shr_mod.F90
+D	src/components/data_comps/dlnd/lnd_comp_mct.F90
+A	src/components/data_comps/dlnd/mct/lnd_comp_mct.F90
+T	src/components/data_comps/docn/cime_config/buildlib
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/docn_comp_mod.F90
+A	src/components/data_comps/docn/docn_shr_mod.F90
+A	src/components/data_comps/docn/mct/ocn_comp_mct.F90
+D	src/components/data_comps/docn/ocn_comp_mct.F90
+T	src/components/data_comps/drof/cime_config/buildlib
+M	src/components/data_comps/drof/cime_config/config_component.xml
+M	src/components/data_comps/drof/drof_comp_mod.F90
+A	src/components/data_comps/drof/drof_shr_mod.F90
+A	src/components/data_comps/drof/mct/rof_comp_mct.F90
+D	src/components/data_comps/drof/rof_comp_mct.F90
+A	src/components/data_comps/dshare/shr_dmodel_mod.F90
+A	src/components/data_comps/dshare/shr_strdata_mod.F90
+A	src/components/data_comps/dshare/shr_stream_mod.F90
+A	src/components/data_comps/dshare/shr_tInterp_mod.F90
+T	src/components/data_comps/dwav/cime_config/buildlib
+M	src/components/data_comps/dwav/cime_config/config_component.xml
+M	src/components/data_comps/dwav/dwav_comp_mod.F90
+A	src/components/data_comps/dwav/dwav_shr_mod.F90
+A	src/components/data_comps/dwav/mct/wav_comp_mct.F90
+D	src/components/data_comps/dwav/wav_comp_mct.F90
+T	src/components/stub_comps/satm/cime_config/buildlib
+M	src/components/stub_comps/satm/cime_config/buildnml
+M	src/components/stub_comps/satm/cime_config/config_component.xml
+T	src/components/stub_comps/sesp/cime_config/buildlib
+M	src/components/stub_comps/sesp/cime_config/buildnml
+M	src/components/stub_comps/sesp/cime_config/config_component.xml
+T	src/components/stub_comps/sglc/cime_config/buildlib
+M	src/components/stub_comps/sglc/cime_config/buildnml
+M	src/components/stub_comps/sglc/cime_config/config_component.xml
+T	src/components/stub_comps/sice/cime_config/buildlib
+M	src/components/stub_comps/sice/cime_config/buildnml
+M	src/components/stub_comps/sice/cime_config/config_component.xml
+T	src/components/stub_comps/slnd/cime_config/buildlib
+M	src/components/stub_comps/slnd/cime_config/buildnml
+M	src/components/stub_comps/slnd/cime_config/config_component.xml
+T	src/components/stub_comps/socn/cime_config/buildlib
+M	src/components/stub_comps/socn/cime_config/buildnml
+T	src/components/stub_comps/srof/cime_config/buildlib
+M	src/components/stub_comps/srof/cime_config/buildnml
+T	src/components/stub_comps/swav/cime_config/buildlib
+M	src/components/stub_comps/swav/cime_config/buildnml
+M	src/components/stub_comps/swav/cime_config/config_component.xml
+T	src/components/xcpl_comps/xatm/cime_config/buildlib
+M	src/components/xcpl_comps/xatm/cime_config/config_component.xml
+T	src/components/xcpl_comps/xglc/cime_config/buildlib
+M	src/components/xcpl_comps/xglc/cime_config/config_component.xml
+T	src/components/xcpl_comps/xice/cime_config/buildlib
+M	src/components/xcpl_comps/xice/cime_config/config_component.xml
+T	src/components/xcpl_comps/xlnd/cime_config/buildlib
+M	src/components/xcpl_comps/xlnd/cime_config/config_component.xml
+T	src/components/xcpl_comps/xocn/cime_config/buildlib
+M	src/components/xcpl_comps/xocn/cime_config/config_component.xml
+T	src/components/xcpl_comps/xrof/cime_config/buildlib
+M	src/components/xcpl_comps/xrof/cime_config/config_component.xml
+T	src/components/xcpl_comps/xwav/cime_config/buildlib
+M	src/components/xcpl_comps/xwav/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_compsets.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/namelist_definition_modelio.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/som/shell_commands
+M	src/drivers/mct/main/CMakeLists.txt
+D	src/drivers/mct/main/cesm_comp_mod.F90
+D	src/drivers/mct/main/cesm_driver.F90
+A	src/drivers/mct/main/cime_comp_mod.F90
+A	src/drivers/mct/main/cime_driver.F90
+M	src/drivers/mct/main/component_mod.F90
+M	src/drivers/mct/main/component_type_mod.F90
+M	src/drivers/mct/main/map_glc2lnd_mod.F90
+M	src/drivers/mct/main/map_lnd2glc_mod.F90
+M	src/drivers/mct/main/mrg_mod.F90
+M	src/drivers/mct/main/prep_aoflux_mod.F90
+M	src/drivers/mct/main/prep_atm_mod.F90
+M	src/drivers/mct/main/prep_glc_mod.F90
+M	src/drivers/mct/main/prep_ice_mod.F90
+M	src/drivers/mct/main/prep_ocn_mod.F90
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/main/seq_domain_mct.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_io_mod.F90
+M	src/drivers/mct/main/seq_rest_mod.F90
+M	src/drivers/mct/shr/CMakeLists.txt
+M	src/drivers/mct/shr/glc_elevclass_mod.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+M	src/drivers/mct/shr/shr_ndep_mod.F90
+M	src/drivers/mct/unit_test/CMakeLists.txt
+A	src/drivers/mct/unit_test/check_fields_test/CMakeLists.txt
+A	src/drivers/mct/unit_test/check_fields_test/test_check_fields.pf
+M	src/drivers/mct/unit_test/utils/create_mapper_mod.F90
+M	src/externals/CMake/CIME_utils.cmake
+M	src/share/test/unit/CMakeLists.txt
+A	src/share/test/unit/mock/README
+M	src/share/test/unit/mock/shr_sys_mod.nompi_abortthrows.F90
+A	src/share/test/unit/shr_abort_test/CMakeLists.txt
+A	src/share/test/unit/shr_abort_test/README
+A	src/share/test/unit/shr_abort_test/test_shr_abort.pf
+M	src/share/test/unit/shr_assert_test/CMakeLists.txt
+M	src/share/test/unit/shr_spfn_test/CMakeLists.txt
+M	src/share/test/unit/shr_string_test/CMakeLists.txt
+M	src/share/unit_test_stubs/README
+A	src/share/unit_test_stubs/util/CMakeLists.txt
+A	src/share/unit_test_stubs/util/README
+A	src/share/unit_test_stubs/util/shr_abort_mod.abortthrows.F90
+M	src/share/util/CMakeLists.txt
+A	src/share/util/shr_abort_mod.F90
+D	src/share/util/shr_dmodel_mod.F90
+M	src/share/util/shr_mct_mod.F90
+M	src/share/util/shr_pcdf_mod.F90
+M	src/share/util/shr_pio_mod.F90
+D	src/share/util/shr_strdata_mod.F90
+D	src/share/util/shr_stream_mod.F90
+M	src/share/util/shr_sys_mod.F90
+D	src/share/util/shr_tInterp_mod.F90
+M	tools/cprnc/README
+M	tools/statistical_ensemble_test/ensemble.sh
+M	tools/statistical_ensemble_test/single_run.sh
+M	tools/utils/find_circular_dependency.py
+
+
+======================================================================
+
+======================================================================
 
 Originator: Chris Fischer 
 Date: 6-22-2017
