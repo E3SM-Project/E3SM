@@ -339,7 +339,7 @@ module shr_reprosum_mod
       logical :: validate                ! flag indicating need to
                                          !  verify gmax and max_levels
                                          !  are accurate/sufficient
-      integer :: nan_check, inf_check    ! flag on whether there are
+      logical :: nan_check, inf_check    ! flag on whether there are
                                          !  NaNs and INFs in input array
 
       integer :: num_nans, num_infs      ! count of NaNs and INFs in
