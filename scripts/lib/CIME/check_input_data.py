@@ -118,7 +118,7 @@ and prestage the restart data to $RUNDIR manually
 
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
-            logger.debug("Copy rpointer {}".format(rpointerfile))
+            logger.info("Copy rpointer {}".format(rpointerfile))
             shutil.copy(rpointerfile, rundir)
 
         # link everything else
@@ -126,7 +126,7 @@ and prestage the restart data to $RUNDIR manually
         for rcfile in glob.iglob(os.path.join(refdir,"*")):
             rcbaseline = os.path.basename(rcfile)
             if not os.path.exists("{}/{}".format(rundir, rcbaseline)):
-                logger.debug("Staging file {}".format(rcfile))
+                logger.info("Staging file {}".format(rcfile))
                 os.symlink(rcfile, "{}/{}".format(rundir, rcbaseline))
 
         for cam2file in  glob.iglob(os.path.join("{}","*.cam2.*").format(rundir)):
