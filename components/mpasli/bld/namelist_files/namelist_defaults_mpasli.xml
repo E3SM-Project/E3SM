@@ -10,6 +10,7 @@
 <config_flowParamA_calculation>'constant'</config_flowParamA_calculation>
 <config_do_velocity_reconstruction_for_external_dycore>.false.</config_do_velocity_reconstruction_for_external_dycore>
 <config_simple_velocity_type>'uniform'</config_simple_velocity_type>
+<config_use_glp>.false.</config_use_glp>
 
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>
@@ -84,7 +85,7 @@
 <config_print_thickness_advection_info>.false.</config_print_thickness_advection_info>
 <config_print_calving_info>.false.</config_print_calving_info>
 <config_print_thermal_info>.false.</config_print_thermal_info>
-<config_always_compute_fem_grid>.false.</config_always_compute_fem_grid>
+<config_always_compute_fem_grid>.true.</config_always_compute_fem_grid>
 <config_print_velocity_cleanup_details>.false.</config_print_velocity_cleanup_details>
 
 <!-- subglacial_hydro -->
@@ -104,6 +105,14 @@
 <config_SGH_creep_coefficient>0.04</config_SGH_creep_coefficient>
 <config_SGH_englacial_porosity>0.01</config_SGH_englacial_porosity>
 <config_SGH_till_max>2.0</config_SGH_till_max>
+<config_SGH_chnl_active>.false.</config_SGH_chnl_active>
+<config_SGH_chnl_alpha>1.25</config_SGH_chnl_alpha>
+<config_SGH_chnl_beta>1.5</config_SGH_chnl_beta>
+<config_SGH_chnl_conduc_coeff>0.1</config_SGH_chnl_conduc_coeff>
+<config_SGH_chnl_creep_coefficient>0.04</config_SGH_chnl_creep_coefficient>
+<config_SGH_incipient_channel_width>2.0</config_SGH_incipient_channel_width>
+<config_SGH_include_pressure_melt>.true.</config_SGH_include_pressure_melt>
+<config_SGH_shmip_forcing>'none'</config_SGH_shmip_forcing>
 
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
