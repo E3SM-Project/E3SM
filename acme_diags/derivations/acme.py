@@ -191,8 +191,8 @@ def swcfsrf(fsns, fsnsc):
     return var
 
 def lwcfsrf(flns, flnsc):
-    """Surface longwave cloud forcing """
-    var = flns - flnsc
+    """Surface longwave cloud forcing, for ACME model, upward is postitive for LW """
+    var = -(flns - flnsc)
     var.long_name = "Surface longwave cloud forcing"
     return var
 
