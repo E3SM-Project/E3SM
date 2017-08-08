@@ -989,10 +989,10 @@ using a fortran linker.
 </compiler>
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
-    <append> -qopt-report </append>
+    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
   </CFLAGS>
   <FFLAGS>
-    <append> -qopt-report </append>
+    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
   </FFLAGS>
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
