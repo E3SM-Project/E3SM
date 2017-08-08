@@ -93,8 +93,8 @@ _TEST_SUITES = {
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
-    #atmopheric tests for extended coverage
-    "acme_atm_ext_cvrg" : (None, None,
+    #atmopheric tests for extra coverage
+    "acme_atm_extra_coverage" : (None, None,
                          ("SMS_Lm1.ne4_ne4.FC5AV1C-L",
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
@@ -145,8 +145,8 @@ _TEST_SUITES = {
                            "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.f09_g16_a.MPASLIALB")
                           ),
-    #acme tests for extended coverage
-    "acme_ext_cvrg" : (("acme_atm_ext_cvrg",),None,
+    #acme tests for extra coverage
+    "acme_extra_coverage" : (("acme_atm_extra_coverage",),None,
                      () ),
 
     #acme tests for hi-res
