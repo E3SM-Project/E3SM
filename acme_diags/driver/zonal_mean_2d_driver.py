@@ -185,8 +185,6 @@ def run_diag(parameter):
                     mv1_reg = mv1_p
                     lev_out = mv1_p.getLevel()
                     lat_out = mv1_p.getLatitude()
-                    print lev_out,lev_out[:]
-                    print lat_out,lat_out[:]
                     mv2_reg = mv2_p.crossSectionRegrid(lev_out, lat_out)
                     #apply mask back, since crossSectionRegrid doesn't preserve mask
                     mv2_reg = MV2.masked_where(
