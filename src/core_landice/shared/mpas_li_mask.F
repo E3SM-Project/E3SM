@@ -132,6 +132,10 @@ module li_mask
       module procedure li_mask_is_grounded_ice_intout_0d
    end interface
 
+   interface li_mask_is_grounding_line
+      module procedure li_mask_is_grounding_line_logout_1d
+      module procedure li_mask_is_grounding_line_logout_0d
+   end interface
 
    !--------------------------------------------------------------------
    !
@@ -849,6 +853,20 @@ contains
         li_mask_is_grounded_ice_intout_0d = 0
       endif
    end function li_mask_is_grounded_ice_intout_0d
+
+   function li_mask_is_grounding_line_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_grounding_line_logout_1d
+
+      li_mask_is_grounding_line_logout_1d = (iand(mask, li_mask_ValueGroundingLine) == li_mask_ValueGroundingLine)
+   end function li_mask_is_grounding_line_logout_1d
+
+   function li_mask_is_grounding_line_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_grounding_line_logout_0d
+
+      li_mask_is_grounding_line_logout_0d = (iand(mask, li_mask_ValueGroundingLine) == li_mask_ValueGroundingLine)
+   end function li_mask_is_grounding_line_logout_0d
 
    function li_mask_is_initial_ice_logout_1d(mask)
       integer, dimension(:), intent(in) :: mask
