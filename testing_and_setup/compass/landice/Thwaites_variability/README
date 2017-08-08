@@ -1,0 +1,15 @@
+To set up a suite of runs:
+
+1. Run standard compass set up script to create an instance of the test case, e.g.:
+./setup_testcase.py -f general.config.landice.mjh -n 37 --work_dir /net/scratch1/mhoffman/mpas-testing/
+
+2. Run the set up script that is created from the work_dir location, e.g.:
+cd /net/scratch1/mhoffman/mpas-testing/landice/Thwaites_variability/standard_resolution/standard_configuration
+./setup_thwaites_testcase.py
+
+Steps 1 and 2 are done primarily to keep this under version control, including the creation of the namelist and streams files.
+
+3. To generate and run a suite of simulations within variability parameter space, use the script setup_many_runs.sh
+which is symlinked into your work_dir location.  Be sure to manually adjust the variables at the top!
+
+4. After runs complete (or during their execution), use the compare_variability_runs.py script to plot results.
