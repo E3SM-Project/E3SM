@@ -729,6 +729,16 @@ contains
     call shr_mpi_bcast(esp_nthreads,GLOBAL_COMM,'esp_nthreads')
     call shr_mpi_bcast(cpl_nthreads,GLOBAL_COMM,'cpl_nthreads')
 
+    call shr_mpi_bcast(atm_layout,GLOBAL_COMM,'atm_layout')
+    call shr_mpi_bcast(lnd_layout,GLOBAL_COMM,'lnd_layout')
+    call shr_mpi_bcast(ocn_layout,GLOBAL_COMM,'ocn_layout')
+    call shr_mpi_bcast(ice_layout,GLOBAL_COMM,'ice_layout')
+    call shr_mpi_bcast(glc_layout,GLOBAL_COMM,'glc_layout')
+    call shr_mpi_bcast(wav_layout,GLOBAL_COMM,'wav_layout')
+    call shr_mpi_bcast(rof_layout,GLOBAL_COMM,'rof_layout')
+    call shr_mpi_bcast(esp_layout,GLOBAL_COMM,'esp_layout')
+
+
     ! Create MPI communicator groups
 
     if (mype == 0) then
