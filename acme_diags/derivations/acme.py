@@ -190,9 +190,9 @@ def swcfsrf(fsns, fsnsc):
     var.long_name = "Surface shortwave cloud forcing"
     return var
 
-def lwcfsrf(flnsc, flns):
+def lwcfsrf(flns, flnsc):
     """Surface longwave cloud forcing """
-    var = flnsc - flns
+    var = flns - flnsc
     var.long_name = "Surface longwave cloud forcing"
     return var
 
@@ -352,7 +352,7 @@ derived_variables = {
     'LWCFSRF': OrderedDict([
         (('LWCFSRF'), rename),
         (('sfc_cre_net_lw_mon'), rename),
-        (('FLNSC', 'FLNS'), lambda flns, flnsc: lwcfsrf(flnsc, flns))
+        (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
     'FLNS': OrderedDict([
         (('sfc_net_lw_all_mon'), rename)
