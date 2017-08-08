@@ -2530,6 +2530,10 @@ sub setup_logic_initial_conditions {
                     'irrig'=>$nl_flags->{'irrig'}, 'glc_nec'=>$nl_flags->{'glc_nec'},
                     'crop'=>$nl_flags->{'crop'}, 'bgc'=>$nl_flags->{'bgc_mode'} );
       } else {
+	my $nu_com_val = $nl_flags->{'nu_com'};
+	if ($nu_com_val eq "") {
+	  $nu_com_val = "RD";
+        }
         add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
                     'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
                     'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
@@ -2540,6 +2544,7 @@ sub setup_logic_initial_conditions {
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
                     'glc_nec'=>$nl_flags->{'glc_nec'}, 'use_crop'=>$nl_flags->{'use_crop'},
+                    'nu_com'=>$nu_com_val,
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     } elsif ($opts->{'ignore_ic_year'}) {
@@ -2551,6 +2556,10 @@ sub setup_logic_initial_conditions {
                     'irrig'=>$nl_flags->{'irrig'}, 'glc_nec'=>$nl_flags->{'glc_nec'},
                     'crop'=>$nl_flags->{'crop'}, 'bgc'=>$nl_flags->{'bgc_mode'} );
       } else {
+	my $nu_com_val = $nl_flags->{'nu_com'};
+	if ($nu_com_val eq "") {
+	  $nu_com_val = "RD";
+        }
         add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
                     'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
                     'ic_md'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
@@ -2561,6 +2570,7 @@ sub setup_logic_initial_conditions {
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
                     'glc_nec'=>$nl_flags->{'glc_nec'}, 'use_crop'=>$nl_flags->{'use_crop'},
+                    'nu_com'=>$nu_com_val,
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     } else {
@@ -2572,6 +2582,10 @@ sub setup_logic_initial_conditions {
                     'irrig'=>$nl_flags->{'irrig'}, 'glc_nec'=>$nl_flags->{'glc_nec'},
                     'crop'=>$nl_flags->{'crop'}, 'bgc'=>$nl_flags->{'bgc_mode'} );
       } else {
+	my $nu_com_val = $nl_flags->{'nu_com'};
+	if ($nu_com_val eq "") {
+	  $nu_com_val = "RD";
+        }
         add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
                     'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
                     'ic_ymd'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
@@ -2582,6 +2596,7 @@ sub setup_logic_initial_conditions {
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
                     'glc_nec'=>$nl_flags->{'glc_nec'}, 'use_crop'=>$nl_flags->{'use_crop'},
+                    'nu_com'=>$nu_com_val,
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     }
