@@ -469,14 +469,14 @@
     <!-- ENA RRM grid (all components) -->
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_enax4v1_ne0np4_enax4v1</sname>
-      <lname>a%ne0np4_enax4v1_l%ne0np4_enax4v1_oi%ne0np4_enax4v1_r%r01_m%oRRS18to6_g%null_w%null</lname>
+      <lname>a%ne0np4_enax4v1_l%ne0np4_enax4v1_oi%ne0np4_enax4v1_r%null_m%oRRS18to6_g%null_w%null</lname>
       <alias>enax4v1_enax4v1</alias>
     </grid>
 
     <!-- ENA RRM grid (land on ne30) -->
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_enax4v1_ne30np4_ne0np4_enax4v1</sname>
-      <lname>a%ne0np4_enax4v1_l%ne30np4_oi%ne0np4_enax4v1_r%r01_m%oRRS18to6_g%null_w%null</lname>
+      <lname>a%ne0np4_enax4v1_l%ne30np4_oi%ne0np4_enax4v1_r%null_m%oRRS18to6_g%null_w%null</lname>
       <alias>enax4v1_ne30_enax4v1</alias>
     </grid>
 
