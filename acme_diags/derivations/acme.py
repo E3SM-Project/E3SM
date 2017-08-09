@@ -191,7 +191,7 @@ def swcfsrf(fsns, fsnsc):
     return var
 
 def lwcfsrf(flns, flnsc):
-    """Surface longwave cloud forcing, for ACME model, upward is postitive for LW """
+    """Surface longwave cloud forcing, for ACME model, upward is postitive for LW , for ceres, downward is postive for both LW and SW"""
     var = -(flns - flnsc)
     var.long_name = "Surface longwave cloud forcing"
     return var
@@ -334,23 +334,28 @@ derived_variables = {
         (('rsds', 'rsus'), lambda rsds, rsus: albedo_srf(rsds, rsus)),
         (('FSDS', 'FSNS'), lambda fsds, fsns: albedo_srf(fsds, fsds-fsns))
     ]),
+    #Pay attention to the positive direction of SW and LW fluxes
     'SWCF': OrderedDict([
         (('SWCF'), rename),
+        (('toa_net_sw_all_mon','toa_net_sw_clr_mon'), lambda net_all,net_clr: swcf(net_all,net_clr)),
         (('toa_cre_sw_mon'), rename),
         (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ]),
     'SWCFSRF': OrderedDict([
         (('SWCFSRF'), rename),
+        (('sfc_net_sw_all_mon','sfc_net_sw_clr_mon'), lambda net_all,net_clr: swcfsrf(net_all,net_clr)),
         (('sfc_cre_net_sw_mon'), rename),
         (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ]),
     'LWCF': OrderedDict([
         (('LWCF'), rename),
+        (('toa_net_lw_all_mon','toa_net_lw_clr_mon'), lambda net_all,net_clr: lwcf(net_clr,net_all)),
         (('toa_cre_lw_mon'), rename),
         (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ]),
     'LWCFSRF': OrderedDict([
         (('LWCFSRF'), rename),
+        (('sfc_net_lw_all_mon','sfc_net_lw_clr_mon'), lambda net_all,net_clr: lwcfsrf(net_clr,net_all)),
         (('sfc_cre_net_lw_mon'), rename),
         (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
