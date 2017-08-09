@@ -1241,9 +1241,14 @@ subroutine micro_mg_tend ( &
 
      if (trim(micro_mg_precip_frac_method) == 'in_cloud') then
 
+        ! If cloud mass exists, keep precip_frac = cldm (precipitation
+        ! only present in cloud). If not, use the max of cloud fraction
+        ! and fraction from the level above (precip is originating from
+        ! above in this case, but we need to use the max because MG2 can't
+        ! handle precip_frac < cldm correctly).
         if (k /= 1) then
            where (qc(:,k) < qsmall .and. qi(:,k) < qsmall)
-              precip_frac(:,k) = precip_frac(:,k-1)
+              precip_frac(:,k) = max(precip_frac(:,k-1),precip_frac(:,k))
            end where
         endif
 
