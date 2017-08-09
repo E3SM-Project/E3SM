@@ -749,7 +749,7 @@
       <command name="load">mkl/16.0</command>
     </modules>
     <modules mpilib="!mpi-serial">
-      <command name="load" mpilib="!mpi-serial">sems-openmpi/1.10.5</command>
+      <command name="load">sems-openmpi/1.10.5</command>
       <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
     </modules>
     <modules mpilib="mpi-serial">
