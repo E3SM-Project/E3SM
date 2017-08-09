@@ -28,6 +28,9 @@
                 <option name="config_AM_globalStats_compute_interval">'output_interval'</option>
                 <option name="config_AM_globalStats_compute_on_startup">.true.</option>
                 <option name="config_AM_globalStats_write_on_startup">.true.</option>
+
+                <option name="config_pio_num_iotasks">2</option>
+                <option name="config_pio_stride">16</option>
         </namelist>
 
         <streams>
@@ -82,6 +85,7 @@
                         <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                         <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
+                        <attribute name="io_type">netcdf</attribute>
                         <add_contents>
                                 <member name="xtime" type="var"/>
                                 <member name="deltat" type="var"/>
