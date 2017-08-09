@@ -43,6 +43,7 @@ module iop
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: init_iop_fields
   public :: readiopdata         ! read iop boundary data
+  public :: readiopdata_surface
   public :: setiopupdate        ! find index in iopboundary data for current time
 !  public :: scam_use_iop_srf
 ! !PUBLIC DATA:
@@ -151,7 +152,25 @@ subroutine readiopdata_surface()
    real(r8) coldata(plev)
    integer strt4(4),cnt4(4)
    character(len=16) :: lowername
-   
+  
+   fill_ends= .false.
+
+!     
+!     Open IOP dataset
+!     
+  call handle_ncerr( nf90_open (iopfile, 0, ncid),&
+       'readiopdata.F90', __LINE__)
+
+!
+!     if the dataset is a CAM generated dataset set use_camiop to true
+!       CAM IOP datasets have a global attribute called CAM_GENERATED_IOP      
+!
+   if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+      use_camiop = .true.
+   else
+      use_camiop = .false.
+   endif
+ 
 !=====================================================================
 !     
 !     Read time variables
@@ -264,7 +283,25 @@ subroutine readiopdata_surface()
    else
       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
       have_shflx = .true.
-   endif   
+   endif
+
+   status = nf90_inq_varid( ncid, 'Tg', varid   )
+   if (status .ne. nf90_noerr) then
+      write(iulog,*)'Could not find variable Tg'
+      if ( have_tsair ) then
+         write(iulog,*) 'Using Tsair'
+         tground = tsair     ! use surface value from T field
+      else
+         write(iulog,*) 'Using T at lowest level'
+         tground = t3(1,plev,1,n3)
+      endif
+   else
+      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
+      have_tg = .true.
+   endif
+
+   write(*,*) 'SHFUCKS', shflxobs
+   write(*,*) 'NSTEP', get_nstep()   
    
    call shr_sys_flush( iulog )
 
@@ -668,21 +705,6 @@ endif !scm_observed_aero
             t3(1,i,1,n3)=tobs(i)  !     set t to tobs at first time step
          end do
       endif
-   endif
-
-   status = nf90_inq_varid( ncid, 'Tg', varid   )
-   if (status .ne. nf90_noerr) then
-      write(iulog,*)'Could not find variable Tg'
-      if ( have_tsair ) then
-         write(iulog,*) 'Using Tsair'
-         tground = tsair     ! use surface value from T field
-      else
-         write(iulog,*) 'Using T at lowest level'
-         tground = t3(1,plev,1,n3)
-      endif
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
-      have_tg = .true.
    endif
 
    status = nf90_inq_varid( ncid, 'qsrf', varid   )

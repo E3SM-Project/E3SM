@@ -15,8 +15,8 @@ module stepon
   use camsrfexch,       only: cam_out_t     
   use ppgrid,           only: begchunk, endchunk
   use physics_types,    only: physics_state, physics_tend
-  use time_manager,     only: is_first_step, get_step_size
-  use iop,              only: setiopupdate, readiopdata
+  use time_manager,     only: is_first_step, is_last_step, get_step_size
+  use iop,              only: setiopupdate, readiopdata, readiopdata_surface
   use scamMod,          only: use_iop,doiopupdate,use_pert_frc,wfld,wfldh,single_column
   use perf_mod
 
@@ -198,7 +198,7 @@ subroutine stepon_run1( ztodt, phys_state, phys_tend , pbuf2d, dyn_in, dyn_out)
 
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP
-  if (use_iop) then
+  if (use_iop .and. .not. is_last_step()) then
     call setiopupdate
   end if
   
@@ -265,9 +265,9 @@ subroutine stepon_run3( ztodt, cam_out, phys_state, dyn_in, dyn_out )
      
      ! Determine whether it is time for an IOP update;
      ! doiopupdate set to true if model time step > next available IOP
-     if (use_iop) then
-        call setiopupdate
-     end if
+!     if (use_iop) then
+!        call setiopupdate
+!     end if
      
      ! Update IOP properties e.g. omega, divT, divQ
      
