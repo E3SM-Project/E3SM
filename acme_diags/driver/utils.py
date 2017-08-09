@@ -8,6 +8,25 @@ import genutil
 import cdms2
 from acme_diags.derivations.default_regions import regions_specs
 
+def get_set_name(set_name):
+    """Get the correct set name from the argument.
+    Ex: '3' -> 'zonal_mean_xy', etc. """
+
+    names = {
+       ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
+       ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
+       ('5', 'lat_lon'): 'lat_lon',
+       ('7', 'polar'): 'polar',
+       ('13', 'cosp_histogram'): 'cosp_histogram',
+    }
+
+    set_name = str(set_name)
+    for possible_names in names:
+        if set_name in possible_names:
+            return names[possible_names]
+
+    raise RuntimeError('Invalid set option: {}'.format(set_name))
+
 def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
     dir_files = os.listdir(path_name)
