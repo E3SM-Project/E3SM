@@ -708,9 +708,8 @@
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
     <arguments>
-      <arg name="bind"> --bind-to-core</arg>
       <arg name="num_tasks"> --n $TOTALPES</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -776,9 +775,8 @@
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
     <arguments>
-      <arg name="bind"> --bind-to-core</arg>
       <arg name="num_tasks"> --n $TOTALPES</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -856,9 +854,8 @@
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
     <arguments>
-      <arg name="bind"> --bind-to-core</arg>
       <arg name="num_tasks"> --n $TOTALPES</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
