@@ -220,8 +220,8 @@ def run_diag(parameter):
 
                 parameter.var_region = 'global'
                 
-                plot('4', mv2_p, mv1_p, diff, metrics_dict, parameter)
-                utils.save_ncfiles('4', mv1_p, mv2_p, diff, parameter)
+                plot(parameter.current_set, mv2_p, mv1_p, diff, metrics_dict, parameter)
+                utils.save_ncfiles(parameter.current_set, mv1_p, mv2_p, diff, parameter)
 
 
             # for variables without z axis:
@@ -265,8 +265,8 @@ def run_diag(parameter):
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     parameter.var_region = region
 
-                    plot('4', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                    utils.save_ncfiles('4', mv1_domain, mv2_domain, diff, parameter)
+                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                    utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
     
             
             else:

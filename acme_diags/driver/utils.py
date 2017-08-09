@@ -202,7 +202,7 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
 
 def get_output_dir(set_num, parameter):
     """Get the directory of where to save the outputs for a run."""
-    pth = os.path.join(parameter.results_dir, 'set{}'.format(set_num), parameter.case_id)
+    pth = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
         # When running diags in parallel, sometimes another process will create the dir
         try:
@@ -211,7 +211,6 @@ def get_output_dir(set_num, parameter):
             if e.errno != os.errno.EEXIST:
                 raise
             pass 
-    _chown(os.path.join(parameter.results_dir, 'set{}'.format(set_num)), parameter.user)
+    _chown(os.path.join(parameter.results_dir, '{}'.format(set_num)), parameter.user)
     _chown(pth, parameter.user)
     return pth
-    

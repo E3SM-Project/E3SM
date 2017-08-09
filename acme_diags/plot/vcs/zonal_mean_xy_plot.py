@@ -267,7 +267,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # test_title.script('plot_set_3.json')
     # ref_title.script('plot_set_3.json')
 
-    fnm = os.path.join(get_output_dir('3', parameters), parameters.output_file)
+    fnm = os.path.join(get_output_dir(parameters.current_set, parameters), parameters.output_file)
     for f in parameters.output_format:
         f = f.lower().split('.')[-1]
         if f == 'png':

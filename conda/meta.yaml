@@ -33,6 +33,7 @@ requirements:
     - matplotlib
     - cartopy
     - dask
+    - beautifulsoup4
 
 about:
     home: https://github.com/ACME-Climate/acme_diags

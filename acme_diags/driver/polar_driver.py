@@ -10,7 +10,7 @@ import sys
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
-    """Creates the mean, max, min, rmse, corr in a dictionary"""
+    """ Creates the mean, max, min, rmse, corr in a dictionary """
     metrics_dict = {}
     metrics_dict['ref'] = {
         'min': min_cdms(ref),
@@ -59,7 +59,7 @@ def run_diag(parameter):
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
-        #save land/ocean fraction for masking  
+        #save land/ocean fraction for masking
         try:
             land_frac = f_mod('LANDFRAC')
             ocean_frac = f_mod('OCNFRAC')
@@ -69,6 +69,7 @@ def run_diag(parameter):
             land_frac = f0('LANDFRAC')
             ocean_frac = f0('OCNFRAC')
             f0.close()
+
 
         for var in variables: 
             print '***********', variables
@@ -163,10 +164,10 @@ def run_diag(parameter):
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 
                         parameter.var_region = region
-                        plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                        utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
+                        plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                        utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
 
-                #f_in.close()
+                f_in.close()
 
             # for variables without z axis:
             elif mv1.getLevel() == None and mv2.getLevel() == None:
@@ -208,8 +209,8 @@ def run_diag(parameter):
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     parameter.var_region = region
-                    plot('5', mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                    utils.save_ncfiles('5', mv1_domain, mv2_domain, diff, parameter)
+                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                    utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
     
             
             else:

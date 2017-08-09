@@ -34,9 +34,10 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
 #    var_min = float(var.min())
 #    var_max = float(var.max())
 #    var_mean = cdutil.averager(var, axis='xy', weights='generate')
-    var = add_cyclic(var)
+#    var = add_cyclic(var)
     lon = var.getLongitude()
     lat = var.getLatitude()
+    plev = var.getLevel()
     var = ma.squeeze( var.asma() )
 
     # Contour levels
@@ -48,29 +49,32 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
 
     # Contour plot
     ax = fig.add_axes(panel[n],projection=proj)
-    ax.set_global()
-    p1 = ax.contourf(lon, lat, var,
-                     transform=ccrs.PlateCarree(), 
+    #ax.set_global()
+    #p1 = ax.contourf(lon, lat, var,
+    p1 = ax.contourf(lat, plev, var,
+#                     transform=ccrs.PlateCarree(), 
                      norm=norm,
                      levels=levels,
                      cmap=cmap,
                      extend='both',
                      )
     ax.set_aspect('auto')
-    ax.coastlines(lw=0.3)
+#    ax.coastlines(lw=0.3)
     if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
     if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
     if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
-    ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99], crs=ccrs.PlateCarree())
+    #ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99], crs=ccrs.PlateCarree())
     #ax.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
-    ax.set_yticks([-90, -60, -30, 0, 30, 60, 90], crs=ccrs.PlateCarree())
+    ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])#, crs=ccrs.PlateCarree())
+    ax.set_xlim(-90,90)
     lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format='.0f')
     lat_formatter = LatitudeFormatter()
-    ax.xaxis.set_major_formatter(lon_formatter)
-    ax.yaxis.set_major_formatter(lat_formatter)
+    #ax.xaxis.set_major_formatter(lon_formatter)
+    #ax.xaxis.set_major_formatter(lat_formatter)
     ax.tick_params(labelsize=8.0, direction='out', pad=-2, width=1)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
+    ax.invert_yaxis()
 
     # Color bar
     cbax = fig.add_axes((panel[n][0]+0.6635,panel[n][1]+0.0215,0.0326,0.1792))
@@ -84,11 +88,9 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         cbar.set_ticks(levels[1:-1])
         labels = ["%4.1f" % l for l in levels[1:-1]]
         cbar.ax.set_yticklabels(labels,ha='right')
-        #cbar.ax.set_yticklabels(labels,ha='right')
-        cbar.ax.tick_params( labelsize=9.0,pad=25, length=0)
+        cbar.ax.tick_params(labelsize=9.0, pad=25, length=0)
 
     # Min, Mean, Max
-#    if len(stats) == 3:
     fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
     fig.text(panel[n][0]+0.7635,panel[n][1]+0.2107,"%.2f\n%.2f\n%.2f" % stats[0:3],ha='right',fontdict=plotSideTitle)
 
@@ -96,12 +98,15 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
     if len(stats) == 5:
       fig.text(panel[n][0]+0.6635,panel[n][1]-0.0105,"RMSE\nCORR",ha='left',fontdict=plotSideTitle)
       fig.text(panel[n][0]+0.7635,panel[n][1]-0.0105,"%.2f\n%.2f" % stats[3:5],ha='right',fontdict=plotSideTitle)
+    #plt.yscale('log')
+    #plt.gca().invert_yaxis()
 
 def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
     fig = plt.figure(figsize=[8.5, 11.0])
-    proj = ccrs.PlateCarree(central_longitude=180)
+    #proj = ccrs.PlateCarree(central_longitude=180)
+    proj = None
 
     # First two panels
     min1  = metrics_dict['test']['min']
@@ -119,6 +124,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     min3  = metrics_dict['diff']['min']
     mean3 = metrics_dict['diff']['mean']
     max3  = metrics_dict['diff']['max']
+
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
     plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
@@ -129,7 +135,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Save figure
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(get_output_dir('5', parameter), parameter.output_file)
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
         _chown(fnm + '.' + f, parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
