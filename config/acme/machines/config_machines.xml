@@ -710,7 +710,7 @@
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
       <arg name="num_tasks"> --n $TOTALPES</arg>
-      <arg name="tasks_per_node"> --npernode {{tasks_per_node}}</arg>
+      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -778,7 +778,7 @@
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
       <arg name="num_tasks"> --n $TOTALPES</arg>
-      <arg name="tasks_per_node"> --npernode {{tasks_per_node}}</arg>
+      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -858,7 +858,7 @@
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
       <arg name="num_tasks"> --n $TOTALPES</arg>
-      <arg name="tasks_per_node"> --npernode {{tasks_per_node}}</arg>
+      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
