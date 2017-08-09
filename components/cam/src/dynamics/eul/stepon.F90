@@ -195,6 +195,17 @@ subroutine stepon_run1( ztodt, phys_state, phys_tend , pbuf2d, dyn_in, dyn_out)
   call diag_dynvar_ic (phis, ps(:,beglat:endlat,n3m1), t3(:,:,beglat:endlat,n3m1), u3(:,:,beglat:endlat,n3m1), &
                        v3(:,:,beglat:endlat,n3m1), q3(:,:,:,beglat:endlat,n3m1) )
   call t_stopf ('diag_dynvar_ic')
+
+  ! Determine whether it is time for an IOP update;
+  ! doiopupdate set to true if model time step > next available IOP
+  if (use_iop) then
+    call setiopupdate
+  end if
+  
+  if (single_column) then
+    if (doiopupdate) call readiopdata_surface()
+  endif
+  
   !
   !----------------------------------------------------------
   ! Couple from dynamics to physics

@@ -94,6 +94,189 @@ contains
    endif
   end subroutine init_iop_fields
 
+subroutine readiopdata_surface()
+
+!-----------------------------------------------------------------------
+!     
+!     Open and read netCDF file containing IOP surface conditions
+!     Called separately from readiopdata to update surface conditions
+!     at appropriate place
+!     
+!---------------------------Code history--------------------------------
+	use comsrf
+        use ppgrid,           only: begchunk, endchunk
+	use phys_grid,        only: clat_p
+	use commap
+        use string_utils,     only: to_lower
+        use getinterpnetcdfdata
+        use shr_sys_mod,      only: shr_sys_flush
+	use hycoef, only : hyam, hybm
+        use eul_control_mod
+        use error_messages, only : handle_ncerr
+        use netcdf
+!-----------------------------------------------------------------------
+   implicit none
+#if ( defined RS6000 )
+   implicit automatic ( a-z )
+#endif
+!------------------------------Locals-----------------------------------
+
+   integer NCID, status
+   integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
+           mod_varID,sps_varID,sps_dimID
+   integer tsec_varID, bdate_varID,varid
+   integer i,j
+   integer nlev, nmod, nsps
+   integer total_levs
+
+   integer bdate, ntime
+   integer, allocatable :: tsec(:)
+   integer k, m
+   integer icldliq,icldice
+   integer inumliq,inumice
+
+   logical have_srf              ! value at surface is available
+   logical fill_ends             ! 
+   logical have_cnst(pcnst)
+   real(r8), allocatable :: dplevs( : )
+   integer, allocatable :: dmods( : )
+   real(r8) dummy
+   real(r8) lat,xlat
+   real(r8) srf(1)                  ! value at surface
+   real(r8) pmid(plev)  ! pressure at model levels (time n)
+   real(r8) pint(plevp) ! pressure at model interfaces (n  )
+   real(r8) pdel(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
+   real(r8) weight
+   real(r8) tmpdata(1)
+   real(r8) coldata(plev)
+   integer strt4(4),cnt4(4)
+   character(len=16) :: lowername
+   
+!=====================================================================
+!     
+!     Read time variables
+
+
+   status = nf90_inq_dimid (ncid, 'time', time_dimID )
+   if (status /= NF90_NOERR) then
+      status = nf90_inq_dimid (ncid, 'tsec', time_dimID )
+      if (status /= NF90_NOERR) then
+         write(iulog,* )'ERROR - readiopdata.F:Could not find dimension ID for time/tsec'
+         status = NF90_CLOSE ( ncid )
+         call endrun
+      end if
+   end if
+
+   call handle_ncerr( nf90_inquire_dimension( ncid, time_dimID, len=ntime ),&
+         'readiopdata.F90', __LINE__)
+
+   allocate(tsec(ntime))
+
+   status = nf90_inq_varid (ncid, 'tsec', tsec_varID )
+   call handle_ncerr( nf90_get_var (ncid, tsec_varID, tsec),&
+           'readiopdata.F90', __LINE__)
+   
+   status = nf90_inq_varid (ncid, 'nbdate', bdate_varID )
+   if (status /= NF90_NOERR) then
+      status = nf90_inq_varid (ncid, 'bdate', bdate_varID )
+      if (status /= NF90_NOERR) then
+         write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for bdate'
+         status = NF90_CLOSE ( ncid )
+         call endrun
+      end if
+   end if
+   call handle_ncerr( nf90_get_var (ncid, bdate_varID, bdate),&
+        'readiopdata.F90', __LINE__) 
+	
+!     
+!======================================================
+!     read level data
+!     
+   status = NF90_INQ_DIMID( ncid, 'lev', lev_dimID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_inquire_dimension( ncid, lev_dimID, len=nlev ),&
+         'readiopdata.F90', __LINE__)
+
+   allocate(dplevs(nlev+1))
+
+   status = NF90_INQ_VARID( ncid, 'lev', lev_varID )
+   if ( status .ne. nf90_noerr ) then
+      write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for lev'
+      status = NF90_CLOSE ( ncid )
+      return
+   end if
+
+   call handle_ncerr( nf90_get_var (ncid, lev_varID, dplevs(:nlev)),&
+                    'readiopdata.F90', __LINE__)
+		    
+   call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
+
+   lonid = 0
+   latid = 0
+   levid = 0
+   timeid = 0
+
+   call wrap_inq_dimid(ncid, 'lat', latid)
+   call wrap_inq_dimid(ncid, 'lon', lonid)
+   call wrap_inq_dimid(ncid, 'lev', levid)
+   call wrap_inq_dimid(ncid, 'time', timeid)
+ 
+   strt4(1) = closelonidx
+   strt4(2) = closelatidx
+   strt4(3) = iopTimeIdx
+   strt4(4) = 1
+   cnt4(1)  = 1
+   cnt4(2)  = 1
+   cnt4(3)  = 1
+   cnt4(4)  = 1	
+   
+!  Test for BOTH 'lhflx' and 'lh' without overwriting 'have_lhflx'.  
+!  Analagous changes made for the surface heat flux
+
+   status = nf90_inq_varid( ncid, 'lhflx', varid   )
+   if ( status .ne. nf90_noerr ) then
+      status = nf90_inq_varid( ncid, 'lh', varid   )
+      if ( status .ne. nf90_noerr ) then
+        have_lhflx = .false.
+      else
+        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
+        have_lhflx = .true.
+      endif
+   else
+      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
+      have_lhflx = .true.
+   endif
+
+   status = nf90_inq_varid( ncid, 'shflx', varid   )
+   if ( status .ne. nf90_noerr ) then
+      status = nf90_inq_varid( ncid, 'sh', varid   )
+      if ( status .ne. nf90_noerr ) then
+        have_shflx = .false.
+      else
+        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
+        have_shflx = .true.
+      endif
+   else
+      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
+      have_shflx = .true.
+   endif   
+   
+   call shr_sys_flush( iulog )
+
+   status = nf90_close( ncid )
+   call shr_sys_flush( iulog )
+
+   deallocate(dplevs,tsec)
+
+   return   	    	  
+
+end subroutine readiopdata_surface
+
 subroutine readiopdata( )
 
 
@@ -920,37 +1103,6 @@ endif !scm_observed_aero
       have_q2 = .false.
    else
       have_q2 = .true.
-   endif
-
-!  Test for BOTH 'lhflx' and 'lh' without overwriting 'have_lhflx'.  
-!  Analagous changes made for the surface heat flux
-
-   status = nf90_inq_varid( ncid, 'lhflx', varid   )
-   if ( status .ne. nf90_noerr ) then
-      status = nf90_inq_varid( ncid, 'lh', varid   )
-      if ( status .ne. nf90_noerr ) then
-        have_lhflx = .false.
-      else
-        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
-        have_lhflx = .true.
-      endif
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
-      have_lhflx = .true.
-   endif
-
-   status = nf90_inq_varid( ncid, 'shflx', varid   )
-   if ( status .ne. nf90_noerr ) then
-      status = nf90_inq_varid( ncid, 'sh', varid   )
-      if ( status .ne. nf90_noerr ) then
-        have_shflx = .false.
-      else
-        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
-        have_shflx = .true.
-      endif
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
-      have_shflx = .true.
    endif
 
    call shr_sys_flush( iulog )
