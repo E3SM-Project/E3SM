@@ -127,6 +127,7 @@ module PhosphorusFluxType
      real(r8), pointer :: m_retransp_to_litter_fire_patch           (:)     ! patch (gP/m2/s) from retransp to deadcrootp due to fire                                                         
      real(r8), pointer :: fire_ploss_patch                          (:)     ! patch total pft-level fire P loss (gP/m2/s) 
      real(r8), pointer :: fire_ploss_col                            (:)     ! col total column-level fire P loss (gP/m2/s)
+     real(r8), pointer :: fire_decomp_ploss_col                     (:)     ! col fire p loss from decomposable pools (gP/m2/s)
      real(r8), pointer :: fire_ploss_p2c_col                        (:)     ! col patch2col column-level fire P loss (gP/m2/s) (p2c)
      real(r8), pointer :: fire_mortality_p_to_cwdp_col              (:,:)   ! col P fluxes associated with fire mortality to CWD pool (gP/m3/s)
 
@@ -512,6 +513,7 @@ contains
     allocate(this%pinputs_col                   (begc:endc))    ; this%pinputs_col                   (:) = nan
     allocate(this%poutputs_col                  (begc:endc))    ; this%poutputs_col                  (:) = nan
     allocate(this%fire_ploss_col                (begc:endc))    ; this%fire_ploss_col                (:) = nan
+    allocate(this%fire_decomp_ploss_col         (begc:endc))    ; this%fire_decomp_ploss_col         (:) = nan
     allocate(this%fire_ploss_p2c_col            (begc:endc))    ; this%fire_ploss_p2c_col            (:) = nan
     allocate(this%som_p_leached_col             (begc:endc))    ; this%som_p_leached_col     (:) = nan
 
@@ -1137,6 +1139,7 @@ contains
     do l = 1, ndecomp_cascade_transitions
        ! vertically integrated fluxes
        !-- mineralization/immobilization fluxes (none from CWD)
+       if(trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))=='')exit
        if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
           this%decomp_cascade_sminp_flux_col(begc:endc,l) = spval
           data1dptr => this%decomp_cascade_sminp_flux_col(:,l)
@@ -1219,6 +1222,7 @@ contains
          ptr_col=this%som_p_leached_col, default='inactive')
 
     do k = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
        if ( .not. decomp_cascade_con%is_cwd(k) ) then
           this%decomp_ppools_leached_col(begc:endc,k) = spval
           data1dptr => this%decomp_ppools_leached_col(:,k)
@@ -1388,6 +1392,11 @@ contains
     call hist_addfld1d (fname='COL_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total column-level fire P loss', &
          ptr_col=this%fire_ploss_col, default='inactive')
+
+    this%fire_decomp_ploss_col(begc:endc) = spval
+    call hist_addfld1d (fname='DECOMP_FIRE_PLOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='fire P loss of decomposable pools', &
+         ptr_col=this%fire_decomp_ploss_col, default='inactive')
 
     this%dwt_seedp_to_leaf_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF', units='gP/m^2/s', &

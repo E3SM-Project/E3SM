@@ -151,6 +151,8 @@ module CNStateType
      real(r8), pointer :: np_scalar                    (:)     ! np scaling factor for root n/p uptake kinetics (no units)
      real(r8), pointer :: cost_ben_scalar              (:)     ! cost benefit analysis scaling factor for root n uptake kinetics (no units)
 
+     real(r8), pointer :: frac_loss_lit_to_fire_col        (:)
+     real(r8), pointer :: frac_loss_cwd_to_fire_col        (:)
    contains
 
      procedure, public  :: Init         
@@ -321,7 +323,8 @@ contains
     allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = 0.0
     allocate(this%np_scalar                   (begp:endp))                   ; this%np_scalar     (:) = 0.0
     allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
-    
+    allocate(this%frac_loss_lit_to_fire_col       (begc:endc))               ; this%frac_loss_lit_to_fire_col(:) =0._r8
+    allocate(this%frac_loss_cwd_to_fire_col       (begc:endc))               ; this%frac_loss_cwd_to_fire_col(:) =0._r8
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------

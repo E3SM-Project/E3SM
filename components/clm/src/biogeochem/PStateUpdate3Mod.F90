@@ -17,6 +17,7 @@ module PStateUpdate3Mod
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
+  use tracer_varcon       , only : is_active_betr_bgc
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
@@ -87,9 +88,16 @@ contains
             flux_mineralization(c,j) = 0._r8
          enddo
       enddo
-
-      do k = 1, ndecomp_cascade_transitions
-         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+      if(is_active_betr_bgc)then
+        do j = 1, nlevdecomp
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - pf%primp_to_labilep_vr_col(c,j) *dt + pf%pdep_to_sminp_col(c)*dt * pdep_prof(c,j)
+          end do
+        enddo
+      else
+        do k = 1, ndecomp_cascade_transitions
+          if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
             do j = 1, nlevdecomp
                ! column loop
                do fc = 1,num_soilc
@@ -97,9 +105,9 @@ contains
                     flux_mineralization(c,j) = flux_mineralization(c,j) - &
                                                pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
                end do
-            end do
-         else
-            do j = 1, nlevdecomp
+             end do
+           else
+             do j = 1, nlevdecomp
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
@@ -107,24 +115,24 @@ contains
                                                pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
 
                end do
-            end do
-         endif
-      end do
+             end do
+           endif
+        end do
+   
 
-
-      do j = 1, nlevdecomp
+        do j = 1, nlevdecomp
               ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            flux_mineralization(c,j) = flux_mineralization(c,j) + &
+           do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             flux_mineralization(c,j) = flux_mineralization(c,j) + &
                                        pf%biochem_pmin_vr_col(c,j)
 
-         end do
-      end do
+           end do
+        end do
 
-    if (nu_com .eq. 'RD') then
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
+      if (nu_com .eq. 'RD') then
+        do j = 1, nlevdecomp
+          do fc = 1,num_soilc
             c = filter_soilc(fc)
                ! assign read in parameter values
                smax_c = smax( isoilorder(c) )
@@ -153,10 +161,10 @@ contains
                              + pf%supplement_to_sminp_vr_col(c,j) - pf%sminp_to_plant_vr_col(c,j) &
                              - pf%labilep_to_secondp_vr_col(c,j) - pf%sminp_leached_vr_col(c,j) ) / &
                              ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
-            end do
-         end do
-      else ! ECA  
-        do j = 1, nlevdecomp
+             end do
+           end do
+        else ! ECA  
+          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                smax_c = vmax_minsurf_p_vr(isoilorder(c),j)
@@ -190,7 +198,7 @@ contains
                end if
             enddo
          enddo
-      end if
+        end if
              
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -236,7 +244,7 @@ contains
          end do
       end do
 
-
+    endif !is_active_betr_bgc
       ! patch-level phosphorus fluxes 
 
       do fp = 1,num_soilp

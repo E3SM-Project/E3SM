@@ -18,6 +18,7 @@ module PStateUpdate1Mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
   use VegetationType              , only : veg_pp
+  use tracer_varcon          , only : is_active_betr_bgc
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
@@ -89,6 +90,7 @@ contains
       ! if coupled with pflotran, the following updates are NOT needed
 !      if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
+      if(.not. is_active_betr_bgc)then
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -148,7 +150,7 @@ contains
             end do
          end if
       end do
-!      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      endif ! if (.not. is_active_betr_bgc))
       !------------------------------------------------------------------
       
       ! patch loop

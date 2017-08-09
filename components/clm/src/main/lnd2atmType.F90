@@ -58,6 +58,10 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_qgwl_grc (:) => null() ! rof liq -- glacier, wetland and lakes water balance residual component
      real(r8), pointer :: qflx_rofice_grc      (:) => null() ! rof ice forcing
 
+     real(r8), pointer :: qflx_rofliq_qsur_doc_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsur_dic_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsub_doc_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsub_dic_grc(:) => null()
    contains
 
      procedure, public  :: Init
@@ -125,6 +129,11 @@ contains
     allocate(this%qflx_rofliq_qsubp_grc(begg:endg))            ; this%qflx_rofliq_qsubp_grc(:) =ival
     allocate(this%qflx_rofliq_qgwl_grc (begg:endg))            ; this%qflx_rofliq_qgwl_grc (:) =ival
     allocate(this%qflx_rofice_grc      (begg:endg))            ; this%qflx_rofice_grc      (:) =ival
+
+    allocate(this%qflx_rofliq_qsur_doc_grc(begg:endg))          ; this%qflx_rofliq_qsur_doc_grc(:) = ival
+    allocate(this%qflx_rofliq_qsur_dic_grc(begg:endg))          ; this%qflx_rofliq_qsur_dic_grc(:) = ival
+    allocate(this%qflx_rofliq_qsub_doc_grc(begg:endg))          ; this%qflx_rofliq_qsub_doc_grc(:) = ival
+    allocate(this%qflx_rofliq_qsub_dic_grc(begg:endg))          ; this%qflx_rofliq_qsub_dic_grc(:) = ival 
 
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival

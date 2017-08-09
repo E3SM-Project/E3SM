@@ -55,7 +55,8 @@ module CNNitrogenStateType
      real(r8), pointer :: retransn_patch               (:)     ! patch (gN/m2) plant pool of retranslocated N
      real(r8), pointer :: npool_patch                  (:)     ! patch (gN/m2) temporary plant N pool
      real(r8), pointer :: ntrunc_patch                 (:)     ! patch (gN/m2) pft-level sink for N truncation
-
+     real(r8), pointer :: plant_n_buffer_patch         (:)     ! patch (gN/m2) pft-level abstract N storage
+     real(r8), pointer :: plant_n_buffer_col           (:)     ! patch (gN/m2) col-level abstract N storage
      real(r8), pointer :: decomp_npools_vr_col         (:,:,:) ! col (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
      real(r8), pointer :: sminn_vr_col                 (:,:)   ! col (gN/m3) vertically-resolved soil mineral N
      real(r8), pointer :: ntrunc_vr_col                (:,:)   ! col (gN/m3) vertically-resolved column-level sink for N truncation
@@ -188,7 +189,6 @@ module CNNitrogenStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , public  :: nbuffer_update
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -267,7 +267,8 @@ contains
     allocate(this%storvegn_patch           (begp:endp))                   ; this%storvegn_patch           (:)   = nan
     allocate(this%totvegn_patch            (begp:endp))                   ; this%totvegn_patch            (:)   = nan
     allocate(this%totpftn_patch            (begp:endp))                   ; this%totpftn_patch            (:)   = nan
-
+    allocate(this%plant_n_buffer_patch    (begp:endp))                    ; this%plant_n_buffer_patch     (:)   = nan
+    allocate(this%plant_n_buffer_col    (begc:endc))                      ; this%plant_n_buffer_col       (:)   = nan
     allocate(this%sminn_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%sminn_vr_col             (:,:) = nan
     allocate(this%ntrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ntrunc_vr_col            (:,:) = nan
     allocate(this%smin_no3_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_vr_col          (:,:) = nan
@@ -600,10 +601,10 @@ contains
             ptr_col=this%totsomn_1m_col, default='inactive')
     endif
 
-    this%plant_nbuffer_col(begc:endc) = spval
+    this%plant_n_buffer_patch(begp:endp) = spval
     call hist_addfld1d (fname='PLANTN_BUFFER', units='gN/m^2', &
             avgflag='A', long_name='plant nitrogen stored as buffer', &
-            ptr_col=this%plant_nbuffer_col)
+            ptr_col=this%plant_n_buffer_patch,default='inactive')
     
     this%ntrunc_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
@@ -836,6 +837,7 @@ contains
           this%storvegn_patch(p)           = 0._r8
           this%totvegn_patch(p)            = 0._r8
           this%totpftn_patch(p)            = 0._r8          
+          this%plant_n_buffer_patch(p)     = 1._r8
        end if
 
        this%npimbalance_patch(p) = 0.0_r8
@@ -898,7 +900,6 @@ contains
           this%prod10n_col(c)       = 0._r8
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
-          this%plant_nbuffer_col(c) = 1._r8
        end if
     end do
 
@@ -1206,10 +1207,6 @@ contains
        end do
     end do
 
-    call restartvar(ncid=ncid, flag=flag, varname='plant_nbuffer', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%plant_nbuffer_col)
-         
     call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%totcoln_col) 
@@ -1571,6 +1568,10 @@ contains
    end do
 
    call p2c(bounds, num_soilc, filter_soilc, &
+        this%plant_n_buffer_patch(bounds%begp:bounds%endp), &
+        this%plant_n_buffer_col(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
         this%totvegn_patch(bounds%begp:bounds%endp), &
         this%totvegn_col(bounds%begc:bounds%endc))
 
@@ -1793,15 +1794,15 @@ contains
            this%sminn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c) + &
-           this%plant_nbuffer_col(c)
+           this%ntrunc_col(c)+ &
+           this%plant_n_buffer_col(c)
            
       this%totabgn_col (c) =  &
            this%totpftn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c) + &
-           this%plant_nbuffer_col(c)
+           this%ntrunc_col(c)+ &
+           this%plant_n_buffer_col(c) 
 
       this%totblgn_col(c) = &
            this%cwdn_col(c) + &
@@ -1813,33 +1814,6 @@ contains
 
  end subroutine Summary
  
-  !-----------------------------------------------------------------------
  
-  subroutine nbuffer_update(this, bounds, num_soilc, filter_soilc,  &
-      plant_minn_active_yield_flx_col, plant_minn_passive_yield_flx_col)
-
-    use clm_time_manager         , only : get_step_size        
-    ! !ARGUMENTS:
-    class (nitrogenstate_type) :: this
-    type(bounds_type) , intent(in) :: bounds  
-    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
-    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
-    
-    real(r8)          , intent(in) :: plant_minn_active_yield_flx_col(bounds%begc:bounds%endc)
-    real(r8)          , intent(in) :: plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc)
-    integer :: fc, c
-    real(r8) :: dtime
-  
-    dtime =  get_step_size()
-  
-    
-    do fc = 1, num_soilc
-      c = filter_soilc(fc)
-      this%plant_nbuffer_col(c) = this%plant_nbuffer_col(c)           + &
-                                  (plant_minn_active_yield_flx_col(c) + &
-                                   plant_minn_passive_yield_flx_col(c))*dtime
-    enddo
-      
-  end subroutine nbuffer_update      
 
 end module CNNitrogenStateType
