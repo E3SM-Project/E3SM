@@ -94,6 +94,13 @@ module EnergyFluxType
      ! Latent heat
      real(r8), pointer :: htvp_col                (:)   ! latent heat of vapor of water (or sublimation) [j/kg]
 
+     ! for couplig with pflotran
+     real(r8), pointer :: eflx_soil_grnd_col      (:)   ! col integrated soil ground heat flux (W/m2)  [+ = into ground]
+     real(r8), pointer :: eflx_rnet_soil_col      (:)   ! col soil net (sw+lw) radiation flux (W/m2) [+ = into soil]
+     real(r8), pointer :: eflx_fgr0_soil_col      (:)   ! col soil-air heat flux (W/m2) [+ = into soil]
+     real(r8), pointer :: eflx_fgr0_snow_col      (:)   ! col soil-snow heat flux (W/m2) [+ = into soil]
+     real(r8), pointer :: eflx_fgr0_h2osfc_col    (:)   ! col soil-surfacewater heat flux (W/m2) [+ = into soil]
+
      ! Balance Checks
      real(r8), pointer :: errsoi_patch            (:)   ! soil/lake energy conservation error   (W/m**2)
      real(r8), pointer :: errsoi_col              (:)   ! soil/lake energy conservation error   (W/m**2)
@@ -221,6 +228,13 @@ contains
     allocate( this%canopy_cond_patch       (begp:endp))             ; this%canopy_cond_patch       (:)   = nan
 
     allocate( this%htvp_col                (begc:endc))             ; this%htvp_col                (:)   = nan
+
+    ! for coupling with pflotran
+    allocate( this%eflx_soil_grnd_col      (begc:endc))             ; this%eflx_soil_grnd_col      (:)   = nan
+    allocate( this%eflx_rnet_soil_col      (begc:endc))             ; this%eflx_rnet_soil_col      (:)   = nan
+    allocate( this%eflx_fgr0_soil_col      (begc:endc))             ; this%eflx_fgr0_soil_col      (:)   = nan
+    allocate( this%eflx_fgr0_snow_col      (begc:endc))             ; this%eflx_fgr0_snow_col      (:)   = nan
+    allocate( this%eflx_fgr0_h2osfc_col    (begc:endc))             ; this%eflx_fgr0_h2osfc_col    (:)   = nan
 
     allocate(this%rresis_patch             (begp:endp,1:nlevgrnd))  ; this%rresis_patch            (:,:) = nan
     allocate(this%btran_patch              (begp:endp))             ; this%btran_patch             (:)   = nan

@@ -13,8 +13,8 @@ module PhosphorusFluxType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  !! bgc interface & pflotran:
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  ! bgc interface & pflotran:
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -282,7 +282,7 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
-     ! clm_bgc_interface & pflotran
+     ! clm_interface & pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: plant_pdemand_col                         (:)     ! col P flux required to support initial GPP (gN/m2/s)
      real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
@@ -322,7 +322,7 @@ module PhosphorusFluxType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
-     !! bgc & pflotran interface
+     ! bgc & pflotran interface
      procedure , private :: PSummary_interface
 
   end type phosphorusflux_type
@@ -645,7 +645,7 @@ contains
     allocate(this%plant_to_litter_pflux       (begc:endc                   )) ; this%plant_to_litter_pflux       (:)   = nan
     allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
 
-    ! clm_bgc_interface & pflotran
+    ! clm_interface & pflotran
     !------------------------------------------------------------------------
     allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
     allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
@@ -1496,7 +1496,7 @@ contains
          avgflag='A', long_name='total allocated P flux', &
          ptr_patch=this%plant_palloc_patch, default='active')
 
-    !! bgc interface
+    ! bgc interface
     this%plant_pdemand_col(begc:endc) = spval
     call hist_addfld1d (fname='PLANT_PDEMAND_COL', units='gN/m^2/s', &
         avgflag='A', long_name='P flux required to support initial GPP', &
@@ -1694,7 +1694,7 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_palloc_patch) 
 
-    ! clm_bgc_interface & pflotran
+    ! clm_interface & pflotran
     !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externalp_to_decomp_ppools_col
@@ -1742,7 +1742,7 @@ contains
           end if
        end if
 
-    end if !! if (use_pflotran .and. pf_cmode)
+    end if ! if (use_pflotran .and. pf_cmode)
     !------------------------------------------------------------------------
   end subroutine Restart
 
@@ -1995,7 +1995,7 @@ contains
        this%fire_ploss_col(i) = value_column
        this%wood_harvestp_col(i) = value_column
 
-       !! bgc-interface
+       ! bgc-interface
        this%plant_pdemand_col(i) = value_column
 
        this%fire_ploss_col(i)                = value_column
@@ -2047,6 +2047,7 @@ contains
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_ppools_sourcesink_col(i,j,k) = value_column
+             this%biochem_pmin_ppools_vr_col(i,j,k) = value_column   ! this is needed, if no P cycle
           end do
        end do
     end do
@@ -2221,7 +2222,7 @@ contains
           end do
        end do
     end do
-    end if !!if (.not.(use_pflotran .and. pf_cmode))
+    end if !if (.not.(use_pflotran .and. pf_cmode))
     !-----------------------------------------------------------------
 
     ! vertically integrate inorganic P flux
@@ -2405,21 +2406,21 @@ contains
        end do
     end do
 
-    !! bgc interface & pflotran:
+    ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_bgc_interface) then
+    if (use_clm_interface) then
         call PSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
 
   end subroutine Summary
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 ! !INTERFACE:
 subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
-!! bgc interface & pflotran:
+! bgc interface & pflotran:
 ! On the radiation time step, perform olumn-level nitrogen
 ! summary calculations, which mainly from PFLOTRAN bgc coupling
 !
@@ -2436,10 +2437,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
    type(bounds_type) ,  intent(in) :: bounds
    integer,             intent(in) :: num_soilc       ! number of soil columns in filter
    integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
-!
-! !REVISION HISTORY:
-!!08/26/2015: created by Gangsheng Wang
-!
+
 ! !LOCAL VARIABLES:
    integer :: c,j, l      ! indices
    integer :: fc          ! column filter indices
@@ -2448,7 +2446,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
    ! set time steps
     dtime = real( get_step_size(), r8 )
     if (use_pflotran .and. pf_cmode) then
-        !! TODO
+        ! TODO
     end if
 
        ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
@@ -2492,9 +2490,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%phenology_p_to_litr_met_p_col(c,j)            &
                         + this%dwt_frootp_to_litr_met_p_col(c,j)             &
                         + this%gap_mortality_p_to_litr_met_p_col(c,j)        &
-                        + this%harvest_p_to_litr_met_p_col(c,j)              !!&
-!                        + this%m_p_to_litr_met_fire_col(c,j)                 &
-!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_litr_met_p_col(c,j)              
 
                 elseif (l==i_cel_lit) then
                    this%externalp_to_decomp_ppools_col(c,j,l) =              &
@@ -2502,9 +2498,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%phenology_p_to_litr_cel_p_col(c,j)            &
                         + this%dwt_frootp_to_litr_cel_p_col(c,j)             &
                         + this%gap_mortality_p_to_litr_cel_p_col(c,j)        &
-                        + this%harvest_p_to_litr_cel_p_col(c,j)              !!&
-!                        + this%m_p_to_litr_cel_fire_col(c,j)                 &
-!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_litr_cel_p_col(c,j)              
 
                 elseif (l==i_lig_lit) then
                    this%externalp_to_decomp_ppools_col(c,j,l) =              &
@@ -2512,9 +2506,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%phenology_p_to_litr_lig_p_col(c,j)            &
                         + this%dwt_frootp_to_litr_lig_p_col(c,j)             &
                         + this%gap_mortality_p_to_litr_lig_p_col(c,j)        &
-                        + this%harvest_p_to_litr_lig_p_col(c,j)              !!&
-!                        + this%m_p_to_litr_lig_fire_col(c,j)                 &
-!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_litr_lig_p_col(c,j)              
 
                 ! for cwd
                 elseif (l==i_cwd) then
@@ -2523,14 +2515,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%dwt_livecrootp_to_cwdp_col(c,j)               &
                         + this%dwt_deadcrootp_to_cwdp_col(c,j)               &
                         + this%gap_mortality_p_to_cwdp_col(c,j)              &
-                        + this%harvest_p_to_cwdp_col(c,j)                    !!&
-!                        + this%fire_mortality_p_to_cwdp_col(c,j)
-!
-             ! for som n
-!                else
-!                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
-!                       this%externalp_to_decomp_ppools_col(c,j,l)            &
-!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_cwdp_col(c,j)                    
 
                 end if
 
@@ -2556,7 +2541,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 this%sminp_net_transport_vr_col(c,j) = 0._r8
-!                this%sminp_net_transport_vr_col(c,j) = this%sminp_leached_vr_col(c,j)
+
                 this%sminp_net_transport_delta_col(c) = &
                             this%sminp_net_transport_delta_col(c) - &
                             this%sminp_net_transport_vr_col(c,j)*dzsoi_decomp(j)
@@ -2571,7 +2556,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
           this%sminp_net_transport_delta_col(c)     = -this%sminp_net_transport_delta_col(c)
        end do
 end subroutine PSummary_interface
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
 end module PhosphorusFluxType
 

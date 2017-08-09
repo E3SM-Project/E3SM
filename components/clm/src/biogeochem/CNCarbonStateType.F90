@@ -20,6 +20,9 @@ module CNCarbonStateType
   use ColumnType             , only : col_pp                
   use clm_varctl             , only : nu_com, use_ed
   use VegetationType         , only : veg_pp
+
+  ! bgc interface & pflotran
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   
   ! 
   ! !PUBLIC TYPES:
@@ -2735,13 +2738,13 @@ contains
            do k = 1, ndecomp_pools
               do c = bounds%begc, bounds%endc
                  do j = 1, nlevdecomp
-		    if ( exit_spinup ) then
-		      m = decomp_cascade_con%spinup_factor(k)
-                      if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+		            if ( exit_spinup ) then
+		               m = decomp_cascade_con%spinup_factor(k)
+                       if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
                     else if ( enter_spinup ) then 
-		      m = 1. / decomp_cascade_con%spinup_factor(k)
-		      if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
-		    end if
+		               m = 1. / decomp_cascade_con%spinup_factor(k)
+		               if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+		            end if
                     this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
                  end do
               end do
@@ -2901,7 +2904,7 @@ contains
     use clm_varctl       , only: iulog
     use clm_time_manager , only: get_step_size
     use clm_varcon       , only: secspday
-    use clm_varpar       , only: nlevdecomp, ndecomp_pools 
+    use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
     !
     ! !ARGUMENTS:
     class(carbonstate_type) :: this
@@ -2916,6 +2919,7 @@ contains
     integer  :: c,p,j,k,l       ! indices
     integer  :: fp,fc           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
+    integer  :: nlev
     !-----------------------------------------------------------------------
 
     ! calculate patch -level summary of carbon state
@@ -2995,6 +2999,8 @@ contains
 
     ! column level summary
 
+     nlev = nlevdecomp
+     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
 
       ! vertically integrate each of the decomposing C pools
@@ -3005,7 +3011,7 @@ contains
        end do
       end do
       do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp
+       do j = 1, nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_cpools_col(c,l) = &
@@ -3133,7 +3139,7 @@ contains
        c = filter_soilc(fc)
        this%ctrunc_col(c) = 0._r8
     end do
-    do j = 1, nlevdecomp
+    do j = 1, nlev
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%ctrunc_col(c) = &

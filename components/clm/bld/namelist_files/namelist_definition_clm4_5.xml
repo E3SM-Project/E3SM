@@ -1599,7 +1599,7 @@ Specifies the method for decomposing CLM grids across processors.
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
 
-<entry id="use_bgc_interface" type="logical" category="default_settings"
+<entry id="use_clm_interface" type="logical" category="default_settings"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
 </entry>

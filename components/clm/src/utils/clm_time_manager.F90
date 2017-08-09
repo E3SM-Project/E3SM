@@ -50,7 +50,7 @@ module clm_time_manager
         is_perpetual,             &! return true if perpetual calendar is in use
         is_restart,               &! return true if this is a restart run
         update_rad_dtime,         &! track radiation interval via nstep
-        !!below used by pflotran
+        !below used by pflotran
         nsstep,                   &! (re-)start timestep
         nestep                     ! ending timestep
 
@@ -112,7 +112,8 @@ module clm_time_manager
    private :: timemgr_spmdbcast
    private :: init_calendar
    private :: init_clock
-   private :: calc_nestep
+!    private :: calc_nestep
+   public  :: calc_nestep    !pflotran
    private :: timemgr_print
    private :: TimeGetymd
 
@@ -632,7 +633,7 @@ contains
 
     tm_first_restart_step = .true.
 
-    !! pflotran: nsstep
+    ! pflotran: nsstep
     ! save the first restart 'nstep'
     nsstep = get_nstep()
 
