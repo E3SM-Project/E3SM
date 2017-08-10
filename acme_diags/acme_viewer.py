@@ -8,7 +8,7 @@ import shutil
 from bs4 import BeautifulSoup
 import acme_diags
 from cdp.cdp_viewer import OutputViewer
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils import get_output_dir, get_set_name
 
 # Dict of 
 # {
@@ -31,20 +31,21 @@ def _copy_acme_logo(root_dir):
     dst_path = os.path.join(root_dir, "viewer")
     shutil.copy(src_pth, dst_path)
 
-def _get_acme_logo_path(current_dir):
-    """Based of the current directory of the html,
-    get the relative path of the ACME logo"""
+def _get_acme_logo_path(root_dir, html_path):
+    """Based of the root dir of the viewer and the current 
+    dir of the html, get the relative path of the ACME logo"""
     # when current_dir = myresults-07-11/viewer/index.html, the image is in myresults-07-11/viewer/viewer/ACME_Logo.png
     # so there's no need to move some number of directories up.
     # That's why we have - 3
-    dirs_to_go_up = len(current_dir.split('/')) - 3
+    relative_dir = html_path.replace(root_dir + '/', '')
+    dirs_to_go_up = len(relative_dir.split('/')) - 1
     pth = os.path.join('.')
     for _ in range(0, dirs_to_go_up):
         pth = os.path.join(pth, '..')
     pth = os.path.join(pth, 'viewer', 'ACME_Logo.png')
     return pth
 
-def _add_header(path, version, model_name, time):
+def _add_header(path, version, model_name, time, logo_path):
     """Add the header to the html located at path"""
 
     # We're inserting the following in the body under navbar navbar-default
@@ -81,8 +82,7 @@ def _add_header(path, version, model_name, time):
     soup.body.insert(0, header_div)
 
     img_div = soup.new_tag("div", id="acme-header2", style="background-color:#dbe6c5; float:right; width:55%")
-    img_path = _get_acme_logo_path(path)
-    img = soup.new_tag("img", src=img_path, alt="logo", style="width:161px; height:71px; background-color:#dbe6c5")
+    img = soup.new_tag("img", src=logo_path, alt="logo", style="width:161px; height:71px; background-color:#dbe6c5")
     img_div.append(img)
     soup.body.insert(1, img_div)
 
@@ -116,7 +116,8 @@ def _extras(root_dir, parameters):
     img_path = os.path.join('viewer', 'ACME_Logo.png')
 
     for f in index_files:
-        _add_header(f, acme_diags.__version__, parameters[0].test_name, dt)
+        path = _get_acme_logo_path(root_dir, f)
+        _add_header(f, acme_diags.__version__, parameters[0].test_name, dt, path)
         h1_to_h3(f)
 
 def _add_pages_and_top_row(viewer, parameters):
@@ -124,6 +125,7 @@ def _add_pages_and_top_row(viewer, parameters):
     set_to_seasons = {}  # dict of {set: [seasons]}
     for p in parameters:
         for set_num in p.sets:
+            set_num = get_set_name(set_num)
             for ssn in p.seasons:
                 if set_num not in set_to_seasons:
                     set_to_seasons[set_num] = []
@@ -147,6 +149,7 @@ def create_viewer(root_dir, parameters, ext):
 
     for parameter in parameters:
         for set_num in parameter.sets:
+            set_num = get_set_name(set_num)
             viewer.set_page("{}".format(set_num))
             try:
                 viewer.set_group(parameter.case_id)
