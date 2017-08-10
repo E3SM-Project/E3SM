@@ -7,11 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 import matplotlib.path as mpath
-
 from acme_diags.metrics import rmse, corr
-from acme_diags.driver.utils import get_output_dir
-
-
+from acme_diags.driver.utils import get_output_dir, _chown
 
 plotTitle = {'fontsize':11.5}
 plotSideTitle = {'fontsize':9.0}
@@ -152,4 +149,5 @@ def plot(reference, test, diff, metrics_dict, parameter):
         f = f.lower().split('.')[-1]
         fnm = os.path.join(get_output_dir(parameter.current_set, parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
+        _chown(fnm + '.' + f, parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)

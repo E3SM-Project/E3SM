@@ -1,16 +1,23 @@
 import os
 import sys
 import json
+import getpass
 import datetime
+import importlib
+from dask.distributed import Client
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
+from acme_diags.driver.utils import get_set_name
 
 def _get_default_diags(set_num):
     """Get the data from the json corresponding to set_num"""
-    folder = 'set{}'.format(set_num)
-    fnm = 'set{}_diags_AMWG_default.json'.format(set_num)
+    set_num = get_set_name(set_num)
+    folder = '{}'.format(set_num)
+    fnm = '{}_AMWG_default.json'.format(set_num)
     pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
+    if not os.path.exists(pth):
+        raise RuntimeError("Plotting via set '{}' not supported".format(set_num))
     with open(pth) as json_file:
         json_data = json.loads(json_file.read())
     return json_data
@@ -41,9 +48,27 @@ def make_parameters(original_parameter, vars_to_ignore=[]):
                 if var not in vars_to_ignore:
                     p.__dict__[var] = original_parameter.__dict__[var]
             p.check_values()
+            p.user = getpass.getuser()
             parameters.append(p)
     return parameters
 
+
+def run_diag(parameters):
+    """For a single set of parameters, run the corresponding diags."""
+    for pset in parameters.sets:
+        set_name = get_set_name(pset)
+
+        parameters.current_set = set_name
+        mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
+        try:
+            module = importlib.import_module(mod_str)
+        except ImportError as e:
+            print('Set {} is not supported yet. Please give us time.'.format(set_name))
+            continue
+        print('Starting to run ACME Diagnostics.')
+        module.run_diag(parameters)
+
+            
 if __name__ == '__main__':
     parser = ACMEParser()
     original_parameter = parser.get_parameter(default_vars=False)
@@ -55,29 +80,19 @@ if __name__ == '__main__':
     # don't overwrite the sets keyword in the default json files.
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
-    
-    for parameter in parameters:
-        for pset in parameter.sets:
-            pset = str(pset)
+   
+    if not os.path.exists(original_parameter.results_dir):
+        os.makedirs(original_parameter.results_dir, 0775)
 
-            parameter.current_set = pset
-            if pset == '3' or pset == 'zonal_mean_xy':
-                from acme_diags.driver.zonal_mean_xy_driver import run_diag
-            elif pset == '4' or pset == 'zonal_mean_2d':
-                from acme_diags.driver.zonal_mean_2d_driver import run_diag
-            elif pset == '5' or pset == 'lat_lon':
-                from acme_diags.driver.lat_lon_driver import run_diag
-            elif pset == '7' or pset == 'polar':
-                from acme_diags.driver.polar_driver import run_diag
-            elif pset == '13' or pset == 'cosp_histogram':
-                from acme_diags.driver.cosp_histogram_driver import run_diag
+    if not parameters[0].distributed:
+        for p in parameters:
+            run_diag(p)
+    else:
+        client = Client(parameters[0].client_addr)
+        results = client.map(run_diag, parameters)
+        client.gather(results)
+        client.close()
 
-            else:
-                print('Plot set {} is not supported yet. Please give us time.'.format(pset))
-                continue
-            print('Starting to run ACME diags')
-            run_diag(parameter)
-    
     pth = os.path.join(original_parameter.results_dir, 'viewer')
     if not os.path.exists(pth):
         os.makedirs(pth)

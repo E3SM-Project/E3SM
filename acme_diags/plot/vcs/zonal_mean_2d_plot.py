@@ -6,7 +6,7 @@ import vcs
 import cdms2
 import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils import get_output_dir, _chown
 
 textcombined_objs = {}
 
@@ -197,11 +197,13 @@ def plot(reference, test, diff, metrics_dict, parameter):
         f = f.lower().split('.')[-1]
         if f == 'png':
             vcs_canvas.png(fnm)
+            _chown(fnm + '.png', parameter.user)
         elif f == 'pdf':
             vcs_canvas.pdf(fnm)
+            _chown(fnm + '.pdf', parameter.user)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
-
+            _chown(fnm + '.svg', parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
 
     vcs_canvas.clear()

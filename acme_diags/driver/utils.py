@@ -1,10 +1,31 @@
 import os
 import copy
+import pwd
+import grp
 import cdutil
 import MV2
 import genutil
 import cdms2
 from acme_diags.derivations.default_regions import regions_specs
+
+def get_set_name(set_name):
+    """Get the correct set name from the argument.
+    Ex: '3' -> 'zonal_mean_xy', etc. """
+
+    names = {
+       ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
+       ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
+       ('5', 'lat_lon'): 'lat_lon',
+       ('7', 'polar'): 'polar',
+       ('13', 'cosp_histogram'): 'cosp_histogram',
+    }
+
+    set_name = str(set_name)
+    for possible_names in names:
+        if set_name in possible_names:
+            return names[possible_names]
+
+    raise RuntimeError('Invalid set option: {}'.format(set_name))
 
 def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
@@ -17,6 +38,13 @@ def _findfile(path_name, data_name, season):
        if filename.startswith(data_name) and season in filename:
            return path_name+filename
     raise IOError("No file found for {} and {}".format(data_name, season))
+
+def _chown(path, user, group=-1):
+    """Chown the path with the user and group"""
+    uid = pwd.getpwnam(user).pw_uid
+    if group != -1:
+        group = grp.getgrnam(group).gr_gid
+    os.chown(path, uid, group)
 
 def get_test_filename(parameters, season):
     """Return the test file name based on
@@ -168,26 +196,40 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         cdms2.setCompressionWarnings(0)  # Turn off warning messages
         # Save test file
         pth = get_output_dir(set_num, parameter)
-        file_test = cdms2.open(pth + '/' + parameter.output_file + '_test.nc', 'w+')
+        test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
+        file_test = cdms2.open(test_pth, 'w+')
         test.id = parameter.var_id
         file_test.write(test)
         file_test.close()
+        _chown(test_pth, parameter.user)
 
         # Save reference file
-        file_ref = cdms2.open(pth + '/' + parameter.output_file + '_ref.nc', 'w+')
+        ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
+        file_ref = cdms2.open(ref_pth, 'w+')
         ref.id = parameter.var_id
         file_ref.write(ref)
         file_ref.close()
+        _chown(ref_pth, parameter.user)
 
         # Save difference file
-        file_diff = cdms2.open(pth + '/' + parameter.output_file + '_diff.nc', 'w+')
+        diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
+        file_diff = cdms2.open(diff_pth, 'w+')
         diff.id = parameter.var_id + '(test - reference)'
         file_diff.write(diff)
         file_diff.close()
+        _chown(diff_pth, parameter.user)
 
 def get_output_dir(set_num, parameter):
     """Get the directory of where to save the outputs for a run."""
     pth = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
-        os.makedirs(pth)
+        # When running diags in parallel, sometimes another process will create the dir
+        try:
+            os.makedirs(pth, 0775)
+        except OSError as e:
+            if e.errno != os.errno.EEXIST:
+                raise
+            pass 
+    _chown(os.path.join(parameter.results_dir, '{}'.format(set_num)), parameter.user)
+    _chown(pth, parameter.user)
     return pth

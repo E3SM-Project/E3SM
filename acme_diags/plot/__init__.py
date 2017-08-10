@@ -1,29 +1,20 @@
 """Manages plotting, provides a single interface
 for different plots with different backends."""
+import importlib
+from acme_diags.driver.utils import get_set_name
 
 def _get_plot_fcn(backend, set_num):
     """Get the actual plot() function based on the backend and set_num."""
-    set_num = str(set_num)
     try:
-        import importlib
         if backend in ['matplotlib', 'mpl']:
             backend = 'cartopy'
 
-        if set_num in ['zonal_mean_xy', '3']:
-            mod_str = 'acme_diags.plot.{}.zonal_mean_xy_plot'.format(backend)
-        elif set_num in ['zonal_mean_2d', '4']:
-            mod_str = 'acme_diags.plot.{}.zonal_mean_2d_plot'.format(backend)
-        elif set_num in ['lat_lon', '5']:
-            mod_str = 'acme_diags.plot.{}.lat_lon_plot'.format(backend)
-        elif set_num in ['polar', '7']:
-            mod_str = 'acme_diags.plot.{}.polar_plot'.format(backend)
-        elif set_num in ['cosp_histogram', '13']:
-            mod_str = 'acme_diags.plot.{}.cosp_histogram_plot'.format(backend)
-        else:
-            raise ImportError('There is no module {} for the {} backend'.format(set_num, backend))
+        set_num = get_set_name(set_num) 
+        mod_str = 'acme_diags.plot.{}.{}_plot'.format(backend, set_num)
 
         module = importlib.import_module(mod_str)
         return module.plot
+
     except ImportError as e:
         print(e)
         print('Plotting for set {} with {} is not supported'.format(set_num, backend))

@@ -3,24 +3,27 @@ from setuptools import find_packages, setup
 
 data_files = [
 
-    (sys.prefix + '/share/acme_diags/set4',
-     ['acme_diags/driver/set4_diags_AMWG_default.json',
-      'acme_diags/plot/vcs/plot_set_4_new.json',
-      'acme_diags/plot/vcs/plot_set_4.json'
-     ]),
-    (sys.prefix + '/share/acme_diags/set3',
-     ['acme_diags/driver/set3_diags_AMWG_default.json',
+    (sys.prefix + '/share/acme_diags/zonal_mean_xy',
+     ['acme_diags/driver/zonal_mean_xy_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_3.json'
      ]),
-    (sys.prefix + '/share/acme_diags/set5',
-     ['acme_diags/driver/set5_diags_AMWG_default.json',
+    (sys.prefix + '/share/acme_diags/zonal_mean_2d',
+     ['acme_diags/driver/zonal_mean_2d_AMWG_default.json',
+      'acme_diags/plot/vcs/plot_set_4.json',
+      'acme_diags/plot/vcs/plot_set_4_new.json'
+     ]),
+    (sys.prefix + '/share/acme_diags/lat_lon',
+     ['acme_diags/driver/lat_lon_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_5_new.json',
       'acme_diags/plot/vcs/plot_set_5.json'
      ]),
-    (sys.prefix + '/share/acme_diags/set7',
-     ['acme_diags/driver/set7_diags_AMWG_default.json',
+    (sys.prefix + '/share/acme_diags/polar',
+     ['acme_diags/driver/polar_AMWG_default.json',
       'acme_diags/plot/vcs/plot_set_7_new.json',
       'acme_diags/plot/vcs/plot_set_7.json'
+     ]),
+    (sys.prefix + '/share/acme_diags/cosp_histogram',
+     ['acme_diags/driver/cosp_histogram_AMWG_default.json'
      ]),
     (sys.prefix + '/share/acme_diags',
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
