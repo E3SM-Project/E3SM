@@ -48,7 +48,6 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.diff_levels = []
         self.diff_units = ''
 
-        self.num_workers = 1
         self.multiprocessing = False
         self.distributed = False
         self.scheduler_addr = '127.0.0.1:8786'

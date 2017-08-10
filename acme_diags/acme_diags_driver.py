@@ -7,6 +7,8 @@ import json
 import getpass
 import datetime
 import importlib
+import dask.bag
+import dask.multiprocessing
 from dask.distributed import Client
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
@@ -71,10 +73,34 @@ def run_diag(parameters):
         print('Starting to run ACME Diagnostics.')
         module.run_diag(parameters)
 
-            
+def serial(parameters):
+    """Run the diagnostics serially"""
+    for p in parameters:
+        run_diag(p)
+
+def distribute(parameters):
+    """Run the diagnostics in parallel distributedly"""
+    try:
+        client = Client(parameters[0].scheduler_addr)
+        results = client.map(run_diag, parameters)
+        client.gather(results)
+    finally:
+        client.close()
+
+def multiprocess(parameters):
+    """Run the diagnostics in parallel using multiprocessing"""
+    bag = dask.bag.from_sequence(parameters)
+
+    with dask.set_options(get=dask.multiprocessing.get):
+        if hasattr(parameters[0], 'num_workers'):
+            results = bag.map(run_diag).compute(num_workers=parameters[0].num_workers) 
+        else:
+            # num of workers is defaulted to the number of processes
+            results = bag.map(run_diag).compute()
+
 if __name__ == '__main__':
     parser = ACMEParser()
-    original_parameter = parser.get_parameter(default_vars=False)
+    original_parameter = parser.get_parameter(default_vars=False, check_values=False)
     if not hasattr(original_parameter, 'results_dir'):
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
@@ -84,19 +110,18 @@ if __name__ == '__main__':
     ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
     parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
    
+    print(parameters[0].__dict__)
     if not os.path.exists(original_parameter.results_dir):
         os.makedirs(original_parameter.results_dir, 0775)
 
-    if not parameters[0].distributed:
-        for p in parameters:
-            run_diag(p)
+    if parameters[0].multiprocessing:
+        multiprocess(parameters)
+    elif parameters[0].distributed:
+        distribute(parameters)
     else:
-        client = Client(parameters[0].scheduler_addr)
-        results = client.map(run_diag, parameters)
-        client.gather(results)
-        client.close()
+        serial(parameters)
 
-    pth = os.path.join(original_parameter.results_dir, 'viewer')
+    pth = os.path.join(parameters[0].results_dir, 'viewer')
     if not os.path.exists(pth):
         os.makedirs(pth)
 
