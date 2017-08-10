@@ -28,13 +28,17 @@ from matplotlib import cm
 #outfname = 'globalStats.nc.clean'
 outfname = 'globalStats.nc'
 runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and os.path.isfile(os.path.join(adir, outfname)))]
+print "Original run list:", runs
 
 # reorder to put the 'control' runs at the beginning
 special_runs = ('steady', 'no-melt')
 for r in special_runs:
-   if r in runs:  
+   if r in runs:
       runs.remove(r)
       runs.insert(0, r)
+
+# optionally exclude some subset
+#runs[:] = [r for r in runs if not 'per70' in r]
 
 print "Will process the following directories: ", runs
 
