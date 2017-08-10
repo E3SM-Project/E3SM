@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import copy
 from collections import OrderedDict
 from numbers import Number
@@ -8,8 +10,8 @@ import numpy as np
 
 
 def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
-    ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
-     whatever is described in derived_vars_dict[var_key] for the nc_file'''
+    """Given a key (var_key) to the derived_vars_dict dict, compute and return
+     whatever is described in derived_vars_dict[var_key] for the nc_file"""
     if hasattr(parameter, 'derived_variables'):
         _add_user_derived_vars(derived_vars_dict, parameter)
     if var_key in derived_vars_dict:
@@ -20,7 +22,7 @@ def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
 
 
 def _add_user_derived_vars(derived_vars_dict, parameter):
-    ''' Append parameter.derived_variables to the correct part of derived_vars_dict '''
+    """Append parameter.derived_variables to the correct part of derived_vars_dict"""
     for key, user_derived_vars in parameter.derived_variables.iteritems():
         # append the user-defined vars to the already defined ones
         # add to an existing entry, otherwise create a new one
@@ -37,7 +39,7 @@ def _add_user_derived_vars(derived_vars_dict, parameter):
 
 
 def _compute_derived_var(var_key, derived_vars_dict, nc_file):
-    ''' Call the first valid derivation from the derived_vars_dict dict. '''
+    """Call the first valid derivation from the derived_vars_dict dict."""
     derived_vars = derived_vars_dict[var_key]
     # store a list of all inputs visited, so if Exception, we get a good msg.
     derived_var_inputs = []
@@ -64,13 +66,13 @@ def _compute_derived_var(var_key, derived_vars_dict, nc_file):
 
 
 def rename(new_name):
-    ''' Given the new name, just return it. '''
+    """Given the new name, just return it."""
     return new_name
 
 
 def aplusb(var1, var2, target_units=None):
-    ''' Returns var1 + var2. If both of their units are not the same,
-    it tries to convert both of their units to target_units '''
+    """Returns var1 + var2. If both of their units are not the same,
+    it tries to convert both of their units to target_units"""
 
     if target_units is not None:
         var1 = convert_units(var1, target_units)
@@ -80,8 +82,8 @@ def aplusb(var1, var2, target_units=None):
 
 
 def convert_units(var, target_units):
-    ''' Converts units of var to target_units.
-    var is a cdms.TransientVariable. '''
+    """Converts units of var to target_units.
+    var is a cdms.TransientVariable."""
 
     if not hasattr(var, 'units') and var.id == 'SST':
         var.units = target_units
@@ -135,7 +137,7 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 
 def qflxconvert_units(var):
-    print var.units
+    print(var.units)
     if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
@@ -144,7 +146,7 @@ def qflxconvert_units(var):
     return var
 
 def prect(precc, precl):
-    """Total precipitation flux = convective + large-scal, """
+    """Total precipitation flux = convective + large-scale"""
     var = precc + precl
     var = convert_units(var, "mm/day")
     var.long_name = "Total precipitation rate (convective + large-scale)"

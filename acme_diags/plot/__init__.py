@@ -1,5 +1,7 @@
 """Manages plotting, provides a single interface
 for different plots with different backends."""
+from __future__ import print_function
+
 import importlib
 from acme_diags.driver.utils import get_set_name
 

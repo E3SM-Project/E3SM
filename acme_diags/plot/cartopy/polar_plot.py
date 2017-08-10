@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import cdms2
 import cdutil
@@ -109,7 +111,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     fig = plt.figure(figsize=[8.5, 11.0])
 
     # Create projection
-    print parameter.var_region
+    print(parameter.var_region)
     if parameter.var_region.find('N') !=-1:
         pole = 'N'
         proj = ccrs.NorthPolarStereo(central_longitude=0)

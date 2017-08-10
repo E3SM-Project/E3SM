@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 import numpy
@@ -41,8 +43,8 @@ def managetextcombined(tt_name, to_name, vcs_canvas):
     return mytc
 
 def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
-    """ canvas is a vcs.Canvas, metrics_dict is a dict and
-    ref_test_or_diff is a string. """
+    """canvas is a vcs.Canvas, metrics_dict is a dict and
+    ref_test_or_diff is a string."""
     var_min = '%.2f' % metrics_dict[ref_test_or_diff]['min']
     var_max = '%.2f' % metrics_dict[ref_test_or_diff]['max']
     var_mean = '%.2f' % metrics_dict[ref_test_or_diff]['mean']
@@ -71,7 +73,7 @@ def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
     canvas.plot(mean_label)
 
 def plot_rmse_and_corr(canvas, metrics_dict):
-    """ canvas is a vcs.Canvas, metrics_dict is a dict """
+    """canvas is a vcs.Canvas, metrics_dict is a dict"""
 
     rmse_str = '%.2f' % metrics_dict['misc']['rmse']
     corr_str = '%.2f' % metrics_dict['misc']['corr']

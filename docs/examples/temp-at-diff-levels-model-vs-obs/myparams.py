@@ -11,7 +11,7 @@ results_dir = 'Jerry_ra_ta'
 sets = [5]
 
 def rename(new_name):
-    '''Given the new name, just return it.'''
+    """Given the new name, just return it."""
     return new_name
 
 derived_variables = {
