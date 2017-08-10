@@ -4,7 +4,7 @@ Module dyn_comp
   use domain_mod, only : domain1d_t
   use element_mod, only : element_t
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
-  use hybvcoord_mod, only : hvcoord_t
+  use hybvcoord_mod, only : hvcoord_t, set_layer_locations
   use hybrid_mod, only : hybrid_t
   use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
