@@ -618,7 +618,7 @@ contains
        vr_suffix = ""
     endif
 
-    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+    if (use_nitrif_denitrif) then
        this%smin_no3_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SMIN_NO3'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral NO3 (vert. res.)', &
@@ -630,12 +630,10 @@ contains
             ptr_col=this%smin_nh4_vr_col)
 
        ! pflotran
-       if(use_pflotran .and. pf_cmode) then
-          this%smin_nh4sorb_vr_col(begc:endc,:) = spval
-          call hist_addfld_decomp (fname='SMIN_NH4SORB'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+       this%smin_nh4sorb_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NH4SORB'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral NH4 absorbed (vert. res.)', &
             ptr_col=this%smin_nh4sorb_vr_col)
-       end if
 
        if ( nlevdecomp_full > 1 ) then
           this%smin_no3_col(begc:endc) = spval
@@ -649,13 +647,11 @@ contains
                ptr_col=this%smin_nh4_col)
 
           ! pflotran
-          if(use_pflotran .and. pf_cmode) then
-            this%smin_nh4sorb_col(begc:endc) = spval
-            call hist_addfld1d (fname='SMIN_NH4SORB', units='gN/m^2', &
+          this%smin_nh4sorb_col(begc:endc) = spval
+          call hist_addfld1d (fname='SMIN_NH4SORB', units='gN/m^2', &
                avgflag='A', long_name='soil mineral NH4 absorbed', &
                ptr_col=this%smin_nh4sorb_col)
-          end if
-       end if
+       endif
 
        this%sminn_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
@@ -880,19 +876,15 @@ contains
              this%decomp_npools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
              this%decomp_npools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cn_ratio(k)
           end do
-          if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+          if (use_nitrif_denitrif) then
              do j = 1, nlevdecomp_full
                 this%smin_nh4_vr_col(c,j) = 0._r8
                 this%smin_no3_vr_col(c,j) = 0._r8
-                if(use_pflotran .and. pf_cmode) then
-                    this%smin_nh4sorb_vr_col(c,j) = 0._r8
-                end if
+                this%smin_nh4sorb_vr_col(c,j) = 0._r8
              end do
              this%smin_nh4_col(c) = 0._r8
              this%smin_no3_col(c) = 0._r8
-             if(use_pflotran .and. pf_cmode) then
-                this%smin_nh4sorb_col(c) = 0._r8
-             end if
+             this%smin_nh4sorb_col(c) = 0._r8
           end if
           this%totlitn_col(c)    = 0._r8
           this%totsomn_col(c)    = 0._r8
@@ -1143,7 +1135,7 @@ contains
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 
-    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+    if (use_nitrif_denitrif) then
        ! smin_no3_vr
        if (use_vertsoilc) then
           ptr2d => this%smin_no3_vr_col(:,:)
@@ -1163,7 +1155,7 @@ contains
        end if
     end if
 
-    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+    if (use_nitrif_denitrif) then
        ! smin_nh4
        if (use_vertsoilc) then
           ptr2d => this%smin_nh4_vr_col(:,:)
@@ -1245,7 +1237,7 @@ contains
        decomp_cascade_state = 0
     end if
     ! add info about the nitrification / denitrification state
-    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+    if (use_nitrif_denitrif) then
        decomp_cascade_state = decomp_cascade_state + 10
     end if
     if (flag == 'write') itemp = decomp_cascade_state    
@@ -1427,7 +1419,7 @@ contains
        this%sminn_col(i)       = value_column
        this%ntrunc_col(i)      = value_column
        this%cwdn_col(i)        = value_column
-       if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       if (use_nitrif_denitrif) then
           this%smin_no3_col(i) = value_column
           this%smin_nh4_col(i) = value_column
           if(use_pflotran .and. pf_cmode) then
@@ -1447,7 +1439,7 @@ contains
           i = filter_column(fi)
           this%sminn_vr_col(i,j)       = value_column
           this%ntrunc_vr_col(i,j)      = value_column
-          if (use_nitrif_denitrif  .or. (use_pflotran .and. pf_cmode)) then
+          if (use_nitrif_denitrif) then
              this%smin_no3_vr_col(i,j) = value_column
              this%smin_nh4_vr_col(i,j) = value_column
              if(use_pflotran .and. pf_cmode) then
@@ -1508,7 +1500,6 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
-    use clm_varpar    , only: nlevdecomp_full
     !
     ! !ARGUMENTS:
     class (nitrogenstate_type) :: this
@@ -1522,7 +1513,6 @@ contains
     integer  :: c,p,j,k,l   ! indices
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
-    integer  :: nlev
     !-----------------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -1590,10 +1580,7 @@ contains
         this%totpftn_col(bounds%begc:bounds%endc))
 
    ! vertically integrate NO3 NH4 N2O pools
-   nlev = nlevdecomp
-   if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
-
-   if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+   if (use_nitrif_denitrif) then
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%smin_no3_col(c) = 0._r8
@@ -1602,7 +1589,7 @@ contains
             this%smin_nh4sorb_col(c) = 0._r8
          end if
       end do
-      do j = 1, nlev
+      do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             this%smin_no3_col(c) = &
@@ -1628,7 +1615,7 @@ contains
          c = filter_soilc(fc)
          this%decomp_npools_col(c,l) = 0._r8
       end do
-      do j = 1, nlev
+      do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             this%decomp_npools_col(c,l) = &
@@ -1757,7 +1744,7 @@ contains
       c = filter_soilc(fc)
       this%sminn_col(c)      = 0._r8
    end do
-   do j = 1, nlev
+   do j = 1, nlevdecomp
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%sminn_col(c) = &
@@ -1771,7 +1758,7 @@ contains
       c = filter_soilc(fc)
       this%ntrunc_col(c) = 0._r8
    end do
-   do j = 1, nlev
+   do j = 1, nlevdecomp
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%ntrunc_col(c) = &
