@@ -16,7 +16,7 @@ module stepon
   use ppgrid,           only: begchunk, endchunk
   use physics_types,    only: physics_state, physics_tend
   use time_manager,     only: is_first_step, is_last_step, get_step_size
-  use iop,              only: setiopupdate, readiopdata, readiopdata_surface
+  use iop,              only: setiopupdate, readiopdata
   use scamMod,          only: use_iop,doiopupdate,use_pert_frc,wfld,wfldh,single_column
   use perf_mod
 
@@ -54,6 +54,8 @@ module stepon
   type(advection_state) :: adv_state    ! Advection state data
 
   real(r8) :: etamid(plev)              ! vertical coords at midpoints or pmid if single_column
+
+  logical :: iop_update_surface         ! update surface properties in IOP forcing
 
 !======================================================================= 
 contains
@@ -197,13 +199,14 @@ subroutine stepon_run1( ztodt, phys_state, phys_tend , pbuf2d, dyn_in, dyn_out)
   call t_stopf ('diag_dynvar_ic')
 
   ! Determine whether it is time for an IOP update;
-  ! doiopupdate set to true if model time step > next available IOP
+  ! doiopupdate set to true if model time step > next available IOP 
   if (use_iop .and. .not. is_last_step()) then
     call setiopupdate
   end if
   
   if (single_column) then
-    if (doiopupdate) call readiopdata_surface()
+    iop_update_surface = .true. 
+    if (doiopupdate) call readiopdata( iop_update_surface )
   endif
   
   !
@@ -263,15 +266,10 @@ subroutine stepon_run3( ztodt, cam_out, phys_state, dyn_in, dyn_out )
   integer :: stage
   if (single_column) then
      
-     ! Determine whether it is time for an IOP update;
-     ! doiopupdate set to true if model time step > next available IOP
-!     if (use_iop) then
-!        call setiopupdate
-!     end if
-     
      ! Update IOP properties e.g. omega, divT, divQ
      
-     if (doiopupdate) call readiopdata()
+     iop_update_surface = .false.
+     if (doiopupdate) call readiopdata( iop_update_surface )
      
   endif
 
