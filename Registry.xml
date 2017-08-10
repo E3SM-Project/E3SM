@@ -2094,6 +2094,43 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 		/>
+		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time">
+                	<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="degrees Celsius per second" name_in_code="temperatureSurfaceFluxTendency"
+                         	description="potential temperature tendency due to surface fluxes"
+                	/>
+                	<var name="salinitySurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="PSU per second" name_in_code="salinitySurfaceFluxTendency"
+                         	description="salinity tendency due to surface fluxes"
+                	/>
+                </var_array>
+                <var_array name="activeTracerShortWaveTendency" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="temperatureShortWaveTendency" array_group="activeTracerSWTendGroup" units="degrees Celsius per second" name_in_code="temperatureShortWaveTendency"
+                                description="potential temperature tendency due to penetrating shortwave"
+                        />
+                </var_array>
+                <var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
+                                description="potential temperature tendency due to kpp non-local flux"
+                        />
+                        <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
+                                description="salinity tendency due to kpp non-local flux"
+                        />
+                </var_array>
+                <var_array name="activeTracerAdvectionTendency" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="temperatureAdvectionTendency" array_group="activeTracerAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureAdvectionTendency"
+                                description="potential temperature tendency due to advection"
+                        />
+                        <var name="salinityAdvectionTendency" array_group="activeTracerAdvTendGroup" units="PSU per second" name_in_code="salinityAdvectionTendency"
+                                description="salinity tendency due to advection"
+                        />
+                </var_array>
+                <var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
+                                description="potential temperature tendency due to vertical mixing"
+                        />
+                        <var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
+                                description="salinity tendency due to vertical mixing"
+                        />
+                </var_array>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
 				description="potential temperature extrapolated to ocean surface"

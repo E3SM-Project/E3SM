@@ -192,6 +192,12 @@ module ocn_time_integration_split
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
       type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField, effectiveDensityField
+      ! tracer tendencies brought in here to normalize by new layer thickness
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+        activeTracerAdvectionTendency,                &
+        activeTracerSurfaceFluxTendency,              &
+        activeTracerShortWaveTendency,                &
+        activeTracerNonLocalTendency
 
       ! State/Tend Field Pointers
       type (field1DReal), pointer :: normalBarotropicVelocitySubcycleField, sshSubcycleField
@@ -1504,6 +1510,10 @@ module ocn_time_integration_split
             call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
             call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityCur, 1)
             call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityNew, 2)
+            call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
+            call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
+            call mpas_pool_get_array(diagnosticsPool,'activeTracerShortWaveTendency',activeTracerShortWaveTendency)
+            call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
 
             call mpas_pool_get_array(tendPool, 'layerThickness', layerThicknessTend)
             call mpas_pool_get_array(tendPool, 'normalVelocity', normalVelocityTend)
@@ -1605,10 +1615,27 @@ module ocn_time_integration_split
                   do k = 1, maxLevelCell(iCell)
                      ! this is h_{n+1}
                      layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell) + dt * layerThicknessTend(k,iCell)
+                     activeTracerAdvectionTendency(:,k,iCell) = &
+                          activeTracerAdvectionTendency(:,k,iCell) / &
+                          layerThicknessNew(k,iCell)
+        
+                     activeTracerSurfaceFluxTendency(:,k,iCell) = &
+                          activeTracerSurfaceFluxTendency(:,k,iCell) / &
+                          layerThicknessNew(k,iCell)
+
+                     activeTracerShortwaveTendency(:,k,iCell) = &
+                          activeTracerShortwaveTendency(:,k,iCell) / &
+                          layerThicknessNew(k,iCell)
+
+                     activeTracerNonLocalTendency(:,k,iCell) = &
+                          activeTracerNonLocalTendency(:,k,iCell) / &
+                          layerThicknessNew(k,iCell)
+
                   end do
                end do
                !$omp end do
 
+               
                call mpas_pool_begin_iteration(tracersPool)
                do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
                   if ( groupItr % memberType == MPAS_POOL_FIELD ) then

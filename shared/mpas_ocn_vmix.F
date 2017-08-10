@@ -477,6 +477,7 @@ contains
                                                     vertDiffTopOfCell, kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerVertMixTendency
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
       logical, pointer :: config_use_cvmix
@@ -504,6 +505,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, &
+         'activeTracerVertMixTendency',activeTracerVertMixTendency)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
@@ -552,9 +555,24 @@ contains
 
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, timeLevel)
+
+            ! store tracers
+            if (trim(groupItr % memberName) == 'activeTracers') then
+               call mpas_log_write("vertMixDiffStore",MPAS_LOG_WARN)
+               activeTracerVertMixTendency(:,:,:)=tracersGroup(:,:,:)
+            endif
+       
             if ( associated(tracersGroup) ) then
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, err)
             end if
+
+            ! difference tracers to compute influence of vertical mixing and divide by dt
+            if (trim(groupItr % memberName) == 'activeTracers') then
+              call mpas_log_write("vertMixDiffCompute",MPAS_LOG_WARN)
+              activeTracerVertMixTendency(:,:,:) = &
+               (tracersGroup(:,:,:) - activeTracerVertMixTendency(:,:,:)) / dt
+            endif
+
          end if
       end do
       call mpas_timer_stop('vmix solve tracers')
