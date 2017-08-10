@@ -13,7 +13,7 @@ if (DEFINED ENV{CIME_COMPILER})
   set(args "--compiler $ENV{CIME_COMPILER}")
 endif()
 if (DEFINED ENV{CIME_MPILIB})
-  set(args "${args} --compiler $ENV{CIME_MPILIB}")
+  set(args "${args} --mpilib $ENV{CIME_MPILIB}")
 endif()
 separate_arguments(ARG_LIST UNIX_COMMAND ${args})
 
