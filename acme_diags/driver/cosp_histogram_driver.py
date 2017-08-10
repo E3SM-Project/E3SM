@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+from __future__ import print_function
+
 import cdms2
 import MV2
 from acme_diags.plot import plot
@@ -49,7 +50,7 @@ def run_diag(parameter):
             filename1 = utils.get_test_filename(parameter, season)
             filename2 = utils.get_ref_filename(parameter, season)
         except IOError as e:
-            print e
+            print(e)
             # the file for the current parameters wasn't found, move to next parameters
             continue
 
@@ -71,8 +72,7 @@ def run_diag(parameter):
             f0.close()
 
         for var in variables: 
-            print '***********', variables
-            print var
+            print('Variable: {}'.format(var))
             parameter.var_id = var
             mv1 = acme.process_derived_var(
                 var, acme.derived_variables, f_mod, parameter)
@@ -85,14 +85,13 @@ def run_diag(parameter):
                 regions = ['global']
 
             for region in regions:
-                print "selected region", region
+                print("Selected region: {}".format(region))
 
                 mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
 
                 parameter.output_file = '-'.join(
                     [ref_name, var, season, region])
                 parameter.main_title = str(' '.join([var, season, region]))
-                print parameter.main_title
 
                 mv1_domain_mean = mean(mv1_domain)
                 mv2_domain_mean = mean(mv2_domain)

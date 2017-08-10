@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import copy
 import pwd
@@ -115,7 +117,7 @@ def select_region(region, var1, var2, land_frac,ocean_frac,parameter):
         elif region.find('ocean') != -1:
             land_ocean_frac = ocean_frac
         region_value = regions_specs[region]['value']
-        print 'region_value', region_value
+        print('region_value', region_value)
     
         var1_domain = mask_by(
             var1, land_ocean_frac, low_limit=region_value)
@@ -130,9 +132,9 @@ def select_region(region, var1, var2, land_frac,ocean_frac,parameter):
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]['domain']
-        print domain
+        print(domain)
     except:
-        print ("no domain selector")
+        print("no domain selector")
     var1_domain = var1_domain(domain)
     var2_domain = var2_domain(domain)
     var1_domain.units = var1.units

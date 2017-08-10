@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+from __future__ import print_function
+
 import cdms2
 import MV2
 from acme_diags.plot import plot
@@ -49,7 +50,7 @@ def run_diag(parameter):
             filename1 = utils.get_test_filename(parameter, season)
             filename2 = utils.get_ref_filename(parameter, season)
         except IOError as e:
-            print e
+            print(e)
             # the file for the current parameters wasn't found, move to next parameters
             continue
 
@@ -71,8 +72,7 @@ def run_diag(parameter):
             f0.close()
 
         for var in variables: 
-            print '***********', variables
-            print var
+            print('Variable: {}'.format(var))
             parameter.var_id = var
             mv1 = acme.process_derived_var(
                 var, acme.derived_variables, f_mod, parameter)
@@ -90,11 +90,11 @@ def run_diag(parameter):
                 # this is cdms2 for bad mask, denise's fix should fix
                 mv2 = MV2.masked_where(mv2 >1e+20, mv2)
             if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
-                print mv2.fill_value
+                print(mv2.fill_value)
                 # mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
                 # this is cdms2 for bad mask, denise's fix should fix
                 mv2 = MV2.masked_where(mv2 == -999., mv2)
-                print mv2.fill_value
+                print(mv2.fill_value)
     
                 # following should move to derived variable
                 if var == 'PRECT_LAND':
@@ -110,7 +110,7 @@ def run_diag(parameter):
 
             if mv1.getLevel() and mv2.getLevel():  # for variables with z axis:
                 plev = parameter.plevs
-                print 'selected pressure level', plev
+                print('Selected pressure level: {}'.format(plev))
                 f_ins = [f_mod, f_obs]
                 for f_ind, mv in enumerate([mv1,mv2]):
                     mv_plv = mv.getLevel()
@@ -143,7 +143,7 @@ def run_diag(parameter):
                         regions = ['global']
     
                     for region in regions:
-                        print "selected region", region
+                        print("Selected region: {}".format(region))
 
                         mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
     
@@ -176,7 +176,7 @@ def run_diag(parameter):
                     regions = ['global']
 
                 for region in regions:
-                    print "selected region", region
+                    print("Selected region: {}".format(region))
 
                     mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
     
@@ -195,11 +195,11 @@ def run_diag(parameter):
                         if ref_name == 'WILLMOTT':
                             mv2_reg = MV2.masked_where(
                                 mv2_reg == mv2_reg.fill_value, mv2_reg)
-                            print ref_name
+                            print(ref_name)
     
                             # if mv.mask is False:
                             #    mv = MV2.masked_less_equal(mv, mv._FillValue)
-                            #    print "*************",mv.count()
+                            #    print("*************",mv.count())
                         land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                         mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                         mv2_reg = MV2.masked_where(land_mask, mv2_reg)

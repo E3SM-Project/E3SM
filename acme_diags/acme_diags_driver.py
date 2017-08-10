@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
 import os
 import sys
 import json
@@ -88,7 +91,7 @@ if __name__ == '__main__':
         for p in parameters:
             run_diag(p)
     else:
-        client = Client(parameters[0].client_addr)
+        client = Client(parameters[0].scheduler_addr)
         results = client.map(run_diag, parameters)
         client.gather(results)
         client.close()

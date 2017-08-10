@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy
 import genutil
 import cdp.cdp_metric
@@ -12,5 +14,5 @@ class CORR(cdp.cdp_metric.CDPMetric):
         try:
             corr = float(genutil.statistics.correlation(model, obs, axis=axis, weights='generate'))
         except Exception, err:
-            print err
+            print(err)
         return corr
