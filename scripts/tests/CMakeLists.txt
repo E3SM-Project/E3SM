@@ -8,9 +8,18 @@ execute_process(COMMAND "python" "list_tests" OUTPUT_VARIABLE STR_TESTS
                 ERROR_STRIP_TRAILING_WHITESPACE)
 separate_arguments(TEST_LIST UNIX_COMMAND ${STR_TESTS})
 
+set(args "")
+if (DEFINED ENV{CIME_COMPILER})
+  set(args "--compiler $ENV{CIME_COMPILER}")
+endif()
+if (DEFINED ENV{CIME_MPILIB})
+  set(args "${args} --compiler $ENV{CIME_MPILIB}")
+endif()
+separate_arguments(ARG_LIST UNIX_COMMAND ${args})
+
 foreach(ATEST ${TEST_LIST})
     # this assignment prevents quotes being added to testname in add_test
     set(fulltest "${ATEST}")
-    add_test(NAME ${ATEST} COMMAND ./scripts_regression_tests.py -v ${fulltest}
+    add_test(NAME ${ATEST} COMMAND ./scripts_regression_tests.py -v ${fulltest} ${ARG_LIST}
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endforeach(ATEST)

@@ -10,4 +10,17 @@ set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_TEST_TIMEOUT 82800 CACHE STRING "")
 set(DART_TESTING_TIMEOUT 82800 CACHE STRING "")
 
-set(BUILDNAME "cime_regression_$ENV{SHELL}")
+set(shell $ENV{SHELL})
+
+if (DEFINED ENV{CIME_COMPILER})
+   set(compiler $ENV{CIME_COMPILER})
+else()
+   set(compiler "default")
+endif()
+if (DEFINED ENV{CIME_MPILIB})
+   set(mpilib $ENV{CIME_MPILIB})
+else()
+   set(mpilib "default")
+endif()
+
+set(BUILDNAME "scripts_regression_${shell}_${compiler}_${mpilib}")
