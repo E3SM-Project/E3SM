@@ -240,7 +240,7 @@ dependencies:
 - !!python/unicode
   'vtk-cdat=7.1.0.2.10=py27_mesalib_0'
 - !!python/unicode
-  'cdp=2017.05.18=0'
+  'cdp=2017.07.29=0'
 - pip:
   - backports-abc==0.5
   - backports.ssl-match-hostname==3.5.0.1

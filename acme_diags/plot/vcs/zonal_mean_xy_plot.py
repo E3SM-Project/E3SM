@@ -44,7 +44,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_plot_markersize = 1
     diff_plot_markercolor = 1
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set3')
+    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'zonal_mean_xy')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_3.json'))
 
     set_units(test, parameters.test_units)

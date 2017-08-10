@@ -124,7 +124,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test = rotate_180(test)
     diff = rotate_180(diff)
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set4')
+    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'zonal_mean_2d')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_4.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_4_new.json'))
 

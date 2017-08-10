@@ -100,7 +100,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     case_id = parameter.case_id
 
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
+    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'lat_lon')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5_new.json'))
 
