@@ -38,6 +38,45 @@ for r in special_runs:
 
 print "Will process the following directories: ", runs
 
+rhoi = 910.0
+
+# ------ Needed functions ------
+
+def xtime2numtime(xtime):
+  """Define a function to convert xtime character array to numeric time values using datetime objects"""
+  # First parse the xtime character array into a string
+  xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
+
+  dt = []
+  for stritem in xtimestr:
+      itemarray = stritem.strip().replace('_', '-').replace(':', '-').split('-')  # Get an array of strings that are Y,M,D,h,m,s
+      results = [int(i) for i in itemarray]
+      if (results[0] < 1900):  # datetime has a bug where years less than 1900 are invalid on some systems
+         results[0] += 1900
+      dt.append( datetime.datetime(*results) ) # * notation passes in the array as arguments
+
+  numtime = netCDF4.date2num(dt, units='seconds since '+str(dt[0]))   # use the netCDF4 module's function for converting a datetime to a time number
+  return numtime / (3600.0*24.0*365.0) # in years
+
+def xtime2numtimeMy(xtime):
+  """Define a function to convert xtime character array to numeric time values using local arithmetic"""
+  # First parse the xtime character array into a string
+  xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
+
+  numtime = np.zeros( (len(xtimestr),) )
+  ii = 0
+  for stritem in xtimestr:
+      itemarray = stritem.strip().replace('_', '-').replace(':', '-').split('-')  # Get an array of strings that are Y,M,D,h,m,s
+      results = [int(i) for i in itemarray]
+      numtime[ii] = results[0] + results[1]/12.0 + results[2]/365.0  # approximate years
+      ii += 1
+  return numtime
+
+
+
+
+# --- set up figure axes ---
+
 fig = plt.figure(1, facecolor='w')
 
 nrow=4
@@ -90,38 +129,35 @@ plt.grid()
 
 
 
-def xtime2numtime(xtime):
-  """Define a function to convert xtime character array to numeric time values using datetime objects"""
-  # First parse the xtime character array into a string
-  xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
+# =================== repeat cleaner for presentation ===========
 
-  dt = []
-  for stritem in xtimestr:
-      itemarray = stritem.strip().replace('_', '-').replace(':', '-').split('-')  # Get an array of strings that are Y,M,D,h,m,s
-      results = [int(i) for i in itemarray]
-      if (results[0] < 1900):  # datetime has a bug where years less than 1900 are invalid on some systems
-         results[0] += 1900
-      dt.append( datetime.datetime(*results) ) # * notation passes in the array as arguments
+fig2 = plt.figure(2, facecolor='w')
 
-  numtime = netCDF4.date2num(dt, units='seconds since '+str(dt[0]))   # use the netCDF4 module's function for converting a datetime to a time number
-  return numtime / (3600.0*24.0*365.0) # in years
+nrow=3
+ncol=1
 
-def xtime2numtimeMy(xtime):
-  """Define a function to convert xtime character array to numeric time values using local arithmetic"""
-  # First parse the xtime character array into a string
-  xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
+# melt forcing
+ax2MeanMelt = fig2.add_subplot(nrow, ncol, 1)
+plt.xlabel('Year')
+plt.ylabel('mean melt (m/yr)')
+plt.xticks(np.arange(22)*20.0)
+plt.grid()
 
-  numtime = np.zeros( (len(xtimestr),) )
-  ii = 0
-  for stritem in xtimestr:
-      itemarray = stritem.strip().replace('_', '-').replace(':', '-').split('-')  # Get an array of strings that are Y,M,D,h,m,s
-      results = [int(i) for i in itemarray]
-      numtime[ii] = results[0] + results[1]/12.0 + results[2]/365.0  # approximate years
-      ii += 1
-  return numtime
+# VAF
+ax2VAF = fig2.add_subplot(nrow, ncol, 2, sharex=axMeanMelt)
+plt.xlabel('Year')
+plt.ylabel('VAF (Gt)')
+plt.xticks(np.arange(22)*20.0)
+plt.grid()
+
+ax2VAFrate = fig2.add_subplot(nrow, ncol, 3, sharex=axMeanMelt)
+plt.xlabel('Year')
+plt.ylabel('VAF rate (Gt/yr)')
+plt.xticks(np.arange(22)*20.0)
+plt.grid()
 
 
-rhoi = 910.0
+
 #colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
 n200 = sum("amp200" in r for r in runs)
 colors = [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n200) ]
@@ -150,8 +186,15 @@ for run in runs:
    #yrs = f.variables['daysSinceStart'][:] / 365.0
    xtimes = f.variables['xtime'][:]
 
+
    yrs = xtime2numtimeMy(xtimes)
    dyrs = yrs[1:]-yrs[0:-1]
+
+   # resampled version of time array - needed for filtering.
+   # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
+   resampYrs = np.linspace(0.0, yrs.max(), len(yrs)*2)
+   dresampYrs = resampYrs[1:]-resampYrs[0:-1]
+
    melt = f.variables['avgSubshelfMelt'][:]
    totalmelt = f.variables['totalFloatingBasalMassBal'][:] / 1.0e12
    cumumelt = totalmelt*0.0
@@ -159,21 +202,35 @@ for run in runs:
       cumumelt[t] = cumumelt[t-1] + totalmelt[t-1] * dyrs[t-1]
 
    VAF = f.variables['volumeAboveFloatation'][:] / 1.0e12 * rhoi
-   VAFrate = (VAF[1:]-VAF[0:-1] ) / dyrs
+   resampVAF = np.interp(resampYrs, yrs, VAF) # generate y values for each x
+   VAFsmooth = scipy.signal.savgol_filter(resampVAF, window_length=7, polyorder=1)
+   #VAFrate = (VAF[1:]-VAF[0:-1] ) / dyrs
+   VAFsmoothrate = (VAFsmooth[1:]-VAFsmooth[0:-1] ) / dresampYrs
 
    GA = f.variables['groundedIceArea'][:] / 1.0e3**2
-   GAsmooth = scipy.signal.savgol_filter(GA, window_length=27, polyorder=2)
-   GArate = (GAsmooth[1:] - GAsmooth[0:-1]) / dyrs
+   resampGA = np.interp(resampYrs, yrs, GA) # generate y values for each x
+   GAsmooth = scipy.signal.savgol_filter(resampGA, window_length=7, polyorder=1)
+   GArate = (GAsmooth[1:] - GAsmooth[0:-1]) / dresampYrs
 
+   # actual plotting begins here
    axMeanMelt.plot(yrs, melt, color=color, linewidth=lw)
    axTotalMelt.plot(yrs, totalmelt, color=color, linewidth=lw)
    axCumuMelt.plot(yrs, cumumelt, color=color, linewidth=lw)
 
    axVAF.plot(yrs, VAF, label = run, color=color, linewidth=lw)
-   axVAFrate.plot(yrs[1:], VAFrate, color=color, linewidth=lw)
+   #axVAFrate.plot(yrs[1:], VAFrate, color=color, linewidth=lw)
+   axVAFrate.plot(resampYrs[1:], VAFsmoothrate, color=color, linewidth=lw)
 
    axGA.plot(yrs, GA, color=color, linewidth=lw)
-   axGArate.plot(yrs[1:], GArate, color=color, linewidth=lw)
+   axGArate.plot(resampYrs[1:], GArate, color=color, linewidth=lw)
+
+
+   # actual plotting begins here for second figure
+   ax2MeanMelt.plot(yrs, melt, color=color, linewidth=lw)
+   ax2VAF.plot(yrs, VAF, label = run, color=color, linewidth=lw)
+   #ax2VAFrate.plot(yrs[1:], VAFrate, color=color, linewidth=lw)
+   ax2VAFrate.plot(resampYrs[1:], VAFsmoothrate, color=color, linewidth=lw)
+
 
    f.close()
 
@@ -199,6 +256,33 @@ axSLRrate.set_ylim(GTtoSL(y1), GTtoSL(y2))
 #axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
 axSLRrate.set_ylabel('S.L. equiv. (mm/yr)')
 axSLRrate.set_xlim(x1, x2)
+
+
+
+
+
+# ===================  for figure 2
+handles, labels = ax2VAF.get_legend_handles_labels()
+l1 = ax2VAF.legend(handles[0:2], labels[0:2], loc='lower left', ncol=1)  # control runs
+l2 = ax2VAF.legend(handles[2:], labels[2:], loc='lower center', ncol=2)  # variability runs
+ax2VAF.add_artist(l1)
+
+ax2SLR=ax2VAF.twinx()
+y1, y2=ax2VAF.get_ylim()
+x1, x2=ax2VAF.get_xlim()
+ax2SLR.set_ylim(GTtoSL(y1) - GTtoSL(VAF[0]), GTtoSL(y2) - GTtoSL(VAF[0]))
+#axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
+ax2SLR.set_ylabel('S.L. equiv. (mm)')
+ax2SLR.set_xlim(x1, x2)
+
+ax2SLRrate=ax2VAFrate.twinx()
+y1, y2=ax2VAFrate.get_ylim()
+x1, x2=ax2VAFrate.get_xlim()
+ax2SLRrate.set_ylim(GTtoSL(y1), GTtoSL(y2))
+#ax2SLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
+ax2SLRrate.set_ylabel('S.L. equiv. (mm/yr)')
+ax2SLRrate.set_xlim(x1, x2)
+
 
 
 plt.show()
