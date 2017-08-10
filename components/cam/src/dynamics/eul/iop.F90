@@ -94,7 +94,7 @@ contains
    endif
   end subroutine init_iop_fields
 
-subroutine readiopdata( dosurface )
+subroutine readiopdata( iop_update_surface )
 
 
 !-----------------------------------------------------------------------
@@ -124,7 +124,7 @@ subroutine readiopdata( dosurface )
 #endif
 !------------------------------Locals-----------------------------------
 !     
-   logical, intent(in) :: dosurface 
+   logical, intent(in) :: iop_update_surface 
 
    integer NCID, status
    integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
@@ -240,7 +240,7 @@ subroutine readiopdata( dosurface )
 ! =====================================================
 !     read observed aersol data
  
- if(scm_observed_aero .and. .not. dosurface) then
+ if(scm_observed_aero .and. .not. iop_update_surface) then
    status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
@@ -389,7 +389,7 @@ endif !scm_observed_aero
    cnt4(3)  = 1
    cnt4(4)  = 1
 
-   if (.not. dosurface) then
+   if (.not. iop_update_surface) then
 
      status = nf90_inq_varid( ncid, 'Ps', varid   )
      if ( status .ne. nf90_noerr ) then
