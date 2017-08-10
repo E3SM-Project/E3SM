@@ -133,10 +133,13 @@ module ocn_time_integration_split
       integer, pointer :: config_n_btr_cor_iter, config_num_halos
       logical, pointer :: config_use_standardGM
 
+      
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
+      logical, pointer :: config_compute_tracer_budget
+
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
       real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
@@ -245,6 +248,7 @@ module ocn_time_integration_split
 
       call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
 
+      call mpas_pool_get_config(domain % configs, 'config_compute_tracer_budget', config_compute_tracer_budget)
       allocate(n_bcl_iter(config_n_ts_iter))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1615,7 +1619,15 @@ module ocn_time_integration_split
                   do k = 1, maxLevelCell(iCell)
                      ! this is h_{n+1}
                      layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell) + dt * layerThicknessTend(k,iCell)
-                     activeTracerAdvectionTendency(:,k,iCell) = &
+                  end do
+               end do
+               !$omp end do
+
+               if (config_compute_tracer_budget) then
+               !$omp do schedule(runtime) private(k)
+               do iCell = 1, nCells
+                  do k= 1, maxLevelCell(iCell)
+                       activeTracerAdvectionTendency(:,k,iCell) = &
                           activeTracerAdvectionTendency(:,k,iCell) / &
                           layerThicknessNew(k,iCell)
         
@@ -1632,9 +1644,9 @@ module ocn_time_integration_split
                           layerThicknessNew(k,iCell)
 
                   end do
-               end do
+               end do 
                !$omp end do
-
+               endif
                
                call mpas_pool_begin_iteration(tracersPool)
                do while ( mpas_pool_get_next_member(tracersPool, groupItr) )

@@ -1044,6 +1044,10 @@
 					description="Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_compute_tracer_budgets" type="logical" default_value=".true." units="unitless"
+					description="Enables the computation of tracer budget terms"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_disable_thick_all_tend" type="logical" default_value=".false." units="unitless"
 					description="Disables all tendencies on the thickness field."
 					possible_values=".true. or .false."
