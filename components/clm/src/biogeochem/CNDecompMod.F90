@@ -112,6 +112,8 @@ contains
     ! !USES:
 !    use CNAllocationMod , only: CNAllocation
     use CNAllocationMod , only: CNAllocation2_ResolveNPLimit ! Phase-2 of CNAllocation
+    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
+    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     !
     ! !ARGUMENT:
     type(bounds_type)        , intent(in)    :: bounds   
@@ -211,6 +213,19 @@ contains
          actual_immob_vr                  =>    nitrogenflux_vars%actual_immob_vr_col                  , &
          actual_immob_p_vr                =>    phosphorusflux_vars%actual_immob_p_vr_col                &
          )
+        !!------------------------------------------------------------------------------------------------! calculate decomposition rates (originally called in CNEcosystemDynNoLeaching1)
+       if (use_century_decomp) then
+          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, &
+               carbonflux_vars)
+       else
+          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, &
+               carbonflux_vars, cnstate_vars)
+       end if
+
+
+!!------------------------------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------------------------------
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in CNEcosystemDynNoLeaching1
@@ -686,13 +701,15 @@ contains
 	    !------------------------------------------------------------------
 	    ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
 	    !------------------------------------------------------------------
-	    smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-	    smin_no3_to_plant_vr_loc(:,:) = 0._r8
+	    !smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+	    !smin_no3_to_plant_vr_loc(:,:) = 0._r8
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
       if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
          ! fpg calculation
+	 smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+	 smin_no3_to_plant_vr_loc(:,:) = 0._r8
          do fc=1,num_soilc
             c = filter_soilc(fc)
             sminn_to_plant(c)       = 0._r8
@@ -818,13 +835,13 @@ contains
     end if !(use_pflotran.and.pf_cmode)
     !------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
-      do fc=1,num_soilc
-         c = filter_soilc(fc)
-         net_nmin(c)    = 0._r8
-         gross_nmin(c)  = 0._r8
-         net_pmin(c)    = 0._r8
-         gross_pmin(c)  = 0._r8
-      end do
+      !do fc=1,num_soilc
+      !   c = filter_soilc(fc)
+      !   net_nmin(c)    = 0._r8
+      !   gross_nmin(c)  = 0._r8
+      !   net_pmin(c)    = 0._r8
+      !   gross_pmin(c)  = 0._r8
+      !end do
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
