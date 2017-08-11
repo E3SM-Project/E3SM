@@ -321,5 +321,6 @@
 			<var_array name="activeTracersAvg0250to0700"/>
 			<var_array name="activeTracersAvg0700to2000"/>
 			<var_array name="activeTracersAvg2000toBottom"/>
+			<var name="divergenceAtBottom"/>
 		</stream>
 	</streams>
