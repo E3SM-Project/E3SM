@@ -571,10 +571,10 @@ module cime_comp_mod
    character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
    character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
    character(*), parameter :: F0R = "('"//subname//" : ', A, 2g23.15 )"
-   character(*), parameter :: FormatA = '(A,": =============== ", A41,          " ===============")'
-   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,5x,   " ===============")'
-   character(*), parameter :: FormatR = '(A,": =============== ", A31,F9.3,1x,  " ===============")'
-   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,1x," ===============")'
+   character(*), parameter :: FormatA = '(A,": =============== ", A44,          " ===============")'
+   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,8x,   " ===============")'
+   character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
+   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,4x," ===============")'
 !===============================================================================
 contains
 !===============================================================================
