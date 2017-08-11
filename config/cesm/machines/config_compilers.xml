@@ -109,7 +109,7 @@ using a fortran linker.
   <CFLAGS>
     <base> -mcmodel=medium -std=gnu99 </base>
     <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </CFLAGS>
   <CPPDEFS>
@@ -126,11 +126,11 @@ using a fortran linker.
     <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
     <append compile_threaded="true"> -fopenmp </append>
     <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
-         least with some versions of gfortran (confirmed with 5.3.0), gfortran's
-         isnan (which is called in cime via the CPRGNU-specific
-         shr_infnan_isnan) causes a floating point exception when called on a
-         signaling NaN. -->
-    <append DEBUG="TRUE"> -g -Wall -ffpe-trap=zero,overflow -fcheck=bounds </append>
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
