@@ -5973,7 +5973,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="blues">
+    <mach name="blues|bebop">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
