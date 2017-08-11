@@ -447,6 +447,9 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Dynamic PFT surface datasets (relative to {csmdata}) -->
+<!--SSP -->
+<flanduse_timeseries hgrid="ne30np4"       ssp="5" sim_year_range="1850-2100"
+ use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
 
 <!-- Note that, to reduce the number of necessary datasets, we use an RCP
      dataset (arbitrarily, RCP8.5) for the historical period, because all of the
@@ -599,6 +602,7 @@ this mask will have smb calculated over the entire global land surface
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="6"   >lnd/clm2/ndepdata/fndep_clm_rcp6.0_simyr1849-2106_1.9x2.5_c100810.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/ndepdata/fndep_clm_rcp4.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="2.6" >lnd/clm2/ndepdata/fndep_clm_rcp2.6_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   ssp="5" >lnd/clm2/ndepdata/fndep_clm_rcp8.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
 
 <ndepmapalgo use_cn=".true."                               >bilinear</ndepmapalgo>
 
@@ -642,6 +646,7 @@ this mask will have smb calculated over the entire global land surface
 <stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="6"   >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
 <stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
 <stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="2.6" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   ssp="5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
 
 <pdepmapalgo use_cn=".true."                               >bilinear</pdepmapalgo>
 

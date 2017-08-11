@@ -198,6 +198,11 @@
   </compset>
 
   <compset>
+    <alias>ISSP5CLM45CN</alias>
+    <lname>SSP5_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>IRCP60CN</alias>
     <lname>RCP6_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>
@@ -280,6 +285,11 @@
   <compset>
     <alias>I1850CNPECACTCBC</alias>
     <lname>1850_DATM%QIA_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>I1850CNPECACTCBCBCRD</alias>
+    <lname>1850_DATM%QIA_CLM45%CNPECACTCBCBCRD_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
   </compset>
 
   <compset>
@@ -1259,6 +1269,7 @@
     <entry id="RUN_STARTDATE">
       <values>
 	<value compset="RCP[2468]"		  >2005-01-01</value>
+	<value compset="SSP[5]"			  >2005-01-01</value>
 	<value compset="HIST_"			  >1850-01-01</value>
 	<value compset="20TR_"			  >1850-01-01</value>
 	<value compset="4804_"			  >0001-01-01</value>
