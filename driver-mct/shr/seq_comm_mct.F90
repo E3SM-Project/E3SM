@@ -497,7 +497,7 @@ contains
     integer, intent(inout) :: count
     character(len=*), intent(in) :: name
 
-    character(len=*), parameter :: subname = "comp_pelayout"
+    character(len=*), parameter :: subname = "comp_comm_init"
     integer :: comp_inst_tasks
     integer :: droot
     integer :: current_task_rootpe
@@ -526,13 +526,12 @@ contains
        ! rootpes >= 0
        !! Determine the process layout
        !!
-       !! We will assign atm_ntasks / num_inst_atm tasks to each atmosphere
-       !! instance.  (This may lead to unallocated tasks if atm_ntasks is
-       !! not an integer multiple of num_inst_atm.)
+       !! We will assign comp_ntasks / num_inst_comp tasks to each component
+       !! instance.  (This may lead to unallocated tasks if comp_ntasks is
+       !! not an integer multiple of num_inst_comp.)
 
        if (comp_rootpe < 0) then
-          write(logunit,*) trim(subname),' ERROR: rootpes must be >= 0'
-          call shr_sys_abort(trim(subname)//' ERROR: rootpes >= 0')
+          call shr_sys_abort(trim(subname)//' ERROR: rootpes must be >= 0 for component '//name)
        endif
 
        if (trim(comp_layout) == trim(layout_concurrent)) then
@@ -542,7 +541,7 @@ contains
           comp_inst_tasks = comp_ntasks
           droot = 0
        else
-          call shr_sys_abort(subname//' ERROR invalid comp_layout ')
+          call shr_sys_abort(subname//' ERROR invalid comp_layout for component'//name)
        endif
        current_task_rootpe = comp_rootpe
        do n = 1, num_inst_comp
