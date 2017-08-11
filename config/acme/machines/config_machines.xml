@@ -121,6 +121,16 @@
       <command name="rm">esmf</command>
     </modules>
 
+    <modules>
+      <command name="rm">craype</command>
+      <command name="load">craype/2.5.12.3</command>
+      <command name="load">craype-ivybridge</command>
+      <command name="rm">pmi</command>
+      <command name="load">pmi/5.0.12</command>
+      <command name="rm">cray-mpich</command>
+      <command name="load">cray-mpich/7.6.0</command>
+    </modules>
+
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
@@ -140,17 +150,8 @@
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/16.09.1</command>
-    </modules>
-
-    <modules>
-      <command name="load">cray-mpich/7.6.0</command>
-
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.12.3</command>
-      <command name="load">craype-ivybridge</command>
-      <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.06.1</command>
     </modules>
 
     <modules mpilib="mpi-serial">
@@ -252,20 +253,25 @@
       <command name="rm">esmf</command>
     </modules>
 
+    <modules>
+      <command name="rm">craype</command>
+      <command name="load">craype/2.5.12</command>
+      <command name="load">pmi/5.0.12</command>
+
+      <command name="rm">cray-mpich</command>
+      <command name="load">cray-mpich/7.6.0</command>
+    </modules>
+
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
       <command name="load">intel/17.0.2.174</command>
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.7</command>
     </modules>
 
     <modules compiler="intel18">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
       <command name="load">intel/2018.beta</command>
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.10</command>
     </modules>
 
     <modules compiler="gnu">
@@ -273,19 +279,13 @@
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/16.09.1</command>
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.7</command>
+      <command name="load">cray-libsci/17.06.1</command>
     </modules>
 
     <modules>
-      <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.5.5</command>
-
       <command name="rm">craype-mic-knl</command>
       <command name="load">craype-haswell</command>
     </modules>
-
 
     <modules mpilib="mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
@@ -304,7 +304,6 @@
     <modules>
       <command name="load">git/2.9.1</command>
       <command name="load">cmake/3.3.2</command>
-      <command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
       <command name="load">zlib/1.2.8</command>
     </modules>
   </module_system>
@@ -396,18 +395,25 @@
       <command name="rm">intel</command>
       <command name="load">intel/17.0.2.174</command>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.7</command>
-      <command name="load">cray-mpich/7.4.4</command>
+      <command name="load">craype/2.5.12</command>
+      <command name="rm">cray-mpich</command>
+      <command name="load">cray-mpich/7.6.0</command>
     </modules>
 
     <modules compiler="intel18">
+      <!-- A bug in the modules is not letting us unload/load mpich 7.6 with intel18, so first load intel17 here, then correct below -->
+      <command name="load">PrgEnv-intel</command>
+      <command name="rm">intel</command>
+      <command name="load">intel/17.0.2.174</command>
+
+      <command name="rm">craype</command>
+      <command name="load">craype/2.5.12</command>
+      <command name="rm">cray-mpich</command>
+      <command name="load">cray-mpich/7.6.0</command>
+
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
       <command name="load">intel/2018.beta</command>
-      <command name="rm">craype</command>
-      <command name="load">craype/2.5.10</command>
-      <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.5.5</command>
     </modules>
 
     <modules compiler="gnu">
@@ -415,13 +421,17 @@
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/16.09.1</command>
+      <command name="load">cray-libsci/17.06.1</command>
+
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.7</command>
-      <command name="load">cray-mpich/7.4.4</command>
+      <command name="load">craype/2.5.12</command>
+      <command name="rm">cray-mpich</command>
+      <command name="load">cray-mpich/7.6.0</command>
     </modules>
 
     <modules>
+      <command name="rm">pmi</command>
+      <command name="load">pmi/5.0.12</command>
       <command name="rm">craype-haswell</command>
       <command name="load">craype-mic-knl</command>
     </modules>
@@ -442,7 +452,6 @@
     <modules>
       <command name="load">git/2.9.1</command>
       <command name="load">cmake/3.3.2</command>
-      <command name="load">pmi/5.0.10-1.0000.11069.183.8.ari</command>
       <command name="load">zlib/1.2.8</command>
     </modules>
   </module_system>

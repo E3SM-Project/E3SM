@@ -635,6 +635,8 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
+  <!--ADD_SLIBS MPILIB="mpi-serial"> -mkl=sequential -lpthread </ADD_SLIBS-->
+  <!--ADD_SLIBS MPILIB="mpich"> -mkl -lpthread </ADD_SLIBS-->
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
