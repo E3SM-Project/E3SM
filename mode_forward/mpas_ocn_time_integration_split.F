@@ -138,7 +138,7 @@ module ocn_time_integration_split
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
-      logical, pointer :: config_compute_tracer_budget
+      logical, pointer :: config_compute_tracer_budgets
 
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
@@ -248,7 +248,7 @@ module ocn_time_integration_split
 
       call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
 
-      call mpas_pool_get_config(domain % configs, 'config_compute_tracer_budget', config_compute_tracer_budget)
+      call mpas_pool_get_config(domain % configs, 'config_compute_tracer_budgets', config_compute_tracer_budgets)
       allocate(n_bcl_iter(config_n_ts_iter))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1623,7 +1623,7 @@ module ocn_time_integration_split
                end do
                !$omp end do
 
-               if (config_compute_tracer_budget) then
+               if (config_compute_tracer_budgets) then
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
                   do k= 1, maxLevelCell(iCell)
