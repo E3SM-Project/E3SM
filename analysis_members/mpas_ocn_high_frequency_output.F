@@ -1,4 +1,4 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+!Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
@@ -161,18 +161,60 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      integer :: iLevel, iLevelTarget, iCell, iEdge, i, cell1, cell2, k
+      integer :: iLevel, iLevelTarget, iCell, iEdge, i, cell1, cell2, k, eoe
+      integer :: iLevel0100, iLevel0250, iLevel0700, iLevel2000
+      real (kind=RKIND) :: sumLayerThickness
       integer, pointer :: nVertLevels, nCells, nEdges
-      integer, dimension(:), pointer :: nEdgesOnCell, maxLevelEdgeTop, maxLevelCell
-      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge
+      integer, dimension(:), pointer :: nEdgesOnCell, maxLevelEdgeTop, maxLevelEdgeBot, maxLevelCell, nEdgesOnEdge
+      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge, edgesOnEdge
 
-      real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, kineticEnergyAtSurface, relativeVorticityAt100m
-      real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
+      real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff, weightedNormalVel, cellArea
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt250m, kineticEnergyAtSurface, relativeVorticityAt250m
+      real (kind=RKIND), dimension(:), pointer :: divergenceAt250m, relativeVorticityVertexAt250m
+      real (kind=RKIND), dimension(:), pointer :: divergenceAtBottom,relativeVorticityAtBottom,kineticEnergyAtBottom
+      real (kind=RKIND), dimension(:), pointer :: vertVelAt250m
+      real (kind=RKIND), dimension(:), pointer :: BruntVaisalaFreqTopAtSFC, BruntVaisalaFreqTopAt250m, BruntVaisalaFreqTopAtBottom
+
+      real (kind=RKIND), dimension(:), pointer :: normalVelAtSFC, normalVelAt250m, normalVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: tangentialVelAtSFC, tangentialVelAt250m, tangentialVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: zonalVelAtSFC, zonalVelAt250m, zonalVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: meridionalVelAtSFC, meridionalVelAt250m, meridionalVelAtBottom
+
+      real (kind=RKIND), dimension(:), pointer :: zonalAreaWeightedCellVelAtSFC, zonalAreaWeightedCellVelAt250m, zonalAreaWeightedCellVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: meridionalAreaWeightedCellVelAtSFC, meridionalAreaWeightedCellVelAt250m, meridionalAreaWeightedCellVelAtBottom
+
+      real (kind=RKIND), dimension(:), pointer :: normalBarotropicVel
+      real (kind=RKIND), dimension(:), pointer :: tangentialBarotropicVel
+      real (kind=RKIND), dimension(:), pointer :: zonalBarotropicVel
+      real (kind=RKIND), dimension(:), pointer :: meridionalBarotropicVel
+
+      real (kind=RKIND), dimension(:), pointer :: normalBaroclinicVelAtSFC, normalBaroclinicVelAt250m, normalBaroclinicVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: tangentialBaroclinicVelAtSFC, tangentialBaroclinicVelAt250m, tangentialBaroclinicVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: zonalBaroclinicVelAtSFC, zonalBaroclinicVelAt250m, zonalBaroclinicVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: meridionalBaroclinicVelAtSFC, meridionalBaroclinicVelAt250m, meridionalBaroclinicVelAtBottom
+
+      real (kind=RKIND), dimension(:), pointer :: normalGMBolusVelAtSFC, normalGMBolusVelAt250m, normalGMBolusVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: tangentialGMBolusVelAtSFC, tangentialGMBolusVelAt250m, tangentialGMBolusVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: zonalGMBolusVelAtSFC, zonalGMBolusVelAt250m, zonalGMBolusVelAtBottom
+      real (kind=RKIND), dimension(:), pointer :: meridionalGMBolusVelAtSFC, meridionalGMBolusVelAt250m, meridionalGMBolusVelAtBottom
+
+      real (kind=RKIND), dimension(:), pointer :: angleEdge
+      real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
+      real (kind=RKIND), dimension(:), pointer :: vertTransportVelocityAt250m, vertGMvelocityAt250m
+      real (kind=RKIND), dimension(:), pointer :: vertVelSFC, vertTransportVelocitySFC, vertGMvelocitySFC
       real (kind=RKIND), dimension(:), pointer :: barotropicSpeed, columnIntegratedSpeed, dvEdge, dcEdge, areaCell
-      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
-      real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence, layerThickness, normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersAt250m, activeTracersAvgTopto0100, activeTracersAvg0100to0250
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersAtBottom
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersAvg0250to0700, activeTracersAvg0700to2000, activeTracersAvg2000toBottom
+      real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence, layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity, BruntVaisalaFreqTop
+      real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop, vertGMBolusVelocityTop, vertTransportVelocityTop
+      real (kind=RKIND), dimension(:,:), pointer :: normalGMBolusVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: normalBaroclinicVelocity ! baroclinic/barotropic pressume split explicit
+      real (kind=RKIND), dimension(:), pointer :: normalBarotropicVelocity ! baroclinic/barotropic pressume split explicit
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+      character (len=StrKIND), pointer :: config_time_integrator
 
       ! scratch space
       type (field1DReal), pointer :: normalThicknessFluxSumField, layerThicknessSumEdgeField
@@ -207,14 +249,127 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence, timeLevel)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
+         call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertGMBolusVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
+         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
 
          ! get arrays that can be written to output at high freqency
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAt100m', kineticEnergyAt100m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAt250m', kineticEnergyAt250m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAtSurface', kineticEnergyAtSurface)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt100m', relativeVorticityAt100m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtSurface', activeTracersAtSurface)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAt100m', divergenceAt100m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityVertexAt100m', relativeVorticityVertexAt100m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt250m', relativeVorticityAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAt250m', divergenceAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAtBottom', relativeVorticityAtBottom)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAtBottom', divergenceAtBottom)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAtBottom', kineticEnergyAtBottom)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityVertexAt250m', relativeVorticityVertexAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAt250m', activeTracersAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtBottom', activeTracersAtBottom)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAvgTopto0100', activeTracersAvgTopto0100)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAvg0100to0250', activeTracersAvg0100to0250)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAvg0250to0700', activeTracersAvg0250to0700)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAvg0700to2000', activeTracersAvg0700to2000)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAvg2000toBottom', activeTracersAvg2000toBottom)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertGMvelocitySFC', vertGMvelocitySFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertTransportVelocitySFC', vertTransportVelocitySFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertVelAt250m', vertVelAt250m)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalVelAtSFC', normalVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalVelAt250m', normalVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalVelAtBottom', normalVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialVelAtSFC', tangentialVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialVelAt250m', tangentialVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialVelAtBottom', tangentialVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalVelAtSFC', zonalVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalVelAt250m', zonalVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalVelAtBottom', zonalVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalVelAtSFC', meridionalVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalVelAt250m', meridionalVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalVelAtBottom', meridionalVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalAreaWeightedCellVelAtSFC', zonalAreaWeightedCellVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalAreaWeightedCellVelAt250m', zonalAreaWeightedCellVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalAreaWeightedCellVelAtBottom', zonalAreaWeightedCellVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalAreaWeightedCellVelAtSFC', meridionalAreaWeightedCellVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalAreaWeightedCellVelAt250m', meridionalAreaWeightedCellVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalAreaWeightedCellVelAtBottom', meridionalAreaWeightedCellVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalBarotropicVel', normalBarotropicVel)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialBarotropicVel', tangentialBarotropicVel)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalBarotropicVel', zonalBarotropicVel)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalBarotropicVel', meridionalBarotropicVel)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalBaroclinicVelAtSFC', normalBaroclinicVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalBaroclinicVelAt250m', normalBaroclinicVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalBaroclinicVelAtBottom', normalBaroclinicVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialBaroclinicVelAtSFC', tangentialBaroclinicVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialBaroclinicVelAt250m', tangentialBaroclinicVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialBaroclinicVelAtBottom', tangentialBaroclinicVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalBaroclinicVelAtSFC', zonalBaroclinicVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalBaroclinicVelAt250m', zonalBaroclinicVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalBaroclinicVelAtBottom', zonalBaroclinicVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalBaroclinicVelAtSFC', meridionalBaroclinicVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalBaroclinicVelAt250m', meridionalBaroclinicVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalBaroclinicVelAtBottom', meridionalBaroclinicVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAtSFC', normalGMBolusVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAt250m', normalGMBolusVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAtBottom', normalGMBolusVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAtSFC', tangentialGMBolusVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAt250m', tangentialGMBolusVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAtBottom', tangentialGMBolusVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAtSFC', zonalGMBolusVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAt250m', zonalGMBolusVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAtBottom', zonalGMBolusVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAtSFC', meridionalGMBolusVelAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAt250m', meridionalGMBolusVelAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAtBottom', meridionalGMBolusVelAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'BruntVaisalaFreqTopAtSFC', BruntVaisalaFreqTopAtSFC)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'BruntVaisalaFreqTopAt250m', BruntVaisalaFreqTopAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'BruntVaisalaFreqTopAtBottom', BruntVaisalaFreqTopAtBottom)
+
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertGMvelocityAt250m', vertGMvelocityAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertTransportVelocityAt250m', vertTransportVelocityAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'vertVelSFC', vertVelSFC)
+
+         ! split explicit specific arrays
+         call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
+         if ( config_time_integrator == trim('split_explicit')) then
+           call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, 1)
+           call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
+         endif
+
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+         call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
+         call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'barotropicSpeed', barotropicSpeed)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'columnIntegratedSpeed', columnIntegratedSpeed)
 
          !
          ! note for future build out
@@ -224,37 +379,378 @@ contains
          ! for now, just get close enough
          iLevelTarget = 1
          do iLevel=2,nVertLevels
-           if(refBottomDepth(iLevel) > 100.0_RKIND) then
+           if(refBottomDepth(iLevel) > 250.0_RKIND) then
               iLevelTarget = iLevel-1
               exit
            endif
          enddo
 
+         ! find vertical level that is just above the 100 m reference level
+         iLevel0100 = 1
+         do iLevel=2,nVertLevels
+           if(refBottomDepth(iLevel) > 100.0_RKIND) then
+              iLevel0100 = iLevel-1
+              exit
+           endif
+         enddo
+
+         ! find vertical level that is just above the 250 m reference level
+         iLevel0250 = 1
+         do iLevel=iLevel0100,nVertLevels
+           if(refBottomDepth(iLevel) > 250.0_RKIND) then
+              iLevel0250 = iLevel-1
+              exit
+           endif
+         enddo
+
+         ! find vertical level that is just above the 700 m reference level
+         iLevel0700 = 1
+         do iLevel=iLevel0250,nVertLevels
+           if(refBottomDepth(iLevel) > 700.0_RKIND) then
+              iLevel0700 = iLevel-1
+              exit
+           endif
+         enddo
+
+         ! find vertical level that is just above the 2000 m reference level
+         iLevel2000 = 1
+         do iLevel=iLevel0700,nVertLevels
+           if(refBottomDepth(iLevel) > 2000.0_RKIND) then
+              iLevel2000 = iLevel-1
+              exit
+           endif
+         enddo
+
+         ! avg between surface and 100 m
+
+
          ! copy data into high frequency output fields
-         ! tracer data will be converted to new tracer infrastrcture (and this line removed) before June 23 2015.
-         kineticEnergyAt100m(:) = kineticEnergyCell(iLevelTarget,:)
-         relativeVorticityAt100m(:) = relativeVorticityCell(iLevelTarget,:)
-         divergenceAt100m(:) = divergence(iLevelTarget,:)
-         relativeVorticityVertexAt100m = relativeVorticity(iLevelTarget,:)
+         kineticEnergyAt250m(:) = kineticEnergyCell(iLevelTarget,:)
+         relativeVorticityAt250m(:) = relativeVorticityCell(iLevelTarget,:)
+         divergenceAt250m(:) = divergence(iLevelTarget,:)
+         relativeVorticityVertexAt250m(:) = relativeVorticity(iLevelTarget,:)
          kineticEnergyAtSurface(:) = kineticEnergyCell(1,:)
-         activeTracersAtSurface(1,:) = activeTracers(1,1,:)
-         activeTracersAtSurface(2,:) = activeTracers(2,1,:)
+         activeTracersAt250m(1,:) = activeTracers(1,iLevelTarget,:)
+         activeTracersAt250m(2,:) = activeTracers(2,iLevelTarget,:)
+         vertGMvelocitySFC(:) = vertGMBolusVelocityTop(1,:)
+         vertTransportVelocitySFC(:) = vertTransportVelocityTop(1,:)
+         vertVelSFC(:) = vertVelocityTop(1,:)
+         vertGMvelocityAt250m(:) = vertGMBolusVelocityTop(iLevelTarget,:)
+         vertTransportVelocityAt250m(:) = vertTransportVelocityTop(iLevelTarget,:)
+         vertVelAt250m(:) = vertVelocityTop(iLevelTarget,:)
+
+         ! copy data at bottom
+         do iCell=1,nCells
+           iLevelTarget = maxLevelCell(iCell)
+           relativeVorticityAtBottom(iCell) = relativeVorticityCell(iLevelTarget,iCell)
+           divergenceAtBottom(iCell) = divergence(iLevelTarget,iCell)
+           kineticEnergyAtBottom(iCell) = kineticEnergyCell(iLevelTarget,iCell)
+           activeTracersAtBottom(1,iCell) = activeTracers(1,iLevelTarget,iCell)
+           activeTracersAtBottom(2,iCell) = activeTracers(2,iLevelTarget,iCell)
+         enddo
 
          !
          ! compute barotropic kinetic energy
          !
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'barotropicSpeed', barotropicSpeed)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'columnIntegratedSpeed', columnIntegratedSpeed)
+
+         ! SFC
+         iLevelTarget = 1
+         do iCell = 1, nCells
+           BruntVaisalaFreqTopAtSFC(iCell) = BruntVaisalaFreqTop(iLevelTarget,iCell)
+         end do
+         do iEdge = 1, nEdges
+           normalVelAtSFC(iEdge) = normalVelocity(iLevelTarget,iEdge)
+           tangentialVelAtSFC(iEdge) = tangentialVelocity(iLevelTarget,iEdge)
+           zonalVelAtSFC(iEdge) = normalVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
+                                  - tangentialVelAtSFC(iEdge)*sin(angleEdge(iEdge))
+           meridionalVelAtSFC(iEdge) = normalVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
+                                       + tangentialVelAtSFC(iEdge)*cos(angleEdge(iEdge))
+         end do
+
+         iLevelTarget = 1
+         do iEdge = 1, nEdges
+           normalGMBolusVelAtSFC(iEdge) = normalGMBolusVelocity(iLevelTarget,iEdge)
+         end do
+         do iEdge = 1, nEdges
+           tangentialGMBolusVelAtSFC(iEdge) = 0.0_RKIND
+           do i = 1, nEdgesOnEdge(iEdge)
+             eoe = edgesOnEdge(i,iEdge)
+             tangentialGMBolusVelAtSFC(iEdge) = tangentialGMBolusVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtSFC(eoe)
+           end do
+
+           zonalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
+             - tangentialGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge))
+           meridionalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
+             + tangentialGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge))
+         end do
+
+         if ( config_time_integrator == trim('split_explicit')) then
+
+           iLevelTarget = 1
+           do iEdge = 1, nEdges
+             normalBarotropicVel(iEdge) = normalBarotropicVelocity(iEdge)
+           end do
+           do iEdge = 1, nEdges
+             tangentialBarotropicVel(iEdge) = 0.0_RKIND
+             do i = 1, nEdgesOnEdge(iEdge)
+               eoe = edgesOnEdge(i,iEdge)
+               tangentialBarotropicVel(iEdge) = tangentialBarotropicVel(iEdge) + weightsOnEdge(i,iEdge) * normalBarotropicVel(eoe)
+             end do
+
+             zonalBarotropicVel(iEdge) = normalBarotropicVel(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBarotropicVel(iEdge)*sin(angleEdge(iEdge))
+             meridionalBarotropicVel(iEdge) = normalBarotropicVel(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBarotropicVel(iEdge)*cos(angleEdge(iEdge))
+           end do
+
+           iLevelTarget = 1
+           do iEdge = 1, nEdges
+             normalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelocity(iLevelTarget,iEdge)
+           end do
+           do iEdge = 1, nEdges
+             tangentialBaroclinicVelAtSFC(iEdge) = 0.0_RKIND
+             do i = 1, nEdgesOnEdge(iEdge)
+               eoe = edgesOnEdge(i,iEdge)
+               tangentialBaroclinicVelAtSFC(iEdge) = tangentialBaroclinicVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAtSFC(eoe)
+             end do
+
+             zonalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBaroclinicVelAtSFC(iEdge)*sin(angleEdge(iEdge))
+             meridionalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBaroclinicVelAtSFC(iEdge)*cos(angleEdge(iEdge))
+           end do
+
+         endif
+
+         ! 250m
+         iLevelTarget = iLevel0250
+         do iCell = 1, nCells
+           BruntVaisalaFreqTopAt250m(iCell) = BruntVaisalaFreqTop(iLevelTarget,iCell)
+         end do
+         do iEdge = 1, nEdges
+           normalVelAt250m(iEdge) = normalVelocity(iLevelTarget,iEdge)
+           tangentialVelAt250m(iEdge) = tangentialVelocity(iLevelTarget,iEdge)
+           zonalVelAt250m(iEdge) = normalVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
+                                  - tangentialVelAt250m(iEdge)*sin(angleEdge(iEdge))
+           meridionalVelAt250m(iEdge) = normalVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
+                                       + tangentialVelAt250m(iEdge)*cos(angleEdge(iEdge))
+         end do
+
+         iLevelTarget = iLevel0250
+         do iEdge = 1, nEdges
+           normalGMBolusVelAt250m(iEdge) = normalGMBolusVelocity(iLevelTarget,iEdge)
+         end do
+         do iEdge = 1, nEdges
+           tangentialGMBolusVelAt250m(iEdge) = 0.0_RKIND
+           do i = 1, nEdgesOnEdge(iEdge)
+             eoe = edgesOnEdge(i,iEdge)
+             tangentialGMBolusVelAt250m(iEdge) = tangentialGMBolusVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAt250m(eoe)
+           end do
+
+           zonalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
+             - tangentialGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge))
+           meridionalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
+             + tangentialGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge))
+         end do
+
+         if ( config_time_integrator == trim('split_explicit')) then
+
+           iLevelTarget = iLevel0250
+           do iEdge = 1, nEdges
+             normalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelocity(iLevelTarget,iEdge)
+           end do
+           do iEdge = 1, nEdges
+             tangentialBaroclinicVelAt250m(iEdge) = 0.0_RKIND
+             do i = 1, nEdgesOnEdge(iEdge)
+               eoe = edgesOnEdge(i,iEdge)
+               tangentialBaroclinicVelAt250m(iEdge) = tangentialBaroclinicVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAt250m(eoe)
+             end do
+
+             zonalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBaroclinicVelAt250m(iEdge)*sin(angleEdge(iEdge))
+             meridionalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBaroclinicVelAt250m(iEdge)*cos(angleEdge(iEdge))
+           end do
+
+         endif
+
+         ! bottom
+         do iCell = 1, nCells
+           iLevelTarget = maxLevelCell(iCell)
+           BruntVaisalaFreqTopAtBottom(iCell) = BruntVaisalaFreqTop(iLevelTarget,iCell)
+         end do
+         do iEdge = 1, nEdges
+           iLevelTarget = maxLevelEdgeBot(iEdge)
+           normalVelAtBottom(iEdge) = normalVelocity(iLevelTarget,iEdge)
+           tangentialVelAtBottom(iEdge) = tangentialVelocity(iLevelTarget,iEdge)
+           zonalVelAtBottom(iEdge) = normalVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
+                                  - tangentialVelAtBottom(iEdge)*sin(angleEdge(iEdge))
+           meridionalVelAtBottom(iEdge) = normalVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
+                                       + tangentialVelAtBottom(iEdge)*cos(angleEdge(iEdge))
+         end do
+
+         do iEdge = 1, nEdges
+           iLevelTarget = maxLevelEdgeBot(iEdge)
+           normalGMBolusVelAtBottom(iEdge) = normalGMBolusVelocity(iLevelTarget,iEdge)
+         end do
+         do iEdge = 1, nEdges
+           tangentialGMBolusVelAtBottom(iEdge) = 0.0_RKIND
+           do i = 1, nEdgesOnEdge(iEdge)
+             eoe = edgesOnEdge(i,iEdge)
+             tangentialGMBolusVelAtBottom(iEdge) = tangentialGMBolusVelAtBottom(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtBottom(eoe)
+           end do
+
+           zonalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
+             - tangentialGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge))
+           meridionalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
+             + tangentialGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge))
+         end do
+
+         if ( config_time_integrator == trim('split_explicit')) then
+
+           do iEdge = 1, nEdges
+             iLevelTarget = maxLevelEdgeBot(iEdge)
+             normalBaroclinicVelAtBottom(iEdge) = normalBaroclinicVelocity(iLevelTarget,iEdge)
+           end do
+           do iEdge = 1, nEdges
+             tangentialBaroclinicVelAtBottom(iEdge) = 0.0_RKIND
+             do i = 1, nEdgesOnEdge(iEdge)
+               eoe = edgesOnEdge(i,iEdge)
+               tangentialBaroclinicVelAtBottom(iEdge) = tangentialBaroclinicVelAtBottom(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAtBottom(eoe)
+             end do
+
+             zonalBaroclinicVelAtBottom(iEdge) = normalBaroclinicVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBaroclinicVelAtBottom(iEdge)*sin(angleEdge(iEdge))
+             meridionalBaroclinicVelAtBottom(iEdge) = normalBaroclinicVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBaroclinicVelAtBottom(iEdge)*cos(angleEdge(iEdge))
+           end do
+
+         endif
+
+         !
+         ! compute Perot reconstructed cell-centered velocities
+         !
+
+         do iCell = 1, nCells
+           zonalAreaWeightedCellVelAtSFC(iCell) = 0.0_RKIND
+           meridionalAreaWeightedCellVelAtSFC(iCell) = 0.0_RKIND
+           cellArea = 0.0_RKIND
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
+               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
+               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               weightedNormalVel = normalVelAtSFC(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               zonalAreaWeightedCellVelAtSFC(iCell) = zonalAreaWeightedCellVelAtSFC(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
+               meridionalAreaWeightedCellVelAtSFC(iCell) = meridionalAreaWeightedCellVelAtSFC(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
+           end do
+           zonalAreaWeightedCellVelAtSFC(iCell) = zonalAreaWeightedCellVelAtSFC(iCell)/cellArea
+           meridionalAreaWeightedCellVelAtSFC(iCell) = meridionalAreaWeightedCellVelAtSFC(iCell)/cellArea
+         end do
+
+         do iCell = 1, nCells
+           zonalAreaWeightedCellVelAt250m(iCell) = 0.0_RKIND
+           meridionalAreaWeightedCellVelAt250m(iCell) = 0.0_RKIND
+           cellArea = 0.0_RKIND
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
+               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
+               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               weightedNormalVel = normalVelAt250m(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               zonalAreaWeightedCellVelAt250m(iCell) = zonalAreaWeightedCellVelAt250m(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
+               meridionalAreaWeightedCellVelAt250m(iCell) = meridionalAreaWeightedCellVelAt250m(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
+           end do
+           zonalAreaWeightedCellVelAt250m(iCell) = zonalAreaWeightedCellVelAt250m(iCell)/cellArea
+           meridionalAreaWeightedCellVelAt250m(iCell) = meridionalAreaWeightedCellVelAt250m(iCell)/cellArea
+         end do
+
+         do iCell = 1, nCells
+           zonalAreaWeightedCellVelAtBottom(iCell) = 0.0_RKIND
+           meridionalAreaWeightedCellVelAtBottom(iCell) = 0.0_RKIND
+           cellArea = 0.0_RKIND
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
+               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
+               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               weightedNormalVel = normalVelAtBottom(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               zonalAreaWeightedCellVelAtBottom(iCell) = zonalAreaWeightedCellVelAtBottom(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
+               meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
+           end do
+           zonalAreaWeightedCellVelAtBottom(iCell) = zonalAreaWeightedCellVelAtBottom(iCell)/cellArea
+           meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell)/cellArea
+         end do
+
+         !
+         ! compute layer averaged tracers
+         !
+         activeTracersAvgTopto0100(:,:) = -1.0e34_RKIND
+         do iCell = 1, nCells
+           sumLayerThickness = layerThickness(1,iCell)
+           activeTracersAvgTopto0100(:,iCell) = activeTracers(:,1,iCell)*layerThickness(1,iCell)
+           do k=2, min(maxLevelCell(iCell),iLevel0100)
+              sumLayerThickness = sumLayerThickness + layerThickness(k,iCell)
+              activeTracersAvgTopto0100(:,iCell) = activeTracersAvgTopto0100(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
+           enddo
+           activeTracersAvgTopto0100(:,iCell) = activeTracersAvgTopto0100(:,iCell) / max(sumLayerThickness,1.0_RKIND)
+         enddo
+
+         activeTracersAvg0100to0250(:,:) = -1.0e34_RKIND
+         do iCell = 1, nCells
+           if (iLevel0100+1.le.maxLevelCell(iCell)) then
+              sumLayerThickness = layerThickness(iLevel0100+1,iCell)
+              activeTracersAvg0100to0250(:,iCell) = activeTracers(:,iLevel0100+1,iCell)*layerThickness(iLevel0100,iCell)
+              do k=iLevel0100+2, min(maxLevelCell(iCell),iLevel0250)
+                 sumLayerThickness = sumLayerThickness + layerThickness(k,iCell)
+                 activeTracersAvg0100to0250(:,iCell) = activeTracersAvg0100to0250(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
+              enddo
+              activeTracersAvg0100to0250(:,iCell) = activeTracersAvg0100to0250(:,iCell) / max(sumLayerThickness,1.0_RKIND)
+           endif
+         enddo
+
+         activeTracersAvg0250to0700(:,:) = -1.0e34_RKIND
+         do iCell = 1, nCells
+           if (iLevel0250+1.le.maxLevelCell(iCell)) then
+              sumLayerThickness = layerThickness(iLevel0250+1,iCell)
+              activeTracersAvg0250to0700(:,iCell) = activeTracers(:,iLevel0250+1,iCell)*layerThickness(iLevel0250+1,iCell)
+              do k=iLevel0250+2, min(maxLevelCell(iCell),iLevel0700)
+                 sumLayerThickness = sumLayerThickness + layerThickness(k,iCell)
+                 activeTracersAvg0250to0700(:,iCell) = activeTracersAvg0250to0700(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
+              enddo
+              activeTracersAvg0250to0700(:,iCell) = activeTracersAvg0250to0700(:,iCell) / max(sumLayerThickness,1.0_RKIND)
+           endif
+         enddo
+
+         activeTracersAvg0700to2000(:,:) = -1.0e34_RKIND
+         do iCell = 1, nCells
+           if (iLevel0700+1.le.maxLevelCell(iCell)) then
+              sumLayerThickness = layerThickness(iLevel0700+1,iCell)
+              activeTracersAvg0700to2000(:,iCell) = activeTracers(:,iLevel0700+1,iCell)*layerThickness(iLevel0700+1,iCell)
+              do k=iLevel0700+2, min(maxLevelCell(iCell),iLevel2000)
+                 sumLayerThickness = sumLayerThickness + layerThickness(k,iCell)
+                 activeTracersAvg0700to2000(:,iCell) = activeTracersAvg0700to2000(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
+              enddo
+              activeTracersAvg0700to2000(:,iCell) = activeTracersAvg0700to2000(:,iCell) / max(sumLayerThickness,1.0_RKIND)
+           endif
+         enddo
+
+         activeTracersAvg2000toBottom(:,:) = -1.0e34_RKIND
+         do iCell = 1, nCells
+           if (iLevel2000+1.le.maxLevelCell(iCell)) then
+              sumLayerThickness = layerThickness(iLevel2000+1,iCell)
+              activeTracersAvg2000toBottom(:,iCell) = activeTracers(:,iLevel2000+1,iCell)*layerThickness(iLevel2000+1,iCell)
+              do k=iLevel2000+2, maxLevelCell(iCell)
+                 sumLayerThickness = sumLayerThickness + layerThickness(k,iCell)
+                 activeTracersAvg2000toBottom(:,iCell) = activeTracersAvg2000toBottom(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
+              enddo
+              activeTracersAvg2000toBottom(:,iCell) = activeTracersAvg2000toBottom(:,iCell) / max(sumLayerThickness,1.0_RKIND)
+           endif
+         enddo
+
+         !
+         ! compute barotropic kinetic energy
+         !
 
          ! scratch arrays
          call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
