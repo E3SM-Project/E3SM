@@ -482,7 +482,7 @@ contains
       !
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-
+      call mpas_pool_get_config(ocnConfigs, 'config_compute_tracer_budgets', config_compute_tracer_budgets)
       !
       ! get arrays
       !
