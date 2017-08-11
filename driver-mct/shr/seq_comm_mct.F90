@@ -46,7 +46,6 @@ module seq_comm_mct
   public seq_comm_name
   public seq_comm_inst
   public seq_comm_suffix
-  public seq_comm_petlist
   public seq_comm_setptrs
   public seq_comm_setnthreads
   public seq_comm_getnthreads
@@ -160,16 +159,17 @@ module seq_comm_mct
     integer :: nthreads        ! number of omp threads per task
     integer :: iam             ! my task number in mpicom
     logical :: iamroot         ! am i the root task in mpicom
-    integer :: gloiam          ! my task number in mpi_comm_world
+
+    integer :: gloiam          ! my task number in global_comm
     integer :: gloroot         ! the global task number of each comps root on all pes
+
     integer :: pethreads       ! max number of threads on my task
     integer :: cplpe           ! a common task in mpicom from the cpl group for join mpicoms
                                ! cplpe is used to broadcast information from the coupler to the component
     integer :: cmppe           ! a common task in mpicom from the component group for join mpicoms
                                ! cmppe is used to broadcast information from the component to the coupler
     logical :: set             ! has this datatype been set
-    integer, pointer    :: petlist(:)  ! esmf pet list
-    logical :: petlist_allocated ! whether the petlist pointer variable was allocated
+
   end type seq_comm_type
 
   type(seq_comm_type) :: seq_comms(ncomps)
@@ -256,7 +256,6 @@ contains
        seq_comms(n)%suffix = ' '
        seq_comms(n)%inst = 0
        seq_comms(n)%set = .false.
-       seq_comms(n)%petlist_allocated = .false.
        seq_comms(n)%mpicom = MPI_COMM_NULL    ! do some initialization here
        seq_comms(n)%iam = -1
        seq_comms(n)%iamroot = .false.
@@ -313,7 +312,6 @@ contains
           close(nu)
        end if
        call shr_file_freeUnit(nu)
-
     end if
 
     call shr_mpi_bcast(atm_nthreads,GLOBAL_COMM,'atm_nthreads')
@@ -490,10 +488,10 @@ contains
     integer, intent(in) :: comp_pestride
     integer, intent(in) :: num_inst_comp
     integer, intent(in) :: CPLID
-    integer, intent(inout) :: COMPID(num_inst_comp)
-    integer, intent(inout) :: CPLCOMPID(num_inst_comp)
-    integer, intent(inout) :: ALLCOMPID
-    integer, intent(inout) :: CPLALLCOMPID
+    integer, intent(out) :: COMPID(num_inst_comp)
+    integer, intent(out) :: CPLCOMPID(num_inst_comp)
+    integer, intent(out) :: ALLCOMPID
+    integer, intent(out) :: CPLALLCOMPID
     integer, intent(inout) :: count
     character(len=*), intent(in) :: name
 
@@ -506,7 +504,6 @@ contains
     integer :: pelist (3,1)
     integer :: ierr
     integer :: mype
-
 
     call mpi_comm_rank(global_comm, mype, ierr)
 
@@ -560,7 +557,7 @@ contains
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
        call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
-       call seq_comm_joincomm(CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, num_inst_comp)
+       call seq_comm_joincomm(CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, n, num_inst_comp)
     enddo
     call seq_comm_jcommarr(COMPID, ALLCOMPID, 'ALL'//name//'ID', 1, 1)
     call seq_comm_joincomm(CPLID, ALLCOMPID, CPLALLCOMPID, 'CPLALL'//name//'ID', 1, 1)
@@ -601,12 +598,6 @@ contains
     end if
     seq_comm_mct_initialized = .false.
 
-    do id = 1, ncomps
-       if (seq_comms(id)%petlist_allocated) then
-          deallocate(seq_comms(id)%petlist)
-       end if
-    end do
-
     call mct_world_clean()
 
   end subroutine seq_comm_clean
@@ -644,17 +635,6 @@ contains
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     ntasks = ((pelist(2,1) - pelist(1,1)) / pelist(3,1)) + 1
-    allocate(seq_comms(ID)%petlist(ntasks))
-    seq_comms(ID)%petlist_allocated = .true.
-    cnt = 0
-    do ntask = pelist(1,1),pelist(2,1),pelist(3,1)
-        cnt = cnt + 1
-        if (cnt > ntasks) then
-           write(logunit,*) subname,' ERROR in petlist init ',ntasks,pelist(1:3,1),ntask,cnt
-           call shr_sys_abort(subname//' ERROR in petlist init')
-        endif
-        seq_comms(ID)%petlist(cnt) = ntask
-    enddo
 
     seq_comms(ID)%set = .true.
     seq_comms(ID)%ID = ID
@@ -1281,21 +1261,6 @@ contains
     end if
 
   end function seq_comm_suffix
-!---------------------------------------------------------
-  subroutine seq_comm_petlist(ID,petlist)
-
-    implicit none
-    integer,intent(in) :: ID
-    integer,pointer :: petlist(:)
-    character(*),parameter :: subName =   '(seq_comm_petlist) '
-
-    if ((ID < 1) .or. (ID > ncomps)) then
-       nullify(petlist)
-    else
-       petlist => seq_comms(ID)%petlist
-    end if
-
-  end subroutine seq_comm_petlist
 !---------------------------------------------------------
 !---------------------------------------------------------
   integer function seq_comm_inst(ID)
