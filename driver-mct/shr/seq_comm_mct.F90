@@ -531,7 +531,7 @@ contains
        !! not an integer multiple of num_inst_comp.)
 
        if (comp_rootpe < 0) then
-          call shr_sys_abort(trim(subname)//' ERROR: rootpes must be >= 0 for component '//name)
+          call shr_sys_abort(trim(subname)//' ERROR: rootpes must be >= 0 for component '//trim(name))
        endif
 
        if (trim(comp_layout) == trim(layout_concurrent)) then
@@ -541,7 +541,7 @@ contains
           comp_inst_tasks = comp_ntasks
           droot = 0
        else
-          call shr_sys_abort(subname//' ERROR invalid comp_layout for component'//name)
+          call shr_sys_abort(subname//' ERROR invalid comp_layout for component '//trim(name))
        endif
        current_task_rootpe = comp_rootpe
        do n = 1, num_inst_comp
