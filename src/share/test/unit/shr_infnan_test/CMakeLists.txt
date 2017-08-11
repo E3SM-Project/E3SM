@@ -8,24 +8,7 @@ add_executable(infnan_test_exe ${test_sources})
 
 declare_generated_dependencies(infnan_test_exe "${share_genf90_sources}")
 
-if("${CMAKE_BUILD_TYPE}" MATCHES CESM_DEBUG)
-  set(FPES_ARE_TRAPPED TRUE)
-endif()
+# Add the actual test.
+add_test(infnan infnan_test_exe)
 
-if(NOT FPES_ARE_TRAPPED)
-
-  # Add the actual test.
-  add_test(infnan infnan_test_exe)
-
-  define_Fortran_stop_failure(infnan)
-
-else()
-
-  # CESM_DEBUG turns on floating point trapping, causing checks in this
-  # test to fail. We'd like the users to be able to see that the test
-  # was skipped but didn't fail, but CTest has no mechanism for this.
-  # Instead, hack around it by adding a test that will always pass but
-  # is likely to stand out as a skipped test.
-  add_test(SKIPPED_infnan true)
-
-endif()
+define_Fortran_stop_failure(infnan)
