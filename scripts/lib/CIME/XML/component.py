@@ -284,3 +284,4 @@ class Component(EntryID):
         for v in sorted(compsets.iteritems()):
             label, definition = v
             logger.info("   {:20s} : {}".format(label, definition))
+

@@ -307,3 +307,31 @@ class Machines(GenericXML):
                 print( "      pes/node       ",pes_per_node.text)
             if max_tasks_per_node is not None:
                 print( "      max_tasks/node ",max_tasks_per_node.text)
+
+    def return_all_values(self):
+        # return a dictionary of machines
+        mach_dict = dict()
+        machines = self.get_nodes(nodename="machine")
+        for machine in machines:
+            name = machine.get("MACH")
+            desc = machine.find("DESC")
+            os_  = machine.find("OS")
+            compilers = machine.find("COMPILERS")
+            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
+            pes_per_node = machine.find("PES_PER_NODE")
+            ppn = ''
+            if pes_per_node is not None:
+                ppn = pes_per_node.text
+
+            max_tasks_pn = ''
+            if max_tasks_per_node is not None:
+                max_tasks_pn = max_tasks_per_node.text
+
+            mach_dict[name] = { 'description'    : desc.text, 
+                                'os'             : os_.text,
+                                'compilers'      : compilers.text,
+                                'pes/node'       : ppn,
+                                'max_tasks/node' : max_tasks_pn }
+
+        return mach_dict
+
