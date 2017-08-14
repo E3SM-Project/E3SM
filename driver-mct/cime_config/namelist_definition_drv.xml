@@ -41,18 +41,19 @@
   -->
 
   <!-- =========================== -->
-  <!-- group cime_cpl_inst              -->
+  <!-- group cime_driver_inst              -->
   <!-- =========================== -->
 
-  <entry id="ninst_cpl" modify_via_xml="NINST_MAX">
+  <entry id="ninst_driver" modify_via_xml="NINST_MAX">
     <type>integer</type>
-    <category>cime_cpl_inst</category>
-    <group>cime_cpl_inst</group>
+    <category>cime_driver_inst</category>
+    <group>cime_driver_inst</group>
     <desc>
-      Number of CESM coupler instances.
+      Number of CESM driver instances.  Only used if MULTI_DRIVER is TRUE.
     </desc>
     <values>
-      <value>$NINST_MAX</value>
+      <value>1</value>
+      <value MULTI_DRIVER="TRUE">$NINST_MAX</value>
     </values>
   </entry>
 

@@ -443,10 +443,6 @@ module cime_comp_mod
    integer :: budget_ltann            ! long term budget flag for end of year writing
    integer :: budget_ltend            ! long term budget flag for end of run writing
 
-!  character(CL) :: hist_r2x_flds     = 'all'
-!  character(CL) :: hist_l2x_flds     = 'all'
-!  character(CL) :: hist_a2x24hr_flds = 'all'
-
    character(CL) :: hist_a2x_flds     = &
         'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 
@@ -508,7 +504,7 @@ module cime_comp_mod
    !----------------------------------------------------------------------------
    ! communicator groups and related
    !----------------------------------------------------------------------------
-   integer :: driver_comm
+   integer  :: global_comm
    integer  :: mpicom_GLOID          ! MPI global communicator
    integer  :: mpicom_CPLID          ! MPI cpl communicator
    integer  :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
@@ -587,7 +583,7 @@ contains
 
 subroutine cime_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
-   use seq_comm_mct, only: num_inst_cpl
+   use seq_comm_mct, only: num_inst_driver
    !----------------------------------------------------------
    !| Initialize MCT and MPI communicators and IO
    !----------------------------------------------------------
@@ -596,32 +592,32 @@ subroutine cime_pre_init1()
    logical :: comp_iamin(num_inst_total)
    character(len=seq_comm_namelen) :: comp_name(num_inst_total)
    integer :: i, it
-   integer :: cpl_id
-   integer :: cpl_comm
+   integer :: driver_id
+   integer :: driver_comm
 
    call mpi_init(ierr)
    call shr_mpi_chkerr(ierr,subname//' mpi_init')
-   call mpi_comm_dup(MPI_COMM_WORLD, driver_comm, ierr)
+   call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
    call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
    comp_comm = MPI_COMM_NULL
    time_brun = mpi_wtime()
 
-   !--- Initialize multiple coupler instances, if requested ---
-   call cime_cpl_init(driver_comm, cpl_comm, num_inst_cpl, cpl_id)
+   !--- Initialize multiple driver instances, if requested ---
+   call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
 
-   call shr_pio_init1(num_inst_total,NLFileName, cpl_comm)
+   call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
    !
-   ! If pio_async_interface is true Driver_comm is MPI_COMM_NULL on the servernodes
+   ! If pio_async_interface is true Global_comm is MPI_COMM_NULL on the servernodes
    ! and server nodes do not return from shr_pio_init2
    !
-   !   if (Driver_comm /= MPI_COMM_NULL) then
+   !   if (Global_comm /= MPI_COMM_NULL) then
 
-   if (num_inst_cpl > 1) then
-      call seq_comm_init(cpl_comm, NLFileName, cpl_comm_ID=cpl_id)
-      write(cpl_inst_tag,'("_",i4.4)') cpl_id
+   if (num_inst_driver > 1) then
+      call seq_comm_init(global_comm, driver_comm, NLFileName, driver_comm_ID=driver_id)
+      write(cpl_inst_tag,'("_",i4.4)') driver_id
    else
-      call seq_comm_init(cpl_comm, NLFileName)
+      call seq_comm_init(global_comm, driver_comm, NLFileName)
       cpl_inst_tag = ''
    end if
 
@@ -794,8 +790,8 @@ subroutine cime_pre_init1()
       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
 #endif
       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
-      if (num_inst_cpl > 1) &
-         write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_cpl,'instances'
+      if (num_inst_driver > 1) &
+         write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
    endif
 
    !
@@ -3743,7 +3739,7 @@ end subroutine cime_init
       !----------------------------------------------------------
       if (esp_present .and. esprun_alarm) then
          ! Make sure that all couplers are here in multicoupler mode before running ESP component
-         call mpi_barrier(driver_comm, ierr)
+         call mpi_barrier(global_comm, ierr)
 
          call component_run(Eclock_e, esp, esp_run, infodata, &
               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
@@ -4065,8 +4061,7 @@ subroutine cime_comp_barriers(mpicom, timer)
   endif
 end subroutine cime_comp_barriers
 
-subroutine cime_cpl_init(comm_in, comm_out, num_inst_cpl, id)
-  use seq_comm_mct, only : cpl_inst_iamin
+subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
   !-----------------------------------------------------------------------
   !
   ! Initialize multiple coupler instances, if requested
@@ -4077,50 +4072,51 @@ subroutine cime_cpl_init(comm_in, comm_out, num_inst_cpl, id)
 
   integer , intent(in) :: comm_in
   integer , intent(in) :: comm_out
-  integer , intent(out)   :: num_inst_cpl
+  integer , intent(out)   :: num_inst_driver
   integer , intent(out)   :: id      ! instance ID, starts from 1
   !
   ! Local variables
   !
   integer :: ierr, inst_comm, mype, nu, numpes !, pes
-  integer :: ninst_cpl
+  integer :: ninst_driver, drvpes
 
-  namelist /cime_cpl_inst/ ninst_cpl
+  namelist /cime_driver_inst/ ninst_driver
 
   call shr_mpi_commrank(comm_in, mype  , ' cime_cpl_init')
   call shr_mpi_commsize(comm_in, numpes, ' cime_cpl_init')
 
-  num_inst_cpl = 1
+  num_inst_driver = 1
   id    = 0
 
   if (mype == 0) then
     ! Read coupler namelist if it exists
-    ninst_cpl = 1
+    ninst_driver = 1
     nu = shr_file_getUnit()
     open(unit = nu, file = NLFileName, status = 'old', iostat = ierr)
     rewind(unit = nu)
-    read(unit = nu, nml = cime_cpl_inst, iostat = ierr)
+    read(unit = nu, nml = cime_driver_inst, iostat = ierr)
     close(unit = nu)
     call shr_file_freeUnit(nu)
-    num_inst_cpl = max(ninst_cpl, 1)
+    num_inst_driver = max(ninst_driver, 1)
   end if
 
-  call shr_mpi_bcast(num_inst_cpl, comm_in, 'ninst_cpl')
+  call shr_mpi_bcast(num_inst_driver, comm_in, 'ninst_driver')
 
-  if (mod(numpes, num_inst_cpl) /= 0) then
+  if (mod(numpes, num_inst_driver) /= 0) then
     call shr_sys_abort(subname // &
       ' : Total PE number must be a multiple of coupler instance number')
   end if
 
-  if (num_inst_cpl == 1) then
+  if (num_inst_driver == 1) then
      call mpi_comm_dup(comm_in, comm_out, ierr)
      call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
   else
-    id = mype * num_inst_cpl / numpes + 1
+    id = mype * num_inst_driver / numpes + 1
     call mpi_comm_split(comm_in, id, 0, comm_out, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
   end if
-
+  call shr_mpi_commsize(comm_out, drvpes, ' cime_cpl_init')
+  print *,__FILE__,__LINE__,numpes,drvpes
 end subroutine cime_cpl_init
 
 end module cime_comp_mod
