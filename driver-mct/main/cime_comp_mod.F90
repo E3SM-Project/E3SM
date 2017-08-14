@@ -614,7 +614,7 @@ subroutine cime_pre_init1()
    !   if (Global_comm /= MPI_COMM_NULL) then
 
    if (num_inst_driver > 1) then
-      call seq_comm_init(global_comm, driver_comm, NLFileName, driver_comm_ID=driver_id)
+      call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
       write(cpl_inst_tag,'("_",i4.4)') driver_id
    else
       call seq_comm_init(global_comm, driver_comm, NLFileName)
