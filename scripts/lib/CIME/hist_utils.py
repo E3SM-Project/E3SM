@@ -182,10 +182,10 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     all_success = True
     num_compared = 0
     comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
-    multiinst_cpl_compare = False
+    multiinst_driver_compare = False
     for model in _iter_model_file_substrs(case):
         if model == 'cpl' and suffix2 == 'multiinst':
-            multiinst_cpl_compare = True
+            multiinst_driver_compare = True
         comments += "  comparing model '{}'\n".format(model)
         hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
         hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
@@ -205,7 +205,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         for hist1, hist2 in match_ups:
             success, cprnc_log_file = cprnc(model, hist1, hist2, case, from_dir1,
-                                            multiinst_cpl_compare=multiinst_cpl_compare,
+                                            multiinst_driver_compare=multiinst_driver_compare,
                                             outfile_suffix=outfile_suffix)
             if success:
                 comments += "    {} matched {}\n".format(hist1, hist2)
@@ -237,7 +237,7 @@ def compare_test(case, suffix1, suffix2):
 
     return _compare_hists(case, rundir, rundir, suffix1, suffix2)
 
-def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfile_suffix=""):
+def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix=""):
     """
     Run cprnc to compare two individual nc files
 
@@ -277,7 +277,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
         with open(output_filename, "r") as fd:
             out = fd.read()
 
-    if multiinst_cpl_compare:
+    if multiinst_driver_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
         # in this case we only want to check that the fields we are able to compare

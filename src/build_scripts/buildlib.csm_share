@@ -19,7 +19,7 @@ my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	--value`;
 my $GMAKE_J		= `./xmlquery GMAKE_J		--value`;
 my $GMAKE		= `./xmlquery GMAKE		--value`;
 my $CASETOOLS		= `./xmlquery CASETOOLS		--value`;
-my $multi_coupler  	= `./xmlquery MULTI_COUPLER       --value`;
+my $multi_driver  	= `./xmlquery MULTI_DRIVER       --value`;
 
 my $NINST_ATM		= 1;
 my $NINST_ICE		= 1;
@@ -30,15 +30,15 @@ my $NINST_ROF		= 1;
 my $NINST_WAV		= 1;
 my $NINST_ESP		= 1;
 
-if ($multi_coupler == "FALSE") {
-    my $NINST_ATM		= `./xmlquery NINST_ATM		--value`;
-    my $NINST_ICE		= `./xmlquery NINST_ICE		--value`;
-    my $NINST_GLC		= `./xmlquery NINST_GLC		--value`;
-    my $NINST_LND		= `./xmlquery NINST_LND		--value`;
-    my $NINST_OCN		= `./xmlquery NINST_OCN		--value`;
-    my $NINST_ROF		= `./xmlquery NINST_ROF		--value`;
-    my $NINST_WAV		= `./xmlquery NINST_WAV		--value`;
-    my $NINST_ESP		= `./xmlquery NINST_ESP		--value`;
+if ($multi_driver eq "FALSE") {
+    $NINST_ATM		= `./xmlquery NINST_ATM		--value`;
+    $NINST_ICE		        = `./xmlquery NINST_ICE		--value`;
+    $NINST_GLC		= `./xmlquery NINST_GLC		--value`;
+    $NINST_LND		= `./xmlquery NINST_LND		--value`;
+    $NINST_OCN		= `./xmlquery NINST_OCN		--value`;
+    $NINST_ROF		= `./xmlquery NINST_ROF		--value`;
+    $NINST_WAV		= `./xmlquery NINST_WAV		--value`;
+    $NINST_ESP		= `./xmlquery NINST_ESP		--value`;
 }
 my $NINST_VALUE		= `./xmlquery NINST_VALUE	--value`;
 $ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	--value`;
