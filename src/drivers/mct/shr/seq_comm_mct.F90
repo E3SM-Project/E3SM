@@ -27,7 +27,6 @@ module seq_comm_mct
 
   private
 #include <mpif.h>
-  save
 
 !--------------------------------------------------------------------------
 ! Public interfaces
@@ -83,7 +82,7 @@ module seq_comm_mct
                                                 num_inst_wav + &
                                                 num_inst_rof + &
                                                 num_inst_esp + 1
-  integer, public :: num_inst_cpl = 1
+  integer, public :: num_inst_driver = 1
   integer, public :: cpl_inst_iamin = 1
   integer, public :: num_inst_min, num_inst_max
   integer, public :: num_inst_xao    ! for xao flux
@@ -186,8 +185,6 @@ module seq_comm_mct
   character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')','(',a,2i6,')')"
   character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
   character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
-  integer :: Coupler_Comm
-
 
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
@@ -202,8 +199,7 @@ contains
     seq_comm_get_ncomps = ncomps
   end function seq_comm_get_ncomps
 
-
-  subroutine seq_comm_init(Comm_in, nmlfile, Cpl_comm_id)
+  subroutine seq_comm_init(Global_comm, Driver_Comm, nmlfile, Drv_comm_id)
     !----------------------------------------------------------
     !
     ! Arguments
@@ -385,21 +381,29 @@ contains
     count = count + 1
     CPLID = count
 
+    if (global_mype == 0) then
+       pelist(1,1) = 0
+       pelist(2,1) = global_numpes-1
+       pelist(3,1) = 1
+    end if
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, global_comm, ierr)
+    call seq_comm_setcomm(global_comm, GLOID, pelist,iname='GLOBAL')
+
     if (mype == 0) then
        pelist(1,1) = 0
        pelist(2,1) = numpes-1
        pelist(3,1) = 1
     end if
-    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, Coupler_Comm, ierr)
-    call seq_comm_setcomm(GLOID, pelist,iname='GLOBAL')
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, driver_comm, ierr)
+    call seq_comm_setcomm(driver_comm, DRVID, pelist,iname='DRIVER')
 
     if (mype == 0) then
        pelist(1,1) = cpl_rootpe
        pelist(2,1) = cpl_rootpe + (cpl_ntasks -1) * cpl_pestride
        pelist(3,1) = cpl_pestride
     end if
-    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, Coupler_Comm, ierr)
-    call seq_comm_setcomm(CPLID,pelist,cpl_nthreads,'CPL')
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, Driver_comm, ierr)
+    call seq_comm_setcomm(driver_comm, CPLID,pelist,cpl_nthreads,'CPL')
 
     call comp_comm_init(global_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
          CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count)
@@ -479,7 +483,7 @@ contains
 
     deallocate(comps,comms)
 
-    call seq_comm_printcomms()
+    call seq_comm_printcomms(global_comm)
 
   end subroutine seq_comm_init
 
@@ -562,11 +566,11 @@ contains
           pelist(3,1) = cstr(n)
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
-       call seq_comm_joincomm(CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, n, num_inst_comp)
+       call seq_comm_setcomm(driver_comm, COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
+       call seq_comm_joincomm(driver_comm, CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, n, num_inst_comp)
     enddo
-    call seq_comm_jcommarr(COMPID, ALLCOMPID, 'ALL'//name//'ID', 1, 1)
-    call seq_comm_joincomm(CPLID, ALLCOMPID, CPLALLCOMPID, 'CPLALL'//name//'ID', 1, 1)
+    call seq_comm_jcommarr(global_comm, COMPID, ALLCOMPID, 'ALL'//name//'ID', 1, 1)
+    call seq_comm_joincomm(driver_comm, CPLID, ALLCOMPID, CPLALLCOMPID, 'CPLALL'//name//'ID', 1, 1)
 
   end subroutine comp_comm_init
 
@@ -609,9 +613,10 @@ contains
   end subroutine seq_comm_clean
 
 !---------------------------------------------------------
-  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst)
+  subroutine seq_comm_setcomm(comm_in, ID,pelist,nthreads,iname,inst,tinst)
 
     implicit none
+    integer, intent(in) :: comm_in
     integer,intent(IN) :: ID
     integer,intent(IN) :: pelist(:,:)
     integer,intent(IN),optional :: nthreads
@@ -633,11 +638,12 @@ contains
        call shr_sys_abort()
     endif
 
-    call mpi_comm_group(Coupler_Comm, mpigrp_world, ierr)
+    call mpi_comm_group(Comm_in, mpigrp_world, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
     call mpi_group_range_incl(mpigrp_world, 1, pelist, mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
-    call mpi_comm_create(Coupler_Comm, mpigrp, mpicom, ierr)
+    call mpi_comm_create(Comm_in, mpigrp, mpicom, ierr)
+
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     ntasks = ((pelist(2,1) - pelist(1,1)) / pelist(3,1)) + 1
@@ -705,9 +711,10 @@ contains
   end subroutine seq_comm_setcomm
 
 !---------------------------------------------------------
-  subroutine seq_comm_joincomm(ID1,ID2,ID,iname,inst,tinst)
+  subroutine seq_comm_joincomm(COMM_IN, ID1,ID2,ID,iname,inst,tinst)
 
     implicit none
+    integer, intent(in) :: comm_in
     integer,intent(IN) :: ID1    ! src id
     integer,intent(IN) :: ID2    ! srd id
     integer,intent(IN) :: ID     ! computed id
@@ -749,7 +756,8 @@ contains
 
     call mpi_group_union(seq_comms(ID1)%mpigrp,seq_comms(ID2)%mpigrp,mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
-    call mpi_comm_create(Coupler_Comm, mpigrp, mpicom, ierr)
+    call mpi_comm_create(Comm_in, mpigrp, mpicom, ierr)
+
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     seq_comms(ID)%set = .true.
@@ -827,9 +835,10 @@ contains
   end subroutine seq_comm_joincomm
 
 !---------------------------------------------------------
-  subroutine seq_comm_jcommarr(IDs,ID,iname,inst,tinst)
+  subroutine seq_comm_jcommarr(comm_in, IDs,ID,iname,inst,tinst)
 
     implicit none
+    integer, intent(in) :: comm_in
     integer,intent(IN) :: IDs(:) ! src id
     integer,intent(IN) :: ID     ! computed id
     character(len=*),intent(IN),optional :: iname  ! comm name
@@ -874,7 +883,7 @@ contains
        call mpi_group_union(mpigrpp,seq_comms(IDs(n))%mpigrp,mpigrp,ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
     enddo
-    call mpi_comm_create(Coupler_Comm, mpigrp, mpicom, ierr)
+    call mpi_comm_create(Comm_in, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     seq_comms(ID)%set = .true.
@@ -948,19 +957,21 @@ contains
   end subroutine seq_comm_jcommarr
 
 !---------------------------------------------------------
-  subroutine seq_comm_printcomms()
+  subroutine seq_comm_printcomms(comm_in)
 
     implicit none
+    integer, intent(in) :: comm_in
     character(*),parameter :: subName =   '(seq_comm_printcomms) '
     integer :: n,mype,npes,ierr
 
-    call mpi_comm_size(Coupler_Comm, npes  , ierr)
+    call mpi_comm_size(Comm_in, npes  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size comm_world')
-    call mpi_comm_rank(Coupler_Comm, mype  , ierr)
+    call mpi_comm_rank(Comm_in, mype  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank comm_world')
 
     call shr_sys_flush(logunit)
-    call mpi_barrier(Coupler_Comm,ierr)
+    call mpi_barrier(Comm_in,ierr)
+
     if (mype == 0) then
        do n = 1,ncomps
           write(logunit,'(a,4i6,2x,3a)') trim(subName),n, &

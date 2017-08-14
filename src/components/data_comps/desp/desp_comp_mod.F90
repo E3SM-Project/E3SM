@@ -18,7 +18,7 @@ module desp_comp_mod
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData
   use seq_timemgr_mod, only: seq_timemgr_RestartAlarmIsOn
   use seq_comm_mct,    only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_comm_mct,    only: num_inst_cpl
+  use seq_comm_mct,    only: num_inst_cpl => num_inst_driver
 
 
   implicit none
@@ -607,7 +607,7 @@ CONTAINS
 
   subroutine get_restart_filenames_a(comp_ind, filenames, retcode)
     use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID
-    use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix, cpl_inst_tag, num_inst_cpl
+    use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix, cpl_inst_tag
     use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
 
     ! Dummy arguments
