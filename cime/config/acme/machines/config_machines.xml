@@ -313,7 +313,7 @@
     <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
     <NODENAME_REGEX>cori-knl-haswell-is-default</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
-    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <COMPILERS>intel,intel18,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -380,6 +380,19 @@
 	<command name="load">PrgEnv-intel</command>
 	<command name="rm">intel</command>
 	<command name="load">intel/17.0.2.174</command>
+	<command name="rm">craype</command>
+	<command name="load">craype/2.5.7</command>
+	<command name="load">cray-mpich/7.4.4</command>
+      </modules>
+
+      <modules compiler="intel18">
+	<command name="load">PrgEnv-intel</command>
+	<command name="rm">intel</command>
+	<command name="load">intel/2018.beta</command>
+	<command name="rm">craype</command>
+	<command name="load">craype/2.5.10</command>
+	<command name="rm">cray-mpich</command>
+	<command name="load">cray-mpich/7.5.5</command>
       </modules>
 
       <modules compiler="cray">
@@ -387,25 +400,26 @@
 	<command name="load">PrgEnv-cray</command>
 	<command name="rm">cce</command>
 	<command name="load">cce/8.5.4</command>
+	<command name="load">cray-libsci/16.09.1</command>
+	<command name="rm">craype</command>
+	<command name="load">craype/2.5.7</command>
+	<command name="load">cray-mpich/7.4.4</command>
       </modules>
+
       <modules compiler="gnu">
 	<command name="rm">PrgEnv-intel</command>
 	<command name="load">PrgEnv-gnu</command>
 	<command name="rm">gcc</command>
 	<command name="load">gcc/6.3.0</command>
-      </modules>
-      <modules compiler="!intel">
 	<command name="load">cray-libsci/16.09.1</command>
+	<command name="rm">craype</command>
+	<command name="load">craype/2.5.7</command>
+	<command name="load">cray-mpich/7.4.4</command>
       </modules>
 
       <modules>
-	<command name="rm">craype</command>
-	<command name="load">craype/2.5.7</command>
-
 	<command name="rm">craype-haswell</command>
 	<command name="load">craype-mic-knl</command>
-
-	<command name="load">cray-mpich/7.4.4</command>
       </modules>
 
       <modules mpilib="mpi-serial">
@@ -438,7 +452,11 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
 
+      <env name="MPICH_MEMORY_REPORT" compiler="intel18">1</env>
+
       <env name="FORT_BUFFERED" compiler="intel">yes</env>
+      <env name="FORT_BUFFERED" compiler="intel18">yes</env>
+
       </environment_variables>
 </machine>
 
