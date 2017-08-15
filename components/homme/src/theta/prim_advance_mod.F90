@@ -116,12 +116,17 @@ contains
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
 
-    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) ::  itertol,statesave(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
+    real (kind=real_kind) :: itertol,statesave(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) :: statesave0(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) :: statesave2(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) :: statesave3(nets:nete,np,np,nlev,6)
+
     real (kind=real_kind) ::  gamma,delta
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
+ 
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -131,7 +136,7 @@ contains
 
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
- 
+
 ! integration = "explicit"
 !
 !   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
@@ -310,9 +315,137 @@ contains
         deriv,nets,nete,.false.,gamma*eta_ave_w,1.d0,1.d0,1.d0)     
             
       call state_read(elem,statesave,n0,nets,nete)
-
       call t_stopf("ARS232_timestep")
-!=========================================================================================
+!======================================================================================================
+    elseif (tstep_type==8) then ! SSP2 222
+      call t_startf("SSP2222_timestep")
+      gamma=1.d0-1.d0/sqrt(2.d0)
+      call state_save(elem,statesave0,nm1,nets,nete)
+      call state_save(elem,statesave,n0,nets,nete)
+
+      maxiter=10
+      itertol=1e-15
+      ! solve for g1 and save at np1
+      call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      !   print *, 'num iters  ', maxiter
+      ! === end of stage 1 ===
+
+      ! solve for dt*s(g1) and put at nm1
+      call elemstate_add(elem,statesave,nets,nete,1,nm1,np1,n0,1.d0/gamma,-1.d0/gamma,1.d0)
+
+      ! form dt*n(g1) and put at np1
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1.d0,0.d0,0.d0)
+      call state_save(elem,statesave2,np1,nets,nete)
+
+      ! put xn+dt*(n(g1)+s(g1))/2 at np1
+      call elemstate_add(elem,statesave,nets,nete,3,np1,np1,nm1,0.5d0,0.5d0,1.d0)
+
+      ! put xn+dt*s(g1)*(1-2*gamma) at nm1
+      call elemstate_add(elem,statesave,nets,nete,2,nm1,nm1,nm1,1.d0-2.d0*gamma,1.d0,1.d0)
+
+      ! put xn+dt*n(g1)*(1-2*gamma)+dt*s(g1) at nm1
+      call elemstate_add(elem,statesave2,nets,nete,2,nm1,nm1,nm1,1.d0,1.d0,1.d0)
+
+      maxiter=10
+      itertol=1e-15
+      ! solve for g2 and save at n0
+      call compute_stage_value_dirk(n0,nm1,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      !   print *, 'num iters  ', maxiter
+      ! === end of stage 2 ===
+
+      ! for solution and store at np1
+      call compute_andor_apply_rhs(np1,np1,n0,qn0,0.5d0*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)
+
+      call state_read(elem,statesave0,nm1,nets,nete)
+      call state_read(elem,statesave,n0,nets,nete)
+
+      call t_stopf("SSP2222_timestep")
+!===========================================================================================
+    elseif (tstep_type==9)  then ! SSP3 332
+      call t_startf("SSP3332_timestep")
+       
+      gamma=1.d0-1.d0/sqrt(2.d0)
+      call state_save(elem,statesave0,nm1,nets,nete)
+      call state_save(elem,statesave,n0,nets,nete)
+
+      maxiter=10
+      itertol=1e-15
+      ! solve for g1 and save at n0
+      call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      !   print *, 'num iters  ', maxiter
+
+      ! === end of stage 1 ===
+   
+      ! solve for dt*s(g1) and store at nm1 and statesave3
+      call elemstate_add(elem,statesave,nets,nete,1,nm1,np1,n0,1.d0/gamma,-1.d0/gamma,1.d0)
+      call state_save(elem,statesave3,nm1,nets,nete)
+
+      ! compute dt*n(g1) and store at np1 and statesave2
+      call compute_andor_apply_rhs(np1,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1.d0,0.d0,0.d0)
+      call state_save(elem,statesave2,np1,nets,nete)
+
+      ! put xn+dt*n(g1)+dt*(1-2*gamma)*s(g1) at n0
+      call elemstate_add(elem,statesave,nets,nete,3,n0,np1,nm1,1.d0,1.d0-2.d0*gamma,1.d0)
+
+      maxiter=10
+      itertol=1e-15
+      ! solve for g2 and save at np1
+      call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      !   print *, 'num iters  ', maxiter
+
+      ! === end of stage 2 ===
+
+      ! solve for dt*s(g2) at store at nm1
+      call elemstate_add(elem,statesave,nets,nete,1,nm1,np1,n0,1.d0/gamma,-1.d0/gamma,1.d0)
+
+      ! compute dt*n(g2) and store at np1
+      call compute_andor_apply_rhs(np1,np1,np1,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1.d0,0.d0,0.d0)
+    
+     ! put xn+dt*0.25*n(g2) at n0
+     call elemstate_add(elem,statesave,nets,nete,2,n0,np1,np1,0.25d0,1.d0,1.d0)
+
+     ! put xn+dt*(n(g2)+s(g2))/6 at nm1
+     call elemstate_add(elem,statesave,nets,nete,3,nm1,nm1,np1,1.d0/6.d0,1.d0/6.d0,1.d0)
+
+     ! put xn+dt*.25*s(g2)+0.25*dt*n(g1) at n0
+     call elemstate_add(elem,statesave2,nets,nete,2,n0,n0,n0,1.d0,1.d0,.25d0)
+
+     ! put xn+dt*.25*s(g2)+0.25*dt*n(g1)+(.5-gamma)*dt*s(g1) at n0
+     call elemstate_add(elem,statesave3,nets,nete,2,n0,n0,n0,1.d0,1.d0,0.5d0-gamma)
+
+      maxiter=10
+      itertol=1e-15
+      ! solve for g3 and save at np1
+      call compute_stage_value_dirk(np1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      !   print *, 'num iters  ', maxiter
+
+      ! === end of stage 3 ===
+
+     ! put xn+dt*(n(g2)+s(g2))/6+dt*n(g1)/6 at nm1
+     call elemstate_add(elem,statesave2,nets,nete,2,nm1,nm1,nm1,1.d0,1.d0,1.d0/6.d0)
+
+     ! put xn+dt*(n(g2)+s(g2))/6+dt*n(g1)/6+dt*s(g1)/6 at nm1
+     call elemstate_add(elem,statesave3,nets,nete,2,nm1,nm1,nm1,1.d0,1.d0,1.d0/6.d0)
+
+     ! form the approximate solution at np1
+
+      ! compute dt*n(g2) and store at np1
+      call compute_andor_apply_rhs(np1,nm1,np1,qn0,2.d0*dt/3.d0,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)
+
+      call state_read(elem,statesave0,nm1,nets,nete)
+      call state_read(elem,statesave,n0,nets,nete)
+
+      call t_stopf("SSP3332_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
