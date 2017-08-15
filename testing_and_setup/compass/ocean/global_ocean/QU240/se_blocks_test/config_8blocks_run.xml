@@ -12,6 +12,7 @@
 		<option name="config_number_of_blocks">8</option>
 		<option name="config_pio_num_iotasks">1</option>
 		<option name="config_pio_stride">4</option>
+		<option name="config_compute_tracer_budgets">false</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

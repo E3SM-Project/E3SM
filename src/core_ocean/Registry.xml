@@ -1191,6 +1191,7 @@
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
+		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 	</packages>
 
 	<streams>
@@ -2098,7 +2099,8 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 		/>
-		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time">
+		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+
 			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="degrees Celsius per second" name_in_code="temperatureSurfaceFluxTendency"
 				description="potential temperature tendency due to surface fluxes"
 			/>
@@ -2106,12 +2108,12 @@
 				description="salinity tendency due to surface fluxes"
 			/>
 		</var_array>
-		<var_array name="activeTracerShortWaveTendency" type="real" dimensions="nVertLevels nCells Time">
+		<var_array name="activeTracerShortWaveTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 		      <var name="temperatureShortWaveTendency" array_group="activeTracerSWTendGroup" units="degrees Celsius per second" name_in_code="temperatureShortWaveTendency"
 			     description="potential temperature tendency due to penetrating shortwave"
 		      />
 		</var_array>
-		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time">
+		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 		      <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 			     description="potential temperature tendency due to kpp non-local flux"
 		      />
@@ -2119,7 +2121,7 @@
 			     description="salinity tendency due to kpp non-local flux"
 		      />
 		</var_array>
-		<var_array name="activeTracerAdvectionTendency" type="real" dimensions="nVertLevels nCells Time">
+		<var_array name="activeTracerAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 		      <var name="temperatureAdvectionTendency" array_group="activeTracerAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureAdvectionTendency"
 			     description="potential temperature tendency due to advection"
 		      />
@@ -2127,7 +2129,7 @@
 			     description="salinity tendency due to advection"
 		      />
 		</var_array>
-		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time">
+		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 		      <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
 			     description="potential temperature tendency due to vertical mixing"
 		      />
