@@ -440,7 +440,6 @@ contains
         activeTracerShortWaveTendency,                &
         activeTracerNonLocalTendency
 
-
       !
       ! Field pointers
       !
@@ -509,10 +508,12 @@ contains
       !
       ! get diagnostic arrays for temperature/salinity budget
       !
-      call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
-      call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
-      call mpas_pool_get_array(diagnosticsPool,'activeTracerShortWaveTendency',activeTracerShortWaveTendency)
-      call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
+      if (config_compute_tracer_budgets) then
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerShortWaveTendency',activeTracerShortWaveTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
+      endif
 
       if(config_disable_tr_all_tend) return
 
