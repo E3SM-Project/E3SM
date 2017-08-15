@@ -1878,12 +1878,20 @@
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
 
-  <entry id="PCT_SPARE_NODES">
-    <type>integer</type>
-    <default_value>0</default_value>
+  <entry id="ALLOCATE_SPARE_NODES">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Percent of extra spare nodes to allocate</desc>
+    <desc>Allocate some spare nodes to handle node failures. The system will pick a reasonable number</desc>
+  </entry>
+
+  <entry id="FORCE_SPARE_NODES">
+    <type>integer</type>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Force this exact number of spare nodes to be allocated</desc>
   </entry>
 
   <entry id="NTASKS">
