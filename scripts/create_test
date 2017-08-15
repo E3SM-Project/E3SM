@@ -183,7 +183,6 @@ OR
                         "Used for accounting when on a batch system."
                         "The default is user-specified environment variable PROJECT")
 
-
     parser.add_argument("-t", "--test-id",
                         help="Specify an 'id' for the test. This is simply a"
                         "string that is appended to the end of a test name."
