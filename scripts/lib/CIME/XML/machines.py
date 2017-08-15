@@ -240,7 +240,7 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="edison")
         >>> machobj.get_default_compiler()
         'intel'
-        >>> machobj.is_valid_compiler("cray")
+        >>> machobj.is_valid_compiler("gnu")
         True
         >>> machobj.is_valid_compiler("nag")
         False
