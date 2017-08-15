@@ -65,6 +65,7 @@ _TEST_SUITES = {
     "acme_land_developer" : ("acme_runoff_developer", "0:45:00",
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
+                              "ERS.f19_f19.I20TRCLM45CN",
                               "SMS_Ld1.hcru_hcru.I1850CRUCLM45CN",
                              ("ERS.f19_g16.I1850CNECACNTBC" ,"clm-eca"),
                              ("ERS.f19_g16.I1850CNECACTCBC" ,"clm-eca"),

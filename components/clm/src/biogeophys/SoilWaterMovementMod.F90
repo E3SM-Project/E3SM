@@ -1086,6 +1086,7 @@ contains
                                                                         ! vegetation transpiration (mm H2O/s) (+ = to atm) 
           qflx_tran_veg_col   => waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  
                                                                         ! vegetation transpiration (mm H2O/s) (+ = to atm)
+          qflx_rootsoi_frac_patch  =>    waterflux_vars%qflx_rootsoi_frac_patch    , & ! Output: [real(r8) (:,:) ]  vegetation/soil water exchange (m H2O/s) (+ = to atm)
           rootr_patch         => soilstate_vars%rootr_patch         , & ! Input: [real(r8) (:,:) ]
                                                                         ! effective fraction of roots in each soil layer  
           rootr_col           => soilstate_vars%rootr_col             & ! Output: [real(r8) (:,:) ]  
@@ -1118,7 +1119,8 @@ contains
                   p = col_pp%pfti(c) + pi - 1
                   if (veg_pp%active(p)) then
                      rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * &
-                           qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
+                          qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
+                     qflx_rootsoi_frac_patch(p,j) = rootr_patch(p,j) * qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
                   end if
                end if
             end do
@@ -1145,6 +1147,24 @@ contains
 
          end do
       end do
+
+      do pi = 1,max_patch_per_col
+         do j = 1,nlevsoi
+            do fc = 1, num_filterc
+               c = filterc(fc)
+               if (pi <= col_pp%npfts(c)) then
+                  p = col_pp%pfti(c) + pi - 1
+                  if (veg_pp%active(p)) then
+                    if(rootr_col(c,j)==0._r8)then
+                      qflx_rootsoi_frac_patch(p,j) = 0._r8
+                    else
+                      qflx_rootsoi_frac_patch(p,j) = qflx_rootsoi_frac_patch(p,j)/(temp(c)*rootr_col(c,j))
+                    endif
+                  end if
+               end if
+            end do
+         end do
+       enddo
     end associate
     return
  end subroutine Compute_EffecRootFrac_And_VertTranSink_Default

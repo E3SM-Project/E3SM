@@ -76,15 +76,16 @@ contains
   subroutine readPrivateParameters
     ! read CN and BGC shared parameters
     !
-    use CNAllocationBetrMod      , only : readCNAllocBetrParams
     use CNAllocationMod          , only : readCNAllocParams    
     use CNDecompMod              , only : readCNDecompParams
     use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
     use CNDecompCascadeCNMod     , only : readCNDecompCnParams
     use CNPhenologyMod           , only : readCNPhenolParams
+    use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use CNMRespMod               , only : readCNMRespParams
     use CNNDynamicsMod           , only : readCNNDynamicsParams
     use CNGapMortalityMod        , only : readCNGapMortParams 
+    use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
     use CNSoilLittVertTranspMod  , only : readCNSoilLittVertTranspParams
     use ch4Mod                   , only : readCH4Params
@@ -94,7 +95,6 @@ contains
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
     use tracer_varcon            , only : is_active_betr_bgc                                         
-    use betr_initializeMod       , only : bgc_reaction, betrtracer_vars
     use CLMFatesParamInterfaceMod, only : FatesReadParameters
     
     !
@@ -120,44 +120,50 @@ contains
     call ncd_inqdlen(ncid,dimid,npft)
     
     if(use_betr)then
-      call bgc_reaction%readParams(ncid, betrtracer_vars)   
+    !  the following will be replaced with something more general. Jinyun Tang
+    !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
     endif
 
     !
     ! populate each module with private parameters
     !       
-    if (use_cn .and. is_active_betr_bgc) then
-       call readCNAllocBetrParams(ncid) 
-    end if
 
-    if ( (use_cn .or. use_ed) .and. .not.is_active_betr_bgc ) then
+    if ( (use_cn .or. use_ed) ) then
 
        call readCNAllocParams(ncid)
-       call readCNDecompParams(ncid)
-       if (use_century_decomp) then
-          call readCNDecompBgcParams(ncid)
-       else
-          call readCNDecompCnParams(ncid)
-       end if
+       if(.not. is_active_betr_bgc) then
+         call readCNDecompParams(ncid)
+         if (use_century_decomp) then
+            call readCNDecompBgcParams(ncid)
+         else
+            call readCNDecompCnParams(ncid)
+         end if
        
-       if (use_nitrif_denitrif) then
-          call readCNNitrifDenitrifParams(ncid)
-       end if
+         if (use_nitrif_denitrif) then
+            call readCNNitrifDenitrifParams(ncid)
+         end if
 
-       call readCNSoilLittVertTranspParams(ncid)
+         call readCNSoilLittVertTranspParams(ncid)
        
-       if (use_lch4) then
-          call readCH4Params (ncid)
-       end if
+         if (use_lch4) then
+            call readCH4Params (ncid)
+         end if
+      endif
     end if
 
-    
-    
     if (use_cn) then
-       call readCNPhenolParams(ncid)
+       if(is_active_betr_bgc)then
+         call readCNPhenolBeTRParams(ncid)
+       else
+         call readCNPhenolParams(ncid)
+       endif
        call readCNMRespParams (ncid)
        call readCNNDynamicsParams (ncid)
-       call readCNGapMortParams (ncid)
+       if(is_active_betr_bgc)then
+         call readCNGapMortBeTRParams (ncid)
+       else
+         call readCNGapMortParams (ncid)
+       endif
     end if
 
     !

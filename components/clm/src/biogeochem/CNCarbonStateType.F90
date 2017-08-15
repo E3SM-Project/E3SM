@@ -96,6 +96,7 @@ module CNCarbonStateType
      real(r8), pointer :: totecosysc_col           (:)     ! col (gC/m2) total ecosystem carbon, incl veg but excl cpool
      real(r8), pointer :: totcolc_col              (:)     ! col (gC/m2) total column carbon, incl veg and cpool
      real(r8), pointer :: totabgc_col              (:)     ! col (gC/m2) total column above ground carbon, excluding som 
+     real(r8), pointer :: totblgc_col              (:)     ! col (gc/m2) total column non veg carbon
 
      ! Balance checks
      real(r8), pointer :: begcb_patch              (:)     ! patch carbon mass, beginning of time step (gC/m**2)
@@ -114,6 +115,7 @@ module CNCarbonStateType
      real(r8), pointer :: cwdc_end_col(:)
      real(r8), pointer :: totlitc_end_col(:)
      real(r8), pointer :: totsomc_end_col(:)
+     real(r8), pointer :: decomp_som2c_vr_col(:,:)
 
    contains
 
@@ -225,9 +227,11 @@ contains
     allocate(this%totvegc_col              (begc :endc))                   ;     this%totvegc_col              (:)   = nan
 
     allocate(this%totabgc_col              (begc :endc))                   ;     this%totabgc_col              (:)   = nan
+    allocate(this%totblgc_col              (begc:endc))                    ;     this%totblgc_col              (:)   = nan
     allocate(this%decomp_cpools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))  
     this%decomp_cpools_vr_col(:,:,:)= nan
 
+    allocate(this%decomp_som2c_vr_col(begc:endc,1:nlevdecomp_full)); this%decomp_som2c_vr_col(:,:)= nan
     allocate(this%begcb_patch (begp:endp));     this%begcb_patch (:) = nan
     allocate(this%begcb_col   (begc:endc));     this%begcb_col   (:) = nan
     allocate(this%endcb_patch (begp:endp));     this%endcb_patch (:) = nan
@@ -766,6 +770,7 @@ contains
        !those variables are now ouput in betr
        this%decomp_cpools_col(begc:endc,:) = spval
        do l  = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
           if ( nlevdecomp_full > 1 ) then
              data2dptr => this%decomp_cpools_vr_col(:,:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
@@ -1337,6 +1342,7 @@ contains
 
     use restUtilMod
     use ncdio_pio
+    use tracer_varcon  , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (carbonstate_type) :: this
@@ -2353,7 +2359,17 @@ contains
           end if
        end do
     end if
+    if(is_active_betr_bgc)then
+      if (carbon_type == 'c12') then
+        call restartvar(ncid=ncid, flag=flag, varname='totblgc', xtype=ncd_double,  &
+           dim1name='column', long_name='', units='', &
+           interpinic_flag='interp', readvar=readvar, data=this%totblgc_col)
 
+        call restartvar(ncid=ncid, flag=flag, varname='cwdc', xtype=ncd_double,  &
+           dim1name='column', long_name='', units='', &
+           interpinic_flag='interp', readvar=readvar, data=this%cwdc_col)
+      endif
+    endif
     if (carbon_type == 'c12') then
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr_col

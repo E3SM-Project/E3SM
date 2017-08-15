@@ -5,7 +5,7 @@ module clm_instMod
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
   use decompMod                  , only : bounds_type, get_proc_bounds
-  use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_ed
+  use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_ed, use_betr
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -57,7 +57,8 @@ module clm_instMod
 
   use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
-
+  use BeTRSimulationALM          , only : betr_simulation_alm_type
+  use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
 
 
@@ -112,7 +113,8 @@ module clm_instMod
   type(clm_bgc_interface_data_type)                   :: clm_bgc_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
-
+  class(betr_simulation_alm_type), pointer            :: ep_betr
+  type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
   public :: clm_inst_biogeochem
   public :: clm_inst_biogeophys
   public :: alm_fates
@@ -203,6 +205,9 @@ contains
 
        call crop_vars%Init(bounds_proc)
 
+       if(use_betr)then
+         call PlantMicKinetics_vars%Init(bounds_proc)
+       endif
     end if
     
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)

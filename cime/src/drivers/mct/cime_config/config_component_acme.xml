@@ -266,6 +266,7 @@
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
+      <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
@@ -439,7 +440,6 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="DATM.+POP\d">TRUE</value>
-      <value compset="DATM.*_MPASO">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
