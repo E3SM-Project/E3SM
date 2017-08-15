@@ -81,7 +81,7 @@ class EnvMachPes(EnvBase):
 
     def get_spare_nodes(self, num_nodes):
         force_spare_nodes = self.get_value("FORCE_SPARE_NODES")
-        if force_spare_nodes is not None:
+        if force_spare_nodes != -999:
             return force_spare_nodes
 
         if self.get_value("ALLOCATE_SPARE_NODES"):
