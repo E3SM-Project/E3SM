@@ -133,7 +133,6 @@ module ocn_time_integration_split
       integer, pointer :: config_n_btr_cor_iter, config_num_halos
       logical, pointer :: config_use_standardGM
 
-      
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
@@ -1624,28 +1623,28 @@ module ocn_time_integration_split
                !$omp end do
 
                if (config_compute_tracer_budgets) then
-               !$omp do schedule(runtime) private(k)
-               do iCell = 1, nCells
-                  do k= 1, maxLevelCell(iCell)
-                       activeTracerAdvectionTendency(:,k,iCell) = &
-                          activeTracerAdvectionTendency(:,k,iCell) / &
-                          layerThicknessNew(k,iCell)
-        
-                     activeTracerSurfaceFluxTendency(:,k,iCell) = &
-                          activeTracerSurfaceFluxTendency(:,k,iCell) / &
-                          layerThicknessNew(k,iCell)
-
-                     activeTracerShortwaveTendency(:,k,iCell) = &
-                          activeTracerShortwaveTendency(:,k,iCell) / &
-                          layerThicknessNew(k,iCell)
-
-                     activeTracerNonLocalTendency(:,k,iCell) = &
-                          activeTracerNonLocalTendency(:,k,iCell) / &
-                          layerThicknessNew(k,iCell)
-
-                  end do
-               end do 
-               !$omp end do
+                  !$omp do schedule(runtime) private(k)
+                  do iCell = 1, nCells
+                     do k= 1, maxLevelCell(iCell)
+                          activeTracerAdvectionTendency(:,k,iCell) = &
+                             activeTracerAdvectionTendency(:,k,iCell) / &
+                             layerThicknessNew(k,iCell)
+   
+                        activeTracerSurfaceFluxTendency(:,k,iCell) = &
+                             activeTracerSurfaceFluxTendency(:,k,iCell) / &
+                             layerThicknessNew(k,iCell)
+   
+                        activeTracerShortwaveTendency(:,k,iCell) = &
+                             activeTracerShortwaveTendency(:,k,iCell) / &
+                             layerThicknessNew(k,iCell)
+   
+                        activeTracerNonLocalTendency(:,k,iCell) = &
+                             activeTracerNonLocalTendency(:,k,iCell) / &
+                             layerThicknessNew(k,iCell)
+   
+                     end do
+                  end do 
+                  !$omp end do
                endif
                
                call mpas_pool_begin_iteration(tracersPool)

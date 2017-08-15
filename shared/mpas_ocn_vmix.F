@@ -563,7 +563,7 @@ contains
                   activeTracerVertMixTendency(:,:,:)=tracersGroup(:,:,:)
                endif
             endif
-       
+
             if ( associated(tracersGroup) ) then
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, err)
             end if
