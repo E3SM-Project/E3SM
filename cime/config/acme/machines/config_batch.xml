@@ -57,7 +57,7 @@
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
     <submit_args>
-      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-A" name="$CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
@@ -76,7 +76,7 @@
     <submit_args>
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-P" name="$PROJECT"/>
+      <arg flag="-P" name="$CHARGE_ACCOUNT"/>
     </submit_args>
     <directives>
       <directive                       > -n {{ total_tasks }} </directive>
@@ -101,7 +101,7 @@
     <submit_args>
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-A" name="$PROJECT"/>
+      <arg flag="-A" name="$CHARGE_ACCOUNT"/>
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
@@ -122,7 +122,7 @@
     <walltime_format>%H:%M:%S</walltime_format>
     <submit_args>
       <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-A" name="$PROJECT"/>
+      <arg flag="-A" name="$CHARGE_ACCOUNT"/>
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
