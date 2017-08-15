@@ -354,7 +354,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
-                                   / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
+                                   / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)  ! goes as dc**1
             meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
                                    / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
             meshScaling(iEdge)     = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
