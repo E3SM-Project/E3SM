@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.12
+set script_ver = 3.0.13
 
 #===========================================
 # DEFINE ALIASES
@@ -267,6 +267,8 @@ endif
 # BASIC ERROR CHECKING
 #===========================================
 
+set seconds_after_warning = 10
+
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
     acme_newline
@@ -297,26 +299,28 @@ if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0
   exit 15
 endif
 
-if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $stop_num != $restart_num ) ) then
-  acme_print 'WARNING: It makes no sense to have chained submissions unless the run is producing appropriate restarts!'
-  acme_print '         The run length and restarts do not match exactly. '
-  acme_print '         It is hard to check definitively, so stopping just in case.'
-  acme_print '         If the settings are OK then deactivate this test.'
-  acme_print '         $stop_units     = '$stop_units
-  acme_print '         $stop_num       = '$stop_num
-  acme_print '         $restart_units  = '$restart_units
-  acme_print '         $restart_num    = '$restart_num
-  acme_print '         $num_resubmits  = '$num_resubmits
-  exit 16
-endif
-
 if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
   acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
   acme_print '       You should either use a different queue, or submit a single job without archiving.'
   acme_print '       $debug_queue             = '$debug_queue
   acme_print '       $num_resubmits           = '$num_resubmits
   acme_print '       $do_short_term_archiving = '$do_short_term_archiving
-  exit 17
+  exit 16
+endif
+
+if ( $restart_num != 0 ) then
+  @ remaining_periods = $stop_num - ( $stop_num / $restart_num ) * $restart_num
+  if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $remaining_periods != 0 ) ) then
+    acme_print 'WARNING: run length is not divisible by the restart write frequency, or the units differ.'
+    acme_print 'If restart write frequency doesnt evenly divide the run length, restarts will simulate the same time period multiple times.'
+    acme_print '         $stop_units        = '$stop_units
+    acme_print '         $stop_num          = '$stop_num
+    acme_print '         $restart_units     = '$restart_units
+    acme_print '         $restart_num       = '$restart_num
+    acme_print '         $remaining_periods = '$remaining_periods
+    acme_print '         $num_resubmits     = '$num_resubmits
+    sleep $seconds_after_warning
+  endif
 endif
 
 #===========================================
@@ -768,7 +772,7 @@ endif
 #       https://acme-climate.atlassian.net/wiki/display/WORKFLOW/ACME+Input+Data+Repository
 
 #set input_data_dir = 'input_data_dir_NOT_SET'
-#if ( $machine == 'cori' || $machine == 'edison' ) then
+#if ( $machine == 'cori*' || $machine == 'edison' ) then
 #  set input_data_dir = '/project/projectdirs/m411/ACME_inputdata'    # PJC-NERSC
 ## set input_data_dir = '/project/projectdirs/ccsm1/inputdata'        # NERSC
 #else if ( $machine == 'titan' || $machine == 'eos' ) then
@@ -1009,7 +1013,7 @@ mkdir -p batch_output      ### Make directory that stdout and stderr will go int
 
 set batch_options = ''
 
-if ( $machine == cori || $machine == edison ) then
+if ( $machine =~ 'cori*' || $machine == edison ) then
     set batch_options = "--job-name=${job_name} --output=batch_output/${case_name}.o%j"
 
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
@@ -1201,7 +1205,7 @@ endif
 
 #NOTE:  This section is for making specific changes to the run options (ie env_run.xml).
 
-#if ( $machine == cori ) then      ### fix pnetcdf problem on Cori. (github #593)
+#if ( $machine == 'cori*' ) then      ### fix pnetcdf problem on Cori. (github #593)
 #  $xmlchange_exe --id PIO_TYPENAME  --val "netcdf"
 #endif
 
@@ -1353,6 +1357,8 @@ acme_newline
 # 3.0.10   2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
 # 3.0.11   2017-07-14    Replace auto-chaining code with ACME's resubmit feature. Also fix Edison's qos setting (again...) (MD)
 # 3.0.12   2017-07-24    Supports setting the queue priority for anvil. Also move making machine lowercase up to clean some things up (MD)
+# 3.0.13   2017-08-07    Verify that the number of periods between a restart evenly divides the number until the stop with the same units.
+#                        Update the machine check for cori to account for cori-knl (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
