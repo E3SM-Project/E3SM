@@ -2608,6 +2608,14 @@
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
  </entry>
 
+ <entry id="CHARGE_ACCOUNT">
+   <type>char</type>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
+   <desc>project to charge in scripts if different from PROJECT</desc>
+ </entry>
+
  <entry id="MODEL_VERSION">
    <type>char</type>
    <default_value>unknown</default_value>
