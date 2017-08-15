@@ -10,7 +10,7 @@
 !  ocn_high_frequency_output
 !
 !> \brief MPAS ocean analysis mode member: high_frequency_output
-!> \author Todd Ringler
+!> \author Todd Ringler and Phillip Wolfram
 !> \date   2015/06/12
 !> \details
 !>  MPAS ocean analysis mode member: high_frequency_output
@@ -64,7 +64,7 @@ contains
 !  routine ocn_init_high_frequency_output
 !
 !> \brief   Initialize MPAS-Ocean analysis member
-!> \author  Todd Ringler
+!> \author  Todd Ringler and Phillip Wolfram
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts all initializations required for the
@@ -111,7 +111,7 @@ contains
 !  routine ocn_compute_high_frequency_output
 !
 !> \brief   Compute MPAS-Ocean analysis member
-!> \author  Todd Ringler
+!> \author  Todd Ringler and Phillip Wolfram
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts all computation required for this
@@ -813,7 +813,7 @@ contains
 !  routine ocn_restart_high_frequency_output
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
-!> \author  Todd Ringler
+!> \author  Todd Ringler and Phillip Wolfram
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts computation required to save a restart state
@@ -860,7 +860,7 @@ contains
 !  routine ocn_finalize_high_frequency_output
 !
 !> \brief   Finalize MPAS-Ocean analysis member
-!> \author  Todd Ringler
+!> \author  Todd Ringler and Phillip Wolfram
 !> \date    2015/06/12
 !> \details
 !>  This routine conducts all finalizations required for this
