@@ -9,7 +9,8 @@ import glob, os, shutil, math, string
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.utils                     import convert_to_type, get_model
+from CIME.utils                     import get_project, get_charge_account
 from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
@@ -775,6 +776,11 @@ class Case(object):
             self.set_value("PROJECT", project)
         elif machobj.get_value("PROJECT_REQUIRED"):
             expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
+            
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
