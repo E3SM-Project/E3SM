@@ -321,7 +321,7 @@ contains
               'activeTracerShortWaveTendency',activeTracerShortWaveTendency)
          call mpas_pool_get_array(diagnosticsPool,&
               'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
-                
+
          ! initialize buffers
          workBufferSum(:) = 0.0_RKIND
          workBufferMin(:) = +1.0e20_RKIND
