@@ -2,7 +2,8 @@
 
   <comp_archive_spec compname="cam" compclass="atm">
     <rest_file_extension>\.[ri]\..*</rest_file_extension>
-    <rest_file_extension>\.r[sh]\.*</rest_file_extension>
+    <rest_file_extension>\.rh\d\.*</rest_file_extension>
+    <rest_file_extension>\.rs\.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
