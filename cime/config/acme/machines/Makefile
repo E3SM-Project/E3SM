@@ -61,15 +61,12 @@ endif
 
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
-# trilinos, Albany, or MOAB libraries.
+# trilinos, or Albany libraries.
 USE_CXX = false
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
    USE_CXX = true
 endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
-   USE_CXX = true
-endif
-ifeq ($(strip $(USE_MOAB)), TRUE)
    USE_CXX = true
 endif
 
