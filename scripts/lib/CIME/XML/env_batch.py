@@ -503,8 +503,8 @@ class EnvBatch(EnvBase):
         return self.get_nodes("queue")
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
-        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "PROJECT_REQUIRED",
-                        "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
+        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT", 
+                        "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
             nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
                                         root=root, xpath=xpath)
         else:
