@@ -20,10 +20,10 @@
 			<attribute name="type">output</attribute>
 			<add_contents>
 				<member name="xtime" type="var"/>
-				<member name="kineticEnergyAt100m" type="var"/>
+				<member name="kineticEnergyAt250m" type="var"/>
 				<member name="kineticEnergyAtSurface" type="var"/>
-				<member name="relativeVorticityAt100m" type="var"/>
-				<member name="activeTracersAtSurface" type="var_array"/>
+				<member name="relativeVorticityAt250m" type="var"/>
+				<member name="activeTracersAt250m" type="var_array"/>
 			</add_contents>
 		</stream>
 	</streams>
