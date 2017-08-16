@@ -76,13 +76,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         expect(not (type(value) is str and "USERDEFINED_required_build" in value),
                "Parameter '{}' must be defined".format(vid))
 
-    # Create batch script
+    # Remove batch scripts
     if reset or clean:
-        # back up relevant files
         if os.path.exists("case.run"):
             os.remove("case.run")
 
-        # only do the following if are NOT in testmode
         if not test_mode:
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
