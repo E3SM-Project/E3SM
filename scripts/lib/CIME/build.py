@@ -395,17 +395,17 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     incroot             = os.path.abspath(case.get_value("INCROOT"))
     libroot             = os.path.abspath(case.get_value("LIBROOT"))
     sharedlibroot       = os.path.abspath(case.get_value("SHAREDLIBROOT"))
-    multi_coupler = case.get_value("MULTI_COUPLER")
+    multi_driver = case.get_value("MULTI_DRIVER")
     complist = []
     ninst = 1
     for comp_class in comp_classes:
         if comp_class == "CPL":
             config_dir = None
-            if multi_coupler:
+            if multi_driver:
                 ninst = case.get_value("NINST_MAX")
         else:
             config_dir = os.path.dirname(case.get_value("CONFIG_{}_FILE".format(comp_class)))
-            if multi_coupler:
+            if multi_driver:
                 ninst = 1
             else:
                 ninst = case.get_value("NINST_{}".format(comp_class))

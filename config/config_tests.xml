@@ -518,14 +518,14 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
   </test>
 
   <test NAME="MCC">
-    <DESC>multi-coupler validation vs single-instance (default length)</DESC>
+    <DESC>multi-driver validation vs single-instance (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <DOUT_S>FALSE</DOUT_S>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
     <REST_OPTION>none</REST_OPTION>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
-    <MULTI_COUPLER>TRUE</MULTI_COUPLER>
+    <MULTI_DRIVER>TRUE</MULTI_DRIVER>
   </test>
 
   <test NAME="NCK">

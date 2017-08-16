@@ -216,7 +216,7 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
          i = i + 1
       enddo
 
-      write(logunit,*) 'dead_setNewGrid decomp seg ',mype,lsize,nx
+!      write(logunit,*) 'dead_setNewGrid decomp seg ',mype,lsize,nx
 
       found = .true.
 

@@ -41,6 +41,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')
+    config['MULTI_DRIVER'] = '.true.' if case.get_value('MULTI_DRIVER') else '.false.'
     config['OS'] = case.get_value('OS')
     config['glc_nec'] = 0 if case.get_value('GLC_NEC') == 0 else case.get_value('GLC_NEC')
     config['single_column'] = 'true' if case.get_value('PTS_MODE') else 'false'
@@ -251,7 +252,7 @@ def _create_component_modelio_namelists(case, files):
     #if we are in multi-coupler mode the number of instances of cpl will be the max
     # of any NINST_* value
     maxinst = 1
-    if case.get_value("MULTI_COUPLER"):
+    if case.get_value("MULTI_DRIVER"):
         maxinst = case.get_value("NINST_MAX")
 
     for model in models:

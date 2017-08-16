@@ -636,7 +636,7 @@ class Case(object):
         self.clean_up_lookups()
 
 
-    def _setup_mach_pes(self, pecount, multi_coupler, ninst, machine_name, mpilib):
+    def _setup_mach_pes(self, pecount, multi_driver, ninst, machine_name, mpilib):
         #--------------------------------------------
         # pe layout
         #--------------------------------------------
@@ -720,9 +720,9 @@ class Case(object):
                 val = -1*val*pes_per_node
             if val > pesize:
                 pesize = val
-        if multi_coupler:
+        if multi_driver:
             pesize *= int(ninst)
-            mach_pes_obj.set_value("MULTI_COUPLER", True)
+            mach_pes_obj.set_value("MULTI_DRIVER", True)
 
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
@@ -745,7 +745,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   pesfile=None,user_grid=False, gridfile=None,
-                  multi_coupler=False, ninst=1, test=False,
+                  multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
                   input_dir=None):
@@ -836,10 +836,10 @@ class Case(object):
         env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
-        pesize = self._setup_mach_pes(pecount, multi_coupler, ninst, machine_name, mpilib)
+        pesize = self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
 
-        if multi_coupler and ninst>1:
-            logger.info(" Coupler has %s instances" % ninst)
+        if multi_driver and ninst>1:
+            logger.info(" Driver/Coupler has %s instances" % ninst)
 
         #--------------------------------------------
         # batch system
@@ -1458,7 +1458,7 @@ class Case(object):
                user_mods_dir=None, machine_name=None,
                project=None, pecount=None, compiler=None, mpilib=None,
                pesfile=None,user_grid=False, gridfile=None,
-               multi_coupler=False, ninst=1, test=False,
+               multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
                input_dir=None):
@@ -1473,7 +1473,7 @@ class Case(object):
                            project=project,
                            pecount=pecount, compiler=compiler, mpilib=mpilib,
                            pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
-                           multi_coupler=multi_coupler, ninst=ninst, test=test,
+                           multi_driver=multi_driver, ninst=ninst, test=test,
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,

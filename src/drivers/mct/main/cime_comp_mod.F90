@@ -4116,7 +4116,6 @@ subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
   end if
   call shr_mpi_commsize(comm_out, drvpes, ' cime_cpl_init')
-  print *,__FILE__,__LINE__,numpes,drvpes
 end subroutine cime_cpl_init
 
 end module cime_comp_mod

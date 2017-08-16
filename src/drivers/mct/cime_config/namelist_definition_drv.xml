@@ -53,7 +53,7 @@
     </desc>
     <values>
       <value>1</value>
-      <value MULTI_DRIVER="TRUE">$NINST_MAX</value>
+      <value MULTI_DRIVER=".true.">$NINST_MAX</value>
     </values>
   </entry>
 

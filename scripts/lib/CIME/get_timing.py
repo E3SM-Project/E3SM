@@ -94,8 +94,8 @@ class _TimingParser:
 
     def getTiming(self):
         ninst = 1
-        multi_coupler = self.case.get_value("MULTI_COUPLER")
-        if multi_coupler:
+        multi_driver = self.case.get_value("MULTI_DRIVER")
+        if multi_driver:
             ninst = self.case.get_value("NINST_MAX")
 
         if ninst > 1:

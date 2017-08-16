@@ -72,7 +72,7 @@ class EnvMachPes(EnvBase):
             maxinst = max(maxinst, self.get_value("NINST", attribute={"component":comp}))
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
-        if self.get_value("MULTI_COUPLER"):
+        if self.get_value("MULTI_DRIVER"):
             total_tasks *= maxinst
         return total_tasks
 

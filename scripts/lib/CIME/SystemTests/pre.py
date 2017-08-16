@@ -85,11 +85,11 @@ class PRE(SystemTestsCompareTwo):
         else:
             pause_comps = pause_comps.split(':')
 
-        multi_coupler = self._case.get_value("MULTI_COUPLER")
+        multi_driver = self._case.get_value("MULTI_DRIVER")
 
         for comp in pause_comps:
             if comp == "cpl":
-                if multi_coupler:
+                if multi_driver:
                     ninst = self._case.get_value("NINST_MAX")
                 else:
                     ninst = 1

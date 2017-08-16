@@ -3,7 +3,7 @@
 Multi-instance component functionality
 ======================================
 
-The CIME coupling infrastructure is capable of running multiple component instances (ensembles) under one model executable.  There are two modes of ensemble capability, single coupler in which all component instances are handled by a single coupler component or multi-coupler in which each instance includes a separate coupler component.  In the multi-coupler mode the entire model is duplicated for each instance while in the single coupler mode only active components need be duplicated.   In most cases the multi-coupler mode will give better performance and should be used.
+The CIME coupling infrastructure is capable of running multiple component instances (ensembles) under one model executable.  There are two modes of ensemble capability, single driver in which all component instances are handled by a single driver/coupler component or multi-driver in which each instance includes a separate driver/coupler component.  In the multi-driver mode the entire model is duplicated for each instance while in the single driver mode only active components need be duplicated.   In most cases the multi-driver mode will give better performance and should be used.
 
 The primary motivation for this development was to be able to run an ensemble Kalman-Filter for data assimilation and parameter estimation (UQ, for example).
 However, it also provides the ability to run a set of experiments within a single model executable where each instance can have a different namelist, and to have all the output go to one directory.
@@ -45,12 +45,12 @@ To run two instances of CAM, CLM, CICE, RTM and DOCN, invoke the following :ref:
    > ./xmlchange NINST_ROF=2
    > ./xmlchange NINST_OCN=2
 
-As a result, you will have two instances of CAM, CLM and CICE (prescribed), RTM, and DOCN, each running concurrently on 72 MPI tasks and all using the same coupler component.   In this single coupler mode the number of tasks for each component instance is NTASKS_COMPONENT/NINST_COMPONENT and the total number of tasks is the same as for the single instance case.
+As a result, you will have two instances of CAM, CLM and CICE (prescribed), RTM, and DOCN, each running concurrently on 72 MPI tasks and all using the same driver/coupler component.   In this single driver/coupler mode the number of tasks for each component instance is NTASKS_COMPONENT/NINST_COMPONENT and the total number of tasks is the same as for the single instance case.
 
-Now consider the multi coupler model.
+Now consider the multi driver model.
 To use this mode change
 ::
-   > ./xmlchange MULTI_COUPLER=TRUE
+   > ./xmlchange MULTI_DRIVER=TRUE
 
 This configuration will run each component instance on the original 144 tasks but will generate two copies of the model (in the same executable) for a total of 288 tasks.
 
@@ -88,15 +88,15 @@ To change the DOCN stream txt file instance 0002, copy **docn.streams.txt.prescr
 
 Also keep these important points in mind:
 
-#. Note that these changes can be made at create_newcase time with option --ninst # where # is a positive integer, use the additional logical option --ninst-couplers to invoke the multi-coupler mode.
+#. Note that these changes can be made at create_newcase time with option --ninst # where # is a positive integer, use the additional logical option --multi-driver to invoke the multi-driver mode.
 
 #. **Multiple component instances can differ ONLY in namelist settings; they ALL use the same model executable.**
 
 #. Calling **case.setup** with ``--clean`` *DOES NOT* remove the **user_nl_xxx_NN** (where xxx is the component name) files created by **case.setup**.
 
 #. A special variable NINST_LAYOUT is provided for some experimental compsets, its value should be
-   'concurrent' for all but a few special cases and it cannot be used if MULTI_COUPLER=TRUE.
+   'concurrent' for all but a few special cases and it cannot be used if MULTI_DRIVER=TRUE.
 
-#. In **create_test** these options can be invoked with testname modifiers _N# for the single coupler mode and _C# for the multi-coupler mode.  These are mutually exclusive options, they cannot be combined.
+#. In **create_test** these options can be invoked with testname modifiers _N# for the single driver mode and _C# for the multi-driver mode.  These are mutually exclusive options, they cannot be combined.
 
-#. In create_newcase you may use --ninst # to set the number of instances and --multi-coupler for multi-coupler mode.
+#. In create_newcase you may use --ninst # to set the number of instances and --multi-driver for multi-driver mode.

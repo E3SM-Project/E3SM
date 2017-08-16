@@ -34,8 +34,8 @@ def _build_usernl_files(case, model, comp):
     expect(os.path.isdir(model_dir),
            "cannot find cime_config directory {} for component {}".format(model_dir, comp))
     ninst = 1
-    multi_coupler = case.get_value("MULTI_COUPLER")
-    if multi_coupler:
+    multi_driver = case.get_value("MULTI_DRIVER")
+    if multi_driver:
         ninst = case.get_value("NINST_MAX")
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
@@ -45,7 +45,7 @@ def _build_usernl_files(case, model, comp):
             ninst = case.get_value("NINST_{}".format(model))
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
-        if ninst > 1 and not comp.endswith("esp"):
+        if ninst > 1:
             for inst_counter in xrange(1, ninst+1):
                 inst_nlfile = "{}_{:04d}".format(nlfile, inst_counter)
                 if not os.path.exists(inst_nlfile):
@@ -124,7 +124,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
-        multi_coupler = case.get_value("MULTI_COUPLER")
+        multi_driver = case.get_value("MULTI_DRIVER")
         for comp in models:
             if comp == "CPL":
                 continue
@@ -135,10 +135,10 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                     case.set_value("NTASKS_{}".format(comp), ninst)
                 else:
                     expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
-            # But the NINST_LAYOUT may only be concurrent in multi_coupler mode
-            if multi_coupler:
+            # But the NINST_LAYOUT may only be concurrent in multi_driver mode
+            if multi_driver:
                 expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
-                       "If multi_coupler is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
+                       "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
