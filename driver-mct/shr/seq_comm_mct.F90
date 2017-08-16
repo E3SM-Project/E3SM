@@ -185,7 +185,7 @@ module seq_comm_mct
   character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
   character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
   integer :: Global_Comm
-
+  integer :: driver_comm
 
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
@@ -250,7 +250,8 @@ contains
        call shr_sys_abort()
     endif
     seq_comm_mct_initialized = .true.
-    Global_Comm = driver_comm_in
+    global_comm = global_comm_in
+    driver_comm = driver_comm_in
 
     call mpi_comm_dup(Comm_in, Coupler_Comm, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
@@ -280,9 +281,9 @@ contains
 
     call mpi_comm_size(GLOBAL_COMM_IN, global_numpes , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size comm_world')
-    call mpi_comm_rank(GLOBAL_COMM, mype  , ierr)
+    call mpi_comm_rank(DRIVER_COMM, mype  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank driver')
-    call mpi_comm_size(GLOBAL_COMM, numpes, ierr)
+    call mpi_comm_size(DRIVER_COMM, numpes, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size driver')
 
     if (mod(global_numpes, numpes) .ne. 0) then
@@ -327,24 +328,24 @@ contains
        call shr_file_freeUnit(nu)
     end if
 
-    call shr_mpi_bcast(atm_nthreads,GLOBAL_COMM,'atm_nthreads')
-    call shr_mpi_bcast(lnd_nthreads,GLOBAL_COMM,'lnd_nthreads')
-    call shr_mpi_bcast(ocn_nthreads,GLOBAL_COMM,'ocn_nthreads')
-    call shr_mpi_bcast(ice_nthreads,GLOBAL_COMM,'ice_nthreads')
-    call shr_mpi_bcast(glc_nthreads,GLOBAL_COMM,'glc_nthreads')
-    call shr_mpi_bcast(wav_nthreads,GLOBAL_COMM,'wav_nthreads')
-    call shr_mpi_bcast(rof_nthreads,GLOBAL_COMM,'rof_nthreads')
-    call shr_mpi_bcast(esp_nthreads,GLOBAL_COMM,'esp_nthreads')
-    call shr_mpi_bcast(cpl_nthreads,GLOBAL_COMM,'cpl_nthreads')
+    call shr_mpi_bcast(atm_nthreads,DRIVER_COMM,'atm_nthreads')
+    call shr_mpi_bcast(lnd_nthreads,DRIVER_COMM,'lnd_nthreads')
+    call shr_mpi_bcast(ocn_nthreads,DRIVER_COMM,'ocn_nthreads')
+    call shr_mpi_bcast(ice_nthreads,DRIVER_COMM,'ice_nthreads')
+    call shr_mpi_bcast(glc_nthreads,DRIVER_COMM,'glc_nthreads')
+    call shr_mpi_bcast(wav_nthreads,DRIVER_COMM,'wav_nthreads')
+    call shr_mpi_bcast(rof_nthreads,DRIVER_COMM,'rof_nthreads')
+    call shr_mpi_bcast(esp_nthreads,DRIVER_COMM,'esp_nthreads')
+    call shr_mpi_bcast(cpl_nthreads,DRIVER_COMM,'cpl_nthreads')
 
-    call shr_mpi_bcast(atm_layout,GLOBAL_COMM,'atm_layout')
-    call shr_mpi_bcast(lnd_layout,GLOBAL_COMM,'lnd_layout')
-    call shr_mpi_bcast(ocn_layout,GLOBAL_COMM,'ocn_layout')
-    call shr_mpi_bcast(ice_layout,GLOBAL_COMM,'ice_layout')
-    call shr_mpi_bcast(glc_layout,GLOBAL_COMM,'glc_layout')
-    call shr_mpi_bcast(wav_layout,GLOBAL_COMM,'wav_layout')
-    call shr_mpi_bcast(rof_layout,GLOBAL_COMM,'rof_layout')
-    call shr_mpi_bcast(esp_layout,GLOBAL_COMM,'esp_layout')
+    call shr_mpi_bcast(atm_layout,DRIVER_COMM,'atm_layout')
+    call shr_mpi_bcast(lnd_layout,DRIVER_COMM,'lnd_layout')
+    call shr_mpi_bcast(ocn_layout,DRIVER_COMM,'ocn_layout')
+    call shr_mpi_bcast(ice_layout,DRIVER_COMM,'ice_layout')
+    call shr_mpi_bcast(glc_layout,DRIVER_COMM,'glc_layout')
+    call shr_mpi_bcast(wav_layout,DRIVER_COMM,'wav_layout')
+    call shr_mpi_bcast(rof_layout,DRIVER_COMM,'rof_layout')
+    call shr_mpi_bcast(esp_layout,DRIVER_COMM,'esp_layout')
 
 
     !--- compute some other num_inst values
@@ -396,7 +397,7 @@ contains
        pelist(2,1) = numpes-1
        pelist(3,1) = 1
     end if
-    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
     call seq_comm_setcomm(GLOID, pelist,iname='GLOBAL')
 
     if (mype == 0) then
@@ -404,24 +405,24 @@ contains
        pelist(2,1) = cpl_rootpe + (cpl_ntasks -1) * cpl_pestride
        pelist(3,1) = cpl_pestride
     end if
-    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
     call seq_comm_setcomm(CPLID,pelist,cpl_nthreads,'CPL')
 
-    call comp_comm_init(global_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
+    call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
          CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
-    call comp_comm_init(global_comm, lnd_rootpe, lnd_nthreads, lnd_layout, lnd_ntasks, lnd_pestride, num_inst_lnd, &
+    call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, lnd_ntasks, lnd_pestride, num_inst_lnd, &
          CPLID, LNDID, CPLLNDID, ALLLNDID, CPLALLLNDID, 'LND', count, drv_comm_id)
-    call comp_comm_init(global_comm, ice_rootpe, ice_nthreads, ice_layout, ice_ntasks, ice_pestride, num_inst_ice, &
+    call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, ice_ntasks, ice_pestride, num_inst_ice, &
          CPLID, ICEID, CPLICEID, ALLICEID, CPLALLICEID, 'ICE', count, drv_comm_id)
-    call comp_comm_init(global_comm, ocn_rootpe, ocn_nthreads, ocn_layout, ocn_ntasks, ocn_pestride, num_inst_ocn, &
+    call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, ocn_ntasks, ocn_pestride, num_inst_ocn, &
          CPLID, OCNID, CPLOCNID, ALLOCNID, CPLALLOCNID, 'OCN', count, drv_comm_id)
-    call comp_comm_init(global_comm, rof_rootpe, rof_nthreads, rof_layout, rof_ntasks, rof_pestride, num_inst_rof, &
+    call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, rof_ntasks, rof_pestride, num_inst_rof, &
          CPLID, ROFID, CPLROFID, ALLROFID, CPLALLROFID, 'ROF', count, drv_comm_id)
-    call comp_comm_init(global_comm, glc_rootpe, glc_nthreads, glc_layout, glc_ntasks, glc_pestride, num_inst_glc, &
+    call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, glc_ntasks, glc_pestride, num_inst_glc, &
          CPLID, GLCID, CPLGLCID, ALLGLCID, CPLALLGLCID, 'GLC', count, drv_comm_id)
-    call comp_comm_init(global_comm, wav_rootpe, wav_nthreads, wav_layout, wav_ntasks, wav_pestride, num_inst_wav, &
+    call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, wav_ntasks, wav_pestride, num_inst_wav, &
          CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id)
-    call comp_comm_init(global_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
+    call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
          CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id)
 
     if (count /= ncomps) then
@@ -443,7 +444,7 @@ contains
     do n = 1,ncomps
        gloroot = -999
        if (seq_comms(n)%iamroot) gloroot = seq_comms(n)%gloiam
-       call shr_mpi_max(gloroot,seq_comms(n)%gloroot,GLOBAL_COMM, &
+       call shr_mpi_max(gloroot,seq_comms(n)%gloroot,DRIVER_COMM, &
                         trim(subname)//' gloroot',all=.true.)
     enddo
 
@@ -481,7 +482,7 @@ contains
        call shr_sys_abort()
     endif
 
-    call mct_world_init(ncomps, GLOBAL_COMM, comms, comps)
+    call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
 
     deallocate(comps,comms)
 
@@ -490,10 +491,10 @@ contains
 
   end subroutine seq_comm_init
 
-  subroutine comp_comm_init(global_comm, comp_rootpe, comp_nthreads, comp_layout, &
+  subroutine comp_comm_init(driver_comm, comp_rootpe, comp_nthreads, comp_layout, &
        comp_ntasks, comp_pestride, num_inst_comp, &
        CPLID, COMPID, CPLCOMPID, ALLCOMPID, CPLALLCOMPID, name, count, drv_comm_id)
-    integer, intent(in) :: global_comm
+    integer, intent(in) :: driver_comm
     integer, intent(in) :: comp_rootpe
     integer, intent(in) :: comp_nthreads
     character(len=*), intent(in) :: comp_layout
@@ -519,7 +520,7 @@ contains
     integer :: ierr
     integer :: mype
 
-    call mpi_comm_rank(global_comm, mype, ierr)
+    call mpi_comm_rank(driver_comm, mype, ierr)
 
     count = count + 1
     ALLCOMPID = count
@@ -569,7 +570,7 @@ contains
           pelist(2,1) = cmax(n)
           pelist(3,1) = cstr(n)
        endif
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
        if (present(drv_comm_id)) then
           call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, drv_comm_id)
        else
@@ -645,11 +646,11 @@ contains
        call shr_sys_abort()
     endif
 
-    call mpi_comm_group(GLOBAL_COMM, mpigrp_world, ierr)
+    call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
     call mpi_group_range_incl(mpigrp_world, 1, pelist, mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
-    call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
+    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
 
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
@@ -762,7 +763,7 @@ contains
 
     call mpi_group_union(seq_comms(ID1)%mpigrp,seq_comms(ID2)%mpigrp,mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
-    call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
+    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     seq_comms(ID)%set = .true.
@@ -887,6 +888,7 @@ contains
        call mpi_group_union(mpigrpp,seq_comms(IDs(n))%mpigrp,mpigrp,ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
     enddo
+    ! The allcompid is created across multiple drivers.
     call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
@@ -967,13 +969,13 @@ contains
     character(*),parameter :: subName =   '(seq_comm_printcomms) '
     integer :: n,mype,npes,ierr
 
-    call mpi_comm_size(GLOBAL_COMM, npes  , ierr)
+    call mpi_comm_size(DRIVER_COMM, npes  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size comm_world')
-    call mpi_comm_rank(GLOBAL_COMM, mype  , ierr)
+    call mpi_comm_rank(DRIVER_COMM, mype  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank comm_world')
 
     call shr_sys_flush(logunit)
-    call mpi_barrier(GLOBAL_COMM,ierr)
+    call mpi_barrier(DRIVER_COMM,ierr)
     if (mype == 0) then
        do n = 1,ncomps
           write(logunit,'(a,4i6,2x,3a)') trim(subName),n, &
