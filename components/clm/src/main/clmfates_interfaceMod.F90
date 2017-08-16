@@ -918,6 +918,7 @@ contains
       type(fates_bounds_type) :: fates_clump
       integer                 :: c   ! HLM column index
       integer                 :: s   ! Fates site index
+      integer                 :: g   ! HLM grid index
       integer                 :: dk_index
       character(len=fates_long_string_length) :: ioname
       integer                 :: nvar
@@ -972,7 +973,7 @@ contains
          end do
          !$OMP END PARALLEL DO
          
-         !$OMP PARALLEL DO PRIVATE (nc,s,c)
+         !$OMP PARALLEL DO PRIVATE (nc,s,c,g)
          do nc = 1,nclumps
             
             allocate(this%fates_restart%restart_map(nc)%site_index(this%fates(nc)%nsites))
@@ -980,8 +981,8 @@ contains
             do s=1,this%fates(nc)%nsites
                c = this%f2hmap(nc)%fcolumn(s)
                this%fates_restart%restart_map(nc)%site_index(s)   = c
-               this%fates_restart%restart_map(nc)%cohort1_index(s) = &
-                    bounds_proc%begCohort + (c-bounds_proc%begc)*fates_maxElementsPerSite
+               g = col_pp%gridcell(c)
+               this%fates_restart%restart_map(nc)%cohort1_index(s) = (g-1)*fates_maxElementsPerSite + 1
             end do
             
          end do
