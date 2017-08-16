@@ -34,7 +34,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.contour_levels = []  # used both in test and reference
         self.test_name = ''
         self.test_title = ''
-        self.test_colormap = ''
+        self.test_colormap = 'viridis'
         self.test_units = ''
 
         self.reference_name = ''
@@ -44,7 +44,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.diff_name = ''
         self.diff_title = 'Model - Observation'
-        self.diff_colormap = ''
+        self.diff_colormap = 'RdBu_r'
         self.diff_levels = []
         self.diff_units = ''
 
