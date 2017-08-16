@@ -1,5 +1,79 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 8-16-2017
+Tag: cime5.3.0-alpha.32
+Answer Changes: None
+Tests: scripts_regression_tests.py, f19_f19 and f09_f09 ADESP tests on hobart
+       cesm2 prealpha tests on cheyenne
+       scripts_regression_tests.py --compiler gnu --mpilib openmpi on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Remove untested/unused scripts in Tools directory.
+    - Remove mask specification for test using DOCN%SOMAQP.
+    - Improve error messages from xmlchange.
+    - seq_comm_mct code cleanup.
+    - Refactor how spare nodes get computed.
+    - Fix SEQ test on skybridge.
+    - Get melvin scripts_regression_tests working again.
+    - Merge configuration changes from ACME to CIME.
+    - Allow running infnan unit tests even in DEBUG mode.
+    - Add -Og -fbacktrace to gnu debug flags.
+    - Allow --compiler and --mpilib
+    - Add a --compiler and --mpilib options to scripts_regression_tests.py.
+
+User interface changes: 
+    - Yes, new case variables controlling spare nodes
+    - Yes scripts_regression_tests.py now has --compiler and --mpilibs option.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1be3c17 Merge pull request #1751 from jedwards4b/tools_cleanup
+30a17eb Merge pull request #1819 from ESMCI/fischer/ADESP_test_fix
+37909bd Merge pull request #1818 from ESMCI/jgfouca/xmlchange_improve_error
+8e9a554 Merge pull request #1805 from jedwards4b/seq_comm_mct_refactor
+aa917ee Merge pull request #1816 from ESMCI/jgfouca/refactor_spare_nodes
+b5ba1e8 Merge pull request #1817 from ESMCI/jgfouca/fix_seq_on_skybridge
+bc0e1f1 Merge pull request #1815 from ESMCI/jgfouca/get_melvin_working_again
+8032624 Merge pull request #1812 from ESMCI/mfdeakin-sandia/configuration_changes
+f814ef3 Merge pull request #1810 from billsacks/infnan_unit_test
+d3bcd58 Merge pull request #1808 from billsacks/gnu_debug_flags
+7f91804 Merge pull request #1804 from jedwards4b/allow_new_opts_ctest
+ab8f58b Merge pull request #1789 from jedwards4b/srt_compiler_option
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/machines/config_machines.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/config_tests.xml
+M       config/xml_schemas/config_machines_template.xml
+M       config/xml_schemas/env_mach_pes.xsd
+M       config/xml_schemas/env_mach_specific.xsd
+D       scripts/Tools/check_exactrestart.pl
+D       scripts/Tools/create_train
+D       scripts/Tools/load.awk
+D       scripts/Tools/mdiag_reduce.csh
+D       scripts/Tools/mdiag_reduce.pl
+M       scripts/Tools/xmlchange
+M       scripts/lib/CIME/SystemTests/seq.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/case_setup.py
+M       scripts/tests/CMakeLists.txt
+M       scripts/tests/CTestConfig.cmake
+M       scripts/tests/scripts_regression_tests.py
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/component_mod.F90
+M       src/drivers/mct/shr/seq_comm_mct.F90
+M       src/share/test/unit/shr_infnan_test/CMakeLists.txt
+M       src/share/test/unit/shr_infnan_test/test_infnan.F90
+
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 8-08-2017
 Tag: cime5.3.0-alpha.31
