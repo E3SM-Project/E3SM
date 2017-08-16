@@ -215,7 +215,7 @@ contains
     logical :: error_state
     integer :: ierr, n, count
     character(*), parameter :: subName =   '(seq_comm_init) '
-    integer :: mype,numpes,myncomps,max_threads,gloroot
+    integer :: mype,numpes,myncomps,max_threads,gloroot, global_numpes
     integer :: pelist(3,1)       ! start, stop, stride for group
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
@@ -252,9 +252,6 @@ contains
     seq_comm_mct_initialized = .true.
     global_comm = global_comm_in
     driver_comm = driver_comm_in
-
-    call mpi_comm_dup(Comm_in, Coupler_Comm, ierr)
-    call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
     !! Initialize seq_comms elements
 
