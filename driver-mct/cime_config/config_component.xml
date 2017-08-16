@@ -1975,9 +1975,9 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component.  If MULTI_COUPLER is True
-    only NINST_CPL is used and all components have NINST_CPL instances;
-    if MULTI_COUPLER is False NINST_CPL is 1.</desc>
+    <desc>Number of instances for each component.  If MULTI_DRIVER is True
+    the NINST_MAX value will be used.
+    </desc>
   </entry>
 
   <entry id="NINST_LAYOUT">
