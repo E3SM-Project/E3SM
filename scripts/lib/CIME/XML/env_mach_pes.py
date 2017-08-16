@@ -80,4 +80,17 @@ class EnvMachPes(EnvBase):
         return num_nodes, self.get_spare_nodes(num_nodes)
 
     def get_spare_nodes(self, num_nodes):
-        return int(math.ceil(float(num_nodes) * (self.get_value("PCT_SPARE_NODES") / 100.0)))
+        force_spare_nodes = self.get_value("FORCE_SPARE_NODES")
+        if force_spare_nodes != -999:
+            return force_spare_nodes
+
+        if self.get_value("ALLOCATE_SPARE_NODES"):
+            ten_pct = int(math.ceil(float(num_nodes) * 0.1))
+            if ten_pct < 1:
+                return 1 # Always provide at lease one spare node
+            elif ten_pct > 10:
+                return 10 # Never provide more than 10 spare nodes
+            else:
+                return ten_pct
+        else:
+            return 0

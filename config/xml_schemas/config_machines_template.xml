@@ -103,6 +103,7 @@
     <!-- module system: allowed module_system type values are:
 	 module  http://www.tacc.utexas.edu/tacc-projects/mclay/lmod
 	 soft http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html
+         none
       -->
     <module_system type="module">
       <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/perl</init_path>

@@ -20,7 +20,6 @@ module component_mod
   use seq_comm_mct,     only: seq_comm_iamin, seq_comm_namelen, num_inst_frc
   use seq_comm_mct,     only: seq_comm_suffix, seq_comm_name, seq_comm_setnthreads
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
-  use seq_comm_mct,     only: seq_comm_petlist
   use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
   use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
   use seq_diag_mct,     only: seq_diag_avect_mct
