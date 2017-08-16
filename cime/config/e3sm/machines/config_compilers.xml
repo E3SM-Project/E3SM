@@ -1163,6 +1163,158 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<machine MACH="edison">
+  <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
+  <NODENAME_REGEX>edison</NODENAME_REGEX>
+  <TESTS>acme_developer</TESTS>
+  <COMPILERS>intel,gnu,cray</COMPILERS>
+  <MPILIBS>mpt,mpi-serial</MPILIBS>
+  <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch/edison</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <OS>CNL</OS>
+  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <SUPPORTED_BY>cseg</SUPPORTED_BY>
+  <GMAKE_J>8</GMAKE_J>
+  <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+  <PES_PER_NODE>24</PES_PER_NODE>
+  <PROJECT>acme</PROJECT>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <mpirun mpilib="default">
+    <executable>srun</executable>
+    <arguments>
+      <arg name="label"> --label</arg>
+      <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+      <arg name="thread_count" > -c {{ thread_count }}</arg>
+    </arguments>
+  </mpirun>
+  <module_system type="module">
+    <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+    <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+    <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+    <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+    <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <modules>
+      <command name="rm">PrgEnv-intel</command>
+      <command name="rm">PrgEnv-cray</command>
+      <command name="rm">PrgEnv-gnu</command>
+      <command name="rm">intel</command>
+      <command name="rm">cce</command>
+      <command name="rm">gcc</command>
+      <command name="rm">cray-parallel-netcdf</command>
+      <command name="rm">cray-parallel-hdf5</command>
+      <command name="rm">pmi</command>
+      <command name="rm">cray-libsci</command>
+      <command name="rm">cray-mpich2</command>
+      <command name="rm">cray-mpich</command>
+      <command name="rm">cray-netcdf</command>
+      <command name="rm">cray-hdf5</command>
+      <command name="rm">cray-netcdf-hdf5parallel</command>
+      <command name="rm">craype-sandybridge</command>
+      <command name="rm">craype-ivybridge</command>
+      <command name="rm">craype</command>
+      <command name="rm">papi</command>
+      <command name="rm">cmake</command>
+      <command name="rm">cray-petsc</command>
+      <command name="rm">esmf</command>
+    </modules>
+
+    <modules compiler="intel">
+      <command name="load">PrgEnv-intel</command>
+      <command name="rm">intel</command>
+      <command name="load">intel/15.0.1.133</command>
+      <!--command name="load">intel/16.0.2.181</command-->
+      <!--command name="load">intel/17.0.0.098</command-->
+      <command name="rm">cray-libsci</command>
+    </modules>
+    <modules compiler="cray">
+      <command name="load">PrgEnv-cray</command>
+      <command name="switch">cce cce/8.4.3</command>
+    </modules>
+    <modules compiler="gnu">
+      <command name="load">PrgEnv-gnu</command>
+      <command name="switch">gcc gcc/5.1.0</command>
+    </modules>
+    <modules compiler="!intel">
+      <command name="switch">cray-libsci/16.07.1</command>
+    </modules>
+
+    <modules>
+      <command name="rm">craype</command>
+      <command name="load">craype/2.5.5</command>
+      <command name="load">craype-ivybridge</command>
+      <command name="rm">pmi</command>
+      <command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
+
+      <!--command name="load">cray-mpich/7.3.1</command  acme original  -->
+      <!--command name="load">cray-mpich/7.4.1</command  edison default -->
+      <command name="load">cray-mpich/7.2.5</command>
+    </modules>
+
+    <modules mpilib="mpi-serial">
+      <command name="load">cray-hdf5/1.8.16</command>
+      <command name="load">cray-netcdf/4.4.0</command>
+    </modules>
+    <modules mpilib="!mpi-serial">
+      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+      <command name="load">cray-hdf5-parallel/1.8.16</command>
+      <command name="load">cray-parallel-netcdf/1.6.1</command>
+    </modules>
+    <modules>
+      <command name="load">papi/5.4.3.2</command>
+      <command name="load">perl/5.20.0</command>
+      <command name="load">cmake/3.3.2</command>
+      <!--command name="load">cray-petsc/3.5.3.0</command-->
+    </modules>
+  </module_system>
+
+  <environment_variables>
+    <env name="MPICH_ENV_DISPLAY">1</env>
+    <env name="MPICH_VERSION_DISPLAY">1</env>
+    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+
+    <env name="OMP_STACKSIZE">64M</env>
+  </environment_variables>
+
+</machine>
+
+
+
+
+<compiler MACH="edison" COMPILER="intel18">
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <MPICC> icc </MPICC>
+  <MPICXX> icpc </MPICXX>
+  <MPIFC> ifort </MPIFC>
+  <SLIBS>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
+    <append> -mkl -lpthread </append>
+  </SLIBS>
+</compiler>
+
+
+
+
+
 <compiler MACH="edison" COMPILER="intel">
   <CONFIG_ARGS>
     <base> --host=Linux </base>
