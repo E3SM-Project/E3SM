@@ -107,7 +107,6 @@ module CLMFatesInterfaceMod
 
    use ChecksBalancesMod     , only : SummarizeNetFluxes, FATES_BGC_Carbon_BalanceCheck
    use EDTypesMod            , only : ed_patch_type
-   use EDTypesMod            , only : ed_hist_scpfmaps
    use FatesHydraulicsMemMod , only : nlevsoi_hyd
    use FatesInterfaceMod     , only : hlm_numlevgrnd, hlm_numlevsoil, hlm_numlevdecomp_full
    use EDMainMod             , only : ed_ecosystem_dynamics

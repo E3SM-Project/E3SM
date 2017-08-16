@@ -214,8 +214,6 @@ contains
 
     namelist /clm_inparm / use_c13, use_c14
 
-    namelist /clm_inparm / fates_paramfile, use_ed, use_ed_spitfire
-
     namelist /clm_inparm/ fates_paramfile, use_ed,      &
           use_fates_spitfire, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
