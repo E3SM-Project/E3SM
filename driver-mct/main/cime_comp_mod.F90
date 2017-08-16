@@ -71,7 +71,6 @@ module cime_comp_mod
     use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
     use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
     use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
-    use seq_comm_mct, only: seq_comm_petlist
 
    ! clock & alarm routines and variables
    use seq_timemgr_mod, only: seq_timemgr_type
@@ -572,10 +571,10 @@ module cime_comp_mod
    character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
    character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
    character(*), parameter :: F0R = "('"//subname//" : ', A, 2g23.15 )"
-   character(*), parameter :: FormatA = '(A,": =============== ", A41,          " ===============")'
-   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,5x,   " ===============")'
-   character(*), parameter :: FormatR = '(A,": =============== ", A31,F9.3,1x,  " ===============")'
-   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,1x," ===============")'
+   character(*), parameter :: FormatA = '(A,": =============== ", A44,          " ===============")'
+   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,8x,   " ===============")'
+   character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
+   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,4x," ===============")'
 !===============================================================================
 contains
 !===============================================================================
