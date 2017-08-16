@@ -263,10 +263,8 @@ def _create_component_modelio_namelists(case, files):
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
             if maxinst == 1 and model != 'cpl':
                 inst_count = case.get_value("NINST_" + model.upper())
-            elif model != 'esp':
-                inst_count = maxinst
             else:
-                inst_count = 1
+                inst_count = maxinst
 
             inst_string = ""
             inst_index = 1
