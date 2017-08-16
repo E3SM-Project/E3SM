@@ -625,6 +625,18 @@ def get_charge_account(machobj=None):
     2. File $HOME/.cime/config
     3. config_machines.xml (if machobj provided)
     4. default to same value as PROJECT
+
+    >>> import CIME
+    >>> import CIME.XML.machines
+    >>> machobj = CIME.XML.machines.Machines(machine="theta")
+    >>> project = get_project(machobj)
+    >>> charge_account = get_charge_account(machobj)
+    >>> project == charge_account
+    True
+    >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
+    >>> get_charge_account(machobj)
+    'ChargeAccount'
+    >>> reset_cime_config()
     """
     charge_account = os.environ.get("CHARGE_ACCOUNT")
     if (charge_account is not None):
