@@ -19,7 +19,8 @@ module desp_comp_mod
   use seq_timemgr_mod, only: seq_timemgr_RestartAlarmIsOn
   use seq_comm_mct,    only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use seq_comm_mct,    only: num_inst_cpl => num_inst_driver
-
+  ! Used to link esp components across multiple drivers
+  use seq_comm_mct,    only: global_comm
 
   implicit none
   private
@@ -130,6 +131,7 @@ CONTAINS
     integer(IN)                    :: CurrentTOD ! model sec into model date
     integer(IN)                    :: stepno     ! step number
     character(len=CL)              :: calendar   ! calendar type
+    integer :: global_mype, global_numpes
 
     !----- define namelist -----
     namelist / desp_nml /                                                     &
@@ -218,6 +220,12 @@ CONTAINS
       !------------------------------------------------------------------------
 
       call shr_strdata_pioinit(SDESP, COMPID)
+
+      call mpi_comm_rank(global_comm, global_mype, ierr)
+      call mpi_comm_size(global_comm, global_numpes, ierr)
+
+      write(logunit,*)'DESP: I am global rank ',global_mype,' of ',global_numpes
+
 
       !------------------------------------------------------------------------
       ! Validate mode

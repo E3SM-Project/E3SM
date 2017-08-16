@@ -184,7 +184,9 @@ module seq_comm_mct
   character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')','(',a,2i6,')')"
   character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
   character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
-  integer :: Global_Comm
+
+  ! Exposed for use in the esp component, please don't use this elsewhere
+  integer, public :: Global_Comm
   integer :: driver_comm
 
   character(len=32), public :: &
