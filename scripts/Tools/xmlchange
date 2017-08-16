@@ -110,24 +110,26 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
                     value = case.get_value(xmlid, resolved=False,
                                            subgroup=subgroup)
                     xmlval = "%s %s" % (value, xmlval)
+
                 if type_str is not None and not force:
                     xmlval = convert_to_type(xmlval, type_str, xmlid)
 
-                if not dryrun :
+                if not dryrun:
                     newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
                     expect(newval is not None,"No variable \"%s\" found"%xmlid)
-                else :
+                else:
                     logger.warning("'%s' = '%s'" , xmlid , xmlval )
         else:
             if append:
                 value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
                 xmlval = "%s %s" % (value, xmlval)
-            type_str = case.get_type_info(xmlid)
-            if not force:
-                xmlval = convert_to_type(xmlval, type_str, xmlid)
-            newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
 
-            expect(newval is not None,"No variable \"%s\" found"%xmlid)
+            type_str = case.get_type_info(xmlid)
+            if type_str is not None and not force:
+                xmlval = convert_to_type(xmlval, type_str, xmlid)
+
+            newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+            expect(newval is not None,"No variable '%s' found" % xmlid)
 
     if not noecho:
         argstr = ""
