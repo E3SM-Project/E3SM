@@ -7,56 +7,21 @@ import json
 import getpass
 import datetime
 import importlib
-import dask.bag
-import dask.multiprocessing
-from dask.distributed import Client
+import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name
 
 def _get_default_diags(set_num):
-    """Get the data from the json corresponding to set_num"""
+    """Returns the path from the json corresponding to set_num"""
     set_num = get_set_name(set_num)
     folder = '{}'.format(set_num)
     fnm = '{}_AMWG_default.json'.format(set_num)
     pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
     if not os.path.exists(pth):
         raise RuntimeError("Plotting via set '{}' not supported".format(set_num))
-    with open(pth) as json_file:
-        json_data = json.loads(json_file.read())
-    return json_data
-
-def make_parameters(original_parameter, vars_to_ignore=[]):
-    """Create multiple parameters given a list of
-    parameters in a json and an original parameter"""
-
-    if hasattr(original_parameter, 'custom_diags'):
-        with open(original_parameter.custom_diags) as json_file:
-            json_data = json.loads(json_file.read())
-    else:
-        json_data = {'': []}  # the first key doesn't hold any value, so it's ''
-        for set_num in original_parameter.sets:
-            default_set_runs = _get_default_diags(set_num)
-            for _, set_runs in default_set_runs.iteritems():
-                for single_run in set_runs:
-                    json_data[''].append(single_run)
-    parameters = []
-    for key in json_data:
-        for single_run in json_data[key]:
-            p = ACMEParameter()
-            for attr_name in single_run:
-                setattr(p, attr_name, single_run[attr_name])
-
-            # Add attributes of original_parameter to p
-            for var in original_parameter.__dict__:
-                if var not in vars_to_ignore:
-                    p.__dict__[var] = original_parameter.__dict__[var]
-            p.check_values()
-            p.user = getpass.getuser()
-            parameters.append(p)
-    return parameters
-
+    return pth
 
 def run_diag(parameters):
     """For a single set of parameters, run the corresponding diags."""
@@ -73,57 +38,43 @@ def run_diag(parameters):
         print('Starting to run ACME Diagnostics.')
         module.run_diag(parameters)
 
-def serial(parameters):
-    """Run the diagnostics serially"""
-    for p in parameters:
-        run_diag(p)
-
-def distribute(parameters):
-    """Run the diagnostics in parallel distributedly"""
-    try:
-        client = Client(parameters[0].scheduler_addr)
-        results = client.map(run_diag, parameters)
-        client.gather(results)
-    finally:
-        client.close()
-
-def multiprocess(parameters):
-    """Run the diagnostics in parallel using multiprocessing"""
-    bag = dask.bag.from_sequence(parameters)
-
-    with dask.set_options(get=dask.multiprocessing.get):
-        if hasattr(parameters[0], 'num_workers'):
-            results = bag.map(run_diag).compute(num_workers=parameters[0].num_workers) 
-        else:
-            # num of workers is defaulted to the number of processes
-            results = bag.map(run_diag).compute()
-
 if __name__ == '__main__':
     parser = ACMEParser()
-    original_parameter = parser.get_parameter(default_vars=False, check_values=False)
+    original_parameter = parser.get_orig_parameters(default_vars=False, check_values=False)
+    # needed for distributed running
+    # chown of all generated files to the user who ran the diags
+    original_parameter.user = getpass.getuser()
+
     if not hasattr(original_parameter, 'results_dir'):
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
-    # if user wants all of the default diags for the sets (ex: sets=[5, 7]), then
-    # don't overwrite the sets keyword in the default json files.
-    ignore_vars = [] if hasattr(original_parameter, 'custom_diags') else ['sets']
-    parameters = make_parameters(original_parameter, vars_to_ignore=ignore_vars)
+    if hasattr(original_parameter, 'other_parameters'):
+        # use the parameters given by -d
+        parameters = parser.get_parameters(orig_parameters=original_parameter, check_values=False)
+
+    else:
+        # load the default jsons
+        default_jsons_paths = []
+        for set_num in original_parameter.sets:
+            default_jsons_paths.append(_get_default_diags(set_num))
+        other_parameters = parser.get_other_parameters(files_to_open=default_jsons_paths, check_values=False)
+
+        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the default jsons
+        parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=['sets'])
    
-    print(parameters[0].__dict__)
     if not os.path.exists(original_parameter.results_dir):
         os.makedirs(original_parameter.results_dir, 0775)
 
     if parameters[0].multiprocessing:
-        multiprocess(parameters)
+        cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
-        distribute(parameters)
+        cdp.cdp_run.distribute(run_diag, parameters)
     else:
-        serial(parameters)
+        cdp.cdp_run.serial(run_diag, parameters)
 
     pth = os.path.join(parameters[0].results_dir, 'viewer')
     if not os.path.exists(pth):
         os.makedirs(pth)
 
     create_viewer(pth, parameters, parameters[0].output_format[0])
-    
