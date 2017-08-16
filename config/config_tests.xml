@@ -442,7 +442,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
     <CHECK_TIMING>FALSE</CHECK_TIMING>
     <NODE_FAIL_REGEX>JGF FAKE NODE FAIL</NODE_FAIL_REGEX>
-    <PCT_SPARE_NODES>300</PCT_SPARE_NODES>
+    <FORCE_SPARE_NODES>3</FORCE_SPARE_NODES>
   </test>
 
   <test NAME="ICP">
