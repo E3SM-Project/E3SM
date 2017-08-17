@@ -164,7 +164,7 @@ def _save_prerun_timing_acme(case, lid):
         "*.xml",
         "user_nl_*",
         "*env_mach_specific*",
-        "Macros",
+        "Macros*",
         "README.case",
         "Depends.%s" % mach,
         "Depends.%s" % compiler,
