@@ -981,9 +981,9 @@ contains
           
           qflx_snwcp_liq     =>    waterflux_vars%qflx_snwcp_liq_col     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_snwcp_ice     =>    waterflux_vars%qflx_snwcp_ice_col     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
-          qflx_dew_grnd      =>    waterflux_vars%qflx_dew_grnd_col      , & ! Output: [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]      
-          qflx_dew_snow      =>    waterflux_vars%qflx_dew_snow_col      , & ! Output: [real(r8) (:)   ] surface dew added to snow pack (mm H2O /s) [+]    
-          qflx_sub_snow      =>    waterflux_vars%qflx_sub_snow_col      , & ! Output: [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s) [+]   
+          !qflx_dew_grnd      =>    waterflux_vars%qflx_dew_grnd_col      , & ! Output: [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]
+          !qflx_dew_snow      =>    waterflux_vars%qflx_dew_snow_col      , & ! Output: [real(r8) (:)   ] surface dew added to snow pack (mm H2O /s) [+]
+          !qflx_sub_snow      =>    waterflux_vars%qflx_sub_snow_col      , & ! Output: [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s) [+]
           qflx_drain         =>    waterflux_vars%qflx_drain_col         , & ! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
           qflx_qrgwl         =>    waterflux_vars%qflx_qrgwl_col         , & ! Output: [real(r8) (:)   ] qflx_surf at glaciers, wetlands, lakes (mm H2O /s)
           qflx_rsub_sat      =>    waterflux_vars%qflx_rsub_sat_col      , & ! Output: [real(r8) (:)   ] soil saturation excess [mm h2o/s]                 

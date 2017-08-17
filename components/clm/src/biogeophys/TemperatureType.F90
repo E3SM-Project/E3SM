@@ -103,6 +103,9 @@ module TemperatureType
      ! For VSFM model
      real(r8), pointer :: t_soil_col_1d            (:)   ! 1D temperature of soil layers (Kelvin)
 
+     ! For coupling with pflotran
+     real(r8), pointer :: t_nearsurf_col           (:)   ! near-surface air temperature averaged over bare-veg as BC  (Kelvin)
+
    contains
 
      procedure, public  :: Init         
@@ -237,7 +240,10 @@ contains
     allocate(this%c_h2osfc_col             (begc:endc))                      ; this%c_h2osfc_col             (:)   = nan
 
     ! For VSFM model
-    allocate(this%t_soil_col_1d            ((endc-begc+1)*nlevgrnd))         ; this%t_soil_col_1d            (:) = nan
+    allocate(this%t_soil_col_1d            ((endc-begc+1)*nlevgrnd))         ; this%t_soil_col_1d            (:)   = nan
+
+    ! for coupling with pflotran
+    allocate(this%t_nearsurf_col           (begc:endc))                      ; this%t_nearsurf_col           (:)   = nan
 
   end subroutine InitAllocate
 
