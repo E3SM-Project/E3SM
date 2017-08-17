@@ -512,12 +512,20 @@ class TESTRUNFAIL(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         script = \
 """
-echo Insta fail
-echo model failed > {}/cpl.log.$LID
-exit -1
-""".format(rundir)
+if [ -z "$TESTRUNFAIL_PASS" ]; then
+  echo Insta fail
+  echo model failed > {}/cpl.log.$LID
+  exit -1
+else
+  echo Insta pass
+  echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
+  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+fi
+""".format(rundir, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
