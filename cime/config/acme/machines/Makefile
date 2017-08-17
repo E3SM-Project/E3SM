@@ -290,6 +290,25 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+# Set MOAB info if it is being used
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  ifdef MOAB_PATH
+    CPPDEFS += -DHAVE_MOAB
+    ifndef INC_MOAB
+      INC_MOAB:=$(MOAB_PATH)/include
+    endif
+    ifndef LIB_MOAB
+      LIB_MOAB:=$(MOAB_PATH)/lib
+    endif
+  else
+    $(error MOAB_PATH must be defined when USE_MOAB is TRUE)
+  endif
+
+  # get the "IMESH_LIBS" list as an env var
+  include $(LIB_MOAB)/iMesh-Defs.inc
+
+endif
+
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 
 ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
@@ -389,6 +408,9 @@ ifdef INC_TRILINOS
 endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
+endif
+ifdef INC_MOAB
+  INCLDIR += -I$(INC_MOAB)
 endif
 
 ifeq ($(MODEL),driver)
@@ -554,6 +576,11 @@ endif
 # Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
 ifeq ($(strip $(USE_ALBANY)), TRUE)
   SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
+# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  SLIBS += $(IMESH_LIBS)
 endif
 
 # Add libraries and flags that we need on the link line when C++ code is included
