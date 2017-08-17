@@ -2,7 +2,11 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc glc="SGLC">Stub glacier (land ice) component</desc>
+  </description>
+
 
   <entry id="COMP_GLC">
     <type>char</type>
@@ -13,8 +17,10 @@
     <desc>Name of land-ice component</desc>
   </entry>
 
-  <description>
-    <desc compset="_SGLC">Stub glc component</desc>
-  </description>
+  <help>
+    =========================================
+    SGLC naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>

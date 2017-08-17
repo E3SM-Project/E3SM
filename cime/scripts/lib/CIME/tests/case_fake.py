@@ -22,6 +22,7 @@ class CaseFake(object):
         casename = os.path.basename(case_root)
         self.set_value('CASE', casename)
         self.set_value('CASEBASEID', casename)
+        self.set_value('RUN_TYPE', 'startup')
         self.set_rundir()
 
     def get_value(self, item):
@@ -100,4 +101,3 @@ class CaseFake(object):
         inside CASEROOT)
         """
         self.set_value('RUNDIR', os.path.join(self.get_value('CASEROOT'), 'run'))
-

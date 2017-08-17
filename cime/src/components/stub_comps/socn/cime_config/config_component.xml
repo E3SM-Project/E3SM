@@ -17,4 +17,10 @@
     <desc compset="_SOCN">Stub ocn component</desc>
   </description>
 
+  <help>
+    =========================================
+    SOCN naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

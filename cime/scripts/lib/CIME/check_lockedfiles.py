@@ -22,7 +22,7 @@ def lock_file(filename, caseroot=None, newname=None):
     fulllockdir = os.path.join(caseroot, LOCKED_DIR)
     if not os.path.exists(fulllockdir):
         os.mkdir(fulllockdir)
-    logging.debug("Locking file %s to %s"%(filename, newname))
+    logging.debug("Locking file {} to {}".format(filename, newname))
     shutil.copyfile(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
 
 def unlock_file(filename, caseroot=None):
@@ -59,21 +59,21 @@ def check_pelayouts_require_rebuild(case, models):
         # for any component
         env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
         for comp in models:
-            if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
+            if case.get_value("{}_PE_CHANGE_REQUIRES_REBUILD".format(comp)):
                 # Changing these values in env_mach_pes.xml will force
                 # you to clean the corresponding component
-                old_tasks   = env_mach_pes_locked.get_value("NTASKS_%s" % comp)
-                old_threads = env_mach_pes_locked.get_value("NTHRDS_%s" % comp)
-                old_inst    = env_mach_pes_locked.get_value("NINST_%s" % comp)
+                old_tasks   = env_mach_pes_locked.get_value("NTASKS_{}".format(comp))
+                old_threads = env_mach_pes_locked.get_value("NTHRDS_{}".format(comp))
+                old_inst    = env_mach_pes_locked.get_value("NINST_{}".format(comp))
 
-                new_tasks   = case.get_value("NTASKS_%s" % comp)
-                new_threads = case.get_value("NTHRDS_%s" % comp)
-                new_inst    = case.get_value("NINST_%s" % comp)
+                new_tasks   = case.get_value("NTASKS_{}".format(comp))
+                new_threads = case.get_value("NTHRDS_{}".format(comp))
+                new_inst    = case.get_value("NINST_{}".format(comp))
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logging.warn("%s pe change requires clean build %s %s" % (comp, old_tasks, new_tasks))
+                    logging.warn("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
-                    run_cmd_no_fail("./case.build --clean %s" % cleanflag)
+                    run_cmd_no_fail("./case.build --clean {}".format(cleanflag))
 
         unlock_file("env_mach_pes.xml", case.get_value("CASEROOT"))
 
@@ -106,14 +106,14 @@ def check_lockedfiles(caseroot=None):
                 f1obj = EnvBatch(caseroot, cfile)
                 f2obj = EnvBatch(caseroot, lfile)
             else:
-                logging.warn("Locked XML file '%s' is not current being handled" % fpart)
+                logging.warn("Locked XML file '{}' is not current being handled".format(fpart))
                 continue
             diffs = f1obj.compare_xml(f2obj)
             if diffs:
-                logging.warn("File %s has been modified"%lfile)
+                logging.warn("File {} has been modified".format(lfile))
                 for key in diffs.keys():
-                    print("  found difference in %s : case %s locked %s" %
-                          (key, repr(diffs[key][0]), repr(diffs[key][1])))
+                    print("  found difference in {} : case {} locked {}"
+                          .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
 
                 if objname == "env_mach_pes":
                     expect(False, "Invoke case.setup --reset ")
@@ -134,4 +134,4 @@ def check_lockedfiles(caseroot=None):
                 elif objname == "env_batch":
                     expect(False, "Batch configuration has changed, please run case.setup --reset")
                 else:
-                    expect(False, "'%s' diff was not handled" % objname)
+                    expect(False, "'{}' diff was not handled".format(objname))

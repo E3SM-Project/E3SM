@@ -16,7 +16,7 @@ def _run_pylint(on_file, interactive):
 ###############################################################################
     pylint = find_executable("pylint")
 
-    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement"
+    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement,logging-format-interpolation"
     cimeroot = get_cime_root()
 
     if "scripts/Tools" in on_file:
@@ -54,9 +54,9 @@ def _matches(file_path, file_ends):
 def _should_pylint_skip(filepath):
 ###############################################################################
     # TODO - get rid of this
-    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs")
+    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "doc")
     for dir_to_skip in list_of_directories_to_ignore:
-        if dir_to_skip in filepath:
+        if dir_to_skip + "/" in filepath:
             return True
 
     return False

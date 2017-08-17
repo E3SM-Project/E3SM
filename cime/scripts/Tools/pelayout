@@ -178,9 +178,9 @@ def modify_ntasks(case, new_tot_tasks):
         # Check for valid recomputation
         for comp in comp_classes:
             expect(new_tasks[comp] * curr_tot_tasks / new_tot_tasks == curr_tasks[comp],
-                   "Task change invalid for %s"%comp)
+                   "Task change invalid for {}" % comp)
             expect(new_roots[comp] * curr_tot_tasks / new_tot_tasks == curr_roots[comp],
-                   "Root PE change invalid for %s"%comp)
+                   "Root PE change invalid for {}" % comp)
         # End for
 
         # We got this far? Go ahead and change PE layout

@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
 
-<entry_id>
+<entry_id version="2.0">
 
 <!-- The list of component classes that this coupler/driver knows how
      to deal with.  Stub and data models for each component class
@@ -384,7 +384,7 @@
   <entry id="PAUSE_COMPONENT_LIST">
     <type>char</type>
     <default_value>none</default_value>
-    <values>
+    <values match="last">
       <value compset="_DESP">cpl</value>
     </values>
     <group>run_begin_stop_restart</group>
@@ -501,22 +501,6 @@
     <file>env_run.xml</file>
     <desc>Logical to turn on short term archiving.
     If TRUE, short term archiving will be turned on.</desc>
-  </entry>
-
-  <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Logical to archive all interim restart files, not just those at eor
-    If TRUE, perform short term archiving on all interim restart files,
-    not just those at the end of the run. By default, this value is TRUE.
-    The restart files are saved under the specific component directory
-    ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
-    Interim restart files are created using the REST_N and REST_OPTION variables.
-    This is for expert users ONLY and requires expert knowledge.
-    We will not document this further in this guide.</desc>
   </entry>
 
   <entry id="DOUT_L_MS">
@@ -719,8 +703,8 @@
 
   <entry id="COMP_INTERFACE">
     <type>char</type>
-    <valid_values>MCT</valid_values>
-    <default_value>MCT</default_value>
+    <valid_values>mct</valid_values>
+    <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>use MCT component interface</desc>
@@ -1467,6 +1451,40 @@
     <desc>ocn2atm state mapping file decomp type</desc>
   </entry>
 
+  <entry id="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file decomp type</desc>
+  </entry>
+
   <entry id="LND2ATM_FMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1652,6 +1670,40 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2lnd state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file decomp type</desc>
   </entry>
 
   <entry id="GLC2ICE_RMAPNAME">
@@ -1911,14 +1963,6 @@
     <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc>
   </entry>
 
-  <entry id="DOUT_L_MSROOT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_dout</group>
-    <file>env_run.xml</file>
-    <desc>Root directory on long term archiving store system for long-term data archives.</desc>
-  </entry>
-
   <entry id="MPI_RUN_COMMAND">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -2046,21 +2090,12 @@
     <desc>Number of instances for each component</desc>
   </entry>
 
-
   <entry id="TOTALPES">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
     <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="TOTAL_CORES">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>total number of cores used (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="MAX_TASKS_PER_NODE">
@@ -2635,7 +2670,7 @@
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
 
-  <help>
+ <help>
     =========================================
     Notes:
     (1) Time period is first four characters of

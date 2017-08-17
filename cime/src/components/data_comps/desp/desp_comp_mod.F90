@@ -472,7 +472,7 @@ CONTAINS
           call get_restart_filenames(ind, cpl_resume, errcode)
           allocate(rfilenames(1))
           rfilenames(1) = cpl_resume
-          varname = 'a2x_ax_Sa_tbot'
+          varname = 'x2oacc_ox_Sa_pslv'
         case default
           call shr_sys_abort(subname//'Unrecognized ind')
         end select

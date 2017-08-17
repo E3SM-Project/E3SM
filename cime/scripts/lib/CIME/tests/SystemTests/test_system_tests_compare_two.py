@@ -166,7 +166,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         if casename not in self.run_pass_casenames:
             raise RuntimeError('casename not in run_pass_casenames')
 
-    def _component_compare_test(self, suffix1, suffix2):
+    def _component_compare_test(self, suffix1, suffix2, success_change=False):
         # Trying to use the real version of _component_compare_test would pull
         # too much baggage into these tests. Since the return value from this
         # method isn't important, it's sufficient for the tests of this class to
@@ -355,12 +355,13 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         expected_calls = [
             Call(METHOD_run_indv,
-                 {'suffix': run_one_suffix, 'CASE': casename}),
+                {'suffix': run_one_suffix, 'CASE': casename}),
             Call(METHOD_run_indv,
-                 {'suffix': run_two_suffix, 'CASE': '%s.%s'%(casename, run_two_suffix)}),
+                {'suffix': run_two_suffix, 'CASE': '{}.{}'.format(casename, run_two_suffix)}),
             Call(METHOD_link_to_case2_output, {}),
             Call(METHOD_component_compare_test,
-                 {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})]
+                {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
+        ]
         self.assertEqual(expected_calls, mytest.log)
 
     def test_run1_fails(self):
@@ -394,4 +395,3 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
-

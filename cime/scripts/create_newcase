@@ -12,10 +12,10 @@ def parse_command_line(args, cimeroot, description):
 ###############################################################################
     help_str = \
 """
-%s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
+{0} --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
 OR
-%s --help
-""" % ((os.path.basename(args[0]), ) * 2)
+{0} --help
+""".format(os.path.basename(args[0]))
     model = get_model()
 
     parser = argparse.ArgumentParser(usage=help_str,
@@ -32,20 +32,20 @@ OR
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
-                        "To see list of current compsets, use the utility manage_case in this directory")
+                        "To see list of current compsets, use the utility query_config in this directory")
 
     parser.add_argument("--res", "-res", required=True,
                         help="(required) Specify a model grid resolution. "
-                        "To see list of current compsets, use the utility manage_case in this directory")
+                        "To see list of current compsets, use the utility query_config in this directory")
 
     parser.add_argument("--machine", "-mach",
                         help="Specify a machine. default: match NODENAME_REGEX in config_machines.xml "
-                        "To see list of current  machines, use the utility manage_case in this directory"
+                        "To see list of current  machines, use the utility query_config in this directory"
                         )
 
     parser.add_argument("--compiler", "-compiler",
                         help="Specify a compiler. "
-                        "To see list of supported compilers for each machine, use the utility manage_case in this directory")
+                        "To see list of supported compilers for each machine, use the utility query_config in this directory")
 
     parser.add_argument("--ninst",default=1,
                         help="Specify number of component instances"
@@ -53,7 +53,7 @@ OR
 
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
-                        "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
+                        "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
 
     parser.add_argument("--project", "-project",
@@ -65,18 +65,18 @@ OR
 
     parser.add_argument("--user-mods-dir", "-user_mods_dir",
                         help="Path to directory with user_nl_* files and xmlchange "
-                        "commands to utilize. This can also include SourceMods")
-
-    parser.add_argument("--user-compset", action="store_true",
-                        help="If set, then the --compset argument is treated as a user specified compset."
-                        "This assumes that all of the compset settings in the"
-                        "compset along name have been defined for all of its components"
-                        "If the compset name is found as a supported compset, then it will be treated as such.")
+                        "commands to utilize. This can also include SourceMods. "
+                        "This can be an absolute path, a path relative to the "
+                        "current directory, or a path relative to "
+                        "cime_config/usermods_dirs/ under the primary component "
+                        "for the given compset (for example, in an F compset "
+                        "whose primary component is cam, '--user-mods-dir foo' "
+                        "could be found in components/cam/cime_config/usermods_dirs/foo).")
 
     parser.add_argument("--pesfile",
-                        help="Only used and required for --user-compset argument."
-                        "Full pathname of the pes specification file"
-                        "This argument is required if --user-compset is True")
+                        help="Full pathname of an optional pes specification "
+                        "file. The file can follow either the config_pes.xml or "
+                        "the env_mach_pes.xml format.")
 
     parser.add_argument("--user-grid", action="store_true",
                         help="If set, then the -grid argument is treated as a user specified grid."
@@ -128,20 +128,16 @@ OR
 
     if args.srcroot is not None:
         expect(os.path.isdir(args.srcroot),
-               "Input non-default directory srcroot %s does not exist " %args.srcroot)
+               "Input non-default directory srcroot {} does not exist ".format(args.srcroot))
         args.srcroot = os.path.abspath(args.srcroot)
 
     if args.gridfile is not None:
         expect(os.path.isfile(args.gridfile),
-               "Grid specification file %s does not exist " %args.gridfile)
+               "Grid specification file {} does not exist ".format(args.gridfile))
 
     if args.pesfile is not None:
         expect(os.path.isfile(args.pesfile),
-               "Pes specification file %s cannot be found " %args.pesfile)
-
-    if args.user_compset:
-        expect(args.pesfile is not None,
-               "--pesfile is required if --user-compset is set")
+               "Pes specification file {} cannot be found ".format(args.pesfile))
 
     if args.user_grid:
         expect(args.gridfile is not None,
@@ -159,7 +155,7 @@ OR
 
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
-        args.user_mods_dir, args.user_compset, args.pesfile, \
+        args.user_mods_dir, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
         args.walltime, args.queue, args.output_root, args.script_root, \
         run_unsupported, args.answer, args.input_dir
@@ -171,7 +167,7 @@ def _main_func(description):
 
     casename, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
-        user_mods_dir, user_compset, pesfile, \
+        user_mods_dir, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
         output_root, script_root, run_unsupported, \
         answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
@@ -181,10 +177,14 @@ def _main_func(description):
     else:
         caseroot = os.path.abspath(script_root)
 
+    if user_mods_dir is not None:
+        if os.path.isdir(user_mods_dir):
+            user_mods_dir = os.path.abspath(user_mods_dir)
+
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists
     expect(not (os.path.exists(caseroot) and not test),
-           "Case directory %s already exists"%caseroot)
+           "Case directory {} already exists".format(caseroot))
 
     with Case(caseroot, read_only=False) as case:
         # Set values for env_case.xml
@@ -195,8 +195,7 @@ def _main_func(description):
         # Configure the Case
         case.configure(compset, grid, machine_name=machine, project=project,
                        pecount=pecount, compiler=compiler, mpilib=mpilib,
-                       user_compset=user_compset, pesfile=pesfile,
-                       user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                       pesfile=pesfile,user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
                        walltime=walltime, queue=queue, output_root=output_root,
                        run_unsupported=run_unsupported, answer=answer,
                        input_dir=input_dir)
@@ -205,9 +204,6 @@ def _main_func(description):
 
         # Write out the case files
         case.flush(flushall=True)
-        if user_mods_dir is not None:
-            if os.path.isdir(user_mods_dir):
-                user_mods_dir = os.path.abspath(user_mods_dir)
         case.apply_user_mods(user_mods_dir)
 
     # Lock env_case.xml
