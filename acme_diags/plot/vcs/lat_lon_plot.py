@@ -75,7 +75,10 @@ def plot_rmse_and_corr(canvas, metrics_dict):
 
 def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
     if parameter_colormap is not '':
-        method.colormap = vcs.getcolormap(parameter_colormap)
+        if parameter_colormap in vcs.listelements('colormap'):
+            method.colormap = vcs.getcolormap(parameter_colormap)
+        else:
+            method.colormap = vcs.vcs.matplotlib2vcs(parameter_colormap)
         colors = vcs.getcolors(method.levels, colors=range(6, 240))
         method.fillareacolors = colors
 
