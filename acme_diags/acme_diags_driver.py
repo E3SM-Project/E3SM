@@ -49,23 +49,22 @@ if __name__ == '__main__':
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
-    if hasattr(original_parameter, 'other_parameters'):
+    if hasattr(original_parameter, 'other_parameters') and original_parameter.other_parameters != []:
         # use the parameters given by -d
         parameters = parser.get_parameters(orig_parameters=original_parameter, check_values=False)
 
     else:
         # load the default jsons
         default_jsons_paths = []
+
         for set_num in original_parameter.sets:
             default_jsons_paths.append(_get_default_diags(set_num))
         other_parameters = parser.get_other_parameters(files_to_open=default_jsons_paths, check_values=False)
-
         # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the default jsons
         parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=['sets'])
-   
+
     if not os.path.exists(original_parameter.results_dir):
         os.makedirs(original_parameter.results_dir, 0775)
-
     if parameters[0].multiprocessing:
         cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
