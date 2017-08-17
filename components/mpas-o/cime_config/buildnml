@@ -77,6 +77,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $ic_date .= '170328';
         $ic_prefix .= 'oEC60to30v3wLI';
         $decomp_prefix .= 'mpas-o.graph.info.';
+        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx.EC60to30v3wLI.170328.nc';
 } elsif ( $OCN_GRID eq 'oQU240' ) {
 	$ic_date .= '151209';
 	$ic_prefix .= 'ocean.QU.240km';
