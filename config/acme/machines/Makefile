@@ -251,8 +251,9 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
     $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
   endif
 
-  # Get the "PETSC_LIB" list an env var
-  include $(PETSC_PATH)/conf/variables
+  # Get the "PETSC_LIB" list an env var 
+  include $(PETSC_PATH)/lib/petsc/conf/variables
+  
 endif
 
 # Set Trilinos info if it is being used
@@ -564,7 +565,7 @@ endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
-  SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
+  SLIBS += ${PETSC_LIB}
 endif
 
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
@@ -904,7 +905,7 @@ cleanrof:
 	$(RM) -fr $(EXEROOT)/rof/obj
 
 cleanlnd:
-	$(RM) -f $(LIBROOT)/liblnd.a
+	$(RM) -f $(LIBROOT)/$(LNDLIB)
 	$(RM) -fr $(EXEROOT)/lnd/obj
 
 cleancsmshare:
