@@ -70,7 +70,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
     ax.yaxis.set_major_formatter(lat_formatter)
-    ax.tick_params(labelsize=8.0, direction='out', pad=-2, width=1)
+    ax.tick_params(labelsize=8.0, direction='out', width=1)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
 
@@ -83,14 +83,13 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params(labelsize=9.0, length=0)
 
     else:
+
         cbar.set_ticks(levels[1:-1])
-        labels = ["%4.1f" % l for l in levels[1:-1]]
-        cbar.ax.set_yticklabels(labels,ha='right')
-        #cbar.ax.set_yticklabels(labels,ha='right')
-        cbar.ax.tick_params( labelsize=9.0,pad=25, length=0)
+        labels = levels[1:-1]
+        cbar.ax.set_yticklabels(labels)
+        cbar.ax.tick_params(labelsize=9.0, length=0)
 
     # Min, Mean, Max
-#    if len(stats) == 3:
     fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
     fig.text(panel[n][0]+0.7635,panel[n][1]+0.2107,"%.2f\n%.2f\n%.2f" % stats[0:3],ha='right',fontdict=plotSideTitle)
 
@@ -110,12 +109,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     mean1 = metrics_dict['test']['mean']
     max1  = metrics_dict['test']['max']
 
-    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
+    plot_panel(0, fig, proj, test, parameter.contour_levels, parameter.test_colormap, 
+               (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1) )
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
-    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
+    plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap, 
+               (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2) )
 
     # Third panel
     min3  = metrics_dict['diff']['min']
@@ -123,7 +124,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
     max3  = metrics_dict['diff']['max']
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
-    plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
+    plot_panel(2, fig, proj, diff, parameter.diff_levels, parameter.diff_colormap, 
+               (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c) )
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)

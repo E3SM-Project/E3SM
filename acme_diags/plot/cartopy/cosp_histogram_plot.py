@@ -128,7 +128,7 @@ def plot(reference, test, diff,_, parameter):#underscore meanding argument not i
 
     plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
     plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.reference_name,parameter.reference_title,test.units))
-    plot_panel(2, fig, _, diff, parameter.diff_levels, 'RdBu_r', (parameter.diff_name,parameter.diff_title,test.units))
+    plot_panel(2, fig, _, diff, parameter.diff_levels, parameter.diff_colormap, (parameter.diff_name,parameter.diff_title,test.units))
 
 #    min2  = metrics_dict['ref']['min']
 #    mean2 = metrics_dict['ref']['mean']

@@ -177,7 +177,7 @@ def run_diag(parameter):
                     regions = ['global']
 
                 for region in regions:
-                        print("Selected region: {}".format(region))
+                    print("Selected region: {}".format(region))
 
                     mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
     

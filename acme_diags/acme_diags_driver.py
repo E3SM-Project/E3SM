@@ -40,7 +40,7 @@ def run_diag(parameters):
 
 if __name__ == '__main__':
     parser = ACMEParser()
-    original_parameter = parser.get_orig_parameters(default_vars=False, check_values=False)
+    original_parameter = parser.get_orig_parameters(default_vars=False, check_values=True)
     # needed for distributed running
     # chown of all generated files to the user who ran the diags
     original_parameter.user = getpass.getuser()
