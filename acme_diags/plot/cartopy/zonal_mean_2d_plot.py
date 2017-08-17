@@ -115,12 +115,12 @@ def plot(reference, test, diff, metrics_dict, parameter):
     mean1 = metrics_dict['test']['mean']
     max1  = metrics_dict['test']['max']
 
-    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
+    plot_panel(0, fig, proj, test, parameter.contour_levels, parameter.test_colormap, (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
-    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
+    plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap, (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
 
     # Third panel
     min3  = metrics_dict['diff']['min']
@@ -129,7 +129,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
-    plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
+    plot_panel(2, fig, proj, diff, parameter.diff_levels, parameter.diff_colormap, (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)

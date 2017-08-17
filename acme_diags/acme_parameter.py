@@ -39,7 +39,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.reference_name = ''
         self.reference_title = ''
-        self.reference_colormap = ''
+        self.reference_colormap = 'viridis'
         self.reference_units = ''
 
         self.diff_name = ''

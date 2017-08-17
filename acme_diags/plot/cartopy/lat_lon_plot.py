@@ -115,7 +115,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
-    plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.test_colormap, 
+    plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap, 
                (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2) )
 
     # Third panel
