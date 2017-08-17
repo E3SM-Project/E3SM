@@ -440,7 +440,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_N>0</STOP_N>
     <REST_OPTION>none</REST_OPTION>
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
-    <TIMER_LEVEL>12</TIMER_LEVEL>
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
@@ -530,7 +529,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_N>10</STOP_N>
     <REST_OPTION>none</REST_OPTION>
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
-    <TIMER_LEVEL>12</TIMER_LEVEL>
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
