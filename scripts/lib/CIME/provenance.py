@@ -60,7 +60,8 @@ def _save_build_provenance_acme(case, lid):
     env_prov = os.path.join(exeroot, "build_environment.%s.txt" % lid)
     if os.path.exists(env_prov):
         os.remove(env_prov)
-    copy_umask(os.path.join(caseroot, "software_environment.txt"), env_prov)
+    env_module = case.get_env("mach_specific")
+    env_module.save_all_env_info(env_prov)
 
     # For all the just-created post-build provenance files, symlink a generic name
     # to them to indicate that these are the most recent or active.
