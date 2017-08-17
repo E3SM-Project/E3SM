@@ -1384,7 +1384,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
         # Test that re-running works
-        tests = update_acme_tests.get_test_suite("cime_developer")
+        tests = update_acme_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
         for test in tests:
             casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
 
