@@ -200,6 +200,9 @@ contains
       call addfld('TROPH_FD', horiz_only,    'A', 'probability', 'Tropopause Found (Hybrid Stobie)')
      end if
 
+    call add_default('TROP_P', 1, ' ')
+    call add_default('TROP_T', 1, ' ')
+    call add_default('hstobie_linoz', 1, ' ')
 
     call tropopause_read_file()
 

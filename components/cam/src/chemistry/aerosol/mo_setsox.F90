@@ -41,9 +41,11 @@ contains
     implicit none
 
     logical :: history_aerosol   ! Output aerosol diagnostics
+    logical :: history_verbose   ! produce verbose history output
 
     call phys_getopts( &
          history_aerosol_out = history_aerosol, &
+         history_verbose_out = history_verbose, &
          prog_modal_aero_out=modal_aerosols )
 
     cloud_borne = modal_aerosols
@@ -129,7 +131,7 @@ contains
     end if
 
     call addfld( 'XPH_LWC',(/ 'lev' /), 'A','kg/kg', 'pH value multiplied by lwc')
-    if ( history_aerosol ) then    
+    if ( history_aerosol .and. history_verbose ) then    
        call add_default ('XPH_LWC', 1, ' ') 
     endif
 

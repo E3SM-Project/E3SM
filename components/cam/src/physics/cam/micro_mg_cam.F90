@@ -624,6 +624,7 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    integer :: m, mm
    logical :: history_amwg         ! output the variables used by the AMWG diag package
+   logical :: history_verbose      ! produce verbose history output
    logical :: history_budget       ! Output tendencies and state variables for CAM4
                                    ! temperature, water vapor, cloud ice and cloud
                                    ! liquid budgets.
@@ -897,6 +898,7 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
+                     history_verbose_out        = history_verbose      , &
                      history_budget_out         = history_budget       , &
                      history_budget_histfile_num_out = budget_histfile)
 
@@ -906,8 +908,10 @@ subroutine micro_mg_cam_init(pbuf2d)
       call add_default ('AQSNOW   ', 1, ' ')
       call add_default ('ANRAIN   ', 1, ' ')
       call add_default ('ANSNOW   ', 1, ' ')
-      call add_default ('ADRAIN   ', 1, ' ')
-      call add_default ('ADSNOW   ', 1, ' ')
+      if (history_verbose) then
+         call add_default ('ADRAIN   ', 1, ' ')
+         call add_default ('ADSNOW   ', 1, ' ')
+      endif
       call add_default ('AREI     ', 1, ' ')
       call add_default ('AREL     ', 1, ' ')
       call add_default ('AWNC     ', 1, ' ')

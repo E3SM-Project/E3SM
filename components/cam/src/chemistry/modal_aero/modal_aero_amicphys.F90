@@ -5798,11 +5798,13 @@ implicit none
    character(2)                   :: tmpch2
 
    logical                        :: history_aerosol      ! Output the MAM aerosol tendencies
+   logical                        :: history_verbose      ! produce verbose history output
    logical                        :: history_aerocom    ! Output the aerocom history
    !-----------------------------------------------------------------------
  
 
-      call phys_getopts( history_aerosol_out        = history_aerosol   )
+      call phys_getopts( history_aerosol_out = history_aerosol, &
+                         history_verbose_out = history_verbose   )
 #if ( defined CAM_VERSION_IS_ACME ) 
       history_aerocom = .false.
 #else
@@ -5916,7 +5918,7 @@ implicit none
             unit = 'kg/m2/s'
             if (tmpnamea(1:4) == 'num_' .or. tmpnamea(1:4) == 'NUM_') unit = '#/m2/s'
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if ( history_aerosol ) call add_default( fieldname, 1, ' ' )
+            if ( history_aerosol .and. history_verbose ) call add_default( fieldname, 1, ' ' )
             if ( masterproc ) write(iulog,'(3(a,3x))') 'gasaerexch addfld', fieldname, unit
          end if
          if ( do_qqcw_coltendaa(lmz,iqqcwtend_rnam)) then
@@ -5926,7 +5928,7 @@ implicit none
             unit = 'kg/m2/s'
             if (tmpnamea(1:4) == 'num_' .or. tmpnamea(1:4) == 'NUM_') unit = '#/m2/s'
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if ( history_aerosol ) call add_default( fieldname, 1, ' ' )
+            if ( history_aerosol .and. history_verbose ) call add_default( fieldname, 1, ' ' )
             if ( masterproc ) write(iulog,'(3(a,3x))') 'gasaerexch addfld', fieldname, unit
          end if
       end do ! lmz
@@ -5971,7 +5973,7 @@ implicit none
             unit = 'kg/m2/s'
             if (tmpnamea(1:4) == 'num_' .or. tmpnamea(1:4) == 'NUM_') unit = '#/m2/s'
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if ( history_aerosol ) call add_default( fieldname, 1, ' ' )
+            if ( history_aerosol .and. history_verbose ) call add_default( fieldname, 1, ' ' )
             if ( masterproc ) write(iulog,'(3(a,3x))') 'modal_aero_coag_init addfld', fieldname, unit
          end if
       end do ! lmz
@@ -6004,7 +6006,7 @@ implicit none
             unit = 'kg/m2/s'
             if (tmpnamea(1:4) == 'num_' .or. tmpnamea(1:4) == 'NUM_') unit = '#/m2/s'
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if ( history_aerosol ) call add_default( fieldname, 1, ' ' )
+            if ( history_aerosol .and. history_verbose ) call add_default( fieldname, 1, ' ' )
             if ( masterproc ) write(iulog,'(3(a,3x))') 'modal_aero_newnuc_init addfld', fieldname, unit
          end if
       end do ! lmz
