@@ -70,7 +70,7 @@ _TEST_SUITES = {
                              ("ERS.f19_g16.I1850CNECACTCBC" ,"clm-eca"),
                              ("SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
                              ("SMS_Ld4.f45_f45.ICLM45ED","clm-fates"),
-                             ("ERS_Ld3.f45_f45.ICLM45ED","clm-fates"),
+                             ("ERP_Ld3.f45_f45.ICLM45ED","clm-fates"),
                              ("ERS.f19_g16.I1850CLM45","clm-betr"),
                              ("ERS.f19_g16.I1850CLM45","clm-vst"),
                               "ERS.ne11_oQU240.I20TRCLM45",
