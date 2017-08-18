@@ -27,7 +27,10 @@ module CNBalanceCheckMod
   use PhosphorusStateType , only : phosphorusstate_type
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
-
+  ! forest fertilization experiment
+  use clm_time_manager    , only : get_curr_date
+  use CNStateType         , only : fert_type , fert_continue, fert_dose
+  use clm_varctl          , only : forest_fert_exp
 
   !
   implicit none
@@ -289,6 +292,11 @@ contains
     integer :: fc             ! lake filter indices
     logical :: err_found      ! error flag
     real(r8):: dt             ! radiation time step (seconds)
+
+    integer:: kyr                     ! current year 
+    integer:: kmo                     ! month of year  (1, ..., 12)
+    integer:: kda                     ! day of month   (1, ..., 31) 
+    integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
     !-----------------------------------------------------------------------
 
     associate(                                                                 &
@@ -332,6 +340,15 @@ contains
          col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
          if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
               fert_to_sminn(c) + soyfixn_to_sminn(c)
+         ! forest fertilization
+         if (forest_fert_exp) then
+            call get_curr_date(kyr, kmo, kda, mcsec)
+            if (kda == 1  .and. mcsec == 0 ) then
+               if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
+                  col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
+               end if
+             end if
+         end if
 
          ! calculate total column-level outputs
          col_noutputs(c) = denit(c) + col_fire_nloss(c) + dwt_nloss(c) + product_nloss(c)
@@ -442,6 +459,11 @@ contains
     real(r8) :: leafp_to_litter_col(bounds%begc:bounds%endc) 
     real(r8) :: frootp_to_litter_col(bounds%begc:bounds%endc) 
     real(r8):: flux_mineralization_col(bounds%begc:bounds%endc)   !  local temperary variable
+
+    integer:: kyr                     ! current year 
+    integer:: kmo                     ! month of year  (1, ..., 12)
+    integer:: kda                     ! day of month   (1, ..., 31) 
+    integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
     !-----------------------------------------------------------------------
 
     associate(                                                                   &
@@ -539,6 +561,15 @@ contains
 !         col_pinputs(c) =  flux_mineralization_col(c)/dt
 !         if (crop_prog) col_pinputs(c) = col_pinputs(c) + fert_p_to_sminp(c) 
 
+         ! forest fertilization
+         if (forest_fert_exp) then
+            call get_curr_date(kyr, kmo, kda, mcsec)
+            if (kda == 1  .and. mcsec == 0 ) then
+               if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
+                  col_pinputs(c) = col_pinputs(c) + fert_dose(c,kmo)/dt
+               end if
+             end if
+         end if
          col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
 !         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt

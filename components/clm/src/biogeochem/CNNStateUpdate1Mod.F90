@@ -20,6 +20,10 @@ module CNNStateUpdate1Mod
   use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
+  ! forest fertilization experiment
+  use clm_time_manager       , only : get_curr_date
+  use CNStateType            , only : fert_type , fert_continue, fert_dose
+  use clm_varctl             , only : forest_fert_exp
   !
   implicit none
   save
@@ -54,6 +58,11 @@ contains
     integer :: fp,fc     ! lake filter indices
     real(r8):: dt        ! radiation time step (seconds)
     real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
+
+    integer:: kyr                     ! current year 
+    integer:: kmo                     ! month of year  (1, ..., 12)
+    integer:: kda                     ! day of month   (1, ..., 31) 
+    integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 
@@ -271,6 +280,36 @@ contains
             
          end if
       endif  !end if is_active_betr_bgc 
+
+      ! forest fertilization
+      if (forest_fert_exp) then
+         call get_curr_date(kyr, kmo, kda, mcsec)
+         if (.not. use_nitrif_denitrif) then
+            if (kda == 1  .and. mcsec == 0 ) then
+              do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
+                      do j = 1, nlevdecomp
+                          ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+                      end do
+                  end if
+              end do
+            end if
+         else
+            if (kda == 1  .and. mcsec == 0 ) then
+              do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
+                      do j = 1, nlevdecomp
+                          ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
+                          ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
+                          ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
+                      end do
+                  end if
+              end do
+            end if
+         end if
+      end if
 
       ! patch loop
       

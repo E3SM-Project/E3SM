@@ -43,6 +43,7 @@ module controlMod
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
+  use clm_varctl              , only: forest_fert_exp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -163,6 +164,8 @@ contains
          nu_com_phosphatase
     namelist /clm_inparm/  &
          nu_com_nfix
+    namelist /clm_inparm/ &
+         forest_fert_exp
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -629,6 +632,7 @@ contains
     call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)

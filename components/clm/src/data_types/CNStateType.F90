@@ -16,6 +16,7 @@ module CNStateType
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
+  use clm_varctl     , only: forest_fert_exp
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -24,6 +25,10 @@ module CNStateType
   !
   ! !PRIVATE MEMBER FUNCTIONS: 
   private :: checkDates
+  ! !PUBLIC TYPES:
+  integer(r8), pointer, public :: fert_type         (:)
+  integer(r8), pointer, public :: fert_continue     (:)
+  real(r8)   , pointer, public :: fert_dose         (:,:)
   ! 
   ! !PUBLIC TYPES:
   type, public :: cnstate_type
@@ -325,6 +330,9 @@ contains
     allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
     allocate(this%frac_loss_lit_to_fire_col       (begc:endc))               ; this%frac_loss_lit_to_fire_col(:) =0._r8
     allocate(this%frac_loss_cwd_to_fire_col       (begc:endc))               ; this%frac_loss_cwd_to_fire_col(:) =0._r8
+    allocate(fert_type                        (begc:endc))                   ; fert_type     (:) = 0
+    allocate(fert_continue                    (begc:endc))                   ; fert_continue (:) =0
+    allocate(fert_dose                        (begc:endc,1:12))              ; fert_dose     (:,:) = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -660,6 +668,10 @@ contains
     character(len=256)    :: locfn                    ! local filename
     integer               :: begc, endc
     integer               :: begg, endg
+
+    integer     ,pointer     :: fert_type_rdin (:)
+    integer     ,pointer     :: fert_continue_rdin (:)
+    real(r8)    ,pointer     :: fert_dose_rdin (:,:)
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -733,6 +745,47 @@ contains
     end do
     deallocate(soilorder_rdin)
 
+
+    ! --------------------------------------------------------------------
+    ! forest fertilization experiments info, Q. Z. 2017
+    ! --------------------------------------------------------------------
+    if (forest_fert_exp) then
+       allocate(fert_type_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='fert_type', flag='read',data=fert_type_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_type NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          fert_type(c) = fert_type_rdin(g)
+       end do
+       deallocate(fert_type_rdin)
+
+       allocate(fert_continue_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='fert_continue', flag='read',data=fert_continue_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_continue NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          fert_continue(c) = fert_continue_rdin(g)
+       end do
+       deallocate(fert_continue_rdin)
+
+       allocate(fert_dose_rdin(bounds%begg:bounds%endg,1:12))
+       call ncd_io(ncid=ncid, varname='fert_dose', flag='read',data=fert_dose_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_dose NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          do j = 1 , 12
+             fert_dose(c,j) = fert_dose_rdin(g,j)
+          end do
+       end do
+       deallocate(fert_dose_rdin)
+    end if
+    ! --------------------------------------------------------------------
 
     ! --------------------------------------------------------------------
     ! Read in ABM data 

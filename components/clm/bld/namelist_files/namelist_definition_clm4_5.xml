@@ -116,6 +116,10 @@ If TRUE, use new phosphatase activity algorithm that comes with nu_com module
 If TRUE, use new N2 fixation algorithm that comes with nu_com module
 </entry>
 
+<entry id="forest_fert_exp" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, run forest N/P fertilization experiment
+</entry>
 
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
