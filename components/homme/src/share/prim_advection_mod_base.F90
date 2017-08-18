@@ -516,9 +516,13 @@ OMP_SIMD
     enddo
   enddo ! ie loop
 
+#ifndef BARRIERTIMERS
   call t_startf('eus_bexchV')
+#endif
   call bndry_exchangeV( hybrid , edgeAdvp1 )
+#ifndef BARRIERTIMERS
   call t_stopf('eus_bexchV')
+#endif
 
   do ie = nets , nete
     if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
