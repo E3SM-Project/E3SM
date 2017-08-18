@@ -636,7 +636,7 @@ def get_charge_account(machobj=None):
     >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
     >>> get_charge_account(machobj)
     'ChargeAccount'
-    >>> reset_cime_config()
+    >>> del os.environ["CHARGE_ACCOUNT"]
     """
     charge_account = os.environ.get("CHARGE_ACCOUNT")
     if (charge_account is not None):
