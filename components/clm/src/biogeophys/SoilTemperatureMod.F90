@@ -697,6 +697,7 @@ contains
       ! Free up memory
       deallocate(filter_nolakec_and_nourbanc)
       deallocate(filter_nolakec_and_urbanc  )
+      deallocate(filter_lun                 )
 
     end associate
 
