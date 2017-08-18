@@ -56,7 +56,7 @@ OR
                              "if no arguments then clean all objects other than sharedlib objects")
 
     mutex_group.add_argument("-b", "--build", nargs="+", choices=allobjs,
-                             help="libs to build")
+                             help="libs to build. Will cause namelist generation to be skipped.")
 
     mutex_group.add_argument("--clean-all", action="store_true",
                              help="clean all objects including sharedlibobjects that may be used by other builds")

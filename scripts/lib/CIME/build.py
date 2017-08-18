@@ -255,10 +255,10 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
                     logger.warn(line)
 
     # clm not a shared lib for ACME
-    if get_model() != "acme" and not (buildlist is not None and "lnd" not in buildlist):
+    if get_model() != "acme" and (buildlist is None or "lnd" in buildlist):
         comp_lnd = case.get_value("COMP_LND")
         clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
-        if comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
+        if comp_lnd == "clm" and "clm4_0" not in clm_config_opts:
             logging.info("         - Building clm4_5/clm5_0 Library ")
             esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
             bldroot = os.path.join(sharedlibroot, sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
