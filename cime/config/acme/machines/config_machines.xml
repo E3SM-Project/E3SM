@@ -1130,7 +1130,7 @@
 <machine MACH="bebop">
     <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
     <NODENAME_REGEX>beboplogin.*</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>acme_integration</TESTS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,mpich,mvapich,openmpi,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/bebop</CIME_OUTPUT_ROOT>
