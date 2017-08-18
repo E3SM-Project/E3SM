@@ -334,9 +334,9 @@
     </mach>
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
-        <comment>hires 636 nodes, 68x2</comment>
-        <PES_PER_NODE>68</PES_PER_NODE>
-        <MAX_TASKS_PER_NODE>136</MAX_TASKS_PER_NODE>
+        <comment>hires 675 nodes, 64x2, ~2sypd</comment>
+        <PES_PER_NODE>64</PES_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>43200</ntasks_atm>
           <ntasks_lnd>43200</ntasks_lnd>
