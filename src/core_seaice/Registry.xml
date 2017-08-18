@@ -2290,10 +2290,10 @@
 		<var name="iceEnthalpy"			type="real"	dimensions="nIceLayers nCategories nCells Time"		name_in_code="iceEnthalpy"/>
 		<var name="iceSalinity"			type="real"	dimensions="nIceLayers nCategories nCells Time"		name_in_code="iceSalinity"/>
 		<var name="snowEnthalpy"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		name_in_code="snowEnthalpy"/>
-		<var name="snowIceMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="kg/m^3"					name_in_code="snowIceMass"/>
-		<var name="snowLiquidMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="kg/m^3"					name_in_code="snowLiquidMass"/>
-		<var name="snowGrainRadius"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="um"					name_in_code="snowGrainRadius"/>
-		<var name="snowDensity"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="um"					name_in_code="snowDensity"/>
+		<var name="snowIceMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="kg/m^3"					name_in_code="snowIceMass"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="kg/m^3"					name_in_code="snowLiquidMass"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadius"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="um"					name_in_code="snowGrainRadius"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensity"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		units="um"					name_in_code="snowDensity"		packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAge"				type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="iceAge"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceArea"			type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="firstYearIceArea"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceArea"			type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="levelIceArea"			packages="pkgColumnTracerLevelIce"/>
@@ -2376,10 +2376,10 @@
 		<var name="iceEnthalpyCell"			type="real"	dimensions="nIceLayers nCells Time"		name_in_code="iceEnthalpyCell"/>
 		<var name="iceSalinityCell"			type="real"	dimensions="nIceLayers nCells Time"		name_in_code="iceSalinityCell"/>
 		<var name="snowEnthalpyCell"			type="real"	dimensions="nSnowLayers nCells Time"		name_in_code="snowEnthalpyCell"/>
-		<var name="snowIceMassCell"			type="real"	dimensions="nSnowLayers nCells Time"		units="kg/m^3"					name_in_code="snowIceMassCell"/>
-		<var name="snowLiquidMassCell"			type="real"	dimensions="nSnowLayers nCells Time"		units="kg/m^3"					name_in_code="snowLiquidMassCell"/>
-		<var name="snowGrainRadiusCell"		type="real"	dimensions="nSnowLayers nCells Time"		units="um"					name_in_code="snowGrainRadiusCell"/>
-		<var name="snowDensityCell"		type="real"	dimensions="nSnowLayers nCells Time"		units="um"					name_in_code="snowDensityCell"/>
+		<var name="snowIceMassCell"			type="real"	dimensions="nSnowLayers nCells Time"		units="kg/m^3"					name_in_code="snowIceMassCell"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassCell"			type="real"	dimensions="nSnowLayers nCells Time"		units="kg/m^3"					name_in_code="snowLiquidMassCell"	packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusCell"		type="real"	dimensions="nSnowLayers nCells Time"		units="um"					name_in_code="snowGrainRadiusCell"	packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityCell"			type="real"	dimensions="nSnowLayers nCells Time"		units="um"					name_in_code="snowDensityCell"		packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeCell"				type="real"	dimensions="nCells Time"			name_in_code="iceAgeCell"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaCell"		type="real"	dimensions="nCells Time"			name_in_code="firstYearIceAreaCell"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaCell"			type="real"	dimensions="nCells Time"			name_in_code="levelIceAreaCell"		packages="pkgColumnTracerLevelIce"/>
@@ -2551,10 +2551,10 @@
 		<var name="iceEnthalpyMask"			type="integer"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyMask"/>
 		<var name="iceSalinityMask"			type="integer"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityMask"/>
 		<var name="snowEnthalpyMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyMask"/>
-		<var name="snowIceMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassMask"/>
-		<var name="snowLiquidMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassMask"/>
-		<var name="snowGrainRadiusMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusMask"/>
-		<var name="snowDensityMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityMask"/>
+		<var name="snowIceMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassMask"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassMask"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusMask"		type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusMask"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityMask"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeMask"				type="integer"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeMask"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaMask"		type="integer"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaMask"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaMask"			type="integer"	dimensions="ONE nCategories nCells"			name_in_code="levelIceAreaMask"		packages="pkgColumnTracerLevelIce"/>
@@ -2623,10 +2623,10 @@
 		<var name="iceEnthalpyEdgeFlux"			type="real"	dimensions="nIceLayers nCategories nEdges"		name_in_code="iceEnthalpyEdgeFlux"/>
 		<var name="iceSalinityEdgeFlux"			type="real"	dimensions="nIceLayers nCategories nEdges"		name_in_code="iceSalinityEdgeFlux"/>
 		<var name="snowEnthalpyEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowEnthalpyEdgeFlux"/>
-		<var name="snowIceMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowIceMassEdgeFlux"/>
-		<var name="snowLiquidMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowLiquidMassEdgeFlux"/>
-		<var name="snowGrainRadiusEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowGrainRadiusEdgeFlux"/>
-		<var name="snowDensityEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowDensityEdgeFlux"/>
+		<var name="snowIceMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowIceMassEdgeFlux"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowLiquidMassEdgeFlux"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowGrainRadiusEdgeFlux"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowDensityEdgeFlux"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeEdgeFlux"				type="real"	dimensions="ONE nCategories nEdges"			name_in_code="iceAgeEdgeFlux"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaEdgeFlux"			type="real"	dimensions="ONE nCategories nEdges"			name_in_code="firstYearIceAreaEdgeFlux"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaEdgeFlux"			type="real"	dimensions="ONE nCategories nEdges"			name_in_code="levelIceAreaEdgeFlux"			packages="pkgColumnTracerLevelIce"/>
@@ -2695,10 +2695,10 @@
 		<var name="iceEnthalpyProduct"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyProduct"/>
 		<var name="iceSalinityProduct"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityProduct"/>
 		<var name="snowEnthalpyProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyProduct"/>
-		<var name="snowIceMassProduct"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassProduct"/>
-		<var name="snowLiquidMassProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassProduct"/>
-		<var name="snowGrainRadiusProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusProduct"/>
-		<var name="snowDensityProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityProduct"/>
+		<var name="snowIceMassProduct"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassProduct"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassProduct"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusProduct"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityProduct"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityProduct"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeProduct"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeProduct"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaProduct"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaProduct"			packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaProduct"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="levelIceAreaProduct"			packages="pkgColumnTracerLevelIce"/>
@@ -2766,10 +2766,10 @@
 		<var name="iceEnthalpyTriangle"			type="real"	dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="iceEnthalpyTriangle"/>
 		<var name="iceSalinityTriangle"			type="real"	dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="iceSalinityTriangle"/>
 		<var name="snowEnthalpyTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowEnthalpyTriangle"/>
-		<var name="snowIceMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowIceMassTriangle"/>
-		<var name="snowLiquidMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowLiquidMassTriangle"/>
-		<var name="snowGrainRadiusTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowGrainRadiusTriangle"/>
-		<var name="snowDensityTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowDensityTriangle"/>
+		<var name="snowIceMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowIceMassTriangle"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowLiquidMassTriangle"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowGrainRadiusTriangle"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowDensityTriangle"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeTriangle"				type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="iceAgeTriangle"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaTriangle"			type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="firstYearIceAreaTriangle"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaTriangle"			type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="levelIceAreaTriangle"			packages="pkgColumnTracerLevelIce"/>
@@ -2844,14 +2844,14 @@
 		<var name="iceSalinityBarycentery"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityBarycentery"/>
 		<var name="snowEnthalpyBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyBarycenterx"/>
 		<var name="snowEnthalpyBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyBarycentery"/>
-		<var name="snowIceMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycenterx"/>
-		<var name="snowIceMassBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycentery"/>
-		<var name="snowLiquidMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassBarycenterx"/>
-		<var name="snowLiquidMassBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassBarycentery"/>
-		<var name="snowGrainRadiusBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusBarycenterx"/>
-		<var name="snowGrainRadiusBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusBarycentery"/>
-		<var name="snowDensityBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityBarycenterx"/>
-		<var name="snowDensityBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityBarycentery"/>
+		<var name="snowIceMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycenterx"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowIceMassBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycentery"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassBarycenterx"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassBarycentery"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusBarycenterx"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusBarycentery"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityBarycenterx"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowDensityBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityBarycentery"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeBarycenterx"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeBarycenterx"			packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeBarycentery"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeBarycentery"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaBarycenterx"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaBarycenterx"		packages="pkgColumnTracerFirstYearIce"/>
@@ -2991,18 +2991,18 @@
 		<var name="snowEnthalpyCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyCenter"/>
 		<var name="snowEnthalpyGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyGradx"/>
 		<var name="snowEnthalpyGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyGrady"/>
-		<var name="snowIceMassCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassCenter"/>
-		<var name="snowIceMassGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassGradx"/>
-		<var name="snowIceMassGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassGrady"/>
-		<var name="snowLiquidMassCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassCenter"/>
-		<var name="snowLiquidMassGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassGradx"/>
-		<var name="snowLiquidMassGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassGrady"/>
-		<var name="snowGrainRadiusCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusCenter"/>
-		<var name="snowGrainRadiusGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusGradx"/>
-		<var name="snowGrainRadiusGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusGrady"/>
-		<var name="snowDensityCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityCenter"/>
-		<var name="snowDensityGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityGradx"/>
-		<var name="snowDensityGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityGrady"/>
+		<var name="snowIceMassCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassCenter"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowIceMassGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassGradx"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowIceMassGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassGrady"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassCenter"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassCenter"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassGradx"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassGradx"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassGrady"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassGrady"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusCenter"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusCenter"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusGradx"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusGradx"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusGrady"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusGrady"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityCenter"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowDensityGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityGradx"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowDensityGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityGrady"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeCenter"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeCenter"				packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeGradx"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeGradx"				packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeGrady"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeGrady"				packages="pkgColumnTracerIceAge"/>
@@ -3186,10 +3186,10 @@
 		<var name="iceEnthalpyCons"			type="real"	dimensions="nIceLayers nCategories"			name_in_code="iceEnthalpyCons"/>
 		<var name="iceSalinityCons"			type="real"	dimensions="nIceLayers nCategories"			name_in_code="iceSalinityCons"/>
 		<var name="snowEnthalpyCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowEnthalpyCons"/>
-		<var name="snowIceMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowIceMassCons"/>
-		<var name="snowLiquidMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowLiquidMassCons"/>
-		<var name="snowGrainRadiusCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowGrainRadiusCons"/>
-		<var name="snowDensityCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowDensityCons"/>
+		<var name="snowIceMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowIceMassCons"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowLiquidMassCons"		packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusCons"		type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowGrainRadiusCons"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowDensityCons"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeCons"				type="real"	dimensions="ONE nCategories"				name_in_code="iceAgeCons"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaCons"		type="real"	dimensions="ONE nCategories"				name_in_code="firstYearIceAreaCons"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaCons"			type="real"	dimensions="ONE nCategories"				name_in_code="levelIceAreaCons"		packages="pkgColumnTracerLevelIce"/>
@@ -3264,14 +3264,14 @@
 		<var name="iceSalinityLocalMax"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityLocalMax"/>
 		<var name="snowEnthalpyLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyLocalMin"/>
 		<var name="snowEnthalpyLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyLocalMax"/>
-		<var name="snowIceMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMin"/>
-		<var name="snowIceMassLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMax"/>
-		<var name="snowLiquidMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassLocalMin"/>
-		<var name="snowLiquidMassLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassLocalMax"/>
-		<var name="snowGrainRadiusLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusLocalMin"/>
-		<var name="snowGrainRadiusLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusLocalMax"/>
-		<var name="snowDensityLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityLocalMin"/>
-		<var name="snowDensityLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityLocalMax"/>
+		<var name="snowIceMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMin"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowIceMassLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMax"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassLocalMin"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMassLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassLocalMax"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadiusLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusLocalMin"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusLocalMax"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityLocalMin"			packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowDensityLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityLocalMax"			packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAgeLocalMin"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeLocalMin"				packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeLocalMax"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeLocalMax"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaLocalMin"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaLocalMin"		packages="pkgColumnTracerFirstYearIce"/>
@@ -3758,9 +3758,9 @@
 		<var name="snowMeltMassCategory"		type="real"	dimensions="nCategories nCells Time"		name_in_code="snowMeltMassCategory"		units="kg/m^2"/>
 		<var name="snowRadiusRadiationCategory"	type="real"	dimensions="nCategories nCells Time"		name_in_code="snowRadiusRadiationCategory"	units="um"/>
 		<var name="snowRadiusRadiation"		type="real"	dimensions="nCells Time"			name_in_code="snowRadiusRadiation"		units="um"/>
-		<var name="tau"				type="real"	dimensions="sno_dns dTdz T"		name_in_code="snowPropertyTau"		units="um"/>
-		<var name="kappa"				type="real"	dimensions="sno_dns dTdz T"		name_in_code="snowPropertyKappa"	units="none"/>
-		<var name="drdsdt0"				type="real"	dimensions="sno_dns dTdz T"		name_in_code="snowPropertyRate"	units="um/hr"/>
+		<var name="tau"				type="real"	dimensions="sno_dns dTdz T"			name_in_code="snowPropertyTau"		units="um"/>
+		<var name="kappa"				type="real"	dimensions="sno_dns dTdz T"			name_in_code="snowPropertyKappa"	units="none"/>
+		<var name="drdsdt0"				type="real"	dimensions="sno_dns dTdz T"			name_in_code="snowPropertyRate"	units="um/hr"/>
 	</var_struct>
 
 	<!-- aerosols -->
