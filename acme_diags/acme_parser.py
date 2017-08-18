@@ -146,5 +146,19 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--backend',
             dest='backend',
-            help='Graphic backend',
+            help='Graphical backend',
+            required=False)
+        
+        self.add_argument(
+            '--multiprocessing',
+            dest='multiprocessing',
+            help='Run the diags using multiprocessing',
+            action='store_true',
+            required=False)
+
+        self.add_argument(
+            '--distributed',
+            dest='distributed',
+            help='Run the diags distributedly',
+            action='store_true',
             required=False)

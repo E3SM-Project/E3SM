@@ -51,7 +51,6 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.multiprocessing = False
         self.distributed = False
-        self.scheduler_addr = '127.0.0.1:8786'
 
     def check_values(self):
         if not hasattr(self, 'reference_data_path') or self.reference_data_path == '':
