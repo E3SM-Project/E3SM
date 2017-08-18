@@ -516,6 +516,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only):
 
     logger.info("Time spent not building: {:f} sec".format(t2 - t1))
     logger.info("Time spent building: {:f} sec".format(t3 - t2))
+    logger.info("MODEL BUILD HAS FINISHED SUCCESSFULLY")
 
     return True
 
