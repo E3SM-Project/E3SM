@@ -40,7 +40,7 @@ module clm_interface_pflotranMod
   ! !USES:
   ! Most 'USES' are declaired in each subroutine
   !  use shr_const_mod, only : SHR_CONST_G
-  use shr_kind_mod , only : r8 => shr_kind_r8
+  use shr_kind_mod , only : r8 => shr_kind_r8, CL => shr_kind_CL
   use decompMod    , only : bounds_type
   use filterMod    , only : clumpfilter
   use abortutils   , only : endrun
@@ -88,7 +88,8 @@ module clm_interface_pflotranMod
                                                         !      or inactive column in (1:bounds%endc-bounds%endc+1)
 #endif
   !
-  character(len=256), private:: pflotran_prefix = ''
+  character(len=CL), private:: pflotran_inputdir = ''
+  character(len=CL), private:: pflotran_prefix = ''
   character(len=32), private :: restart_stamp = ''
 
   real(r8), parameter :: rgas = 8.3144621d0                 ! m3 Pa K-1 mol-1
@@ -177,7 +178,7 @@ contains
     character(len=32) :: subname = 'clm_pf_readnl'  ! subroutine name
   !EOP
   !-----------------------------------------------------------------------
-    namelist / clm_pflotran_inparm / pflotran_prefix
+    namelist / clm_pflotran_inparm / pflotran_inputdir, pflotran_prefix
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard namelist file.
@@ -187,7 +188,7 @@ contains
 
        unitn = getavu()
        write(iulog,*) 'Read in clm-pflotran namelist'
-       call opnfil (NLFilename, unitn, 'F')
+       open (unitn, file=trim(NLFilename), status='old', iostat=ierr)
        call shr_nl_find_group_name(unitn, 'clm_pflotran_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_pflotran_inparm, iostat=ierr)
@@ -196,12 +197,15 @@ contains
                          errMsg(__FILE__, __LINE__))
           end if
        end if
+       close(unitn)
        call relavu( unitn )
        write(iulog, '(/, A)') " clm-pflotran namelist:"
+       write(iulog, '(A, " : ", A,/)') "   pflotran_inputdir", trim(pflotran_inputdir)
        write(iulog, '(A, " : ", A,/)') "   pflotran_prefix", trim(pflotran_prefix)
     end if
 
     ! Broadcast namelist variables read in
+    call shr_mpi_bcast(pflotran_inputdir, mpicom)
     call shr_mpi_bcast(pflotran_prefix, mpicom)
 
   end subroutine clm_pf_readnl
@@ -869,7 +873,7 @@ contains
     ! -----------------------------------------------------------------
 
     ! (4) Create PFLOTRAN model
-    call pflotranModelCreate(mpicom, pflotran_prefix, pflotran_m)
+    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
 
     call pflotranModelSetupMappingFiles(pflotran_m)
 
