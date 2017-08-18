@@ -1021,7 +1021,7 @@ end subroutine clubb_init_cnst
   ! =============================================================================== !
 
    subroutine clubb_tend_cam( &
-                              state,   ptend_all,   pbuf,     hdtime, &
+                              state,   ptend_all,   pbuf, chunk_smry, hdtime, nstep, &
                               cmfmc,   cam_in,   sgh30, & 
                               macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o)
 
@@ -1077,6 +1077,9 @@ end subroutine clubb_init_cnst
                                         stats_begin_timestep_api, &
                                         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
                                         sat_mixrat_liq_api
+
+   use global_summary,            only: tp_stat_smry, get_smry_field_idx, get_chunk_smry
+    
 #endif
 
    implicit none
@@ -1099,6 +1102,8 @@ end subroutine clubb_init_cnst
    ! ---------------------- !
     
    type(physics_buffer_desc), pointer :: pbuf(:)
+
+   type(tp_stat_smry) :: chunk_smry(:)
 
    ! ---------------------- !
    ! Output Auguments !
