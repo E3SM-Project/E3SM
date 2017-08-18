@@ -40,6 +40,11 @@ SET(THETA_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
 
+SET(THETA_SRCS_C
+  ${SRC_DIR}/nvector_external.h
+  ${SRC_DIR}/nvector_external.c
+)
+
 SET(THETHAH_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
 )
@@ -89,4 +94,8 @@ theta_setup()
 ############################################################################
 createTestExec(theta theta ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
-
+# link SUNDIALS and ARKODE libraries to theta
+TARGET_LINK_LIBRARIES(theta sundials_farkode)
+TARGET_LINK_LIBRARIES(theta sundials_arkode)
+TARGET_LINK_LIBRARIES(theta sundials_nvecserial)
+TARGET_LINK_LIBRARIES(theta sundials_fnvecserial)

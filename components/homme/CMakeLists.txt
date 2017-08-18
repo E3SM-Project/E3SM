@@ -129,6 +129,12 @@ IF (DEFINED EXTRAE_DIR)
   SET(HAVE_EXTRAE TRUE)
 ENDIF ()
 
+# this section is for linking to SUNDIALS/ARKODE as an external library
+IF (DEFINED SUNDIALS_DIR)
+  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib)
+  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include/)
+ENDIF ()
+
 ###########################################
 # Definitions for timing library
 ###########################################
