@@ -40,32 +40,53 @@ def run_diag(parameters):
 
 if __name__ == '__main__':
     parser = ACMEParser()
-    original_parameter = parser.get_orig_parameters(default_vars=False, check_values=True)
-    # needed for distributed running
-    # chown of all generated files to the user who ran the diags
-    original_parameter.user = getpass.getuser()
+    args = parser.view_args()
 
-    if not hasattr(original_parameter, 'results_dir'):
-        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        original_parameter.results_dir = '{}-{}'.format('acme_diags_results', dt)
+    if args.parameters and not args.other_parameters:  # -p only
+        original_parameter = parser.get_orig_parameters(default_vars=False)
+        other_parameters = parser.get_other_parameters(check_values=False)
 
-    if hasattr(original_parameter, 'other_parameters'):
-        # use the parameters given by -d
-        parameters = parser.get_parameters(orig_parameters=original_parameter, check_values=False)
+        if not hasattr(original_parameter, 'sets'):
+            print("When running with just -p, you need to define the sets parameter.")
+            sys.exit()
 
-    else:
         # load the default jsons
         default_jsons_paths = []
+
         for set_num in original_parameter.sets:
             default_jsons_paths.append(_get_default_diags(set_num))
         other_parameters = parser.get_other_parameters(files_to_open=default_jsons_paths, check_values=False)
 
-        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the default jsons
-        parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=['sets'])
-   
-    if not os.path.exists(original_parameter.results_dir):
-        os.makedirs(original_parameter.results_dir, 0775)
+        # Don't put the sets from the Python parameters to the default.
+        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the default jsons like lat_lon_AMWG_default.json
+        vars_to_ignore = ['sets']
+        parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=vars_to_ignore)
 
+    elif not args.parameters and args.other_parameters:  # -d only
+        other_parameters = parser.get_other_parameters(check_values=True)
+        parameters = parser.get_parameters(other_parameters=other_parameters)
+
+    elif args.parameters and args.other_parameters:  # -p and -d
+        original_parameter = parser.get_orig_parameters(default_vars=False)
+        other_parameters = parser.get_other_parameters(check_values=False)
+        parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters)
+
+    else:
+        raise RuntimeError('You tried running the diags without -p and/or -d')
+
+
+    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    for p in parameters:
+        # needed for distributed running
+        # chown of all generated files to the user who ran the diags
+        p.user = getpass.getuser()
+
+        if not hasattr(p, 'results_dir'):
+            p.results_dir = '{}-{}'.format('acme_diags_results', dt)
+
+
+    if not os.path.exists(parameters[0].results_dir):
+        os.makedirs(parameters[0].results_dir, 0775)
     if parameters[0].multiprocessing:
         cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
