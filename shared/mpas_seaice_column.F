@@ -510,9 +510,9 @@ contains
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
        call MPAS_pool_get_subpool(block % structs, "snow", snow)
 
-       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
-       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
 
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
        call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
@@ -6087,7 +6087,6 @@ contains
     call MPAS_pool_get_array(tracers, "snowDensity", snowDensity, 1)
     call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
-
     nTracers = 1
 
     ! surfaceTemperature
@@ -11038,7 +11037,9 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive
+         pkgTracerZSalinityActive, &
+         pkgColumnTracerSnowDensityActive, &
+         pkgColumnTracerSnowGrainRadiusActive
 
 
     ! mesh stand-ins
@@ -11104,6 +11105,8 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowDensityActive", pkgColumnTracerSnowDensityActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
 
        ! ice age
@@ -11253,6 +11256,17 @@ contains
           call set_stand_in_tracer_array(block, "verticalSalinity")
        endif
 
+       ! snow density tracers
+       if (.not. pkgColumnTracerSnowDensityActive) then
+          call set_stand_in_tracer_array(block, "snowDensity")
+          call set_stand_in_tracer_array(block, "snowLiquidMass")
+          call set_stand_in_tracer_array(block, "snowIceMass")
+       endif
+
+       ! snow grain radius
+       if (.not. pkgColumnTracerSnowGrainRadiusActive) then
+          call set_stand_in_tracer_array(block, "snowGrainRadius")
+       endif
        !-----------------------------------------------------------------------
        ! other column packages
        !-----------------------------------------------------------------------
@@ -11362,7 +11376,9 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive
+         pkgTracerZSalinityActive, &
+         pkgColumnTracerSnowDensityActive, &
+         pkgColumnTracerSnowGrainRadiusActive
 
     ! drag variables
     type(field1DReal), pointer :: &
@@ -11420,6 +11436,8 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowDensityActive", pkgColumnTracerSnowDensityActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
        ! ice age
        if (.not. pkgColumnTracerIceAgeActive) then
@@ -11568,6 +11586,17 @@ contains
           call finalize_stand_in_tracer_array(block, "verticalSalinity")
        endif
 
+       ! snow density tracers
+       if (.not. pkgColumnTracerSnowDensityActive) then
+          call finalize_stand_in_tracer_array(block, "snowDensity")
+          call finalize_stand_in_tracer_array(block, "snowLiquidMass")
+          call finalize_stand_in_tracer_array(block, "snowIceMass")
+       endif
+
+       ! snow grain radius
+       if (.not. pkgColumnTracerSnowGrainRadiusActive) then
+          call finalize_stand_in_tracer_array(block, "snowGrainRadius")
+       endif
        !-----------------------------------------------------------------------
        ! other column packages
        !-----------------------------------------------------------------------
