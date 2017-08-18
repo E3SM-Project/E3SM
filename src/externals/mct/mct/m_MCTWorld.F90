@@ -282,7 +282,6 @@
 
 ! allocate a tmp array for the receive on root.
   if(myGid == 0) then
-     print *,__FILE__,__LINE__,Gsize, ncomps
     allocate(tmparray(0:Gsize-1,ncomps),stat=ier)
     if(ier/=0) call die(myname_,'allocate(tmparray)',ier)
 
