@@ -12,7 +12,11 @@ and the gfortran compiler. The gfortran compiler can be installed using homebrew
 (http://brew.sh), or using pre-compiled binaries from the MacOSX HPC website
 (http://hpc.soureforge.net), or it can be compiled by the user from the GNU sources.
 
-The standard clang compiler does not support OpenMP. Users wanting to compile MPAS
+Caveats:
+
+(1) MPAS cannot be compiled with gfortran-clang if GEN_F90=true.
+
+(2) The standard clang compiler does not support OpenMP. Users wanting to compile MPAS
 with OpenMP support on MacOSX will have to install the LLVM clang compiler, which is
 accomplished easiest with homebrew. Since this alternative clang compiler is not in
 the standard search/library path, the user will have to modify the call to the clang
@@ -57,3 +61,10 @@ would become
 ...
 
 assuming that the LLVM clang compiler is installed in /usr/local/opt/llvm.
+
+
+bluegene: Compiling MPAS on IBM Bluegene using the xl compilers
+----------
+All MPAS cores except the ocean compile on IBM Bluegene using the xl compilers. The ocean
+core currently does not work on IBM Bluegene. Known limitations: OPENMP must be disabled
+(OPENMP=false) for compiling, since the xl compilers do not support nested OpenMP directives.

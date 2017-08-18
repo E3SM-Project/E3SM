@@ -13,7 +13,7 @@ MODULE ESMF
    USE ESMF_AlarmClockMod
    USE ESMF_Stubs   ! add new dummy interfaces and typedefs here as needed
    USE MeatMod
-#include <ESMF_TimeMgr.inc>
+#include "ESMF_TimeMgr.inc"
    INTEGER, PARAMETER :: ESMF_MAX_ALARMS=MAX_ALARMS
 !
 END MODULE ESMF

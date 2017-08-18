@@ -24,14 +24,28 @@ module mpas_io
    integer, parameter :: PIO_REALKIND = PIO_DOUBLE
 #endif
 
+#ifdef USE_PIO2
+   integer, parameter :: MPAS_INT_FILLVAL = PIO_FILL_INT
+   character, parameter :: MPAS_CHAR_FILLVAL = achar(0)  ! TODO: To be replaced with PIO_FILL_CHAR once PIO2 provides this variable
+#else
    integer, parameter :: MPAS_INT_FILLVAL = NF_FILL_INT
    character, parameter :: MPAS_CHAR_FILLVAL = achar(NF_FILL_CHAR)
+#endif
+
+#ifdef USE_PIO2
+#ifdef SINGLE_PRECISION
+   real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = PIO_FILL_FLOAT
+#else
+   real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = PIO_FILL_DOUBLE
+#endif
+#else
 #ifdef SINGLE_PRECISION
    real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = NF_FILL_FLOAT
 #else
    real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = NF_FILL_DOUBLE
 #endif
-   
+#endif
+
    interface MPAS_io_get_var
       module procedure MPAS_io_get_var_int0d
       module procedure MPAS_io_get_var_int1d
@@ -267,7 +281,11 @@ module mpas_io
             pio_mode = PIO_64BIT_OFFSET
          else if (ioformat == MPAS_IO_NETCDF4) then
             pio_iotype = PIO_iotype_netcdf4p
+#ifdef USE_PIO2
+            pio_mode = 0
+#else
             pio_mode = PIO_64BIT_OFFSET
+#endif
          end if
       end if
 

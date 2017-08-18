@@ -625,7 +625,7 @@ contains
                 do iCell = 1, nCells
                       zhi = min (layerInterfaceSigma_Input(k1+1,iCell), layerInterfaceSigma(k2+1)) 
                       zlo = max (layerInterfaceSigma_Input(k1,iCell), layerInterfaceSigma(k2))
-                      hOverlap = max (zhi-zlo, 0.d0) * thickness(iCell)
+                      hOverlap = max (zhi-zlo, 0.0_RKIND) * thickness(iCell)
                       hTsum(iCell,nt,k2) = htsum(iCell,nt,k2)    &
                                        +  tracers(nt,k1,iCell) * hOverlap
                 enddo      ! iCell
@@ -781,7 +781,7 @@ contains
                do nt = 1, nTracers
                   zhi = min (layerInterfaceSigma_Input(k1+1), layerInterfaceSigma(k2+1))
                   zlo = max (layerInterfaceSigma_Input(k1), layerInterfaceSigma(k2))
-                  hOverlap = max (zhi-zlo, 0.d0) * thisThk
+                  hOverlap = max (zhi-zlo, 0.0_RKIND) * thisThk
                   hTsum(nt,k2) = htsum(nt,k2) + tracers(nt,k1,iCell) * hOverlap
                enddo         ! nt
             enddo            ! k1

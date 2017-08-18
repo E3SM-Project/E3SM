@@ -404,6 +404,9 @@ ifeq "$(USE_PIO2)" "true"
 	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
 	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
 	LIBS = -L$(PIO)/lib -lpiof -lpioc
+ifneq ($(wildcard $(PIO)/lib/libgptl.a), ) # Check for GPTL library for PIO2
+	LIBS += -lgptl
+endif
 else
 	CPPINCLUDES = -I$(PIO)/include
 	FCINCLUDES = -I$(PIO)/include
@@ -414,6 +417,9 @@ ifeq "$(USE_PIO2)" "true"
 	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
 	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
 	LIBS = -L$(PIO) -lpiof -lpioc
+ifneq ($(wildcard $(PIO)/libgptl.a), ) # Check for GPTL library for PIO2
+	LIBS += -lgptl
+endif
 else
 	CPPINCLUDES = -I$(PIO)
 	FCINCLUDES = -I$(PIO)
@@ -509,7 +515,6 @@ ifeq "$(OPENMP)" "true"
 endif #OPENMP IF
 
 ifeq "$(PRECISION)" "single"
-	FFLAGS += "-DSINGLE_PRECISION"
 	CFLAGS += "-DSINGLE_PRECISION"
 	CXXFLAGS += "-DSINGLE_PRECISION"
 	override CPPFLAGS += "-DSINGLE_PRECISION"
