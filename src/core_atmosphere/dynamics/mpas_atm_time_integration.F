@@ -2736,6 +2736,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: theta_m, ru_p, rtheta_pp, rtheta_pp_old
 !      real (kind=RKIND), dimension(:), pointer :: dcEdge
       real (kind=RKIND), pointer :: smdiv, config_len_disp
+      real (kind=RKIND), dimension(:), pointer :: specZoneMaskEdge
 
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nCellsSolve
@@ -2745,6 +2746,7 @@ module atm_time_integration
       integer :: cell1, cell2, iEdge, k
 
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'specZoneMaskEdge', specZoneMaskEdge)
 !      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(state, 'theta_m', theta_m, 1)
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
@@ -2780,7 +2782,7 @@ module atm_time_integration
 !!  scaled 3d divergence damping
                divCell1 = -(rtheta_pp(k,cell1)-rtheta_pp_old(k,cell1))
                divCell2 = -(rtheta_pp(k,cell2)-rtheta_pp_old(k,cell2))
-               ru_p(k,iEdge) = ru_p(k,iEdge) + coef_divdamp*(divCell2-divCell1) &
+               ru_p(k,iEdge) = ru_p(k,iEdge) + coef_divdamp*(divCell2-divCell1)*(1.0_RKIND - specZoneMaskEdge(iEdge)) &
                                                       /(theta_m(k,cell1)+theta_m(k,cell2))
 
             end do
