@@ -3094,10 +3094,16 @@
 		<var name="inverseLayerThickness" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Inverse layer thickness for advection"
 		/>
-		<var name="tracerMin" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="tracerMinHor" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Min tracer value for monotonic advection"
 		/>
-		<var name="tracerMax" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="tracerMaxHor" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Max tracer value for monotonic advection"
+		/>
+		<var name="tracerMinVert" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Min tracer value for monotonic advection"
+		/>
+		<var name="tracerMaxVert" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Max tracer value for monotonic advection"
 		/>
 		<var name="fluxIncoming" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
