@@ -4071,7 +4071,7 @@ subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
   implicit none
 
   integer , intent(in) :: comm_in
-  integer , intent(in) :: comm_out
+  integer , intent(out) :: comm_out
   integer , intent(out)   :: num_inst_driver
   integer , intent(out)   :: id      ! instance ID, starts from 1
   !
@@ -4079,6 +4079,7 @@ subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
   !
   integer :: ierr, inst_comm, mype, nu, numpes !, pes
   integer :: ninst_driver, drvpes
+  character(len=*),    parameter :: subname = '(cime_cpl_init) '
 
   namelist /cime_driver_inst/ ninst_driver
 
@@ -4094,7 +4095,14 @@ subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
     nu = shr_file_getUnit()
     open(unit = nu, file = NLFileName, status = 'old', iostat = ierr)
     rewind(unit = nu)
-    read(unit = nu, nml = cime_driver_inst, iostat = ierr)
+    ierr = 1
+    do while ( ierr /= 0 ) 
+       read(unit = nu, nml = cime_driver_inst, iostat = ierr)
+       if (ierr < 0) then
+          call shr_sys_abort( subname//':: namelist read returns an'// &
+               ' end of file or end of record condition' )
+       endif
+    enddo
     close(unit = nu)
     call shr_file_freeUnit(nu)
     num_inst_driver = max(ninst_driver, 1)

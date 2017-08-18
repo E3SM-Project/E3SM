@@ -180,7 +180,7 @@ module seq_comm_mct
   character(*), parameter :: layout_concurrent = 'concurrent'
   character(*), parameter :: layout_sequential = 'sequential'
 
-  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,   3i6,' (',a,i6,')',' (',a,i3,')')"
+  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,   3i6,' (',a,i6,')',' (',a,i3,')','(',a,a,')')"
   character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')','(',a,2i6,')')"
   character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
   character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
@@ -571,6 +571,7 @@ contains
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
        if (present(drv_comm_id)) then
+          print *,__FILE__,__LINE__,drv_comm_id
           call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, drv_comm_id)
        else
           call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
@@ -712,7 +713,8 @@ contains
 
     if (seq_comms(ID)%iamroot) then
        write(logunit,F11) trim(subname),'  initialize ID ',ID,seq_comms(ID)%name, &
-         ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads
+         ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads,&
+         ' suffix =',trim(seq_comms(ID)%suffix)
     endif
 
   end subroutine seq_comm_setcomm
