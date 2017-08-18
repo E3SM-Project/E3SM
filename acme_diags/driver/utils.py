@@ -34,11 +34,11 @@ def _findfile(path_name, data_name, season):
     dir_files = os.listdir(path_name)
     for filename in dir_files:
        if filename.startswith(data_name + '_' + season):
-           return path_name+filename
+           return os.path.join(path_name, filename)
     # only ran on model data, because a shorter name is used
     for filename in dir_files:
        if filename.startswith(data_name) and season in filename:
-           return path_name+filename
+           return os.path.join(path_name, filename)
     raise IOError("No file found for {} and {}".format(data_name, season))
 
 def _chown(path, user, group=-1):
@@ -52,7 +52,7 @@ def get_test_filename(parameters, season):
     """Return the test file name based on
     the season and other parameters"""
     if hasattr(parameters, 'test_file'):
-        fnm = parameters.test_data_path + parameters.test_file
+        fnm = os.path.join(parameters.test_data_path, parameters.test_file)
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
     else:
@@ -63,7 +63,7 @@ def get_ref_filename(parameters, season):
     """Return the reference file name based on
     the season and other parameters"""
     if hasattr(parameters, 'ref_file'):
-        fnm = parameters.reference_data_path + parameters.ref_file
+        fnm = os.path.join(parameters.reference_data_path, parameters.ref_file)
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
     else:
