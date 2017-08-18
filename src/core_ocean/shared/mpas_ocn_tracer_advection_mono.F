@@ -87,15 +87,18 @@ module ocn_tracer_advection_mono
 
       real (kind=RKIND) :: signedFactor
       real (kind=RKIND) :: flux_upwind, tracer_min_new, tracer_max_new, tracer_upwind_new, scale_factor
+      real (kind=RKIND) :: tracer_min_hor_new, tracer_max_hor_new
       real (kind=RKIND) :: flux, tracer_weight, invAreaCell1, invAreaCell2
       real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, verticalDivergenceFactor
-      real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, tracer_new, upwind_tendency, inv_h_new, tracer_max, tracer_min
+      real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, tracer_new, upwind_tendency, inv_h_new, tracer_max_vert, tracer_min_vert
+      real (kind=RKIND), dimension(:,:), pointer :: tracer_max_hor, tracer_min_hor
       real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing, high_order_horiz_flux, high_order_vert_flux
 
       type (field2DReal), pointer :: highOrderHorizFluxField, tracerNewField, &
-                                     tracerCurField, upwindTendencyField, inverseLayerThicknessField, tracerMinField, &
-                                    tracerMaxField, fluxIncomingField, fluxOutgoingField, highOrderVertFluxField
+                                     tracerCurField, upwindTendencyField, inverseLayerThicknessField, tracerMinHorField, &
+                                    tracerMaxHorField, fluxIncomingField, fluxOutgoingField, highOrderVertFluxField, &
+                                    tracerMinVertField, tracerMaxVertField
 
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
@@ -126,8 +129,10 @@ module ocn_tracer_advection_mono
       call mpas_pool_get_field(scratchPool, 'tracerValue', tracerCurField, 1)
       call mpas_pool_get_field(scratchPool, 'upwindTendency', upwindTendencyField)
       call mpas_pool_get_field(scratchPool, 'inverseLayerThickness', inverseLayerThicknessField)
-      call mpas_pool_get_field(scratchPool, 'tracerMin', tracerMinField)
-      call mpas_pool_get_field(scratchPool, 'tracerMax', tracerMaxField)
+      call mpas_pool_get_field(scratchPool, 'tracerMinHor', tracerMinHorField)
+      call mpas_pool_get_field(scratchPool, 'tracerMaxHor', tracerMaxHorField)
+      call mpas_pool_get_field(scratchPool, 'tracerMinVert', tracerMinVertField)
+      call mpas_pool_get_field(scratchPool, 'tracerMaxVert', tracerMaxVertField)
       call mpas_pool_get_field(scratchPool, 'fluxIncoming', fluxIncomingField)
       call mpas_pool_get_field(scratchPool, 'fluxOutgoing', fluxOutgoingField)
       call mpas_pool_get_field(scratchPool, 'highOrderVertFlux', highOrderVertFluxField)
@@ -137,8 +142,10 @@ module ocn_tracer_advection_mono
       call mpas_allocate_scratch_field(tracerCurField, .true., .false.)
       call mpas_allocate_scratch_field(upwindTendencyField, .true., .false.)
       call mpas_allocate_scratch_field(inverseLayerThicknessField, .true., .false.)
-      call mpas_allocate_scratch_field(tracerMinField, .true., .false.)
-      call mpas_allocate_scratch_field(tracerMaxField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMinHorField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMaxHorField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMinVertField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMaxVertField, .true., .false.)
       call mpas_allocate_scratch_field(fluxIncomingField, .true., .false.)
       call mpas_allocate_scratch_field(fluxOutgoingField, .true., .false.)
       call mpas_allocate_scratch_field(highOrderVertFluxField, .true., .false.)
@@ -152,8 +159,10 @@ module ocn_tracer_advection_mono
       tracer_cur => tracerCurField % array
       upwind_tendency => upwindTendencyField % array
       inv_h_new => inverseLayerThicknessField % array
-      tracer_max => tracerMaxField % array
-      tracer_min => tracerMinField % array
+      tracer_max_hor => tracerMaxHorField % array
+      tracer_min_hor => tracerMinHorField % array
+      tracer_max_vert => tracerMaxVertField % array
+      tracer_min_vert => tracerMinVertField % array
       flux_incoming => fluxIncomingField % array
       flux_outgoing => fluxOutgoingField % array
 
@@ -209,35 +218,41 @@ module ocn_tracer_advection_mono
         !  Compute the high and low order vertical fluxes. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i, flux_upwind)
         do iCell = 1, nCells
-          k = 1
-          tracer_max(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-          tracer_min(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
 
+          ! Operate on top cell in column
+          k = 1
+          tracer_max_vert(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+          tracer_min_vert(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+
+          ! Operate on next-to-top cell in column
           k = max(1, min(maxLevelCell(iCell), 2))
           if ( k >= 2 ) then
             verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
             verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
             high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1 &
                 *tracer_cur(k-1,iCell))
-            tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-            tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+            tracer_max_vert(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+            tracer_min_vert(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
           end if
 
+          ! Operate on internal cells in column
           if ( vert4thOrder ) then
              do k=3,maxLevelCell(iCell)-1
                 high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux4( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
                                        tracer_cur(k  ,iCell),tracer_cur(k+1,iCell), w(k,iCell))
 
-                tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-                tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+                ! mrp 170818 note: these two lines are identical to other sets, could be pulled out.
+                tracer_max_vert(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+                tracer_min_vert(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
              end do
           else if ( vert3rdOrder ) then
              do k=3,maxLevelCell(iCell)-1
                 high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux3( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
                                        tracer_cur(k  ,iCell),tracer_cur(k+1,iCell), w(k,iCell), coef_3rd_order )
 
-                tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-                tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+                ! mrp 170818 note: these two lines are identical to other sets, could be pulled out.
+                tracer_max_vert(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+                tracer_min_vert(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
              end do
           else if ( vert2ndOrder ) then
              do k=3,maxLevelCell(iCell)-1
@@ -246,31 +261,27 @@ module ocn_tracer_advection_mono
                 high_order_vert_flux(k,iCell) = w(k,iCell) * (verticalWeightK * tracer_cur(k,iCell) + verticalWeightKm1 &
                                               * tracer_cur(k-1,iCell))
 
-                tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-                tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+                ! mrp 170818 note: these two lines are identical to other sets, could be pulled out.
+                tracer_max_vert(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
+                tracer_min_vert(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
              end do
           end if
 
+          ! Operate on deepest vertical cell in column.
           k = max(1, maxLevelCell(iCell))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
-          tracer_max(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
-          tracer_min(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
+          tracer_max_vert(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
+          tracer_min_vert(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
 
-          ! pull tracer_min and tracer_max from the (horizontal) surrounding cells
-
-          ! Note by mrp 170818.  These next two lines are the original temporary
-          ! fix proposed by Todd on 170813.  They simply reset the tracer min
-          ! and max so that the vertical min and max are not considered.  This
-          ! is the fix that was used on simulations from Aug 13 to Aug 20.
-          tracer_max(:,iCell)=tracer_cur(:,iCell)
-          tracer_min(:,iCell)=tracer_cur(:,iCell)
-
+          ! Compute tracer_min_hor and tracer_max_hor from the surrounding horizontal cells
+          tracer_max_hor(:,iCell) = tracer_cur(:,iCell)
+          tracer_min_hor(:,iCell) = tracer_cur(:,iCell)
           do i = 1, nEdgesOnCell(iCell)
             do k=1, min(maxLevelCell(iCell), maxLevelCell(cellsOnCell(i, iCell)))
-              tracer_max(k,iCell) = max(tracer_max(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
-              tracer_min(k,iCell) = min(tracer_min(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
+              tracer_max_hor(k,iCell) = max(tracer_max_hor(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
+              tracer_min_hor(k,iCell) = min(tracer_min_hor(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
             end do ! k loop
           end do ! i loop over nEdgesOnCell
 
@@ -391,10 +402,13 @@ module ocn_tracer_advection_mono
                            * inv_h_new(k,iCell)
             tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
 
-            scale_factor = (tracer_max(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
+            ! mrp 170818 WARNING: scale factor is only chosen from horizontal
+            ! min and max.  This is incorrect, but better than only limiting in
+            ! the vertical, which is what occurred before 170812.
+            scale_factor = (tracer_max_hor(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
             flux_incoming(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
 
-            scale_factor = (tracer_upwind_new-tracer_min(k,iCell))/(tracer_upwind_new-tracer_min_new+eps)
+            scale_factor = (tracer_upwind_new-tracer_min_hor(k,iCell))/(tracer_upwind_new-tracer_min_new+eps)
             flux_outgoing(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
           end do ! k loop
         end do ! iCell loop
@@ -491,16 +505,16 @@ module ocn_tracer_advection_mono
           !$omp do schedule(runtime) private(k)
           do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
-              if(tracer_new(k,iCell) < tracer_min(k, iCell)-eps) then
+              if(tracer_new(k,iCell) < tracer_min_hor(k, iCell)-eps) then
                  call mpas_log_write( &
                     'Minimum out of bounds on tracer: $i $f $f ', &
-                    MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_min(k, iCell), tracer_new(k,iCell) /) )
+                    MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_min_hor(k, iCell), tracer_new(k,iCell) /) )
               end if
 
-              if(tracer_new(k,iCell) > tracer_max(k,iCell)+eps) then
+              if(tracer_new(k,iCell) > tracer_max_hor(k,iCell)+eps) then
                  call mpas_log_write( &
                     'Maximum out of bounds on tracer: $i $f $f ', &
-                    MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_max(k, iCell), tracer_new(k,iCell) /) )
+                    MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_max_hor(k, iCell), tracer_new(k,iCell) /) )
               end if
             end do
           end do
@@ -520,8 +534,10 @@ module ocn_tracer_advection_mono
       call mpas_deallocate_scratch_field(tracerCurField, .true.)
       call mpas_deallocate_scratch_field(upwindTendencyField, .true.)
       call mpas_deallocate_scratch_field(inverseLayerThicknessField, .true.)
-      call mpas_deallocate_scratch_field(tracerMinField, .true.)
-      call mpas_deallocate_scratch_field(tracerMaxField, .true.)
+      call mpas_deallocate_scratch_field(tracerMinHorField, .true.)
+      call mpas_deallocate_scratch_field(tracerMaxHorField, .true.)
+      call mpas_deallocate_scratch_field(tracerMinVertField, .true.)
+      call mpas_deallocate_scratch_field(tracerMaxVertField, .true.)
       call mpas_deallocate_scratch_field(fluxIncomingField, .true.)
       call mpas_deallocate_scratch_field(fluxOutgoingField, .true.)
       call mpas_deallocate_scratch_field(highOrderVertFluxField, .true.)
