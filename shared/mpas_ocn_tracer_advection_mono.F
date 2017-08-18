@@ -259,6 +259,14 @@ module ocn_tracer_advection_mono
           tracer_min(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
 
           ! pull tracer_min and tracer_max from the (horizontal) surrounding cells
+
+          ! Note by mrp 170818.  These next two lines are the original temporary
+          ! fix proposed by Todd on 170813.  They simply reset the tracer min
+          ! and max so that the vertical min and max are not considered.  This
+          ! is the fix that was used on simulations from Aug 13 to Aug 20.
+          tracer_max(:,iCell)=tracer_cur(:,iCell)
+          tracer_min(:,iCell)=tracer_cur(:,iCell)
+
           do i = 1, nEdgesOnCell(iCell)
             do k=1, min(maxLevelCell(iCell), maxLevelCell(cellsOnCell(i, iCell)))
               tracer_max(k,iCell) = max(tracer_max(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
