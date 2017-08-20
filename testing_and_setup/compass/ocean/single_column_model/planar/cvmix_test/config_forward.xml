@@ -29,7 +29,7 @@
 		<option name="config_cvmix_kpp_surface_layer_extent">0.1</option>
 		
 		<option name="config_eos_type">'linear'</option>
-		<option name="config_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_implicit_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
 		<option name="config_use_activeTracers_surface_restoring">.false.</option>
 		<option name="config_use_activeTracers_interior_restoring">.false.</option>

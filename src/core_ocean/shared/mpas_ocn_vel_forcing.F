@@ -26,6 +26,7 @@ module ocn_vel_forcing
    use ocn_forcing
 
    use ocn_vel_forcing_surface_stress
+   use ocn_vel_forcing_explicit_bottom_drag
    use ocn_vel_forcing_rayleigh
 
    implicit none
@@ -76,7 +77,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, &
-                                   surfaceStress, layerThicknessEdge, tend, err)!{{{
+                                   surfaceStress, kineticEnergyCell, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -85,7 +86,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity    !< Input: Normal velocity at edges
+         normalVelocity, &    !< Input: Normal velocity at edges
+         kineticEnergyCell        !< Input: kinetic energy at cell
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          surfaceFluxAttenuationCoefficient, & !< Input: attenuation coefficient for surface fluxes at cell centers
@@ -120,7 +122,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2
+      integer :: err1
 
       !-----------------------------------------------------------------
       !
@@ -130,11 +132,19 @@ contains
       !
       !-----------------------------------------------------------------
 
+      err = 0
+
       call ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, &
                                                surfaceStress, layerThicknessEdge, tend, err1)
-      call ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err2)
+      err = ior(err, err1)
 
-      err = ior(err1, err2)
+      call ocn_vel_forcing_explicit_bottom_drag_tend(meshPool, normalVelocity, &
+              kineticEnergyCell, layerThicknessEdge, tend, err1)
+
+      err = ior(err, err1)
+
+      call ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err1)
+      err = ior(err, err1)
 
    !--------------------------------------------------------------------
 
@@ -170,6 +180,7 @@ contains
       integer :: err1, err2
 
       call ocn_vel_forcing_surface_stress_init(err1)
+      call ocn_vel_forcing_explicit_bottom_drag_init(err1)
       call ocn_vel_forcing_rayleigh_init(err2)
 
       err = ior(err1, err2)
