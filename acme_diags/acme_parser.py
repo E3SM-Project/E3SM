@@ -54,6 +54,13 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '-D', '--datasets',
+            nargs='+',
+            dest='datasets',
+            help='Datasets to use. Ex: ACME or AMWG',
+            required=False)
+
+        self.add_argument(
             '-v', '--variables',
             nargs='+',
             dest='variables',
