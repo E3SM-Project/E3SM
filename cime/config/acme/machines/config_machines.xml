@@ -874,10 +874,19 @@
         <command name="add">+python-2.7</command>
       </modules>
       <modules compiler="gnu">
+        <command name="add">+gcc-5.3.0</command>
+        <command name="add">+hdf5-1.10.0-gcc-5.3.0-serial</command>
+        <command name="add">+netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial</command>
+      </modules>
+      <modules compiler="gnu-5.2">
 	<command name="add">+gcc-5.2</command>
 	<command name="add">+netcdf-4.3.3.1-gnu5.2-serial</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
+        <command name="add">+mvapich2-2.2b-gcc-5.3.0</command>
+        <command name="add">+pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b</command>
+      </modules>
+      <modules compiler="gnu-5.2" mpilib="mvapich">
 	<command name="add">+mvapich2-2.2b-gcc-5.2</command>
       </modules>
       <modules compiler="intel">
