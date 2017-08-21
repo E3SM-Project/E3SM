@@ -22,7 +22,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.plevs = []
 
         # Plotting related
-        self.main_title = 'Main Title'
+        self.main_title = ''
         self.backend = 'vcs'
         self.save_netcdf = False
         self.output_file = 'output'
