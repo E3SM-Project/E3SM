@@ -285,7 +285,7 @@ contains
       if (forest_fert_exp) then
          call get_curr_date(kyr, kmo, kda, mcsec)
          if (.not. use_nitrif_denitrif) then
-            if (kda == 1  .and. mcsec == 0 ) then
+            if (kda == 1  .and. mcsec == 0 .and. kyr >= 1981) then
               do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
@@ -296,7 +296,7 @@ contains
               end do
             end if
          else
-            if (kda == 1  .and. mcsec == 0 ) then
+            if (kda == 1  .and. mcsec == 0 .and. kyr >= 1981) then
               do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
