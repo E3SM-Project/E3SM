@@ -907,32 +907,11 @@
         <command name="add">+pnetcdf-1.6.1-mpich-3.1.4-nag-6.0</command>
       </modules>
     </module_system>
-    <environment_variables compiler="gnu">
-      <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
+    <environment_variables>
+      <env name="NETCDFROOT">$SHELL{dirname $(dirname $(which ncdump))}</env>
     </environment_variables>
-    <environment_variables compiler="gnu" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
-    </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
-      <env name="NETCDF_INCLUDES">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/include</env>
-      <env name="NETCDF_LIBS">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib</env>
-      <env name="PATH">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/bin:$ENV{PATH}</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
-    </environment_variables>
-    <environment_variables compiler="pgi">
-      <env name="NETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/netcdf-4.4.1-4el54ak5ic4ukbfxknv64ejvlum2kmy7</env>
-    </environment_variables>
-    <environment_variables compiler="pgi" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/parallel-netcdf-1.7.0-htrulk5hgp3jjci2f72srr5ujkg6q4i6</env>
-    </environment_variables>
-    <environment_variables compiler="nag">
-      <env name="NETCDFROOT">/soft/netcdf/4.3.1-serial/nag-6.0</env>
-    </environment_variables>
-    <environment_variables compiler="nag" mpilib="mpich">
-      <env name="PNETCDFROOT">/home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0</env>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDFROOT">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
