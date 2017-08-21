@@ -153,12 +153,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             '--multiprocessing',
             dest='multiprocessing',
             help='Run the diags using multiprocessing',
-            action='store_true',
+            action='store_const',
+            const=True,
             required=False)
 
         self.add_argument(
             '--distributed',
             dest='distributed',
             help='Run the diags distributedly',
-            action='store_true',
+            action='store_const',
+            const=True,
             required=False)
