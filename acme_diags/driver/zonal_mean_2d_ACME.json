@@ -34,16 +34,6 @@
                 {
                         "sets": ["zonal_mean_2d"],
                         "case_id": "MERRA2",
-                        "variables": ["SHUM"],
-                        "ref_name": "MERRA2",
-                        "reference_name": "MERRA2 Reanalysis 1980-2016",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,16],
-                        "diff_levels": [-1.8,-1.5,-1.2,-0.9,-0.6,-0.3,-0.1,0,0.1,0.3,0.6,0.9,1.2,1.5,1.8]
-                },
-                {
-                        "sets": ["zonal_mean_2d"],
-                        "case_id": "MERRA2",
                         "variables": ["OMEGA"],
                         "ref_name": "MERRA",
                         "reference_name": "MERRA",

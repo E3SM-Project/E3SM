@@ -571,7 +571,7 @@ derived_variables = {
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
     ]),
     'RELHUM': OrderedDict([
-        (('hur'), lambda hur: convert_units(hur, target_units="%"))
+        (('hur'), lambda hur: convert_units(hur, target_units="%")),
         (('RELHUM'), lambda relhum: convert_units(relhum, target_units="%"))
 #        (('RELHUM'), rename)
     ]),
