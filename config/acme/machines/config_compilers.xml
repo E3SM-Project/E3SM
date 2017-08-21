@@ -1193,7 +1193,7 @@ for mct, etc.
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -mkl</ADD_SLIBS>
+  <ADD_SLIBS> $(shell nf-config --flibs) -mkl</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <MPIFC> mpiifort </MPIFC>
   <MPICC> mpiicc  </MPICC>
