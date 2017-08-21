@@ -181,7 +181,7 @@ contains
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVertMixTendency
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerAdvectionTendency
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerSurfaceFluxTendency
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerShortWaveTendency
+      real (kind=RKIND),dimension(:,:),pointer::temperatureShortWaveTendency
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerNonLocalTendency
       real (kind=RKIND), dimension(:,:),   pointer :: kineticEnergyCell
       real (kind=RKIND), dimension(:,:),   pointer :: relativeVorticityCell
@@ -318,7 +318,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool,&
               'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
          call mpas_pool_get_array(diagnosticsPool,&
-              'activeTracerShortWaveTendency',activeTracerShortWaveTendency)
+              'temperatureShortWaveTendency',temperatureShortWaveTendency)
          call mpas_pool_get_array(diagnosticsPool,&
               'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
 
@@ -366,7 +366,7 @@ contains
             if ( associated(activeTracers) ) workArray(21,:) = &
                activeTracerSurfaceFluxTendency(index_salinity,iLevel,:)
             if ( associated(activeTracers) ) workArray(22,:) = &
-               activeTracerShortWaveTendency(index_temperature,iLevel,:)
+               temperatureShortWaveTendency(iLevel,:)
             if ( associated(activeTracers) ) workArray(23,:) = &
                activeTracerNonLocalTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) ) workArray(24,:) = &

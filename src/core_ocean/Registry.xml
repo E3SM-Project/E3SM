@@ -1044,7 +1044,7 @@
 					description="Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_compute_tracer_budgets" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_compute_active_tracer_budgets" type="logical" default_value=".true." units="unitless"
 					description="Enables the computation of tracer budget terms"
 					possible_values=".true. or .false."
 		/>
@@ -2108,11 +2108,9 @@
 				description="salinity tendency due to surface fluxes"
 			/>
 		</var_array>
-		<var_array name="activeTracerShortWaveTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureShortWaveTendency" array_group="activeTracerSWTendGroup" units="degrees Celsius per second" name_in_code="temperatureShortWaveTendency"
+		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency"
 			     description="potential temperature tendency due to penetrating shortwave"
-		      />
-		</var_array>
+		/>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 		      <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 			     description="potential temperature tendency due to kpp non-local flux"
