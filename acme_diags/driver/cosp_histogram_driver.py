@@ -100,6 +100,7 @@ def run_diag(parameter):
                 mv1_domain_mean.id = var
                 mv2_domain_mean.id = var
                 diff.id = var
+                parameter.backend = 'cartopy'
                 plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff, {}, parameter)
 #                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 #                    utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)

@@ -41,22 +41,35 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '--results_dir',
+            dest='results_dir',
+            help='Path of where to save the results',
+            required=False)
+
+        self.add_argument(
+            '--sets',
+            nargs='+',
+            dest='sets',
+            help='Sets to use',
+            required=False)
+
+        self.add_argument(
             '-v', '--variables',
-            type=str,
+            nargs='+',
             dest='variables',
             help='Variables to use',
             required=False)
 
         self.add_argument(
-            '--levels',
+            '--plevs',
             type=float,
-            dest='levels',
+            nargs='+',
+            dest='plevs',
             help='Selected pressure level',
             required=False)
 
         self.add_argument(
             '-s', '--season',
-            type=str,
             nargs='+',
             dest='season',
             help='Season to use',
@@ -64,7 +77,6 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
 
         self.add_argument(
             '-r', '--region',
-            type=str,
             nargs='+',
             dest='region',
             help='region to use',
@@ -81,6 +93,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             '-o', '--output_file',
             dest='output_file',
             help='Name of the output file',
+            required=False)
+
+        self.add_argument(
+            '--contour_levels',
+            type=float,
+            nargs='+',
+            dest='contour_levels',
+            help='Levels for the test and reference',
             required=False)
 
         self.add_argument(
@@ -146,5 +166,30 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--backend',
             dest='backend',
-            help='Graphic backend',
+            help='Graphical backend',
             required=False)
+        
+        self.add_argument(
+            '--multiprocessing',
+            dest='multiprocessing',
+            help='Run the diags using multiprocessing',
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
+            '--distributed',
+            dest='distributed',
+            help='Run the diags distributedly',
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
+            '--save_netcdf',
+            dest='save_netcdf',
+            help='Save the NetCDF files.',
+            action='store_const',
+            const=True,
+            required=False)
+
