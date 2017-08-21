@@ -35,6 +35,12 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '--test_data_path',
+            dest='test_data_path',
+            help='Path for the test climitologies',
+            required=False)
+
+        self.add_argument(
             '--results_dir',
             dest='results_dir',
             help='Path of where to save the results',
