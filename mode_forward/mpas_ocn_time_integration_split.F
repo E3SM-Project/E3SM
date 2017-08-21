@@ -137,7 +137,7 @@ module ocn_time_integration_split
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
-      logical, pointer :: config_compute_tracer_budgets
+      logical, pointer :: config_compute_active_tracer_budgets
 
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
@@ -198,9 +198,10 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         activeTracerAdvectionTendency,                &
         activeTracerSurfaceFluxTendency,              &
-        activeTracerShortWaveTendency,                &
         activeTracerNonLocalTendency
 
+      real (kind=RKIND), dimension(:,:), pointer :: &
+        temperatureShortWaveTendency
       ! State/Tend Field Pointers
       type (field1DReal), pointer :: normalBarotropicVelocitySubcycleField, sshSubcycleField
       type (field2DReal), pointer :: highFreqThicknessField, lowFreqDivergenceField
@@ -247,7 +248,7 @@ module ocn_time_integration_split
 
       call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
 
-      call mpas_pool_get_config(domain % configs, 'config_compute_tracer_budgets', config_compute_tracer_budgets)
+      call mpas_pool_get_config(domain % configs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
       allocate(n_bcl_iter(config_n_ts_iter))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1621,28 +1622,27 @@ module ocn_time_integration_split
                if (config_compute_tracer_budgets) then
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
-                  call mpas_pool_get_array(diagnosticsPool,'activeTracerShortWaveTendency',activeTracerShortWaveTendency)
+                  call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',activeTracerShortWaveTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
-
-                  !$omp do schedule(runtime) private(k)
+               if (config_compute_active_tracer_budgets) then
+               !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k= 1, maxLevelCell(iCell)
-                          activeTracerAdvectionTendency(:,k,iCell) = &
-                             activeTracerAdvectionTendency(:,k,iCell) / &
-                             layerThicknessNew(k,iCell)
-
+                        activeTracerAdvectionTendency(:,k,iCell) = &
+                           activeTracerAdvectionTendency(:,k,iCell) / &
+                           layerThicknessNew(k,iCell)
+        
                         activeTracerSurfaceFluxTendency(:,k,iCell) = &
-                             activeTracerSurfaceFluxTendency(:,k,iCell) / &
-                             layerThicknessNew(k,iCell)
+                           activeTracerSurfaceFluxTendency(:,k,iCell) / &
+                           layerThicknessNew(k,iCell)
 
-                        activeTracerShortwaveTendency(:,k,iCell) = &
-                             activeTracerShortwaveTendency(:,k,iCell) / &
-                             layerThicknessNew(k,iCell)
+                        temperatureShortWaveTendency(k,iCell) = &
+                           temperatureShortWaveTendency(k,iCell) / &
+                           layerThicknessNew(k,iCell)
 
                         activeTracerNonLocalTendency(:,k,iCell) = &
-                             activeTracerNonLocalTendency(:,k,iCell) / &
-                             layerThicknessNew(k,iCell)
-
+                           activeTracerNonLocalTendency(:,k,iCell) / &
+                           layerThicknessNew(k,iCell)
                      end do
                   end do 
                   !$omp end do
