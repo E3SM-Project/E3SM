@@ -1746,6 +1746,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/ne240np4/map_1km-merge-10min_HYDRO1K-merge-nomask_to_ne240np4_nomask_aave_da_c130405.nc</map>
 <map frm_hgrid="ne240np4"    frm_lmask="nomask" to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne240np4/map_ne240np4_nomask_to_0.5x0.5_nomask_aave_da_c110922.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne240np4"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/ne240np4/map_0.5x0.5_GSDTG2000_to_ne240np4_nomask_aave_da_c170821.nc</map>
 
 <!-- mapping files for 0.125x0.125 START added on Fri Aug  1 15:44:32 2014-->
 <!-- Created by lnd/clm/bld/namelist_files/createMapEntry.pl--> 
