@@ -264,7 +264,7 @@
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "plevs": [200.0]
+                        "plevs": [850.0, 200.0]
                 },
           {
                         "sets": ["lat_lon"],
@@ -273,7 +273,7 @@
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "plevs": [300.0, 500.0]
+                        "plevs": [500.0, 300.0]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -311,7 +311,7 @@
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "plevs": [200.0]
+                        "plevs": [850, 200.0]
                 },
                 {
                         "sets": ["lat_lon"],
