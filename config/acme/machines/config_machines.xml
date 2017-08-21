@@ -801,7 +801,7 @@
   <PES_PER_NODE>16</PES_PER_NODE>
   <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <PROJECT>fy150001P</PROJECT>
+  <PROJECT>fy150001</PROJECT>
 
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
