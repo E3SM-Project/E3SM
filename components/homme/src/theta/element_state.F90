@@ -9,7 +9,7 @@ module element_state
 
   implicit none
   private
-  integer, public, parameter :: timelevels = 50
+  integer, public, parameter :: timelevels = 3
 
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 
