@@ -5,6 +5,8 @@ import cdms2
 import cdutil
 import numpy as np
 import numpy.ma as ma
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
