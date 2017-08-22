@@ -10,8 +10,8 @@
 !  ocn_tracer_advection
 !
 !> \brief MPAS ocean tracer advection driver
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Mark Petersen, David Lee, Doug Jacobsen
+!> \date   August 2017
 !> \details
 !>  This module contains driver routine for tracer advection tendencys
 !>  as well as the routines for setting up advection coefficients and
@@ -50,15 +50,15 @@ module ocn_tracer_advection
 !  routine ocn_tracer_advection_tend
 !
 !> \brief MPAS ocean tracer advection tendency
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Mark Petersen, David Lee, Doug Jacobsen
+!> \date   August 2017
 !> \details
 !>  This routine is the driver routine for computing the tendency for
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
    subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, & !{{{
-                                        scratchPool, tend_layerThickness, tend)
+                                        scratchPool, diagnosticsPool, tend_layerThickness, tend, tracerGroupName)
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input/Output: tracer values
@@ -69,17 +69,30 @@ module ocn_tracer_advection
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch fields
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: pool for traceradvection budget term
       real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Thickness tendency information
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+              activeTracerHorizontalAdvectionTendency, &
+              activeTracerVerticalAdvectionTendency
+
+      logical, pointer :: config_compute_active_tracer_budgets
+
+      integer :: num_tracers, nVertLevels, nCells
 
       real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd
 
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nAdvCellsForEdge
       integer, dimension(:,:), pointer :: highOrderAdvectionMask, edgeSignOnCell, advCellsForEdge
 
+      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrime
+      real (kind=RKIND), dimension(:,:,:), allocatable :: tracersPrime
+      character (len=*), intent(in) :: tracerGroupName ! variable to check for tracer budget
       if(.not. tracerAdvOn) return
 
       call mpas_timer_start("tracer adv")
 
+      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
       call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
       call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -89,11 +102,59 @@ module ocn_tracer_advection
       call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge', nAdvCellsForEdge)
       call mpas_pool_get_array(meshPool, 'advCellsForEdge', advCellsForEdge)
 
+      if (config_compute_active_tracer_budgets) then
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
+                 activeTracerHorizontalAdvectionTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
+                 activeTracerVerticalAdvectionTendency)
+      end if
+
       if(monotonicOn) then
-         call ocn_tracer_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
-            nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
-            highOrderAdvectionMask, edgeSignOnCell)
+        num_tracers = size(tracers,dim=1)
+        nVertLevels = size(tracers,dim=2)
+        nCells = size(tracers,dim=3)
+
+        allocate(layerThicknessPrime(nVertLevels,nCells))
+        allocate(tracersPrime(num_tracers,nVertLevels,nCells))
+
+        layerThicknessPrime(:,:) = 0.0_RKIND
+        tracersPrime(:,:,:) = 0.0_RKIND
+
+        ! Note: We could flip the order of operations of horizontal versus vertical
+        ! every other step for 2nd order splitting.  That would be done here.
+
+        if (config_compute_active_tracer_budgets) then
+           if (tracerGroupName == 'activeTracers') then
+              activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:)
+           end if
+        end if
+
+        call ocn_tracer_hor_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
+           nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, layerThickness, &
+           dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
+           highOrderAdvectionMask, edgeSignOnCell, layerThicknessPrime, tracersPrime)
+
+        if (config_compute_active_tracer_budgets) then
+          if (tracerGroupName == 'activeTracers') then
+             activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:) - &
+                     activeTracerHorizontalAdvectionTendency(:,:,:)
+
+             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:)
+          end if
+        end if
+
+        call ocn_tracer_vert_advection_mono_tend(tracersPrime, advCoefs, advCoefs3rd, &
+           w, layerThicknessPrime, layerThicknessPrime, dt, meshPool, scratchPool, tend, maxLevelCell)
+
+        if (config_compute_active_tracer_budgets) then
+          if (tracerGroupName == 'activeTracers') then
+             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:) - &
+                     activeTracerVerticalAdvectionTendency(:,:,:)
+          end if
+        end if
+
+        deallocate(layerThicknessPrime)
+        deallocate(tracersPrime)
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
@@ -109,8 +170,8 @@ module ocn_tracer_advection
 !  routine ocn_tracer_advection_init
 !
 !> \brief MPAS ocean tracer advection tendency
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Mark Petersen, David Lee, Doug Jacobsen
+!> \date   August 2017
 !> \details
 !>  This routine is the driver routine for initialization of
 !>  the tracer advection routines.
