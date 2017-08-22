@@ -17,7 +17,7 @@ def _get_default_diags(set_num, dataset):
     """Returns the path from the json corresponding to set_num"""
     set_num = get_set_name(set_num)
     folder = '{}'.format(set_num)
-    fnm = '{}_{}_default.json'.format(set_num, dataset)
+    fnm = '{}_{}.json'.format(set_num, dataset)
     pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
     if not os.path.exists(pth):
         raise RuntimeError("Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
