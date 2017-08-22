@@ -14,6 +14,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_name = ''
 
         self.sets = []
+        self.datasets = ['ACME']
         self.variables = []
         self.seasons = []
         self.regions = ['global']

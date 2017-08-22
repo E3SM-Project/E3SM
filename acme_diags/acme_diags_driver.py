@@ -13,14 +13,14 @@ from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name
 
-def _get_default_diags(set_num):
+def _get_default_diags(set_num, dataset):
     """Returns the path from the json corresponding to set_num"""
     set_num = get_set_name(set_num)
     folder = '{}'.format(set_num)
-    fnm = '{}_AMWG_default.json'.format(set_num)
+    fnm = '{}_{}.json'.format(set_num, dataset)
     pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
     if not os.path.exists(pth):
-        raise RuntimeError("Plotting via set '{}' not supported".format(set_num))
+        raise RuntimeError("Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
     return pth
 
 def run_diag(parameters):
@@ -44,7 +44,6 @@ if __name__ == '__main__':
 
     if args.parameters and not args.other_parameters:  # -p only
         original_parameter = parser.get_orig_parameters(default_vars=False)
-        other_parameters = parser.get_other_parameters(check_values=False)
 
         if not hasattr(original_parameter, 'sets'):
             print("When running with just -p, you need to define the sets parameter.")
@@ -54,9 +53,12 @@ if __name__ == '__main__':
         default_jsons_paths = []
 
         for set_num in original_parameter.sets:
-            default_jsons_paths.append(_get_default_diags(set_num))
+            datasets = ['ACME']
+            if hasattr(original_parameter, 'datasets'):
+                datasets = original_parameter.datasets
+            for ds in datasets:
+                default_jsons_paths.append(_get_default_diags(set_num, ds))
         other_parameters = parser.get_other_parameters(files_to_open=default_jsons_paths, check_values=False)
-
         # Don't put the sets from the Python parameters to the default.
         # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the default jsons like lat_lon_AMWG_default.json
         vars_to_ignore = ['sets']
