@@ -196,7 +196,8 @@ module ocn_time_integration_split
       type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField, effectiveDensityField
       ! tracer tendencies brought in here to normalize by new layer thickness
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        activeTracerAdvectionTendency,                &
+        activeTracerHorizontalAdvectionTendency,      &
+        activeTracerVerticalAdvectionTendency,        &
         activeTracerSurfaceFluxTendency,              &
         activeTracerNonLocalTendency
 
@@ -1631,17 +1632,24 @@ module ocn_time_integration_split
                !$omp end do
 
                if (config_compute_active_tracer_budgets) then
-                  call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
+                  call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
+                          activeTracerHorizontalAdvectionTendency)
+                  call mpas_pool_get_array(diagnosticspool,'activeTracerVerticalAdvectionTendency', &
+                          activeTracerVerticalAdvectionTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
                   call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
                !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k= 1, maxLevelCell(iCell)
-                        activeTracerAdvectionTendency(:,k,iCell) = &
-                           activeTracerAdvectionTendency(:,k,iCell) / &
+                        activeTracerHorizontalAdvectionTendency(:,k,iCell) = &
+                           activeTracerHorizontalAdvectionTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
         
+                        activeTracerVerticalAdvectionTendency(:,k,iCell) = &
+                           activeTracerVerticalAdvectionTendency(:,k,iCell) / &
+                           layerThicknessNew(k,iCell)
+
                         activeTracerSurfaceFluxTendency(:,k,iCell) = &
                            activeTracerSurfaceFluxTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
