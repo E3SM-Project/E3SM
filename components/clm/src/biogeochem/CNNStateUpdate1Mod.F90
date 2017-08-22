@@ -288,7 +288,7 @@ contains
             if (kda == 1  .and. mcsec == 0 .and. kyr >= 1981) then
               do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
+                  if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
                       do j = 1, nlevdecomp
                           ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
                       end do
@@ -299,7 +299,7 @@ contains
             if (kda == 1  .and. mcsec == 0 .and. kyr >= 1981) then
               do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
+                  if ( (( (fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
                       do j = 1, nlevdecomp
                           ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
                           ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)

@@ -166,7 +166,7 @@ contains
          if (kda == 1  .and. mcsec == 0 ) then
             do fc = 1,num_soilc
               c = filter_soilc(fc)
-              if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
+              if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
                   do j = 1, nlevdecomp
                       ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
                   end do

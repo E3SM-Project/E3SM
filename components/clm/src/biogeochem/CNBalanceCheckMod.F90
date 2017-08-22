@@ -344,7 +344,7 @@ contains
          if (forest_fert_exp) then
             call get_curr_date(kyr, kmo, kda, mcsec)
             if (kda == 1  .and. mcsec == 0 ) then
-               if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
+               if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
                   col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
                end if
              end if
@@ -565,7 +565,7 @@ contains
          if (forest_fert_exp) then
             call get_curr_date(kyr, kmo, kda, mcsec)
             if (kda == 1  .and. mcsec == 0 ) then
-               if ( ((fert_continue(c) .and. kyr > 1981) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
+               if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
                   col_pinputs(c) = col_pinputs(c) + fert_dose(c,kmo)/dt
                end if
              end if
