@@ -571,10 +571,12 @@ derived_variables = {
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
     ]),
     'RELHUM': OrderedDict([
+        (('hur'), lambda hur: convert_units(hur, target_units="%")),
         (('RELHUM'), lambda relhum: convert_units(relhum, target_units="%"))
 #        (('RELHUM'), rename)
     ]),
     'OMEGA': OrderedDict([
+        (('wap'), lambda wap: convert_units(wap, target_units="mbar/day")),
         (('OMEGA'), lambda omega: convert_units(omega, target_units="mbar/day"))
     ]),
     'SHUM': OrderedDict([
