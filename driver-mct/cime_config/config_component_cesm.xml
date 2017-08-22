@@ -396,7 +396,7 @@
 
   <entry id="AVGHIST_OPTION">
     <type>char</type>
-    <valid_values></valid_values>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
     <values match="last">
       <value compset="_DOCN%IAF">nmonths</value>
