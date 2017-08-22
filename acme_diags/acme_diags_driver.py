@@ -46,9 +46,8 @@ if __name__ == '__main__':
         original_parameter = parser.get_orig_parameters(default_vars=False)
 
         if not hasattr(original_parameter, 'sets'):
-            print("When running with just -p, you need to define the sets parameter.")
-            sys.exit()
-
+            original_parameter.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
+            
         # load the default jsons
         default_jsons_paths = []
 
@@ -75,7 +74,6 @@ if __name__ == '__main__':
 
     else:
         raise RuntimeError('You tried running the diags without -p and/or -d')
-
 
     dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     for p in parameters:
