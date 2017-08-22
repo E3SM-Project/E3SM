@@ -160,7 +160,7 @@ def create_viewer(root_dir, parameters, ext):
             pth = get_output_dir(set_num, parameter)
             files = glob.glob(pth + '/*.' + ext)  # ex: files[0] = myresults/set5/set5_SST_HadISST/HadISST_CL-SST-SON-global.png
 
-            for ext_fnm in files:
+            for ext_fnm in sorted(files):
                 fnm = ext_fnm.replace('.' + ext, '')
                 fnm = fnm.split('/')[-1]  # ex: HadISST_CL-SST-SON-global
                 keywords = fnm.split('-')
@@ -221,5 +221,6 @@ def create_viewer(root_dir, parameters, ext):
 
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
+
 
 
