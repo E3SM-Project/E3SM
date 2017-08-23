@@ -92,7 +92,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._case2 = None
 
         self._setup_cases_if_not_yet_done()
-        # Since case 2 has the same name as case1 it's CIME_OUTPUT_ROOT must also be different
+        # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
         self._case2.set_value("CIME_OUTPUT_ROOT",
                               os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
                                            self._case1.get_value("CASE")))
