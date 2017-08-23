@@ -480,7 +480,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerVertMixTendency
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
-      logical, pointer :: config_use_cvmix,config_compute_tracer_budgets
+      logical, pointer :: config_use_cvmix,config_compute_active_tracer_budgets
       type (mpas_pool_iterator_type) :: groupItr
 
       err = 0
@@ -496,8 +496,8 @@ contains
       end if
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
-      call mpas_pool_get_config(ocnConfigs, 'config_compute_tracer_budgets',  &
-                                config_compute_tracer_budgets)
+      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets',  &
+                                config_compute_active_tracer_budgets)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
@@ -559,7 +559,7 @@ contains
 
             ! store tracers
             if (trim(groupItr % memberName) == 'activeTracers') then
-               if (config_compute_tracer_budgets) then
+               if (config_compute_active_tracer_budgets) then
                   activeTracerVertMixTendency(:,:,:)=tracersGroup(:,:,:)
                endif
             endif
@@ -570,7 +570,7 @@ contains
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
             if (trim(groupItr % memberName) == 'activeTracers') then
-               if (config_compute_tracer_budgets) then
+               if (config_compute_active_tracer_budgets) then
                   activeTracerVertMixTendency(:,:,:) = &
                       (tracersGroup(:,:,:) - activeTracerVertMixTendency(:,:,:)) / dt
                endif
