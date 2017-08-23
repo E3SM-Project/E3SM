@@ -198,7 +198,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         caseroot1 = self._case1.get_value("CASEROOT")
 
         # Nest the case directory for case2 inside the case directory for case1
-        caseroot2 = os.path.join(caseroot1, casename2)
+        caseroot2 = os.path.join(caseroot1, "case2", casename2)
 
         return caseroot2
 
@@ -227,18 +227,17 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         # test setup when it's not needed - e.g., by appending things to user_nl
         # files multiple times. This is why we want to make sure to just do the
         # test setup once.)
-
         if os.path.exists(self._caseroot2):
             self._case2 = self._case_from_existing_caseroot(self._caseroot2)
         else:
             try:
                 # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
+                case2_output_root = os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
+                                                  "case2",self._case1.get_value("CASE"))
                 self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
                     keepexe = self._separate_builds==False,
-                    cime_output_root=os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
-                                                  self._case1.get_value("CASE")))
-
+                    cime_output_root = case2_output_root)
                 self._setup_cases()
             except:
                 # If a problem occurred in setting up the test cases, it's
@@ -249,7 +248,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 # case, but if we didn't remove the case2 directory, the next
                 # re-build of the test would think, "okay, setup is done, I can
                 # move on to the build", which would be wrong.
-                shutil.rmtree(self._caseroot2)
+                if os.path.isdir(self._caseroot2):
+                    shutil.rmtree(self._caseroot2)
                 self._activate_case1()
                 logger.warning("WARNING: Test case setup failed. Case2 has been removed, "
                                "but the main case may be in an inconsistent state. "
