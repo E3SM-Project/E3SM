@@ -232,7 +232,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._case2 = self._case_from_existing_caseroot(self._caseroot2)
         else:
             try:
-                # Since case 2 has the same name as case1 it's CIME_OUTPUT_ROOT must also be different
+                # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
                 self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
                     keepexe = self._separate_builds==False,
