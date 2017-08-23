@@ -449,31 +449,31 @@
 				 description="Average relative enstrophy within region volume"
 			/>
                         <var name="avgVolumeTemperatureAdv" array_group="volumeAvgs" units="C s^{-1}"
-                                 description="Max temperature advection within region volume"
+                                 description="Average temperature advection within region volume"
                         />
                         <var name="avgVolumeSalinityAdv" array_group="volumeAvgs" units="PSU s^{-1}"
-                                 description="Max salinity advection within region volume"
+                                 description="Average salinity advection within region volume"
                         />
                         <var name="avgVolumeTemperatureSfcFlux" array_group="volumeAvgs" units="C s^{-1}"
-                                 description="Max temperature surface flux tend within region volume"
+                                 description="Average temperature surface flux tend within region volume"
                         />
                         <var name="avgVolumeSalinitySfcFlux" array_group="volumeAvgs" units="PSU s^{-1}"
-                                 description="Max salinity surface flux tend within region volume"
+                                 description="Average salinity surface flux tend within region volume"
                         />
                         <var name="avgVolumeTemperatureSW" array_group="volumeAvgs" units="C s^{-1}"
-                                 description="Max temperature shortwave tend within region volume"
+                                 description="Average temperature shortwave tend within region volume"
                         />
                         <var name="avgVolumeTemperatureNL" array_group="volumeAvgs" units="C s^{-1}"
-                                 description="Max temperature non local tend within region volume"
+                                 description="Average temperature non local tend within region volume"
                         />
                         <var name="avgVolumeSalinitySfcNL" array_group="volumeAvgs" units="PSU s^{-1}"
-                                 description="Max salinity non local tend within region volume"
+                                 description="Average salinity non local tend within region volume"
                         />
                         <var name="avgVolumeTemperatureVertMix" array_group="volumeAvgs" units="C s^{-1}"
-                                 description="Max temperature vertical mixing within region volume"
+                                 description="Average temperature vertical mixing within region volume"
                         />
                         <var name="avgVolumeSalinityVertMix" array_group="volumeAvgs" units="PSU s^{-1}"
-                                 description="Max salinity vertical mixing within region volume"
+                                 description="Average salinity vertical mixing within region volume"
                         />
 		</var_array>
 	</var_struct>

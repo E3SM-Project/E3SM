@@ -357,20 +357,20 @@ contains
                activeTracerAdvectionTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) ) workArray(17,:) = &
                activeTracerAdvectionTendency(index_salinity,iLevel,:)
-            if ( associated(activeTracers) ) workArray(18,:) = &
-               activeTracerVertMixTendency(index_temperature,iLevel,:)
-            if ( associated(activeTracers) ) workArray(19,:) = &
-               activeTracerVertMixTendency(index_salinity,iLevel,:)
-            if ( associated(activeTracers) ) workArray(20,:) = &
+            if ( associated(activeTracers) ) workArray(18,:) = & 
                activeTracerSurfaceFluxTendency(index_temperature,iLevel,:)
-            if ( associated(activeTracers) ) workArray(21,:) = &
+            if ( associated(activeTracers) ) workArray(19,:) = & 
                activeTracerSurfaceFluxTendency(index_salinity,iLevel,:)
-            if ( associated(activeTracers) ) workArray(22,:) = &
+            if ( associated(activeTracers) ) workArray(20,:) = & 
                temperatureShortWaveTendency(iLevel,:)
-            if ( associated(activeTracers) ) workArray(23,:) = &
+            if ( associated(activeTracers) ) workArray(21,:) = & 
                activeTracerNonLocalTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) ) workArray(22,:) = & 
+               activeTracerNonLocalTendency(index_salinity,iLevel,:) 
+            if ( associated(activeTracers) ) workArray(23,:) = &
+               activeTracerVertMixTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) ) workArray(24,:) = &
-               activeTracerNonLocalTendency(index_salinity,iLevel,:)
+               activeTracerVertMixTendency(index_salinity,iLevel,:)
 
 
 

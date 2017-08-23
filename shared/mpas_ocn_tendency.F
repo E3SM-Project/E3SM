@@ -510,7 +510,7 @@ contains
       !
       ! get diagnostic arrays for temperature/salinity budget
       !
-      if (config_compute_tracer_budgets) then
+      if (config_compute_active_tracer_budgets) then
          call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
          call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
@@ -827,7 +827,7 @@ contains
 
                if (config_compute_active_tracer_budgets) then
                   if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                     temperatureShortWaveTendency(:,:) = tracerGroupTend(:,:)
+                     temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)
                   endif
                endif
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
@@ -837,7 +837,7 @@ contains
                
                if (config_compute_active_tracer_budgets) then
                   if ( trim(groupItr % memberName) == 'activeTracers' ) then     
-                    temperatureShortWaveTendency(:,:) = tracerGroupTend(:,:)- &
+                    temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)- &
                                         temperatureShortWaveTendency(:,:)
                   endif
                endif
