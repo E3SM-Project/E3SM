@@ -163,6 +163,7 @@ subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
   !-----------------------------------------------------------------------
 
   tau = 0._r8
+  launch_wave = .false.
 
   ! GW generation depends on frontogenesis at specified level (may be below
   ! actual source level).
