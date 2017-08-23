@@ -884,12 +884,21 @@
 
   <machine MACH="homebrew">
     <DESC>
-     Customize these fields as appropriate for your system, particularly changing MAX_TASKS_PER_NODE and PES_PER_NODE to the number of cores on your machine.
-You may also want to change instances of '$ENV{HOME}/projects' to your desired directory organization.
-You can use this in either of two ways:
-(1) Without making any changes, by adding `--machine homebrew` to create_newcase or create_test
-(2) Copying this into a config_machines.xml file in your personal .cime directory and then changing the machine name (<machine MACH="homebrew">) to your machine name and the NODENAME_REGEX to something matching your machine's hostname.
-In this case, you should not need the `--machine` argument, because the machine should be determined automatically.
+
+     Customize these fields as appropriate for your system,
+     particularly changing MAX_TASKS_PER_NODE and PES_PER_NODE to the
+     number of cores on your machine.  You may also want to change
+     instances of '$ENV{HOME}/projects' to your desired directory
+     organization.  You can use this in either of two ways: (1)
+     Without making any changes, by adding `--machine homebrew` to
+     create_newcase or create_test (2) Copying this into a
+     config_machines.xml file in your personal .cime directory and
+     then changing the machine name (MACH="homebrew") to
+     your machine name and the NODENAME_REGEX to something matching
+     your machine's hostname.  In this case, you should not need the
+     `--machine` argument, because the machine should be determined
+     automatically.
+
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
     <OS>Darwin</OS>
