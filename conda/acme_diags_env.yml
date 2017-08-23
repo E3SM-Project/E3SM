@@ -1,4 +1,4 @@
-name: acme_diags_env
+name: acme_diags_env1
 channels:
 - !!python/unicode
   'uvcdat/label/nightly'

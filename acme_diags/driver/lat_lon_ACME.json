@@ -231,6 +231,26 @@
                 },
                 {
                         "sets": ["lat_lon"],
+                        "case_id": "WHOI-OAFlux",
+                        "variables": ["LHFLX"],
+                        "ref_name": "OAFlux",
+                        "reference_name": "WHOI OAFlux 1979-2013",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0,5, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300],
+                        "diff_levels": [-150, -120, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 120, 150]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "WHOI-OAFlux",
+                        "variables": ["SHFLX"],
+                        "ref_name": "OAFlux",
+                        "reference_name": "WHOI OAFlux 1979-2013",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [-100, -75, -50, -25, -10, 0, 10, 25, 50, 75, 100, 125, 150, 175, 200],
+                        "diff_levels": [-100, -80, -60, -40, -20, -10, -5, 0, 5, 10, 20, 40, 60, 80, 100]
+                },
+                {
+                        "sets": ["lat_lon"],
                         "case_id": "ERA-Interim",
                         "variables": ["LHFLX"],
                         "ref_name": "ERA-Interim",
