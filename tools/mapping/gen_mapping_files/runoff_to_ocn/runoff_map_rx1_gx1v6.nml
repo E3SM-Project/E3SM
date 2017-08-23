@@ -1,0 +1,15 @@
+  &input_nml
+   gridtype     = 'obs'
+   file_roff    = '/glade/p/cesm/cseg/inputdata/lnd/dlnd7/RX1/runoff.daitren.annual.090225.nc'
+   file_ocn     = '/glade/p/cesm/cseg/mapping/grids/gx1v6_090205.nc'
+   file_nn      = 'map_rx1_to_gx1v6_nearestdtos_131212.nc '
+   file_smooth  = 'map_gx1v6_to_gx1v6_smooth_131212.nc '
+   file_new     = 'map_rx1_to_gx1v6_e1000r300_131212.nc'
+   title        = 'runoff map: rx1 -> gx1v6, smoothed '
+   eFold        = 1000000.0
+   rMax         =  300000.0
+   step1 = .true.
+   step2 = .true.
+   step3 = .true.
+
+  /
