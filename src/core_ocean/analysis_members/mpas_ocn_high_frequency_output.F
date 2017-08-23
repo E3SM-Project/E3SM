@@ -371,20 +371,6 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'barotropicSpeed', barotropicSpeed)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'columnIntegratedSpeed', columnIntegratedSpeed)
 
-         !
-         ! note for future build out
-         ! HERE: interpolate vertically to target z-level or isopycnal or some other surface
-         !
-
-         ! for now, just get close enough
-         iLevelTarget = 1
-         do iLevel=2,nVertLevels
-           if(refBottomDepth(iLevel) > 250.0_RKIND) then
-              iLevelTarget = iLevel-1
-              exit
-           endif
-         enddo
-
          ! find vertical level that is just above the 100 m reference level
          iLevel0100 = 1
          do iLevel=2,nVertLevels
@@ -421,168 +407,44 @@ contains
            endif
          enddo
 
-         ! avg between surface and 100 m
-
-
          ! copy data into high frequency output fields
-         kineticEnergyAt250m(:) = kineticEnergyCell(iLevelTarget,:)
-         relativeVorticityAt250m(:) = relativeVorticityCell(iLevelTarget,:)
-         divergenceAt250m(:) = divergence(iLevelTarget,:)
-         relativeVorticityVertexAt250m(:) = relativeVorticity(iLevelTarget,:)
+         kineticEnergyAt250m(:) = kineticEnergyCell(iLevel0250,:)
+         relativeVorticityAt250m(:) = relativeVorticityCell(iLevel0250,:)
+         divergenceAt250m(:) = divergence(iLevel0250,:)
+         relativeVorticityVertexAt250m(:) = relativeVorticity(iLevel0250,:)
          kineticEnergyAtSurface(:) = kineticEnergyCell(1,:)
-         activeTracersAt250m(1,:) = activeTracers(1,iLevelTarget,:)
-         activeTracersAt250m(2,:) = activeTracers(2,iLevelTarget,:)
+         activeTracersAt250m(1,:) = activeTracers(1,iLevel0250,:)
+         activeTracersAt250m(2,:) = activeTracers(2,iLevel0250,:)
          vertGMvelocitySFC(:) = vertGMBolusVelocityTop(1,:)
          vertTransportVelocitySFC(:) = vertTransportVelocityTop(1,:)
          vertVelSFC(:) = vertVelocityTop(1,:)
-         vertGMvelocityAt250m(:) = vertGMBolusVelocityTop(iLevelTarget,:)
-         vertTransportVelocityAt250m(:) = vertTransportVelocityTop(iLevelTarget,:)
-         vertVelAt250m(:) = vertVelocityTop(iLevelTarget,:)
+         vertGMvelocityAt250m(:) = vertGMBolusVelocityTop(iLevel0250,:)
+         vertTransportVelocityAt250m(:) = vertTransportVelocityTop(iLevel0250,:)
+         vertVelAt250m(:) = vertVelocityTop(iLevel0250,:)
 
-         ! copy data at bottom
-         do iCell=1,nCells
-           iLevelTarget = maxLevelCell(iCell)
-           relativeVorticityAtBottom(iCell) = relativeVorticityCell(iLevelTarget,iCell)
-           divergenceAtBottom(iCell) = divergence(iLevelTarget,iCell)
-           kineticEnergyAtBottom(iCell) = kineticEnergyCell(iLevelTarget,iCell)
-           activeTracersAtBottom(1,iCell) = activeTracers(1,iLevelTarget,iCell)
-           activeTracersAtBottom(2,iCell) = activeTracers(2,iLevelTarget,iCell)
-         enddo
-
-         !
-         ! compute barotropic kinetic energy
-         !
-
-         ! SFC
-         iLevelTarget = 1
-         do iCell = 1, nCells
-           BruntVaisalaFreqTopAtSFC(iCell) = BruntVaisalaFreqTop(iLevelTarget,iCell)
-         end do
          do iEdge = 1, nEdges
-           normalVelAtSFC(iEdge) = normalVelocity(iLevelTarget,iEdge)
-           tangentialVelAtSFC(iEdge) = tangentialVelocity(iLevelTarget,iEdge)
+           normalGMBolusVelAtSFC(iEdge) = normalGMBolusVelocity(1,iEdge)
+           normalGMBolusVelAt250m(iEdge) = normalGMBolusVelocity(iLevel0250,iEdge)
+           normalGMBolusVelAtBottom(iEdge) = normalGMBolusVelocity(maxLevelEdgeBot(iEdge),iEdge)
+
+           tangentialVelAtSFC(iEdge) = tangentialVelocity(1,iEdge)
+           tangentialVelAt250m(iEdge) = tangentialVelocity(iLevel0250,iEdge)
+           tangentialVelAtBottom(iEdge) = tangentialVelocity(maxLevelEdgeBot(iEdge),iEdge)
+
+           normalVelAtSFC(iEdge) = normalVelocity(1,iEdge)
+           normalVelAt250m(iEdge) = normalVelocity(iLevel0250,iEdge)
+           normalVelAtBottom(iEdge) = normalVelocity(maxLevelEdgeBot(iEdge),iEdge)
+
            zonalVelAtSFC(iEdge) = normalVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
                                   - tangentialVelAtSFC(iEdge)*sin(angleEdge(iEdge))
            meridionalVelAtSFC(iEdge) = normalVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
                                        + tangentialVelAtSFC(iEdge)*cos(angleEdge(iEdge))
-         end do
 
-         iLevelTarget = 1
-         do iEdge = 1, nEdges
-           normalGMBolusVelAtSFC(iEdge) = normalGMBolusVelocity(iLevelTarget,iEdge)
-         end do
-         do iEdge = 1, nEdges
-           tangentialGMBolusVelAtSFC(iEdge) = 0.0_RKIND
-           do i = 1, nEdgesOnEdge(iEdge)
-             eoe = edgesOnEdge(i,iEdge)
-             tangentialGMBolusVelAtSFC(iEdge) = tangentialGMBolusVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtSFC(eoe)
-           end do
-
-           zonalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
-             - tangentialGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge))
-           meridionalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
-             + tangentialGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge))
-         end do
-
-         if ( config_time_integrator == trim('split_explicit')) then
-
-           iLevelTarget = 1
-           do iEdge = 1, nEdges
-             normalBarotropicVel(iEdge) = normalBarotropicVelocity(iEdge)
-           end do
-           do iEdge = 1, nEdges
-             tangentialBarotropicVel(iEdge) = 0.0_RKIND
-             do i = 1, nEdgesOnEdge(iEdge)
-               eoe = edgesOnEdge(i,iEdge)
-               tangentialBarotropicVel(iEdge) = tangentialBarotropicVel(iEdge) + weightsOnEdge(i,iEdge) * normalBarotropicVel(eoe)
-             end do
-
-             zonalBarotropicVel(iEdge) = normalBarotropicVel(iEdge)*cos(angleEdge(iEdge)) &
-               - tangentialBarotropicVel(iEdge)*sin(angleEdge(iEdge))
-             meridionalBarotropicVel(iEdge) = normalBarotropicVel(iEdge)*sin(angleEdge(iEdge)) &
-               + tangentialBarotropicVel(iEdge)*cos(angleEdge(iEdge))
-           end do
-
-           iLevelTarget = 1
-           do iEdge = 1, nEdges
-             normalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelocity(iLevelTarget,iEdge)
-           end do
-           do iEdge = 1, nEdges
-             tangentialBaroclinicVelAtSFC(iEdge) = 0.0_RKIND
-             do i = 1, nEdgesOnEdge(iEdge)
-               eoe = edgesOnEdge(i,iEdge)
-               tangentialBaroclinicVelAtSFC(iEdge) = tangentialBaroclinicVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAtSFC(eoe)
-             end do
-
-             zonalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
-               - tangentialBaroclinicVelAtSFC(iEdge)*sin(angleEdge(iEdge))
-             meridionalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
-               + tangentialBaroclinicVelAtSFC(iEdge)*cos(angleEdge(iEdge))
-           end do
-
-         endif
-
-         ! 250m
-         iLevelTarget = iLevel0250
-         do iCell = 1, nCells
-           BruntVaisalaFreqTopAt250m(iCell) = BruntVaisalaFreqTop(iLevelTarget,iCell)
-         end do
-         do iEdge = 1, nEdges
-           normalVelAt250m(iEdge) = normalVelocity(iLevelTarget,iEdge)
-           tangentialVelAt250m(iEdge) = tangentialVelocity(iLevelTarget,iEdge)
            zonalVelAt250m(iEdge) = normalVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
                                   - tangentialVelAt250m(iEdge)*sin(angleEdge(iEdge))
            meridionalVelAt250m(iEdge) = normalVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
                                        + tangentialVelAt250m(iEdge)*cos(angleEdge(iEdge))
-         end do
 
-         iLevelTarget = iLevel0250
-         do iEdge = 1, nEdges
-           normalGMBolusVelAt250m(iEdge) = normalGMBolusVelocity(iLevelTarget,iEdge)
-         end do
-         do iEdge = 1, nEdges
-           tangentialGMBolusVelAt250m(iEdge) = 0.0_RKIND
-           do i = 1, nEdgesOnEdge(iEdge)
-             eoe = edgesOnEdge(i,iEdge)
-             tangentialGMBolusVelAt250m(iEdge) = tangentialGMBolusVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAt250m(eoe)
-           end do
-
-           zonalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
-             - tangentialGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge))
-           meridionalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
-             + tangentialGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge))
-         end do
-
-         if ( config_time_integrator == trim('split_explicit')) then
-
-           iLevelTarget = iLevel0250
-           do iEdge = 1, nEdges
-             normalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelocity(iLevelTarget,iEdge)
-           end do
-           do iEdge = 1, nEdges
-             tangentialBaroclinicVelAt250m(iEdge) = 0.0_RKIND
-             do i = 1, nEdgesOnEdge(iEdge)
-               eoe = edgesOnEdge(i,iEdge)
-               tangentialBaroclinicVelAt250m(iEdge) = tangentialBaroclinicVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAt250m(eoe)
-             end do
-
-             zonalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
-               - tangentialBaroclinicVelAt250m(iEdge)*sin(angleEdge(iEdge))
-             meridionalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
-               + tangentialBaroclinicVelAt250m(iEdge)*cos(angleEdge(iEdge))
-           end do
-
-         endif
-
-         ! bottom
-         do iCell = 1, nCells
-           iLevelTarget = maxLevelCell(iCell)
-           BruntVaisalaFreqTopAtBottom(iCell) = BruntVaisalaFreqTop(iLevelTarget,iCell)
-         end do
-         do iEdge = 1, nEdges
-           iLevelTarget = maxLevelEdgeBot(iEdge)
-           normalVelAtBottom(iEdge) = normalVelocity(iLevelTarget,iEdge)
-           tangentialVelAtBottom(iEdge) = tangentialVelocity(iLevelTarget,iEdge)
            zonalVelAtBottom(iEdge) = normalVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
                                   - tangentialVelAtBottom(iEdge)*sin(angleEdge(iEdge))
            meridionalVelAtBottom(iEdge) = normalVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
@@ -590,15 +452,25 @@ contains
          end do
 
          do iEdge = 1, nEdges
-           iLevelTarget = maxLevelEdgeBot(iEdge)
-           normalGMBolusVelAtBottom(iEdge) = normalGMBolusVelocity(iLevelTarget,iEdge)
-         end do
-         do iEdge = 1, nEdges
+           tangentialGMBolusVelAtSFC(iEdge) = 0.0_RKIND
+           tangentialGMBolusVelAt250m(iEdge) = 0.0_RKIND
            tangentialGMBolusVelAtBottom(iEdge) = 0.0_RKIND
            do i = 1, nEdgesOnEdge(iEdge)
              eoe = edgesOnEdge(i,iEdge)
+             tangentialGMBolusVelAtSFC(iEdge) = tangentialGMBolusVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtSFC(eoe)
+             tangentialGMBolusVelAt250m(iEdge) = tangentialGMBolusVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAt250m(eoe)
              tangentialGMBolusVelAtBottom(iEdge) = tangentialGMBolusVelAtBottom(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtBottom(eoe)
            end do
+
+           zonalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
+             - tangentialGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge))
+           meridionalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
+             + tangentialGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge))
+
+           zonalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
+             - tangentialGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge))
+           meridionalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
+             + tangentialGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge))
 
            zonalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
              - tangentialGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge))
@@ -606,18 +478,92 @@ contains
              + tangentialGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge))
          end do
 
+         do iCell=1,nCells
+           relativeVorticityAtBottom(iCell) = relativeVorticityCell(maxLevelCell(iCell),iCell)
+           divergenceAtBottom(iCell) = divergence(maxLevelCell(iCell),iCell)
+           kineticEnergyAtBottom(iCell) = kineticEnergyCell(maxLevelCell(iCell),iCell)
+           activeTracersAtBottom(1,iCell) = activeTracers(1,maxLevelCell(iCell),iCell)
+           activeTracersAtBottom(2,iCell) = activeTracers(2,maxLevelCell(iCell),iCell)
+
+           BruntVaisalaFreqTopAtSFC(iCell) = BruntVaisalaFreqTop(1,iCell)
+           BruntVaisalaFreqTopAt250m(iCell) = BruntVaisalaFreqTop(iLevel0250,iCell)
+           BruntVaisalaFreqTopAtBottom(iCell) = BruntVaisalaFreqTop(maxLevelCell(iCell),iCell)
+         end do
+
+         do iCell = 1, nCells
+           zonalAreaWeightedCellVelAtSFC(iCell) = 0.0_RKIND
+           zonalAreaWeightedCellVelAt250m(iCell) = 0.0_RKIND
+           zonalAreaWeightedCellVelAtBottom(iCell) = 0.0_RKIND
+
+           meridionalAreaWeightedCellVelAtSFC(iCell) = 0.0_RKIND
+           meridionalAreaWeightedCellVelAt250m(iCell) = 0.0_RKIND
+           meridionalAreaWeightedCellVelAtBottom(iCell) = 0.0_RKIND
+
+           cellArea = 0.0_RKIND
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
+               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
+               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+
+               weightedNormalVel = normalVelAtSFC(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               zonalAreaWeightedCellVelAtSFC(iCell) = zonalAreaWeightedCellVelAtSFC(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
+               meridionalAreaWeightedCellVelAtSFC(iCell) = meridionalAreaWeightedCellVelAtSFC(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
+
+               weightedNormalVel = normalVelAt250m(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               zonalAreaWeightedCellVelAt250m(iCell) = zonalAreaWeightedCellVelAt250m(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
+               meridionalAreaWeightedCellVelAt250m(iCell) = meridionalAreaWeightedCellVelAt250m(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
+
+               weightedNormalVel = normalVelAtBottom(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
+               zonalAreaWeightedCellVelAtBottom(iCell) = zonalAreaWeightedCellVelAtBottom(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
+               meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
+           end do
+           zonalAreaWeightedCellVelAtSFC(iCell) = zonalAreaWeightedCellVelAtSFC(iCell)/cellArea
+           meridionalAreaWeightedCellVelAtSFC(iCell) = meridionalAreaWeightedCellVelAtSFC(iCell)/cellArea
+
+           zonalAreaWeightedCellVelAt250m(iCell) = zonalAreaWeightedCellVelAt250m(iCell)/cellArea
+           meridionalAreaWeightedCellVelAt250m(iCell) = meridionalAreaWeightedCellVelAt250m(iCell)/cellArea
+
+           zonalAreaWeightedCellVelAtBottom(iCell) = zonalAreaWeightedCellVelAtBottom(iCell)/cellArea
+           meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell)/cellArea
+         end do
+
          if ( config_time_integrator == trim('split_explicit')) then
 
            do iEdge = 1, nEdges
-             iLevelTarget = maxLevelEdgeBot(iEdge)
-             normalBaroclinicVelAtBottom(iEdge) = normalBaroclinicVelocity(iLevelTarget,iEdge)
+             normalBarotropicVel(iEdge) = normalBarotropicVelocity(iEdge)
+             normalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelocity(1,iEdge)
+             normalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelocity(iLevel0250,iEdge)
+             normalBaroclinicVelAtBottom(iEdge) = normalBaroclinicVelocity(maxLevelEdgeBot(iEdge),iEdge)
            end do
+
            do iEdge = 1, nEdges
+             tangentialBarotropicVel(iEdge) = 0.0_RKIND
+             tangentialBaroclinicVelAtSFC(iEdge) = 0.0_RKIND
+             tangentialBaroclinicVelAt250m(iEdge) = 0.0_RKIND
              tangentialBaroclinicVelAtBottom(iEdge) = 0.0_RKIND
              do i = 1, nEdgesOnEdge(iEdge)
                eoe = edgesOnEdge(i,iEdge)
+               tangentialBarotropicVel(iEdge) = tangentialBarotropicVel(iEdge) + weightsOnEdge(i,iEdge) * normalBarotropicVel(eoe)
+               tangentialBaroclinicVelAtSFC(iEdge) = tangentialBaroclinicVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAtSFC(eoe)
+               tangentialBaroclinicVelAt250m(iEdge) = tangentialBaroclinicVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAt250m(eoe)
                tangentialBaroclinicVelAtBottom(iEdge) = tangentialBaroclinicVelAtBottom(iEdge) + weightsOnEdge(i,iEdge) * normalBaroclinicVelAtBottom(eoe)
              end do
+
+             zonalBarotropicVel(iEdge) = normalBarotropicVel(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBarotropicVel(iEdge)*sin(angleEdge(iEdge))
+             meridionalBarotropicVel(iEdge) = normalBarotropicVel(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBarotropicVel(iEdge)*cos(angleEdge(iEdge))
+
+             zonalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBaroclinicVelAtSFC(iEdge)*sin(angleEdge(iEdge))
+             meridionalBaroclinicVelAtSFC(iEdge) = normalBaroclinicVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBaroclinicVelAtSFC(iEdge)*cos(angleEdge(iEdge))
+
+             zonalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
+               - tangentialBaroclinicVelAt250m(iEdge)*sin(angleEdge(iEdge))
+             meridionalBaroclinicVelAt250m(iEdge) = normalBaroclinicVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
+               + tangentialBaroclinicVelAt250m(iEdge)*cos(angleEdge(iEdge))
 
              zonalBaroclinicVelAtBottom(iEdge) = normalBaroclinicVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
                - tangentialBaroclinicVelAtBottom(iEdge)*sin(angleEdge(iEdge))
@@ -628,64 +574,13 @@ contains
          endif
 
          !
-         ! compute Perot reconstructed cell-centered velocities
-         !
-
-         do iCell = 1, nCells
-           zonalAreaWeightedCellVelAtSFC(iCell) = 0.0_RKIND
-           meridionalAreaWeightedCellVelAtSFC(iCell) = 0.0_RKIND
-           cellArea = 0.0_RKIND
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
-               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
-               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-               weightedNormalVel = normalVelAtSFC(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-               zonalAreaWeightedCellVelAtSFC(iCell) = zonalAreaWeightedCellVelAtSFC(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
-               meridionalAreaWeightedCellVelAtSFC(iCell) = meridionalAreaWeightedCellVelAtSFC(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
-           end do
-           zonalAreaWeightedCellVelAtSFC(iCell) = zonalAreaWeightedCellVelAtSFC(iCell)/cellArea
-           meridionalAreaWeightedCellVelAtSFC(iCell) = meridionalAreaWeightedCellVelAtSFC(iCell)/cellArea
-         end do
-
-         do iCell = 1, nCells
-           zonalAreaWeightedCellVelAt250m(iCell) = 0.0_RKIND
-           meridionalAreaWeightedCellVelAt250m(iCell) = 0.0_RKIND
-           cellArea = 0.0_RKIND
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
-               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
-               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-               weightedNormalVel = normalVelAt250m(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-               zonalAreaWeightedCellVelAt250m(iCell) = zonalAreaWeightedCellVelAt250m(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
-               meridionalAreaWeightedCellVelAt250m(iCell) = meridionalAreaWeightedCellVelAt250m(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
-           end do
-           zonalAreaWeightedCellVelAt250m(iCell) = zonalAreaWeightedCellVelAt250m(iCell)/cellArea
-           meridionalAreaWeightedCellVelAt250m(iCell) = meridionalAreaWeightedCellVelAt250m(iCell)/cellArea
-         end do
-
-         do iCell = 1, nCells
-           zonalAreaWeightedCellVelAtBottom(iCell) = 0.0_RKIND
-           meridionalAreaWeightedCellVelAtBottom(iCell) = 0.0_RKIND
-           cellArea = 0.0_RKIND
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               ! note, we don't necessarily have d_{i,j} computed (Fringer, 2006), so we allow averaging between cells via 0.5_RKIND*dcEdge(iEdge) to compute
-               ! segment of cell area d_{i,j}-- the key is that the edge-normal velocities are a convex combination
-               cellArea = cellArea + 0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-               weightedNormalVel = normalVelAtBottom(iEdge)*0.5_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-               zonalAreaWeightedCellVelAtBottom(iCell) = zonalAreaWeightedCellVelAtBottom(iCell) + cos(angleEdge(iEdge)) * weightedNormalVel
-               meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell) + sin(angleEdge(iEdge)) * weightedNormalVel
-           end do
-           zonalAreaWeightedCellVelAtBottom(iCell) = zonalAreaWeightedCellVelAtBottom(iCell)/cellArea
-           meridionalAreaWeightedCellVelAtBottom(iCell) = meridionalAreaWeightedCellVelAtBottom(iCell)/cellArea
-         end do
-
-         !
          ! compute layer averaged tracers
          !
          activeTracersAvgTopto0100(:,:) = -1.0e34_RKIND
+         activeTracersAvg0100to0250(:,:) = -1.0e34_RKIND
+         activeTracersAvg0250to0700(:,:) = -1.0e34_RKIND
+         activeTracersAvg0700to2000(:,:) = -1.0e34_RKIND
+         activeTracersAvg2000toBottom(:,:) = -1.0e34_RKIND
          do iCell = 1, nCells
            sumLayerThickness = layerThickness(1,iCell)
            activeTracersAvgTopto0100(:,iCell) = activeTracers(:,1,iCell)*layerThickness(1,iCell)
@@ -694,10 +589,7 @@ contains
               activeTracersAvgTopto0100(:,iCell) = activeTracersAvgTopto0100(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
            enddo
            activeTracersAvgTopto0100(:,iCell) = activeTracersAvgTopto0100(:,iCell) / max(sumLayerThickness,1.0_RKIND)
-         enddo
 
-         activeTracersAvg0100to0250(:,:) = -1.0e34_RKIND
-         do iCell = 1, nCells
            if (iLevel0100+1.le.maxLevelCell(iCell)) then
               sumLayerThickness = layerThickness(iLevel0100+1,iCell)
               activeTracersAvg0100to0250(:,iCell) = activeTracers(:,iLevel0100+1,iCell)*layerThickness(iLevel0100,iCell)
@@ -707,10 +599,7 @@ contains
               enddo
               activeTracersAvg0100to0250(:,iCell) = activeTracersAvg0100to0250(:,iCell) / max(sumLayerThickness,1.0_RKIND)
            endif
-         enddo
 
-         activeTracersAvg0250to0700(:,:) = -1.0e34_RKIND
-         do iCell = 1, nCells
            if (iLevel0250+1.le.maxLevelCell(iCell)) then
               sumLayerThickness = layerThickness(iLevel0250+1,iCell)
               activeTracersAvg0250to0700(:,iCell) = activeTracers(:,iLevel0250+1,iCell)*layerThickness(iLevel0250+1,iCell)
@@ -720,10 +609,7 @@ contains
               enddo
               activeTracersAvg0250to0700(:,iCell) = activeTracersAvg0250to0700(:,iCell) / max(sumLayerThickness,1.0_RKIND)
            endif
-         enddo
 
-         activeTracersAvg0700to2000(:,:) = -1.0e34_RKIND
-         do iCell = 1, nCells
            if (iLevel0700+1.le.maxLevelCell(iCell)) then
               sumLayerThickness = layerThickness(iLevel0700+1,iCell)
               activeTracersAvg0700to2000(:,iCell) = activeTracers(:,iLevel0700+1,iCell)*layerThickness(iLevel0700+1,iCell)
@@ -733,10 +619,7 @@ contains
               enddo
               activeTracersAvg0700to2000(:,iCell) = activeTracersAvg0700to2000(:,iCell) / max(sumLayerThickness,1.0_RKIND)
            endif
-         enddo
 
-         activeTracersAvg2000toBottom(:,:) = -1.0e34_RKIND
-         do iCell = 1, nCells
            if (iLevel2000+1.le.maxLevelCell(iCell)) then
               sumLayerThickness = layerThickness(iLevel2000+1,iCell)
               activeTracersAvg2000toBottom(:,iCell) = activeTracers(:,iLevel2000+1,iCell)*layerThickness(iLevel2000+1,iCell)
