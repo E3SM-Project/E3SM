@@ -1207,13 +1207,13 @@
     <domain name="ne240np4">
       <nx>3110402</nx> <ny>1</ny>
       <file atm_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file atm_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2_111209.nc</file>
+      <file atm_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
       <file ice_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <file ice_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.121113.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <file lnd_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file lnd_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2_111209.nc</file>
+      <file lnd_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <file ocn_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.121113.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
       <support>Experimental for very high resolution experiments</support>
     </domain>
