@@ -140,11 +140,11 @@ contains
         bulkRichardsonNumberBuoy, bulkRichardsonNumberShear, unresolvedShear, normalVelocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
-      integer, pointer :: index_vertNonLocalFluxTemp, config_cvmix_num_ri_smooth_loops, config_cvmix_num_BLD_smooth_loops
+      integer, pointer :: index_vertNonLocalFluxTemp, config_cvmix_num_ri_smooth_loops
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnCell, cellMask
 
       logical, pointer :: config_use_cvmix_shear, config_use_cvmix_convection, config_use_cvmix_kpp
-      logical, pointer :: config_use_cvmix_fixed_boundary_layer
+      logical, pointer :: config_use_cvmix_fixed_boundary_layer, config_cvmix_use_BLD_smoothing
       real (kind=RKIND), pointer :: config_cvmix_kpp_stop_OBL_search, config_cvmix_kpp_criticalBulkRichardsonNumber
       real (kind=RKIND), pointer :: config_cvmix_kpp_boundary_layer_depth, config_cvmix_kpp_surface_layer_extent
       real (kind=RKIND), pointer :: configure_cvmix_kpp_minimum_OBL_under_sea_ice
@@ -208,7 +208,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_boundary_layer_depth', config_cvmix_kpp_boundary_layer_depth)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_extent', config_cvmix_kpp_surface_layer_extent)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_num_ri_smooth_loops', config_cvmix_num_ri_smooth_loops)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_num_BLD_smooth_loops', config_cvmix_num_BLD_smooth_loops)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_use_BLD_smoothing', config_cvmix_use_BLD_smoothing)
       call mpas_pool_get_config(ocnConfigs, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice', &
                                 configure_cvmix_kpp_minimum_OBL_under_sea_ice)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -707,44 +707,35 @@ contains
  endif ! kpp stage 2 convection calc
       end do  ! do iCell=1,mesh%nCells
       !$omp end do
-      if (kpp_stage == 1) then ! smooth boundary layer
+      if (kpp_stage == 1 .and. config_cvmix_use_BLD_smoothing) then ! smooth boundary layer
+         nCells = nCellsArray(2)
 
-         do nsmooth=1,min(config_cvmix_num_BLD_smooth_loops,1)
-           nCells = nCellsArray(2)
+         do iCell=1,nCells
+            nEdges = nEdgesOnCell(iCell)
+            boundaryLayerDepthSmooth(iCell) = 0.0_RKIND
+            areaSum = 0.0_RKIND
+            edgeCount = 0
 
-           do iCell=1,nCells
-              nEdges = nEdgesOnCell(iCell)
-!              areaSum = nEdges * areaCell(iCell)
-!              boundaryLayerDepthSmooth(iCell) = areaSum * boundaryLayerDepth(iCell)
-
-               boundaryLayerDepthSmooth(iCell) = 0.0_RKIND
-               areaSum = 0.0_RKIND
-               edgeCount = 0
-
-!               if ( areaSum /= 0) then 
-                do iEdge = 1,nEdges
-                   iNeighbor = cellsOnCell(iEdge,iCell)
-                   boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +  &
-                                 2.0_RKIND * cellMask(1,iNeighbor) * areaCell(iNeighbor)    &
-                                   * boundaryLayerDepth(iNeighbor)
-                   areaSum = areaSum + 2.0_RKIND * areaCell(iNeighbor) * cellMask(1,iNeighbor)
-                   edgeCount = edgeCount + cellMask(1,iNeighbor)
-                end do
-                areaSum = areaSum + edgeCount * areaCell(iCell)
-                boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +   &
-                           boundaryLayerDepth(iCell) * edgeCount * areaCell(iCell)
-                boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) / areaSum
-!             endif
-          end do
+            do iEdge = 1,nEdges
+               iNeighbor = cellsOnCell(iEdge,iCell)
+               boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +  &
+                             2.0_RKIND * cellMask(1,iNeighbor) * areaCell(iNeighbor)    &
+                             * boundaryLayerDepth(iNeighbor)
+               areaSum = areaSum + 2.0_RKIND * areaCell(iNeighbor) * cellMask(1,iNeighbor)
+               edgeCount = edgeCount + cellMask(1,iNeighbor)
+            end do
+            areaSum = areaSum + edgeCount * areaCell(iCell)
+            boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +   &
+                         boundaryLayerDepth(iCell) * edgeCount * areaCell(iCell)
+            boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) / areaSum
+         end do
 
           do iCell=1, nCells
              boundaryLayerDepth(iCell) = boundaryLayerDepthSmooth(iCell)
           enddo
 
-         enddo
-
      
-        endif !stage 1 BLD smoothing
+       endif !stage 1 BLD smoothing
       end do ! kpp_stage
       call mpas_timer_stop('cvmix cell loop')
 
