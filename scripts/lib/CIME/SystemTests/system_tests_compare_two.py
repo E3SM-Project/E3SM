@@ -92,7 +92,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._case2 = None
 
         self._setup_cases_if_not_yet_done()
-
+        # Since case 2 has the same name as case1 it's CIME_OUTPUT_ROOT must also be different
+        self._case2.set_value("CIME_OUTPUT_ROOT",
+                              os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
+                                           self._case1.get_value("CASE")))
     # ========================================================================
     # Methods that MUST be implemented by specific tests that inherit from this
     # base class
@@ -195,10 +198,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         Assumes that self._case1 is already set to point to the case1 object,
         and that self._run_two_suffix is already set.
         """
-        casename1 = self._case1.get_value("CASE")
+        casename2 = self._case1.get_value("CASE")
         caseroot1 = self._case1.get_value("CASEROOT")
-
-        casename2 = "{}.{}".format(casename1, self._run_two_suffix)
 
         # Nest the case directory for case2 inside the case directory for case1
         caseroot2 = os.path.join(caseroot1, casename2)
