@@ -322,11 +322,16 @@ module clm_varctl
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
   !
   logical, private :: clmvarctl_isset = .false.
- !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
  
- !-----------------------------------------------------------------------
- ! nutrient competition (nu_com), default is relative demand approach (RD)
- character(len=15), public :: nu_com = 'RD'
+  !-----------------------------------------------------------------------
+  ! nutrient competition (nu_com), default is relative demand approach (RD)
+  character(len=15), public :: nu_com = 'RD'
+ 
+  !-----------------------------------------------------------------------
+  ! forest N/P fertilization
+  logical, public :: forest_fert_exp = .false. 
+
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity

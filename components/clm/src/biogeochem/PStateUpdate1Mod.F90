@@ -22,6 +22,10 @@ module PStateUpdate1Mod
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
+  ! forest fertilization experiment
+  use clm_time_manager       , only : get_curr_date
+  use CNStateType            , only : fert_type , fert_continue, fert_dose
+  use clm_varctl             , only : forest_fert_exp
   !
   implicit none
   save
@@ -55,7 +59,10 @@ contains
     integer :: fp,fc     ! lake filter indices
     real(r8):: dt        ! radiation time step (seconds)
 
-
+    integer:: kyr                     ! current year 
+    integer:: kmo                     ! month of year  (1, ..., 12)
+    integer:: kda                     ! day of month   (1, ..., 31) 
+    integer:: mcsec                   ! seconds of day (0, ..., seconds/day)
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 
@@ -152,7 +159,23 @@ contains
       end do
       endif ! if (.not. is_active_betr_bgc))
       !------------------------------------------------------------------
-      
+     
+      ! forest fertilization
+      if (forest_fert_exp) then
+         call get_curr_date(kyr, kmo, kda, mcsec)
+         if (kda == 1  .and. mcsec == 0 ) then
+            do fc = 1,num_soilc
+              c = filter_soilc(fc)
+              if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
+                  do j = 1, nlevdecomp
+                      ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+                  end do
+              end if
+            end do
+         end if
+      end if
+
+
       ! patch loop
 
       do fp = 1,num_soilp
