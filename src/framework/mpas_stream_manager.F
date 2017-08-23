@@ -5556,7 +5556,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_derived_types, only : MPAS_streamManager_type, &
-                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, MPAS_STREAM_PROPERTY_ACTIVE, &
                                         MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
                                         MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
                                         MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
@@ -5668,6 +5668,10 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     if (trim(filename_interval) /= 'none') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_FILENAME_INTV, filename_interval, ierr=ierr)
+    end if
+
+    if (direction_c == 4) then
+       call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_ACTIVE, .false., ierr=ierr)
     end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
