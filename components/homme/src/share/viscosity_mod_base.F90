@@ -156,13 +156,9 @@ logical var_coef1
 #endif
    enddo
    
-#ifndef BARRIERTIMERS
    call t_startf('biwk_bexchV')
-#endif
    call bndry_exchangeV(hybrid,edge3)
-#ifndef BARRIERTIMERS
    call t_stopf('biwk_bexchV')
-#endif 
 
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
@@ -360,13 +356,9 @@ logical var_coef1
       enddo
    enddo
 
-#ifndef BARRIERTIMERS
    call t_startf('biwksc_bexchV')
-#endif
    call bndry_exchangeV(hybrid,edgeq)
-#ifndef BARRIERTIMERS
    call t_stopf('biwksc_bexchV')
-#endif   
 
    do ie=nets,nete
 
@@ -711,13 +703,9 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
       call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
    enddo
    
-#ifndef BARRIERTIMERS
    call t_startf('nmm_bexchV')
-#endif
    call bndry_exchangeS(hybrid,edgeMinMax)
-#ifndef BARRIERTIMERS
    call t_stopf('nmm_bexchV')
-#endif
 
    do ie=nets,nete
       kptr = 0
@@ -752,13 +740,9 @@ subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh
       call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
    enddo
 
-#ifndef BARRIERTIMERS
    call t_startf('nmm_bexchS_start')
-#endif
    call bndry_exchangeS_start(hybrid,edgeMinMax)
-#ifndef BARRIERTIMERS
    call t_stopf('nmm_bexchS_start')
-#endif
 
 end subroutine neighbor_minmax_start
 subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
@@ -772,13 +756,9 @@ subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neig
    ! local 
    integer :: ie,q, k,kptr
 
-#ifndef BARRIERTIMERS
    call t_startf('nmm_bexchS_fini')
-#endif
    call bndry_exchangeS_finish(hybrid,edgeMinMax)
-#ifndef BARRIERTIMERS
    call t_stopf('nmm_bexchS_fini')
-#endif
 
    do ie=nets,nete
       kptr = 0

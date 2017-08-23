@@ -930,13 +930,9 @@ contains
            call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
         enddo
 
-#ifndef BARRIERTIMERS
         call t_startf('ahdp_bexchV2')
-#endif
         call bndry_exchangeV(hybrid,edge3)
-#ifndef BARRIERTIMERS
         call t_stopf('ahdp_bexchV2')
-#endif
 
         do ie=nets,nete
 
@@ -1527,13 +1523,9 @@ contains
   ! sync is required
   ! =============================================================
 
-#ifndef BARRIERTIMERS
   call t_startf('caar_bexchV')
-#endif
   call bndry_exchangeV(hybrid,edge3p1)
-#ifndef BARRIERTIMERS
   call t_stopf('caar_bexchV')
-#endif
 
   do ie=nets,nete
      ! ===========================================================
