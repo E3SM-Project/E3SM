@@ -13,7 +13,6 @@ def _get_plot_fcn(backend, set_num):
 
         set_num = get_set_name(set_num) 
         mod_str = 'acme_diags.plot.{}.{}_plot'.format(backend, set_num)
-
         module = importlib.import_module(mod_str)
         return module.plot
 

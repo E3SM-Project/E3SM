@@ -34,6 +34,7 @@ requirements:
     - cartopy
     - dask
     - beautifulsoup4
+    - html5lib
 
 about:
     home: https://github.com/ACME-Climate/acme_diags
