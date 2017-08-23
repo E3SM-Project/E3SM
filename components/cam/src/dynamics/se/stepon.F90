@@ -239,7 +239,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,ie)
    end do
 
+   call t_startf("stepon_bexchV")
    call bndry_exchangeV(par, edgebuf)
+   call t_stopf("stepon_bexchV")
 
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 

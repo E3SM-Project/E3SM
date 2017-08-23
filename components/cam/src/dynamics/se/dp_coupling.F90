@@ -119,7 +119,11 @@ CONTAINS
        end do
        call t_stopf('UniquePoints')
 
-       if (use_gw_front) call gws_src_fnct(elem, tl_f, frontgf, frontga)
+       if (use_gw_front) then
+         call t_startf('gws_src_fnct')
+         call gws_src_fnct(elem, tl_f, frontgf, frontga)
+         call t_stopf('gws_src_fnct')
+       endif
     else
        ps_tmp(:,:) = 0._r8
        T_tmp(:,:,:) = 0._r8

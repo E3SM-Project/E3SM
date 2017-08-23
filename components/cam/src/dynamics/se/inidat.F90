@@ -20,6 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
+  use perf_mod, only: t_startf, t_stopf
   implicit none
   private
   public read_inidat
@@ -373,6 +374,7 @@ contains
     
     ! once we've read all the fields we do a boundary exchange to 
     ! update the redundent columns in the dynamics
+    call t_startf('rd_inidat_bndry_exch')
     if(iam < par%nprocs) then
        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2, numthreads_in=1)
     end if
@@ -389,7 +391,9 @@ contains
        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
     if(iam < par%nprocs) then
+       call t_startf("rd_inidat_bexchV")
        call bndry_exchangeV(par,edge)
+       call t_stopf("rd_inidat_bexchV")
     end if
     do ie=1,nelemd
        kptr=0
@@ -416,6 +420,7 @@ contains
     if(iam < par%nprocs) then
        call FreeEdgeBuffer(edge)
     end if
+    call t_stopf('rd_inidat_bndry_exch')
 
     !
     ! This subroutine is used to create nc_topo files, if requested

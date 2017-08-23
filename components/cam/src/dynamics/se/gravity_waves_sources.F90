@@ -7,6 +7,7 @@ module gravity_waves_sources
   use kinds, only          : real_kind
   use shr_kind_mod, only   : r8 => shr_kind_r8
   use thread_mod, only   : nthreads
+  use perf_mod, only       : t_startf, t_stopf
 
   implicit none
   private
@@ -75,7 +76,9 @@ CONTAINS
     call derivinit(deriv(hybrid%ithr))
     allocate(frontgf_thr(np,np,nlev,nets:nete))
     allocate(frontga_thr(np,np,nlev,nets:nete))
+    call t_startf("frontogenesis")
     call compute_frontogenesis(frontgf_thr,frontga_thr,tl,elem,deriv(hybrid%ithr),hybrid,nets,nete)
+    call t_stopf("frontogenesis")
     do ie=nets,nete
        ncols = elem(ie)%idxP%NumUniquePts
        call UniquePoints(elem(ie)%idxP, nlev, frontgf_thr(:,:,:,ie), frontgf(1:ncols,:,ie))
@@ -156,7 +159,9 @@ CONTAINS
        call edgeVpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,ie)
     enddo
     if (iam<par%nprocs) then
+       call t_startf("cf_bexchV")
        call bndry_exchangeV(hybrid,edge3)
+       call t_stopf("cf_bexchV")
     end if
     do ie=nets,nete
        call edgeVunpack(edge3, frontgf(:,:,:,ie),nlev,0,ie)
