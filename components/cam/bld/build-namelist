@@ -4008,6 +4008,7 @@ if ($cfg->get('dyn') =~ /se/) {
 
 # Defaults for history output
 add_default($nl, 'history_amwg');
+add_default($nl, 'history_verbose');
 add_default($nl, 'history_vdiag');
 add_default($nl, 'history_aerosol');
 add_default($nl, 'history_aero_optics');
