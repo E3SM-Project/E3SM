@@ -1138,9 +1138,12 @@ class Case(object):
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
             cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
-        expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable"
-               "by this user.  Use the --cime-output-root flag to provide a writable "
-               "scratch directory".format(cime_output_root))
+        if os.path.isdir(cime_output_root):
+            expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable"
+                   "by this user.  Use the --cime-output-root flag to provide a writable "
+                   "scratch directory".format(cime_output_root))
+        else:
+            os.makedirs(cime_output_root)
 
         newcaseroot = os.path.abspath(newcase)
         expect(not os.path.isdir(newcaseroot),

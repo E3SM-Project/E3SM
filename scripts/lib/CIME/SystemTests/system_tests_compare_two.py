@@ -233,7 +233,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             try:
                 # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
                 case2_output_root = os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
-                                                  "case2",self._case1.get_value("CASE"))
+                                                  self._case1.get_value("CASE"), "case2")
                 self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
                     keepexe = self._separate_builds==False,
