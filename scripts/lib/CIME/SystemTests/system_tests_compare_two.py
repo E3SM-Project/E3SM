@@ -21,6 +21,17 @@ In addition, they MAY require the following method:
     that's needed in both cases. This is called before _case_one_setup or
     _case_two_setup.
 
+(2) _case_one_custom_prerun_action(self):
+    Use this to do arbitrary actions immediately before running case one
+
+(3) _case_two_custom_prerun_action(self):
+    Use this to do arbitrary actions immediately before running case two
+
+(4) _case_one_custom_postrun_action(self):
+    Use this to do arbitrary actions immediately after running case one
+
+(5) _case_two_custom_postrun_action(self):
+    Use this to do arbitrary actions immediately after running case two
 """
 
 from CIME.XML.standard_module_setup import *
@@ -36,10 +47,11 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def __init__(self,
                  case,
-                 separate_builds,
+                 separate_builds=True,
                  run_two_suffix = 'test',
                  run_one_description = '',
-                 run_two_description = ''):
+                 run_two_description = '',
+                 multisubmit = False):
         """
         Initialize a SystemTestsCompareTwo object. Individual test cases that
         inherit from SystemTestsCompareTwo MUST call this __init__ method.
@@ -56,6 +68,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 when starting the first run. Defaults to ''.
             run_two_description (str, optional): Description printed to log file
                 when starting the second run. Defaults to ''.
+            multisubmit (bool): Do first and second runs as different submissions.
+                Designed for tests with RESUBMIT=1
         """
         SystemTestsCommon.__init__(self, case)
 
@@ -92,6 +106,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         self._case2 = None
 
         self._setup_cases_if_not_yet_done()
+
+        self._multisubmit = multisubmit
     # ========================================================================
     # Methods that MUST be implemented by specific tests that inherit from this
     # base class
@@ -131,6 +147,30 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         pass
 
+    def _case_one_custom_prerun_action(self):
+        """
+        Use to do arbitrary actions immediately before running case one
+        """
+        pass
+
+    def _case_two_custom_prerun_action(self):
+        """
+        Use to do arbitrary actions immediately before running case two
+        """
+        pass
+
+    def _case_one_custom_postrun_action(self):
+        """
+        Use to do arbitrary actions immediately after running case one
+        """
+        pass
+
+    def _case_two_custom_postrun_action(self):
+        """
+        Use to do arbitrary actions immediately after running case two
+        """
+        pass
+
     # ========================================================================
     # Main public methods
     # ========================================================================
@@ -160,21 +200,34 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         Runs both phases of the two-phase test and compares their results
         If success_change is True, success requires some files to be different
         """
+        first_phase = self._case1.get_value("RESUBMIT") == 1 # Only relevant for multi-submit tests
+        run_type = self._case1.get_value("RUN_TYPE")
 
         # First run
-        logger.info('Doing first run: ' + self._run_one_description)
-        self._activate_case1()
-        run_type = self._case1.get_value("RUN_TYPE")
-        self.run_indv(suffix = self._run_one_suffix)
+        if not self._multisubmit or first_phase:
+            logger.info('Doing first run: ' + self._run_one_description)
+            self._activate_case1()
+            self._case_one_custom_prerun_action()
+            self.run_indv(suffix = self._run_one_suffix)
+            self._case_one_custom_postrun_action()
 
         # Second run
-        logger.info('Doing second run: ' + self._run_two_description)
-        self._activate_case2()
-        # we need to make sure run2 is properly staged.
-        if run_type != "startup":
-            check_case(self._case2, self._caseroot2)
-        self._force_case2_settings()
-        self.run_indv(suffix = self._run_two_suffix)
+        if not self._multisubmit or not first_phase:
+            # Subtle issue: case1 is already in a writeable state since it tends to be opened
+            # with a with statement in all the API entrances in CIME. case2 was created via clone,
+            # not a with statement, so it's not in a writeable state, so we need to use a with
+            # statement here to put it in a writeable state.
+            with self._case2:
+                logger.info('Doing second run: ' + self._run_two_description)
+                self._activate_case2()
+                # we need to make sure run2 is properly staged.
+                if run_type != "startup":
+                    check_case(self._case2, self._caseroot2)
+                self._force_case2_settings()
+
+                self._case_two_custom_prerun_action()
+                self.run_indv(suffix = self._run_two_suffix)
+                self._case_two_custom_postrun_action()
 
         # Compare results
         # Case1 is the "main" case, and we need to do the comparisons from there
@@ -236,7 +289,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                                                   self._case1.get_value("CASE"), "case2")
                 self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
-                    keepexe = self._separate_builds==False,
+                    keepexe = not self._separate_builds,
                     cime_output_root = case2_output_root)
                 self._setup_cases()
             except:

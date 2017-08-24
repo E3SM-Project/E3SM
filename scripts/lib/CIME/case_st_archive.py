@@ -7,7 +7,7 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
-from CIME.utils                     import run_and_log_case_status
+from CIME.utils                     import run_and_log_case_status, sorted_ls
 from os.path                        import isdir, join
 import datetime
 
@@ -384,16 +384,21 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
                                        archive_file_fn)
 
 ###############################################################################
-def restore_from_archive(case):
+def restore_from_archive(case, rest_dir=None):
 ###############################################################################
     """
-    Take most recent archived restart files and load them into current case.
+    Take archived restart files and load them into current case.  Use rest_dir if provided otherwise use most recent
     """
     dout_sr = case.get_value("DOUT_S_ROOT")
     rundir = case.get_value("RUNDIR")
-    most_recent_rest = run_cmd_no_fail("ls -1dt {}/rest/* | head -1".format(dout_sr))
+    if rest_dir is not None:
+        if not os.path.isabs(rest_dir):
+            rest_dir = os.path.join(dout_sr, "rest", rest_dir)
+    else:
+        rest_dir = sorted_ls(os.path.join(dout_sr, "rest"))[-1]
 
-    for item in glob.glob("{}/*".format(most_recent_rest)):
+    logger.info("Restoring from {} to {}".format(rest_dir, rundir))
+    for item in glob.glob("{}/*".format(rest_dir)):
         base = os.path.basename(item)
         dst = os.path.join(rundir, base)
         if os.path.exists(dst):

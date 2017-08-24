@@ -273,6 +273,19 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
+  <test NAME="IRT">
+    <DESC>exact restart from startup, default 6 days + 5 days with restart from interum file</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <DOUT_S_SAVE_INTERIM_RESTART_FILES>TRUE</DOUT_S_SAVE_INTERIM_RESTART_FILES>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
   <test NAME="ERIO">
     <DESC>exact restart from startup with different PIO methods, default 6 days + 5 days</DESC>
     <INFO_DBUG>1</INFO_DBUG>
