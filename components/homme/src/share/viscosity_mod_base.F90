@@ -159,7 +159,7 @@ logical var_coef1
    call t_startf('biwk_bexchV')
    call bndry_exchangeV(hybrid,edge3)
    call t_stopf('biwk_bexchV')
-   
+
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
       
@@ -359,7 +359,7 @@ logical var_coef1
    call t_startf('biwksc_bexchV')
    call bndry_exchangeV(hybrid,edgeq)
    call t_stopf('biwksc_bexchV')
-   
+
    do ie=nets,nete
 
       ! apply inverse mass matrix, then apply laplace again

@@ -29,6 +29,10 @@ OPTION(PREFER_SHARED "Prefer linking with shared libraries." FALSE)
 # need to tell the source to use this capability
 ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
 
+#Uncomment this for certain timers, 
+#or use -DBARRIERTIMERS in config line.
+ADD_DEFINITIONS(-DBARRIERTIMERS)
+
 # Set up some directories to facilitate finding netcdf and pnetcdf
 INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
