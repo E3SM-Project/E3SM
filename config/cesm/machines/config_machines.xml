@@ -1153,8 +1153,8 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/nobackup/fvitt/csm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/nobackup/fvitt/csm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
@@ -1207,8 +1207,8 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/nobackup/fvitt/csm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/nobackup/fvitt/csm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
@@ -1261,8 +1261,8 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/nobackup/fvitt/csm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/nobackup/fvitt/csm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
@@ -1315,8 +1315,8 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/nobackup/fvitt/csm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/nobackup/fvitt/csm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
