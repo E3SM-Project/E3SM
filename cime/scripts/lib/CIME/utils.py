@@ -618,6 +618,48 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
+def get_charge_account(machobj=None):
+    """
+    Hierarchy for choosing CHARGE_ACCOUNT:
+    1. Environment variable CHARGE_ACCOUNT
+    2. File $HOME/.cime/config
+    3. config_machines.xml (if machobj provided)
+    4. default to same value as PROJECT
+
+    >>> import CIME
+    >>> import CIME.XML.machines
+    >>> machobj = CIME.XML.machines.Machines(machine="theta")
+    >>> project = get_project(machobj)
+    >>> charge_account = get_charge_account(machobj)
+    >>> project == charge_account
+    True
+    >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
+    >>> get_charge_account(machobj)
+    'ChargeAccount'
+    >>> del os.environ["CHARGE_ACCOUNT"]
+    """
+    charge_account = os.environ.get("CHARGE_ACCOUNT")
+    if (charge_account is not None):
+        logger.info("Using charge_account from env CHARGE_ACCOUNT: " + charge_account)
+        return charge_account
+
+    cime_config = get_cime_config()
+    if (cime_config.has_option('main','CHARGE_ACCOUNT')):
+        charge_account = cime_config.get('main','CHARGE_ACCOUNT')
+        if (charge_account is not None):
+            logger.info("Using charge_account from .cime/config: " + charge_account)
+            return charge_account
+
+    if machobj is not None:
+        charge_account = machobj.get_value("CHARGE_ACCOUNT")
+        if charge_account is not None:
+            logger.info("Using charge_account from config_machines.xml: " + charge_account)
+            return charge_account
+
+    logger.info("No charge_account info available, using value from PROJECT")
+    return get_project(machobj)
+
+
 def setup_standard_logging_options(parser):
     helpfile = "%s.log"%sys.argv[0]
     helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
