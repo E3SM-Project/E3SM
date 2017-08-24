@@ -386,10 +386,12 @@ module li_subglacial_hydro
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
          call mpas_pool_get_array(hydroPool, 'waterVelocityCellX', waterVelocityCellX)
          call mpas_pool_get_array(hydroPool, 'waterVelocityCellY', waterVelocityCellY)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          allocate(cellJunk(nCells+1))
          call mpas_reconstruct(meshPool, waterVelocity, waterVelocityCellX, waterVelocityCellY, &
               cellJunk, cellJunk, cellJunk)
