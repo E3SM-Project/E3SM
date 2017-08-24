@@ -52,6 +52,8 @@ Module dyn_comp
   !  JPE  06.05.31:  created
   !  Aaron Donahue 17.04.11: Fixed bug in write_grid_mapping which caused 
   !       a segmentation fault when dyn_npes<npes
+  !  Aaron Donahue 17.06.27: Fixed a bug with multiple communication groups
+  !       when dyn_npes<npes
   !
   !----------------------------------------------------------------------
 
@@ -129,7 +131,9 @@ CONTAINS
     par=initmp(npes_se)
 
     ! Read the SE specific part of the namelist
-    call readnl(par, NLFileName)
+    if (iam<par%nprocs) then
+       call readnl(par, NLFileName)
+    end if
 
     ! override the setting in the SE namelist, it's redundant anyway
     if (.not. is_first_step()) runtype = 1

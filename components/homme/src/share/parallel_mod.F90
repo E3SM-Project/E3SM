@@ -102,6 +102,11 @@ contains
 !  initmp:
 !  Initializes the parallel (message passing)
 !  environment, returns a parallel_t structure..
+!  
+!  Revision History
+!
+!  Aaron Donahue 17.06.27: Fixed bug with multiple communication groups
+!              created when dyn_npes<npes for ATM model.
 ! ================================================
      
   function initmp(npes_in) result(par)
@@ -155,14 +160,22 @@ contains
     call MPI_comm_rank(mpicom,iam_cam,ierr)
     color = iam_cam/npes_homme
     call mpi_comm_split(mpicom, color, iam_cam, par%comm, ierr)
+    if (iam_cam >= npes_homme) then
+       par%rank   = 0
+       par%nprocs = 0
+       par%comm   = MPI_COMM_NULL
+    else
+       call MPI_comm_rank(par%comm,par%rank,ierr)
+       call MPI_comm_size(par%comm,par%nprocs,ierr)
+    end if
 #else
     par%comm     = MPI_COMM_WORLD
-#endif
     call MPI_comm_rank(par%comm,par%rank,ierr)
     call MPI_comm_size(par%comm,par%nprocs,ierr)
+#endif
 
     par%masterproc = .FALSE.
-    if(par%rank .eq. par%root) par%masterproc = .TRUE.
+    if(par%rank .eq. par%root .and. par%nprocs > 0) par%masterproc = .TRUE.
     if (par%masterproc) write(iulog,*)'number of MPI processes: ',par%nprocs
            
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
@@ -181,7 +194,9 @@ contains
     !   then use this information to determined the 
     !   number of MPI processes per node    
     ! ================================================ 
-
+#ifdef CAM
+    if (iam_cam<par%nprocs) then
+#endif
     my_name(:) = ''
     call MPI_Get_Processor_Name(my_name,namelen,ierr)
 
@@ -284,7 +299,9 @@ contains
     endif
 
     deallocate(the_names)
- 
+#ifdef CAM
+    end if ! (iam_cam<par%nprocs)
+#endif 
 #else
     par%root          =  0 
     par%rank          =  0
