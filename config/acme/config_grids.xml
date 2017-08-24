@@ -790,6 +790,12 @@
       <alias>sooberingoax4x8v1_sooberingoax4x8v1</alias>
     </grid>
 
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>ne0np4_twpx4v1_ne0np4_twpx4v1</sname>
+      <lname>a%ne0np4_twpx4v1_l%ne0np4_twpx4v1_oi%ne0np4_twpx4v1_r%null_m%oRRS18to6v3_g%null_w%null</lname>
+      <alias>twpx4v1_twpx4v1</alias>
+    </grid>
+
     <grid compset="_CISM">
       <sname>T31_gx3v7_gland10</sname>
       <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null</lname>
@@ -1503,6 +1509,16 @@
       <file ice_mask="tx0.1v2">domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.sooberingoax4x8v1_tx0.1v2.141022.nc</file>
       <file ocn_mask="tx0.1v2">domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</file>
+    </domain>
+
+    <domain name="ne0np4_twpx4v1">
+      <nx>81434</nx>
+      <ny>1</ny>
+      <desc>1-deg with 1/4-deg over Tropical West Pacific (version 1):</desc>
+      <file atm_mask="oRRS18to6v3">domain.lnd.twpx4v1_oRRS18to6v3.170629.nc</file>
+      <file ice_mask="oRRS18to6v3">domain.ocn.twpx4v1_oRRS18to6v3.170629.nc</file>
+      <file lnd_mask="oRRS18to6v3">domain.lnd.twpx4v1_oRRS18to6v3.170629.nc</file>
+      <file ocn_mask="oRRS18to6v3">domain.ocn.twpx4v1_oRRS18to6v3.170629.nc</file>
     </domain>
 
     <domain name="oQU240">
