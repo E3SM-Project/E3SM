@@ -303,22 +303,24 @@
 
   <batch_system MACH="skybridge" type="slurm" >
     <queues>
-      <queue jobmin="1" jobmax="1024" walltimemax="06:00:00" default="true">batch</queue>
+      <queue jobmin="1" jobmax="512" walltimemax="04:00:00" default="true">short</queue>
+      <queue jobmin="1" jobmax="1024" walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="chama" type="slurm" >
     <queues>
-      <queue jobmin="1" jobmax="1024" walltimemax="06:00:00" default="true">batch</queue>
+      <queue jobmin="1" jobmax="512" walltimemax="04:00:00" default="true">short</queue>
+      <queue jobmin="1" jobmax="1024" walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="ghost" type="slurm" >
     <queues>
-      <queue jobmin="1" jobmax="1024" walltimemax="06:00:00" default="true">batch</queue>
+      <queue jobmin="1" jobmax="512" walltimemax="04:00:00" default="true">short</queue>
+      <queue jobmin="1" jobmax="1024" walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
-
 
   <batch_system MACH="mustang" type="moab" >
     <directives>
