@@ -86,7 +86,6 @@ if __name__ == '__main__':
             p.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
 
-    """
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0775)
     if parameters[0].multiprocessing:
@@ -95,7 +94,7 @@ if __name__ == '__main__':
         cdp.cdp_run.distribute(run_diag, parameters)
     else:
         cdp.cdp_run.serial(run_diag, parameters)
-    """
+
     pth = os.path.join(parameters[0].results_dir, 'viewer')
     if not os.path.exists(pth):
         os.makedirs(pth)
