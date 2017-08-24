@@ -79,7 +79,7 @@
       <lname>a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid compset="DATM.+CLM">
+    <grid compset="(DATM|SATM).+CLM">
       <sname>hcru_hcru</sname>
       <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</lname>
     </grid>
