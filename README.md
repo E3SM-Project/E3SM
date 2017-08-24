@@ -15,9 +15,9 @@ This diagnostics package is constructed for supporting the diagnostics task of D
 * is flexible for user specified diagnostics and being configured for use by other climate models.
 
 ## Current State <a name="current-state"></a>
-Algorithm and visulization codes for the AMWG Set 5, 7, 4, 3 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), pressure-lat contour plots (Figure 3), and zonal mean line plots (Figure 4) for climatology seasonal means, are done for testing. 
+Algorithm and visulization codes for the AMWG Set 5, 7, 4, 3, 13 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), and 2d joint histogram for COSP cloud simulator output (Figure 5), for climatology seasonal means, are done for testing. 
 
-The package enables the AMWG Set 5 diagnostics and features built-in user diagnostics, by specifying user desired diagnostics regions and pressure levels for variables with the vertical dimension. 
+The package features built-in user diagnostics, by specifying user desired diagnostics regions and pressure levels for variables with the vertical dimension. 
 
 <img src="docs/example_fig1.png" alt="Figure1" style="width: 280px;"/>
 <h5 align="center">Figure 1: An example of the lat-lon contour plots for air temperature at 850 mb with tropical ocean region considered</h5> 
@@ -31,6 +31,8 @@ The package enables the AMWG Set 5 diagnostics and features built-in user diagno
 <img src="docs/example_fig4.png" alt="Figure4" style="width: 280px;"/>
 <h5 align="center">Figure 4: An example of the zonal mean surface air temperature line plot </h5> 
 
+<img src="docs/example_fig5.png" alt="Figure5" style="width: 280px;"/>
+<h5 align="center">Figure 5: An example of 2d joint histogram plot using COSP simulator output</h5> 
 ## Documentation <a name="doc"></a>
 
 * [Quickstart guide for AIMS4](docs/quick-guide-aims4.ipynb)
