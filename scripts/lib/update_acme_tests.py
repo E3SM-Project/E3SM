@@ -99,7 +99,7 @@ _TEST_SUITES = {
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
                           "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
-                          ("ERP_Ln5.ne30_ne30.FC5AV1C-L", "cam-rtm_null"),                          
+                          ("ERP_Ln5.ne30_ne30.FC5AV1C-L"),                          
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
     #atmopheric tests for hi-res
@@ -107,9 +107,9 @@ _TEST_SUITES = {
                          ("SMS_Ln5.ne120_ne120.FC5AV1C-L",
                           )
                          ),
-    #atmopheric tests to mimic production runs
+    #atmopheric tests to mimic low res production runs
     "acme_atm_prod" : (None, None,
-                       (("SMS_Ln5.ne120_ne120.FC5AV1C-L", "cam-cosplite"),
+                       (("SMS_Ln5.ne30_ne30.FC5AV1C-L", "cam-cosplite"),
                         )
                        ),
 
