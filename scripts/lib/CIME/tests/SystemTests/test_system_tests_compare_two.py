@@ -363,6 +363,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
             Call(METHOD_component_compare_test,
                 {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
         ]
+        self.maxDiff = None
         self.assertEqual(expected_calls, mytest.log)
 
     def test_run1_fails(self):
@@ -396,3 +397,6 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2, catchbreak=True)
