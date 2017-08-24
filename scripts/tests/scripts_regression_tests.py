@@ -333,13 +333,17 @@ class J_TestCreateNewcase(unittest.TestCase):
         # this is intended as a test of whether create_clone is independent of user
         run_cmd_assert_result(self, "./xmlchange USER=this_is_not_a_user",
                               from_dir=prevtestdir)
+
         fakeoutputroot = string.replace(cls._testroot, os.environ.get("USER"), "this_is_not_a_user")
         run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT=%s"%fakeoutputroot,
                               from_dir=prevtestdir)
-        # this test should fail
+
+        # this test should pass (user name is replaced)
         run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s " %
-                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR, expected_stat=1)
-        #this test should pass
+                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
+
+        shutil.rmtree(testdir)
+        # this test should pass
         run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --cime-output-root %s" %
                               (SCRIPT_DIR, prevtestdir, testdir, cls._testroot),from_dir=SCRIPT_DIR)
 
