@@ -1355,7 +1355,9 @@ class Case(object):
                 if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
                     testcnt += 1
         if testcnt > 0:
-            logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in {:d} tests.\n".format(testcnt))
+            logger.warn("\n*********************************************************************************************************************************")
+            logger.warn("This compset and grid combination is not scientifically supported, however it is used in {:d} tests.".format(testcnt))
+            logger.warn("*********************************************************************************************************************************\n")
         else:
             expect(False, "\nThis compset and grid combination is untested in CESM.  "
                    "Override this warning with the --run-unsupported option to create_newcase.",
