@@ -90,6 +90,8 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
             # loop through the possible rpointer files and contents
             for rpointer_file, rpointer_content in rpointer_items:
+                temp_rpointer_file = rpointer_file
+                temp_rpointer_content = rpointer_content
 
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
@@ -97,6 +99,10 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                     if not ninst_strings:
                         ninst_strings = ["empty"]
                 for ninst_string in ninst_strings:
+                    # reinitialize the rpointer_file for each instance
+                    rpointer_file = temp_rpointer_file
+                    rpointer_content = temp_rpointer_content
+
                     if ninst_string == 'empty':
                         ninst_string = ""
                     for key, value in [('$CASE', casename),
@@ -105,7 +111,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                         rpointer_file = rpointer_file.replace(key, value)
                         rpointer_content = rpointer_content.replace(key, value)
 
-                    # write out the respect files with the correct contents
+                    # write out the respective files with the correct contents
                     rpointer_file = os.path.join(archive_restdir, rpointer_file)
                     logger.info("writing rpointer_file {}".format(rpointer_file))
                     f = open(rpointer_file, 'w')
