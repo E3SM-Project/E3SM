@@ -124,7 +124,7 @@ contains
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
-    call syncmp(par)
+    if(Debug) call syncmp(par)
     endif ! ithr == 0
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -219,7 +219,7 @@ contains
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
-    call syncmp(par)
+    if(Debug) call syncmp(par)
     endif ! ithr == 0
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -347,7 +347,7 @@ contains
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
-    call syncmp(par)
+    if(Debug) call syncmp(par)
     endif ! ithr == 0
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
