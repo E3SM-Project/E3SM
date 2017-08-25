@@ -102,3 +102,9 @@ class CaseFake(object):
         inside CASEROOT)
         """
         self.set_value('RUNDIR', os.path.join(self.get_value('CASEROOT'), 'run'))
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *_):
+        pass

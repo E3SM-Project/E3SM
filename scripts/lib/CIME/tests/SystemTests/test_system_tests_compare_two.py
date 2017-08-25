@@ -396,3 +396,6 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2, catchbreak=True)
