@@ -90,13 +90,16 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
 
             # loop through the possible rpointer files and contents
             for rpointer_file, rpointer_content in rpointer_items:
-
+                temp_rpointer_file = rpointer_file
+                temp_rpointer_content = rpointer_content
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
                 if rpointer_content is not 'unset':
                     if not ninst_strings:
                         ninst_strings = ["empty"]
                 for ninst_string in ninst_strings:
+                    rpointer_file = temp_rpointer_file
+                    rpointer_content = temp_rpointer_content
                     if ninst_string == 'empty':
                         ninst_string = ""
                     for key, value in [('$CASE', casename),
