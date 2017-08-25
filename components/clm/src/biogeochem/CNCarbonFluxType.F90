@@ -4823,7 +4823,7 @@ contains
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_clm_interface) then
+    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
         call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     ! CSummary_interface: hr_col(c) will be used below
@@ -5075,10 +5075,10 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
     dtime = get_step_size()
 !---------------------------------------------------------------------------------------------------
    ! total heterotrophic respiration (HR)
-       this%hr_col(:) = 0._r8
-       do j = 1,nlevdecomp_full
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%hr_col(c) = 0._r8
+          do j = 1,nlevdecomp_full
              this%hr_col(c) = this%hr_col(c) + &
                 this%hr_vr_col(c,j) * dzsoi_decomp(j)
           end do
@@ -5135,26 +5135,30 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
     ! (note: this can be for general purpose, although here added an 'if...endif' block for PF-bgc)
     ! first, need to save the total plant C adding/removing to decomposing pools at previous time-step
     ! for calculating the net changes, which are used to do balance check
-    this%externalc_to_decomp_delta_col(:) = 0._r8
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fc = 1, num_soilc
-             c = filter_soilc(fc)
-             this%externalc_to_decomp_delta_col(c) = this%externalc_to_decomp_delta_col(c) + &
+
+    do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        this%externalc_to_decomp_delta_col(c) = 0._r8
+        do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+            this%externalc_to_decomp_delta_col(c) = this%externalc_to_decomp_delta_col(c) + &
                                 this%externalc_to_decomp_cpools_col(c,j,l)*dzsoi_decomp(j)
           end do
-       end do
+        end do
     end do
     !
     ! do the initialization for the following variable here.
     ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
-    this%externalc_to_decomp_cpools_col(:,:,:) = 0._r8
 
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%externalc_to_decomp_cpools_col(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+    end do
 
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
              ! for litter C pools
              if (l==i_met_lit) then
                 this%externalc_to_decomp_cpools_col(c,j,l) =                 &

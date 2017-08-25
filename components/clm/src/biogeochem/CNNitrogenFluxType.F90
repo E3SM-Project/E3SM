@@ -3038,7 +3038,7 @@ contains
 
     ! bgc interface & pflotran
     !----------------------------------------------------------------
-    if (use_clm_interface .and. pf_cmode) then
+    if (use_clm_interface .and. (use_pflotran .and. pf_cmode)) then
         call NSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
@@ -3078,8 +3078,6 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 
    ! set time steps
     dtime = real( get_step_size(), r8 )
-
-    if (use_pflotran .and. pf_cmode) then
       ! nitrification-denitrification rates (not yet passing out from PF, but will)
       !------------------------------------------------
       ! NOT used currently
@@ -3180,14 +3178,16 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 
        ! do the initialization for the following variable here.
        ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
-       this%externaln_to_decomp_npools_col(:,:,:) = 0._r8
+       do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%externaln_to_decomp_npools_col(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+       end do
 
        ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools
        do fc = 1,num_soilc
             c = filter_soilc(fc)
             do j = 1, nlevdecomp_full
                 do l = 1, ndecomp_pools
-
                 ! for litter C pools
                 if (l==i_met_lit) then
                    this%externaln_to_decomp_npools_col(c,j,l) =              &
@@ -3257,7 +3257,12 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
              end do
           end do
        else
-          this%no3_net_transport_vr_col(:,:) = 0._r8
+          do j = 1, nlevdecomp_full
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%no3_net_transport_vr_col(c,j) = 0._r8
+             end do
+          end do
        end if
 
        ! change the sign so that it is the increments from the previous time-step (unit: g/m2/s)
@@ -3265,8 +3270,6 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
           c = filter_soilc(fc)
           this%externaln_to_decomp_delta_col(c) = -this%externaln_to_decomp_delta_col(c)
        end do
-
-    end if ! if (use_pflotran .and. pf_cmode)
 
 end subroutine NSummary_interface
 !-------------------------------------------------------------------------------------------------
