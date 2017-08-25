@@ -69,13 +69,32 @@ contains
 
     integer        :: i,j
 
+    if (ithr == 0) then
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
 
-    !$OMP MASTER
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
 
+    !==================================================
+    !  Pre-post the Receives
+    !==================================================
+    do icycle=1,nRecvCycles
+       pCycle         => pSchedule%RecvCycle(icycle)
+       source          = pCycle%source - 1
+       length      = nlyr * pCycle%lengthP
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
+       iptr            = nlyr * (pCycle%ptrP -1) + 1
+       if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
+            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
+       if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+       endif
+    end do    ! icycle
 
     !==================================================
     !  Fire off the sends
@@ -97,26 +116,6 @@ contains
        endif
     end do    ! icycle
 
-    !==================================================
-    !  Post the Receives 
-    !==================================================
-    do icycle=1,nRecvCycles
-       pCycle         => pSchedule%RecvCycle(icycle)
-       source          = pCycle%source - 1
-       length      = nlyr * pCycle%lengthP
-       ! tag             = pCycle%tag
-       tag             = buffer%tag
-       iptr            = nlyr * (pCycle%ptrP -1) + 1
-       if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
-            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
-       if(ierr .ne. MPI_SUCCESS) then
-          errorcode=ierr
-          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
-       endif
-    end do    ! icycle
-    
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
        print *,'size of moveptr: ',size(buffer%moveptr)
        print *,'active omp threads:  ',omp_get_num_threads()
@@ -125,7 +124,11 @@ contains
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
-    !$OMP END MASTER
+    call syncmp(par)
+    endif ! ithr == 0
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
 !pw call t_startf('bndry_copy')
     !JMD ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
@@ -163,13 +166,32 @@ contains
 
     integer        :: i,j
 
+    if (ithr == 0) then
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
 
-    !$OMP MASTER
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
 
+    !==================================================
+    !  Pre-post the Receives
+    !==================================================
+    do icycle=1,nRecvCycles
+       pCycle         => pSchedule%RecvCycle(icycle)
+       source          = pCycle%source - 1
+       length      = nlyr * pCycle%lengthS
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
+       iptr            = nlyr * (pCycle%ptrS -1) + 1
+       if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
+            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
+       if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+       endif
+    end do    ! icycle
 
     !==================================================
     !  Fire off the sends
@@ -191,34 +213,17 @@ contains
        endif
     end do    ! icycle
 
-    !==================================================
-    !  Post the Receives 
-    !==================================================
-    do icycle=1,nRecvCycles
-       pCycle         => pSchedule%RecvCycle(icycle)
-       source          = pCycle%source - 1
-       length      = nlyr * pCycle%lengthS
-       ! tag             = pCycle%tag
-       tag             = buffer%tag
-       iptr            = nlyr * (pCycle%ptrS -1) + 1
-       if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
-            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
-       if(ierr .ne. MPI_SUCCESS) then
-          errorcode=ierr
-          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
-       endif
-    end do    ! icycle
-    
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
        call abortmp('edgebuffer threads does not match number of active threads')
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
-
-    !$OMP END MASTER
+    call syncmp(par)
+    endif ! ithr == 0
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
 !JMD    ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
@@ -227,7 +232,6 @@ contains
     if(length>0) then 
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
-
 
   end subroutine bndry_exchangeS_core
 
@@ -255,13 +259,32 @@ contains
 
     integer        :: i,j
 
+    if (ithr == 0) then
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
 
-    !$OMP MASTER
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
 
+    !==================================================
+    !  Post the Receives
+    !==================================================
+    do icycle=1,nRecvCycles
+       pCycle         => pSchedule%RecvCycle(icycle)
+       source          = pCycle%source - 1
+       length      = nlyr * pCycle%lengthS
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
+       iptr            = nlyr * (pCycle%ptrS -1) + 1
+       if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
+            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
+       if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+       endif
+    end do    ! icycle
 
     !==================================================
     !  Fire off the sends
@@ -283,26 +306,7 @@ contains
        endif
     end do    ! icycle
 
-    !==================================================
-    !  Post the Receives 
-    !==================================================
-    do icycle=1,nRecvCycles
-       pCycle         => pSchedule%RecvCycle(icycle)
-       source          = pCycle%source - 1
-       length      = nlyr * pCycle%lengthS
-       ! tag             = pCycle%tag
-       tag             = buffer%tag
-       iptr            = nlyr * (pCycle%ptrS -1) + 1
-       if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
-            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
-       if(ierr .ne. MPI_SUCCESS) then
-          errorcode=ierr
-          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
-       endif
-    end do    ! icycle
-    !$OMP END MASTER
+    endif ! ithr == 0
     
   end subroutine bndry_exchangeS_core_start
 
@@ -330,10 +334,10 @@ contains
 
     integer        :: i,j
 
+    if (ithr == 0) then
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
 
-    !$OMP MASTER
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
 
@@ -343,8 +347,11 @@ contains
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
-
-    !$OMP END MASTER
+    call syncmp(par)
+    endif ! ithr == 0
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
 !JMD    ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
@@ -353,7 +360,6 @@ contains
     if(length>0) then 
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
-
 
   end subroutine bndry_exchangeS_core_finish
 
@@ -395,6 +401,24 @@ contains
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
 
+    !==================================================
+    !  Post the Receives
+    !==================================================
+    do icycle=1,nRecvCycles
+       pCycle         => pSchedule%RecvCycle(icycle)
+       source          = pCycle%source - 1
+       length      = nlyr * pCycle%lengthP
+       tag             = pCycle%tag
+       iptr            = pCycle%ptrP
+       !DBG if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       call MPI_Irecv(buffer%receive(1,iptr),length,MPIinteger_t, &
+            source,tag,par%comm,Rrequest(icycle),ierr)
+       if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+       endif
+    end do    ! icycle
 
     !==================================================
     !  Fire off the sends
@@ -414,26 +438,6 @@ contains
           print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
        endif
     end do    ! icycle
-
-    !==================================================
-    !  Post the Receives 
-    !==================================================
-    do icycle=1,nRecvCycles
-       pCycle         => pSchedule%RecvCycle(icycle)
-       source          = pCycle%source - 1
-       length      = nlyr * pCycle%lengthP
-       tag             = pCycle%tag
-       iptr            = pCycle%ptrP
-       !DBG if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-       call MPI_Irecv(buffer%receive(1,iptr),length,MPIinteger_t, &
-            source,tag,par%comm,Rrequest(icycle),ierr)
-       if(ierr .ne. MPI_SUCCESS) then
-          errorcode=ierr
-          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
-       endif
-    end do    ! icycle
-
 
     !==================================================
     !  Wait for all the receives to complete
@@ -470,9 +474,6 @@ contains
     !$OMP BARRIER
 #endif
     call bndry_exchangeV_core(hybrid%par,hybrid%ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 !pw call t_stopf('bndry_exchangeV')
 !pw call t_adj_detailf(-2)
 
@@ -493,9 +494,6 @@ contains
 #endif
     ithr=0
     call bndry_exchangeV_core(par,ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 !pw call t_stopf('bndry_exchangeV')
 !pw call t_adj_detailf(-2)
 
@@ -515,9 +513,6 @@ contains
     !$OMP BARRIER
 #endif
     call bndry_exchangeS_core(hybrid%par,hybrid%ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 !pw call t_stopf('bndry_exchangeS')
 !pw call t_adj_detailf(-2)
 
@@ -537,9 +532,6 @@ contains
     !$OMP BARRIER
 #endif
     call bndry_exchangeS_core_start(hybrid%par,hybrid%ithr,buffer)
-!#if (defined HORIZ_OPENMP)
-!    !$OMP BARRIER
-!#endif
 !pw call t_stopf('bndry_exchangeS_start')
 !pw call t_adj_detailf(-2)
 
@@ -555,13 +547,7 @@ contains
 
 !pw call t_adj_detailf(+2)
 !pw call t_startf('bndry_exchangeS_finish')
-!#if (defined HORIZ_OPENMP)
-!    !$OMP BARRIER
-!#endif
     call bndry_exchangeS_core_finish(hybrid%par,hybrid%ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 !pw call t_stopf('bndry_exchangeS_finish')
 !pw call t_adj_detailf(-2)
 
@@ -582,9 +568,6 @@ contains
 #endif
     ithr=0
     call bndry_exchangeS_core(par,ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 !pw call t_stopf('bndry_exchangeS')
 !pw call t_adj_detailf(-2)
 
@@ -623,18 +606,14 @@ contains
 
 !pw call t_adj_detailf(+2)
 !pw call t_startf('bndry_exchangeS_finish')
-!#if (defined HORIZ_OPENMP)
-!    !$OMP BARRIER
-!#endif
     ithr=0
     call bndry_exchangeS_core_finish(par,ithr,buffer)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
 !pw call t_stopf('bndry_exchangeS_finish')
 !pw call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeS_nonthreaded_finish
+
+
 
   subroutine ghost_exchangeVfull(par,ithr,buffer)
 !
@@ -685,25 +664,7 @@ contains
        nRecvCycles = pSchedule%nRecvCycles
 
        !==================================================
-       !  Fire off the sends
-       !==================================================
-       do icycle=1,nSendCycles
-          pCycle      => pSchedule%SendCycle(icycle)
-          dest            = pCycle%dest - 1
-          length      = nlyr * pCycle%lengthP_ghost * buffer%elem_size
-          tag             = pCycle%tag
-          iptr            = pCycle%ptrP_ghost
-          !print *,'ghost_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-          call MPI_Isend(buffer%buf(1,1,1,iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
-          if(ierr .ne. MPI_SUCCESS) then
-             errorcode=ierr
-             call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-             print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
-          endif
-       end do    ! icycle
-
-       !==================================================
-       !  Post the Receives 
+       !  Post the Receives
        !==================================================
        do icycle=1,nRecvCycles
           pCycle         => pSchedule%RecvCycle(icycle)
@@ -721,6 +682,23 @@ contains
           endif
        end do    ! icycle
 
+       !==================================================
+       !  Fire off the sends
+       !==================================================
+       do icycle=1,nSendCycles
+          pCycle      => pSchedule%SendCycle(icycle)
+          dest            = pCycle%dest - 1
+          length      = nlyr * pCycle%lengthP_ghost * buffer%elem_size
+          tag             = pCycle%tag
+          iptr            = pCycle%ptrP_ghost
+          !print *,'ghost_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
+          call MPI_Isend(buffer%buf(1,1,1,iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
+          if(ierr .ne. MPI_SUCCESS) then
+             errorcode=ierr
+             call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+             print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
+          endif
+       end do    ! icycle
 
        !==================================================
        !  Wait for all the receives to complete
