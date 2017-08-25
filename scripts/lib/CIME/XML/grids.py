@@ -24,7 +24,6 @@ class Grids(GenericXML):
 
         self._comp_gridnames = self._get_grid_names()
 
-
     def _get_grid_names(self):
         if self._version == 1.0:
             gridnames = ["atm", "lnd", "ocnice", "rof", "mask", "glc", "wav"]
@@ -520,8 +519,6 @@ class Grids(GenericXML):
                     if gridname != "null":
                         logger.info ("    {}".format(domains[gridname]))
 
-
-
     def _print_values_v1(self, long_output=None):
         # write out grid elements
         grid_nodes = self.get_nodes(nodename="grid")
@@ -567,7 +564,6 @@ class Grids(GenericXML):
                 logger.info("   ")
 
                 # write out XROT_FLOOD_MODE element TODO: (why is this in there???)
-
 
     def _get_all_values_v1(self):
         # return a list of grid elements in long form
@@ -624,7 +620,6 @@ class Grids(GenericXML):
 
         return default_comp_grids, grid_list
 
-
     def _get_all_values_v2(self):
 
         default_comp_grids = list()
@@ -640,7 +635,6 @@ class Grids(GenericXML):
                 default_comp_grids.append({'component':name,
                                            'compset':compset,
                                            'value':value,})
-                
         domains = {}
 
         domain_nodes = self.get_nodes(nodename="domain")
@@ -708,7 +702,6 @@ class Grids(GenericXML):
                     grid_list.append({gridname:(grids_dict[alias], domains[gridname])})
 
         return default_comp_grids, grid_list
-
 
     def return_all_values(self):
         # parse grid data and return a dictionary

@@ -4,10 +4,6 @@
 
 <entry_id>
 
-  <description mustmatch="SROF">
-    <desc compset="SROF">Stub river component</desc>
-  </description>
-
   <entry id="COMP_ROF">
     <type>char</type>
     <valid_values>srof</valid_values>
@@ -17,6 +13,9 @@
     <desc>Name of river component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SROF">Stub river component</desc>
+  </description>
 
   <help>
     =========================================

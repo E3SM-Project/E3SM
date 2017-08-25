@@ -458,54 +458,6 @@ class Case(object):
         if compset_alias is None:
             logger.info("Did not find a compset match for longname {} ".format(compset_name))
             self._compsetname = compset_name
-            files = Files()
-            drv_config_file = files.get_value("CONFIG_CPL_FILE")
-            drv_comp = Component(drv_config_file)
-            comp_classes = drv_comp.get_valid_model_components()
-            components = self.get_compset_components()
-            if len(comp_classes) > len(components):
-                components.append('sesp')
-            for i in xrange(1,len(comp_classes)):
-                comp_class = comp_classes[i]
-                comp_name  = components[i-1]
-                node_name = 'CONFIG_' + comp_class + '_FILE'
-                comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
-                comp_config_file = self.get_resolved_value(comp_config_file)
-                expect(comp_config_file is not None and os.path.isfile(comp_config_file),
-                       "Config file {} for component {} not found.".format(comp_config_file, comp_name))
-                compobj = Component(comp_config_file)
-                root_node = compobj.get_node("description")
-                expect(root_node is not None,
-                       "No description found in file {} for component {}".format(comp_config_file, comp_name))
-                mustmatch = root_node.get("mustmatch")
-                desc_nodes = compobj.get_nodes("desc", root=root_node)
-                if mustmatch is not None:
-                    if not re.search(mustmatch, compset_name):
-                        logger.info("ERROR: did not find a valid compset entry for {}, valid entries for {} are".format(comp_name, comp_name))
-                        for node in desc_nodes:
-                            attribute = node.get("compset").replace("_","")
-                            logger.info("{:25} : {:50}".format(attribute, node.text))
-                        expect(False, "Exiting")
-                desc = None
-                for node in desc_nodes:
-                    compset_match = node.get("compset")
-                    compset_match = compset_match.replace("_","")
-                    compset_match = "_" + compset_match + "_"
-                    compset_name = compset_name + "_"
-                    if re.search(compset_match, compset_name):
-                        desc = node.text
-                        print "DEBUG: desc is ",desc
-                        break
-                if desc is None:
-                    logger.info("ERROR: did not find a valid compset entry for {}, valid entries for {} are".format(comp_name, comp_name))
-                    for node in desc_nodes:
-                        attribute = node.get("compset").replace("_","")
-                        logger.info("{:25} : {:50}".format(attribute, node.text))
-                    expect(False, "Exiting")
-        else:
-            expect(False,
-                   "Could not find a compset match for either alias or longname in {}\n".format(compset_name)
-                   + "You may need the --user-compset argument.")
 
         return None, science_support
 
@@ -610,6 +562,7 @@ class Case(object):
                     element_component = re.sub(r'[0-9]*',"",element_component)
                 components.append(element_component)
         return components
+
 
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
@@ -1524,47 +1477,3 @@ class Case(object):
                 logger.warn("Leaving broken case dir {}".format(self._caseroot))
 
             raise
-
-    def get_compset_description(self, compset_name):
-        """
-        find and return the compset component descriptions in a dictionary
-        """
-        desc_dict = dict()
-        self._compsetname = compset_name
-        files = Files()
-        drv_config_file = files.get_value("CONFIG_CPL_FILE")
-        drv_comp = Component(drv_config_file)
-        comp_classes = drv_comp.get_valid_model_components()
-        components = self.get_compset_components()
-        if len(comp_classes) > len(components):
-            components.append('sesp')
-        print "DEBUG compset_name = {0}".format(compset_name)
-        for i in xrange(1,len(comp_classes)):
-            comp_class = comp_classes[i]
-            comp_name  = components[i-1]
-            node_name = 'CONFIG_' + comp_class + '_FILE'
-            comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
-            comp_config_file = self.get_resolved_value(comp_config_file)
-            expect(comp_config_file is not None and os.path.isfile(comp_config_file),
-                   "Config file {} for component {} not found.".format(comp_config_file, comp_name))
-            compobj = Component(comp_config_file)
-            root_node = compobj.get_node("description")
-            expect(root_node is not None,
-                   "No description found in file {} for component {}".format(comp_config_file, comp_name))
-            desc = None
-            desc_nodes = compobj.get_nodes("desc", root=root_node)
-            for node in desc_nodes:
-                compset_match = node.get("compset")
-##                compset_match = compset_match.replace("_","")
-                # check if compset_match is bounded by "_"
-                if compset_match[0] != "_":
-                    compset_match = "_" + compset_match
-                if compset_match[-1] != "_":
-                    compset_match = compset_match + "_"
-##                compset_name = compset_name + "_"
-                if re.search(compset_match, compset_name):
-                    desc_dict[comp_name] = node.text
-                    break
-
-        return desc_dict
-

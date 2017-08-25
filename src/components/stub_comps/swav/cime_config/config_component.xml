@@ -8,10 +8,6 @@
     <desc wav="SWAV">Stub wave component</desc>
   </description>
 
-  <description>
-    <desc compset="SWAV">Stub wave component</desc>
-  </description>
-
   <entry id="COMP_WAV">
     <type>char</type>
     <valid_values>swav</valid_values>
