@@ -20,6 +20,7 @@ class CaseFake(object):
             os.makedirs(case_root)
         self.set_value('CASEROOT', case_root)
         casename = os.path.basename(case_root)
+        self.set_value('CIME_OUTPUT_ROOT','/tmp')
         self.set_value('CASE', casename)
         self.set_value('CASEBASEID', casename)
         self.set_value('RUN_TYPE', 'startup')
@@ -63,7 +64,7 @@ class CaseFake(object):
 
         return newcase
 
-    def create_clone(self, newcase, keepexe=False):
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         # Need to disable unused-argument checking: keepexe is needed to match
         # the interface of Case, but is not used in this fake implementation
         #

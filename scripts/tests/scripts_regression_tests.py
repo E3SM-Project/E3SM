@@ -333,13 +333,17 @@ class J_TestCreateNewcase(unittest.TestCase):
         # this is intended as a test of whether create_clone is independent of user
         run_cmd_assert_result(self, "./xmlchange USER=this_is_not_a_user",
                               from_dir=prevtestdir)
+
         fakeoutputroot = string.replace(cls._testroot, os.environ.get("USER"), "this_is_not_a_user")
         run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT=%s"%fakeoutputroot,
                               from_dir=prevtestdir)
-        # this test should fail
+
+        # this test should pass (user name is replaced)
         run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s " %
-                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR, expected_stat=1)
-        #this test should pass
+                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
+
+        shutil.rmtree(testdir)
+        # this test should pass
         run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --cime-output-root %s" %
                               (SCRIPT_DIR, prevtestdir, testdir, cls._testroot),from_dir=SCRIPT_DIR)
 
@@ -807,7 +811,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
             for test in ct._tests:
                 if (phase == CIME.test_scheduler.TEST_START):
                     continue
-                elif (phase == CIME.test_scheduler.MODEL_BUILD_PHASE):
+                elif (phase == MODEL_BUILD_PHASE):
                     ct._update_test_status(test, phase, TEST_PEND_STATUS)
 
                     if (test == build_fail_test):
@@ -819,7 +823,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
-                elif (phase == CIME.test_scheduler.RUN_PHASE):
+                elif (phase == RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
                             ct._update_test_status(test, phase, TEST_PEND_STATUS)
@@ -896,44 +900,45 @@ class O_TestTestScheduler(TestCreateTestCommon):
             self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, found %d" % len(log_files))
             log_file = log_files[0]
             if (test_name == build_fail_test):
-                self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
                 data = open(log_file, "r").read()
                 self.assertTrue("Intentional fail for testing infrastructure" in data,
                                 "Broken test did not report build error:\n%s" % data)
             elif (test_name == build_fail_exc_test):
                 data = open(log_file, "r").read()
-                self.assertEqual(ts.get_status(CIME.test_scheduler.SHAREDLIB_BUILD_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(SHAREDLIB_BUILD_PHASE), TEST_FAIL_STATUS)
                 self.assertTrue("Exception from init" in data,
                                 "Broken test did not report build error:\n%s" % data)
             elif (test_name == run_fail_test):
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_FAIL_STATUS)
             elif (test_name == run_fail_exc_test):
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_FAIL_STATUS)
                 data = open(log_file, "r").read()
                 self.assertTrue("Exception from run_phase" in data,
                                 "Broken test did not report run error:\n%s" % data)
             elif (test_name == mem_fail_test):
                 self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS)
             elif (test_name == test_diff_test):
                 self.assertEqual(ts.get_status("COMPARE_base_rest"), TEST_FAIL_STATUS, msg="Problem with %s" % test_diff_test)
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS, msg=test_name)
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS, msg=test_name)
                 if (test_name == mem_pass_test):
                     self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS, msg=test_name)
 
     ###########################################################################
     def test_c_use_existing(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
+        tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True,test_root=TEST_ROOT,
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
                            output_root=TEST_ROOT,compiler=self._compiler, mpilib=self._mpilib)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
+        run_fail_test       = [item for item in tests if "TESTRUNFAIL" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
 
         log_lvl = logging.getLogger().getEffectiveLevel()
@@ -946,17 +951,30 @@ class O_TestTestScheduler(TestCreateTestCommon):
         test_statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
 
+        if (self._hasbatch):
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id), from_dir=self._testroot,
+                                  expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+
         for test_status in test_statuses:
-            ts = TestStatus(test_dir=os.path.dirname(test_status))
+            casedir = os.path.dirname(test_status)
+            ts = TestStatus(test_dir=casedir)
             test_name = ts.get_name()
             if test_name == build_fail_test:
-                self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+                self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+                with TestStatus(test_dir=casedir) as ts:
+                    ts.set_status(MODEL_BUILD_PHASE, TEST_PEND_STATUS)
+            elif test_name == run_fail_test:
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_FAIL_STATUS)
+                with TestStatus(test_dir=casedir) as ts:
+                    ts.set_status(SUBMIT_PHASE, TEST_PEND_STATUS)
             else:
                 self.assertTrue(test_name == pass_test)
-                self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_PASS_STATUS)
-                self.assertEqual(ts.get_status(CIME.test_scheduler.SUBMIT_PHASE), TEST_PEND_STATUS)
+                self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(SUBMIT_PHASE), TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS)
 
         os.environ["TESTBUILDFAIL_PASS"] = "True"
+        os.environ["TESTRUNFAIL_PASS"] = "True"
         ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
                             test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=self._compiler,
                             mpilib=self._mpilib)
@@ -973,9 +991,9 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
-            self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_PASS_STATUS)
-            self.assertEqual(ts.get_status(CIME.test_scheduler.SUBMIT_PHASE),         TEST_PASS_STATUS)
-            self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE),         TEST_PASS_STATUS)
+            self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_PASS_STATUS)
+            self.assertEqual(ts.get_status(SUBMIT_PHASE),      TEST_PASS_STATUS)
+            self.assertEqual(ts.get_status(RUN_PHASE),         TEST_PASS_STATUS)
 
 ###############################################################################
 class P_TestJenkinsGenericJob(TestCreateTestCommon):
@@ -1376,7 +1394,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
         # Test that re-running works
-        tests = update_acme_tests.get_test_suite("cime_developer")
+        tests = update_acme_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
         for test in tests:
             casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
 

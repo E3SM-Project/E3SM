@@ -107,7 +107,7 @@ using a fortran linker.
 
 <compiler COMPILER="gnu">
   <CFLAGS>
-    <base> -mcmodel=medium -std=gnu99 </base>
+    <base> -std=gnu99 </base>
     <append compile_threaded="true"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
@@ -123,7 +123,7 @@ using a fortran linker.
   <FFLAGS>
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-    <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
+    <base>  -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
     <append compile_threaded="true"> -fopenmp </append>
     <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
          least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and

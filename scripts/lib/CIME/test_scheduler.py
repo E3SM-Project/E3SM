@@ -224,8 +224,15 @@ class TestScheduler(object):
                             # We need to pick up here
                             break
                         else:
-                            self._update_test_status(test, phase, TEST_PEND_STATUS)
-                            self._update_test_status(test, phase, status)
+                            if phase != SUBMIT_PHASE:
+                                # Somewhat subtle. Create_test considers submit/run to be the run phase,
+                                # so don't try to update test status for a passed submit phase
+                                self._update_test_status(test, phase, TEST_PEND_STATUS)
+                                self._update_test_status(test, phase, status)
+
+                                if phase == RUN_PHASE:
+                                    logger.info("Test {} passed and will not be re-run".format(test))
+
                 logger.info("Using existing test directory {}".format(self._get_test_dir(test)))
         else:
             # None of the test directories should already exist.

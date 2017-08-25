@@ -1185,9 +1185,6 @@ class Case(object):
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
         if cime_output_root is None:
             cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
-        expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable"
-               "by this user.  Use the --cime-output-root flag to provide a writable "
-               "scratch directory".format(cime_output_root))
 
         newcaseroot = os.path.abspath(newcase)
         expect(not os.path.isdir(newcaseroot),
@@ -1202,28 +1199,32 @@ class Case(object):
             logger.warning(" clone CIMEROOT is {} ".format(clone_cimeroot))
             logger.warning(" It is NOT recommended to clone cases from different versions of CIME.")
 
-
         # *** create case object as deepcopy of clone object ***
         srcroot = os.path.join(newcase_cimeroot,"..")
         newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
         newcase.set_value("CIMEROOT", newcase_cimeroot)
-        newcase.set_value("CIME_OUTPUT_ROOT", cime_output_root)
 
         # if we are cloning to a different user modify the output directory
         olduser = self.get_value("USER")
         newuser = os.environ.get("USER")
         if olduser != newuser:
-            outputroot = self.get_value("CIME_OUTPUT_ROOT")
-            outputroot = string.replace(outputroot, olduser, newuser)
-            # try to make the new output directory and raise an exception
-            # on any error other than directory already exists.
-            try:
-                os.makedirs(outputroot)
-            except OSError:
-                if not os.path.isdir(outputroot):
-                    raise
-            newcase.set_value("CIME_OUTPUT_ROOT", outputroot)
+            cime_output_root = string.replace(cime_output_root, olduser, newuser)
             newcase.set_value("USER", newuser)
+        newcase.set_value("CIME_OUTPUT_ROOT", cime_output_root)
+
+        # try to make the new output directory and raise an exception
+        # on any error other than directory already exists.
+        if os.path.isdir(cime_output_root):
+            expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable"
+                   "by this user.  Use the --cime-output-root flag to provide a writable "
+                   "scratch directory".format(cime_output_root))
+        else:
+            try:
+                os.makedirs(cime_output_root)
+            except:
+                if not os.path.isdir(cime_output_root):
+                    raise
+
         # determine if will use clone executable or not
         if keepexe:
             orig_exeroot = self.get_value("EXEROOT")
