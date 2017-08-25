@@ -525,7 +525,7 @@
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne240np4_ne240np4</sname>
       <alias>ne240_ne240</alias>
-      <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</lname>
+      <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%tx0.1v2_g%null_w%null</lname>
     </grid>
 
     <!--- cism grids -->
@@ -1207,13 +1207,13 @@
     <domain name="ne240np4">
       <nx>3110402</nx> <ny>1</ny>
       <file atm_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file atm_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2_111209.nc</file>
+      <file atm_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
       <file ice_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <file ice_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.121113.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <file lnd_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file lnd_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2_111209.nc</file>
+      <file lnd_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <file ocn_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.121113.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
       <support>Experimental for very high resolution experiments</support>
     </domain>
