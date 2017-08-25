@@ -44,13 +44,12 @@ class IRT(SystemTestsCompareTwo):
 
     def _case_one_custom_postrun_action(self):
         case_st_archive(self._case)
-
-    def _case_two_custom_prerun_action(self):
+        # Since preview namelist is run before _case_two_prerun_action, we need to do this here.
         dout_s_root = self._case1.get_value("DOUT_S_ROOT")
         restart_list = ls_sorted_by_mtime(os.path.join(dout_s_root,"rest"))
         logger.info("Restart directory list is {}".format(restart_list))
         expect(len(restart_list) >=2,"Expected at least two restart directories")
         # Get the older of the two restart directories
-        restore_from_archive(self._case,
+        restore_from_archive(self._case2,
                              rest_dir=os.path.abspath(
                                  os.path.join(dout_s_root, "rest", restart_list[0])))
