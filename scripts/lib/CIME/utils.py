@@ -1224,8 +1224,8 @@ def _get_most_recent_lid_impl(files):
 
     return sorted(results)
 
-def sorted_ls(path):
-    ''' return list of path sorted by timestamp '''
+def ls_sorted_by_mtime(path):
+    ''' return list of path sorted by timestamp oldest first'''
     mtime = lambda f: os.stat(os.path.join(path, f)).st_mtime
     return list(sorted(os.listdir(path), key=mtime))
 

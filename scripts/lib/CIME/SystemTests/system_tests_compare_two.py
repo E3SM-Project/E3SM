@@ -14,7 +14,7 @@ Classes that inherit from this are REQUIRED to implement the following methods:
 (2) _case_two_setup
     This method will be called to set up case 2, the "test" case
 
-In addition, they MAY require the following method:
+In addition, they MAY require the following methods:
 
 (1) _common_setup
     This method will be called to set up both cases. It should contain any setup
@@ -47,7 +47,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
     def __init__(self,
                  case,
-                 separate_builds=True,
+                 separate_builds,
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = '',

@@ -7,7 +7,7 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
-from CIME.utils                     import run_and_log_case_status, sorted_ls
+from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime
 from os.path                        import isdir, join
 import datetime
 
@@ -395,7 +395,7 @@ def restore_from_archive(case, rest_dir=None):
         if not os.path.isabs(rest_dir):
             rest_dir = os.path.join(dout_sr, "rest", rest_dir)
     else:
-        rest_dir = sorted_ls(os.path.join(dout_sr, "rest"))[-1]
+        rest_dir = ls_sorted_by_mtime(os.path.join(dout_sr, "rest"))[-1]
 
     logger.info("Restoring from {} to {}".format(rest_dir, rundir))
     for item in glob.glob("{}/*".format(rest_dir)):
