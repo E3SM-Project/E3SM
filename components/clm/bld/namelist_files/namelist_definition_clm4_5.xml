@@ -235,10 +235,41 @@ Toggle to turn on the ED (fates)
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_ed_spitfire" type="logical" category="physics"
+<entry id="use_fates_spitfire" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on spitfire (only relevant if ED is being used).
+Toggle to turn on spitfire (only relevant if FATES is being used).
 </entry>
+
+<entry id="use_fates_logging" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the logging module (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_planthydro" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on plant hydraulics(only relevant if FATES is on).
+</entry>
+
+<entry id="use_fates_ed_st3" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on Static Stand Structure Mode (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_ed_prescribed_phys" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on prescribed physiology (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_inventory_init" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on inventory initialization(only relevant if FATES is being used).
+</entry>
+
+<entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
+       input_pathname="abs" group="clm_inparm" valid_values="" >
+Full pathname to the inventory initialization control file.
+</entry>
+
 
 <entry id="paramfile" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
