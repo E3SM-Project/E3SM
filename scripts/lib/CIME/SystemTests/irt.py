@@ -12,7 +12,6 @@ This test the model's restart capability as well as the short term archiver's in
 
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.XML.standard_module_setup import *
-from CIME.case_setup import case_setup
 from CIME.case_st_archive import case_st_archive, restore_from_archive
 from CIME.utils import ls_sorted_by_mtime
 
