@@ -25,7 +25,6 @@
     <desc cpl="BGC[%BDRD][%BPRP]">Biogeochemistry intercomponent </desc>
     <desc option="BDRD"> with diagnostic CO2</desc>
     <desc option="BPRP"> with prognostic CO2 </desc>
-
   </description>
 
   <entry id="DRV_THREADING">
