@@ -42,6 +42,8 @@ CIME User's Guide Part 2: Intermediate - CIME Internals, Porting, Testing and Us
    multi-instance.rst
    adding-cases.rst
    use_cases/use-cases.rst
+   adding-components.rst
+
 
 Indices and tables
 ==================

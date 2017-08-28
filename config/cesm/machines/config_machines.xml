@@ -815,7 +815,7 @@
   </machine>
 
   <machine MACH="hobart">
-    <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
+    <DESC>NCAR CGD Linux Cluster 48 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>

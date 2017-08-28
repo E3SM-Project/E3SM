@@ -96,7 +96,6 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_compsets.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_compsets.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_compsets.xml</value>
-      <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -115,7 +114,6 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_pes.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_pes.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_pes.xml</value>
-      <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/config_pes.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -217,7 +215,6 @@
       <value component="rtm"      >$SRCROOT/components/rtm/cime_config/usermods_dirs</value>
       <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/usermods_dirs</value>
-      <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/usermods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -299,7 +296,6 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="vic" >$CIMEROOT/config/$MODEL//vic/config_component.xml</value>
       <value component="clm" >$SRCROOT/components/clm/cime_config/config_component.xml</value>
       <value component="dlnd">$CIMEROOT/src/components/data_comps/dlnd/cime_config/config_component.xml</value>
       <value component="slnd">$CIMEROOT/src/components/stub_comps/slnd/cime_config/config_component.xml</value>
@@ -350,7 +346,6 @@
     <default_value>unset</default_value>
     <values>
       <value component="pop"  >$SRCROOT/components/pop/cime_config/config_component.xml</value>
-      <value component="mpas-o"  >$SRCROOT/components/mpas-o/cime_config/config_component.xml</value>
       <value component="aquap">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
       <value component="docn" >$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml</value>
       <value component="socn" >$CIMEROOT/src/components/stub_comps/socn/cime_config/config_component.xml</value>
@@ -368,7 +363,6 @@
     <default_value>unset</default_value>
     <values>
       <value component="cism">$SRCROOT/components/cism/cime_config/config_component.xml</value>
-      <value component="dglc">$CIMEROOT/src/components/data_comps/dglc/cime_config/config_component.xml</value>
       <value component="sglc">$CIMEROOT/src/components/stub_comps/sglc/cime_config/config_component.xml</value>
       <value component="xglc">$CIMEROOT/src/components/xcpl_comps/xglc/cime_config/config_component.xml</value>
     </values>
