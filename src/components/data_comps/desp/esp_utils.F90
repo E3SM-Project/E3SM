@@ -326,11 +326,13 @@ CONTAINS
       call esp_modify_array(varr, 1.0e-12_r8, all_equiv)
       call pio_write_darray(file, varid, iodesc, varr, ierr)
       call esp_pio_handle_error(ierr, subname//'Error writing variable '//trim(varname))
+   endif
+
+    call esp_pio_closefile(file)
+    if (found) then
       ! Cleanup
       call pio_freedecomp(pio_subsystem, iodesc)
     end if
-
-    call esp_pio_closefile(file)
     if (allocated(varr)) then
       deallocate(varr)
     end if
