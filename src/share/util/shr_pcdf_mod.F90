@@ -50,13 +50,8 @@ module shr_pcdf_mod
 !EOP
 
   character(len=*),parameter :: version   = 'shr_pcdf_v0_0_01'
-#ifdef PIO1
   real(r8)        ,parameter :: fillvalue = SHR_CONST_SPVAL
   integer(in)     ,parameter :: ifillvalue = -999999
-#else
-  real(r8)        ,parameter :: fillvalue = PIO_FILL_DOUBLE
-  integer(in)     ,parameter :: ifillvalue = PIO_FILL_INT
-#endif
 
 !===============================================================================
 contains
@@ -562,7 +557,11 @@ subroutine shr_pcdf_defvar0d(fid,fname,vtype)
   !-------------
 
   rcode = pio_def_var(fid,trim(fname),vtype,varid)
-
+  if (vtype == PIO_DOUBLE) then
+     rcode = PIO_put_att(fid, varid, '_FillValue', fillvalue)
+  else
+     rcode = PIO_put_att(fid, varid, '_FillValue', ifillvalue)
+  endif
 end subroutine shr_pcdf_defvar0d
 
 !===============================================================================
@@ -583,6 +582,11 @@ subroutine shr_pcdf_defvar1d(fid,fname,vtype,dimid)
   !-------------
 
   rcode = pio_def_var(fid,trim(fname),vtype,dimid,varid)
+  if (vtype == PIO_DOUBLE) then
+     rcode = PIO_put_att(fid, varid, '_FillValue', fillvalue)
+  else
+     rcode = PIO_put_att(fid, varid, '_FillValue', ifillvalue)
+  endif
 
 end subroutine shr_pcdf_defvar1d
 
