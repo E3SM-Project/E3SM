@@ -267,8 +267,11 @@ contains
     ! phosphorus conditions of plants are needed, in order to use new fixation and phosphatase 
     ! activity subroutines, under carbon only or carbon nitrogen only mode, fixation and phosphatase
     ! activity are set to false
-    if (carbon_only .or. carbonnitrogen_only) then
+    if (carbon_only) then
         nu_com_nfix = .false.
+        nu_com_phosphatase = .false.
+    end if
+    if (carbonnitrogen_only) then
         nu_com_phosphatase = .false.
     end if
  
@@ -717,7 +720,7 @@ contains
          gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
 
          ! carbon return of leaf C investment
-         benefit_pgpp_pleafc(p) = max(gpp(p)  / max(laisun(p)/slatop(ivt(p)) ,1e-20_r8), 0.0_r8)
+         benefit_pgpp_pleafc(p) = max(gpp(p)  / max(leafc(p),1e-20_r8), 0.0_r8)
 
          ! get the time step total maintenance respiration
          ! These fluxes should already be in gC/m2/s
@@ -1392,6 +1395,8 @@ contains
                   ! plant, microbial decomposer compete for N
                   ! loop over each pft within the same column
                   ! calculate competition coefficients for N/P
+                  ! first need to convert concentration to per soil water based
+                  ! 2.76 consider soil adsorption effect on [NH4+] availability, based on Zhu et al., 2016 DOI: 10.1002/2016JG003554
                   solution_nh4conc(c,j) = sminn_vr(c,j) / (bd(c,j)*2.76 + h2osoi_vol(c,j)) ! convert to per soil water based
                   e_km_n = 0._r8
                   decompmicc(c,j) = 0.0_r8
@@ -1951,10 +1956,10 @@ contains
                   pnup_pfrootc(p) =  0.0_r8
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
-                           ! derivative of linear function
-                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) * fpg_vr(c,j) / max(frootc(p), 1e-20_r8)
+                           pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8)
                         end do
                   end if
+                  pnup_pfrootc(p) =  pnup_pfrootc(p) / nlevdecomp
                end do
             end do
          end if
@@ -2079,6 +2084,8 @@ contains
                   ! (2) plant, microbial decomposer, denitrifier, (and NO3 leaching?) compete for NO3
                   ! loop over each pft within the same column
                   ! calculate competition coefficients for NH4/NO3
+                  ! first need to convert concentration to per soil water based
+                  ! 2.76 consider soil adsorption effect on [NH4+] availability, based on Zhu et al., 2016 DOI: 10.1002/2016JG003554
                   solution_nh4conc(c,j) = smin_nh4_vr(c,j) / (bd(c,j)*2.76 + h2osoi_vol(c,j)) ! convert to per soil water based
                   solution_no3conc(c,j) = smin_no3_vr(c,j) /  h2osoi_vol(c,j) ! convert to per soil water based
                   e_km_nh4 = 0._r8
@@ -2276,8 +2283,7 @@ contains
                         supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
                              (col_plant_nh4demand_vr(c,j) + col_plant_no3demand_vr(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)
                         ! update to new values that satisfy demand
-                        smin_nh4_to_plant_vr(c,j) = col_plant_nh4demand_vr(c,j)
-                        smin_no3_to_plant_vr(c,j) = col_plant_no3demand_vr(c,j)
+                        smin_nh4_to_plant_vr(c,j) = col_plant_ndemand_vr(c,j) - col_plant_no3demand_vr(c,j)
                         sminn_to_plant_vr(c,j) = col_plant_ndemand_vr(c,j)
                      end if
                   end if
@@ -2872,11 +2878,11 @@ contains
                   pnup_pfrootc(p) =  0.0_r8
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
-                           ! derivative of linear function
-                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)  / max(frootc(p),1e-20_r8)
-                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)  / max(frootc(p),1e-20_r8)
+                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8)
+                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8)
                         end do
                   end if
+                  pnup_pfrootc(p) =  pnup_pfrootc(p) / nlevdecomp
                end do
             end do
          end if
@@ -4168,6 +4174,7 @@ contains
     ! (2) nutrient/water limited, allocate more C into root
   
     ! !USES:
+    use pftvarcon      , only : laimax
   
     !
     ! !ARGUMENTS:
@@ -4180,7 +4187,6 @@ contains
     real(r8), intent(in) :: woody
 
     !! variables
-    real(r8) :: laindex_max = 8
     real(r8) :: allocmin_leaf = 0.25
     !real(r8) :: allocmax_leaf = 0.5
     real(r8) :: alloc_r0 = 0.25     ! initial allocation to roots for unlimiting conditions
@@ -4230,7 +4236,7 @@ contains
     end if
     
     ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem or fine root
-    if (laindex > laindex_max) then 
+    if (laindex > laimax) then 
        if (woody == 1.0_r8) then
           alloc_stem = alloc_stem + alloc_leaf - 0.01_r8
        else

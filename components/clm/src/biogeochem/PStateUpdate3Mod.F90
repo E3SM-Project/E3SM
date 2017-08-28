@@ -125,7 +125,7 @@ contains
            do fc = 1,num_soilc
              c = filter_soilc(fc)
              flux_mineralization(c,j) = flux_mineralization(c,j) + &
-                                       pf%biochem_pmin_vr_col(c,j)
+                                       pf%biochem_pmin_vr_col(c,j)*dt
 
            end do
         end do

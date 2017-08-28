@@ -679,7 +679,7 @@ contains
             biochem_pmin_vr(c,j)=0._r8
             do l = 1, ndecomp_pools
                biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
-                                          biochem_pmin_ppools_vr_col(c,j,l)*dt
+                                          biochem_pmin_ppools_vr_col(c,j,l)
             enddo
         enddo
     end do
