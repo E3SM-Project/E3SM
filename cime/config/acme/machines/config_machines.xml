@@ -931,7 +931,7 @@
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/lcrc/group/earthscience/acme_baselines</BASELINE_ROOT>
+         <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/blues</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -966,22 +966,35 @@
         <command name="add">+python-2.7</command>
       </modules>
       <modules compiler="gnu">
+        <command name="add">+gcc-5.3.0</command>
+        <command name="add">+hdf5-1.10.0-gcc-5.3.0-serial</command>
+        <command name="add">+netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial</command>
+      </modules>
+      <modules compiler="gnu-5.2">
 	<command name="add">+gcc-5.2</command>
 	<command name="add">+netcdf-4.3.3.1-gnu5.2-serial</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mvapich">
+        <command name="add">+mvapich2-2.2b-gcc-5.3.0</command>
+        <command name="add">+pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b</command>
+      </modules>
+      <modules compiler="gnu-5.2" mpilib="mvapich">
 	<command name="add">+mvapich2-2.2b-gcc-5.2</command>
       </modules>
       <modules compiler="intel">
 	<command name="add">+intel-15.0</command>
-	<command name="add">+pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0</command>
-	<command name="add">+mvapich2-2.2b-intel-15.0</command>
 	<command name="add">+mkl-11.2.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mvapich">
+	<command name="add">+mvapich2-2.2b-intel-15.0</command>
+	<command name="add">+pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0</command>
       </modules>
       <modules compiler="pgi">
         <command name="add">+pgi-15.7</command>
         <command name="add">+binutils-2.27</command>
         <command name="add">+netcdf-c-4.4.1-f77-4.4.4-pgi-15.7-serial</command>
       </modules>
-      <modules compiler="pgi" mpilib="!mpi-serial">
+      <modules compiler="pgi" mpilib="mvapich">
         <command name="add">+mvapich2-2.2-pgi-15.7</command>
         <command name="add">+pnetcdf-1.7.0-pgi-15.7-mvapich2-2.2</command>
       </modules>
@@ -990,39 +1003,16 @@
         <command name="add">+hdf5-1.8.12-serial-nag</command>
         <command name="add">+netcdf-4.3.1-serial-nag</command>
       </modules>
-      <modules compiler="nag" mpilib="!mpi-serial">
+      <modules compiler="nag" mpilib="mvapich">
         <command name="add">+mpich3-3.1.4-nag-6.0</command>
         <command name="add">+pnetcdf-1.6.1-mpich-3.1.4-nag-6.0</command>
       </modules>
     </module_system>
-    <environment_variables compiler="gnu">
-      <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
-      <env name="LD_LIBRARY_PATH">/soft/mvapich2/2.2b_psm/gnu-5.2/lib:/soft/netcdf_serial/4.3.3.1/gnu-5.2/lib:/soft/gcc/5.2.0/lib64:/soft/gcc/5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0:/soft/python/2.7.3/lib:/soft/gcc/4.4.2/lib64:/soft/gcc/4.4.2/lib:/soft/lcrc/lib:/usr/lib64:/usr/lib:/soft/mvapich2/1.4-gcc-4.4.2/lib:/soft/tau/2.20.2/tau_latest/x86_64/lib</env>
+    <environment_variables>
+      <env name="NETCDFROOT">$SHELL{dirname $(dirname $(which ncdump))}</env>
     </environment_variables>
-    <environment_variables compiler="gnu" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
-    </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
-      <env name="NETCDF_INCLUDES">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/include</env>
-      <env name="NETCDF_LIBS">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib</env>
-      <env name="PATH">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib:/soft/intel/15.0.1/mkl/lib/intel64:$ENV{LD_LIBRARY_PATH}</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
-    </environment_variables>
-    <environment_variables compiler="pgi">
-      <env name="NETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/netcdf-4.4.1-4el54ak5ic4ukbfxknv64ejvlum2kmy7</env>
-    </environment_variables>
-    <environment_variables compiler="pgi" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/spack-0.10.0/opt/spack/linux-centos6-x86_64/pgi-15.7-0/parallel-netcdf-1.7.0-htrulk5hgp3jjci2f72srr5ujkg6q4i6</env>
-    </environment_variables>
-    <environment_variables compiler="nag">
-      <env name="NETCDFROOT">/soft/netcdf/4.3.1-serial/nag-6.0</env>
-    </environment_variables>
-    <environment_variables compiler="nag" mpilib="mpich">
-      <env name="PNETCDFROOT">/home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0</env>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDFROOT">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
