@@ -192,8 +192,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
 
-      nEdges = nEdgesArray( 3 )
-      nCells = nCellsArray( 2 )
+      nEdges = nEdgesArray( 4 )
+      nCells = nCellsArray( 3 )
 
       ! Convert CESM wind stress to MPAS-O wind stress
       !$omp do schedule(runtime) private(cell1, cell2, zonalAverage, meridionalAverage)
@@ -290,7 +290,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
-      nCells = nCellsArray( 2 )
+      nCells = nCellsArray( 3 )
 
       ! Build surface fluxes at cell centers
       !$omp do schedule(runtime)
@@ -427,7 +427,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
-      nCells = nCellsArray( 2 )
+      nCells = nCellsArray( 3 )
 
       ! Build surface fluxes at cell centers
       !$omp do schedule(runtime) private(allowedSalt, requiredSalt)
