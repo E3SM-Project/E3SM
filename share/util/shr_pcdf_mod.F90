@@ -50,8 +50,13 @@ module shr_pcdf_mod
 !EOP
 
   character(len=*),parameter :: version   = 'shr_pcdf_v0_0_01'
+#ifdef PIO1
   real(r8)        ,parameter :: fillvalue = SHR_CONST_SPVAL
   integer(in)     ,parameter :: ifillvalue = -999999
+#else
+  real(r8)        ,parameter :: fillvalue = PIO_FILL_DOUBLE
+  integer(in)     ,parameter :: ifillvalue = PIO_FILL_INT
+#endif
 
 !===============================================================================
 contains
@@ -639,6 +644,8 @@ subroutine shr_pcdf_writer1d(fid,fname,iodesc,r1d)
   lfillvalue = fillvalue
 
   rcode = pio_inq_varid(fid,trim(fname),varid)
+  print *,__FILE__,__LINE__,lfillvalue
+
   call pio_write_darray(fid, varid, iodesc, r1d, rcode, fillval=lfillvalue)
 
 end subroutine shr_pcdf_writer1d
