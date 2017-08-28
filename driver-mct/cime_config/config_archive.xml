@@ -1,0 +1,12 @@
+<components version="2.0">
+  <comp_archive_spec compname="cpl" compclass="cpl">
+    <rest_file_extension>\.r\..*</rest_file_extension>
+    <hist_file_extension>\.h.*.nc$</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.cpl</rpointer_file>
+      <rpointer_content >$CASE.cpl.r.$DATENAME.nc</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
+</components>
