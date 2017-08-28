@@ -57,7 +57,7 @@ endfunction()
 #=================================================
 
 # Detect "STOP" for CTest.
-if(${CMAKE_Fortran_COMPILER_ID} STREQUAL NAG)
+if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL NAG)
   # NAG prints the stop code instead of yielding a non-zero return, so we
   # have to use a regex to catch that.
   function(define_Fortran_stop_failure test_name)
