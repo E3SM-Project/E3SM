@@ -477,9 +477,10 @@ contains
                                                     vertDiffTopOfCell, kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerVertMixTendency
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
-      logical, pointer :: config_use_cvmix
+      logical, pointer :: config_use_cvmix,config_compute_active_tracer_budgets
       type (mpas_pool_iterator_type) :: groupItr
 
       err = 0
@@ -495,7 +496,8 @@ contains
       end if
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
-
+      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets',  &
+                                config_compute_active_tracer_budgets)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
@@ -504,6 +506,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, &
+         'activeTracerVertMixTendency',activeTracerVertMixTendency)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
@@ -552,9 +556,26 @@ contains
 
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, timeLevel)
+
+            ! store tracers
+            if (trim(groupItr % memberName) == 'activeTracers') then
+               if (config_compute_active_tracer_budgets) then
+                  activeTracerVertMixTendency(:,:,:)=tracersGroup(:,:,:)
+               endif
+            endif
+
             if ( associated(tracersGroup) ) then
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, err)
             end if
+
+            ! difference tracers to compute influence of vertical mixing and divide by dt
+            if (trim(groupItr % memberName) == 'activeTracers') then
+               if (config_compute_active_tracer_budgets) then
+                  activeTracerVertMixTendency(:,:,:) = &
+                      (tracersGroup(:,:,:) - activeTracerVertMixTendency(:,:,:)) / dt
+               endif
+            endif
+
          end if
       end do
       call mpas_timer_stop('vmix solve tracers')

@@ -397,6 +397,8 @@ contains
                           config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
                           config_use_tracerGroup_ttd_forcing, config_use_surface_salinity_monthly_restoring
 
+      logical, pointer :: config_compute_active_tracer_budgets
+
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
@@ -431,6 +433,14 @@ contains
         ecosysTracers     !  need ecosys for DMS and MacroMolecules
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+        activeTracerAdvectionTendency,                &
+        activeTracerSurfaceFluxTendency,              &
+        activeTracerNonLocalTendency
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+        temperatureShortWaveTendency
 
       !
       ! Field pointers
@@ -473,7 +483,7 @@ contains
       !
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-
+      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
       !
       ! get arrays
       !
@@ -496,6 +506,16 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      !
+      ! get diagnostic arrays for temperature/salinity budget
+      !
+      if (config_compute_active_tracer_budgets) then
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
+         call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
+      endif
 
       if(config_disable_tr_all_tend) return
 
@@ -758,9 +778,23 @@ contains
                !
 
                ! Monotonoic Advection, or standard advection
+
+               ! store tendency
+               if (config_compute_active_tracer_budgets) then
+                  if (trim(groupItr % memberName) == 'activeTracers') then
+                     activeTracerAdvectionTendency(:,:,:) = tracerGroupTend(:,:,:)
+                  endif
+               endif
+
                call ocn_tracer_advection_tend(tracerGroup, normalThicknessFlux, vertAleTransportTop, layerThickness, &
                                               layerThickness, dt, meshPool, scratchPool, tend_layerThickness, tracerGroupTend)
 
+               ! difference tendency to get contribution due to advection
+               if (config_compute_active_tracer_budgets) then
+                  if (trim(groupItr % memberName) == 'activeTracers') then
+                     activeTracerAdvectionTendency(:,:,:)=tracerGroupTend(:,:,:)-activeTracerAdvectionTendency(:,:,:)
+                  endif
+               endif
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
@@ -772,16 +806,40 @@ contains
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number
                ! of surface layers
                !
+               if (config_compute_active_tracer_budgets) then
+                  if ( trim(groupItr % memberName) == 'activeTracers' ) then
+                     activeTracerSurfaceFluxTendency(:,:,:) = tracerGroupTend(:,:,:)
+                  endif
+               endif
+
                call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, fractionAbsorbedRunoff, layerThickness, &
                                                  tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff,  &
                                                  tracerGroupTend, err)
 
+               if (config_compute_active_tracer_budgets) then
+                  if (trim(groupItr % memberName) == 'activeTracers') then
+                     activeTracerSurfaceFluxTendency(:,:,:) = tracerGroupTend(:,:,:)-activeTracerSurfaceFluxTendency(:,:,:)
+                  endif
+               endif
                !
                ! Performing shortwave absorption
                !
+
+               if (config_compute_active_tracer_budgets) then
+                  if ( trim(groupItr % memberName) == 'activeTracers' ) then
+                     temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)
+                  endif
+               endif
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
-                            layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
+                           layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
+               endif
+               
+               if (config_compute_active_tracer_budgets) then
+                  if ( trim(groupItr % memberName) == 'activeTracers' ) then     
+                    temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)- &
+                                        temperatureShortWaveTendency(:,:)
+                  endif
                endif
 
                !
@@ -791,7 +849,13 @@ contains
                  call mpas_timer_start("non-local flux from KPP")
                  call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
                  if( trim(groupItr % memberName) == 'activeTracers' ) then
-                     call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
+                   if (config_compute_active_tracer_budgets) then
+                      activeTracerNonLocalTendency(:,:,:) = tracerGroupTend(:,:,:)
+                   endif
+                   call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
+                   if (config_compute_active_tracer_budgets) then  
+                      activeTracerNonLocalTendency(:,:,:) = tracerGroupTend(:,:,:)-activeTracerNonLocalTendency(:,:,:)
+                   endif
                  else
                      call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)
                  endif

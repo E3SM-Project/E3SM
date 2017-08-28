@@ -113,6 +113,7 @@ module ocn_core_interface
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: windStressBulkPKGActive
+      logical, pointer :: tracerBudgetActive
       logical, pointer :: landIcePressurePKGActive
       logical, pointer :: landIceFluxesPKGActive
       logical, pointer :: landIceCouplingPKGActive
@@ -149,6 +150,7 @@ module ocn_core_interface
 
       logical, pointer :: config_use_bulk_wind_stress
       logical, pointer :: config_use_bulk_thickness_flux
+      logical, pointer :: config_compute_active_tracer_budgets
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
        type (mpas_pool_iterator_type) :: groupItr
@@ -215,6 +217,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
       if ( config_use_bulk_wind_stress ) then
          windStressBulkPKGActive = .true.
+      end if
+
+      !
+      ! test for tracer budget
+      !
+      call mpas_pool_get_package(packagePool, 'tracerBudgetActive', tracerBudgetActive)
+      call mpas_pool_get_config(configPool, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
+      if ( config_compute_active_tracer_budgets ) then
+         tracerBudgetActive = .true.
       end if
 
       !
