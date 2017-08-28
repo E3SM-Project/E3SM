@@ -157,6 +157,8 @@
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>
 <config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
+<config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
+<config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
 
 <!-- vmix -->
 <config_convective_visc>1.0</config_convective_visc>
@@ -198,6 +200,7 @@
 <config_cvmix_convective_triggerBVF>0.0</config_cvmix_convective_triggerBVF>
 <config_use_cvmix_shear>.true.</config_use_cvmix_shear>
 <config_cvmix_num_ri_smooth_loops>2</config_cvmix_num_ri_smooth_loops>
+<config_cvmix_use_BLD_smoothing>.true.</config_cvmix_use_BLD_smoothing>
 <config_cvmix_shear_mixing_scheme>'KPP'</config_cvmix_shear_mixing_scheme>
 <config_cvmix_shear_PP_nu_zero>0.005</config_cvmix_shear_PP_nu_zero>
 <config_cvmix_shear_PP_alpha>5.0</config_cvmix_shear_PP_alpha>
@@ -276,7 +279,10 @@
 <config_monotonic>.true.</config_monotonic>
 
 <!-- bottom_drag -->
-<config_bottom_drag_coeff>1.0e-3</config_bottom_drag_coeff>
+<config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
+<config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
+<config_use_explicit_bottom_drag>.false.</config_use_explicit_bottom_drag>
+<config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
@@ -348,6 +354,7 @@
 <config_prescribe_thickness>.false.</config_prescribe_thickness>
 <config_include_KE_vertex>.false.</config_include_KE_vertex>
 <config_check_tracer_monotonicity>.false.</config_check_tracer_monotonicity>
+<config_compute_active_tracer_budgets>.true.</config_compute_active_tracer_budgets>
 <config_disable_thick_all_tend>.false.</config_disable_thick_all_tend>
 <config_disable_thick_hadv>.false.</config_disable_thick_hadv>
 <config_disable_thick_vadv>.false.</config_disable_thick_vadv>
@@ -357,6 +364,7 @@
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>
 <config_disable_vel_surface_stress>.false.</config_disable_vel_surface_stress>
+<config_disable_vel_explicit_bottom_drag>.false.</config_disable_vel_explicit_bottom_drag>
 <config_disable_vel_vmix>.false.</config_disable_vel_vmix>
 <config_disable_vel_vadv>.false.</config_disable_vel_vadv>
 <config_disable_tr_all_tend>.false.</config_disable_tr_all_tend>
@@ -489,6 +497,8 @@
 <config_global_ocean_land_ice_topo_draft_varname>'none'</config_global_ocean_land_ice_topo_draft_varname>
 <config_global_ocean_land_ice_topo_ice_frac_varname>'none'</config_global_ocean_land_ice_topo_ice_frac_varname>
 <config_global_ocean_land_ice_topo_grounded_frac_varname>'none'</config_global_ocean_land_ice_topo_grounded_frac_varname>
+<config_global_ocean_use_constant_land_ice_cavity_temperature>.false.</config_global_ocean_use_constant_land_ice_cavity_temperature>
+<config_global_ocean_constant_land_ice_cavity_temperature>-1.8</config_global_ocean_constant_land_ice_cavity_temperature>
 <config_global_ocean_cull_inland_seas>.true.</config_global_ocean_cull_inland_seas>
 <config_global_ocean_windstress_file>'none'</config_global_ocean_windstress_file>
 <config_global_ocean_windstress_nlat_dimname>'none'</config_global_ocean_windstress_nlat_dimname>
