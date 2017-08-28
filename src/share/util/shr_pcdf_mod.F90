@@ -644,7 +644,6 @@ subroutine shr_pcdf_writer1d(fid,fname,iodesc,r1d)
   lfillvalue = fillvalue
 
   rcode = pio_inq_varid(fid,trim(fname),varid)
-  print *,__FILE__,__LINE__,lfillvalue
 
   call pio_write_darray(fid, varid, iodesc, r1d, rcode, fillval=lfillvalue)
 
