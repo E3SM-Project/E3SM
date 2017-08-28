@@ -564,6 +564,10 @@
 					description="Number of smoothing passes over RiTopOfCell for LMD94 shear instability mixing"
 					possible_values="any integer"
 		/>
+		<nml_option name="config_cvmix_use_BLD_smoothing" type="logical" default_value=".true." units="NA"
+					description="If true KPP bld is smoothed with a laplacian filter" 
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
 					description="Choose between Pacanowski/Philander or Large et al. shear mixing"
 					possible_values="PP or KPP"
@@ -2366,6 +2370,9 @@
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
+		/>
+		<var name="boundaryLayerDepthSmooth" type="real" dimensions="nCells Time" units="m"
+			 description="CVMix/KPP: smoothed boundary layer depth"
 		/>
 		<var name="boundaryLayerDepthEdge" type="real" dimensions="nEdges Time" units="m"
 			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer averaged to cell edges"
