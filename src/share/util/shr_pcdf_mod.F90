@@ -545,7 +545,7 @@ subroutine shr_pcdf_defvar0d(fid,fname,vtype)
 
   implicit none
 
-  type(file_desc_t),intent(in) :: fid
+  type(file_desc_t),intent(inout) :: fid
   character(len=*) ,intent(in) :: fname
   integer(IN)      ,intent(in) :: vtype
 
@@ -569,7 +569,7 @@ subroutine shr_pcdf_defvar1d(fid,fname,vtype,dimid)
 
   implicit none
 
-  type(file_desc_t),intent(in) :: fid
+  type(file_desc_t),intent(inout) :: fid
   character(len=*) ,intent(in) :: fname
   integer(IN)      ,intent(in) :: vtype
   integer(IN)      ,intent(in) :: dimid(:)
