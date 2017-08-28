@@ -50,8 +50,8 @@ module ocn_vel_forcing_rayleigh
    !
    !--------------------------------------------------------------------
 
-   logical :: rayleighFrictionOn
-   real (kind=RKIND) :: rayleighDampingCoef
+   logical :: rayleighFrictionOn, rayleighBottomFrictionOn
+   real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef
 
 
 !***********************************************************************
@@ -131,15 +131,28 @@ contains
 
       nEdges = nEdgesArray( 1 )
 
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-        do k = 1, maxLevelEdgeTop(iEdge)
+      if ( rayleighFrictionOn ) then
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
+           do k = 1, maxLevelEdgeTop(iEdge)
 
+              tend(k,iEdge) = tend(k,iEdge) - rayleighDampingCoef * normalVelocity(k,iEdge)
+
+           enddo
+         enddo
+         !$omp end do
+      endif
+
+      if ( rayleighBottomFrictionOn ) then
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
+
+           k = maxLevelEdgeTop(iEdge)
            tend(k,iEdge) = tend(k,iEdge) - rayleighDampingCoef * normalVelocity(k,iEdge)
 
-        enddo
-      enddo
-      !$omp end do
+         enddo
+         !$omp end do
+      endif
 
       call mpas_timer_stop('vel rayleigh forcing')
 
@@ -172,19 +185,28 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_Rayleigh_friction
-      real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff
+      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction
+      real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff, config_Rayleigh_bottom_damping_coeff
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', config_Rayleigh_friction)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_friction', config_Rayleigh_bottom_friction)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', config_Rayleigh_damping_coeff)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_damping_coeff', config_Rayleigh_bottom_damping_coeff)
 
       rayleighDampingCoef = 0.0_RKIND
 
       if (config_Rayleigh_friction) then
           rayleighFrictionOn = .true.
           rayleighDampingCoef = config_Rayleigh_damping_coeff
+      endif
+
+      rayleighBottomDampingCoef = 0.0_RKIND
+
+      if (config_Rayleigh_bottom_friction) then
+          rayleighBottomFrictionOn = .true.
+          rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
       endif
 
    !--------------------------------------------------------------------
