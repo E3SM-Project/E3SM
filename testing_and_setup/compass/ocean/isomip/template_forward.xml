@@ -10,7 +10,7 @@
 		<option name="config_use_tracer_del2">.true.</option>
 		<option name="config_mom_del2">600.0</option>
 		<option name="config_tracer_del2">100.0</option>
-		<option name="config_bottom_drag_coeff">2.5e-3</option>
+		<option name="config_implicit_bottom_drag_coeff">2.5e-3</option>
 		<option name="config_eos_type">'jm'</option>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_use_cvmix">.true.</option>

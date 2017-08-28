@@ -24,7 +24,7 @@
 		<option name="config_eos_linear_Tref">19.0</option>
 		<option name="config_eos_linear_Sref">35.0</option>
 		<option name="config_eos_linear_densityref">1025.022</option>
-		<option name="config_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_implicit_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_use_activeTracers_surface_bulk_forcing">.false.</option>
 		<option name="config_use_activeTracers_surface_restoring">.false.</option>
 		<option name="config_use_activeTracers_interior_restoring">.false.</option>

@@ -8,7 +8,7 @@
 		<option name="config_time_integrator">'split_explicit'</option>
 		<option name="config_use_mom_del2">.true.</option>
 		<option name="config_mom_del2">10.0</option>
-		<option name="config_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_implicit_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_eos_type">'jm'</option>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>

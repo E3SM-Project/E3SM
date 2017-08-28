@@ -834,7 +834,19 @@
 		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
-		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
+		<nml_option name="config_use_implicit_bottom_drag" type="logical" default_value=".true." units="unitless"
+					description="If true, implicit bottom drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_implicit_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
+					description="Dimensionless bottom drag coefficient, $c_{drag}$."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_use_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
+					description="If true, explicit bottom drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_explicit_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
@@ -1066,6 +1078,10 @@
 		/>
 		<nml_option name="config_disable_vel_surface_stress" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on the velocity field from horizontal surface stresses (e.g. wind stress and top drag)."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from explicit bottom drag"
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_vmix" type="logical" default_value=".false." units="unitless"

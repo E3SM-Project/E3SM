@@ -12,7 +12,7 @@
 		<option name="config_btr_dt">'0000_00:00:01.5'</option>
 		<option name="config_run_duration">'0000_01:00:00'</option>
 		<option name="config_use_const_visc">.true.</option>
-		<option name="config_bottom_drag_coeff">0.0</option>
+		<option name="config_implicit_bottom_drag_coeff">0.0</option>
 		<option name="config_use_mom_del2">.true.</option>
 		<option name="config_mom_del2">10.0</option>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
