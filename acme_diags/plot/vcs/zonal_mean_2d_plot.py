@@ -99,8 +99,8 @@ def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
         if parameter_colormap in vcs.listelements('colormap'):
             method.colormap = vcs.getcolormap(parameter_colormap)
         else:
-            method.colormap = vcs.vcs.matplotlib2vcs(parameter_colormap)
-        colors = vcs.getcolors(method.levels, colors=range(6, 240))
+            method.colormap = vcs.matplotlib2vcs(parameter_colormap)
+        colors = vcs.getcolors(method.levels, colors=range(6, 240), white=[100, 100, 100])
         method.fillareacolors = colors
 
 def set_levels_of_graphics_method(method, levels, data, data2=None):
