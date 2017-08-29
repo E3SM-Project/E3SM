@@ -1072,6 +1072,7 @@ contains
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size
+    use clm_varcon       , only : zisoi
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -1956,10 +1957,10 @@ contains
                   pnup_pfrootc(p) =  0.0_r8
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
-                           pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8)
+                           pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) * dzsoi_decomp(j)
                         end do
                   end if
-                  pnup_pfrootc(p) =  pnup_pfrootc(p) / nlevdecomp
+                  pnup_pfrootc(p) =  pnup_pfrootc(p) / zisoi(nlevdecomp-1)
                end do
             end do
          end if
@@ -2878,11 +2879,11 @@ contains
                   pnup_pfrootc(p) =  0.0_r8
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
-                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8)
-                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8)
+                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) * dzsoi_decomp(j)
+                           pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j),1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) * dzsoi_decomp(j)
                         end do
                   end if
-                  pnup_pfrootc(p) =  pnup_pfrootc(p) / nlevdecomp
+                  pnup_pfrootc(p) =  pnup_pfrootc(p) / zisoi(nlevdecomp-1)
                end do
             end do
          end if
