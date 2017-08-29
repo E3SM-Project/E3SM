@@ -23,8 +23,11 @@ module mpas_init_atm_gwd
    integer, parameter :: topo_x = 43200            ! x-dimension of global 30-arc-second topography array
    integer, parameter :: topo_y = 21600            ! y-dimension of global 30-arc-second topography array
    real (kind=RKIND), parameter :: pts_per_degree = real(topo_x,RKIND) / 360.0_RKIND
-   real (kind=RKIND), parameter :: start_lat = -90.0_RKIND
-   real (kind=RKIND), parameter :: start_lon = -180.0_RKIND
+
+   ! The following are set at the beginning of the compute_gwd_fields routine depending
+   ! on the source of topography data to be used
+   real (kind=RKIND) :: start_lat
+   real (kind=RKIND) :: start_lon
 
    ! Nominal delta-x (in meters) for sub-grid topography cells
    real (kind=RKIND), parameter ::  sg_delta = 2.0 * Pi * Re / (360.0_RKIND * real(pts_per_degree,RKIND))
@@ -81,6 +84,8 @@ module mpas_init_atm_gwd
       real (kind=RKIND), dimension(:), pointer :: var2d, con, oa1, oa2, oa3, oa4, ol1, ol2, ol3, ol4
       real (kind=RKIND), dimension(:), pointer :: elvmax, htheta, hgamma, hsigma
       character(len=StrKIND), pointer :: config_geog_data_path
+      character(len=StrKIND), pointer :: config_topo_data
+      character(len=StrKIND) :: geog_sub_path
 
 
       allocate(topo(topo_x,topo_y))
@@ -90,7 +95,29 @@ module mpas_init_atm_gwd
 
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
       call mpas_pool_get_config(domain % configs, 'config_geog_data_path', config_geog_data_path)
+      call mpas_pool_get_config(domain % configs, 'config_topo_data', config_topo_data)
       call mpas_pool_get_config(domain % configs, 'config_gwd_cell_scaling', config_gwd_cell_scaling)
+
+      select case(trim(config_topo_data))
+         case('GTOPO30')
+            call mpas_log_write('--- Using GTOPO30 terrain dataset for GWDO static fields')
+            geog_sub_path = 'topo_30s/'
+            start_lat =  -90.0_RKIND
+            start_lon = -180.0_RKIND
+         case('GMTED2010')
+            call mpas_log_write('--- Using GMTED2010 terrain dataset for GWDO static fields')
+            geog_sub_path = 'topo_gmted2010_30s/'
+            start_lat =  -90.0_RKIND
+            start_lon =    0.0_RKIND
+         case('default')
+            call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Invalid topography dataset '''//trim(config_topo_data) &
+                                          //''' selected for config_topo_data',                      messageType=MPAS_LOG_ERR)
+            call mpas_log_write('   Possible options are: ''GTOPO30'', ''GMTED2010''',               messageType=MPAS_LOG_ERR)
+            call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
+      end select
+      call mpas_log_write('')
 
       !
       ! Retrieve pointers to arrays holding the latitudes and longitudes of
@@ -118,7 +145,7 @@ module mpas_init_atm_gwd
 !      call mpas_pool_get_array(mesh, 'gamma', hgamma)
 !      call mpas_pool_get_array(mesh, 'sigma', hsigma)
 
-      iErr = read_global_30s_topo(config_geog_data_path)
+      iErr = read_global_30s_topo(config_geog_data_path, geog_sub_path)
       if (iErr /= 0) then
          call mpas_log_write('Error reading global 30-arc-sec topography for GWD statistics', messageType=MPAS_LOG_ERR)
          return
@@ -208,17 +235,18 @@ module mpas_init_atm_gwd
    !
    !> \brief   Reads global 30-arc-second topography into 'topo' module variable
    !> \author  Michael Duda
-   !> \date    31 October 2016
+   !> \date    28 August 2017
    !> \details 
    !>  This subroutine reads the global 30-arc-second topography from the subdirectory 
-   !>  'topo_30s' of the path provided as an argument.
+   !>  identified by the 'sub_path' argument within the 'path' provided as the first argument.
    !
    !-----------------------------------------------------------------------
-   function read_global_30s_topo(path) result(iErr)
+   function read_global_30s_topo(path, sub_path) result(iErr)
 
       implicit none
 
       character(len=*), intent(in) :: path
+      character(len=*), intent(in) :: sub_path
 
       integer :: iErr
 
@@ -245,7 +273,7 @@ module mpas_init_atm_gwd
 
       do iy=1,topo_y,tile_y
       do ix=1,topo_x,tile_x
-         write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//'/topo_30s/', ix, '-', (ix+tile_x-1), '.', &
+         write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//trim(sub_path), ix, '-', (ix+tile_x-1), '.', &
                                                                                       iy, '-', (iy+tile_y-1)
          call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
                            scalefactor, wordsize, istatus)
