@@ -772,7 +772,8 @@
       <command name="load">sems-intel/16.0.2</command>
       <command name="load" mpilib="!mpi-serial">sems-openmpi/1.10.5</command>
       <command name="load">mkl/16.0</command>
-      <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+      <command name="load" mpilib="!mpi-serial">sems-netcdf/4.4.1/exo_parallel</command>
+      <command name="load" mpilib="mpi-serial">sems-netcdf/4.4.1/exo</command>
     </modules>
   </module_system>
   <environment_variables>
@@ -839,7 +840,8 @@
       <command name="load">sems-intel/16.0.2</command>
       <command name="load" mpilib="!mpi-serial">sems-openmpi/1.10.5</command>
       <command name="load">mkl/16.0</command>
-      <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+      <command name="load" mpilib="!mpi-serial">sems-netcdf/4.4.1/exo_parallel</command>
+      <command name="load" mpilib="mpi-serial">sems-netcdf/4.4.1/exo</command>
     </modules>
   </module_system>
   <environment_variables>
