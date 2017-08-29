@@ -85,11 +85,20 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params(labelsize=9.0, length=0)
 
     else:
-
+        maxval = np.amax(np.absolute(levels[1:-1]))
+        if maxval < 10.0:
+           fmt = "%5.2f"
+           pad = 25
+        elif maxval < 100.0 :
+           fmt = "%5.1f"
+           pad = 25
+        else:
+           fmt = "%6.1f"
+           pad = 30
         cbar.set_ticks(levels[1:-1])
-        labels = levels[1:-1]
-        cbar.ax.set_yticklabels(labels)
-        cbar.ax.tick_params(labelsize=9.0, length=0)
+        labels = [fmt % l for l in levels[1:-1]]
+        cbar.ax.set_yticklabels(labels, ha='right')
+        cbar.ax.tick_params(labelsize=9.0, pad=pad, length=0)
 
     # Min, Mean, Max
     fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
