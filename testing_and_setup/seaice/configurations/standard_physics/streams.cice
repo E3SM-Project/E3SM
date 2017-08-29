@@ -21,8 +21,14 @@
         filename_template="output/output.$Y.nc"
         filename_interval="01-00-00_00:00:00"
         clobber_mode="replace_files"
-        output_interval="none" >
-
+        output_interval="00-01-00_00:00:00" >
+	<var name="xtime"/>
+	<var name="daysSinceStartOfSim"/>
+	<var name="iceAreaCell"/>
+	<var name="iceVolumeCell"/>
+	<var name="snowVolumeCell"/>
+	<var name="uVelocityGeo"/>
+	<var name="vVelocityGeo"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"
@@ -208,6 +214,9 @@
 	<var name="iceAreaCell"/>
 	<var name="iceVolumeCell"/>
 	<var name="snowVolumeCell"/>
+	<var name="iceAreaCategory"/>
+	<var name="iceVolumeCategory"/>
+	<var name="snowVolumeCategory"/>
 	<var name="surfaceTemperatureCell"/>
 	<var name="uVelocityGeo"/>
 	<var name="vVelocityGeo"/>
