@@ -1184,6 +1184,15 @@ contains
              (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_frootn_to_litter_fire(p)                 =  frootn(p)             * f * &
              fm_root(veg_pp%itype(p))
+        m_deadstemn_to_litter_fire(p)              =  deadstemn(p) * m_veg * f *  &
+             (1._r8 - cc_dstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))
+        m_deadstemn_storage_to_litter_fire(p)       =  deadstemn_storage(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
+        m_deadstemn_xfer_to_litter_fire(p)          =  deadstemn_xfer(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_frootn_storage_to_litter_fire(p)         =  frootn_storage(p)     * f * &
              fm_other(veg_pp%itype(p))
         m_frootn_xfer_to_litter_fire(p)            =  frootn_xfer(p)        * f * &
@@ -1230,6 +1239,15 @@ contains
              (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_frootp_to_litter_fire(p)                 =  frootp(p)             * f * &
              fm_root(veg_pp%itype(p))
+        m_deadstemp_to_litter_fire(p)               =  deadstemp(p) * m_veg * f *  &
+             (1._r8 - cc_dstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))
+        m_deadstemp_storage_to_litter_fire(p)       =  deadstemp_storage(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
+        m_deadstemp_xfer_to_litter_fire(p)          =  deadstemp_xfer(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_frootp_storage_to_litter_fire(p)         =  frootp_storage(p)     * f * &
              fm_other(veg_pp%itype(p))
         m_frootp_xfer_to_litter_fire(p)            =  frootp_xfer(p)        * f * &
