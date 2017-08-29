@@ -13,6 +13,7 @@
 module cice_numerics
 
   use mpas_derived_types
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -51,7 +52,7 @@ contains
 
     real(kind=RKIND), allocatable, dimension(:,:) :: a
     real(kind=RKIND), allocatable, dimension(:) :: b
-    integer, allocatable, dimension(:) :: indx
+    integer, allocatable, dimension(:) :: indices
     real(kind=RKIND) :: d
 
     integer :: n
@@ -60,132 +61,237 @@ contains
 
     allocate(a(n,n))
     allocate(b(n))
-    allocate(indx(n))
+    allocate(indices(n))
 
     a(:,:) = leftMatrix(:,:)
     b(:) = rightHandSide(:)
 
-    call ludcmp(a,indx,d)
+    call lu_decomposition(a,indices,d)
 
-    call lubksb(a,indx,b)
+    call lu_back_subsitution(a,indices,b)
 
     solutionVector(:) = b(:)
 
     deallocate(a)
     deallocate(b)
-    deallocate(indx)
+    deallocate(indices)
 
   end subroutine cice_solve_linear_basis_system
 
-  !-------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  lu_decomposition
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-------------------------------------------------------------
 
-  SUBROUTINE ludcmp(a,indx,d)
+  subroutine lu_decomposition(a,indices,d)
 
-    IMPLICIT NONE
-    REAL(kind=RKIND), DIMENSION(:,:), INTENT(INOUT) :: a
-    INTEGER, DIMENSION(:), INTENT(OUT) :: indx
-    REAL(kind=RKIND), INTENT(OUT) :: d
-    REAL(kind=RKIND), DIMENSION(size(a,1)) :: vv
-    REAL(kind=RKIND), PARAMETER :: TINY=1.0e-20_RKIND
-    INTEGER :: j,n,imax
-    n=assert_eq(size(a,1),size(a,2),size(indx),'ludcmp')
-    d=1.0_RKIND
-    vv=maxval(abs(a),dim=2)
-    if (any(vv == 0.0_RKIND)) call nrerror('singular matrix in ludcmp')
-    vv=1.0_RKIND/vv
-    do j=1,n
-       imax=(j-1)+imaxloc(vv(j:n)*abs(a(j:n,j)))
-       if (j /= imax) then
-          call swap(a(imax,:),a(j,:))
-          d=-d
-          vv(imax)=vv(j)
-       end if
-       indx(j)=imax
-       if (a(j,j) == 0.0_RKIND) a(j,j)=TINY
-       a(j+1:n,j)=a(j+1:n,j)/a(j,j)
-       a(j+1:n,j+1:n)=a(j+1:n,j+1:n)-outerprod(a(j+1:n,j),a(j,j+1:n))
-    end do
-  END SUBROUTINE ludcmp
+    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         a
 
-  !-------------------------------------------------------------
+    integer, dimension(:), intent(out) :: &
+         indices
 
-  SUBROUTINE lubksb(a,indx,b)
+    real(kind=RKIND), intent(out) :: &
+         d
 
-    IMPLICIT NONE
-    REAL(kind=RKIND), DIMENSION(:,:), INTENT(IN) :: a
-    INTEGER, DIMENSION(:), INTENT(IN) :: indx
-    REAL(kind=RKIND), DIMENSION(:), INTENT(INOUT) :: b
-    INTEGER :: i,n,ii,ll
-    REAL(kind=RKIND) :: summ
-    n=assert_eq(size(a,1),size(a,2),size(indx),'lubksb')
-    ii=0
-    do i=1,n
-       ll=indx(i)
-       summ=b(ll)
-       b(ll)=b(i)
-       if (ii /= 0) then
-          summ=summ-dot_product(a(i,ii:i-1),b(ii:i-1))
-       else if (summ /= 0.0_RKIND) then
-          ii=i
-       end if
-       b(i)=summ
-    end do
-    do i=n,1,-1
-       b(i) = (b(i)-dot_product(a(i,i+1:n),b(i+1:n)))/a(i,i)
-    end do
-  END SUBROUTINE lubksb
+    real(kind=RKIND), dimension(size(a,1)) :: &
+         maxa
 
-  !-------------------------------------------------------------
+    real(kind=RKIND), parameter :: &
+         tiny = 1.0e-20_RKIND
 
-  FUNCTION assert_eq(n1,n2,n3,string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    INTEGER, INTENT(IN) :: n1,n2,n3
-    INTEGER :: assert_eq
-    if (n1 == n2 .and. n2 == n3) then
-       assert_eq=n1
+    integer :: &
+         j, &
+         n, &
+         jmax
+
+    ! check sizes
+    if (size(a,1) == size(a,2) .and. size(a,2) == size(indices)) then
+       n = size(a,1)
     else
-       write (*,*) 'nrerror: an assert_eq failed with this tag:', &
-            string
-       STOP 'program terminated by assert_eq3'
-    end if
-  END FUNCTION assert_eq
+       call mpas_log_write("lu_decomposition: unequal array sizes: $i $i $i", &
+            MPAS_LOG_CRIT, intArgs=(/size(a,1),size(a,2),size(indices)/))
+    endif
 
-  !-------------------------------------------------------------
+    d = 1.0_RKIND
+    maxa = maxval(abs(a),dim=2)
+    if (any(maxa == 0.0_RKIND)) then
+       call mpas_log_write("lu_decomposition: singular matrix", &
+            MPAS_LOG_CRIT)
+    endif
+    maxa = 1.0_RKIND / maxa
 
-  FUNCTION imaxloc(arr)
-    REAL(kind=RKIND), DIMENSION(:), INTENT(IN) :: arr
-    INTEGER :: imaxloc
-    INTEGER, DIMENSION(1) :: imax
-    imax=maxloc(arr(:))
-    imaxloc=imax(1)
-  END FUNCTION imaxloc
+    do j = 1, n
 
-  !-------------------------------------------------------------
+       jmax = (j-1) + get_array_max_location(maxa(j:n)*abs(a(j:n,j)))
 
-  SUBROUTINE nrerror(string)
-    CHARACTER(LEN=*), INTENT(IN) :: string
-    write (*,*) 'nrerror: ',string
-    STOP 'program terminated by nrerror'
-  END SUBROUTINE nrerror
+       if (j /= jmax) then
+          call swap_arrays(a(jmax,:),a(j,:))
+          d = -d
+          maxa(jmax) = maxa(j)
+       end if
 
-  !-------------------------------------------------------------
+       indices(j) = jmax
+       if (a(j,j) == 0.0_RKIND) &
+            a(j,j) = tiny
+       a(j+1:n,j)     = a(j+1:n,j)     / a(j,j)
+       a(j+1:n,j+1:n) = a(j+1:n,j+1:n) - outer_product(a(j+1:n,j),a(j,j+1:n))
 
-  FUNCTION outerprod(a,b)
-    REAL(kind=RKIND), DIMENSION(:), INTENT(IN) :: a,b
-    REAL(kind=RKIND), DIMENSION(size(a),size(b)) :: outerprod
-    outerprod = spread(a,dim=2,ncopies=size(b)) * &
-         spread(b,dim=1,ncopies=size(a))
-  END FUNCTION outerprod
+    end do
 
-  !-------------------------------------------------------------
+  end subroutine lu_decomposition
 
-  SUBROUTINE swap(a,b)
-    REAL(kind=RKIND), DIMENSION(:), INTENT(INOUT) :: a,b
-    REAL(kind=RKIND), DIMENSION(SIZE(a)) :: dum
-    dum=a
-    a=b
-    b=dum
-  END SUBROUTINE swap
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  lu_back_subsitution
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-------------------------------------------------------------
+
+  subroutine lu_back_subsitution(a,indices,b)
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         a
+
+    integer, dimension(:), intent(in) :: &
+         indices
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         b
+
+    integer :: &
+         i, &
+         n, &
+         j, &
+         k
+
+    real(kind=RKIND) :: &
+         sums
+
+    if (size(a,1) == size(a,2) .and. size(a,2) == size(indices)) then
+       n = size(a,1)
+    else
+       call mpas_log_write("lu_back_subsitution: unequal array sizes: $i $i $i", &
+            MPAS_LOG_CRIT, intArgs=(/size(a,1),size(a,2),size(indices)/))
+    endif
+
+    j = 0
+
+    do i = 1, n
+
+       k = indices(i)
+       sums = b(k)
+       b(k) = b(i)
+
+       if (j /= 0) then
+          sums = sums - dot_product(a(i,j:i-1), b(j:i-1))
+       else if (sums /= 0.0_RKIND) then
+          j = i
+       end if
+
+       b(i) = sums
+
+    end do
+
+    do i = n, 1, -1
+       b(i) = (b(i) - dot_product(a(i,i+1:n), b(i+1:n))) / a(i,i)
+    end do
+
+  end subroutine lu_back_subsitution
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_array_max_location
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-------------------------------------------------------------
+
+  function get_array_max_location(array) result(max_loc)
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    integer :: &
+         max_loc
+
+    integer, dimension(1) :: &
+         max_loc_array
+
+    max_loc_array = maxloc(array(:))
+    max_loc       = max_loc_array(1)
+
+  end function get_array_max_location
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  outer_product
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-------------------------------------------------------------
+
+  function outer_product(x, y) result(outerproduct)
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         x, &
+         y
+
+    real(kind=RKIND), dimension(size(x),size(y)) :: &
+         outerproduct
+
+    outerproduct = &
+         spread(x,dim=2,ncopies=size(y)) * &
+         spread(y,dim=1,ncopies=size(x))
+
+  end function outer_product
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  swap_arrays
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-------------------------------------------------------------
+
+  subroutine swap_arrays(x, y)
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         x, &
+         y
+
+    real(kind=RKIND), dimension(size(x)) :: &
+         tmp
+
+    tmp = x
+    x   = y
+    y   = tmp
+
+  end subroutine swap_arrays
 
   !-------------------------------------------------------------
 
