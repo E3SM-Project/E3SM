@@ -78,11 +78,15 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
     circle = mpath.Path(verts * radius + center)
     ax.set_boundary(circle, transform=ax.transAxes)
 
-    if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
-    if title[1] != None: 
-        t = ax.set_title(title[1], fontdict=plotTitle)
-        if title[0] != None or title[2] != None: t.set_position([.5, 1.06])
-    if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
+    
+    # Plot titles
+    for i in range(3):
+        if title[i] == None: title[i] = ''
+
+    t = ax.set_title('%s\n%s' % (title[0],title[2]), loc='left', fontdict=plotSideTitle)
+
+    t = ax.set_title(title[1], fontdict=plotTitle)
+    if title[0] != '' or title[2] != '': t.set_position([.5, 1.06])
 
     # Color bar
     cbax = fig.add_axes((panel[n][0]+0.35,panel[n][1]+0.0354,0.0326,0.1792))
@@ -93,10 +97,20 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
         cbar.ax.tick_params(labelsize=9.0, length=0)
 
     else:
+        maxval = np.amax(np.absolute(levels[1:-1]))
+        if maxval < 10.0:
+           fmt = "%5.2f"
+           pad = 25
+        elif maxval < 100.0 :
+           fmt = "%5.1f"
+           pad = 25
+        else:
+           fmt = "%6.1f"
+           pad = 30
         cbar.set_ticks(levels[1:-1])
-        labels = ["%4.1f" % l for l in levels[1:-1]]
-        cbar.ax.set_yticklabels(labels,ha='right')
-        cbar.ax.tick_params(labelsize=9.0, pad=25, length=0)
+        labels = [fmt % l for l in levels[1:-1]]
+        cbar.ax.set_yticklabels(labels, ha='right')
+        cbar.ax.tick_params(labelsize=9.0, pad=pad, length=0)
 
     # Min, Mean, Max
     fig.text(panel[n][0]+0.35,panel[n][1]+0.225,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
@@ -126,14 +140,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     mean1 = metrics_dict['test']['mean']
     max1  = metrics_dict['test']['max']
     if test.count() >1: 
-        plot_panel(0, fig, proj, pole, test, parameter.contour_levels, parameter.test_colormap, (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1))
+        plot_panel(0, fig, proj, pole, test, parameter.contour_levels, parameter.test_colormap, [parameter.test_name,parameter.test_title,test.units],stats=(max1,mean1,min1))
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
 
     if reference.count() >1: 
-        plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, parameter.reference_colormap, (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2))
+        plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, parameter.reference_colormap, [parameter.reference_name,parameter.reference_title,reference.units],stats=(max2,mean2,min2))
 
     # Third panel
     min3  = metrics_dict['diff']['min']
@@ -143,7 +157,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     c = metrics_dict['misc']['corr']
 
     if diff.count() >1: 
-        plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, parameter.diff_colormap, (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c))
+        plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, parameter.diff_colormap, [None,parameter.diff_title,None], stats=(max3,mean3,min3,r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.97, fontsize=18)
