@@ -1380,8 +1380,9 @@ contains
       config_use_zaerosols,             &
       config_use_column_biogeochemistry
 
-   character(len=strKIND), pointer :: &
-      config_thermodynamics_type
+   character(len=strKIND), pointer ::   &
+      config_thermodynamics_type,       &
+      config_ocean_surface_type
 
    type (field1DReal), pointer ::       &
       seaSurfaceTemperatureField,       &
@@ -1488,6 +1489,7 @@ contains
 
       configs => block_ptr % configs
       call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
+      call mpas_pool_get_config(configs, "config_ocean_surface_type", config_ocean_surface_type)
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
       call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -1562,7 +1564,7 @@ contains
         seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
         seaSurfaceTiltV(i)             = x2i_i % rAttr(index_x2i_So_dhdy, n)
 
-        if () then ! free surface (MPAS-O)
+        if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
         
            meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
 
