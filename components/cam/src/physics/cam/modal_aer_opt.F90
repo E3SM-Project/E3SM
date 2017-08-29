@@ -225,6 +225,7 @@ subroutine modal_aer_opt_init()
       call add_default ('AODDUST1'     , 1, ' ')
       call add_default ('AODDUST3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
+      if ( history_verbose ) then
       call add_default ('BURDEN1'      , 1, ' ')
       call add_default ('BURDEN2'      , 1, ' ')
       call add_default ('BURDEN3'      , 1, ' ')
@@ -241,12 +242,12 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENPROT', 1, ' ')
       call add_default ('BURDENLIP', 1, ' ')
 #endif
+      end if
    end if
 
    if (history_aero_optics) then 
       call add_default ('AODDUST1'     , 1, ' ')
       call add_default ('AODDUST3'     , 1, ' ')
-      if (history_verbose) call add_default ('ABSORB'       , 1, ' ')
       call add_default ('AODMODE1'     , 1, ' ')
       call add_default ('AODMODE2'     , 1, ' ')
       call add_default ('AODMODE3'     , 1, ' ')
@@ -261,6 +262,8 @@ subroutine modal_aer_opt_init()
       call add_default ('AODSOA'       , 1, ' ')
       call add_default ('AODBC'        , 1, ' ')
       call add_default ('AODSS'        , 1, ' ')
+      if (history_verbose) then
+      call add_default ('ABSORB'       , 1, ' ')
       call add_default ('BURDEN1'      , 1, ' ')
       call add_default ('BURDEN2'      , 1, ' ')
       call add_default ('BURDEN3'      , 1, ' ')
@@ -277,6 +280,7 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENPROT'   , 1, ' ')
       call add_default ('BURDENLIP'    , 1, ' ')
 #endif
+      end if
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
   end if
@@ -295,7 +299,7 @@ subroutine modal_aer_opt_init()
      if (history_aero_optics) then
         call add_default ('AODDUST4', 1, ' ')
         call add_default ('AODMODE4', 1, ' ')
-        call add_default ('BURDEN4' , 1, ' ')
+        if (history_verbose) call add_default ('BURDEN4' , 1, ' ')
      end if
   end if
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then      
@@ -316,9 +320,11 @@ subroutine modal_aer_opt_init()
          call add_default ('AODMODE5', 1, ' ')
          call add_default ('AODMODE6', 1, ' ')
          call add_default ('AODMODE7', 1, ' ')         
+         if (history_verbose) then
          call add_default ('BURDEN5', 1, ' ')
          call add_default ('BURDEN6', 1, ' ')
          call add_default ('BURDEN7', 1, ' ')
+         end if
       end if
    end if
    if (cam_chempkg_is('trop_mam9')) then

@@ -612,9 +612,16 @@ contains
                     trim(solsym(m))//' gas chemistry/wet removal (for gas species)')
        call addfld( 'AQ_'//trim(solsym(m)),horiz_only,  'A', unit_basename//'/m2/s ', &
                     trim(solsym(m))//' aqueous chemistry (for gas species)')
-       if ( history_aerosol .and. history_verbose ) then 
-          call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
-          call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
+       if ( history_aerosol ) then 
+          if ( history_verbose ) then
+             call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
+             call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
+          else
+             select case (trim(solsym(m)))
+             case ('O3','H2O2','H2SO4','SO2','DMS','SOAG')
+                  call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
+             end select
+          end if
        endif
        
        call cnst_get_ind(trim(solsym(m)), nspc, abort=.false. ) ! REASTER 08/04/2015
