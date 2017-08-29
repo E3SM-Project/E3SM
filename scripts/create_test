@@ -363,6 +363,13 @@ OR
         dot_count = name.count('.')
         expect(dot_count > 1 and dot_count <= 4, "Invalid test Name, '{}'".format(name))
 
+    # for acme, sort by walltime
+    if model == "acme":
+        if args.walltime is None:
+            test_names.sort(cmp=update_acme_tests.sort_by_time)
+        else:
+            test_names.sort()
+
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
         args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \
