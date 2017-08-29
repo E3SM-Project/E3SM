@@ -1,5 +1,5 @@
 """
-CIME ERP test.  This class inherits from SystemTestsCommon
+CIME ERP test.  This class inherits from SystemTestsCompareTwo
 
 This is a pes counts hybrid (open-MP/MPI) restart bfb test from
 startup.  This is just like an ERS test but the pe-counts/threading
@@ -8,132 +8,72 @@ count are modified on retart.
 (2) Do a restart test with half the number of tasks and threads (suffix rest)
 """
 
-import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
-import CIME.utils
-from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.check_lockedfiles import *
+from CIME.case_st_archive import _get_datenames
 
 logger = logging.getLogger(__name__)
 
-class ERP(SystemTestsCommon):
+class ERP(SystemTestsCompareTwo):
 
     def __init__(self, case):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, case)
+        SystemTestsCompareTwo.__init__(self, case,
+                                       separate_builds = True,
+                                       run_two_suffix = 'rest',
+                                       run_one_description = 'initial',
+                                       run_two_description = 'restart')
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
-        """
-        Build two cases.  Case one uses defaults, case2 uses half the number of threads
-        and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
-        with different numbers of mpi tasks.
-        """
+    def _common_setup(self):
         self._case.set_value("BUILD_THREADED",True)
-        if sharedlib_only:
-            return self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = CIME.utils.get_model()
+    def _case_one_setup(self):
+        stop_n      = self._case.get_value("STOP_N")
 
-        # Make backup copies of the ORIGINAL env_mach_pes.xml and
-        # env_build.xml in LockedFiles if they are not there. If there
-        # are already copies there then simply copy them back to
-        # have the starting env_mach_pes.xml and env_build.xml
-        machpes1 = "env_mach_pes.ERP1.xml"
-        envbuild1 = "env_build.ERP1.xml"
-        if is_locked(machpes1):
-            restore(machpes1, newname="env_mach_pes.xml")
-        else:
-            lock_file("env_mach_pes.xml", newname=machpes1)
+        expect(stop_n > 2, "ERROR: stop_n value {:d} too short".format(stop_n))
 
-        if is_locked(envbuild1):
-            restore(envbuild1, newname="env_build.xml")
+    def _case_two_setup(self):
+        # halve the number of tasks and threads
+        for comp in self._case.get_values("COMP_CLASSES"):
+            ntasks    = self._case1.get_value("NTASKS_{}".format(comp))
+            nthreads  = self._case1.get_value("NTHRDS_{}".format(comp))
+            rootpe    = self._case1.get_value("ROOTPE_{}".format(comp))
+            if ( nthreads > 1 ):
+                self._case.set_value("NTHRDS_{}".format(comp), nthreads/2)
+            if ( ntasks > 1 ):
+                self._case.set_value("NTASKS_{}".format(comp), ntasks/2)
+                self._case.set_value("ROOTPE_{}".format(comp), rootpe/2)
 
-        # Build two executables, one using the original tasks and threads (ERP1) and
-        # one using the modified tasks and threads (ERP2)
-        # The reason we currently need two executables that CESM-CICE has a compile time decomposition
-        # For cases where ERP works, changing this decomposition will not affect answers, but it will
-        # affect the executable that is used
-        for bld in range(1,3):
-            logging.warn("Starting bld {}".format(bld))
+        stop_n = self._case1.get_value("STOP_N")
+        rest_n = self._case1.get_value("REST_N")
+        stop_new = stop_n - rest_n
+        expect(stop_new > 0, "ERROR: stop_n value {:d} too short {:d} {:d}".format(stop_new,stop_n,rest_n))
+        self._case.set_value("STOP_N", stop_new)
+        self._case.set_value("HIST_N", stop_n)
+        self._case.set_value("CONTINUE_RUN", True)
+        self._case.set_value("REST_OPTION","never")
 
-            if (bld == 2):
-                # halve the number of tasks and threads
-                for comp in self._case.get_values("COMP_CLASSES"):
-                    ntasks    = self._case.get_value("NTASKS_{}".format(comp))
-                    nthreads  = self._case.get_value("NTHRDS_{}".format(comp))
-                    rootpe    = self._case.get_value("ROOTPE_{}".format(comp))
-                    if ( nthreads > 1 ):
-                        self._case.set_value("NTHRDS_{}".format(comp), nthreads/2)
-                    if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_{}".format(comp), ntasks/2)
-                        self._case.set_value("ROOTPE_{}".format(comp), rootpe/2)
+        # Note, some components, like CESM-CICE, have
+        # decomposition information in env_build.xml that
+        # needs to be regenerated for the above new tasks and thread counts
+        case_setup(self._case, test_mode=True, reset=True)
 
-                # Note, some components, like CESM-CICE, have
-                # decomposition information in env_build.xml
-                # case_setup(self._case, test_mode=True, reset=True)that
-                # needs to be regenerated for the above new tasks and thread counts
-                case_setup(self._case, test_mode=True, reset=True)
-
-            # Now rebuild the system, given updated information in env_build.xml
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
-            shutil.move("{}/{}.exe".format(exeroot,cime_model),
-                        "{}/{}.ERP{}.exe".format(exeroot,cime_model,bld))
-
-            # Make copies of the new env_mach_pes.xml and the new
-            # env_build.xml to be used in the run phase
-            lock_file("env_mach_pes.xml", newname="env_mach_pes.ERP{}.xml".format(bld))
-            lock_file("env_build.xml", newname="env_build.ERP{}.xml".format(bld))
-
-    def run_phase(self):
-        # run will have values 1,2
-        for run in range(1,3):
-
-            expect(is_locked("env_mach_pes.ERP{:d}.xml".format(run)),
-                   "ERROR: LockedFiles/env_mach_pes.ERP{:d}.xml does not exist, run case.build".format(run ))
-
-            # Use the second env_mach_pes.xml and env_build.xml files
-            restore("env_mach_pes.ERP{:d}.xml".format(run), newname="env_mach_pes.xml")
-            restore("env_build.ERP{:d}.xml".format(run), newname="env_build.xml")
-
-            # update the case to use the new values
-            self._case.read_xml()
-
-            # Use the second executable that was created
-            exeroot = self._case.get_value("EXEROOT")
-            cime_model = CIME.utils.get_model()
-            exefile  = os.path.join(exeroot,"{}.exe".format(cime_model))
-            exefile2 = os.path.join(exeroot,"{}.ERP{:d}.exe".format(cime_model,run))
-            if (os.path.isfile(exefile)):
-                os.remove(exefile)
-            shutil.copy(exefile2, exefile)
-
-            stop_n      = self._case.get_value("STOP_N")
-            stop_option = self._case.get_value("STOP_OPTION")
-
-            if run == 1:
-                expect(stop_n > 2, "ERROR: stop_n value {:d} too short".format(stop_n))
-                rest_n = stop_n/2 + 1
-                self._case.set_value("REST_N", rest_n)
-                self._case.set_value("REST_OPTION", stop_option)
-                self._case.set_value("HIST_N", stop_n)
-                self._case.set_value("HIST_OPTION", stop_option)
-                self._case.set_value("CONTINUE_RUN", False)
-                suffix = "base"
-            else:
-                rest_n = stop_n/2 + 1
-                stop_new = stop_n - rest_n
-                expect(stop_new > 0, "ERROR: stop_n value {:d} too short {:d} {:d}".format(stop_new,stop_n,rest_n))
-                self._case.set_value("STOP_N", stop_new)
-                self._case.set_value("CONTINUE_RUN", True)
-                self._case.set_value("REST_OPTION","never")
-                suffix = "rest"
-
-            case_setup(self._case, test_mode=True, reset=True)
-
-            self.run_indv(suffix=suffix)
-
-        self._component_compare_test("base", "rest")
+    def _case_one_custom_postrun_action(self):
+        rundir1 = self._case1.get_value("RUNDIR")
+        rundir2 = self._case2.get_value("RUNDIR")
+        case = self._case1.get_value("CASE")
+        datenames = _get_datenames(self._case1)
+        for file_ in glob.iglob(os.path.join(rundir1,"*")):
+            logger.info("File is {}".format(file_))
+            if os.path.basename(file_).startswith("rpointer"):
+                logger.info("Copy {} to {}".format(file_, rundir2))
+                shutil.copy(file_, rundir2)
+            elif os.path.basename(file_).startswith(case) and datenames[0] in file_:
+                file_case2 = os.path.join(rundir2, os.path.basename(file_))
+                if not os.path.isfile(file_case2):
+                    logger.info("Link {} to {}".format(file_, rundir2))
+                    os.symlink(file_, file_case2)
