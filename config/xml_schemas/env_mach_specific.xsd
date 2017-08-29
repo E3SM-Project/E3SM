@@ -25,6 +25,7 @@
         <xs:element ref="header"/>
         <xs:element ref="module_system"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="entry"/>
       </xs:sequence>
@@ -85,6 +86,24 @@
     </xs:complexType>
   </xs:element>
   <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="resource_limits">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="resource"/>
+      </xs:sequence>
+      <xs:attribute ref="debug"/>
+      <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="compiler"/>
+      <xs:attribute ref="unit_testing"/>
+      <xs:attribute ref="SMP_PRESENT"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="resource">
     <xs:complexType mixed="true">
       <xs:attribute name="name" use="required" type="xs:NCName"/>
     </xs:complexType>
