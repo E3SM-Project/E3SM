@@ -8,7 +8,7 @@ import shutil, glob
 
 logger = logging.getLogger(__name__)
 
-def apply_user_mods(caseroot, user_mods_path):
+def apply_user_mods(caseroot, user_mods_path, keepexe=None):
     '''
     Recursivlely apply user_mods to caseroot - this includes updating user_nl_xxx,
     updating SourceMods and creating case shell_commands and xmlchange_cmds files
@@ -17,6 +17,9 @@ def apply_user_mods(caseroot, user_mods_path):
 
     If this function is called multiple times, settings from later calls will
     take precedence over earlier calls, if there are conflicts.
+
+    keepexe is an optional argument that is needed for cases where apply_user_mods is
+    called from create_clone
     '''
     case_shell_command_files = [os.path.join(caseroot,"shell_commands"),
                            os.path.join(caseroot,"xmlchange_cmnds")]
@@ -50,6 +53,9 @@ def apply_user_mods(caseroot, user_mods_path):
         # update SourceMods in caseroot
         for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
             if "src" in os.path.basename(root):
+                if keepexe is not None:
+                    expect(False,
+                           "cannot have any source mods in {} if keepexe is an option".format(user_mods_path))
                 for sfile in files:
                     source_mods = os.path.join(root,sfile)
                     case_source_mods = source_mods.replace(include_dir, caseroot)
