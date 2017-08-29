@@ -32,7 +32,8 @@ The package features built-in user diagnostics, by specifying user desired diagn
 <h5 align="center">Figure 4: An example of the zonal mean surface air temperature line plot </h5> 
 
 <img src="docs/example_fig5.png" alt="Figure5" style="width: 280px;"/>
-<h5 align="center">Figure 5: An example of 2d joint histogram plot using COSP simulator output</h5> 
+<h5 align="center">Figure 5: An example of 2d joint histogram plot using COSP simulator output</h5>
+
 ## Documentation <a name="doc"></a>
 
 * [Quickstart guide for AIMS4](docs/quick-guide-aims4.ipynb)
