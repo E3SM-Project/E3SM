@@ -93,15 +93,11 @@ class EnvMachSpecific(EnvBase):
         if resource_nodes is not None:
             nodes = self._compute_resource_actions(resource_nodes, compiler, debug, mpilib)
             for name, val in nodes:
-                try:
-                    attr = getattr(resource, name)
-                    limits = resource.getrlimit(attr)
-                    logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
-                    limits = (int(val), limits[1])
-                    resource.setrlimit(attr, limits)
-                except:
-                    raise
-
+                attr = getattr(resource, name)
+                limits = resource.getrlimit(attr)
+                logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
+                limits = (int(val), limits[1])
+                resource.setrlimit(attr, limits)
 
     def load_modules(self, modules_to_load):
         module_system = self.get_module_system_type()
