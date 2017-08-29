@@ -5,6 +5,7 @@ import urllib2
 import fnmatch
 import datetime
 import shutil
+import collections
 from bs4 import BeautifulSoup
 import acme_diags
 from cdp.cdp_viewer import OutputViewer
@@ -122,7 +123,7 @@ def _extras(root_dir, parameters):
 
 def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
-    set_to_seasons = {}  # dict of {set: [seasons]}
+    set_to_seasons = collections.OrderedDict()  # dict of {set: [seasons]}
     for p in parameters:
         for set_num in p.sets:
             set_num = get_set_name(set_num)
@@ -132,7 +133,7 @@ def _add_pages_and_top_row(viewer, parameters):
                 set_to_seasons[set_num].append(ssn)
 
     for set_num, seasons in set_to_seasons.iteritems():
-        ROW_INFO[set_num] = {}
+        ROW_INFO[set_num] = collections.OrderedDict()
         col_labels = ['Description']
         for s in ['ANN', 'DJF', 'MAM', 'JJA', 'SON']:
             if s in seasons:
