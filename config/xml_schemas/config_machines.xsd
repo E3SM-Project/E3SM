@@ -116,6 +116,7 @@
 	<!-- environment_variables: environment_variables to set on this system,
 	  see detail below-->
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
       </xs:sequence>
       <xs:attribute ref="MACH" use="required"/>
     </xs:complexType>
@@ -187,7 +188,24 @@
       <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
+  <xs:element name="resource_limits">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="resource"/>
+      </xs:sequence>
+      <xs:attribute ref="debug"/>
+      <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="compiler"/>
+      <xs:attribute ref="unit_testing"/>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="resource">
     <xs:complexType mixed="true">
       <xs:attribute ref="name" use="required"/>
     </xs:complexType>

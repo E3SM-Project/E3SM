@@ -143,5 +143,9 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
+    <!-- resource settings as defined in https://docs.python.org/2/library/resource.html -->
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 </config_machines>
