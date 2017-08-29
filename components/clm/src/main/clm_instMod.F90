@@ -292,7 +292,7 @@ contains
 
     ! Initialize ecophys constants
 
-    call veg_vp%Init()
+    call veg_vp%Init(bounds_proc%begg, bounds_proc%endg)
 
     ! Initialize soil order related constants
 

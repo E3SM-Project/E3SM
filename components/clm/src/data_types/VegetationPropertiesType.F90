@@ -134,6 +134,17 @@ module VegetationPropertiesType
      real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
      real(r8)              :: tc_stress           !Critial temperature for moisture stress
 
+     real(r8), pointer     :: vmax_plant_p_grid(:,:)        ! vmax for plant p uptake
+     real(r8), pointer     :: vmax_plant_nh4_grid(:,:)      ! vmax for plant nh4 uptake
+     real(r8), pointer     :: vmax_nfix_grid(:,:)           ! vmax of symbiotic n2 fixation
+     real(r8), pointer     :: vmax_ptase_vr_grid(:,:)       ! vmax of biochemical p production
+     real(r8), pointer     :: km_plant_p_grid(:,:)          ! km for plant p uptake
+
+     logical               :: vmax_plant_p_grid_present     ! flag for vmax_plant_p_grid
+     logical               :: vmax_plant_nh4_grid_present   ! flag for vmax_plant_nh4_grid
+     logical               :: vmax_nfix_grid_present        ! flag for vmax_nfix_grid
+     logical               :: vmax_ptase_vr_grid_present    ! flag for vmax_ptase_vr_grid
+     logical               :: km_plant_p_grid_present       ! flag for km_plant_p_grid
 
    contains
    procedure, public :: Init => veg_vp_init
@@ -145,7 +156,7 @@ module VegetationPropertiesType
 contains
 
   !-----------------------------------------------------------------------
-  subroutine veg_vp_init(this)
+  subroutine veg_vp_init(this, begg, endg)
     !
     ! !USES:
     use clm_varpar, only : numrad, numpft 
@@ -170,9 +181,15 @@ contains
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
     use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
     use pftvarcon , only : bbbopt, mbbopt, nstor, tc_stress, lmrhd 
+    use pftvarcon , only : vmax_plant_p_grid  , vmax_plant_p_grid_present
+    use pftvarcon , only : vmax_plant_nh4_grid, vmax_plant_nh4_grid_present
+    use pftvarcon , only : vmax_nfix_grid     , vmax_nfix_grid_present
+    use pftvarcon , only : vmax_ptase_vr_grid , vmax_ptase_vr_grid_present
+    use pftvarcon , only : km_plant_p_grid    , km_plant_p_grid_present
     !
     
     class (vegetation_properties_type) :: this
+    integer, intent(in)                :: begg, endg
 
     !LOCAL VARIABLES:
     integer :: m, ib, j
@@ -272,6 +289,42 @@ contains
     allocate( this%mbbopt(0:numpft))                             ; this%mbbopt(:)                =nan
     allocate( this%nstor(0:numpft))                              ; this%nstor(:)                 =nan
 
+    this%vmax_plant_p_grid_present   = vmax_plant_p_grid_present
+    this%vmax_plant_nh4_grid_present = vmax_plant_nh4_grid_present
+    this%vmax_nfix_grid_present      = vmax_nfix_grid_present
+    this%vmax_ptase_vr_grid_present  = vmax_ptase_vr_grid_present
+    this%km_plant_p_grid_present     = km_plant_p_grid_present
+
+    if (vmax_plant_p_grid_present) then
+       allocate(this%vmax_plant_p_grid(begg:endg, 0:numpft))
+    else
+       nullify(this%vmax_plant_p_grid)
+    endif
+
+    if (vmax_plant_nh4_grid_present) then
+       allocate(this%vmax_plant_nh4_grid(begg:endg, 0:numpft))
+    else
+       nullify(this%vmax_plant_nh4_grid)
+    endif
+
+    if (vmax_nfix_grid_present) then
+       allocate(this%vmax_nfix_grid(begg:endg, 0:numpft))
+    else
+       nullify(this%vmax_nfix_grid)
+    endif
+
+    if (km_plant_p_grid_present) then
+       allocate(this%km_plant_p_grid(begg:endg, 0:numpft))
+    else
+       nullify(this%km_plant_p_grid)
+    endif
+
+    if (vmax_ptase_vr_grid_present) then
+       allocate(this%vmax_ptase_vr_grid(begg:endg, 1:nlevdecomp))
+    else
+       nullify(this%vmax_ptase_vr_grid)
+    endif
+
     do m = 0,numpft
 
        if (m <= ntree) then
@@ -369,6 +422,22 @@ contains
         this%vmax_nfix(m)      = vmax_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
 
+        if (this%vmax_plant_p_grid_present) then
+           this%vmax_plant_p_grid(:,m) = vmax_plant_p_grid(:,m)
+        end if
+
+        if (this%vmax_plant_nh4_grid_present) then
+           this%vmax_plant_nh4_grid(:,m) = vmax_plant_nh4_grid(:,m)
+        end if
+
+        if (this%vmax_nfix_grid_present) then
+           this%vmax_nfix_grid(:,m) = vmax_nfix_grid(:,m)
+        end if
+
+        if (this%km_plant_p_grid_present) then
+           this%km_plant_p_grid(:,m) = km_plant_p_grid(:,m)
+        end if
+
         do j = 1 , nlevdecomp
            this%decompmicc_patch_vr(m,j) = decompmicc_patch_vr(j,m)
         end do
@@ -403,6 +472,11 @@ contains
     this%tc_stress     = tc_stress
     do j = 1 , nlevdecomp
        this%vmax_ptase_vr(j) = vmax_ptase_vr(j)
+
+       if (this%vmax_ptase_vr_grid_present) then
+          this%vmax_ptase_vr_grid(:,j) = vmax_ptase_vr_grid(:,j)
+       end if
+
     end do
      
   end subroutine veg_vp_init

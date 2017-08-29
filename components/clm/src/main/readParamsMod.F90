@@ -19,18 +19,19 @@ module readParamsMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readSharedParameters ()
+  subroutine readSharedParameters (begg, endg)
     !
     implicit none
-    !-----------------------------------------------------------------------
+    !
+    integer, intent(in) :: begg, endg
 
-    call CNParamsSharedReadFile()
+    call CNParamsSharedReadFile(begg, endg)
 
   end subroutine readSharedParameters
 
   !-----------------------------------------------------------------------
 
-  subroutine CNParamsSharedReadFile ()
+  subroutine CNParamsSharedReadFile (begg, endg)
     !
     ! read CN and BGC shared parameters
     !
@@ -38,6 +39,7 @@ contains
     use CNSharedParamsMod       , only : CNParamsReadShared
 
     use clm_varctl              , only : paramfile, iulog
+    use clm_varctl              , only : fsurdat
     use spmdMod                 , only : masterproc
     use fileutils               , only : getfil
     use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
@@ -46,12 +48,15 @@ contains
     ! !ARGUMENTS:
     implicit none
     !
+    integer, intent(in) :: begg, endg    
+    !
     ! !OTHER LOCAL VARIABLES:
     character(len=32)  :: subname = 'CNParamsSharedReadFile'
-    character(len=256) :: locfn ! local file name
-    type(file_desc_t)  :: ncid  ! pio netCDF file id
-    integer            :: dimid ! netCDF dimension id
-    integer            :: npft  ! number of pfts on pft-physiology file
+    character(len=256) :: locfn        ! local file name
+    type(file_desc_t)  :: ncid         ! pio netCDF file id
+    type(file_desc_t)  :: ncid_surfdat ! pio netCDF file id
+    integer            :: dimid        ! netCDF dimension id
+    integer            :: npft         ! number of pfts on pft-physiology file
     !-----------------------------------------------------------------------
 
     if (masterproc) then
@@ -64,10 +69,13 @@ contains
     call ncd_inqdid(ncid,'pft',dimid) 
     call ncd_inqdlen(ncid,dimid,npft) 
 
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid_surfdat, trim(locfn), 0)
+
     !
     ! some parameters (eg. organic_max) are used in non-CN, non-BGC cases
     !
-    call CNParamsReadShared(ncid)
+    call CNParamsReadShared(ncid, ncid_surfdat, begg, endg)
 
 
   end subroutine CNParamsSharedReadFile

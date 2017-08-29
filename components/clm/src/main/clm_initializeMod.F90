@@ -227,7 +227,7 @@ contains
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
-    call pftconrd()
+    call pftconrd(begg, endg)
     call soilorder_conrd()
 
     ! Read in FATES parameter values early in the call sequence as well
@@ -453,7 +453,7 @@ contains
     ! Read in shared parameters files
     ! ------------------------------------------------------------------------
 
-    call readSharedParameters()
+    call readSharedParameters(bounds_proc%begg, bounds_proc%endg)
 
     ! ------------------------------------------------------------------------
     ! Initialize time manager

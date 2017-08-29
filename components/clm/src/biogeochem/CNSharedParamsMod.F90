@@ -4,6 +4,8 @@ module CNSharedParamsMod
   !
   ! !USES:
   use shr_kind_mod , only: r8 => shr_kind_r8
+  use clm_varctl   , only : iulog
+  use spmdMod   ,  only : masterproc
   implicit none
   save
 
@@ -20,6 +22,9 @@ module CNSharedParamsMod
       real(r8) :: decomp_depth_efolding ! e-folding depth for reduction in decomposition (m) 
       real(r8) :: mino2lim    ! minimum anaerobic decomposition rate as a fraction of potential aerobic rate
       real(r8) :: organic_max ! organic matter content (kg/m3) where soil is assumed to act like peat
+
+      real(r8), pointer :: decomp_depth_efolding_grid(:)      ! e-folding depth for reduction in decomposition (m)
+      logical           :: decomp_depth_efolding_grid_present
   end type CNParamsShareType
 
   type(CNParamsShareType),protected :: CNParamsShareInst
@@ -32,20 +37,26 @@ module CNSharedParamsMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNParamsReadShared(ncid)
+  subroutine CNParamsReadShared(ncid, ncid_surfdat, begg, endg)
     !
     use ncdio_pio   , only : file_desc_t,ncd_io
     use abortutils  , only : endrun
     use shr_log_mod , only : errMsg => shr_log_errMsg
+    use clm_varcon  , only : grlnd
+    use ncdio_pio   , only : var_desc_t, ncd_inqvid
     !
     implicit none
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    type(file_desc_t),intent(inout) :: ncid         ! pio netCDF file id
+    type(file_desc_t),intent(inout) :: ncid_surfdat ! pio netCDF file id
+    integer          , intent(in)   :: begg, endg
     !
     character(len=32)  :: subname = 'CNParamsReadShared'
     character(len=100) :: errCode = '-Error reading in CN and BGC shared params file. Var:'
     logical            :: readv ! has variable been read in or not
     real(r8)           :: tempr ! temporary to read in parameter
     character(len=100) :: tString ! temp. var for reading
+    type(var_desc_t)   :: var_desc! variable descriptor for name
+    integer            :: varid
     !-----------------------------------------------------------------------
     !
     ! netcdf read here
@@ -91,6 +102,25 @@ contains
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNParamsShareInst%organic_max=tempr
 
-  end subroutine CNParamsReadShared
+    call ncd_inqvid(ncid_surfdat,'decomp_depth_efolding', varid, var_desc, readv)
+    if (readv) then
+       allocate(CNParamsShareInst%decomp_depth_efolding_grid(begg:endg))
+       call ncd_io(ncid=ncid_surfdat, varname='decomp_depth_efolding', flag='read', &
+          data=CNParamsShareInst%decomp_depth_efolding_grid, dim1name=grlnd, readvar=readv)
+       if (.not. readv) then
+          call endrun(msg=' ERROR while reading decomp_depth_efolding from surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       CNParamsShareInst%decomp_depth_efolding_grid_present = .true.
+    else
+       nullify(CNParamsShareInst%decomp_depth_efolding_grid)
+       CNParamsShareInst%decomp_depth_efolding_grid_present = .false.
+    endif
+
+    if (masterproc) then
+       write(iulog,*) 'Spatially heterogeneous CNParamsReadShared'
+       write(iulog,*) ' decomp_depth_efolding_grid_present ',CNParamsShareInst%decomp_depth_efolding_grid_present
+    endif
+
+end subroutine CNParamsReadShared
 
 end module CNSharedParamsMod

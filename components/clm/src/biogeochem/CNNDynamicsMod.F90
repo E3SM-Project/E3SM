@@ -639,7 +639,7 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,fc,p                     ! indices
+    integer  :: g,c,fc,p                   ! indices
     real(r8) :: r_fix                      ! carbon cost of N2 fixation, gC/gN
     real(r8) :: r_nup                      ! carbon cost of root N uptake, gC/gN
     real(r8) :: f_nodule                   ! empirical, fraction of root that is nodulated
@@ -651,6 +651,8 @@ contains
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
+         vmax_nfix_grid        => veg_vp%vmax_nfix_grid            , &
+         vmax_nfix_grid_present=> veg_vp%vmax_nfix_grid_present    , &
          km_nfix               => veg_vp%km_nfix                   , &
          frootc                => carbonstate_vars%frootc_patch        , &
          nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
@@ -678,8 +680,14 @@ contains
                   ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e3L/m3 * water content m3/m3 at 10 cm
                   N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * h2osoi_vol(c,4)
                   ! calculate n2 fixation rate for each pft and add it to column total
-                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
-                     N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) * veg_pp%wtcol(p)
+                  if (.not.vmax_nfix_grid_present) then
+                     nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
+                          N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) * veg_pp%wtcol(p)
+                  else
+                     g = veg_pp%gridcell(p)
+                     nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix_grid(g, veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
+                          N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) * veg_pp%wtcol(p)
+                  endif
               end if
           end do
       end do

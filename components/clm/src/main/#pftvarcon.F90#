@@ -296,7 +296,7 @@ contains
     use clm_varcon,  only : tfrz
     use clm_varcon,  only : grlnd
     use spmdMod   ,  only : masterproc
-
+9
     !
     ! !ARGUMENTS:
     implicit none

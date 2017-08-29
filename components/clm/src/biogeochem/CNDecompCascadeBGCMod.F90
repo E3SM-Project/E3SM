@@ -656,7 +656,7 @@ contains
     integer :: i_soil1
     integer :: i_soil2
     integer :: i_soil3
-    integer :: c, fc, j, k, l
+    integer :: g, c, fc, j, k, l
     real(r8):: catanf                       ! hyperbolic temperature function from CENTURY
     real(r8):: catanf_30                    ! reference rate at 30C
     real(r8):: t1                           ! temperature argument
@@ -999,7 +999,12 @@ contains
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               depth_scalar(c,j) = exp(-zsoi(j)/decomp_depth_efolding)
+               if (.not.CNParamsShareInst%decomp_depth_efolding_grid_present) then
+                  depth_scalar(c,j) = exp(-zsoi(j)/decomp_depth_efolding)
+               else
+                  g = col_pp%gridcell(g)
+                  depth_scalar(c,j) = exp(-zsoi(j)/CNParamsShareInst%decomp_depth_efolding_grid(g))
+               end if
             end do
          end do
       end if

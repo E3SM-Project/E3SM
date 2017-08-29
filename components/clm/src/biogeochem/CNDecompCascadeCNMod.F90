@@ -668,7 +668,7 @@ contains
      integer :: i_soil2
      integer :: i_soil3
      integer :: i_soil4
-     integer :: c, fc, j, k, l
+     integer :: g, c, fc, j, k, l
      real(r8):: Q10                          ! temperature dependence
      real(r8):: froz_q10                     ! separate q10 for frozen soil respiration rates.  default to same as above zero rates
      real(r8):: decomp_depth_efolding        ! (meters) e-folding depth for reduction in decomposition [
@@ -983,7 +983,12 @@ contains
           do j = 1, nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                depth_scalar(c,j) = exp(-zsoi(j)/decomp_depth_efolding)
+                if (.not.CNParamsShareInst%decomp_depth_efolding_grid_present) then
+                   depth_scalar(c,j) = exp(-zsoi(j)/decomp_depth_efolding)
+                else
+                  g = col_pp%gridcell(g)
+                  depth_scalar(c,j) = exp(-zsoi(j)/CNParamsShareInst%decomp_depth_efolding_grid(g))
+                endif
              end do
           end do
        end if
