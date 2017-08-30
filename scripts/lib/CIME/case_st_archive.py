@@ -243,10 +243,13 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
     return histfiles
 
 ###############################################################################
-def _archive_restarts(case, archive, archive_entry,
-                      compclass, compname, datename, datename_is_last,
-                      archive_file_fn):
+def _archive_restarts_comp_date(case, archive, archive_entry,
+                                compclass, compname, datename, datename_is_last,
+                                archive_file_fn):
 ###############################################################################
+    """
+    Archive restart files for a single component and single date
+    """
 
     # determine directory for archiving restarts based on datename
     dout_s_root = case.get_value("DOUT_S_ROOT")
@@ -371,29 +374,31 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
     # archive log files
     _archive_log_files(case, archive_incomplete_logs, archive_file_fn)
 
+    # archive restarts and all necessary associated fields (e.g. rpointer files)
     histfiles_savein_rundir_by_compname = {}
-    for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
+    datenames = _get_datenames(case, last_date)
+    for datename in datenames:
+        logger.info('-------------------------------------------')
+        logger.info('Archiving restarts for date {}'.format(datename))
+        logger.info('-------------------------------------------')
 
-        # archive restarts and all necessary associated fields (e.g. rpointer files)
-        logger.info('-------------------------------------------')
-        logger.info('doing short term archiving for {} ({})'.format(compname, compclass))
-        logger.info('-------------------------------------------')
-        datenames = _get_datenames(case, last_date)
-        for datename in datenames:
-            logger.info('Archiving for date %s' % datename)
-            datename_is_last = False
-            if datename == datenames[-1]:
-                datename_is_last = True
+        datename_is_last = False
+        if datename == datenames[-1]:
+            datename_is_last = True
+
+        for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
+            logger.info('Archiving restarts for {} ({})'.format(compname, compclass))
 
             # archive restarts
-            histfiles_savein_rundir = _archive_restarts(case, archive, archive_entry,
-                                                        compclass, compname,
-                                                        datename, datename_is_last,
-                                                        archive_file_fn)
+            histfiles_savein_rundir = _archive_restarts_comp_date(case, archive, archive_entry,
+                                                                  compclass, compname,
+                                                                  datename, datename_is_last,
+                                                                  archive_file_fn)
             if datename_is_last:
                 histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
 
     for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
+        logger.info('Archiving history files for {} ({})'.format(compname, compclass))
         histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
         logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
         _archive_history_files(case, archive, archive_entry,
