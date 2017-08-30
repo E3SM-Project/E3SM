@@ -491,6 +491,16 @@
                 {
                         "sets": ["lat_lon"],
                         "case_id": "MERRA2",
+                        "variables": ["LHFLX"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0,5, 15, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300],
+                        "diff_levels": [-150, -120, -90, -60, -30, -20, -10, -5, 5, 10, 20, 30, 60, 90, 120, 150]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "MERRA2",
                         "variables": ["PRECT"],
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
