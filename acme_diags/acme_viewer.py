@@ -140,6 +140,12 @@ def _add_pages_and_top_row(viewer, parameters):
                 col_labels.append(s)
         viewer.add_page("{}".format(set_num), col_labels)
 
+def _get_description(var, parameters):
+    """Get the description for the variable from the parameters"""
+    if hasattr(parameters, 'viewer_descr') and var in parameters.viewer_descr:
+        return parameters.viewer_descr[var]
+    return var
+
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
     extension ext and create the viewer in root_dir."""
@@ -180,29 +186,27 @@ def create_viewer(root_dir, parameters, ext):
                                 ROW_INFO[set_num][parameter.case_id] = {}
                             if row_name not in ROW_INFO[set_num][parameter.case_id]:
                                 ROW_INFO[set_num][parameter.case_id][row_name] = {}
+                                ROW_INFO[set_num][parameter.case_id][row_name]['descr'] = _get_description(var, parameter)
                             # format fnm to support relative paths
                             ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('..', '{}'.format(set_num), parameter.case_id, fnm)
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for set_num in ROW_INFO:
         viewer.set_page("{}".format(set_num))
-        print('*'*10 + set_num + '*'*10)
 
         for group in ROW_INFO[set_num]:
-            print('*'*5 + group + '*'*5)
             try:             
                 viewer.set_group(group)
             except RuntimeError:
                 viewer.add_group(group)
 
             for row_name in sorted(ROW_INFO[set_num][group]):
-                print(row_name)
                 try:
                      viewer.set_row(row_name)
                 except RuntimeError:
                      # row of row_name wasn't in the viewer, so add it
                      viewer.add_row(row_name)
-                     viewer.add_col(row_name.split(' ')[0])  # the description, currently the var
+                     viewer.add_col(ROW_INFO[set_num][group][row_name]['descr'])  # the description, currently the var
 
                 for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
                     fnm = ROW_INFO[set_num][group][row_name][col_season]

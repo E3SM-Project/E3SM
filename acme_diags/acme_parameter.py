@@ -12,6 +12,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_data_path = ''
         self.reference_name = ''
         self.test_name = ''
+        self.viewer_descr = {}
 
         self.sets = []
         self.datasets = ['ACME']
