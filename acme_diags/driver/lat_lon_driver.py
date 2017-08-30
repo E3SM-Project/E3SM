@@ -78,7 +78,9 @@ def run_diag(parameter):
                 var, acme.derived_variables, f_mod, parameter)
             mv2 = acme.process_derived_var(
                 var, acme.derived_variables, f_obs, parameter)
-    
+
+            parameter.viewer_descr[var] = mv1.long_name if hasattr(mv1, 'long_name') else 'No long_name attr in test data.'
+ 
             # special case, cdms didn't properly convert mask with fill value
             # -999.0, filed issue with denise
             if ref_name == 'WARREN':
@@ -217,3 +219,5 @@ def run_diag(parameter):
                     "Dimensions of two variables are difference. Abort")
         f_obs.close()
         f_mod.close()
+        return parameter
+

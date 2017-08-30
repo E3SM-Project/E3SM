@@ -78,7 +78,8 @@ def run_diag(parameter):
                 var, acme.derived_variables, f_mod, parameter)
             mv2 = acme.process_derived_var(
                 var, acme.derived_variables, f_obs, parameter)
-    
+
+            parameter.viewer_descr[var] = mv1.long_name if hasattr(mv1, 'long_name') else 'No long_name attr in test data.'
 
             #select region
             if len(regions) == 0:
@@ -108,3 +109,4 @@ def run_diag(parameter):
             
         f_obs.close()
         f_mod.close()
+        return parameter

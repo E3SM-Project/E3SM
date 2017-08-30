@@ -24,8 +24,23 @@ def _get_default_diags(set_num, dataset):
         raise RuntimeError("Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
     return pth
 
+def _collaspse_results(parameters):
+    """When using cdp_run, parameters is a list of lists: [[Parameters], ...].
+       Make this just a list: [Parameters]."""
+    output_parameters = []
+
+    for p1 in parameters:
+        if isinstance(p1, list):
+            for p2 in p1:
+                output_parameters.append(p2)
+        else:
+            output_parameters.append(p1)
+
+    return output_parameters
+
 def run_diag(parameters):
     """For a single set of parameters, run the corresponding diags."""
+    results = []
     for pset in parameters.sets:
         set_name = get_set_name(pset)
 
@@ -37,7 +52,9 @@ def run_diag(parameters):
             print('Set {} is not supported yet. Please give us time.'.format(set_name))
             continue
         print('Starting to run ACME Diagnostics.')
-        module.run_diag(parameters)
+        single_result = module.run_diag(parameters)
+        results.append(single_result)
+    return results
 
 if __name__ == '__main__':
     parser = ACMEParser()
@@ -85,18 +102,20 @@ if __name__ == '__main__':
         if not hasattr(p, 'results_dir'):
             p.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
-
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0775)
     if parameters[0].multiprocessing:
-        cdp.cdp_run.multiprocess(run_diag, parameters)
+        parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
-        cdp.cdp_run.distribute(run_diag, parameters)
+        parameters = cdp.cdp_run.distribute(run_diag, parameters)
     else:
-        cdp.cdp_run.serial(run_diag, parameters)
+        parameters = cdp.cdp_run.serial(run_diag, parameters)
+
+    parameters = _collaspse_results(parameters)
 
     pth = os.path.join(parameters[0].results_dir, 'viewer')
     if not os.path.exists(pth):
         os.makedirs(pth)
 
     create_viewer(pth, parameters, parameters[0].output_format[0])
+
