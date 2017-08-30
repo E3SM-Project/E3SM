@@ -1684,9 +1684,17 @@ contains
           if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
              ! Calculate water depth in subnetwork (tributary channels) : 
-             TRunoff%yt( nr, 1 ) = TRunoff%wt( nr, 1 ) / TUnit%tlen( nr ) / TUnit%twidth( nr )
+             if (Tunit%tlen(nr) == 0.0_r8 .or. Tunit%twidth(nr) == 0.0_r8) then
+                TRunoff%yt( nr, 1 ) = 0.0_r8
+             else
+                TRunoff%yt( nr, 1 ) = TRunoff%wt( nr, 1 ) / TUnit%tlen( nr ) / TUnit%twidth( nr )
+             endif
              ! Calculate water depth in main channel :
-             TRunoff%yr( nr, 1 ) = TRunoff%wr( nr, 1 ) / TUnit%rlen( nr ) / TUnit%rwidth( nr )
+             if (Tunit%rlen(nr) == 0.0_r8 .or. Tunit%rwidth(nr) == 0.0_r8) then
+                TRunoff%yr( nr, 1 ) = 0.0_r8
+             else
+                TRunoff%yr( nr, 1 ) = TRunoff%wr( nr, 1 ) / TUnit%rlen( nr ) / TUnit%rwidth( nr )
+             endif
           end if
        end do
 
@@ -1696,7 +1704,10 @@ contains
              if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
                 ! Total water volume within a computation unit :
-                rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wf_ini( nr ) + TRunoff%wh(nr,1)*rtmCTL%area(nr)*TUnit%frac(nr)     ! times "TUnit%frac( nr )" or not ?
+                rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wh(nr,1)*rtmCTL%area(nr)*TUnit%frac(nr)     ! times "TUnit%frac( nr )" or not ?
+                if ( Tctl%OPT_inund .eq. 1 ) then
+                   rtmCTL%volr(nr,1) = rtmCTL%volr(nr,1) + TRunoff%wf_ini( nr )
+                endif
              end if
           end do
        else
@@ -1915,7 +1926,6 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf('mosartr_tot')
-    call shr_sys_flush(iulog)
 
     delt_coupling = coupling_period*1.0_r8
     budget_check = .true.   ! leave this on all the time for now
@@ -1974,14 +1984,14 @@ contains
 
 #ifdef INCLUDE_INUND
        ! If inundation scheme is turned on :
-       if ( Tctl%OPT_inund .eq. 1 ) then
+       if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
          do nr = rtmCTL%begr, rtmCTL%endr
 
            !if ( TUnit%mask( nr ) .gt. 0 ) then      ! 0--Ocean; 1--Land; 2--Basin outlet.
            if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
              budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + TRunoff%wf_ini( nr )
              !budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + rtmCTL%inundwf(nr)        ! 17-6-7
-           end if
+           endif
 
          end do
        end if
@@ -2302,7 +2312,7 @@ contains
 #ifdef INCLUDE_INUND
 
        ! If 'budget_check' is true & inundation scheme is turned on :
-       if ( budget_check .and. Tctl%OPT_inund .eq. 1 ) then
+       if ( inundflag .and. budget_check .and. Tctl%OPT_inund .eq. 1 ) then
 
          do nt = 1, 1
            do nr = rtmCTL%begr, rtmCTL%endr
@@ -2385,7 +2395,7 @@ contains
 #ifdef INCLUDE_INUND
 
     ! If inundation scheme is turned on :
-    if ( Tctl%OPT_inund .eq. 1 ) then
+    if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
       !rtmCTL%wf(:, 1) = TRunoff%wf_ini(:)
       rtmCTL%inundwf(:) = TRunoff%wf_ini(:)
       rtmCTL%inundhf(:) = TRunoff%hf_ini(:)
@@ -2489,7 +2499,7 @@ contains
        end do
 
        ! If inundation scheme is turned on :
-       if ( Tctl%OPT_inund .eq. 1 ) then
+       if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
 
          ! Total volume of flows from main channels to floodplains (for all local grid cells and all sub-steps of coupling period) (m^3):
          budget_terms(bv_chnl2fp, 1) = vol_chnl2fp
@@ -2502,7 +2512,9 @@ contains
            !if ( Tunit%mask(nr) .eq. 1 .or. Tunit%mask(nr) .eq. 2 ) then     ! 1--Land; 2--Basin outlet (downstream is ocean).
 
              ! Water volume over floodplains at coupling-period end:
-             budget_terms(bv_fp_f, 1) = budget_terms(bv_fp_f, 1) + TRunoff%wf_ini(nr)
+             if ( Tctl%OPT_inund .eq. 1 ) then
+                budget_terms(bv_fp_f, 1) = budget_terms(bv_fp_f, 1) + TRunoff%wf_ini(nr)
+             endif
 
              ! Sum up channel surface area:
              budget_terms(bi_mainChnlArea, 1) = budget_terms(bi_mainChnlArea, 1) + TUnit%area(nr) * TUnit%frac(nr) * TUnit%a_chnl(nr)
@@ -2649,7 +2661,7 @@ contains
 
 #ifdef INCLUDE_INUND
             ! If inundation scheme is turned on :
-            if ( Tctl%OPT_inund .eq. 1 ) then
+            if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
               if ( nt .eq. 1 ) then
                 write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wf    = ',nt,budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt)
               end if
@@ -2780,7 +2792,7 @@ contains
           budget_glb_inund(br_ocnout, 1) = budget_global(br_ocnout, 1) / 1000._r8   ! Output flows to oceans.
           budget_glb_inund(br_direct, 1) = budget_global(br_direct, 1) / 1000._r8   ! Output direct to oceans.
 
-          if ( Tctl%OPT_inund .eq. 1 ) then
+          if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
             budget_glb_inund(bv_fp_i, 1) = budget_global(bv_fp_i, 1) / 1000._r8         ! From million m^3 to km^3 (initial water volume over floodplains).
             budget_glb_inund(bv_fp_f, 1) = budget_global(bv_fp_f, 1) / 1000._r8         ! From million m^3 to km^3 (final water volume over floodplains).
             budget_glb_inund(bv_chnl2fp, 1) = budget_global(bv_chnl2fp, 1) / 1000._r8   ! From million m^3 to km^3 (volume of flows from main channels to floodplains).
@@ -2878,7 +2890,7 @@ contains
             write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in main channels (km^3)             =', budget_glb_inund(bv_wr_i, nt)
 
             ! If inundation scheme is on & the 1st tracer (liquid water) :
-            if ( Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+            if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
               write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over fps before cpl period (km^3)   =', budget_glb_inund(bv_fp_i, nt)
             end if
 
@@ -2893,12 +2905,12 @@ contains
             write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in main channels (km^3)             =', budget_glb_inund(bv_wr_f, nt)
 
             ! If inundation scheme is on & the 1st tracer (liquid water) :
-            if ( Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+            if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
               write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over floodplains (km^3)             =', budget_glb_inund(bv_fp_f, nt)
             end if
 
             ! If inundation scheme is on & the 1st tracer (liquid water) :
-            if ( Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+            if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
 
               write(iulog,'(a)') ' '
               write(iulog,'(a)') trim(tracerID)//'---------------------------------'
@@ -2961,7 +2973,6 @@ contains
           write(iulog,'(a)') ' '
 
 #endif
-
        endif   ! (End of if (masterproc). --Inund.)
 
        call t_stopf('mosartr_budget')

@@ -261,7 +261,11 @@ MODULE MOSARTinund_Core_MOD
         TRunoff%wt( iu, 1 ) = TRunoff%wt( iu, 1 ) + TRunoff%dwt( iu, 1 )                
 
         ! Update water depth :
-        TRunoff%yt( iu, 1 ) = TRunoff%wt( iu, 1 ) / TUnit%tlen(iu) / TUnit%twidth( iu )     
+        if (Tunit%tlen(iu) == 0._r8 .or. Tunit%twidth(iu) == 0._r8) then
+           TRunoff%yt(iu,1) = 0._r8
+        else
+           TRunoff%yt( iu, 1 ) = TRunoff%wt( iu, 1 ) / TUnit%tlen(iu) / TUnit%twidth( iu )     
+        endif
       end if
       
     end do
