@@ -2512,15 +2512,17 @@ end if
              call physics_ptend_sum(ptend_aero_sc, ptend_sc, state_sc%ncol)
              call physics_ptend_dealloc(ptend_aero_sc)
 
-             ! Have to scale and apply for full timestep to get tend right
-             ! (see above note for macrophysics).
-             call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, ncol)
-
-             call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
-             call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
-                  nstep, ztodt, zero_sc, &
-                  prec_str_sc(:state_sc%ncol)/cld_macmic_num_steps, &
-                  snow_str_sc(:state_sc%ncol)/cld_macmic_num_steps, zero_sc)
+!!!- KZ 201708 to prevent too much qneg3 errors from subcols  
+!!!             ! Have to scale and apply for full timestep to get tend right
+!!!             ! (see above note for macrophysics).
+!!!             call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, ncol)
+!!!
+!!!             call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
+!!!             call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
+!!!                  nstep, ztodt, zero_sc, &
+!!!                  prec_str_sc(:state_sc%ncol)/cld_macmic_num_steps, &
+!!!                  snow_str_sc(:state_sc%ncol)/cld_macmic_num_steps, zero_sc)
+!!!- KZ 201708 
 
              call physics_state_dealloc(state_sc)
              call physics_tend_dealloc(tend_sc)

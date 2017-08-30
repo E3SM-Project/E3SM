@@ -1055,7 +1055,7 @@ end subroutine clubb_init_cnst
   ! =============================================================================== !
 
    subroutine clubb_tend_cam( &
-                              state,   ptend_all,   pbuf, chunk_smry, hdtime, nstep, &
+                              state,   ptend_all,   pbuf,     hdtime, &
                               cmfmc,   cam_in,   sgh30, & 
                               macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o)
 
