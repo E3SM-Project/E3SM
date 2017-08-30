@@ -20,7 +20,7 @@ module cam_comp
    use perf_mod
    use cam_logfile,       only: iulog
    use physics_buffer,            only: physics_buffer_desc
-   use global_summary,    only: tp_stat_smry
+   use glb_verif_smry,    only: tp_stat_smry
 
    implicit none
    private
