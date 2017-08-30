@@ -328,7 +328,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var_array name="activeTracerAdvectionTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerVertMixTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerSurfaceFluxTendency"/>' . "\n";
-        print $stream_file '    <var_array name="activeTracerShortWaveTendency"/>' . "\n";
+        print $stream_file '    <var_array name="temperatureShortWaveTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerNonLocalTendency"/>' . "\n";
         print $stream_file '    <var name="vertTransportVelocityTop"/>' . "\n";
         print $stream_file '    <var name="vertGMBolusVelocityTop"/>' . "\n";
@@ -686,7 +686,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="rainFlux"/>' . "\n";
 	print $stream_file '    <var name="snowFlux"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerSurfaceFluxTendency"/>' . "\n";
-        print $stream_file '    <var_array name="activeTracerShortWaveTendency"/>' . "\n";
+        print $stream_file '    <var_array name="temperatureShortWaveTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerNonLocalTendency"/>' . "\n";
         print $stream_file '    <var name="areaCellGlobal"/>' . "\n";
         print $stream_file '    <var name="areaEdgeGlobal"/>' . "\n";
