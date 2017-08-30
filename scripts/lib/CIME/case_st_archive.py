@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def _get_datenames(case, last_date=None):
 ###############################################################################
+    """
+    Returns a list of datenames giving the dates of cpl restart files
+
+    If there are no cpl restart files, this will return []
+    """
+
     if last_date is not None:
         try:
             last = datetime.datetime.strptime(last_date, '%Y-%m-%d')
@@ -26,8 +32,7 @@ def _get_datenames(case, last_date=None):
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
     casename = case.get_value("CASE")
     files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl.r*.nc')))
-    if not files:
-        expect(False, 'Cannot find a {}.cpl.r.*.nc file in directory {} '.format(casename, rundir))
+
     datenames = []
     for filename in files:
         names = filename.split('.')
@@ -61,7 +66,6 @@ def _get_ninst_info(case, compclass):
 
     logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
-
 
 ###############################################################################
 def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
@@ -353,6 +357,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
     # archive log files
     _archive_log_files(case, archive_incomplete_logs, archive_file_fn)
 
+    histfiles_savein_rundir_by_compname = {}
     for archive_entry in archive.get_entries():
         # determine compname and compclass
         compname, compclass = archive.get_entry_info(archive_entry)
@@ -377,14 +382,24 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
                                                         compclass, compname,
                                                         datename, datename_is_last,
                                                         archive_file_fn)
-
-            # if the last datename for restart files, then archive history files
-            # for this compname
             if datename_is_last:
-                logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-                _archive_history_files(case, archive, archive_entry,
-                                       compclass, compname, histfiles_savein_rundir,
-                                       archive_file_fn)
+                histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
+
+    for archive_entry in archive.get_entries():
+        # FIXME(wjs, 2017-08-30) Remove duplication by extracting a
+        # 'yield' function that yields each relevant archive_entry
+        # determine compname and compclass
+        compname, compclass = archive.get_entry_info(archive_entry)
+
+        # check for validity of compname
+        if compname not in compset_comps:
+            continue
+
+        histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
+        logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
+        _archive_history_files(case, archive, archive_entry,
+                               compclass, compname, histfiles_savein_rundir,
+                               archive_file_fn)
 
 ###############################################################################
 def restore_from_archive(case, rest_dir=None):
