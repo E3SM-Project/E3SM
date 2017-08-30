@@ -1472,10 +1472,11 @@ class Case(object):
             # Lock env_case.xml
             lock_file("env_case.xml", self._caseroot)
         except:
-            if os.path.exists(self._caseroot) and not logger.isEnabledFor(logging.DEBUG) and not test:
-                logger.warn("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
-                shutil.rmtree(self._caseroot)
-            else:
-                logger.warn("Leaving broken case dir {}".format(self._caseroot))
+            if os.path.exists(self._caseroot):
+                if not logger.isEnabledFor(logging.DEBUG) and not test:
+                    logger.warn("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
+                    shutil.rmtree(self._caseroot)
+                else:
+                    logger.warn("Leaving broken case dir {}".format(self._caseroot))
 
             raise
