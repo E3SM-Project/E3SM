@@ -1111,9 +1111,6 @@ end subroutine clubb_init_cnst
                                         stats_begin_timestep_api, &
                                         hydromet_dim, calculate_thlp2_rad_api, mu, update_xp2_mc_api, &
                                         sat_mixrat_liq_api
-
-   use global_summary,            only: tp_stat_smry, get_smry_field_idx, get_chunk_smry
-    
 #endif
 
    implicit none
@@ -1136,8 +1133,6 @@ end subroutine clubb_init_cnst
    ! ---------------------- !
     
    type(physics_buffer_desc), pointer :: pbuf(:)
-
-   type(tp_stat_smry) :: chunk_smry(:)
 
    ! ---------------------- !
    ! Output Auguments !
