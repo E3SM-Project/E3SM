@@ -488,7 +488,7 @@ contains
    call history_readnl(nlfilename, dtime)
    call physconst_readnl(nlfilename)
    call chem_surfvals_readnl(nlfilename)
-   call phys_ctl_readnl(nlfilename)
+   call phys_ctl_readnl(nlfilename,dtime)
    call wv_sat_readnl(nlfilename)
    call ref_pres_readnl(nlfilename)
    call cam3_aero_data_readnl(nlfilename)

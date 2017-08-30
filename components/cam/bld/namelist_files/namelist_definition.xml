@@ -1122,6 +1122,41 @@ IEFLX fixer options
 Default: 0
 </entry>
 
+<entry id="glb_verif_smry_level" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Level of detail of the summary report.
+ -1: no smry.
+  0: provide a one-line summary for each registered field if 
+     there is any value exceeding the corresponding threshold; 
+     report on # of violations and the extreme values.
+  1: in addition to 0, also report on the locations of extreme values.
+  2: in addition to 1, print out summary for every chunk. This is 
+     similar to the original implementation in QNEG3 and QNEG4. 
+Default: 0 
+</entry>
+
+<entry id="glb_verif_smry_frq" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Frequency of global summary report: 
+Negative: unit is hours.
+Positive: unit is time steps.
+Default: -6 
+</entry>
+
+<entry id="l_print_smry_for_all_fields" type="logical" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Print out global verification summary for all registered fields
+regardless of the total count of violations. 
+When set to .false., summary is printed only for fields with counts >0.
+Default: .false.
+</entry>
+
+<entry id="l_old_qneg4_messages" type="logical" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Let QNEG4 write out worst negative flux excess of each grid chunk. 
+Default: .false.
+</entry>
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"

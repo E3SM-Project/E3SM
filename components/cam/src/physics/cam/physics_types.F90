@@ -200,7 +200,7 @@ contains
 
   end subroutine physics_type_alloc
 !===============================================================================
-  subroutine physics_update(state, ptend, dt, tend, do_hole_fill)
+  subroutine physics_update(state, ptend, dt, tend, chunk_smry, do_hole_fill)
 !-----------------------------------------------------------------------
 ! Update the state and or tendency structure with the parameterization tendencies
 !-----------------------------------------------------------------------
@@ -210,6 +210,7 @@ contains
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
+    use glb_verif_smry,only: tp_stat_smry, get_chunk_smry
 
 #ifdef CLUBB_SGS
     !--- Needed for CLUBB's hole filling code <janhft 09/17/2014> ------
@@ -236,6 +237,7 @@ contains
                     ! This is usually only needed by calls from physpkg.
 
     logical, optional, intent(in) :: do_hole_fill
+    type(tp_stat_smry),intent(inout), optional :: chunk_smry(:)
 !
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
@@ -610,6 +612,22 @@ contains
           if (m /= ixnumice  .and.  m /= ixnumliq .and. &
               m /= ixnumrain .and.  m /= ixnumsnow ) then
              name = trim(ptend%name) // '/' // trim(cnst_name(m))
+
+             !HuiWan 2017-07: Use module glb_verif_smry to provide consise summary for negative values +++
+             !HuiWan 2017-07: For now this module is used only for diagnostics. Later we will consider
+             !                replacing qneg3.
+             if (present(chunk_smry)) then
+                call t_startf('get_chunk_smry')
+                call get_chunk_smry( trim(cnst_name(m))//' @'//trim(ptend%name), ncol, pver, state%q(:ncol,:,m), &
+                                     state%lat(:ncol), state%lon(:ncol), chunk_smry(:) )
+                call t_stopf('get_chunk_smry')
+             end if
+             !HuiWan:2017-07 ===
+
+             if (present(chunk_smry)) then
+             call t_startf('qneg3_in_physics_update')
+             end if
+
 !!== KZ_WATCON 
              if(use_mass_borrower) then 
                 call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
@@ -618,6 +636,10 @@ contains
                 call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
              end if 
 !!== KZ_WATCON 
+             if (present(chunk_smry)) then
+             call t_stopf('qneg3_in_physics_update')
+             end if
+
           else
              do k = ptend%top_level, ptend%bot_level
                 ! checks for number concentration

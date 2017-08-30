@@ -82,7 +82,7 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dyn_time_lvls, &
                           pbuf_old_tim_idx, pbuf_get_index, dtype_r8, dtype_i4, &
                           pbuf_get_field, pbuf_set_field, col_type_subcol, &
                           pbuf_register_subcol
-use constituents,   only: cnst_add, cnst_get_ind, &
+use constituents,   only: cnst_add, cnst_get_ind, qmin, &
                           cnst_name, cnst_longname, sflxnam, apcnst, bpcnst, pcnst
 
 use cldfrc2m,       only: rhmini=>rhmini_const
@@ -618,7 +618,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    use micro_mg1_5, only: micro_mg_init1_5 => micro_mg_init
    use micro_mg2_0, only: micro_mg_init2_0 => micro_mg_init
 
-   use global_summary, only: add_smry_field, ABS_GREATER_EQ 
+   use glb_verif_smry, only: add_smry_field, ABS_GREATER_EQ, SMALLER_THAN, NO_FIX
    use physconst,      only: rounding_tol, water_cnsv_tol
    !-----------------------------------------------------------------------
    !
@@ -718,8 +718,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    call handle_errmsg(errstring, subname="micro_mg_init")
 
    ! Register fields for global summary
-   call add_smry_field('TOT_ENERGY_REL_ERR','microp_tend(check_energy_chng)','-',ABS_GREATER_EQ,rounding_tol)
-   call add_smry_field('TOT_WATER_REL_ERR', 'microp_tend(check_energy_chng)','-',ABS_GREATER_EQ,water_cnsv_tol)
+   call add_smry_field('TE_RELERR @microp_tend','-',ABS_GREATER_EQ,rounding_tol)
+   call add_smry_field('TW_RELERR @microp_tend','-',ABS_GREATER_EQ,water_cnsv_tol)
 
    ! Register history variables
    do m = 1, ncnst
@@ -728,6 +728,11 @@ subroutine micro_mg_cam_init(pbuf2d)
          ! mass mixing ratios
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm)                   )
          call addfld(sflxnam(mm),    horiz_only, 'A',   'kg/m2/s', trim(cnst_name(mm))//' surface flux')
+
+         ! register glb smry entries. Do not let that utility do clipping for now
+         call add_smry_field(trim(cnst_name(mm))//' @cldwat',  'kg/kg', SMALLER_THAN, qmin(mm), fixer=NO_FIX )
+         call add_smry_field(trim(cnst_name(mm))//' @micro_mg','kg/kg', SMALLER_THAN, qmin(mm), fixer=NO_FIX )
+
       else if ( any(mm == (/ ixnumliq, ixnumice, ixnumrain, ixnumsnow /)) ) then
          ! number concentrations
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', '1/kg', cnst_longname(mm)                   )
@@ -1073,7 +1078,7 @@ end subroutine micro_mg_cam_init
 
 !===============================================================================
 
-subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
+subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf, chunk_smry)
 
    use micro_mg_utils, only: size_dist_param_basic, size_dist_param_liq, &
         mg_liq_props, mg_ice_props, avg_diameter, rhoi, rhosn, rhow, rhows, &
@@ -1090,11 +1095,13 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    use physics_buffer,  only: pbuf_col_type_index
    use subcol,          only: subcol_field_avg
+   use glb_verif_smry,  only: tp_stat_smry
 
    type(physics_state),         intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: dtime
    type(physics_buffer_desc),   pointer       :: pbuf(:)
+   type(tp_stat_smry),          intent(inout) :: chunk_smry(:) ! shape: (nfld)
 
    ! Local variables
    integer :: lchnk, ncol, psetcols, ngrdcol
@@ -2257,7 +2264,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call physics_ptend_sum(ptend_loc, ptend, ncol)
 
       ! Update local state
-      call physics_update(state_loc, ptend_loc, dtime/num_steps)
+      call physics_update(state_loc, ptend_loc, dtime/num_steps, chunk_smry=chunk_smry)
 
       ! Sum all outputs for averaging.
       call post_proc%accumulate()

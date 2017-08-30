@@ -585,8 +585,9 @@ end subroutine clubb_init_cnst
     !  These are only needed if we're using a passive scalar
     use clubb_api_module, only: iisclr_rt, iisclr_thl, iisclr_CO2, &    ! [kg/kg]/[K]/[1e6 mol/mol]
                                       iiedsclr_rt, iiedsclr_thl, iiedsclr_CO2 ! "    "
-    use constituents,           only: cnst_get_ind
+    use constituents,           only: cnst_get_ind, qmin, cnst_name
     use phys_control,           only: phys_getopts
+    use glb_verif_smry,         only: add_smry_field, SMALLER_THAN, CLIPPING, NO_FIX
 
 #endif
 
@@ -626,6 +627,11 @@ end subroutine clubb_init_cnst
     real(r8)  :: zt_g(pverp)                        ! Height dummy array
     real(r8)  :: zi_g(pverp)                        ! Height dummy array
 
+    integer :: cld_macmic_num_steps  ! # of substeps used for cloud mac/microphysics
+    integer :: macmic_it             ! substep index
+
+    character(len=32) :: routine_name
+
 
     !----- Begin Code -----
 
@@ -639,6 +645,7 @@ end subroutine clubb_init_cnst
     call phys_getopts(prog_modal_aero_out=prog_modal_aero, &
                       history_amwg_out=history_amwg, &
                       history_clubb_out=history_clubb,&
+                      cld_macmic_num_steps_out = cld_macmic_num_steps, &
                       liqcf_fix_out   = liqcf_fix)
 
     !  Select variables to apply tendencies back to CAM
@@ -671,6 +678,33 @@ end subroutine clubb_init_cnst
        lq(ixnumliq) = .false.
        edsclr_dim = edsclr_dim-1
     endif
+
+    ! ------------------------------------------------------------------------ !
+    ! Register tracer fields to be monitored for clubb_tend_cam. Note:
+    !  - For now we are using the glb_verif_smry module for diagnostics only;
+    !    clipping of unphysical values is still done by QNEG3. Therefore 
+    !    in the loop below, fixer is set to NO_FIX.
+    ! ------------------------------------------------------------------------ !
+    do macmic_it = 1,cld_macmic_num_steps
+      write(routine_name,'(a,i2.2)') 'clubb_macmic_',macmic_it
+
+      do m = 1,pcnst
+        if (lq(m) .and. .not.any(trim(cnst_name(m)).eq.(/"NUMLIQ","NUMICE","NUMRAI","NUMSNO","DMS"/)) ) &
+        call add_smry_field(trim(cnst_name(m))//' @'//trim(routine_name), '(mr)', &
+                            SMALLER_THAN, qmin(m), fixer=NO_FIX)
+      end do
+    end do
+    ! ------------------------------------------------------------------------ !
+    ! Register tracer fields to be monitored for clubb_surface. Note:
+    !  - In that subroutine, lq is set to .true. for all tracers, so we also
+    !    register all of them here.
+    !  - For now we are using the glb_verif_smry module for diagnostics only;
+    !    clipping of unphysical values is still done by QNEG3. Therefore 
+    !    in the loop below, fixer is set to NO_FIX.
+    ! ------------------------------------------------------------------------ !
+    do m = 1,pcnst
+       call add_smry_field(trim(cnst_name(m))//' @clubb_surface','(mr)',SMALLER_THAN,qmin(m),fixer=NO_FIX)
+    end do
 
     ! ----------------------------------------------------------------- !
     ! Set the debug level.  Level 2 has additional computational expense since
@@ -1123,6 +1157,8 @@ end subroutine clubb_init_cnst
 
 #ifdef CLUBB_SGS
 
+   character(len=32) :: routine_name
+
    type(physics_state) :: state1                ! Local copy of state variable
    type(physics_ptend) :: ptend_loc             ! Local tendency from processes, added up to return as ptend_all
    
@@ -1430,6 +1466,9 @@ end subroutine clubb_init_cnst
    !-----------------------------------------------------------------------------------------------!
 
    call t_startf('clubb_tend_cam_init')
+
+   write(routine_name,'(a,i2.2)') 'clubb_macmic_',macmic_it
+
    frac_limit = 0.01_r8
    ic_limit   = 1.e-12_r8
 
@@ -1450,7 +1489,7 @@ end subroutine clubb_init_cnst
  !  Initialize physics tendency arrays, copy the state to state1 array to use in this routine
 
    if (.not. do_icesuper) then    
-     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
+     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_xxx', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
 
    call physics_state_copy(state,state1)
@@ -1458,7 +1497,7 @@ end subroutine clubb_init_cnst
    if (do_icesuper) then
      naai_idx      = pbuf_get_index('NAAI')
      call pbuf_get_field(pbuf, naai_idx, naai)
-     call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
+     call physics_ptend_init(ptend_all, state%psetcols, trim(routine_name))
    endif
 
    !  Determine number of columns and which chunk computation is to be performed on
@@ -1821,7 +1860,7 @@ end subroutine clubb_init_cnst
     endif
    
    if ( do_icesuper ) then
-     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
+     call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_core', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
 
    ! ------------------------------------------------- !
@@ -2560,7 +2599,7 @@ end subroutine clubb_init_cnst
 
    !  Update physics tendencies     
    if (.not. do_icesuper) then
-      call physics_ptend_init(ptend_all, state%psetcols, 'clubb')
+      call physics_ptend_init(ptend_all, state%psetcols, trim(routine_name))
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
@@ -2591,7 +2630,7 @@ end subroutine clubb_init_cnst
    lqice(ixnumliq) = .true.
    lqice(ixnumice) = .true.
     
-   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lq=lqice)
+   call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_DpCu_detr', ls=.true., lq=lqice)
    
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
@@ -3045,7 +3084,7 @@ end subroutine clubb_init_cnst
     call cnst_get_ind('Q',ixq)
     
     lq(:) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'clubb', lq=lq)
+    call physics_ptend_init(ptend, state%psetcols, 'clubb_surface', lq=lq)
     
     ncol = state%ncol
     
