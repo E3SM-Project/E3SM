@@ -547,6 +547,7 @@
 		<nml_option name="config_min_friction_velocity"		type="real"		default_value="0.0005"/>
 		<nml_option name="config_ocean_heat_transfer_type"		type="character"	default_value="constant"/>
 		<nml_option name="config_sea_freezing_temperature_type"	type="character"	default_value="mushy"/>
+		<nml_option name="config_ocean_surface_type"			type="character"	default_value="free"		possible_values="'free' or 'non-free'"/>
 	</nml_record>
 
 	<nml_record name="diagnostics" in_defaults="true">
