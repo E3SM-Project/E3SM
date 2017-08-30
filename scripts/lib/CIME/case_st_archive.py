@@ -14,6 +14,28 @@ import datetime
 logger = logging.getLogger(__name__)
 
 ###############################################################################
+def _get_archive_object(case):
+###############################################################################
+    """
+    Returns the EnvArchive object associated with this case
+    """
+    caseroot = case.get_value("CASEROOT")
+    archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
+    return archive
+
+###############################################################################
+def _get_archive_file_fn(copy_only):
+###############################################################################
+    """
+    Returns the function to use for archiving some files
+    """
+    if copy_only is True:
+        archive_file_fn = shutil.copyfile
+    else:
+        archive_file_fn = shutil.move
+    return archive_file_fn
+
+###############################################################################
 def _get_datenames(case, last_date=None):
 ###############################################################################
     """
@@ -393,10 +415,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     logger.debug('In archive_process...')
 
-    if copy_only is True:
-        archive_file_fn = shutil.copyfile
-    else:
-        archive_file_fn = shutil.move
+    archive_file_fn = _get_archive_file_fn(copy_only)
 
     # archive log files
     _archive_log_files(case, archive_incomplete_logs, archive_file_fn)
@@ -449,6 +468,34 @@ def restore_from_archive(case, rest_dir=None):
         shutil.copy(item, rundir)
 
 ###############################################################################
+def archive_last_restarts(case, archive_restdir):
+###############################################################################
+    """
+    Convenience function for archiving just the last set of restart
+    files to a given directory. This also saves files attached to the
+    restart set, such as rpointer files and necessary history
+    files. However, it does not save other files that are typically
+    archived (e.g., history files, log files).
+
+    Files are copied to the directory given by archive_restdir.
+    """
+    archive = _get_archive_object(case)
+    datenames = _get_datenames(case)
+    expect(len(datenames) >= 1, "No restart dates found")
+    last_datename = datenames[-1]
+
+    # Not currently used for anything if we're only archiving the last
+    # set of restart files, but needed to satisfy the following interface
+    archive_file_fn = _get_archive_file_fn(copy_only=False)
+
+    _ = _archive_restarts_date(case=case,
+                               archive=archive,
+                               datename=last_datename,
+                               datename_is_last=True,
+                               archive_restdir=archive_restdir,
+                               archive_file_fn=archive_file_fn)
+
+###############################################################################
 def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
 ###############################################################################
     """
@@ -473,7 +520,7 @@ def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_onl
 
     logger.info("st_archive starting")
 
-    archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
+    archive = _get_archive_object(case)
     functor = lambda: _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only)
     run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
