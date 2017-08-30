@@ -145,6 +145,26 @@
                 },
                 {
                         "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["NETCF"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["ANN"],
+                        "contour_levels": [-70, -60, -50, -40, -30, -20, -10, 0, 10, 20],
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["NETCF"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [-135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                },
+                {
+                        "sets": ["lat_lon"],
                         "case_id": "CERES-EBAF-surface-v2.8",
                         "variables": ["ALBEDO_SRF"],
                         "ref_name": "ceres_ebaf_surface_v2.8",
