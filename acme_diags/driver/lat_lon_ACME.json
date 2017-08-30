@@ -199,7 +199,9 @@
                         "variables": ["FLNS"],
                         "ref_name": "ceres_ebaf_surface_v2.8",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -207,7 +209,9 @@
                         "variables": ["FLNSC"],
                         "ref_name": "ceres_ebaf_surface_v2.8",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -305,7 +309,9 @@
                         "variables": ["FLNS"],
                         "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF 2001-2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -313,7 +319,9 @@
                         "variables": ["FLNSC"],
                         "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF 2001-2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],

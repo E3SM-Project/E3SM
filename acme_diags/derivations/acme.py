@@ -362,10 +362,10 @@ derived_variables = {
         (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
     'FLNS': OrderedDict([
-        (('sfc_net_lw_all_mon'), rename)
+        (('sfc_net_lw_all_mon'), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon)
     ]),
     'FLNSC': OrderedDict([
-        (('sfc_net_lw_clr_mon'), rename)
+        (('sfc_net_lw_clr_mon'), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
     ]),
     'FLDS': OrderedDict([
         (('rlds'), rename)
