@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+echo "Starting Setup"
+
+# Expect name of sub test directory
+SRC=$1
+
+if [ ! -d $SRC ]
+then
+  echo "Missing test directory $SRC in `pwd`"
+  exit -1
+fi
+
+# Create build directory
+if [ ! -d "./object" ] 
+then
+  mkdir object
+else
+  rm -rf object/*
+fi  
+   
+# Deploy test code 
+cp $SRC/* object
+if [ ! -f object/Makefile ]
+then
+  echo "Error, missing Makefile"
+  exit -1
+fi
+echo "Creating empty parameter file"
+echo "Setup successfull"
+
+# Deployment done , create .success file for flashtest 
+touch object/.success
+   

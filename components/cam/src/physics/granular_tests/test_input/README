@@ -1,0 +1,5 @@
+The ASCII files in this directory were written out in an ACME-ATM
+simulation conducted at NE30L72 resolution. 
+
+Chunks 05401-05409: 16 grid columns per file;
+chunks 05410-05418: 15 grid columns per file.

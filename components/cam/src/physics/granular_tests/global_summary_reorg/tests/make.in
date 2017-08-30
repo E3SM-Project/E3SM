@@ -1,0 +1,26 @@
+#For INTEL Compiler
+FC = gfortran
+LDFLAGS = 	
+LDLIBS = 
+FCFLAGS = -g -fno-range-check
+#-traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv
+CPP = cpp
+#EXE = test1 test2 test3 test4 test5 
+
+#For PGI Compiler
+#FC = pgf90	
+#LDFLAGS = 	
+#LDLIBS = 
+##FCFLAGS = -g  -C -Ktrap=fp -Msave -byteswapio
+#FCFLAGS = -g  -C -Ktrap=fp 
+#CPP = cpp
+#EXE = dd.x
+
+
+##For Lahey compiler
+#FC = lf95
+#LDFLAGS = 	
+#LDLIBS = 
+#FCFLAGS = --chk a,e,s,u --trace --trap -g --O0
+#CPP = cpp
+#EXE = dd.x
