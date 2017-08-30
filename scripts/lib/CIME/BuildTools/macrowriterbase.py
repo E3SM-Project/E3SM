@@ -13,6 +13,7 @@ more.
 import os
 from abc import ABCMeta, abstractmethod
 from CIME.XML.standard_module_setup import *
+from CIME.utils import get_cime_root
 logger = logging.getLogger(__name__)
 
 def _get_components(value):
@@ -234,6 +235,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
 '''#
 # cmake Macros generated from $compiler_file
 #
+set(CMAKE_MODULE_PATH %s)
 include(Compilers)
 set(CMAKE_C_FLAGS_RELEASE "" CACHE STRING "Flags used by c compiler." FORCE)
 set(CMAKE_C_FLAGS_DEBUG "" CACHE STRING "Flags used by c compiler." FORCE)
@@ -241,7 +243,7 @@ set(CMAKE_Fortran_FLAGS_RELEASE "" CACHE STRING "Flags used by Fortran compiler.
 set(CMAKE_Fortran_FLAGS_DEBUG "" CACHE STRING "Flags used by Fortran compiler." FORCE)
 set(all_build_types "None Debug Release RelWithDebInfo MinSizeRel")
 set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: ${all_build_types}." FORCE)
-''')
+''' % os.path.join(get_cime_root(), "src", "CMake"))
 
             # print the settings out to the Macros file, do it in
             # two passes so that path values appear first in the
@@ -254,7 +256,10 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                     if key.endswith("_PATH"):
                         if value.startswith("$"):
                             value = "$ENV{}".format(value[1:])
-                        fd.write("set({} {})\n".format(key, value))
+
+
+                        cmake_var = key.replace("NETCDF_PATH", "NetCDF_PATH").replace("PNETCDF_PATH", "Pnetcdf_PATH")
+                        fd.write("set({} {})\n".format(cmake_var, value))
                         fd.write("list(APPEND CMAKE_PREFIX_PATH {})\n\n".format(value))
 
             for key, value in sorted(macros.iteritems()):
@@ -268,6 +273,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
 
                             idx = 0
                             for is_shell, component in components:
+                                component = component.replace("NETCDF", "NetCDF").replace("PNETCDF_PATH", "Pnetcdf_PATH")
                                 if is_shell:
                                     fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
                                     fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "${{TEMP{:d}}}")\n'.format(idx, idx))
@@ -281,13 +287,13 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                             fd.write('set(TEMP "{}")\n'.format(value))
 
                         if "CFLAGS" in key:
-                            fd.write("add_flags(CMAKE_C_FLAGS ${TEMP})\n\n")
+                            fd.write("add_flags(CFLAGS ${TEMP})\n\n")
                         elif "FFLAGS" in key:
-                            fd.write("add_flags(CMAKE_Fortran_FLAGS ${TEMP})\n\n")
+                            fd.write("add_flags(FFLAGS ${TEMP})\n\n")
                         elif "CPPDEFS" in key:
-                            fd.write("list(APPEND COMPILE_DEFINITIONS ${TEMP})\n\n")
+                            fd.write("list(APPEND CPPDEFS ${TEMP})\n\n")
                         elif "SLIBS" in key or "LDFLAGS" in key:
-                            fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS ${TEMP})\n\n")
+                            fd.write("add_flags(LDFLAGS ${TEMP})\n\n")
 
         # Recursively print the conditionals, combining tests to avoid repetition
         _parse_hash(macros["_COND_"], fd, 0, output_format)

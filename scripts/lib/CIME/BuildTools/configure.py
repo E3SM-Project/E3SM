@@ -66,7 +66,6 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
             if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
                 shutil.copyfile(dfile, outputdfile)
 
-
 def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
                                 sysos, unit_testing):
     """
@@ -79,6 +78,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
     ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)
     ems_file.write()
+    ems_file.load_env(compiler, debug, mpilib)
     for shell in ('sh', 'csh'):
         ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
