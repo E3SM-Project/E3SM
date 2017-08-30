@@ -420,6 +420,28 @@ contains
           if( clubb_hole_fill ) then
              !<janhft 09/17/2014>
              
+          ! don't track number concentrations summary 
+          if (m /= ixnumice  .and.  m /= ixnumliq .and. &
+              m /= ixnumrain .and.  m /= ixnumsnow ) then
+             name = trim(ptend%name) // '/' // trim(cnst_name(m))
+
+             !HuiWan 2017-07: Use module glb_verif_smry to provide consise summary for negative values +++
+             !HuiWan 2017-07: For now this module is used only for diagnostics. Later we will consider
+             !                replacing qneg3.
+             if (present(chunk_smry)) then
+                call t_startf('get_chunk_smry')
+                call get_chunk_smry( trim(cnst_name(m))//' @'//trim(ptend%name), ncol, pver, state%q(:ncol,:,m), &
+                                     state%lat(:ncol), state%lon(:ncol), chunk_smry(:) )
+                call t_stopf('get_chunk_smry')
+             end if
+             !HuiWan:2017-07 ===
+
+             if (present(chunk_smry)) then
+             call t_startf('hole_filling_in_physics_update')
+             end if
+
+          end if 
+
              do icol= 1, ncol
 
              ! Create a Clubb grid object. This must be done for each
@@ -581,6 +603,17 @@ contains
 
              enddo ! icol=1,ncol
 
+          if (m /= ixnumice  .and.  m /= ixnumliq .and. &
+              m /= ixnumrain .and.  m /= ixnumsnow ) then
+             name = trim(ptend%name) // '/' // trim(cnst_name(m))
+
+             if (present(chunk_smry)) then
+             call t_startf('hole_filling_in_physics_update')
+             end if
+
+          end if 
+
+
           else  ! ~clubb_hole_fill
 
             ! Original code for hard clipping negative values is unchanged
@@ -590,12 +623,36 @@ contains
             if (m /= ixnumice  .and.  m /= ixnumliq .and. &
                 m /= ixnumrain .and.  m /= ixnumsnow ) then
                 name = trim(ptend%name) // '/' // trim(cnst_name(m))
+
+
+             !HuiWan 2017-07: Use module glb_verif_smry to provide consise summary for negative values +++
+             !HuiWan 2017-07: For now this module is used only for diagnostics. Later we will consider
+             !                replacing qneg3.
+             if (present(chunk_smry)) then
+                call t_startf('get_chunk_smry')
+                call get_chunk_smry( trim(cnst_name(m))//' @'//trim(ptend%name), ncol, pver, state%q(:ncol,:,m), &
+                                     state%lat(:ncol), state%lon(:ncol), chunk_smry(:) )
+                call t_stopf('get_chunk_smry')
+             end if
+             !HuiWan:2017-07 ===
+
+             if (present(chunk_smry)) then
+             call t_startf('qneg3_in_physics_update')
+             end if
+
+
+
                 if(use_mass_borrower) then 
                    call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
                    call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
                 else
                    call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
                 end if 
+
+             if (present(chunk_smry)) then
+             call t_stopf('qneg3_in_physics_update')
+             end if
+
             else
                 do k = ptend%top_level, ptend%bot_level
                    ! checks for number concentration
