@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno
 import stat as statlib
 import warnings
 from contextlib import contextmanager
@@ -601,6 +601,21 @@ def safe_copy(src_dir, tgt_dir, file_map):
         if (os.path.isfile(full_tgt)):
             os.remove(full_tgt)
         shutil.copy2(full_src, full_tgt)
+
+def symlink_force(target, link_name):
+    """
+    Makes a symlink from link_name to target. Unlike the standard
+    os.symlink, this will work even if link_name already exists (in
+    which case link_name will be overwritten).
+    """
+    try:
+        os.symlink(target, link_name)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            os.remove(link_name)
+            os.symlink(target, link_name)
+        else:
+            raise e
 
 def find_proc_id(proc_name=None,
                  children_only=False,
