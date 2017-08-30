@@ -47,9 +47,9 @@
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU240wLI">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30v3">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30wLI">'00:30:00'</config_dt>
+<config_dt ocn_grid="oEC60to30">'00:10:00'</config_dt>
+<config_dt ocn_grid="oEC60to30v3">'00:10:00'</config_dt>
+<config_dt ocn_grid="oEC60to30wLI">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10v3">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10wLI">'00:10:00'</config_dt>
@@ -106,9 +106,9 @@
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30v3">4.0e11</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30wLI">4.0e11</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30">1.2e12</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30v3">1.2e12</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30wLI">1.2e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10v3">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
@@ -141,7 +141,7 @@
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
-<config_standardGM_tracer_kappa>600.0</config_standardGM_tracer_kappa>
+<config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
 <config_max_relative_slope>0.01</config_max_relative_slope>
@@ -320,9 +320,9 @@
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30">'0000_00:00:45'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:00:45'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:00:45'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30">'0000_00:00:40'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:00:40'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:00:40'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10wLI">'0000_00:00:18'</config_btr_dt>
@@ -343,7 +343,7 @@
 <config_tensor_test_function>'sph_uCosCos'</config_tensor_test_function>
 
 <!-- debug -->
-<config_disable_redi_k33>.false.</config_disable_redi_k33>
+<config_disable_redi_k33>.true.</config_disable_redi_k33>
 <config_disable_redi_horizontal_term1>.false.</config_disable_redi_horizontal_term1>
 <config_disable_redi_horizontal_term2>.false.</config_disable_redi_horizontal_term2>
 <config_disable_redi_horizontal_term3>.false.</config_disable_redi_horizontal_term3>
@@ -352,7 +352,7 @@
 <config_filter_btr_mode>.false.</config_filter_btr_mode>
 <config_prescribe_velocity>.false.</config_prescribe_velocity>
 <config_prescribe_thickness>.false.</config_prescribe_thickness>
-<config_include_KE_vertex>.false.</config_include_KE_vertex>
+<config_include_KE_vertex>.true.</config_include_KE_vertex>
 <config_check_tracer_monotonicity>.false.</config_check_tracer_monotonicity>
 <config_compute_active_tracer_budgets>.true.</config_compute_active_tracer_budgets>
 <config_disable_thick_all_tend>.false.</config_disable_thick_all_tend>
