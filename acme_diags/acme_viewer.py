@@ -147,81 +147,71 @@ def create_viewer(root_dir, parameters, ext):
     viewer = OutputViewer(path=root_dir, index_name='ACME Diagnostics')
     _add_pages_and_top_row(viewer, parameters)
 
-
     for parameter in parameters:
         for set_num in parameter.sets:
             set_num = get_set_name(set_num)
-            viewer.set_page("{}".format(set_num))
-            try:
-                viewer.set_group(parameter.case_id)
-            except RuntimeError:
-                viewer.add_group(parameter.case_id)
 
             # Add all of the files with extension ext from the case_id/ folder'
-            pth = get_output_dir(set_num, parameter)
-            files = glob.glob(pth + '/*.' + ext)  # ex: files[0] = myresults/set5/set5_SST_HadISST/HadISST_CL-SST-SON-global.png
+            pth = get_output_dir(set_num, parameter)  # ex: myresults/lat_lon
 
-            for ext_fnm in sorted(files):
-                fnm = ext_fnm.replace('.' + ext, '')
-                fnm = fnm.split('/')[-1]  # ex: HadISST_CL-SST-SON-global
-                keywords = fnm.split('-')
+            # Filenames are like:
+            # ref_name-variable-season-region
+            # or
+            # ref_name-variable-plev'mb'-season-region
+            ref_name = parameter.ref_name
+            for var in parameter.variables:
+                for season in parameter.seasons:
+                    for region in parameter.regions:
+                        row_name_and_fnm = []  # because some parameters have plevs, there might be more than one row_name, fnm pair
 
-                # 2d vars, format is [ref_name, var, season, region]
-                # 3d vars, format is [ref_name, var, plev, season, region]
-                # ref_name and/or var can be something_like_this, so we always use negative indices
-                ref_name = keywords[0]
-                region = keywords[-1]
-                season = keywords[-2]
-                if keywords[-3].isdigit():  # for when we have a 3d variable, ex: keywords[-3] = 880
-                    plev = keywords[-3]
-                    var = keywords[-4]
-                else:
-                    plev = None
-                    var = keywords[-3]
 
-                if plev is None:  # 2d variable
-                    #row_name = '%s %s %s' % (ref_name, var, region)
-                    row_name = '%s %s' % (var, region)
-                else:  # 3d variable
-                    #row_name = '%s %s %s %s' % (ref_name, var, plev + ' mb ', region)
-                    row_name = '%s %s %s' % (var, plev + ' mb ', region)
+                        if parameter.plevs == []:  # 2d variables
+                            row_name = '{} {}'.format(var, region)
+                            fnm = '{}-{}-{}-{}'.format(ref_name, var, season, region)
+                            row_name_and_fnm.append((row_name, fnm))
+                        else:  # 3d variables
+                            for plev in parameter.plevs:
+                                row_name = '{} {} {}'.format(var, str(int(plev)) + ' mb', region)
+                                fnm = '{}-{}-{}-{}-{}'.format(ref_name, var, int(plev), season, region)
+                                row_name_and_fnm.append((row_name, fnm))
 
-                try:
-                    viewer.set_row(row_name)
-                except RuntimeError:
-                    # row of row_name wasn't in the viewer, so add it
-                    viewer.add_row(row_name)
-                    viewer.add_col(var)  # the description
-
-                if parameter.case_id not in ROW_INFO[set_num]:
-                    ROW_INFO[set_num][parameter.case_id] = {}
-                if row_name not in ROW_INFO[set_num][parameter.case_id]:
-                    ROW_INFO[set_num][parameter.case_id][row_name] = {}
-                # format fnm to support relative paths
-                ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('..', '{}'.format(set_num), parameter.case_id, fnm)
+                        for row_name, fnm in row_name_and_fnm:
+                            if parameter.case_id not in ROW_INFO[set_num]:
+                                ROW_INFO[set_num][parameter.case_id] = {}
+                            if row_name not in ROW_INFO[set_num][parameter.case_id]:
+                                ROW_INFO[set_num][parameter.case_id][row_name] = {}
+                            # format fnm to support relative paths
+                            ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('..', '{}'.format(set_num), parameter.case_id, fnm)
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for set_num in ROW_INFO:
         viewer.set_page("{}".format(set_num))
+        print('*'*10 + set_num + '*'*10)
+
         for group in ROW_INFO[set_num]:
-            viewer.set_group(group)
-            for row_name in ROW_INFO[set_num][group]:
-                viewer.set_row(row_name)
+            print('*'*5 + group + '*'*5)
+            try:             
+                viewer.set_group(group)
+            except RuntimeError:
+                viewer.add_group(group)
+
+            for row_name in sorted(ROW_INFO[set_num][group]):
+                print(row_name)
+                try:
+                     viewer.set_row(row_name)
+                except RuntimeError:
+                     # row of row_name wasn't in the viewer, so add it
+                     viewer.add_row(row_name)
+                     viewer.add_col(row_name.split(' ')[0])  # the description, currently the var
+
                 for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
-                    if col_season in ROW_INFO[set_num][group][row_name]:
-                        fnm = ROW_INFO[set_num][group][row_name][col_season]
-                        formatted_files = []
-                        if parameters[0].save_netcdf:
-                            nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
-                            formatted_files = [{'url': f, 'title': f} for f in nc_files]
-                        viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
-                    else:
-                        # insert a blank value
-                        # is_file must be True, otherwise OutputViewer indexes incorrectly
-                        viewer.add_col('-----', is_file=True)
+                    fnm = ROW_INFO[set_num][group][row_name][col_season]
+                    formatted_files = []
+                    if parameters[0].save_netcdf:
+                        nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
+                        formatted_files = [{'url': f, 'title': f} for f in nc_files]
+                    viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
 
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
-
-
 
