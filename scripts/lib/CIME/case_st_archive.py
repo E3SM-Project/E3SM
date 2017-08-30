@@ -68,6 +68,23 @@ def _get_ninst_info(case, compclass):
     return ninst, ninst_strings
 
 ###############################################################################
+def _get_component_archive_entries(case, archive):
+###############################################################################
+    """
+    Each time this is generator function is called, it yields a tuple
+    (archive_entry, compname, compclass) for one component in this
+    case's compset components.
+    """
+    compset_comps = case.get_compset_components()
+    compset_comps.append('cpl')
+    compset_comps.append('dart')
+
+    for archive_entry in archive.get_entries():
+        compname, compclass = archive.get_entry_info(archive_entry)
+        if compname in compset_comps:
+            yield (archive_entry, compname, compclass)
+
+###############################################################################
 def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                             datename, datename_is_last):
 ###############################################################################
@@ -345,9 +362,6 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
     """
 
     logger.debug('In archive_process...')
-    compset_comps = case.get_compset_components()
-    compset_comps.append('cpl')
-    compset_comps.append('dart')
 
     if copy_only is True:
         archive_file_fn = shutil.copyfile
@@ -358,13 +372,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
     _archive_log_files(case, archive_incomplete_logs, archive_file_fn)
 
     histfiles_savein_rundir_by_compname = {}
-    for archive_entry in archive.get_entries():
-        # determine compname and compclass
-        compname, compclass = archive.get_entry_info(archive_entry)
-
-        # check for validity of compname
-        if compname not in compset_comps:
-            continue
+    for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
 
         # archive restarts and all necessary associated fields (e.g. rpointer files)
         logger.info('-------------------------------------------')
@@ -385,16 +393,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
             if datename_is_last:
                 histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
 
-    for archive_entry in archive.get_entries():
-        # FIXME(wjs, 2017-08-30) Remove duplication by extracting a
-        # 'yield' function that yields each relevant archive_entry
-        # determine compname and compclass
-        compname, compclass = archive.get_entry_info(archive_entry)
-
-        # check for validity of compname
-        if compname not in compset_comps:
-            continue
-
+    for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
         histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
         logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
         _archive_history_files(case, archive, archive_entry,
