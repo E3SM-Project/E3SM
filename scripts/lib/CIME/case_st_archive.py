@@ -245,7 +245,7 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
 ###############################################################################
 def _archive_restarts_date(case, archive,
                            datename, datename_is_last,
-                           archive_file_fn):
+                           archive_restdir, archive_file_fn):
 ###############################################################################
     """
     Archive restart files for a single date
@@ -266,7 +266,7 @@ def _archive_restarts_date(case, archive,
         histfiles_savein_rundir = _archive_restarts_comp_date(case, archive, archive_entry,
                                                               compclass, compname,
                                                               datename, datename_is_last,
-                                                              archive_file_fn)
+                                                              archive_restdir, archive_file_fn)
         histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
 
     return histfiles_savein_rundir_by_compname
@@ -274,17 +274,15 @@ def _archive_restarts_date(case, archive,
 ###############################################################################
 def _archive_restarts_comp_date(case, archive, archive_entry,
                                 compclass, compname, datename, datename_is_last,
-                                archive_file_fn):
+                                archive_restdir, archive_file_fn):
 ###############################################################################
     """
     Archive restart files for a single component and single date
     """
 
     # determine directory for archiving restarts based on datename
-    dout_s_root = case.get_value("DOUT_S_ROOT")
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
-    archive_restdir = join(dout_s_root, 'rest', datename)
     if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
         if not os.path.exists(archive_restdir):
             os.makedirs(archive_restdir)
@@ -405,14 +403,16 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     # archive restarts and all necessary associated files (e.g. rpointer files)
     histfiles_savein_rundir_by_compname = {}
+    dout_s_root = case.get_value("DOUT_S_ROOT")
     datenames = _get_datenames(case, last_date)
     for datename in datenames:
         datename_is_last = False
         if datename == datenames[-1]:
             datename_is_last = True
 
+        archive_restdir = join(dout_s_root, 'rest', datename)
         histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
-            case, archive, datename, datename_is_last, archive_file_fn)
+            case, archive, datename, datename_is_last, archive_restdir, archive_file_fn)
         if datename_is_last:
             histfiles_savein_rundir_by_compname = histfiles_savein_rundir_by_compname_this_date
 
