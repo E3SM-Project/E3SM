@@ -14,16 +14,6 @@ import datetime
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _get_archive_object(case):
-###############################################################################
-    """
-    Returns the EnvArchive object associated with this case
-    """
-    caseroot = case.get_value("CASEROOT")
-    archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
-    return archive
-
-###############################################################################
 def _get_archive_file_fn(copy_only):
 ###############################################################################
     """
@@ -101,10 +91,10 @@ def _get_component_archive_entries(case, archive):
     compset_comps.append('cpl')
     compset_comps.append('dart')
 
-    for archive_entry in archive.get_entries():
-        compname, compclass = archive.get_entry_info(archive_entry)
-        if compname in compset_comps:
-            yield (archive_entry, compname, compclass)
+    for compname in compset_comps:
+        archive_entry = archive.get_entry(compname)
+        if archive_entry is not None:
+            yield(archive_entry, compname, archive_entry.get("compclass"))
 
 ###############################################################################
 def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
@@ -281,7 +271,7 @@ def _archive_restarts_date(case, archive,
     logger.info('-------------------------------------------')
 
     histfiles_savein_rundir_by_compname = {}
-    
+
     for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
         logger.info('Archiving restarts for {} ({})'.format(compname, compclass))
 
@@ -499,7 +489,7 @@ def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
     are done for the restart files. (This has no effect on the history
     files that are associated with these restart files.)
     """
-    archive = _get_archive_object(case)
+    archive = case.get_env('archive')
     datenames = _get_datenames(case)
     expect(len(datenames) >= 1, "No restart dates found")
     last_datename = datenames[-1]
@@ -541,7 +531,7 @@ def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_onl
 
     logger.info("st_archive starting")
 
-    archive = _get_archive_object(case)
+    archive = case.get_env('archive')
     functor = lambda: _archive_process(case, archive, last_date, archive_incomplete_logs, copy_only)
     run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
