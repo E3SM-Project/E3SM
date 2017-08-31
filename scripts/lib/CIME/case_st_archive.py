@@ -267,7 +267,8 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
 ###############################################################################
 def _archive_restarts_date(case, archive,
                            datename, datename_is_last,
-                           archive_restdir, archive_file_fn):
+                           archive_restdir, archive_file_fn,
+                           link_to_last_restart_files=False):
 ###############################################################################
     """
     Archive restart files for a single date
@@ -288,7 +289,8 @@ def _archive_restarts_date(case, archive,
         histfiles_savein_rundir = _archive_restarts_date_comp(case, archive, archive_entry,
                                                               compclass, compname,
                                                               datename, datename_is_last,
-                                                              archive_restdir, archive_file_fn)
+                                                              archive_restdir, archive_file_fn,
+                                                              link_to_last_restart_files)
         histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
 
     return histfiles_savein_rundir_by_compname
