@@ -402,7 +402,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Setup
         run_one_suffix = 'base'
         run_two_suffix = 'run2'
-        case1root, case2root = self.get_caseroots()
+        case1root, _ = self.get_caseroots()
         case1 = CaseFake(case1root)
         mytest = SystemTestsCompareTwoFake(
             case1 = case1,
