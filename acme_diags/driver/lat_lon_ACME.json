@@ -62,7 +62,7 @@
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75],
                         "diff_levels": [-0.25, -0.2, -0.15, -0.1, -0.07, -0.05, -0.02, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25]
                 },
                 {
@@ -72,7 +72,7 @@
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75],
                         "diff_levels": [-0.25, -0.2, -0.15, -0.1, -0.07, -0.05, -0.02, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25]
                 },
                 {
@@ -81,9 +81,19 @@
                         "variables": ["RESTOM"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
+                        "contour_levels": [-120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 60]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["RESTOM"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [-175, -150, -125, -100, -75, -50, -25, 0, 25, 50, 75, 100, 125],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -91,9 +101,19 @@
                         "variables": ["FLUT"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [100, 115, 130, 145, 160, 175, 190, 205, 220, 235, 250, 265, 280, 295, 310],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "seasons": ["ANN"],
+                        "contour_levels": [120, 140, 160, 180, 200, 220, 240, 260, 280, 300],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FLUT"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -101,9 +121,19 @@
                         "variables": ["FLUTC"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [100, 115, 130, 145, 160, 175, 190, 205, 220, 235, 250, 265, 280, 295, 310],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "seasons": ["ANN"],
+                        "contour_levels": [120, 140, 160, 180, 200, 220, 240, 260, 280, 300],
+                        "diff_levels": [-35, -30, -25, -20, -15, -10, -5, -2.5, 2.5, 5, 10, 15, 20, 25, 30, 35]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FLUTC"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320],
+                        "diff_levels": [-35, -30, -25, -20, -15, -10, -5, -2.5, 2.5, 5, 10, 15, 20, 25, 30, 35]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -111,8 +141,28 @@
                         "variables": ["FSNTOA"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
+                        "contour_levels": [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350],
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FSNTOA"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 25, 50, 75, 100, 125, 150, 175, 200, 240, 280, 320, 360, 400, 440],
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FSNTOAC"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["ANN"],
+                        "contour_levels": [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375],
                         "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
@@ -121,8 +171,8 @@
                         "variables": ["FSNTOAC"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [0, 25, 50, 75, 100, 125, 150, 175, 200, 240, 280, 320, 360, 400, 440],
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
                         "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
@@ -131,10 +181,21 @@
                         "variables": ["SWCF"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
                         "regions": ["global"],
-                        "contour_levels": [-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "contour_levels": [-120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0],
+                        "diff_levels": [-60, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 60]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["SWCF"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
+                        "regions": ["global"],
+                        "contour_levels": [-180, -160, -140, -120, -100, -80, -60, -40, -20,  0],
+                        "diff_levels": [-60, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 60]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -154,7 +215,7 @@
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
                         "seasons": ["ANN"],
                         "contour_levels": [-70, -60, -50, -40, -30, -20, -10, 0, 10, 20],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-60, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 60]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -164,7 +225,7 @@
                         "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
                         "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [-135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -173,7 +234,7 @@
                         "ref_name": "ceres_ebaf_surface_v2.8",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75],
                         "diff_levels": [-0.25, -0.2, -0.15, -0.1, -0.07, -0.05, -0.02, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25]
                 },
                 {
@@ -184,7 +245,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -194,7 +255,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 10, 20, 30, 40, 50, 60, 70, 80],
-                        "diff_levels": [-35, -30, -25, -20, -15, -10, -5, -2, 2, 5, 10, 15, 20, 25, 30, 35]
+                        "diff_levels": [-35, -30, -25, -20, -15, -10, -5, 5, 10, 15, 20, 25, 30, 35]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -204,7 +265,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -214,7 +275,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -224,7 +285,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
-                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -234,7 +295,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
-                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -244,7 +305,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -254,7 +315,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -264,7 +325,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -274,7 +335,7 @@
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -283,7 +344,7 @@
                         "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+                        "contour_levels": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75],
                         "diff_levels": [-0.25, -0.2, -0.15, -0.1, -0.07, -0.05, -0.02, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25]
                 },
                 {
@@ -294,7 +355,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [-170, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15, 0, 15, 30, 45],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -304,7 +365,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 10, 20, 30, 40, 50, 60, 70, 80],
-                        "diff_levels": [-35, -30, -25, -20, -15, -10, -5, -2, 2, 5, 10, 15, 20, 25, 30, 35]
+                        "diff_levels": [-35, -30, -25, -20, -15, -10, -5, 5, 10, 15, 20, 25, 30, 35]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -314,7 +375,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -324,7 +385,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -334,7 +395,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
-                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -344,7 +405,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
-                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -354,7 +415,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -364,7 +425,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -374,7 +435,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -384,7 +445,7 @@
                         "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400],
-                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50, 75]
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -470,7 +531,7 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "plevs": [500.0],
                         "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
-                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]
+                        "diff_levels": [-1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, -0.1, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -478,10 +539,10 @@
                         "variables": ["T"],
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
                         "plevs": [850.00],
-                        "contour_levels": [230, 240, 250, 260, 270, 280, 290, 300, 310],
-                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                        "contour_levels": [240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
                 },
                 {
                         "sets": ["lat_lon"],
@@ -489,10 +550,32 @@
                         "variables": ["T"],
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
+                        "plevs": [850.00],
+                        "contour_levels": [230, 240, 250, 260, 270, 280, 290, 300],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["T"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["ANN"],
+                        "plevs": [200.0],
+                        "contour_levels": [210, 212, 214, 216, 218, 220, 222, 224, 226],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["T"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "plevs": [200.0],
                         "contour_levels": [200, 205, 210, 215, 220, 225, 230, 235, 240],
-                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
                 },
                 {
                         "sets": ["lat_lon"],
