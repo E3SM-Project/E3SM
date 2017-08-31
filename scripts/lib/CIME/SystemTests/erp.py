@@ -12,7 +12,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.check_lockedfiles import *
-from CIME.case_st_archive import _get_datenames
 
 logger = logging.getLogger(__name__)
 
@@ -63,17 +62,4 @@ class ERP(SystemTestsCompareTwo):
         case_setup(self._case, test_mode=True, reset=True)
 
     def _case_one_custom_postrun_action(self):
-        rundir1 = self._case1.get_value("RUNDIR")
-        rundir2 = self._case2.get_value("RUNDIR")
-        case = self._case1.get_value("CASE")
-        datenames = _get_datenames(self._case1)
-        for file_ in glob.iglob(os.path.join(rundir1,"*")):
-            logger.info("File is {}".format(file_))
-            if os.path.basename(file_).startswith("rpointer"):
-                logger.info("Copy {} to {}".format(file_, rundir2))
-                shutil.copy(file_, rundir2)
-            elif os.path.basename(file_).startswith(case) and datenames[0] in file_:
-                file_case2 = os.path.join(rundir2, os.path.basename(file_))
-                if not os.path.isfile(file_case2):
-                    logger.info("Link {} to {}".format(file_, rundir2))
-                    os.symlink(file_, file_case2)
+        self.copy_case1_restarts_to_case2()
