@@ -18,11 +18,8 @@ def _get_archive_file_fn(copy_only):
     """
     Returns the function to use for archiving some files
     """
-    if copy_only is True:
-        archive_file_fn = shutil.copyfile
-    else:
-        archive_file_fn = shutil.move
-    return archive_file_fn
+    return shutil.copyfile if copy_only else shutil.move
+
 
 ###############################################################################
 def _get_datenames(case, last_date=None):
