@@ -1,5 +1,5 @@
 """
-CIME ERP test.  This class inherits from SystemTestsCompareTwo
+CIME ERP test.  This class inherits from RestartTest
 
 This is a pes counts hybrid (open-MP/MPI) restart bfb test from
 startup.  This is just like an ERS test but the pe-counts/threading
