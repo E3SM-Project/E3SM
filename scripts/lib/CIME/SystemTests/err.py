@@ -3,28 +3,24 @@ CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
 from CIME.XML.standard_module_setup import *
-from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
-from CIME.SystemTests.irt import IRT
+from CIME.SystemTests.restart_tests import RestartTest
 from CIME.case_st_archive import restore_from_archive
 from CIME.utils import ls_sorted_by_mtime
 
 logger = logging.getLogger(__name__)
 
-class ERR(IRT):
+class ERR(RestartTest):
 
     def __init__(self, case): # pylint: disable=super-init-not-called
         """
         initialize an object interface to the ERR system test
         """
-        SystemTestsCompareTwo.__init__(self, case, # pylint: disable=non-parent-init-called
-                                       separate_builds = False,
-                                       run_two_suffix = 'rest',
-                                       run_one_description = 'initial',
-                                       run_two_description = 'restart',
-                                       multisubmit = True)
-
-    def _case_one_custom_postrun_action(self):
-        pass
+        RestartTest.__init__(self, case, # pylint: disable=non-parent-init-called
+                             separate_builds = False,
+                             run_two_suffix = 'rest',
+                             run_one_description = 'initial',
+                             run_two_description = 'restart',
+                             multisubmit = True)
 
     def _case_two_custom_prerun_action(self):
         dout_s_root = self._case1.get_value("DOUT_S_ROOT")
