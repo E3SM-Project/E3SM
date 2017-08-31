@@ -3919,6 +3919,14 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%annsum_litfall_patch)
     end if
 
+    if (use_vertsoilc) then
+       ptr2d => this%t_scalar_col
+       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='T scaling factor', units='-', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then

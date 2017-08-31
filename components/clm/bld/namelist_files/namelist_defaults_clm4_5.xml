@@ -96,7 +96,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c160822.nc</paramfile>
-<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c160709.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c170828.nc</paramfile>
 
 <fates_paramfile >lnd/clm2/paramdata/fates_params.c170331.nc</fates_paramfile>
 
