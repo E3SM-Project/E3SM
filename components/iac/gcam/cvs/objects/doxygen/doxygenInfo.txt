@@ -1,0 +1,46 @@
+/*! 
+* \defgroup Objects ObjECTS Integrated Assessment Model
+*/
+
+
+/*!
+* \namespace std 
+* \brief The C++ std library namespace. Defining it avoids writing std:: prefixes.
+*/
+
+/*!
+* \namespace xercesc
+* \brief The namespace for the Xerces xml parser.
+*/
+
+/*!
+* \namespace mtl
+* \brief The namespace for the Matrix Template Library.
+*/
+
+/*! 
+* \namespace util
+* \brief The namespace for utility functions and classes used in the model.
+*/
+
+/*!
+* \mainpage ObjECTS API documentation
+*
+* \section intro Introduction
+*
+* \subsection overview Model Overview
+<P>The ObjECTS framework is a flexible, modular, Integrated Assessment modeling framework. The component-based structure of this model represents global energy, land-use, and economic systems through a component hierarchy that aggregates detailed technology information up to a global macroeconomic level.  The primary component hierarchy is from technology -> sub-sector -> sector -> region -> world.  Input is provided by the flexible XML framework, where data is structured in an object hierarchy that parallels that of the model structure.</P> 
+
+The ObjECTS code is intended to replicate both the partial-equilibrium MiniCAM integrated assessment model and a Computable General Equilibrium methodology, similar to that of the current Second Generation Model (SGM).
+<P></P> 
+
+The architecture, based on the natural hierarchy of the global economy, is a component structure that consists of the world, region, sector, sub-sector, technology, and emissions objects, as well as a marketplace object that acts as the glue for all the objects.  The architecture incorporates a structure in which the model is driven by data and its availability, so that the specific sectors and technologies used are determined by the input data not the model code.  
+<P></P> 
+\subsection start Where to Start
+There is no main calculation loop in this object structure. For the partial-equilibrium calculation, however, the world::calc() method is the principal calculation method used by the code.
+The \ref faq is also a good place to look.
+
+\subsection psd Prices, Supplies and Demands in ObjECTS
+The accounting for supply and demand, and the accounting of prices are central to the partial- equilibrium MiniCAM-type calculation in the ObjECTS. <a href="PricesSandD.htm">These Notes</a> are a quick outline of how this process works in the ObjECTS code.
+
+*/

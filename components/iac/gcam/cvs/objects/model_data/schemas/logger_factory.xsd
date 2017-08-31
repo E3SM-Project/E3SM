@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Josh Lurz (PNNL) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="LoggerFactory">
+		<xs:annotation>
+			<xs:documentation>Root element of the LoggerFactory configuration file. </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Logger" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Logger">
+		<xs:annotation>
+			<xs:documentation>The abstract logger class data.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="FileName" type="xs:string"/>
+				<xs:element name="printLogNest" type="xs:integer"/>
+				<xs:element name="printLogWarningLevel" type="xs:integer"/>
+				<xs:element name="printLogTimeStamp" type="xs:integer"/>
+				<xs:element name="printLogDateStamp" type="xs:integer"/>
+				<xs:element name="printLogLineNumber" type="xs:integer"/>
+				<xs:element name="printLogFileName" type="xs:integer"/>
+				<xs:element name="printLogFullPath" type="xs:integer"/>
+				<xs:element name="minLogWarningLevel" type="xs:integer"/>
+				<xs:element name="minToScreenWarningLevel" type="xs:integer"/>
+				<xs:element name="logTabSize" type="xs:integer"/>
+				<xs:element name="headerMessage" type="xs:string"/>
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:string" use="required"/>
+			<xs:attribute name="type" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

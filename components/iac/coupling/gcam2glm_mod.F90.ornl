@@ -1,0 +1,1025 @@
+
+Module gcam2glm_mod
+  
+!---------------------------------------------------------------------------
+!BOP
+!
+! !MODULE: gcam2glm_mod
+!
+!  Interface of the integrated assessment component in CCSM
+!
+! !DESCRIPTION:
+!
+! !USES:
+
+  use iac_fields_mod
+  use shr_file_mod, only: shr_file_getunit, shr_file_freeunit
+  use shr_sys_mod
+  use netcdf
+  implicit none
+  SAVE
+  private                              ! By default make data private
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+  public :: gcam2glm_init_mod               ! clm initialization
+  public :: gcam2glm_run_mod                ! clm run phase
+  public :: gcam2glm_final_mod              ! clm finalization/cleanup
+  public :: handle_err
+  public :: fround
+
+! !PUBLIC DATA MEMBERS: 
+    real*8, dimension(:, :), allocatable :: hydeGCROP2005,&
+         tmp1,tmp2,tmp3,tmp4,   &
+         hydeGPAST2005,   &
+         hydeGWH2005,     &
+         hydeGOTHR2005,   &
+         glm_crop_mask,   &
+         new_avail_land,  &
+         cellarea,        &
+         cellarea_forest, &
+         cellarea_nonforest,&
+         glm_crop_ann,    &
+         glm_past_ann,    &
+         glm_othr_ann,    &
+         cropcell,        &
+         cropcellhalo,    &
+         crop_neighborhood,  &
+         new_crop_neighborhood,  &
+         aez_regions,     &
+         aez_zones,       &
+         fnf,             &
+         fnfforest,       &
+         fnfnonforest,    &
+         pot_veg,         &
+         crop_area,       &
+         crop_area_forest,&
+         crop_area_nonforest, &
+         past_area,       &
+         past_area_forest,&
+         past_area_nonforest, &
+         pctland_in2005,         &
+         rmap,            &
+         potveg,          &
+         avail_land0,     &
+         avail_land1,     &
+         gcam_past,       &
+         gcam_wh,         &
+         gcam_crop
+
+    real*8, dimension(:, :, :), allocatable :: glm_crop, &
+         glm_past
+
+    real*8, dimension(:), allocatable :: datearr, gcam_wh_ann, glm_wh_ann,lon,lat
+    real*8, dimension(:), pointer :: array1d
+    real*8  :: forested_past, forested_past_percent
+    real*8  :: nonforested_past, nonforested_past_percent
+    real*8  :: forested_crop, forested_crop_percent
+    real*8  :: nonforested_crop, nonforested_crop_percent
+
+    real*4  :: miss_val = 1.0e36
+
+    integer :: year2step,n,np1,ntmp,nflds
+    integer, dimension(3) :: start3,count3
+    integer, dimension(2) :: start2,count2
+    integer                               :: ncid,tmp(1), &
+                                               lonDimID, latDimId, timeDimId, &
+                                               numLons, numLats, numTimes,    &
+                                               status,GCROPVarId,timevarid,varid
+    integer, dimension(nf90_max_var_dims) :: dimIDs
+    character(len=*),parameter :: gcam2glm_restfile = 'gcam2glm_restart.'
+    character(len=*),parameter :: gcam2glm_rpointer = 'rpointer.gcam2glm'
+    character(256) :: filename
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+
+! !PRIVATE DATA MEMBERS:
+
+!EOP
+!===============================================================
+contains
+!===============================================================
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: gcam2glm_init_mod
+
+! !INTERFACE:
+  subroutine gcam2glm_init_mod( EClock, cdata, gcamo, glmi, glmi_wh)
+
+! !DESCRIPTION:
+! Initialize interface for glm
+
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+    integer, pointer :: EClock(:)
+    type(iac_cdata_type) :: cdata
+    real*8, pointer :: gcamo(:,:)
+    real*8, pointer :: glmi(:,:)
+    real*8, pointer :: glmi_wh(:,:)
+
+! !LOCAL VARIABLES:
+    logical :: restart_run,lexist
+    integer :: iu,iun
+    character(len=*),parameter :: subname='(gcam2glm_init_mod)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!-----------------------------------------------------------------------
+
+    restart_run  = cdata%l(iac_cdatal_rest)
+    iu  = cdata%i(iac_cdatai_logunit)
+    nflds = cdata%i(iac_cdatai_gcam_naez)*cdata%i(iac_cdatai_gcam_nreg)
+    write(iu,*) trim(subname)
+
+! initialize two level time indexes -  These two time indexes get toggled 
+! first thing in the run method so they set "backward" here.
+! After they are toggled in the run method the indexes will match the 
+! glm_crop/glm_past initialization that happened here.
+
+    n=2
+    np1=1
+
+! Variable to keep track of when to calculate the next GCAM time step.
+! Initialize this with the year passed in via EClock ... 2005 for now
+
+    year2step = EClock(iac_EClock_ymd)/10000
+    status= nf90_open('/tmp/proj/ccsm/jet/GLM/inputs/hyde_3.0/half_deg_grids/gcrop_1500-2005.nc',nf90_nowrite,ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inq_varid(ncid, "cropland", GCROPVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_variable(ncid, GCROPVarId, dimids = dimIDs)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncid, dimIDs(1), len = numLons)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncid, dimIDs(2), len = numLats)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncid, dimIDs(3), len = numTimes)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    allocate(lon(numLons))
+    allocate(lat(numLats))
+    
+    status = nf90_inq_varid(ncid, "lon", varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,varid,lon)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_inq_varid(ncid, "lat", varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,varid,lat)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    allocate(tmp1(numLons, numLats))
+    allocate(tmp2(numLons, numLats))
+    allocate(tmp3(numLons, numLats))
+    allocate(tmp4(numLons, numLats))
+    allocate(hydeGCROP2005(numLons, numLats))
+    allocate(hydeGPAST2005(numLons, numLats))
+    allocate(hydeGOTHR2005(numLons, numLats))
+    allocate(hydeGWH2005(numLons, numLats))
+    allocate(new_avail_land(numLons, numLats))
+    allocate(cellarea(numLons, numLats))
+    allocate(cellarea_forest(numLons, numLats))
+    allocate(cellarea_nonforest(numLons, numLats))
+    allocate(glm_crop_ann(numLons, numLats))
+    allocate(glm_past_ann(numLons, numLats))
+    allocate(glm_othr_ann(numLons, numLats))
+    allocate(glm_wh_ann(nflds))
+    allocate(rmap(numLons, numLats))
+    allocate(potveg(numLons, numLats))
+    allocate(glm_crop_mask(numLons, numLats))
+    allocate(cropcell(numLons, numLats))
+    allocate(cropcellhalo(0:numLons-1, 0:numLats+1))
+    allocate(crop_neighborhood(numLons, numLats))
+    allocate(new_crop_neighborhood(numLons, numLats))
+    allocate(aez_regions(numLons, numLats))
+    allocate(aez_zones(numLons, numLats))
+    allocate(fnf(numLons, numLats))
+    allocate(fnfforest(numLons, numLats))
+    allocate(fnfnonforest(numLons, numLats))
+    allocate(pot_veg(numLons, numLats))
+    allocate(crop_area(numLons, numLats))
+    allocate(crop_area_forest(numLons, numLats))
+    allocate(crop_area_nonforest(numLons, numLats))
+    allocate(past_area(numLons, numLats))
+    allocate(past_area_forest(numLons, numLats))
+    allocate(past_area_nonforest(numLons, numLats))
+    allocate(pctland_in2005(numLons, numLats))
+    allocate(datearr(numTimes))
+    allocate(glm_crop(numLons, numLats, 2))
+    allocate(glm_past(numLons, numLats, 2))
+    allocate(gcam_crop(nflds, 2))
+    allocate(gcam_wh(nflds, 2))
+    allocate(gcam_past(nflds, 2))
+    allocate(avail_land0(numLons, numLats))
+    allocate(avail_land1(numLons, numLats))
+
+    glm_crop=iac_spval
+    glm_past=iac_spval
+    avail_land0=iac_spval
+    avail_land1=iac_spval
+    hydeGCROP2005=iac_spval
+    hydeGPAST2005=iac_spval
+    hydeGOTHR2005=iac_spval
+    hydeGWH2005=iac_spval
+    new_avail_land=iac_spval
+    cellarea=iac_spval
+    cellarea_forest=iac_spval
+    cellarea_nonforest=iac_spval
+    glm_crop_mask=iac_spval
+    cropcell=iac_spval
+    crop_neighborhood=iac_spval
+    new_crop_neighborhood=iac_spval
+    pctland_in2005=iac_spval
+    datearr=iac_spval
+
+
+    status = nf90_inq_varid(ncid,'time',timeVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,timeVarId,datearr)
+    if(status /= nf90_NoErr) call handle_err(status)
+    start3(1)=1
+    count3(1)=numLons
+    start3(2)=1
+    count3(2)=numLats
+    tmp=MAXLOC(datearr,mask=datearr.EQ.2005)
+    start3(3)=tmp(1)
+    count3(3)=1
+    start2=1
+    count2(1)=numLons
+    count2(2)=numLats
+! read in hyde data
+
+    status = nf90_inq_varid(ncid,'cropland',varid)
+    status = nf90_get_var(ncid,varid,hydeGCROP2005,start3,count3)
+    status = nf90_close(ncid)
+    status = nf90_open('/tmp/proj/ccsm/jet/GLM/inputs/hyde_3.0/half_deg_grids/gpast_1500-2005.nc',nf90_nowrite,ncid)
+    status = nf90_inq_varid(ncid,'pasture',varid)
+    status = nf90_get_var(ncid,varid,hydeGPAST2005,start3,count3)
+    status = nf90_close(ncid)
+
+    status = nf90_open('/tmp/proj/ccsm/jet/GLM/inputs/hyde_3.0/half_deg_grids/gothr_1500-2005.nc',nf90_nowrite,ncid)
+    status = nf90_inq_varid(ncid,'primary',varid)
+    status = nf90_get_var(ncid,varid,hydeGOTHR2005,start3,count3)
+    status = nf90_inq_varid(ncid,'cell_area',varid)
+    status = nf90_get_var(ncid,varid,cellarea,start3,count3)
+    status = nf90_close(ncid)
+    cellarea=cellarea/1.e6
+    status = nf90_open('/tmp/proj/ccsm/jet/GLM/inputs/aez_18_reg_14_0.5x0.5_map.nc',nf90_nowrite,ncid)
+    status = nf90_inq_varid(ncid,'aez_regions',varid)
+    status = nf90_get_var(ncid,varid,aez_regions,start2,count2)
+    status = nf90_inq_varid(ncid,'aez_zones',varid)
+    status = nf90_get_var(ncid,varid,aez_zones,start2,count2)
+    status = nf90_close(ncid)
+
+    status = nf90_open('/tmp/proj/ccsm/jet/GLM/inputs/miami_biomass_conform_0.5x0.5_map.nc',nf90_nowrite,ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inq_varid(ncid,'biomass',varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,varid,pot_veg,start2,count2)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_close(ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    cellarea_nonforest(:,:)=0.
+    cellarea_forest(:,:)=0.
+    pot_veg=pot_veg*0.75
+    where ( pot_veg > 2)
+       cellarea_forest(:,:)=cellarea(:,:)
+       fnfforest(:,:)=1.
+    elsewhere
+       fnfnonforest(:,:)=1.
+       cellarea_nonforest(:,:)=cellarea(:,:)
+    end where
+    
+    pctland_in2005(:,:) = 0.    
+    pctland_in2005=hydeGCROP2005+hydeGPAST2005+hydeGOTHR2005
+
+    glm_crop(:,:,1)=hydeGCROP2005;
+    glm_past(:,:,1)=hydeGPAST2005;
+    
+
+    ! if rpointer file exists, then expect to read that file
+    
+    if (restart_run) then
+
+       inquire(file=trim(gcam2glm_rpointer),exist=lexist)
+       if (.not.lexist) then
+          write(iu,*) subname,' ERROR: missing file ',trim(gcam2glm_rpointer)
+          call shr_sys_abort(subname//' ERROR: missing file')
+       endif
+       
+       write(iu,*) subname,' read_restart rpointer ',trim(gcam2glm_rpointer)
+       
+       iun = shr_file_getunit()
+       open(iun,file=trim(gcam2glm_rpointer),form='formatted')
+       read(iun,'(a)') filename
+       close(iun)
+       call shr_file_freeunit(iun)
+       
+       write(iu,*) subname,' read_restart file ',trim(filename)
+       
+       inquire(file=trim(filename),exist=lexist)
+       if (.not.lexist) then
+          write(iu,*) subname,' ERROR: missing file ',trim(filename)
+          call shr_sys_abort(subname//' ERROR: missing file')
+       endif
+       
+       status= nf90_open(filename,nf90_nowrite,ncid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       
+       status = nf90_inq_varid(ncid, "cropland", varid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_get_var(ncid,varid,glm_crop)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_inq_varid(ncid, "pasture", varid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_get_var(ncid,varid,glm_past)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_inq_varid(ncid, "woodharvest", varid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_get_var(ncid,varid,gcam_wh)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_close(ncid)
+       if(status /= nf90_NoErr) call handle_err(status)
+    end if
+    
+  end subroutine gcam2glm_init_mod
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: gcam2glm_run_mod
+
+! !INTERFACE:
+  subroutine gcam2glm_run_mod( EClock, cdata, gcamo, glmi, glmi_wh)
+
+! !DESCRIPTION:
+! Run interface for glm
+
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+    integer, pointer :: EClock(:)
+    type(iac_cdata_type) :: cdata
+    real*8, pointer :: gcamo(:,:)
+    real*8, pointer :: glmi_wh(:)
+    real*8, pointer :: glmi(:,:)
+
+! !PARAMETERS:
+
+    character(len=*),parameter :: subname='(gcam2glm_run_mod)'
+
+    real*8, parameter :: crop_forest_abandon_percent = 0.9
+    real*8, parameter :: past_forest_abandon_percent = 0.9
+
+! !LOCAL VARIABLES:
+
+    character*4 :: yearc
+    character(256) :: filename
+    integer :: i,j,ij,r,i1,j1,year1,year2,aez,ind,h
+    integer :: iu,iun,iyr
+    integer :: ymd, tod, dt,naez,nreg,ii,ntime,currmonth
+    logical :: restart_now
+    real*8  :: crop_d,past_d
+    real*8  :: fact1,fact2,curryear,fact1yp1, fact2yp1,delyr,curryearp1
+    real*8  :: crop_percent,past_percent,pct_new_avail_land
+    real*8  :: tmp0
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!-----------------------------------------------------------------------
+    iu  = cdata%i(iac_cdatai_logunit)
+    ymd = EClock(iac_EClock_ymd)
+    tod = EClock(iac_EClock_tod)
+    dt  = EClock(iac_EClock_dt)
+
+!tcx    if (ymd/10000.ne.2005 .or. mod(ymd/10000-2005,15).ne.0) return
+    write(iu,*) trim(subname),' date= ',ymd,tod
+
+! Check if its time to process the data, if not then just time interpolate what we have.
+    if (ymd/10000.ge.year2step) then 
+
+! Each time through the loop toggle the time indices
+    ntmp=n
+    n=np1
+    np1=ntmp
+
+    where (  aez_regions  >= 1 .and.   aez_regions <= 14)
+       glm_crop(:,:,np1)=0
+       glm_past(:,:,np1)=0
+    elsewhere
+       glm_crop(:,:,np1)=hydeGCROP2005;
+       glm_past(:,:,np1)=hydeGPAST2005;
+    end where
+
+! Unpack gcamo fields
+
+    ij = 0
+    naez=cdata%i(iac_cdatai_gcam_naez)
+    nreg=cdata%i(iac_cdatai_gcam_nreg)
+    ntime=cdata%i(iac_cdatai_gcamo_ntime)
+    do j = n,np1,(np1-n)
+       do i = 1,nreg
+          do h = 1,naez
+             ij = ij + 1
+             gcam_crop((i-1)*naez+h,j) = gcamo(iac_gcamo_crop,ij)
+             gcam_past((i-1)*naez+h,j) = gcamo(iac_gcamo_pasture,ij)
+             gcam_wh((i-1)*naez+h,j) = gcamo(iac_gcamo_woodharv,ij)
+          enddo
+       enddo
+    enddo
+    
+    year1=cdata%i(iac_cdatai_gcam_yr1)
+    year2=cdata%i(iac_cdatai_gcam_yr2)
+    ind=0
+    do r = 1,cdata%i(iac_cdatai_gcam_nreg)
+       do aez = 1,cdata%i(iac_cdatai_gcam_naez)
+          ind=ind+1
+          crop_d = (gcam_crop(ind,np1)-gcam_crop(ind,n))*1000
+          past_d = (gcam_past(ind,np1)-gcam_past(ind,n))*1000
+
+       ! if the regional pasture change is zero, the new gridded pasture
+       ! values for all locations within the region "r" will be the same
+       ! as the previous timestep
+       ! Note: as of March 10, 2009 there are no pasture changes in
+       ! MiniCAM data, hence there are no checks for increases or
+       ! decreases to regional pasture
+       
+       if (past_d==0) then
+          where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+             glm_past(:,:,np1)=glm_past(:,:,n)
+          end where
+       end if
+       
+       if ( crop_d == 0 ) then
+          where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+             glm_crop(:,:,np1)=glm_crop(:,:,n)
+          end where
+          if (past_d < 0)then
+             ! write(6,*)'pasture decrease'
+             ! try to abandon on naturally forested land
+             past_area_forest=0.
+             past_area_nonforest=0.
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                past_area_forest=glm_past(:,:,n)*cellarea_forest(:,:)
+                past_area_nonforest=glm_past(:,:,n)*cellarea_nonforest(:,:)
+             end where
+             forested_past = 0.
+             nonforested_past = 0.
+             forested_past = sum( past_area_forest,mask=glm_past(:,:,n) .gt. 0)
+             nonforested_past = sum(past_area_nonforest,mask=glm_past(:,:,n) > 0 )
+             if ((abs(past_d)*past_forest_abandon_percent <= forested_past) .and. &
+                  (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                ! write(6,*)'case 1'
+                nonforested_past_percent=0.
+                forested_past_percent=0.
+                nonforested_past_percent = past_d*(1-past_forest_abandon_percent)/nonforested_past
+                forested_past_percent = past_d*past_forest_abandon_percent/forested_past
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=glm_past(:,:,n) + &
+                        glm_past(:,:,n)*forested_past_percent*fnfforest + &
+                        glm_past(:,:,n)*nonforested_past_percent*fnfnonforest
+                end where
+             elseif ( (abs(past_d)*past_forest_abandon_percent>forested_past) .and. &
+                  (abs(past_d)*(1-past_forest_abandon_percent) <= nonforested_past)) then
+                ! write(6,*)'case 2'
+                forested_past_percent = -1
+                nonforested_past_percent = -(abs(past_d)-forested_past)/nonforested_past
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=glm_past(:,:,n) +  &
+                        glm_past(:,:,n)*forested_past_percent*fnfforest + &
+                        glm_past(:,:,n)*nonforested_past_percent*fnfnonforest
+                end where
+             elseif( (abs(past_d)*past_forest_abandon_percent<=forested_past) .and. &
+                  (abs(past_d)*(1-past_forest_abandon_percent)>nonforested_past) ) then
+                ! write(6,*)'case 3'
+                forested_past_percent = -(abs(past_d)-nonforested_past)/forested_past
+                nonforested_past_percent = -1
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=glm_past(:,:,n) + &
+                        glm_past(:,:,n)*forested_past_percent*fnfforest + &
+                        glm_past(:,:,n)*nonforested_past_percent*fnfnonforest
+                end where
+             else
+                ! write(6,*)'case 4'
+             end if
+              
+          elseif (past_d > 0) then
+             avail_land0 = 0
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                avail_land0(:,:)=(pctland_in2005(:,:)-glm_crop(:,:,n)-glm_past(:,:,n))*cellarea
+             end where
+             where ( glm_past(:,:,n) .le. 0. )
+                avail_land0=0.
+             end where
+             if ( sum(avail_land0) > past_d ) then
+                ! write(6,*)'pasture increase - land available'
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=(glm_past(:,:,n)*cellarea(:,:)+avail_land0(:,:)/sum(avail_land0(:,:))*past_d)/cellarea
+                end where
+                if ( minval(glm_past(:,:,np1)) < 0) then
+                   write(6,*)'negagive glm_past'
+                   call abort
+                end if
+             else
+                ! write(6,*)'pasture increase - land not available'
+             end if
+          end if
+       end if
+       ! if the regional crop change is negative, apply the regional
+       ! *percentage* change to cropland in all gridcells within the region
+       ! then apply the pasture change
+       
+       if (crop_d<0) then
+          ! write(iu,*) 'crop decrease'
+          ! try to abandon on naturally forested land
+          crop_area_forest=0.
+          crop_area_nonforest=0.
+          where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+             crop_area_forest=glm_crop(:,:,n)*cellarea_forest(:,:)
+             crop_area_nonforest=glm_crop(:,:,n)*cellarea_nonforest(:,:)
+          end where
+          forested_crop=sum(crop_area_forest,mask=glm_crop(:,:,n).gt.0.)
+          nonforested_crop=sum(crop_area_nonforest,mask=glm_crop(:,:,n).gt.0.)
+          if ((abs(crop_d)*crop_forest_abandon_percent<=forested_crop) .and. &
+               (abs(crop_d)*(1-crop_forest_abandon_percent)<=nonforested_crop)) then
+             ! write(6,*)'case 1'
+             forested_crop_percent = crop_d*crop_forest_abandon_percent/forested_crop
+             nonforested_crop_percent = crop_d*(1-crop_forest_abandon_percent)/nonforested_crop
+             tmp1=0.
+             tmp2=0.
+             tmp3=0.
+             tmp4=0.
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                glm_crop(:,:,np1)=glm_crop(:,:,n)+glm_crop(:,:,n)*forested_crop_percent*fnfforest + &
+                                                  glm_crop(:,:,n)*nonforested_crop_percent*fnfnonforest
+                tmp4=(glm_crop(:,:,np1))
+                tmp1=(glm_crop(:,:,n))
+                tmp2=(glm_crop(:,:,n)*forested_crop_percent)*fnfforest
+                tmp3=(glm_crop(:,:,n)*nonforested_crop_percent)*fnfnonforest
+             end where
+          elseif ((abs(crop_d)*crop_forest_abandon_percent>forested_crop) .and. &
+               (abs(crop_d)*(1-crop_forest_abandon_percent)<=nonforested_crop)) then
+             ! write(6,*)'case 2'
+             forested_crop_percent = -1
+             nonforested_crop_percent = -(abs(crop_d)-forested_crop)/nonforested_crop
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                glm_crop(:,:,np1)=glm_crop(:,:,n) + &
+                                  glm_crop(:,:,n)*forested_crop_percent*fnfforest + &
+                                  glm_crop(:,:,n)*nonforested_crop_percent*fnfnonforest
+             end where
+          elseif ((abs(crop_d)*crop_forest_abandon_percent<=forested_crop) .and. &
+               (abs(crop_d)*(1-crop_forest_abandon_percent)>nonforested_crop)) then
+             ! write(6,*)'case 3'
+             forested_crop_percent = -(abs(crop_d)-nonforested_crop)/forested_crop
+             nonforested_crop_percent = -1
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                glm_crop(:,:,np1)=glm_crop(:,:,n) + &
+                                  glm_crop(:,:,n)*forested_crop_percent*fnfforest + &
+                                  glm_crop(:,:,n)*nonforested_crop_percent*fnfnonforest
+             end where
+             ! else
+             ! write(6,*)'case 4'
+          end if
+          
+          if (past_d < 0) then
+             ! write(6,*)'pasture decrease'
+             past_area_forest=0.
+             past_area_nonforest=0.
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                past_area_forest=glm_past(:,:,n)*cellarea_forest(:,:)
+                past_area_nonforest=glm_past(:,:,n)*cellarea_nonforest(:,:)
+             end where
+             forested_past=sum(past_area_forest,mask=glm_past(:,:,n).gt.0.)
+             nonforested_past=sum(past_area_nonforest,mask=glm_past(:,:,n).gt.0.)
+             if ((abs(past_d)*past_forest_abandon_percent<=forested_past).and. &
+                  (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                ! write(6,*)'case 1'
+                forested_past_percent = past_d*past_forest_abandon_percent/forested_past
+                nonforested_past_percent = past_d*(1-past_forest_abandon_percent)/nonforested_past
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=glm_past(:,:,n) + &
+                                     glm_past(:,:,n) * forested_past_percent*fnfforest + &
+                                     glm_past(:,:,n) * nonforested_past_percent*fnfnonforest
+                end where
+             elseif ((abs(past_d)*past_forest_abandon_percent>forested_past).and. &
+                  (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                ! write(6,*)'case 2'
+                forested_past_percent = -1
+                nonforested_past_percent = -(abs(past_d)-forested_past)/nonforested_past
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=glm_past(:,:,n) + &
+                                     glm_past(:,:,n) *forested_past_percent*fnfforest + &
+                                     glm_past(:,:,n) * nonforested_past_percent*fnfnonforest
+                end where
+             elseif ((abs(past_d)*past_forest_abandon_percent<=forested_past).and. &
+                  (abs(past_d)*(1-past_forest_abandon_percent)>nonforested_past)) then
+                ! write(6,*)'case 3'
+                forested_past_percent = -(abs(past_d)-nonforested_past)/forested_past
+                nonforested_past_percent = -1
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=glm_past(:,:,n) + &
+                                     glm_past(:,:,n)*forested_past_percent*fnfforest + &
+                                     glm_past(:,:,n)*nonforested_past_percent*fnfnonforest
+                end where
+             else
+                ! write(6,*)'case 4'
+             end if
+          elseif (past_d>0) then
+             avail_land0 = 0
+             where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                avail_land0(:,:)=(pctland_in2005(:,:)-glm_crop(:,:,n)-glm_past(:,:,n))*cellarea
+             end where
+             where ( glm_past(:,:,n) .le. 0. )
+                avail_land0=0.
+             end where
+             if (sum(avail_land0)>past_d) then
+                ! write(6,*)'pasture increase - land available'
+                where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                   glm_past(:,:,np1)=(glm_past(:,:,n)*cellarea(:,:)+avail_land0(:,:)/sum(avail_land0(:,:))*past_d)/cellarea
+                end where
+                if (minval (glm_past(:,:,np1)) < 0 ) then
+                   ! write(6,*)'negative glm_past(np1)'
+                end if
+             else
+                ! write(6,*)'pasture increase - land not available'
+             end if
+          end if
+       end if
+       
+       ! if the regional crop change is positive, first calculate
+       ! available land for crop expansion. If there is not enough land
+       ! available for expansion, halt the simulation, if there *is*
+       ! enough land available for expansion, apply the crop increase to
+       ! all gridcells in the region, weighted by available land in each
+       ! cell
+
+        if (crop_d > 0) then
+           avail_land0 = 0
+           where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+              avail_land0(:,:)=(pctland_in2005(:,:)-glm_crop(:,:,n)-glm_past(:,:,n))*cellarea
+           end where
+           where ( glm_crop(:,:,n) .le. 0. )
+              avail_land0=0.
+           end where
+           tmp0=sum(avail_land0)
+           if (sum(avail_land0)>=crop_d) then
+              ! write(6,*)'crop increase - land available'
+              where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                 glm_crop(:,:,np1)=(glm_crop(:,:,n)*cellarea+avail_land0/sum(avail_land0)*crop_d)/cellarea
+              end where
+              if (past_d<0) then
+                 ! write(6,*)'pasture decrease'
+                 ! try to abandon on naturally forested land
+                 past_area_forest=0.
+                 past_area_nonforest=0.
+                 where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                    past_area_forest=glm_past(:,:,n)*cellarea_forest(:,:)
+                    past_area_nonforest=glm_past(:,:,n)*cellarea_nonforest(:,:)
+                 end where
+                 forested_past=sum(past_area_forest,mask=glm_past(:,:,n).gt.0.)
+                 nonforested_past=sum(past_area_nonforest,mask=glm_past(:,:,n).gt.0.)
+                 if ((abs(past_d)*past_forest_abandon_percent<=forested_past) .and. &
+                      (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                    ! write(6,*)'case 1'
+                    forested_past_percent = past_d*past_forest_abandon_percent/forested_past
+                    nonforested_past_percent = past_d*(1-past_forest_abandon_percent)/nonforested_past
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=glm_past(:,:,n) + &
+                            glm_past(:,:,n) * forested_past_percent*fnfforest + &
+                            glm_past(:,:,n) * nonforested_past_percent*fnfnonforest
+                    end where
+                 elseif ((abs(past_d)*past_forest_abandon_percent>forested_past) .and. &
+                      (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                    ! write(6,*)'case 2'
+                    forested_past_percent = -1
+                    nonforested_past_percent = -(abs(past_d)-forested_past)/nonforested_past
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=glm_past(:,:,n) + &
+                            glm_past(:,:,n) * forested_past_percent*fnfforest + &
+                            glm_past(:,:,n) * nonforested_past_percent*fnfnonforest
+                    end where
+                 elseif ((abs(past_d)*past_forest_abandon_percent<=forested_past) .and. &
+                      (abs(past_d)*(1-past_forest_abandon_percent)>nonforested_past)) then
+                    ! write(6,*)'case 3'
+                    forested_past_percent = -(abs(past_d)-nonforested_past)/forested_past
+                    nonforested_past_percent = -1
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=glm_past(:,:,n) + &
+                            glm_past(:,:,n) * forested_past_percent*fnfforest +&
+                            glm_past(:,:,n) * nonforested_past_percent*fnfnonforest
+                    end where
+                 else
+                    ! write(6,*)'case 4'
+                 end if
+                 
+              elseif (past_d>0) then
+                 avail_land0 = 0
+                 where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                    avail_land0(:,:)=(pctland_in2005(:,:)-glm_crop(:,:,n)-glm_past(:,:,n))*cellarea(:,:)
+                 end where
+                 where ( glm_past(:,:,n) .le. 0. )
+                    avail_land0=0.
+                 end where
+                 if (sum(avail_land0)>past_d) then
+                    ! write(6,*)'pasture increase - land available'
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=(glm_past(:,:,n)*cellarea(:,:)+avail_land0/sum(avail_land0)*past_d)/cellarea(:,:)
+                    end where
+                    if (minval(glm_past(:,:,np1))<0) then
+                       ! write(6,*)'negative glm_past'
+                    end if
+                 else
+                    ! write(6,*)'pasture increase - land not available'
+                 end if
+              end if
+           else
+              if (past_d<0) then
+                 ! write(6,*)'pasture decrease'
+                 past_area_forest=0.
+                 past_area_nonforest=0.
+                 where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                    past_area_forest=glm_past(:,:,n)*cellarea_forest(:,:)
+                    past_area_nonforest=glm_past(:,:,n)*cellarea_nonforest(:,:)
+                 end where
+                 forested_past=sum(past_area_forest,mask=glm_past(:,:,n).gt.0.)
+                 nonforested_past=sum(past_area_nonforest,mask=glm_past(:,:,n).gt.0.)
+                 if ((abs(past_d)*past_forest_abandon_percent<=forested_past) .and. &
+                      (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                    ! write(6,*)'case 1'
+                    forested_past_percent = past_d*past_forest_abandon_percent/forested_past
+                    nonforested_past_percent = past_d*(1-past_forest_abandon_percent)/nonforested_past
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=glm_past(:,:,n) + &
+                            glm_past(:,:,n) * forested_past_percent*fnfforest + &
+                            glm_past(:,:,n) * nonforested_past_percent*fnfnonforest
+                    end where
+                 elseif ((abs(past_d)*past_forest_abandon_percent>forested_past) .and. &
+                      (abs(past_d)*(1-past_forest_abandon_percent)<=nonforested_past)) then
+                    ! write(6,*)'case 2'
+                    forested_past_percent = -1
+                    nonforested_past_percent = -(abs(past_d)-forested_past)/nonforested_past
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=glm_past(:,:,n)+glm_past(:,:,n)*forested_past_percent*fnfforest+glm_past(:,:,n)*nonforested_past_percent*fnfnonforest
+                    end where
+                 elseif ((abs(past_d)*past_forest_abandon_percent<=forested_past) .and. &
+                      (abs(past_d)*(1-past_forest_abandon_percent)>nonforested_past)) then
+                    ! write(6,*)'case 3'
+                    forested_past_percent = -(abs(past_d)-nonforested_past)/forested_past
+                    nonforested_past_percent = -1
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_past(:,:,np1)=glm_past(:,:,n)+glm_past(:,:,n)*forested_past_percent*fnfforest+glm_past(:,:,n)*nonforested_past_percent*fnfnonforest
+                    end where
+                 else
+                    ! write(6,*)'case 4'
+                 end if
+
+                 avail_land0 = 0
+                 where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                    avail_land0(:,:)=(pctland_in2005(:,:)-glm_crop(:,:,n)-glm_past(:,:,n))*cellarea
+                 end where
+                 where ( glm_crop(:,:,n) .le. 0. )
+                    avail_land0=0.
+                 end where
+                 if (sum(avail_land0)>=crop_d) then
+                    ! write(6,*)'crop increase - land available'
+                    where ( aez_regions .EQ. r .and. aez_zones .EQ. aez)
+                       glm_crop(:,:,np1)=(glm_crop(:,:,n)*cellarea+avail_land0/sum(avail_land0)*crop_d)/cellarea
+                    end where
+                 else
+                    ! write(6,*)'crop increase - land not available'
+                 end if
+              else
+                 ! write(6,*)'crop increase - land not available'
+              end if
+           end if
+        end if
+    end do
+    end do
+
+! Advance the year for next calculation
+
+    year2step=year2step+cdata%i(iac_cdatai_gcam_timestep)
+
+! uncomment the following line for expt1 iesm with 15 year coupling 
+! and a GCAM timestep of 5 years
+!    year2step=year2step+15
+
+    end if !if ymd/10000.ge.year2step
+!
+! Interpolate data to years needed by GLM
+!
+! glm calculates year+1 using 
+! gcam constructed states at year+1
+! and harvest transitions at year
+!
+    curryearp1=ymd/10000+1
+    year1=cdata%i(iac_cdatai_gcam_yr1)
+    year2=cdata%i(iac_cdatai_gcam_yr2)
+    delyr= year2-year1
+    fact1yp1=(year2-curryearp1)/delyr
+    fact2yp1=(curryearp1-year1)/delyr
+    curryear=ymd/10000
+    currmonth=ymd/100 - curryear*100
+    fact1=(year2-curryear)/delyr
+    fact2=(curryear-year1)/delyr
+    glm_crop_ann(:,:)=glm_crop(:,:,n)*fact1yp1+glm_crop(:,:,np1)*fact2yp1
+    glm_past_ann(:,:)=glm_past(:,:,n)*fact1yp1+glm_past(:,:,np1)*fact2yp1
+    glm_othr_ann(:,:)=pctland_in2005-glm_past_ann-glm_crop_ann
+
+! use previous year for fractions fact1 and fact2 for woodharvest
+    glm_wh_ann(:)=gcam_wh(:,n)*fact1+gcam_wh(:,np1)*fact2
+
+!    do j=1,360
+!       do i=1,720
+!          glm_crop_ann(i,j)=fround(glm_crop_ann(i,j),6)
+!          glm_past_ann(i,j)=fround(glm_past_ann(i,j),6)
+!          glm_othr_ann(i,j)=fround(glm_othr_ann(i,j),6)
+!       end do
+!    end do
+
+
+!  Conversion factor of 1.3 to account for a slash fraction 
+!  of 30% for non-harvested carbon lost as a result of wood harvest
+
+    glm_wh_ann(:)=glm_wh_ann(:)*1.3
+
+    ij = 0
+    naez=cdata%i(iac_cdatai_gcam_naez)
+    nreg=cdata%i(iac_cdatai_gcam_nreg)
+ 
+    write(yearc,fmt="I4") ymd/10000
+    open (unit=55,file='gcrop'//yearc//'.txt',action="write",status="unknown")
+    do j=1,360
+       write(55,fmt="720F9.6") glm_crop_ann(:,j)
+    end do
+    close(55)
+    
+    open (unit=55,file='gpast'//yearc//'.txt',action="write",status="unknown")
+    do j=1,360
+       write(55,fmt="720F9.6") glm_past_ann(:,j)
+    end do
+    close(55)
+    
+    ij=0
+    do j=1,numLats
+       do i=1,numLons
+          ij=ij+1
+          glmi(iac_glmi_cropland,ij)=glm_crop_ann(i,j)
+          glmi(iac_glmi_pasture,ij)=glm_past_ann(i,j)
+          glmi(iac_glmi_natveg,ij)=glm_othr_ann(i,j)
+       end do
+    end do
+    glmi_wh(:)=glm_wh_ann(:)
+
+    !
+    !  Since we only run once a year, write a restart file every timestep
+    !
+    iyr=curryear
+    write(filename,'(a,i4.4,a,i2.2,a)') trim(gcam2glm_restfile)//'r.',iyr,'-',currmonth,'.nc'
+    status= nf90_create(filename,nf90_clobber,ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    write(iu,*) subname,' write gcam2glm rpointer file ',trim(gcam2glm_rpointer)
+    
+    iun = shr_file_getunit()
+    open(iun,file=trim(gcam2glm_rpointer),form='formatted')
+    write(iun,'(a)') trim(filename)
+    close(iun)
+    call shr_file_freeunit(iun)
+    
+    write(iu,*) subname,' write_restart file ',trim(filename)
+    
+    status = nf90_def_dim(ncid,'lon',numLons,dimIDs(1))
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_def_dim(ncid,'lat',numLats,dimIDs(2))
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_def_dim(ncid,'time',2,dimIDs(3))
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_def_dim(ncid,'naezxnreg',nflds,dimIDs(4))
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_def_var(ncid,'lon',NF90_FLOAT,dimIDs(1),varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"units","degrees_east")
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_def_var(ncid,'lat',NF90_FLOAT,dimIDs(2),varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"units","degrees_north")
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    status = nf90_def_var(ncid,'time',NF90_INT,dimIDs(3),varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    status = nf90_def_var(ncid,'cropland',NF90_FLOAT,dimIDs(1:3),varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"units","percent")
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_def_var(ncid,'pasture',NF90_FLOAT,dimIDs(1:3),varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"units","percent")
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_def_var(ncid,'woodharvest',NF90_FLOAT,dimIDs(4:3),varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"units","percent")
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_enddef(ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_inq_varid(ncid,'lon',varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_var(ncid,varid,lon)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_inq_varid(ncid,'lat',varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_var(ncid,varid,lat)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    status = nf90_inq_varid(ncid,'cropland',varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_var(ncid,varid,glm_crop)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_inq_varid(ncid,'pasture',varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_var(ncid,varid,glm_past)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_inq_varid(ncid,'woodharvest',varid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_put_var(ncid,varid,gcam_wh)
+    if(status /= nf90_NoErr) call handle_err(status)
+    
+    status = nf90_close(ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+        
+  end subroutine gcam2glm_run_mod
+  
+  
+  !---------------------------------------------------------------------------
+  !BOP
+
+! !IROUTINE: gcam2glm_final_mod
+
+! !INTERFACE:
+  subroutine gcam2glm_final_mod( )
+
+! !DESCRIPTION:
+! Finalize glm model
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+
+! !LOCAL VARIABLES:
+    integer :: iu
+    character(len=*),parameter :: subname='(gcam2glm_final_mod)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+
+!---------------------------------------------------------------------------
+
+!    iu  = nint(cdata(iac_cdata_logunit))
+!    write(iu,*) trim(subname)
+
+  end subroutine gcam2glm_final_mod
+!====================================================================================
+real*8 function fround(n, d)
+real*8 n
+integer d
+  fround= floor(n * 10.**d + .5) / 10.**d
+end function fround
+!====================================================================================
+ subroutine handle_err (status)
+    implicit none
+    integer, intent (in) :: status
+    print *, nf90_strerror(status)
+    stop
+ end subroutine handle_err
+end module gcam2glm_mod
+

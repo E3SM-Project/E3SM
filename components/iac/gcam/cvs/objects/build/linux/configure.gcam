@@ -1,0 +1,52 @@
+### Compile settings for GCAM on Linux ###
+### William.Gustafson@pnl.gov; 9-Sep-2008 ###
+
+### gcc compiler settings (testing with v4.1.2) ###
+CXX             = gcc
+CXXOPTIM        = -O3
+CXXDEBUG        = -DNDEBUG
+CXXBASEOPTS     = $(CXXDEBUG)
+
+#FC              = gfortran
+#FCOPTIM         = -O3
+#FCDEBUG         = -ffpe-trap=invalid,zero,overflow #-g -fbounds-check
+#FCBASEOPTS      = -fno-underscoring $(FCDEBUG)
+FC              = ${FC_IAC}
+FCOPTIM         =
+FCDEBUG         = 
+FCBASEOPTS      = ${FCBASEOPTS_IAC}
+
+ARCH_FLAGS      = -D__GNUC__=4 -D__GNUC_MINOR__=1 -DFORTRAN_LOWER
+ENVLIBS         = 
+
+### Portland compiler settings (tested with v7.1-6) ###
+#FC              = pgf90
+#FCOPTIM         = -O0
+#FCDEBUG         = -Ktrap=fp #-g -Mbounds
+#FCBASEOPTS      = $(FCDEBUG)
+
+### The rest should be mostly compiler independent
+CXXFLAGS        = $(CXXOPTIM) $(CXXBASEOPTS)
+FCFLAGS         = $(FCOPTIM) $(FCBASEOPTS)
+LD              = $(CXX)
+LDFLAGS         = $(CXXFLAGS)
+AR              = ar ru
+MAKE            = make -i -r
+RANLIB          = ranlib
+LIB             = -L${IAC_PATH}/lib  ${PATHOFFSET}/build/linux/libgcamlib.a -lxerces-c -ldb -ldbxml -ldb_cxx -lxqilla -lz
+INCLUDE         = -I${INC_BOOST} \
+                  -I${IAC_PATH}/include \
+                  -I${PATHOFFSET}
+
+.SUFFIXES: .o .cpp .f90 .cc
+.cpp.o:
+	${CXX} -c ${CXXFLAGS} ${ARCH_FLAGS} ${INCLUDE} $*.cpp
+	$(AR) ${BUILDPATH}/libgcamlib.a $*.o
+
+.cc.o:
+	${CXX} -c ${CXXFLAGS} ${ARCH_FLAGS} ${INCLUDE} $*.cc
+	$(AR) ${BUILDPATH}/libgcamlib.a $*.o
+
+.f90.o:
+	$(FC) -c $(FCFLAGS) $(INCLUDE) $*.f90
+	$(AR) ${BUILDPATH}/libgcamlib.a $*.o

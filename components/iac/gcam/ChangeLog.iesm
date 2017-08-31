@@ -1,0 +1,676 @@
+===============================================================
+Tag name: v0_1_16_gcam2.0
+Originator(s): jet
+Date: Dec 06 2012
+One-line Fixed compile error in licence text
+
+
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+	
+===============================================================
+Tag name: v0_1_15_gcam2.0
+Originator(s): jet
+Date: Dec 05 2012
+One-line Changed License text in all files
+
+
+	M       cvs/...
+	
+===============================================================
+Tag name: v0_1_14_gcam2.0
+Originator(s): jet
+Date: Oct 18 2012
+One-line Port to Evergreen
+
+	M       ChangeLog.iesm
+	M       cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+	M       cvs/objects/build/linux/configure.gcam
+	
+===============================================================
+Tag name: v0_1_13_gcam2.0
+Originator(s): jet
+Date: Aug 29 2012
+One-line Bug fix for fast non-sneakernet mode.  GCAM sending bad boundary data.
+	
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+	
+===============================================================
+Tag name: v0_1_12_gcam2.0
+Originator(s): jet
+Date: May 7 2012
+One-line Dont write restarts during init, bug fix for new sneakernet variable.
+	
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+	
+	
+===============================================================
+Tag name: v0_1_11_gcam2.0
+Originator(s): jet
+Date: Apr 15 2012
+One-line Summary: merge 5 and 15 year run modes.  Add sneakermode to iac_in"
+
+	M       cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+	M       cvs/objects/ccsmcpl/source/gcam_comp_mod.f90.5year
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface_wrapper.cpp
+	M       cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+
+ - split the functionality of setting the carbon density out from run mode.
+
+===============================================================
+Tag name: v0_1_10_gcam2.0
+Originator(s): jet
+Date: Apr 04 2012
+One-line Summary: Mods to allow 15 year simulated sneakernet timing.
+
+        M       cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+	A       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp.5year
+	A       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface_wrapper.cpp.5year
+	A       cvs/objects/ccsmcpl/source/gcam_comp_mod.f90.5year
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface_wrapper.cpp
+	M       cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+	A       cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h.5year
+	M       cvs/objects/land_allocator/source/set_carbon_density.cpp
+	M       ChangeLog.iesm
+
+ - These mods allow for simulating the 15 year timestep of the 
+	sneaker net experiments.
+ - There is a new logical passed through the cdata array that controls whether
+	gcam only sets carbon density or runs a forward time step.
+ - The files which allow for the standard 5 year coupling are named xxx.F90.5year.
+	
+===============================================================
+Tag name: v0_1_08_gcam2.0
+Originator(s): jet
+Date: Feb 08 2012
+One-line Summary: Pralit Fixes for restarts, port to hopper, mods for full couple
+
+	M       ChangeLog.iesm
+	M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+	M       cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+	M       cvs/objects/ccarbon_model/source/land_carbon_densities.cpp
+	M       cvs/objects/ccarbon_model/include/land_carbon_densities.h
+	M       cvs/objects/build/linux/configure.gcam
+	M       cvs/objects/containers/source/ccsm_scenario_runner.cpp
+	M       cvs/objects/containers/source/scenario.cpp
+	M       cvs/objects/containers/source/world.cpp
+	M       cvs/objects/containers/include/world.h
+	M       cvs/objects/land_allocator/source/set_carbon_density.cpp
+	M       cvs/objects/land_allocator/source/land_node.cpp
+	M       cvs/objects/land_allocator/include/set_carbon_density.h
+
+===============================================================
+Tag name: v0_1_07_gcam2.0
+Originator(s): jet
+Date: Nov 06 2011
+One-line Summary: Start mods for restarts and write gcam database file out on finalize
+
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+M      cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+M      cvs/objects/containers/source/ccsm_scenario_runner.cpp
+M      cvs/objects/containers/source/scenario.cpp
+M      cvs/objects/containers/source/ccsm_scenario.cpp
+M      cvs/objects/containers/include/ccsm_scenario_runner.h
+M      cvs/objects/containers/include/ccsm_scenario.h
+
+===============================================================
+Tag name: v0_1_06_gcam2.0
+Originator(s): jet
+Date: Oct 21 2011
+One-line Summary: change config file to not allow reading of clm carbon data via dataset
+
+A      exe/configuration_exp1_clmcarbon.xml
+===============================================================
+Tag name: v0_1_05_gcam2.0
+Originator(s): jet
+Date: Oct 13 2011
+One-line Summary: Remove hardcoded 15 year coupling for gcam
+
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+===============================================================
+Tag name: v0_1_04_gcam2.0
+Originator(s): tcraig
+Date: Oct 12 2011
+One-line Summary: change Eclock type to integer
+
+M      cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+===============================================================
+Tag name: v0_1_03_gcam2.0
+Originator(s): jet
+Date: Oct 10 2011
+One-line Summary: set carbon densities using input from gcami
+array and the new visitor code.  GCAM now coupled to clm.
+
+M       cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+M       cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+M       cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+===============================================================
+Tag name: v0_1_02_gcam2.0
+Originator(s): jet
+Date: Sep 11 2011
+One-line Summary: Forgot to add the configuration file for exp 1
+
+M      exe/configuration_exp1.xml
+M      cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+===============================================================
+Tag name: v0_1_01_gcam2.0
+Originator(s): jet
+Date: Sep 09 2011
+One-line Summary: Fixes for ccsm coupled version of gcam2
+
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+A      cvs/objects/model_data/base/iesm_cdensadj.csv
+A      cvs/objects/model_data/base/iesm_cdensadj.xml
+A      cvs/objects/containers/source/ccsm_scenario_runner.cpp
+A      cvs/objects/containers/source/ccsm_scenario.cpp
+A      cvs/objects/containers/include/ccsm_scenario_runner.h
+A      cvs/objects/containers/include/ccsm_scenario.h
+
+===============================================================
+Tag name: v0_0_0_gcam2.0
+Originator(s): jet
+Date: Sept 09 2011
+One-line Summary: GCAM 2.0 vendor update to trunk
+
+D      output/.dot
+A  +   exe/configuration_ref.xml
+M      exe/log_conf.xml
+D      exe/configuration.xml
+A  +   exe/carbon_tax_4p5.xml
+A  +   exe/configuration_4p5.xml
+M      cvs/objects/sectors/source/sector.cpp
+M      cvs/objects/sectors/source/wind_backup_calculator.cpp
+M      cvs/objects/sectors/source/subsector_add_techcosts.cpp
+M      cvs/objects/sectors/source/production_sector.cpp
+D      cvs/objects/sectors/source/forest_supply_subsector.cpp
+M      cvs/objects/sectors/source/subsector.cpp
+M      cvs/objects/sectors/source/energy_final_demand.cpp
+M      cvs/objects/sectors/source/supply_sector.cpp
+M      cvs/objects/sectors/source/sector_utils.cpp
+M      cvs/objects/sectors/source/final_demand_sector.cpp
+D      cvs/objects/sectors/source/food_supply_sector.cpp
+A  +   cvs/objects/sectors/source/ag_supply_sector.cpp
+M      cvs/objects/sectors/source/CSP_backup_calculator.cpp
+D      cvs/objects/sectors/source/forest_demand_sector.cpp
+M      cvs/objects/sectors/source/capacity_limit_backup_calculator.cpp
+D      cvs/objects/sectors/source/interm_supply_sector.cpp
+D      cvs/objects/sectors/source/food_supply_subsector.cpp
+M      cvs/objects/sectors/source/Makefile
+M      cvs/objects/sectors/source/more_sector_info.cpp
+A  +   cvs/objects/sectors/source/ag_supply_subsector.cpp
+D      cvs/objects/sectors/source/forest_supply_sector.cpp
+M      cvs/objects/sectors/source/tran_subsector.cpp
+D      cvs/objects/sectors/include/forest_demand_sector.h
+D      cvs/objects/sectors/include/interm_supply_sector.h
+A  +   cvs/objects/sectors/include/ag_supply_subsector.h
+M      cvs/objects/sectors/include/more_sector_info.h
+D      cvs/objects/sectors/include/forest_supply_sector.h
+M      cvs/objects/sectors/include/tran_subsector.h
+M      cvs/objects/sectors/include/sector.h
+D      cvs/objects/sectors/include/ag_sector.h
+M      cvs/objects/sectors/include/demand_sector.h
+M      cvs/objects/sectors/include/energy_final_demand.h
+M      cvs/objects/sectors/include/supply_sector.h
+M      cvs/objects/sectors/include/final_demand_sector.h
+D      cvs/objects/sectors/include/food_supply_sector.h
+D      cvs/objects/sectors/include/food_supply_subsector.h
+M      cvs/objects/sectors/include/wind_backup_calculator.h
+M      cvs/objects/sectors/include/production_sector.h
+D      cvs/objects/sectors/include/forest_supply_subsector.h
+M      cvs/objects/sectors/include/subsector.h
+M      cvs/objects/sectors/include/sector_utils.h
+A  +   cvs/objects/sectors/include/ag_supply_sector.h
+M      cvs/objects/technologies/source/power_plant_capture_component.cpp
+M      cvs/objects/technologies/source/tran_technology.cpp
+D      cvs/objects/technologies/source/forest_production_technology.cpp
+M      cvs/objects/technologies/source/standard_capture_component.cpp
+M      cvs/objects/technologies/source/sgm_output.cpp
+M      cvs/objects/technologies/source/secondary_output.cpp
+M      cvs/objects/technologies/source/building_generic_dmd_technology.cpp
+M      cvs/objects/technologies/source/solar_technology.cpp
+A  +   cvs/objects/technologies/source/technology_container.cpp
+M      cvs/objects/technologies/source/default_technology.cpp
+A  +   cvs/objects/technologies/source/res_secondary_output.cpp
+M      cvs/objects/technologies/source/shutdown_decider_factory.cpp
+M      cvs/objects/technologies/source/intermittent_technology.cpp
+D      cvs/objects/technologies/source/generic_technology_info.cpp
+M      cvs/objects/technologies/source/input_factory.cpp
+M      cvs/objects/technologies/source/unmanaged_land_technology.cpp
+A  +   cvs/objects/technologies/source/generic_output.cpp
+M      cvs/objects/technologies/source/Makefile
+M      cvs/objects/technologies/source/wind_technology.cpp
+M      cvs/objects/technologies/source/residue_biomass_output.cpp
+M      cvs/objects/technologies/source/primary_output.cpp
+M      cvs/objects/technologies/source/nuke_fuel_technology.cpp
+A  +   cvs/objects/technologies/source/stub_technology_container.cpp
+M      cvs/objects/technologies/source/technology.cpp
+M      cvs/objects/technologies/source/profit_shutdown_decider.cpp
+M      cvs/objects/technologies/source/global_technology_database.cpp
+A  +   cvs/objects/technologies/source/s_curve_shutdown_decider.cpp
+M      cvs/objects/technologies/source/marginal_profit_calculator.cpp
+M      cvs/objects/technologies/source/output_factory.cpp
+A  +   cvs/objects/technologies/source/ag_production_technology.cpp
+A  +   cvs/objects//technologies/source/empty_technology.cpp
+D      cvs/objects/technologies/source/global_technology.cpp
+M      cvs/objects/technologies/source/internal_gains.cpp
+M      cvs/objects/technologies/include/wind_technology.h
+A  +   cvs/objects/technologies/include/generic_output.h
+M      cvs/objects/technologies/include/residue_biomass_output.h
+D      cvs/objects/technologies/include/itechnology_info.h
+M      cvs/objects/technologies/include/primary_output.h
+M      cvs/objects/technologies/include/base_technology.h
+M      cvs/objects/technologies/include/nuke_fuel_technology.h
+A  +   cvs/objects/technologies/include/stub_technology_container.h
+M      cvs/objects/technologies/include/technology.h
+M      cvs/objects/technologies/include/profit_shutdown_decider.h
+M      cvs/objects/technologies/include/global_technology_database.h
+A  +   cvs/objects/technologies/include/s_curve_shutdown_decider.h
+A  +   cvs/objects/technologies/include/itechnology_container.h
+A  +   cvs/objects/technologies/include/ag_production_technology.h
+A  +   cvs/objects/technologies/include/empty_technology.h
+D      cvs/objects/technologies/include/global_technology.h
+M      cvs/objects/technologies/include/internal_gains.h
+M      cvs/objects/technologies/include/tran_technology.h
+D      cvs/objects/technologies/include/forest_production_technology.h
+M      cvs/objects/technologies/include/sgm_output.h
+M      cvs/objects/technologies/include/secondary_output.h
+M      cvs/objects/technologies/include/building_generic_dmd_technology.h
+M      cvs/objects/technologies/include/ioutput.h
+M      cvs/objects/technologies/include/solar_technology.h
+A  +   cvs/objects/technologies/include/technology_container.h
+M      cvs/objects/technologies/include/default_technology.h
+A  +   cvs/objects/technologies/include/res_secondary_output.h
+M      cvs/objects/technologies/include/intermittent_technology.h
+D      cvs/objects/technologies/include/generic_technology_info.h
+M      cvs/objects/technologies/include/itechnology.h
+D      cvs/objects/technologies/include/food_production_technology.h
+M      cvs/objects/technologies/include/unmanaged_land_technology.h
+D      cvs/objects/magicc/source
+D      cvs/objects/magicc/source/compiling_for_gcc.txt
+D      cvs/objects/magicc/source/Climat.f90
+D      cvs/objects/magicc/source/Makefile
+D      cvs/objects/magicc/inputs/co2hist.in
+A  +   cvs/objects/magicc/inputs/co2hist_c.in
+D      cvs/objects/magicc/inputs/magice.cfg
+A  +   cvs/objects/magicc/inputs/magice_c.cfg
+D      cvs/objects/magicc/inputs/magrun.cfg
+A  +   cvs/objects/magicc/inputs/magrun_c.cfg
+A  +   cvs/objects/magicc/inputs/BCOCHist_c.csv
+M      cvs/objects/magicc/inputs/input_gases.emk
+D      cvs/objects/magicc/inputs/qhalos.in
+D      cvs/objects/magicc/inputs/maggas.cfg
+A  +   cvs/objects/magicc/inputs/qhalos_c.in
+A  +   cvs/objects/magicc/inputs/maggas_c.cfg
+D      cvs/objects/magicc/inputs/maguser.cfg
+D      cvs/objects/magicc/inputs/magxtra.cfg
+D      cvs/objects/magicc/inputs/magmod.cfg
+A  +   cvs/objects/magicc/inputs/magxtra_c.cfg
+A  +   cvs/objects/magicc/inputs/maguser_c.cfg
+A  +   cvs/objects/magicc/inputs/magmod_c.cfg
+D      cvs/objects/magicc/inputs/qextra.in
+A  +   cvs/objects/magicc/inputs/qextra_c.in
+M      cvs/objects/main/source/main.cpp
+M      cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+M      cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+D      cvs/objects/ccarbon_model/source/luc_carbon_summer.cpp
+A  +   cvs/objects/ccarbon_model/source/asimple_carbon_calc.cpp
+D      cvs/objects/ccarbon_model/source/luc_flow_out.cpp
+D      cvs/objects/ccarbon_model/source/luc_carbon_summer_stock.cpp
+M      cvs/objects/ccarbon_model/source/carbon_model_utils.cpp
+D      cvs/objects/ccarbon_model/source/carbon_stock.cpp
+D      cvs/objects/ccarbon_model/source/acarbon_stock.cpp
+A  +   cvs/objects/ccarbon_model/source/land_carbon_densities.cpp
+D      cvs/objects/ccarbon_model/source/luc_flow_in_to_box.cpp
+D      cvs/objects/ccarbon_model/source/luc_carbon_summer_sub_container.cpp
+D      cvs/objects/ccarbon_model/source/carbon_box.cpp
+D      cvs/objects/ccarbon_model/source/box_flow.cpp
+D      cvs/objects/ccarbon_model/source/carbon_flow_factory.cpp
+D      cvs/objects/ccarbon_model/source/luc_flow_in_to_box_model.cpp
+M      cvs/objects/ccarbon_model/source/Makefile
+D      cvs/objects/ccarbon_model/source/acarbon_flow.cpp
+D      cvs/objects/ccarbon_model/source/carbon_box_model.cpp
+D      cvs/objects/ccarbon_model/source/environmental_info.cpp
+D      cvs/objects/ccarbon_model/source/npp.cpp
+D      cvs/objects/ccarbon_model/include/luc_flow_in_to_box_model.h
+D      cvs/objects/ccarbon_model/include/environmental_info.h
+D      cvs/objects/ccarbon_model/include/carbon_box_model.h
+D      cvs/objects/ccarbon_model/include/acarbon_flow.h
+D      cvs/objects/ccarbon_model/include/npp.h
+A  +   cvs/objects/ccarbon_model/include/icarbon_calc.h
+D      cvs/objects/ccarbon_model/include/luc_carbon_summer.h
+A  +   cvs/objects/ccarbon_model/include/asimple_carbon_calc.h
+D      cvs/objects/ccarbon_model/include/luc_flow_out.h
+D      cvs/objects/ccarbon_model/include/luc_carbon_summer_stock.h
+M      cvs/objects/ccarbon_model/include/carbon_model_utils.h
+D      cvs/objects/ccarbon_model/include/carbon_stock.h
+D      cvs/objects/ccarbon_model/include/acarbon_stock.h
+A  +   cvs/objects/ccarbon_model/include/land_carbon_densities.h
+D      cvs/objects/ccarbon_model/include/luc_carbon_summer_sub_container.h
+D      cvs/objects/ccarbon_model/include/luc_flow_in_to_box.h
+D      cvs/objects/ccarbon_model/include/carbon_box.h
+D      cvs/objects/ccarbon_model/include/box_flow.h
+D      cvs/objects/ccarbon_model/include/icarbon_container.h
+D      cvs/objects/ccarbon_model/include/icarbon_stock.h
+D      cvs/objects/ccarbon_model/include/carbon_flow_factory.h
+M      cvs/objects/marketplace/source/market.cpp
+M      cvs/objects/marketplace/source/price_market.cpp
+M      cvs/objects/marketplace/source/marketplace.cpp
+M      cvs/objects/marketplace/source/cached_market.cpp
+M      cvs/objects/marketplace/source/trial_value_market.cpp
+M      cvs/objects/marketplace/source/normal_market.cpp
+M      cvs/objects/marketplace/source/Makefile
+A  +   cvs/objects/marketplace/source/market_RES.cpp
+M      cvs/objects/marketplace/include/trial_value_market.h
+A  +   cvs/objects/marketplace/include/market_RES.h
+M      cvs/objects/marketplace/include/imarket_type.h
+M      cvs/objects/marketplace/include/market.h
+M      cvs/objects/marketplace/include/price_market.h
+M      cvs/objects/marketplace/include/marketplace.h
+M      cvs/objects/agLU/fortran_source/Makefile
+D      cvs/objects/model_data/reporting
+D      cvs/objects/model_data/reporting/keyword_addon.xml
+D      cvs/objects/model_data/reporting/standard_queries.xml
+M      cvs/objects/model_data/base/core_model_input_2009-03-13.xml
+M      cvs/objects/model_data/base/core_model_input_2009-11-17.xml
+D      cvs/objects/model_data/base/core_model_input.xml
+A  +   cvs/objects/model_data/base/core_model_input_2010-05-03.xml
+M      cvs/objects/model_data/base/solver_config.xml
+M      cvs/objects/investment/source/set_share_weight_visitor.cpp
+M      cvs/objects/investment/source/Makefile
+M      cvs/objects/policy/source/policy_ghg.cpp
+M      cvs/objects/policy/source/Makefile
+M      cvs/objects/policy/source/policy_portfolio_standard.cpp
+M      cvs/objects/build/linux/configure.gcam.linux
+M      cvs/objects/build/linux/configure.gcam
+M      cvs/objects/build/linux/Makefile
+M      cvs/objects/build/vc71/objects.ncb
+M      cvs/objects/build/vc71/objects.vcproj
+M      cvs/objects/containers/source/region_cge.cpp
+M      cvs/objects/containers/source/scenario.cpp
+M      cvs/objects/containers/source/total_policy_cost_calculator.cpp
+M      cvs/objects/containers/source/dependency_finder.cpp
+M      cvs/objects/containers/source/gdp.cpp
+M      cvs/objects/containers/source/batch_runner.cpp
+M      cvs/objects/containers/source/region_minicam.cpp
+M      cvs/objects/containers/source/mac_generator_scenario_runner.cpp
+M      cvs/objects/containers/source/region.cpp
+M      cvs/objects/containers/source/world.cpp
+M      cvs/objects/containers/source/Makefile
+M      cvs/objects/containers/source/single_scenario_runner.cpp
+M      cvs/objects/containers/include/region_cge.h
+M      cvs/objects/containers/include/scenario.h
+M      cvs/objects/containers/include/dependency_finder.h
+M      cvs/objects/containers/include/gdp.h
+M      cvs/objects/containers/include/tree_item.h
+M      cvs/objects/containers/include/region_minicam.h
+M      cvs/objects/containers/include/region.h
+M      cvs/objects/containers/include/world.h
+M      cvs/objects/containers/include/merge_runner.h
+M      cvs/objects/demographics/source/population_sgm_fixed.cpp
+M      cvs/objects/demographics/source/demographic.cpp
+M      cvs/objects/demographics/source/population_mini_cam.cpp
+M      cvs/objects/demographics/source/population.cpp
+M      cvs/objects/demographics/source/population_sgm_rate.cpp
+M      cvs/objects/demographics/source/Makefile
+M      cvs/objects/demographics/include/population.h
+M      cvs/objects/demographics/include/population_sgm_rate.h
+M      cvs/objects/demographics/include/population_sgm_fixed.h
+M      cvs/objects/demographics/include/demographic.h
+M      cvs/objects/demographics/include/population_mini_cam.h
+M      cvs/objects/functions/source/minicam_price_elasticity_function.cpp
+M      cvs/objects/functions/source/input_subsidy.cpp
+A  +   cvs/objects/functions/source/input_OM_var.cpp
+M      cvs/objects/functions/source/non_energy_input.cpp
+M      cvs/objects/functions/source/building_demand_input.cpp
+M      cvs/objects/functions/source/intensity.cpp
+M      cvs/objects/functions/source/Makefile
+M      cvs/objects/functions/source/sgm_input.cpp
+M      cvs/objects/functions/source/function_utils.cpp
+M      cvs/objects/functions/source/energy_input.cpp
+A  +   cvs/objects/functions/source/input_OM_fixed.cpp
+M      cvs/objects/functions/source/input_tax.cpp
+M      cvs/objects/functions/source/minicam_input.cpp
+A  +   cvs/objects/functions/source/input_capital.cpp
+M      cvs/objects/functions/include/node_input.h
+M      cvs/objects/functions/include/sgm_input.h
+M      cvs/objects/functions/include/function_utils.h
+M      cvs/objects/functions/include/energy_input.h
+A  +   cvs/objects/functions/include/input_OM_fixed.h
+A  +   cvs/objects/functions/include/input_capital.h
+M      cvs/objects/functions/include/minicam_input.h
+A  +   cvs/objects/functions/include/input_OM_var.h
+M      cvs/objects/functions/include/iinput.h
+M      cvs/objects/functions/include/non_energy_input.h
+M      cvs/objects/functions/include/building_demand_input.h
+D      cvs/objects/emissions/source/asimple_carbon_calc.cpp
+M      cvs/objects/emissions/source/emissions_summer.cpp
+M      cvs/objects/emissions/source/acomplex_emissions.cpp
+A  +   cvs/objects/emissions/source/luc_emissions_summer.cpp
+D      cvs/objects/emissions/source/unmanaged_carbon_calc.cpp
+M      cvs/objects/emissions/source/aghg.cpp
+M      cvs/objects/emissions/source/by_product.cpp
+M      cvs/objects/emissions/source/co2_emissions.cpp
+M      cvs/objects/emissions/source/Makefile
+D      cvs/objects/emissions/source/production_carbon_calc.cpp
+M      cvs/objects/emissions/include/ghg_factory.h
+D      cvs/objects/emissions/include/production_carbon_calc.h
+D      cvs/objects/emissions/include/icarbon_calc.h
+D      cvs/objects/emissions/include/asimple_carbon_calc.h
+M      cvs/objects/emissions/include/emissions_summer.h
+M      cvs/objects/emissions/include/acomplex_emissions.h
+A  +   cvs/objects/emissions/include/luc_emissions_summer.h
+D      cvs/objects/emissions/include/unmanaged_carbon_calc.h
+M      cvs/objects/emissions/include/aghg.h
+M      cvs/objects/emissions/include/by_product.h
+M      cvs/objects/emissions/include/emissions_driver_factory.h
+D      cvs/objects/reporting/source/complex_carbon_printer.cpp
+M      cvs/objects/reporting/source/xml_db_outputter.cpp
+D      cvs/objects/reporting/source/complex_carbon_dot_printer.cpp
+M      cvs/objects/reporting/source/energy_balance_table.cpp
+M      cvs/objects/reporting/source/get_glm_data.cpp
+M      cvs/objects/reporting/source/land_allocator_printer.cpp
+M      cvs/objects/reporting/source/batch_csv_outputter.cpp
+M      cvs/objects/reporting/source/Makefile
+D      cvs/objects/reporting/include/complex_carbon_printer.h
+M      cvs/objects/reporting/include/xml_db_outputter.h
+D      cvs/objects/reporting/include/complex_carbon_dot_printer.h
+M      cvs/objects/reporting/include/energy_balance_table.h
+M      cvs/objects/reporting/include/get_glm_data.h
+M      cvs/objects/reporting/include/sgm_gen_table.h
+M      cvs/objects/resources/source/subresource.cpp
+M      cvs/objects/resources/source/renewable_subresource.cpp
+M      cvs/objects/resources/source/resource.cpp
+M      cvs/objects/resources/source/Makefile
+M      cvs/objects/resources/include/subresource.h
+M      cvs/objects/resources/include/grade.h
+M      cvs/objects/resources/include/renewable_subresource.h
+M      cvs/objects/solution/solvers/source/bisect_all.cpp
+M      cvs/objects/solution/solvers/source/bisect_policy.cpp
+M      cvs/objects/solution/solvers/source/bisect_one.cpp
+M      cvs/objects/solution/solvers/source/Makefile
+M      cvs/objects/solution/util/source/solver_library.cpp
+M      cvs/objects/solution/util/source/Makefile
+M      cvs/objects/target_finder/source/policy_target_runner.cpp
+M      cvs/objects/target_finder/source/bisecter.cpp
+A  +   cvs/objects/target_finder/source/kyoto_forcing_target.cpp
+M      cvs/objects/target_finder/source/emissions_stabalization_target.cpp
+M      cvs/objects/target_finder/source/temperature_target.cpp
+A  +   cvs/objects/target_finder/source/secanter.cpp
+M      cvs/objects/target_finder/source/simple_policy_target_runner.cpp
+M      cvs/objects/target_finder/source/Makefile
+M      cvs/objects/target_finder/source/concentration_target.cpp
+M      cvs/objects/target_finder/source/forcing_target.cpp
+M      cvs/objects/target_finder/source/target_factory.cpp
+A  +   cvs/objects/target_finder/include/itarget_solver.h
+M      cvs/objects/target_finder/include/concentration_target.h
+M      cvs/objects/target_finder/include/forcing_target.h
+M      cvs/objects/target_finder/include/target_factory.h
+M      cvs/objects/target_finder/include/policy_target_runner.h
+M      cvs/objects/target_finder/include/itarget.h
+M      cvs/objects/target_finder/include/bisecter.h
+A  +   cvs/objects/target_finder/include/kyoto_forcing_target.h
+M      cvs/objects/target_finder/include/emissions_stabalization_target.h
+M      cvs/objects/target_finder/include/temperature_target.h
+A  +   cvs/objects/target_finder/include/secanter.h
+M      cvs/objects/target_finder/include/simple_policy_target_runner.h
+M      cvs/objects/util/logger/source/logger.cpp
+M      cvs/objects/util/logger/source/Makefile
+M      cvs/objects/util/database/source/output_helper.cpp
+M      cvs/objects/util/database/source/Makefile
+M      cvs/objects/util/curves/source/Makefile
+M      cvs/objects/util/base/source/calibrate_share_weight_visitor.cpp
+M      cvs/objects/util/base/source/atom.cpp
+A  +   cvs/objects/util/base/source/fixed_interpolation_function.cpp
+M      cvs/objects/util/base/source/calibrate_resource_visitor.cpp
+M      cvs/objects/util/base/source/util.cpp
+M      cvs/objects/util/base/source/model_time.cpp
+A  +   cvs/objects/util/base/source/interpolation_rule.cpp
+A  +   cvs/objects/util/base/source/s_curve_interpolation_function.cpp
+A  +   cvs/objects/util/base/source/interpolation_function_factory.cpp
+A  +   cvs/objects/util/base/source/linear_interpolation_function.cpp
+M      cvs/objects/util/base/source/Makefile
+M      cvs/objects/util/base/include/ivisitor.h
+M      cvs/objects/util/base/include/util.h
+A  +   cvs/objects/util/base/include/interpolation_function_factory.h
+A  +   cvs/objects/util/base/include/linear_interpolation_function.h
+M      cvs/objects/util/base/include/xml_helper.h
+M      cvs/objects/util/base/include/default_visitor.h
+A  +   cvs/objects/util/base/include/iinterpolation_function.h
+A  +   cvs/objects/util/base/include/fixed_interpolation_function.h
+M      cvs/objects/util/base/include/definitions.h
+M      cvs/objects/util/base/include/calibrate_resource_visitor.h
+A  +   cvs/objects/util/base/include/interpolation_rule.h
+M      cvs/objects/util/base/include/model_time.h
+M      cvs/objects/util/base/include/hash_map.h
+A  +   cvs/objects/util/base/include/s_curve_interpolation_function.h
+A  +   cvs/objects/util/base/include/version.h
+A  +   cvs/objects/land_allocator/source/land_allocator.cpp
+A  +   cvs/objects/land_allocator/source/set_carbon_density.cpp
+M      cvs/objects/land_allocator/source/land_node.cpp
+M      cvs/objects/land_allocator/source/unmanaged_land_leaf.cpp
+M      cvs/objects/land_allocator/source/land_leaf.cpp
+D      cvs/objects/land_allocator/source/forest_land_leaf.cpp
+A  +   cvs/objects/land_allocator/source/carbon_land_leaf.cpp
+M      cvs/objects/land_allocator/source/Makefile
+M      cvs/objects/land_allocator/source/aland_allocator_item.cpp
+D      cvs/objects/land_allocator/source/tree_land_allocator.cpp
+A  +   cvs/objects/land_allocator/include/carbon_land_leaf.h
+M      cvs/objects/land_allocator/include/aland_allocator_item.h
+D      cvs/objects/land_allocator/include/tree_land_allocator.h
+A  +   cvs/objects/land_allocator/include/land_allocator.h
+A  +   cvs/objects/land_allocator/include/set_carbon_density.h
+M      cvs/objects/land_allocator/include/land_node.h
+M      cvs/objects/land_allocator/include/unmanaged_land_leaf.h
+M      cvs/objects/land_allocator/include/land_leaf.h
+D      cvs/objects/land_allocator/include/forest_land_leaf.h
+M      cvs/objects/land_allocator/include/iland_allocator.h
+M      cvs/objects/consumers/source/Makefile
+A  +   cvs/objects/climate/source/ObjECTS_MAGICC_others.cpp
+A  +   cvs/objects/climate/source/MAGICC_array.cpp
+M      cvs/objects/climate/source/magicc_model.cpp
+M      cvs/objects/climate/source/Makefile
+A  +   cvs/objects/climate/source/MAGICC_IO_helpers.cpp
+A  +   cvs/objects/climate/source/ObjECTS_MAGICC.cpp
+A  +   cvs/objects/climate/include/ObjECTS_MAGICC.h
+A  +   cvs/objects/climate/include/MAGICC_array.h
+M      cvs/objects/climate/include/magicc_model.h
+M      cvs/objects/climate/include/iclimate_model.h
+
+
+===============================================================
+Tag name: v0_1_04_gcam1.1
+Originator(s): jet
+Date: May 22 2011
+One-line Summary: PNNL update for GCAM visitor to get forest biomass
+
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+M      cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+M      cvs/objects/reporting/source/get_glm_data.cpp
+M      cvs/objects/reporting/include/get_glm_data.h
+
+
+===============================================================
+Tag name: v0_1_03_gcam1.1
+Originator(s): jet
+Date: Thu Dec 30 2010
+One-line Summary: update GCAM for coupling in CESM.
+
+Add vistor routine to retrieve data for glm model.
+Update wrapper and interface code to pass standard import and export
+arrays
+
+
+M      cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface_wrapper.cpp
+M      cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+A      cvs/objects/build/linux/configure.gcam.linux
+M      cvs/objects/containers/source/scenario.cpp
+A      cvs/objects/reporting/source/get_glm_data.cpp
+M      cvs/objects/reporting/source/Makefile
+A      cvs/objects/reporting/include/get_glm_data.h
+
+
+===============================================================
+Tag name: v0_1_02_gcam1.1
+Originator(s): tcraig
+Date: Thu Dec 30 2010
+One-line Summary: Convert gcam to a comp in iac for latest top level implementation
+
+D      bld
+D      bld/gcam.template
+M      ChangeLog.iesm
+A      cvs/objects/ccsmcpl/source/gcam_comp_mod.f90
+D      cvs/objects/ccsmcpl/source/iac_comp_mod.f90
+M      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface_wrapper.cpp
+M      cvs/objects/ccsmcpl/source/Makefile
+
+===============================================================
+Tag name: v0_1_01_gcam1.1
+Originator(s): tcraig/jet
+Date: Tue June 4 2010
+One-line Summary: Merge cesmcpl branch to trunk
+
+Added gcam/ccsm interface, working with minimal functionality
+Modified some files in GCAM to allow it to run single 
+consecutive timesteps when called with the run method.
+
+M      bld/gcam.template
+M      exe/configuration.xml
+M      cvs/objects/sectors/source/ag_sector.cpp
+M      cvs/objects/magicc/source/Climat.f90
+M      cvs/objects/ccsmcpl/source/iac_comp_mod.f90
+M      cvs/objects/ccsmcpl/source/Makefile
+A      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface_wrapper.cpp
+A      cvs/objects/ccsmcpl/source/CCSM_GCAM_interface.cpp
+A      cvs/objects/ccsmcpl/include
+A      cvs/objects/ccsmcpl/include/CCSM_GCAM_interface.h
+M      cvs/objects/build/linux/configure.gcam
+M      cvs/objects/containers/source/scenario.cpp
+M      cvs/objects/containers/source/world.cpp
+M      cvs/objects/containers/source/single_scenario_runner.cpp
+M      cvs/objects/climate/source/magicc_model.cpp
+
+One-line Summary: add support for running "trivially" with ccsm
+
+A      bld
+A      bld/gcam.template
+A      ChangeLog.iesm
+A      cvs/objects/ccsmcpl
+A      cvs/objects/ccsmcpl/source
+A      cvs/objects/ccsmcpl/source/iac_comp_mod.f90
+A      cvs/objects/ccsmcpl/source/Makefile
+M      cvs/objects/build/linux/configure.gcam
+M      cvs/objects/build/linux/Makefile
+M      cvs/objects/reporting/source/xml_db_outputter.cpp
+M      cvs/objects/reporting/include/xml_db_outputter.h
+
+===============================================================
+Tag name: v0_0_00_gcam1.1
+Originator(s): tcraig
+Date: Tue June 1 2010
+One-line Summary: first tag of original gcam1.1 vendor tag
+
+===============================================================

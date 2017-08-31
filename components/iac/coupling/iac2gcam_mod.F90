@@ -1,0 +1,2578 @@
+#define DEBUG
+Module iac2gcam_mod
+  
+!---------------------------------------------------------------------------
+!BOP
+!
+! !MODULE: iac2gcam_mod
+!
+!  Interface of the integrated assessment component in CCSM
+!
+! !DESCRIPTION:
+!
+! !USES:
+
+  use gcam2glm_mod, only : handle_err
+  use iac_fields_mod
+  use shr_sys_mod
+  use shr_file_mod, only: shr_file_getunit, shr_file_freeunit
+  use shr_cal_mod, only: shr_cal_date2ymd
+  use netcdf
+
+  implicit none
+  SAVE
+  private                              ! By default make data private
+  !
+  ! pft2gcam data structures
+  !
+   type pft2gcam
+     character(25) :: pftname
+     integer :: ncrops           ! number of gcam crops per pft
+     integer :: pftnum           ! pft number
+     integer :: crop_id(15)      ! global physics column indices
+   end type pft2gcam
+   !
+   ! mapping array to aid region/aez <-> lat,lon mapping
+   !
+   type mapgcam
+       integer :: CCSM_ID
+       integer :: Country_AEZ_ID
+       integer :: GCAM_AEZ
+       integer :: GCAM_ID
+       integer :: x
+       integer :: y
+       real*8  :: WT
+    end type
+
+   type (pft2gcam), dimension(:), allocatable :: pft2gcam_mapping
+   type (mapgcam), dimension(:), allocatable :: map
+   integer, dimension(:,:), allocatable     :: aezcombomap
+   integer lenmap
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+  public :: iac2gcam_init_mod               ! clm initialization
+  public :: iac2gcam_run_mod                ! clm run phase
+  public :: iac2gcam_final_mod              ! clm finalization/cleanup
+  public :: qsortd
+  private :: median
+  private :: mad
+  private :: fround
+
+! !PUBLIC DATA MEMBERS: None
+
+
+! !REVISION HISTORY:
+! Author: T Craig
+!         J Truesdale - add the innards - some of this initialization stuff
+!                       still needs to be moved into the iac shr module.
+!                       I also threw in an ORNL written qsort algorithm to make
+!                       data aggregation easier.
+
+! !PRIVATE DATA MEMBERS:
+
+  integer :: logunit
+  character(len=128) :: casename
+  real*4  :: miss_val = 1.0e36
+  character(len=*),parameter :: iac_clmC_file = 'iac_clmC_file.'
+  character(len=*),parameter :: iac_clmC_rpointer = 'rpointer.iacC'
+  character(40) :: cropname(27),regionname(14)
+  logical :: fast_oneway_iac_coupling
+  logical :: npp_hr_on
+  logical :: initial_run
+  integer, save :: iac_iac_nx
+  integer, save :: iac_iac_ny
+
+!EOP
+!===============================================================
+contains
+!===============================================================
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac2gcam_init_mod
+
+! !INTERFACE:
+  subroutine iac2gcam_init_mod( EClock, cdata, iaco, gcami)
+
+! !DESCRIPTION:
+! Initialize interface for glm
+
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+    integer, pointer :: EClock(:)
+    type(iac_cdata_type) :: cdata
+    real*8, pointer :: iaco(:,:)
+    real*8, pointer :: gcami(:,:)
+
+! !LOCAL VARIABLES:
+
+    
+    character(len=*),parameter :: subname='(iac2gcam_init_mod)'
+    integer :: CCSM_IdVarId
+    integer :: Country_AEZ_IDVarId
+    integer :: GCAM_IDVarId
+    integer :: WeightVarId
+    integer :: base_var1_mean_pftVarId
+    integer :: base_abovg_c_mean_pftVarId
+    integer :: dimid
+    integer :: i
+    integer :: ncid
+    integer :: ncidbase
+    integer :: npfts
+    integer :: numLats
+    integer :: numLons
+    integer :: status
+    integer, dimension(:),allocatable :: tmpint,indx
+    integer, dimension(nf90_max_var_dims) :: dimIDs
+    real*8,  dimension(:),allocatable :: tmpr8
+    character(len=512) :: clm2gcam_mapfile
+    character(len=512) :: iac_base_clmfile
+
+! !REVISION HISTORY:
+! Author: T Craig
+!         J Truesdale - add the innards - some of this initialization stuff
+!                       still needs to be moved into the iac shr module.
+!EOP
+!-----------------------------------------------------------------------
+
+    logunit  = cdata%i(iac_cdatai_logunit)
+    casename = trim(cdata%c(iac_cdatac_casename))
+    clm2gcam_mapfile = trim(cdata%c(iac_cdatac_clm2gcam))
+    iac_base_clmfile = trim(cdata%c(iac_cdatac_ibclmfile))
+    iac_iac_nx = cdata%i(iac_cdatai_iac_nx)
+    iac_iac_ny = cdata%i(iac_cdatai_iac_ny)
+#ifdef DEBUG
+    write(logunit,*) trim(subname)
+#endif
+
+    status= nf90_open(trim(iac_base_clmfile),nf90_nowrite,ncidbase)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    status = nf90_inq_varid(ncidbase, "abovg_c_mean_pft", base_abovg_c_mean_pftVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_variable(ncidbase, base_abovg_c_mean_pftVarId, dimids = dimIDs)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncidbase, dimIDs(1), len = numLons)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncidbase, dimIDs(2), len = numLats)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncidbase, dimIDs(3), len = npfts)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_close(ncidbase)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    allocate( pft2gcam_mapping(npfts) )
+    allocate( aezcombomap(numLons,numLats) )
+
+    pft2gcam_mapping(1)%pftnum=0
+    pft2gcam_mapping(1)%pftname="bareground"
+    pft2gcam_mapping(1)%ncrops=2
+    pft2gcam_mapping(1)%crop_id(1)=iac_gcami_RockIceDesert
+    pft2gcam_mapping(1)%crop_id(2)=iac_gcami_UrbanLand
+
+    pft2gcam_mapping(2)%pftnum=1
+    pft2gcam_mapping(2)%pftname="needle ev temp tree"
+    pft2gcam_mapping(2)%ncrops=2
+    pft2gcam_mapping(2)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(2)%crop_id(2)=iac_gcami_UnmanagedForest
+
+    pft2gcam_mapping(3)%pftnum=2
+    pft2gcam_mapping(3)%pftname="needle ev bor tree"
+    pft2gcam_mapping(3)%ncrops=2
+    pft2gcam_mapping(3)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(3)%crop_id(2)=iac_gcami_UnmanagedForest
+
+    pft2gcam_mapping(4)%pftnum=3
+    pft2gcam_mapping(4)%pftname="needle dec bor tree"
+    pft2gcam_mapping(4)%ncrops=2
+    pft2gcam_mapping(4)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(4)%crop_id(2)=iac_gcami_UnmanagedForest
+
+    pft2gcam_mapping(5)%pftnum=4
+    pft2gcam_mapping(5)%pftname="broad ev trop tree"
+    pft2gcam_mapping(5)%ncrops=5
+    pft2gcam_mapping(5)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(5)%crop_id(2)=iac_gcami_UnmanagedForest
+    pft2gcam_mapping(5)%crop_id(3)=iac_gcami_PalmFruit
+    pft2gcam_mapping(5)%crop_id(4)=iac_gcami_willow
+    pft2gcam_mapping(5)%crop_id(5)=iac_gcami_eucalyptus
+
+    pft2gcam_mapping(6)%pftnum=5
+    pft2gcam_mapping(6)%pftname="broad ev temp tree"
+    pft2gcam_mapping(6)%ncrops=3
+    pft2gcam_mapping(6)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(6)%crop_id(2)=iac_gcami_UnmanagedForest
+    pft2gcam_mapping(6)%crop_id(3)=iac_gcami_willow
+
+    pft2gcam_mapping(7)%pftnum=6
+    pft2gcam_mapping(7)%pftname="broad dec trop tree"
+    pft2gcam_mapping(7)%ncrops=5
+    pft2gcam_mapping(7)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(7)%crop_id(2)=iac_gcami_UnmanagedForest
+    pft2gcam_mapping(7)%crop_id(3)=iac_gcami_PalmFruit
+    pft2gcam_mapping(7)%crop_id(4)=iac_gcami_willow
+    pft2gcam_mapping(7)%crop_id(5)=iac_gcami_eucalyptus
+
+    pft2gcam_mapping(8)%pftnum=7
+    pft2gcam_mapping(8)%pftname="broad dec temp tree"
+    pft2gcam_mapping(8)%ncrops=3
+    pft2gcam_mapping(8)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(8)%crop_id(2)=iac_gcami_UnmanagedForest
+    pft2gcam_mapping(8)%crop_id(3)=iac_gcami_willow
+    
+    pft2gcam_mapping(9)%pftnum=8
+    pft2gcam_mapping(9)%pftname="broad dec bor tree"
+    pft2gcam_mapping(9)%ncrops=2
+    pft2gcam_mapping(9)%crop_id(1)=iac_gcami_Forest
+    pft2gcam_mapping(9)%crop_id(2)=iac_gcami_UnmanagedForest
+
+    pft2gcam_mapping(10)%pftnum=9
+    pft2gcam_mapping(10)%pftname="evergreen shrub"
+    pft2gcam_mapping(10)%ncrops=2
+    pft2gcam_mapping(10)%crop_id(1)=iac_gcami_Shrubland
+    pft2gcam_mapping(10)%crop_id(2)=iac_gcami_Jatropha
+
+    pft2gcam_mapping(11)%pftnum=10
+    pft2gcam_mapping(11)%pftname="temperate shrub"
+    pft2gcam_mapping(11)%ncrops=2
+    pft2gcam_mapping(11)%crop_id(1)=iac_gcami_Shrubland
+    pft2gcam_mapping(11)%crop_id(2)=iac_gcami_Jatropha
+
+    pft2gcam_mapping(12)%pftnum=11
+    pft2gcam_mapping(12)%pftname="bor shrub"
+    pft2gcam_mapping(12)%ncrops=1
+    pft2gcam_mapping(12)%crop_id(1)=iac_gcami_Shrubland
+
+    pft2gcam_mapping(13)%pftnum=12
+    pft2gcam_mapping(13)%pftname="arctic grass"
+    pft2gcam_mapping(13)%ncrops=5
+    pft2gcam_mapping(13)%crop_id(1)=iac_gcami_Grassland
+    pft2gcam_mapping(13)%crop_id(2)=iac_gcami_Tundra
+    pft2gcam_mapping(13)%crop_id(3)=iac_gcami_Pasture
+    pft2gcam_mapping(13)%crop_id(4)=iac_gcami_UnmanagedPasture
+    pft2gcam_mapping(13)%crop_id(5)=iac_gcami_FodderGrass
+
+    pft2gcam_mapping(14)%pftnum=13
+    pft2gcam_mapping(14)%pftname="c3 grass"
+    pft2gcam_mapping(14)%ncrops=4
+    pft2gcam_mapping(14)%crop_id(1)=iac_gcami_Grassland
+    pft2gcam_mapping(14)%crop_id(2)=iac_gcami_Pasture
+    pft2gcam_mapping(14)%crop_id(3)=iac_gcami_UnmanagedPasture
+    pft2gcam_mapping(14)%crop_id(4)=iac_gcami_FodderGrass
+
+    pft2gcam_mapping(15)%pftnum=14
+    pft2gcam_mapping(15)%pftname="c4 grass"
+    pft2gcam_mapping(15)%ncrops=5
+    pft2gcam_mapping(15)%crop_id(1)=iac_gcami_Grassland
+    pft2gcam_mapping(15)%crop_id(2)=iac_gcami_Pasture
+    pft2gcam_mapping(15)%crop_id(3)=iac_gcami_UnmanagedPasture
+    pft2gcam_mapping(15)%crop_id(4)=iac_gcami_FodderGrass
+    pft2gcam_mapping(15)%crop_id(5)=iac_gcami_miscanthus
+
+    pft2gcam_mapping(16)%pftnum=15
+    pft2gcam_mapping(16)%pftname="corn"
+    pft2gcam_mapping(16)%ncrops=13
+    pft2gcam_mapping(16)%crop_id(1)=iac_gcami_Corn
+    pft2gcam_mapping(16)%crop_id(2)=iac_gcami_SugarCrop 
+    pft2gcam_mapping(16)%crop_id(3)=iac_gcami_Rice      
+    pft2gcam_mapping(16)%crop_id(4)=iac_gcami_OtherArableLand
+    pft2gcam_mapping(16)%crop_id(5)=iac_gcami_Wheat
+    pft2gcam_mapping(16)%crop_id(6)=iac_gcami_MiscCrop
+    pft2gcam_mapping(16)%crop_id(7)=iac_gcami_OtherGrain
+    pft2gcam_mapping(16)%crop_id(8)=iac_gcami_OilCrop
+    pft2gcam_mapping(16)%crop_id(9)=iac_gcami_FiberCrop
+    pft2gcam_mapping(16)%crop_id(10)=iac_gcami_FodderHerb
+    pft2gcam_mapping(16)%crop_id(11)=iac_gcami_Root_Tuber
+    pft2gcam_mapping(16)%crop_id(12)=iac_gcami_OtherArableLand
+    pft2gcam_mapping(16)%crop_id(13)=iac_gcami_biomass
+    
+    pft2gcam_mapping(17)%pftnum=16
+    pft2gcam_mapping(17)%pftname="wheat"
+    pft2gcam_mapping(17)%ncrops=0
+
+! tcx moved to namelist
+! f09 to gcam
+!    status= nf90_open("/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/CCSM_2_GCAM_lut.nc",nf90_nowrite,ncid)
+! 1/2 degree to gcam
+!    status= nf90_open("/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/CCSM05d_2_GCAM_lut.nc",nf90_nowrite,ncid)
+
+    status= nf90_open(trim(clm2gcam_mapfile),nf90_nowrite,ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    status = nf90_inq_dimid(ncid, "latlonpts", dimid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncid, dimid, len = lenmap)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    allocate( map(lenmap) )
+    allocate( tmpint(lenmap) )
+    allocate( tmpr8(lenmap) )
+    allocate( indx(lenmap) )
+
+    map(:)%WT=0.
+
+    status = nf90_inq_varid(ncid, "CCSM_ID", CCSM_IDVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,CCSM_IDVarId,tmpint)
+    if(status /= nf90_NoErr) call handle_err(status)
+    map(:)%CCSM_ID=tmpint(:)
+
+    status = nf90_inq_varid(ncid, "Country_AEZ_ID", Country_AEZ_IDVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,Country_AEZ_IDVarId,tmpint)
+    if(status /= nf90_NoErr) call handle_err(status)
+    map(:)%Country_AEZ_ID=tmpint(:)
+
+    status = nf90_inq_varid(ncid, "GCAM_ID", GCAM_IDVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,GCAM_IDVarId,tmpint)
+    if(status /= nf90_NoErr) call handle_err(status)
+    map(:)%GCAM_ID=tmpint(:)
+
+    status = nf90_inq_varid(ncid, "Weight", WeightVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncid,WeightVarId,tmpr8)
+    if(status /= nf90_NoErr) call handle_err(status)
+    map(:)%WT=tmpr8(:)
+
+    status = nf90_close(ncid)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+    do i=1,lenmap
+       map(i)%y = floor( float(map(i)%CCSM_ID / numLons) ) + 1               ! Convert cell ID to x, y
+       map(i)%x = map(i)%CCSM_ID - (map(i)%y - 1 ) * numLons + 1
+       ! now need to change x,y - Yuyu's grid starts at topleft
+       map(i)%x = (mod( ( ( map(i)%x -1 ) + ( numLons / 2 ) ), numLons) ) + 1
+       map(i)%y = numLats  - map(i)%y + 1
+       ! AEZ is encoded in the rightmost two digits of Country_AEZ_ID
+       map(i)%GCAM_AEZ = map(i)%Country_AEZ_ID - 100 * floor( float(map(i)%Country_AEZ_ID / 100) )
+    end do
+
+    !
+    ! Aggregate AEZ data as some AEZs appear more than once due to spatial complexity of regions
+    ! Easiest way for me to do this was to sort the data first so that all duplicates are colocated 
+    ! sort key based on ccsm_id,country_aez_id, and region
+    !
+
+    tmpr8=map(:)%CCSM_ID*10000000+map(:)%Country_AEZ_ID*100+map(:)%GCAM_ID
+    call qsortd(tmpr8,indx,lenmap)
+
+    aezcombomap=1
+    do i=2,lenmap
+       if ( map(indx(i-1))%CCSM_ID       .eq.map(indx(i))%CCSM_ID .and. &
+!            map(indx(i-1))%GCAM_AEZ.eq.map(indx(i))%GCAM_AEZ .and. &
+            map(indx(i-1))%Country_AEZ_ID.eq.map(indx(i))%Country_AEZ_ID .and. &
+            map(indx(i-1))%GCAM_ID       .eq.map(indx(i))%GCAM_ID  ) then
+          map(indx(i))%WT=map(indx(i-1))%WT+map(indx(i))%WT	
+          map(indx(i-1))%WT=0.	
+       endif
+    end do
+
+    ! This map keeps track of multiple aez's per gridcell.  
+    ! Used to expand the scalar_var array for calculating outliers
+
+    aezcombomap=0
+    do i=1,lenmap
+       if(map(i)%WT.gt.0) then	
+          aezcombomap( map(i)%x, map(i)%y )=aezcombomap( map(i)%x, map(i)%y ) + 1 
+       end if
+    end do
+    
+    cropName(1) = "biomass"
+    cropName(2) = "Corn"
+    cropName(3) = "eucalyptus"
+    cropName(4) = "FiberCrop"
+    cropName(5) = "FodderGrass"
+    cropName(6) = "FodderHerb"
+    cropName(7) = "Forest"
+    cropName(8) = "Grassland"
+    cropName(9) = "Jatropha"
+    cropName(10) = "miscanthus"
+    cropName(11) = "MiscCrop"
+    cropName(12) = "OilCrop"
+    cropName(13) = "OtherArableLand"
+    cropName(14) = "OtherGrain"
+    cropName(15) = "PalmFruit"
+    cropName(16) = "Pasture"
+    cropName(17) = "Rice"
+    cropName(18) = "RockIceDesert"
+    cropName(19) = "Root_Tuber"
+    cropName(20) = "Shrubland"
+    cropName(21) = "SugarCrop"
+    cropName(22) = "Tundra"
+    cropName(23) = "UnmanagedForest"
+    cropName(24) = "UnmanagedPasture"
+    cropName(25) = "UrbanLand"
+    cropName(26) = "Wheat"
+    cropName(27) = "willow"
+    
+    regionName(1) = "USA"
+    regionName(2) = "Canada"
+    regionName(3) = "Western Europe"
+    regionName(4) = "Japan"
+    regionName(5) = "Australia_NZ"
+    regionName(6) = "Former Soviet Union"
+    regionName(7) = "China"
+    regionName(8) = "Middle East"
+    regionName(9) = "Africa"
+    regionName(10) = "Latin America"
+    regionName(11) = "Southeast Asia"
+    regionName(12) = "Eastern Europe"
+    regionName(13) = "Korea"
+    regionName(14) = "India"
+    
+    deallocate( tmpint)
+    deallocate( tmpr8)
+    deallocate( indx)
+
+
+  end subroutine iac2gcam_init_mod
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac2gcam_run_mod
+
+! !INTERFACE:
+  subroutine iac2gcam_run_mod( EClock, cdata, iaco, gcami)
+
+! !DESCRIPTION:
+! Run interface
+
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+    integer, pointer :: EClock(:)
+    type(iac_cdata_type) :: cdata
+    real*8, pointer :: iaco(:,:)
+    real*8, pointer :: gcami(:,:)
+
+! !LOCAL VARIABLES:
+
+                                               
+    character(len=*),parameter :: subname='(iac2gcam_run_mod)'
+    character(len=128) :: casename,var1name,var2name
+    character(len=256) :: clmC_bfn,clmC_bfn_dir
+    character(len=512) :: iac_base_clmfile
+    integer :: abovg_c_mean_pftVarId
+    integer :: aez
+    integer :: areaVarId
+    integer :: base_pft_weight_mean_gVarId
+    integer :: base_var1_mean_pftVarId
+    integer :: base_var2_mean_pftVarId
+    integer :: blowg_c_mean_pftVarId
+    integer :: cropid
+    integer :: dimid,varid
+    integer :: i
+    integer :: icrop
+    integer :: ii,kk,ind,indend
+    integer :: ij
+    integer :: ipft
+    integer :: j,k
+    integer :: landfracVarId
+    integer :: n
+    integer :: ncid
+    integer :: ncidbase
+    integer :: npfts
+    integer :: nreg,naez,ncrops
+    integer :: numLats
+    integer :: numLons
+    integer :: numvals
+    integer :: pft_weight_mean_gVarId
+    integer :: r
+    integer :: status
+    integer :: ymd,tod,dt,year,mon,day
+    integer, dimension(:), allocatable      :: indx
+    integer,save :: yy_clmC=-1,mm_clmC
+    integer,save :: iac_gcami_above_ground_carbon=1
+    integer,save :: iac_gcami_below_ground_carbon=2
+    logical :: calc_avg
+    logical :: restart_now
+    logical, dimension(:,:), allocatable    :: namask
+    logical, dimension(:,:,:), allocatable  :: avail
+    real*8                                  :: medianval,madval
+    real*8, dimension(2)                    :: scalar_var_lims
+    real*8, dimension(:), allocatable       :: sum_scaled_var1_raw,sum_scaled_var2_raw,sum_scaled_base_var1_raw,&
+sum_scaled_base_var2_raw,sum_scalar,sum_bscalar,final_var1, &
+final_var2,final_bvar1,final_bvar2,final_above,final_below,var2_scalar
+    real*8, dimension(:), allocatable       :: scalar_var_rmna ! Filtered data points
+    real*8, dimension(:,:), allocatable     :: area,landfrac,scalar,bscalar,aezwtmap,na
+    real*8, dimension(:,:,:), allocatable   :: base_var1,base_var2,base_pft_wt,napft,nac,nacbase,pft_wt,scalar_var,aez_times_ncrop_by_pft
+                                               
+    real*8, dimension(:,:,:), allocatable,TARGET   :: abovg_c,blowg_c,npp_m,hr_m
+    real*8, dimension(:,:,:), pointer       :: var1,var2
+    real*8, dimension(:,:,:,:), allocatable :: gcamijt
+    real*8, parameter                       :: mad_limit = 5.2
+
+! !REVISION HISTORY:
+! Author: T Craig
+!         J Truesdale - add the innards - 
+!                       all reading of base period values needs to be moved to the init method
+!                       arrays for data read in via netcdf will need to be moved up to module scope
+
+!EOP
+!-----------------------------------------------------------------------
+    nreg = cdata%i(iac_cdatai_gcam_nreg)
+    naez = cdata%i(iac_cdatai_gcam_naez)
+    ncrops = iac_gcam_ncrops
+
+    ymd = EClock(iac_EClock_ymd)
+    call shr_cal_date2ymd(ymd,year,mon,day)
+    tod = EClock(iac_EClock_tod)
+    dt  = EClock(iac_EClock_dt)
+    clmc_bfn_dir = trim(cdata%c(iac_cdatac_clmcbfndir))
+    casename = trim(cdata%c(iac_cdatac_casename))
+    fast_oneway_iac_coupling = cdata%l(iac_cdatal_fastiac)
+    npp_hr_on = cdata%l(iac_cdatal_npphr)
+    initial_run = cdata%l(iac_cdatal_initrun)
+    iac_base_clmfile = trim(cdata%c(iac_cdatac_ibclmfile))
+    iac_iac_nx = cdata%i(iac_cdatai_iac_nx)
+    iac_iac_ny = cdata%i(iac_cdatai_iac_ny)
+
+    if (npp_hr_on) then
+       !----- exp1.1 only, f05
+       var1name='npp_mean_pft'
+       var2name='hr_mean_pft'
+    else
+       var1name='abovg_c_mean_pft'
+       var2name='blowg_c_mean_pft'
+    end if
+!
+! Read base data from netcdf file. Carbon stock data supplied by calc_clmc
+!    
+#ifdef DEBUG
+    write(logunit,*) trim(subname),' date= ',ymd,tod
+#endif
+
+    status= nf90_open(trim(iac_base_clmfile),nf90_nowrite,ncidbase)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inq_dimid(ncidbase, "lon", dimid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncidbase, dimid, len = numLons)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inq_dimid(ncidbase, "lat", dimid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncidbase, dimid, len = numLats)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inq_dimid(ncidbase, "PFT", dimid)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_inquire_dimension(ncidbase, dimid, len = npfts)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+
+    allocate(abovg_c(numLons,numLats,npfts))
+    allocate(aezwtmap(numLons,numLats))
+    allocate(area(numLons,numLats))
+    allocate(avail(numLons,numLats,npfts))
+    allocate(base_pft_wt(numLons,numLats,npfts))
+    allocate(base_var1(numLons,numLats,npfts))
+    allocate(base_var2(numLons,numLats,npfts))
+    allocate(blowg_c(numLons,numLats,npfts))
+    allocate(bscalar(numLons,numLats))
+    allocate(final_above(ncrops))
+    allocate(final_below(ncrops))
+    allocate(final_bvar1(ncrops))
+    allocate(final_bvar2(ncrops))
+    allocate(final_var1(ncrops))
+    allocate(final_var2(ncrops))
+    allocate(gcamijt(ncrops,naez,nreg,2))
+    allocate(hr_m(numLons,numLats,npfts))
+    allocate(indx(lenmap) )
+    allocate(landfrac(numLons,numLats))
+    allocate(na(numLons,numLats))
+    allocate(nac(numLons,numLats,npfts))
+    allocate(nacbase(numLons,numLats,npfts))
+    allocate(namask(numLons,numLats))
+    allocate(napft(numLons,numLats,npfts))
+    allocate(npp_m(numLons,numLats,npfts))
+    allocate(pft_wt(numLons,numLats,npfts))
+    allocate(scalar(numLons,numLats))
+    allocate(scalar_var(numLons,numLats,npfts))
+    allocate(aez_times_ncrop_by_pft(numLons,numLats,npfts))
+    allocate(sum_bscalar(ncrops))
+    allocate(sum_scalar(ncrops))
+    allocate(sum_scaled_base_var1_raw(ncrops))
+    allocate(sum_scaled_base_var2_raw(ncrops))
+    allocate(sum_scaled_var1_raw(ncrops))
+    allocate(sum_scaled_var2_raw(ncrops))                         
+    allocate(var2_scalar(ncrops))                         
+
+    !
+    ! Compute pft_wt, abovg_c, blowg_c; valid if final = true
+    ! Convert clm history files to "15 year mean files"
+    !
+
+!    if (yy_clmC <= 2034) yy_clmC = 2034
+!    yy_clmC = yy_clmC + 1
+!    if (yy_clmC > 2049) yy_clmC = 2035
+!    mm_clmC = mon
+
+    if (mon == 1) then
+       yy_clmC = year - 1
+       mm_clmC = 12
+    else
+       yy_clmC = year
+       mm_clmC = mon-1
+    endif
+
+    calc_avg = .false.
+    if (EClock(iac_EClock_Agcamsetden) == 1) calc_avg = .true.
+
+    if (yy_clmC < 2005) then
+       write(logunit,*)'iac2gcam yy_clmC=',yy_clmC,' reading above/below 15 year means 1990-2004'
+
+! tcx moved to namelist
+!       if (npp_hr_on) then
+!!exp1.1
+!          filename = '/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/clm_for_gcam_15yr_means/year_1990-2004_exp1.1/iESM_exp1.1.clm2.h1.1990-2004_mean_exp1.1.nc'
+!       else
+!!exp1.0
+!          filename = '/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/clm_for_gcam_15yr_means/year_1990-2004/b40.20th.1deg.coup.001_gcam.clm2.h1.1990-2004_mean.nc'
+!       endif
+
+       status= nf90_open(trim(iac_base_clmfile),nf90_nowrite,ncid)
+       if(status /= nf90_NoErr) call handle_err(status)
+   
+       status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_get_var(ncid,varid,pft_wt)
+       if(status /= nf90_NoErr) call handle_err(status)
+
+       status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_get_var(ncid,varid,abovg_c)
+       if(status /= nf90_NoErr) call handle_err(status)
+
+       status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+       if(status /= nf90_NoErr) call handle_err(status)
+       status = nf90_get_var(ncid,varid,blowg_c)
+       if(status /= nf90_NoErr) call handle_err(status)
+
+       if (npp_hr_on) then
+          status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+          if(status /= nf90_NoErr) call handle_err(status)
+          status = nf90_get_var(ncid,varid,npp_m)
+          if(status /= nf90_NoErr) call handle_err(status)
+
+          status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+          if(status /= nf90_NoErr) call handle_err(status)
+          status = nf90_get_var(ncid,varid,hr_m)
+          if(status /= nf90_NoErr) call handle_err(status)
+          var1=>npp_m
+          var2=>hr_m
+       else
+          var1=>abovg_c
+          var2=>blowg_c
+          npp_m = 0.0
+          hr_m = 0.0
+       endif
+
+       status = nf90_close(ncid)
+       if(status /= nf90_NoErr) call handle_err(status)
+    else
+       clmC_bfn = './'//trim(casename)//'.clm2.h1.'
+
+       if (fast_oneway_iac_coupling) then
+
+       !---- tcx existing files
+       if (iac_iac_nx == 720 .and. iac_iac_ny == 360) then
+          !----- exp1.1 only, f05
+          clmC_bfn = trim(clmc_bfn_dir)//'/iESM_exp1.1.clm2.h1.'
+       else if (iac_iac_nx == 288 .and. iac_iac_ny == 192) then
+          !----- exp1.0 only, f09
+!          if (yy_clmC >= 2005 .and. yy_clmC <= 2019) &
+!             clmC_bfn = '/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/cli017/y9s/archive/b40.rcp4_5.1deg.bprp.001_AEZ_exp1_2005-2019/b40.rcp4_5.1deg.bprp.001_AEZ_exp1.clm2.h1.'
+!          if (yy_clmC >= 2020 .and. yy_clmC <= 2034) &
+!             clmC_bfn = '/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/cli017/y9s/archive/b40.rcp4_5.1deg.bprp.001_AEZ_exp1_2020-2034/lnd/hist/b40.rcp4_5.1deg.bprp.001_AEZ_exp1.clm2.h1.'
+!          if (yy_clmC >= 2035 .and. yy_clmC <= 2049) &
+!             clmC_bfn = '/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/cli017/y9s/archive/b40.rcp4_5.1deg.bprp.001_AEZ_exp1_2035-2049/lnd/hist/b40.rcp4_5.1deg.bprp.001_AEZ_exp1.clm2.h1.'
+!          if (yy_clmC >= 2050 .and. yy_clmC <= 2064) &
+!             clmC_bfn = '/scratch2/scratchdirs/tcraig/IESM/inputdata/iac/giac/iac2gcam/cli017/y9s/transient/rcps/b40.rcp4_5.1deg.bprp.001_AEZ_exp1/b40.rcp4_5.1deg.bprp.001_AEZ_exp1.clm2.h1.'
+
+          !----- exp1.2 only, f09
+          clmC_bfn = trim(clmc_bfn_dir)//'/iESM_exp1.2.clm2.h1.'
+
+       else
+          write(logunit,*) subname,' fast_oneway_iac_coupling now support for current clm resolution ',iac_iac_nx, iac_iac_ny
+          call shr_sys_abort(subname//' fast iac coupling not compatable with clm resolution ')
+
+       endif
+       endif
+       write(logunit,*)'iac2gcam yy_clmC=',yy_clmC,' calling calc_clmc mm_clmC',mm_clmC,' calc avg=',calc_avg
+       call calc_clmC(yy_clmC,mm_clmC,clmC_bfn,pft_wt,abovg_c,blowg_c,npp_m,hr_m,calc_avg)
+    endif
+
+    if (calc_avg.ne..true.) return
+
+    if (npp_hr_on) then
+       var1=>npp_m
+       var2=>hr_m
+    else
+       var1=>abovg_c
+       var2=>blowg_c
+       npp_m = 0.0
+       hr_m = 0.0
+    endif
+
+#ifdef DEBUG
+    write(logunit,*)'iac2gcam proceeding to preprocess yearly clm average'
+#endif
+    call shr_sys_flush(logunit)
+
+    !
+    ! the na arrays are used to set up a mask for missing values
+    !
+    na=1.
+    nac=1.
+    nacbase=1.
+    napft=1.
+    !
+    ! gcamijt is a temporary to hold data that will eventually
+    ! be placed in gcami
+    !
+    gcamijt=-1.
+    !
+    ! read in the carbon data as well as area and landfrac
+    !
+#ifdef DEBUG
+    write(6,*)'reading base values of area'
+    write(logunit,*)'reading base values of area and landfrac'
+#endif
+    call shr_sys_flush(logunit)
+    status = nf90_inq_varid(ncidbase, "area", areaVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncidbase,areaVarId,area)
+    if(status /= nf90_NoErr) call handle_err(status)
+    !
+    ! git rid of missing values in the input arrays 
+    ! and set up an array to mask these positions
+    !
+
+    where(area.gt.0.9*miss_val)
+       na=miss_val
+    end where
+
+#ifdef DEBUG
+    write(logunit,*)'reading base values of landfrac'
+#endif
+    call shr_sys_flush(logunit)
+    status = nf90_inq_varid(ncidbase, "landfrac", landfracVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncidbase,landfracVarId,landfrac)
+    if(status /= nf90_NoErr) call handle_err(status)
+    where(landfrac.gt.0.9*miss_val)
+       na=miss_val
+    end where
+
+#ifdef DEBUG
+    write(logunit,*)'reading base values of var1'
+#endif
+    call shr_sys_flush(logunit)
+    status = nf90_inq_varid(ncidbase, trim(var1name), base_var1_mean_pftVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncidbase,base_var1_mean_pftVarId,base_var1)
+    if(status /= nf90_NoErr) call handle_err(status)
+    where(base_var1.gt.0.9*miss_val)
+       nac=miss_val
+    end where
+
+#ifdef DEBUG
+    write(logunit,*)'reading base values of var2'
+#endif
+    call shr_sys_flush(logunit)
+    status = nf90_inq_varid(ncidbase, trim(var2name), base_var2_mean_pftVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncidbase,base_var2_mean_pftVarId,base_var2)
+    if(status /= nf90_NoErr) call handle_err(status)
+    where(base_var2.gt.0.9*miss_val)
+       nac=miss_val
+    end where
+
+#ifdef DEBUG
+    write(logunit,*)'reading base values of pft weight'
+#endif
+    call shr_sys_flush(logunit)
+
+    status = nf90_inq_varid(ncidbase, "pft_weight_mean_g", base_pft_weight_mean_gVarId)
+    if(status /= nf90_NoErr) call handle_err(status)
+    status = nf90_get_var(ncidbase,base_pft_weight_mean_gVarId,base_pft_wt)
+    if(status /= nf90_NoErr) call handle_err(status)
+    where(base_pft_wt.gt.0.9*miss_val)
+       napft=miss_val
+    end where
+
+    call shr_sys_flush(logunit)
+
+    where(var1.gt.0.9*miss_val)
+       nac=miss_val
+    end where
+
+    !hr is set by calc_clmc
+
+    call shr_sys_flush(logunit)
+    where(var2.gt.0.9*miss_val)
+       nac=miss_val
+    end where
+
+    call shr_sys_flush(logunit)
+
+    where(pft_wt.gt.0.9*miss_val)
+       napft=miss_val
+    end where
+
+    status = nf90_close(ncidbase)
+    if(status /= nf90_NoErr) call handle_err(status)
+
+
+    !        # Compute the median and median absolute deviation for each AEZ/crop combination
+    !        # See: Davies, P.L. and Gather, U. (1993), "The identification of multiple outliers"
+    !        # J. Amer. Statist. Assoc., 88:782-801.
+    if (year > 2005) then
+#ifdef DEBUG
+    write(logunit,*)'computing outliers'
+#endif
+    call shr_sys_flush(logunit)
+
+       !create mask of valid points
+
+       ! For calculating outliers get rid of 1st pft to match 
+       !what is done in sneaker.R
+       
+       napft(:,:,1)=miss_val   
+    
+       ! for calculating the scalars we need to set the 
+       !following to missing to prevent divideby0 errors
+       where(base_var2.eq.0..or.base_var1.eq.0.)
+          nacbase=miss_val
+       end where
+
+       !constrain carbon and pft weights to non missing values
+       avail=.false.
+       avail=(nac.lt.0.9*miss_val.and.napft<.9*miss_val)
+
+       !points over pft dimension by area/landfrac and aezcombo to non missing values 
+       do i=1,npfts
+          avail(:,:,i)=(avail(:,:,i).and.na<.9*miss_val.and.aezcombomap.gt.0)
+       end do
+
+! calculate scaled values of carbon ignoring all missing values.
+
+       where (avail.and.nacbase.lt.0.9*miss_val)
+          scalar_var=var1/base_var1
+       else where
+          scalar_var=miss_val
+       end where
+
+       ! The outlier algorithm uses all available scaled carbon values to statistically calculate
+       ! which values should be removed.  Because of the complexity of the aez/region data there can
+       ! be more than one aez and/or country within a single gridbox.  The scaled carbon
+       ! values that we actually need are the ones assigned to the gcam crops. Above, only a single scaled
+       ! carbon value was calculated for each of the clm pfts per gridbox.  Since many gcam crops
+       ! can map to a single pft there will also be multiple scaled carbon values for each of the gcam
+       ! crops occupying a grid box.  The original scaled carbon array is expanded below to
+       ! account for the multiple values of carbon that actually reside in a gridbox.  The aezcombomap
+       ! is an array that tracks the total aez and country values that need to be represented per gridbox.
+       ! The mapping array value of ncrops will "blow out" each single pft carbon value into a separate
+       ! scaled value for each gcam crop.  All of this busy work was done with a few lines in the original
+       ! r script.
+
+       do ipft=1,npfts
+          aez_times_ncrop_by_pft(:,:,ipft)=aezcombomap(:,:)*pft2gcam_mapping(ipft)%ncrops
+       end do
+       numvals=sum(aez_times_ncrop_by_pft,mask=scalar_var .lt. .9*miss_val)
+
+       allocate( scalar_var_rmna(1:numvals) )
+
+       ind=0
+       do i=1,numLons
+          do j=1,numLats
+             do k=2,npfts
+                if (scalar_var(i,j,k).lt. .9*miss_val) then
+                   ind=ind+1
+                   indend=ind+aez_times_ncrop_by_pft(i,j,k)-1
+                   scalar_var_rmna(ind:indend)=scalar_var(i,j,k)
+                   ind=indend
+                end if
+             end do
+          end do
+       end do
+       
+       !The expanded scalar var array now contains a carbon value for each aez and country and gcam crop
+       !We take all of these values, sort them, calculate a few medians and then are able to remove
+       !the outliers
+       
+       medianval=median(scalar_var_rmna,numvals)
+#ifdef DEBUG
+       write(6,*)'iac2gcam: medianval for var1 is ',medianval
+#endif
+       madval=mad(scalar_var_rmna,numvals,medianval=medianval)
+       scalar_var_lims(1:1)=medianval-(mad_limit*madval)
+       scalar_var_lims(2:2)=medianval+(mad_limit*madval)
+#ifdef DEBUG
+       write(6,*)'npplims =',scalar_var_lims,medianval,madval
+#endif
+       deallocate( scalar_var_rmna)
+       !
+       ! remove outliers from entire distribution for now we keep track of what is removed
+       !
+       where(avail.and.(scalar_var<scalar_var_lims(1).or.scalar_var>scalar_var_lims(2)))
+          var1=miss_val
+          nac=miss_val
+       end where
+
+       ! calculate scaled values of carbon ignoring all missing values.
+       where (avail.and.base_var2.gt.0.)
+          scalar_var=var2/base_var2
+       else where
+          scalar_var=miss_val
+       end where
+
+       do ipft=1,npfts
+          aez_times_ncrop_by_pft(:,:,ipft)=aezcombomap(:,:)*pft2gcam_mapping(ipft)%ncrops
+       end do
+       numvals=sum(aez_times_ncrop_by_pft,mask=scalar_var .lt. .9*miss_val)
+
+       allocate( scalar_var_rmna(1:numvals) )
+       
+       ind=0
+       do i=1,numLons
+          do j=1,numLats
+             do k=2,npfts
+                if (scalar_var(i,j,k).lt. .9*miss_val) then
+                   ind=ind+1
+                   indend=ind+aez_times_ncrop_by_pft(i,j,k)-1
+                   scalar_var_rmna(ind:indend)=scalar_var(i,j,k)
+                   ind=indend
+                end if
+             end do
+          end do
+       end do
+       
+       ! remove missing values from scalar_var scalar_var to calulate limits
+
+       medianval=median(scalar_var_rmna,numvals)
+#ifdef DEBUG
+       write(6,*)'iac2gcam: medianval for var2 is ',medianval
+#endif
+       madval   =mad(scalar_var_rmna,numvals,medianval=medianval)
+       scalar_var_lims(1:1)=medianval-(mad_limit*madval)
+       scalar_var_lims(2:2)=medianval+(mad_limit*madval)
+       deallocate( scalar_var_rmna)
+#ifdef DEBUG
+       write(6,*)'hrlims =',scalar_var_lims,medianval,madval
+#endif
+
+       where(avail.and.(scalar_var<scalar_var_lims(1).or.scalar_var>scalar_var_lims(2)))
+          var2=miss_val
+          nac=miss_val
+       end where
+
+    end if
+ 
+
+    ! This (below) is subtle. pft_weight_mean_g, which comes from CCSM, is the weight
+    ! of the PFT in the grid cell. Because PFTs may map to multiple GCAM crop types,
+    ! we need to divide it by the number of mappings. Thanks to Yuyu Zhou!
+
+#ifdef DEBUG
+    write(logunit,*)'dividing pft weight amoung gcam crops'
+#endif
+    call shr_sys_flush(logunit)
+    do ipft=2,npfts
+       if (pft2gcam_mapping(ipft)%ncrops.gt.0) then	
+          pft_wt(:,:,ipft)=pft_wt(:,:,ipft)/pft2gcam_mapping(ipft)%ncrops
+          base_pft_wt(:,:,ipft)=base_pft_wt(:,:,ipft)/pft2gcam_mapping(ipft)%ncrops
+       else
+          pft_wt(:,:,ipft)=0.
+          base_pft_wt(:,:,ipft)=0.
+       end if
+    end do
+
+    ! Foreach region/aez combo, work from the list of points in CCSM_2_GCAM_lut.nc and the 
+    ! clm gridded carbon data to calculate scaled carbon values that are then summed over
+    ! gcam region/aez/crop_type.  There is probably a faster way to do this but its 
+    ! complicated by the fact that CCSM_2_GCAM_lut.nc has multiple aezs and countries 
+    ! per clm grid box. Scaling factor based on all the weights for that gridcell
+    ! For now the code is using f90 array intrinsics on an entire array of grid points. 
+    ! Each pass through the loop fills in only those points that are valid for a single 
+    ! region/aez.  I am working with data on the clm grid but you could just as easily 
+    ! reshape the clm data to match the CCSM_2_GCAM_lut.nc arrays and use the f90 intrinsics 
+    ! on the list of available lat/lon points in CCSM_2_GCAM_lut.nc
+
+#ifdef DEBUG
+    write(logunit,*)'summing over each region aez combo'
+#endif
+    call shr_sys_flush(logunit)
+    do r = 1,nreg
+       do aez = 1,naez
+          !
+          !  work with one aez region at a time note map array can have multiple aez's per grid box
+          !
+          indx(:)=0
+          where(map(:)%GCAM_AEZ.eq.aez.and.map(:)%GCAM_ID.eq.r.and.map(:)%WT.gt.0.)
+             indx(:)=1
+          endwhere
+          if (any(indx.gt.0)) then
+             aezwtmap=0.
+             do i=1,lenmap
+                if (indx(i).eq.1) then
+                   aezwtmap(map(i)%x,map(i)%y)=map(i)%WT
+                end if
+             end do
+             sum_scaled_var1_raw=0.
+             sum_scaled_var2_raw=0.
+             sum_scaled_base_var1_raw=0.
+             sum_scaled_base_var2_raw=0.
+             sum_scalar=0.
+             sum_bscalar=0.
+             final_var1=0.
+             final_var2=0.
+             final_bvar1=0.
+             final_bvar2=0.
+             final_above=0.
+             final_below=0.
+             var2_scalar=0.
+             do ipft=2,npfts
+                !
+                ! scaling factor based on all weights
+                !
+                namask=(nac(:,:,ipft)*na*napft(:,:,ipft).eq.1)
+                scalar=0.
+                bscalar=0.
+                scalar = area * pft_wt(:,:,ipft) * landfrac * aezwtmap
+                bscalar = area * base_pft_wt(:,:,ipft) * landfrac * aezwtmap
+                !
+                ! scale and aggregate data among each region, aez, and gcam crop type
+                !
+                do icrop=1,pft2gcam_mapping(ipft)%ncrops
+                   cropid=pft2gcam_mapping(ipft)%crop_id(icrop)
+                   sum_scaled_var1_raw(cropid)=sum_scaled_var1_raw(cropid)+sum(var1(:,:,ipft)*scalar(:,:),mask=namask)
+                   sum_scaled_var2_raw(cropid)=sum_scaled_var2_raw(cropid)+sum(var2(:,:,ipft)*scalar(:,:),mask=namask)
+                   sum_scaled_base_var1_raw(cropid)=sum_scaled_base_var1_raw(cropid)+sum(base_var1(:,:,ipft)*bscalar(:,:),mask=namask)
+                   sum_scaled_base_var2_raw(cropid)=sum_scaled_base_var2_raw(cropid)+sum(base_var2(:,:,ipft)*bscalar(:,:),mask=namask)
+                   sum_scalar(cropid)=sum_scalar(cropid)+sum(scalar(:,:),mask=namask)
+                   sum_bscalar(cropid)=sum_bscalar(cropid)+sum(bscalar(:,:),mask=namask)
+                end do
+             end do
+             !
+             ! Calculate the final var1 and hr forcing with 
+             ! respect to the base period values using the sums from above.
+             !
+             where(sum_scalar.gt.0.)
+                final_var1=sum_scaled_var1_raw/sum_scalar
+                final_var2=sum_scaled_var2_raw/sum_scalar
+             end where
+             where(sum_bscalar.gt.0.)
+                final_bvar1=sum_scaled_base_var1_raw/sum_bscalar
+                final_bvar2=sum_scaled_base_var2_raw/sum_bscalar
+             end where
+             !
+             ! There are a few valid 0/0 points that need to be trapped
+             !
+             where((final_var1.eq.0..and.sum_scalar.gt.0.).and.(final_bvar1.eq.0..and.sum_bscalar.gt.0.))
+                final_above=1.
+             end where
+             where((final_var2.eq.0..and.sum_scalar.gt.0.).and.(final_bvar2.eq.0..and.sum_bscalar.gt.0.))
+                final_below=1.
+             end where
+             !
+             ! output ratios of npp and hr referenced to the base period 1990-2005
+             !
+             where(final_bvar1.gt.0.)
+                final_above=final_var1/final_bvar1
+             end where
+
+             where(final_bvar2.gt.0.)
+                var2_scalar=1. - ((final_var2/final_bvar2)-1.)
+                final_below=(final_above+var2_scalar)/2.
+             end where
+             !
+             ! This data needs to be put into the gcami array
+             !
+             gcamijt(:,aez,r,iac_gcami_above_ground_carbon)=final_above
+             gcamijt(:,aez,r,iac_gcami_below_ground_carbon)=final_below
+          end if
+       end do
+    end do
+
+    gcami=-888.
+    ij=0
+    do r = 1,nreg
+       do aez = 1,naez
+          do icrop = 1,ncrops
+             ij=ij+1
+             gcami(iac_gcami_above_ground_carbon,ij)=gcamijt(icrop,aez,r,iac_gcami_above_ground_carbon)
+             gcami(iac_gcami_below_ground_carbon,ij)=gcamijt(icrop,aez,r,iac_gcami_below_ground_carbon)
+#ifdef DEBUG
+             write(logunit,*)'gcami(iac_gcami_above_ground_carbon',',',ij,')=gcamijt(',icrop,',',aez,',',r,',',iac_gcami_above_ground_carbon,')=',gcami(iac_gcami_above_ground_carbon,ij),'crop=',cropname(icrop),' region=',regionname(r),' aez=',aez
+             write(logunit,*)'gcami(iac_gcami_below_ground_carbon',',',ij,')=gcamijt(',icrop,',',aez,',',r,',',iac_gcami_below_ground_carbon,')=',gcami(iac_gcami_below_ground_carbon,ij),'crop=',cropname(icrop),' region=',regionname(r),' aez=',aez
+#endif
+          end do
+       end do
+    end do
+
+    !
+    ! End debug output
+    !
+
+
+    deallocate(abovg_c)
+    deallocate(aezwtmap)
+    deallocate(area)
+    deallocate(avail)
+    deallocate(base_pft_wt)
+    deallocate(base_var1)
+    deallocate(base_var2)
+    deallocate(blowg_c)
+    deallocate(bscalar)
+    deallocate(final_above)
+    deallocate(final_below)
+    deallocate(final_bvar1)
+    deallocate(final_bvar2)
+    deallocate(final_var1)
+    deallocate(final_var2)
+    deallocate(gcamijt)
+    deallocate(hr_m)
+    deallocate(indx)
+    deallocate(landfrac)
+    deallocate(na)
+    deallocate(nac)
+    deallocate(nacbase)
+    deallocate(namask)
+    deallocate(napft)
+    deallocate(npp_m)
+    deallocate(pft_wt)
+    deallocate(scalar)
+    deallocate(scalar_var)
+    deallocate(aez_times_ncrop_by_pft)
+    deallocate(sum_bscalar)
+    deallocate(sum_scalar)
+    deallocate(sum_scaled_base_var1_raw)
+    deallocate(sum_scaled_base_var2_raw)
+    deallocate(sum_scaled_var1_raw)
+    deallocate(sum_scaled_var2_raw)
+    deallocate(var2_scalar)
+
+  end subroutine iac2gcam_run_mod
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac2gcam_final_mod
+
+! !INTERFACE:
+  subroutine iac2gcam_final_mod( )
+
+! !DESCRIPTION:
+! Finalize glm model
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+
+! !LOCAL VARIABLES:
+    character(len=*),parameter :: subname='(iac2gcam_final_mod)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+
+!---------------------------------------------------------------------------
+
+!    write(logunit,*) trim(subname)
+
+     deallocate( pft2gcam_mapping )
+     deallocate( aezcombomap )
+     deallocate( map )
+
+  end subroutine iac2gcam_final_mod
+
+!---------------------------------------------------------------------------
+!====================================================================================
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: calc_clmC
+
+! !INTERFACE:
+  subroutine calc_clmC(yy,mm,bfn,out_pft_weight,out_abovg_c,out_blowg_c,out_npp,out_hr,calc_avg)
+
+! !DESCRIPTION:
+! Calculate clm C from monthly average files for gcam
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+
+    integer, intent(in)  :: yy          ! year
+    integer, intent(in)  :: mm          ! month
+    character(len=*),intent(in) :: bfn   ! base filename
+    real*8,  intent(out) :: out_abovg_c(:,:,:)
+    real*8,  intent(out) :: out_blowg_c(:,:,:)
+    real*8,  intent(out) :: out_npp(:,:,:)
+    real*8,  intent(out) :: out_hr(:,:,:)
+    real*8,  intent(out) :: out_pft_weight(:,:,:)
+    logical, intent(in)  :: calc_avg      ! compute long term mean for use
+
+! !LOCAL VARIABLES:
+    integer :: i,j,k,n,n1
+    integer :: iun
+    integer :: yy_restart,mm_restart
+    character(len=256) :: filename
+    integer :: status
+    logical :: lexist
+    integer, parameter, dimension(12) :: dpm = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+    integer :: dpy
+    logical :: read_restart, write_restart
+    real*4  :: miss_val_read
+    real*4 ,save :: wcnt
+    integer,save :: ncid,varid,dimid,dimid2(2),dimid3(3)
+    integer,save :: ncol,npft,nlon,nlat,ntim
+    logical,save :: first_call = .true.
+    !--- input ---
+    real*4,  dimension(:,:), allocatable,save :: DEADCROOTC
+    real*4,  dimension(:,:), allocatable,save :: FROOTC
+    real*4,  dimension(:,:), allocatable,save :: LIVECROOTC
+    real*4,  dimension(:,:), allocatable,save :: TOTVEGC
+    real*4,  dimension(:,:), allocatable,save :: CWDC
+    real*4,  dimension(:,:), allocatable,save :: TOTSOMC
+    real*4,  dimension(:,:), allocatable,save :: TOTLITC
+    real*4,  dimension(:,:), allocatable,save :: NPP
+    real*4,  dimension(:,:), allocatable,save :: HR
+    real*8,  dimension(:,:), allocatable,save :: pfts1d_wtgcell
+    integer, dimension(:)  , allocatable,save :: pfts1d_ixy
+    integer, dimension(:)  , allocatable,save :: pfts1d_jxy
+    integer, dimension(:)  , allocatable,save :: pfts1d_itype_veg
+    integer, dimension(:)  , allocatable,save :: pfts1d_itype_lunit
+    integer, dimension(:)  , allocatable,save :: cols1d_ixy
+    integer, dimension(:)  , allocatable,save :: cols1d_jxy
+    integer, dimension(:)  , allocatable,save :: cols1d_itype_lunit
+    integer, dimension(:)  , allocatable,save :: pfts1d_cols
+    !--- inout ---
+    real*4,  dimension(:,:), allocatable,save :: area
+    real*4,  dimension(:,:), allocatable,save :: landfrac
+    real*4,  dimension(:)  , allocatable,save :: lat
+    real*4,  dimension(:)  , allocatable,save :: lon
+    integer, dimension(:)  , allocatable,save :: pft
+    !--- output ---
+    real*4,  dimension(:,:,:), allocatable,save :: abovg_c_mean_pft
+    real*4,  dimension(:,:,:), allocatable,save :: blowg_c_mean_pft
+    real*4,  dimension(:,:,:), allocatable,save :: npp_mean_pft
+    real*4,  dimension(:,:,:), allocatable,save :: hr_mean_pft
+    real*4,  dimension(:,:,:), allocatable,save :: pft_weight_mean_g
+    !--- temporary ---
+    integer, dimension(:,:,:), allocatable,save :: cnt3
+    real*4,  dimension(:,:,:), allocatable,save :: abovg_c_pft
+    real*4,  dimension(:,:,:), allocatable,save :: abovg_c_max_pft
+    real*4,  dimension(:,:,:), allocatable,save :: blowg_c_pft
+    real*4,  dimension(:,:,:), allocatable,save :: blowg_c_max_pft
+    real*4,  dimension(:,:,:), allocatable,save :: npp_pft
+    real*4,  dimension(:,:,:), allocatable,save :: npp_max_pft
+    real*4,  dimension(:,:,:), allocatable,save :: hr_pft
+    real*4,  dimension(:,:,:), allocatable,save :: hr_max_pft
+    real*4,  dimension(:,:,:), allocatable,save :: pft_frac_g
+    !--------------
+    character(len=*),parameter :: subname='(calc_clmC)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+
+!---------------------------------------------------------------------------
+
+     dpy = sum(dpm)
+
+     read_restart = .false.
+! tcx for testing restart
+!     read_restart = .true.
+     write_restart = .true.
+
+     if (first_call) then
+        allocate(cnt3             (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(abovg_c_pft      (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(abovg_c_max_pft  (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(abovg_c_mean_pft (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(blowg_c_pft      (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(blowg_c_max_pft  (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(blowg_c_mean_pft (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(npp_pft          (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(npp_max_pft      (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(npp_mean_pft     (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(hr_pft           (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(hr_max_pft       (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(hr_mean_pft      (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(pft_frac_g       (iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(pft_weight_mean_g(iac_iac_nx,iac_iac_ny,iac_iaco_npfts))
+        allocate(pft(iac_iaco_npfts))
+
+        do n = 1,iac_iaco_npfts
+           pft(n) = n-1
+        enddo
+
+        abovg_c_mean_pft = 0.0
+        blowg_c_mean_pft = 0.0
+        npp_mean_pft     = 0.0
+        hr_mean_pft      = 0.0
+        pft_weight_mean_g = 0.0
+        wcnt = 0.0
+        cnt3 = 0
+        abovg_c_max_pft = miss_val
+        blowg_c_max_pft = miss_val
+        npp_max_pft     = miss_val
+        hr_max_pft      = miss_val
+        if (.not. initial_run) read_restart = .true.
+     endif
+
+     if (read_restart) then
+        ! if rpointer file exists, then expect to read that file
+
+        inquire(file=trim(iac_clmC_rpointer),exist=lexist)
+        if (lexist) then
+
+#ifdef DEBUG
+        write(logunit,*) subname,' read_restart rpointer ',trim(iac_clmC_rpointer)
+#endif
+
+        iun = shr_file_getunit()
+        open(iun,file=trim(iac_clmC_rpointer),form='formatted')
+        read(iun,'(a)') filename
+        close(iun)
+        call shr_file_freeunit(iun)
+
+#ifdef DEBUG
+        write(logunit,*) subname,' read_restart file ',trim(filename)
+#endif
+
+        inquire(file=trim(filename),exist=lexist)
+        if (.not.lexist) then
+           write(logunit,*) subname,' ERROR: missing file ',trim(filename)
+           call shr_sys_abort(subname//' ERROR: missing file')
+        endif
+
+        status= nf90_open(filename,nf90_nowrite,ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+   
+        status = nf90_inq_varid(ncid,'year',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,yy_restart)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'month',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,mm_restart)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if ((yy == yy_restart .and. mm == mm_restart+1) .or. &
+            (yy == yy_restart+1 .and. mm == 1 .and. mm_restart == 12)) then
+           ! OK, current yy/mm next month from yy_restart/mm_restart
+        else
+           write(logunit,*) subname,' ERROR: restart date not consistent',yy_restart,mm_restart,yy,mm
+           call shr_sys_abort(subname//' ERROR: restart date not consistent')
+        endif
+
+        status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,pft_weight_mean_g)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'wcnt',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,wcnt)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'abovg_c_max_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,abovg_c_max_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'blowg_c_max_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,blowg_c_max_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_inq_varid(ncid,'npp_max_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_get_var(ncid,varid,npp_max_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+
+           status = nf90_inq_varid(ncid,'hr_max_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_get_var(ncid,varid,hr_max_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+        else
+           npp_max_pft = 0.0
+           hr_max_pft = 0.0
+        endif
+      
+        status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,abovg_c_mean_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,blowg_c_mean_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_get_var(ncid,varid,npp_mean_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+
+           status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_get_var(ncid,varid,hr_mean_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+        else
+           npp_mean_pft = 0.0
+           hr_mean_pft = 0.0
+        endif
+
+        status = nf90_inq_varid(ncid,'cnt3',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,cnt3)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_close(ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        else
+           write(logunit,*) subname,' read_restart rpointer NOT found ',trim(iac_clmC_rpointer)
+        endif ! rpointer exist
+     endif  ! read_restart
+
+     write(filename,'(a,i4.4,a,i2.2,a)') trim(bfn),yy,'-',mm,'.nc'
+     write(logunit,*) subname,' read ',trim(filename)
+     call shr_sys_flush(logunit)
+     inquire (file=trim(filename),exist=lexist)
+     if (.not.lexist) then
+        write(logunit,*) subname,' ERROR: missing file ',trim(filename)
+        call shr_sys_abort(subname//' ERROR: missing file')
+     endif
+     
+#ifdef DEBUG
+     write(logunit,*)'clm_calc:opening file ',trim(filename)
+#endif
+     status= nf90_open(trim(filename),nf90_nowrite,ncid)
+     if(status /= nf90_NoErr) call handle_err(status)
+
+     if (first_call) then
+        first_call = .false.
+        status = nf90_inq_dimid(ncid, "column", dimid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inquire_dimension(ncid, dimid, len=ncol)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inq_dimid(ncid, "pft", dimid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inquire_dimension(ncid, dimid, len=npft)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inq_dimid(ncid, "lon", dimid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inquire_dimension(ncid, dimid, len=nlon)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inq_dimid(ncid, "lat", dimid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inquire_dimension(ncid, dimid, len=nlat)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inq_dimid(ncid, "time", dimid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_inquire_dimension(ncid, dimid, len=ntim)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (nlon /= iac_iac_nx .or. nlat /= iac_iac_ny) then
+           call shr_sys_abort(subname//' ERROR: dim sizes')
+        endif
+        if (ntim /= 1) then
+           call shr_sys_abort(subname//' ERROR: expect 1 time slice per file')
+        endif
+
+#ifdef DEBUG
+        write(logunit,*) subname,' check dims ',nlon,nlat,npft,ncol,ntim
+#endif
+        call shr_sys_flush(logunit)
+
+        allocate(cwdc(ncol,ntim),totlitc(ncol,ntim),totsomc(ncol,ntim),hr(ncol,ntim))
+        allocate(deadcrootc(npft,ntim),frootc(npft,ntim),livecrootc(npft,ntim), &
+                 totvegc(npft,ntim),npp(npft,ntim))
+        allocate(pfts1d_wtgcell(npft,ntim))
+        allocate(area(nlon,nlat),landfrac(nlon,nlat),lat(nlat),lon(nlon))
+        allocate(pfts1d_ixy(npft),pfts1d_jxy(npft),pfts1d_itype_veg(npft),pfts1d_itype_lunit(npft))
+        allocate(cols1d_ixy(ncol),cols1d_jxy(ncol),cols1d_itype_lunit(ncol))
+        allocate(pfts1d_cols(npft))
+
+        status = nf90_inq_varid(ncid, "lon", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,lon)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "lat", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,lat)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "area", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,area)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "landfrac", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,landfrac)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "pfts1d_ixy", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,pfts1d_ixy)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "pfts1d_jxy", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,pfts1d_jxy)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "pfts1d_itype_veg", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,pfts1d_itype_veg)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "pfts1d_itype_lunit", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,pfts1d_itype_lunit)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "cols1d_ixy", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,cols1d_ixy)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "cols1d_jxy", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,cols1d_jxy)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid, "cols1d_itype_lunit", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,cols1d_itype_lunit)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        !--- compute pfts1d_cols indexing
+        pfts1d_cols = -1
+        do n = 1,npft
+           i = pfts1d_ixy(n)
+           j = pfts1d_jxy(n)
+           if (pfts1d_itype_lunit(n) == 1) then
+! faster but then can't do multi-cols check
+!              n1 = 0
+!              do while (pfts1d_cols(n) < 0 .and. n1 < ncol) 
+!                 n1 = n1 + 1
+!                 if (cols1d_itype_lunit(n1) == 1 .and. cols1d_ixy(n1) == i .and. &
+!                                                       cols1d_jxy(n1) == j) then
+!                    pfts1d_cols(n) = n1
+!                 endif
+!              enddo 
+               do n1 = 1,ncol
+                 if (cols1d_itype_lunit(n1) == 1 .and. cols1d_ixy(n1) == i .and. &
+                                                       cols1d_jxy(n1) == j) then
+                    if (pfts1d_cols(n) > 0) then
+                       write(logunit,*) subname,' ERROR: found 2 cols for this pft',n,n1,pfts1d_cols(n)
+                       call shr_sys_abort(subname//' ERROR: found 2 cols for pft')
+                    endif
+                    pfts1d_cols(n) = n1
+                 endif
+               enddo
+           endif
+        enddo
+
+     endif
+
+     status = nf90_inq_varid(ncid, "CWDC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,cwdc)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(cwdc) > 1.0e30) cwdc = 0.0
+
+     status = nf90_inq_varid(ncid, "TOTLITC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,totlitc)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(totlitc) > 1.0e30) totlitc = 0.0
+
+     status = nf90_inq_varid(ncid, "TOTSOMC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,totsomc)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(totsomc) > 1.0e30) totsomc = 0.0
+
+     if (npp_hr_on) then
+        status = nf90_inq_varid(ncid, "HR", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,hr)
+        if(status /= nf90_NoErr) call handle_err(status)
+!        where (abs(hr) > 1.0e30) hr = 0.0
+     else
+        hr = 0.0
+     endif
+
+     status = nf90_inq_varid(ncid, "DEADCROOTC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,deadcrootc)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(deadcrootc) > 1.0e30) deadcrootc = 0.0
+
+     status = nf90_inq_varid(ncid, "FROOTC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,frootc)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(frootc) > 1.0e30) frootc = 0.0
+
+     status = nf90_inq_varid(ncid, "LIVECROOTC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,livecrootc)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(livecrootc) > 1.0e30) livecrootc = 0.0
+
+     status = nf90_inq_varid(ncid, "TOTVEGC", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,totvegc)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_att(ncid,varid,"missing_value",miss_val_read)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(totvegc) > 1.0e30) totvegc = 0.0
+
+     if (npp_hr_on) then
+        status = nf90_inq_varid(ncid, "NPP", varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_get_var(ncid,varid,npp)
+        if(status /= nf90_NoErr) call handle_err(status)
+!        where (abs(npp) > 1.0e30) npp = 0.0
+     else
+        npp = 0.0
+     endif
+
+     status = nf90_inq_varid(ncid, "pfts1d_wtgcell", varid)
+     if(status /= nf90_NoErr) call handle_err(status)
+     status = nf90_get_var(ncid,varid,pfts1d_wtgcell)
+     if(status /= nf90_NoErr) call handle_err(status)
+!     where (abs(pfts1d_wtgcell) > 1.0e30) pfts1d_wtgcell = 0.0
+
+     status = nf90_close(ncid)
+     if(status /= nf90_NoErr) call handle_err(status)
+
+     if (.not.ismiss(miss_val_read,miss_val)) then
+        write(logunit,*) subname,' ERROR: missing value disagreement ',miss_val,miss_val_read
+        call shr_sys_abort(subname//' ERROR: missing value disagreement')
+     endif
+
+     !-----------------
+     ! compute
+     !-----------------
+
+     pft_frac_g = 0.0   ! nlon,nlat,npft
+     blowg_c_pft = miss_val
+     abovg_c_pft = miss_val
+     npp_pft     = miss_val
+     hr_pft      = miss_val
+     do n = 1,npft
+        i = pfts1d_ixy(n)
+        j = pfts1d_jxy(n)
+        k = pfts1d_itype_veg(n) + 1
+        n1 = pfts1d_cols(n)
+        if (k > iac_iaco_npfts) then
+           write(logunit,*) subname,' ERROR: k gt iac_iaco_npfts',n,i,j,k,iac_iaco_npfts
+           call shr_sys_abort(subname//' ERROR k gt iac_iaco_npfts')
+        endif
+
+        pft_frac_g(i,j,k) = pft_frac_g(i,j,k) + pfts1d_wtgcell(n,1)
+
+! debug region
+!        if (i == 48 .and. j == 142 .and. k == 2) then
+!           write(logunit,'(2a,7i8)') subname,'ind ',yy,mm,n,i,j,k,n1
+!           write(logunit,*) subname,'i2  ',pfts1d_itype_lunit(n)
+!           write(logunit,*) subname,'c1  ',frootc(n,1),livecrootc(n,1),deadcrootc(n,1)
+!           write(logunit,*) subname,'c2  ',totvegc(n,1)
+!           if (n1 > 0) &
+!           write(logunit,*) subname,'c3  ',totsomc(n1,1),totlitc(n1,1),cwdc(n1,1)
+!        endif
+
+        if (pfts1d_itype_lunit(n) == 1 .and. &
+           .not.ismiss(frootc(n,1),miss_val) .and. &
+           .not.ismiss(livecrootc(n,1),miss_val) .and. &
+           .not.ismiss(deadcrootc(n,1),miss_val) .and. &
+           .not.ismiss(totvegc(n,1),miss_val) .and. &
+           .not.ismiss(npp(n,1),miss_val)) then
+
+           ! this checks that the n to i,j,k copy is unique
+           ! if abovg or blowg has been set before, then abort
+           if (.not.ismiss(blowg_c_pft(i,j,k),miss_val) .or. &
+               .not.ismiss(abovg_c_pft(i,j,k),miss_val) .or. &
+               .not.ismiss(npp_pft(i,j,k),miss_val)     .or. &
+               .not.ismiss(hr_pft(i,j,k),miss_val))     then
+              write(logunit,*) subname,' ERROR: blow/abovg_c_pft already set '
+              call shr_sys_abort(subname//' ERROR: blow/abovg_c_pft already set')
+           endif
+
+           blowg_c_pft(i,j,k) = frootc(n,1) + livecrootc(n,1) + deadcrootc(n,1)
+           abovg_c_pft(i,j,k) = totvegc(n,1) - blowg_c_pft(i,j,k)
+           npp_pft(i,j,k)     = npp(n,1)
+
+           if (n1 > 0 .and. &
+              .not. ismiss(totsomc(n1,1),miss_val) .and. &
+              .not. ismiss(totlitc(n1,1),miss_val) .and. &
+              .not. ismiss(cwdc(n1,1),miss_val)    .and. &
+              .not. ismiss(hr(n1,1),miss_val))   then
+              blowg_c_pft(i,j,k) = blowg_c_pft(i,j,k) + totsomc(n1,1) + totlitc(n1,1) + cwdc(n1,1)
+              hr_pft(i,j,k)      = hr(n1,1)
+           endif  ! valid col
+
+        endif   ! valid pft
+
+! debug region
+!        if (i == 48 .and. j == 142 .and. k == 2) then
+!           write(logunit,*) subname,'t1  ',yy,mm,blowg_c_pft(i,j,k),abovg_c_pft(i,j,k)
+!           call shr_sys_flush(logunit)
+!        endif
+
+     enddo  ! npft
+
+     ! weigh pft by length of month since it's accumulation over year
+ 
+     pft_weight_mean_g = pft_weight_mean_g + pft_frac_g * float(dpm(mm))/float(dpy)
+     wcnt = wcnt + float(dpm(mm))/float(dpy)
+
+     ! do not weigh abovg/blowg_c by month since it's a max over year
+     ! ignore missing values in max computation
+     ! make sure to check if max is missing, if so, just set it to value
+
+     do k = 1,iac_iaco_npfts
+     do j = 1,iac_iac_ny
+     do i = 1,iac_iac_nx
+        if (.not. ismiss(abovg_c_pft(i,j,k),miss_val)) then
+           if (ismiss(abovg_c_max_pft(i,j,k),miss_val)) then
+              abovg_c_max_pft(i,j,k) = abovg_c_pft(i,j,k)
+           else
+              abovg_c_max_pft(i,j,k) = max(abovg_c_max_pft(i,j,k),abovg_c_pft(i,j,k))
+           endif
+        endif
+        if (.not. ismiss(blowg_c_pft(i,j,k),miss_val)) then
+           if (ismiss(blowg_c_max_pft(i,j,k),miss_val)) then
+              blowg_c_max_pft(i,j,k) = blowg_c_pft(i,j,k)
+           else
+              blowg_c_max_pft(i,j,k) = max(blowg_c_max_pft(i,j,k),blowg_c_pft(i,j,k))
+           endif
+        endif
+        if (.not. ismiss(npp_pft(i,j,k),miss_val)) then
+           if (ismiss(npp_max_pft(i,j,k),miss_val)) then
+              npp_max_pft(i,j,k) = npp_pft(i,j,k)
+           else
+              npp_max_pft(i,j,k) = max(npp_max_pft(i,j,k),npp_pft(i,j,k))
+           endif
+        endif
+        if (.not. ismiss(hr_pft(i,j,k),miss_val)) then
+           if (ismiss(hr_max_pft(i,j,k),miss_val)) then
+              hr_max_pft(i,j,k) = hr_pft(i,j,k)
+           else
+              hr_max_pft(i,j,k) = max(hr_max_pft(i,j,k),hr_pft(i,j,k))
+           endif
+        endif
+     enddo
+     enddo
+     enddo
+
+     ! accumulate mean taking into account only non-missing values, need to track cnt for each ijk
+     if (mm == 12) then
+#ifdef DEBUG
+        write(logunit,*) subname,' accumulate annual max values ',maxval(cnt3)
+#endif
+        do k = 1,iac_iaco_npfts
+        do j = 1,iac_iac_ny
+        do i = 1,iac_iac_nx
+           if (.not. ismiss(abovg_c_max_pft(i,j,k),miss_val) .and. &
+               .not. ismiss(blowg_c_max_pft(i,j,k),miss_val) .and. &
+               .not. ismiss(npp_max_pft(i,j,k),miss_val)     .and. &
+               .not. ismiss(hr_max_pft(i,j,k),miss_val))     then
+              abovg_c_mean_pft(i,j,k) = abovg_c_mean_pft(i,j,k) + abovg_c_max_pft(i,j,k)
+              blowg_c_mean_pft(i,j,k) = blowg_c_mean_pft(i,j,k) + blowg_c_max_pft(i,j,k)
+              npp_mean_pft(i,j,k)     = npp_mean_pft(i,j,k)     + npp_max_pft(i,j,k)
+              hr_mean_pft(i,j,k)      = hr_mean_pft(i,j,k)      + hr_max_pft(i,j,k)
+              cnt3(i,j,k) = cnt3(i,j,k) + 1
+           endif
+        enddo
+        enddo
+        enddo
+        ! zero out max again for next year
+        abovg_c_max_pft = miss_val
+        blowg_c_max_pft = miss_val
+        npp_max_pft     = miss_val
+        hr_max_pft      = miss_val
+     endif
+   
+     if (calc_avg) then
+   
+#ifdef DEBUG
+        write(logunit,*) subname,' compute long term mean values ',maxval(cnt3),wcnt
+#endif
+
+        ! now finally compute long term means
+        do k = 1,iac_iaco_npfts
+        do j = 1,iac_iac_ny
+        do i = 1,iac_iac_nx
+           if (wcnt /= 0.0) then
+              out_pft_weight(i,j,k) = pft_weight_mean_g(i,j,k) / (wcnt)
+           else
+              out_pft_weight(i,j,k) = 0.0
+           endif
+           if (cnt3(i,j,k) > 0) then
+              out_abovg_c(i,j,k)  = abovg_c_mean_pft(i,j,k) / float(cnt3(i,j,k))
+              out_blowg_c(i,j,k)  = blowg_c_mean_pft(i,j,k) / float(cnt3(i,j,k))
+              out_npp(i,j,k)      = npp_mean_pft(i,j,k)     / float(cnt3(i,j,k))
+              out_hr(i,j,k)       = hr_mean_pft(i,j,k)      / float(cnt3(i,j,k))
+           else
+              out_abovg_c(i,j,k) = 0.0
+              out_blowg_c(i,j,k) = 0.0
+              out_npp(i,j,k)     = 0.0
+              out_hr(i,j,k)      = 0.0
+           endif
+        enddo
+        enddo
+        enddo
+   
+        ! zero out accumulation fields
+        abovg_c_mean_pft  = 0.0
+        blowg_c_mean_pft  = 0.0
+        npp_mean_pft      = 0.0
+        hr_mean_pft       = 0.0
+        pft_weight_mean_g = 0.0
+        wcnt = 0.0
+        cnt3 = 0
+   
+        ! output 
+   
+        write(filename,'(a,i4.4,a,i2.2,a)') trim(iac_clmC_file)//'h.',yy,'-',mm,'.nc'
+        status= nf90_create(filename,nf90_clobber,ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+   
+#ifdef DEBUG
+        write(logunit,*) subname,' write_history file ',trim(filename)
+#endif
+
+        status = nf90_def_dim(ncid,'lon',nlon,dimid2(1))
+        if(status /= nf90_NoErr) call handle_err(status)
+        dimid3(1) = dimid2(1)
+        status = nf90_def_dim(ncid,'lat',nlat,dimid2(2))
+        if(status /= nf90_NoErr) call handle_err(status)
+        dimid3(2) = dimid2(2)
+        status = nf90_def_dim(ncid,'PFT',iac_iaco_npfts,dimid3(3))
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        dimid = dimid2(1)
+        status = nf90_def_var(ncid,'lon',NF90_FLOAT,dimid,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","degrees_east")
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        dimid = dimid2(2)
+        status = nf90_def_var(ncid,'lat',NF90_FLOAT,dimid,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","degrees_north")
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        dimid = dimid3(3)
+        status = nf90_def_var(ncid,'PFT',NF90_INT,dimid,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'area',NF90_FLOAT,dimid2,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","km^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'landfrac',NF90_FLOAT,dimid2,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_def_var(ncid,'pft_weight_mean_g',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'abovg_c_mean_pft',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","gC/m^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'blowg_c_mean_pft',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","gC/m^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_def_var(ncid,'npp_mean_pft',NF90_FLOAT,dimid3,varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"units","gC/m^2/s")
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+      
+           status = nf90_def_var(ncid,'hr_mean_pft',NF90_FLOAT,dimid3,varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"units","gC/m^2/s")
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+        endif
+      
+        status = nf90_enddef(ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_inq_varid(ncid,'lon',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,lon)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'lat',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,lat)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'PFT',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'area',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,area)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'landfrac',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,landfrac)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,out_pft_weight)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,out_abovg_c)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,out_blowg_c)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_var(ncid,varid,out_npp)
+           if(status /= nf90_NoErr) call handle_err(status)
+
+           status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_var(ncid,varid,out_hr)
+           if(status /= nf90_NoErr) call handle_err(status)
+        endif
+
+        status = nf90_close(ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+   
+     endif   ! calc_avg
+
+     ! write restart file
+
+
+     if (write_restart) then
+
+        write(filename,'(a,i4.4,a,i2.2,a)') trim(iac_clmC_file)//'r.',yy,'-',mm,'.nc'
+
+        iun = shr_file_getunit()
+        open(iun,file=trim(iac_clmC_rpointer),form='formatted')
+        write(iun,'(a)') trim(filename)
+        close(iun)
+        call shr_file_freeunit(iun)
+
+#ifdef DEBUG
+        write(logunit,*) subname,' write_restart rpointer ',trim(iac_clmC_rpointer)
+        write(logunit,*) subname,' write_restart file     ',trim(filename)
+#endif
+
+        status= nf90_create(filename,nf90_clobber,ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+   
+        status = nf90_def_dim(ncid,'lon',nlon,dimid2(1))
+        if(status /= nf90_NoErr) call handle_err(status)
+        dimid3(1) = dimid2(1)
+        status = nf90_def_dim(ncid,'lat',nlat,dimid2(2))
+        if(status /= nf90_NoErr) call handle_err(status)
+        dimid3(2) = dimid2(2)
+        status = nf90_def_dim(ncid,'PFT',iac_iaco_npfts,dimid3(3))
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        dimid = dimid2(1)
+        status = nf90_def_var(ncid,'lon',NF90_FLOAT,dimid,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","degrees_east")
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        dimid = dimid2(2)
+        status = nf90_def_var(ncid,'lat',NF90_FLOAT,dimid,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","degrees_north")
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        dimid = dimid3(3)
+        status = nf90_def_var(ncid,'PFT',NF90_INT,dimid,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'area',NF90_FLOAT,dimid2,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","km^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'landfrac',NF90_FLOAT,dimid2,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'year',NF90_INT,varid=varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_def_var(ncid,'month',NF90_INT,varid=varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_def_var(ncid,'pft_weight_mean_g',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_def_var(ncid,'wcnt',NF90_FLOAT,varid=varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_def_var(ncid,'abovg_c_max_pft',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","gC/m^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'blowg_c_max_pft',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","gC/m^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_def_var(ncid,'npp_max_pft',NF90_FLOAT,dimid3,varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"units","gC/m^2/s")
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+      
+           status = nf90_def_var(ncid,'hr_max_pft',NF90_FLOAT,dimid3,varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"units","gC/m^2/s")
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+        endif
+      
+        status = nf90_def_var(ncid,'abovg_c_mean_pft',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","gC/m^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_def_var(ncid,'blowg_c_mean_pft',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","gC/m^2")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        if (npp_hr_on) then
+           status = nf90_def_var(ncid,'npp_mean_pft',NF90_FLOAT,dimid3,varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"units","gC/m^2/s")
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+      
+           status = nf90_def_var(ncid,'hr_mean_pft',NF90_FLOAT,dimid3,varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"units","gC/m^2/s")
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+           if(status /= nf90_NoErr) call handle_err(status)
+        endif
+      
+        status = nf90_def_var(ncid,'cnt3',NF90_FLOAT,dimid3,varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"units","counter")
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"_FillValue",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_att(ncid,varid,"missing_value",miss_val)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_enddef(ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_inq_varid(ncid,'lon',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,lon)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'lat',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,lat)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'PFT',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'area',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,area)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'landfrac',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,landfrac)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'year',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,yy)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'month',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,mm)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,pft_weight_mean_g)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'wcnt',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,wcnt)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'abovg_c_max_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,abovg_c_max_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'blowg_c_max_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,blowg_c_max_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_inq_varid(ncid,'npp_max_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_var(ncid,varid,npp_max_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+      
+           status = nf90_inq_varid(ncid,'hr_max_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_var(ncid,varid,hr_max_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+        endif
+      
+        status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,abovg_c_mean_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,blowg_c_mean_pft)
+        if(status /= nf90_NoErr) call handle_err(status)
+
+        if (npp_hr_on) then
+           status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_var(ncid,varid,npp_mean_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+
+           status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+           if(status /= nf90_NoErr) call handle_err(status)
+           status = nf90_put_var(ncid,varid,hr_mean_pft)
+           if(status /= nf90_NoErr) call handle_err(status)
+        endif
+
+        status = nf90_inq_varid(ncid,'cnt3',varid)
+        if(status /= nf90_NoErr) call handle_err(status)
+        status = nf90_put_var(ncid,varid,cnt3)
+        if(status /= nf90_NoErr) call handle_err(status)
+      
+        status = nf90_close(ncid)
+        if(status /= nf90_NoErr) call handle_err(status)
+     endif
+
+
+!  deallocate(cwdc,totlitc,totsomc)
+!  deallocate(deadcrootc,frootc,livecrootc,totvegc)
+!  deallocate(pfts1d_wtgcell)
+!  deallocate(area,landfrac)
+!  deallocate(pfts1d_ixy,pfts1d_jxy,pfts1d_itype_veg,pfts1d_itype_lunit)
+!  deallocate(cols1d_ixy,cols1d_jxy,cols1d_itype_lunit)
+!  deallocate(abovg_c_pft      )
+!  deallocate(abovg_c_max_pft  )
+!  deallocate(abovg_c_mean_pft )
+!  deallocate(blowg_c_pft      )
+!  deallocate(blowg_c_max_pft  )
+!  deallocate(blowg_c_mean_pft )
+!  deallocate(pft_frac_g       )
+!  deallocate(pft_weight_mean_g)
+
+  end subroutine calc_clmC
+
+!====================================================================================
+logical function ismiss(val,miss)
+
+  real*4, intent(in) :: val
+  real*4, intent(in) :: miss
+
+  if (val > 0.9*miss .and. val < 1.1*miss) then
+     ismiss = .true.
+  else
+     ismiss = .false.
+  endif
+
+end function ismiss
+
+!====================================================================================
+SUBROUTINE qsortd(x,ind,n)
+ 
+! Code converted using TO_F90 by Alan Miller
+! Date: 2002-12-18  Time: 11:55:47
+
+IMPLICIT NONE
+INTEGER, PARAMETER  :: dp = SELECTED_REAL_KIND(12, 60)
+
+REAL (dp), INTENT(IN)  :: x(:)
+INTEGER, INTENT(OUT)   :: ind(:)
+INTEGER, INTENT(IN)    :: n
+
+!***************************************************************************
+
+!                                                         ROBERT RENKA
+!                                                 OAK RIDGE NATL. LAB.
+
+!   THIS SUBROUTINE USES AN ORDER N*LOG(N) QUICK SORT TO SORT A REAL (dp)
+! ARRAY X INTO INCREASING ORDER.  THE ALGORITHM IS AS FOLLOWS.  IND IS
+! INITIALIZED TO THE ORDERED SEQUENCE OF INDICES 1,...,N, AND ALL INTERCHANGES
+! ARE APPLIED TO IND.  X IS DIVIDED INTO TWO PORTIONS BY PICKING A CENTRAL
+! ELEMENT T.  THE FIRST AND LAST ELEMENTS ARE COMPARED WITH T, AND
+! INTERCHANGES ARE APPLIED AS NECESSARY SO THAT THE THREE VALUES ARE IN
+! ASCENDING ORDER.  INTERCHANGES ARE THEN APPLIED SO THAT ALL ELEMENTS
+! GREATER THAN T ARE IN THE UPPER PORTION OF THE ARRAY AND ALL ELEMENTS
+! LESS THAN T ARE IN THE LOWER PORTION.  THE UPPER AND LOWER INDICES OF ONE
+! OF THE PORTIONS ARE SAVED IN LOCAL ARRAYS, AND THE PROCESS IS REPEATED
+! ITERATIVELY ON THE OTHER PORTION.  WHEN A PORTION IS COMPLETELY SORTED,
+! THE PROCESS BEGINS AGAIN BY RETRIEVING THE INDICES BOUNDING ANOTHER
+! UNSORTED PORTION.
+
+! INPUT PARAMETERS -   N - LENGTH OF THE ARRAY X.
+
+!                      X - VECTOR OF LENGTH N TO BE SORTED.
+
+!                    IND - VECTOR OF LENGTH >= N.
+
+! N AND X ARE NOT ALTERED BY THIS ROUTINE.
+
+! OUTPUT PARAMETER - IND - SEQUENCE OF INDICES 1,...,N PERMUTED IN THE SAME
+!                          FASHION AS X WOULD BE.  THUS, THE ORDERING ON
+!                          X IS DEFINED BY Y(I) = X(IND(I)).
+
+!*********************************************************************
+
+! NOTE -- IU AND IL MUST BE DIMENSIONED >= LOG(N) WHERE LOG HAS BASE 2.
+
+!*********************************************************************
+
+INTEGER   :: iu(21), il(21)
+INTEGER   :: m, i, j, k, l, ij, it, itt, indx
+REAL      :: r
+REAL (dp) :: t
+
+! LOCAL PARAMETERS -
+
+! IU,IL =  TEMPORARY STORAGE FOR THE UPPER AND LOWER
+!            INDICES OF PORTIONS OF THE ARRAY X
+! M =      INDEX FOR IU AND IL
+! I,J =    LOWER AND UPPER INDICES OF A PORTION OF X
+! K,L =    INDICES IN THE RANGE I,...,J
+! IJ =     RANDOMLY CHOSEN INDEX BETWEEN I AND J
+! IT,ITT = TEMPORARY STORAGE FOR INTERCHANGES IN IND
+! INDX =   TEMPORARY INDEX FOR X
+! R =      PSEUDO RANDOM NUMBER FOR GENERATING IJ
+! T =      CENTRAL ELEMENT OF X
+
+IF (n <= 0) RETURN
+
+! INITIALIZE IND, M, I, J, AND R
+
+DO  i = 1, n
+  ind(i) = i
+END DO
+m = 1
+i = 1
+j = n
+r = .375
+
+! TOP OF LOOP
+
+20 IF (i >= j) GO TO 70
+IF (r <= .5898437) THEN
+  r = r + .0390625
+ELSE
+  r = r - .21875
+END IF
+
+! INITIALIZE K
+
+30 k = i
+
+! SELECT A CENTRAL ELEMENT OF X AND SAVE IT IN T
+
+ij = i + r*(j-i)
+it = ind(ij)
+t = x(it)
+
+! IF THE FIRST ELEMENT OF THE ARRAY IS GREATER THAN T,
+!   INTERCHANGE IT WITH T
+
+indx = ind(i)
+IF (x(indx) > t) THEN
+  ind(ij) = indx
+  ind(i) = it
+  it = indx
+  t = x(it)
+END IF
+
+! INITIALIZE L
+
+l = j
+
+! IF THE LAST ELEMENT OF THE ARRAY IS LESS THAN T,
+!   INTERCHANGE IT WITH T
+
+indx = ind(j)
+IF (x(indx) >= t) GO TO 50
+ind(ij) = indx
+ind(j) = it
+it = indx
+t = x(it)
+
+! IF THE FIRST ELEMENT OF THE ARRAY IS GREATER THAN T,
+!   INTERCHANGE IT WITH T
+
+indx = ind(i)
+IF (x(indx) <= t) GO TO 50
+ind(ij) = indx
+ind(i) = it
+it = indx
+t = x(it)
+GO TO 50
+
+! INTERCHANGE ELEMENTS K AND L
+
+40 itt = ind(l)
+ind(l) = ind(k)
+ind(k) = itt
+
+! FIND AN ELEMENT IN THE UPPER PART OF THE ARRAY WHICH IS
+!   NOT LARGER THAN T
+
+50 l = l - 1
+indx = ind(l)
+IF (x(indx) > t) GO TO 50
+
+! FIND AN ELEMENT IN THE LOWER PART OF THE ARRAY WHCIH IS NOT SMALLER THAN T
+
+60 k = k + 1
+indx = ind(k)
+IF (x(indx) < t) GO TO 60
+
+! IF K <= L, INTERCHANGE ELEMENTS K AND L
+
+IF (k <= l) GO TO 40
+
+! SAVE THE UPPER AND LOWER SUBSCRIPTS OF THE PORTION OF THE
+!   ARRAY YET TO BE SORTED
+
+IF (l-i > j-k) THEN
+  il(m) = i
+  iu(m) = l
+  i = k
+  m = m + 1
+  GO TO 80
+END IF
+
+il(m) = k
+iu(m) = j
+j = l
+m = m + 1
+GO TO 80
+
+! BEGIN AGAIN ON ANOTHER UNSORTED PORTION OF THE ARRAY
+
+70 m = m - 1
+IF (m == 0) RETURN
+i = il(m)
+j = iu(m)
+
+80 IF (j-i >= 11) GO TO 30
+IF (i == 1) GO TO 20
+i = i - 1
+
+! SORT ELEMENTS I+1,...,J.  NOTE THAT 1 <= I < J AND J-I < 11.
+
+90 i = i + 1
+IF (i == j) GO TO 70
+indx = ind(i+1)
+t = x(indx)
+it = indx
+indx = ind(i)
+IF (x(indx) <= t) GO TO 90
+k = i
+
+100 ind(k+1) = ind(k)
+k = k - 1
+indx = ind(k)
+IF (t < x(indx)) GO TO 100
+
+ind(k+1) = it
+GO TO 90
+END SUBROUTINE qsortd
+!====================================================================================
+!===========================================================================
+  real*8 function fround(n, d)
+    real*8 n
+    integer d
+    fround= floor(n * 10.**d + .5) / 10.**d
+  end function fround
+!====================================================================================
+  function median(a,lena,miss)
+    real*8, dimension(lena), intent(in) :: a
+    integer, intent(in)                 :: lena
+    real*8, optional ,intent(in)        :: miss
+    real*8                              :: median
+    
+    integer :: l,number_data
+    integer, dimension(:),allocatable   :: ind
+    integer, dimension(lena)            :: ind1
+    real*8, dimension(:), allocatable   :: af ! Filtered data points
+    logical, dimension(lena)            :: accepted
+    
+
+    if (present(miss)) then 
+       accepted = a .lt. .9*miss
+       number_data = count(accepted)
+       if (number_data.gt.0) then       
+          allocate( af(1:number_data) )
+          allocate( ind(1:number_data) )
+          af     = pack( a,     accepted )
+       else
+          write(6,*)'median has 0 size array'
+          median=miss
+          return
+       end if
+
+       l = size(af,1)
+       
+       call qsortd(af,ind,l)
+       
+       if ( mod(l, 2) == 0 ) then
+          median = (af(ind(l/2+1)) + af(ind(l/2)))/2.0
+       else
+          median = af(ind(l/2+1))
+       end if
+       deallocate(af)
+       deallocate(ind)
+    else
+
+       call qsortd(a,ind1,lena)
+       
+       if ( mod(lena, 2) == 0 ) then
+          median = (a(ind1(lena/2+1)) + a(ind1(lena/2)))/2.0
+       else
+          median = a(ind1(lena/2+1))
+       end if
+
+    end if
+
+  end function median
+!====================================================================================
+  function mad(a,lena,medianval)
+    integer :: lena
+    real*8, dimension(lena), intent(in) :: a
+    real*8,optional, intent(in)  :: medianval
+    real*8 :: mad
+
+    mad=median(abs(a - medianval),lena)
+
+  end function mad
+
+end module iac2gcam_mod
+

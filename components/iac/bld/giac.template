@@ -1,0 +1,413 @@
+#! /bin/csh -f
+
+if !(-d $CASEBUILD) mkdir $CASEBUILD
+
+# ---------------------------------------------------------------------------
+#  Create resolved namelist 
+# ---------------------------------------------------------------------------
+if ($LND_GRID =~ 1.9x2.5* ) then
+  set map_landuse  = "lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc"
+  set map_fmax     = "lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc"
+  set map_flanwat  = "lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc"
+  set map_fvocef   = "lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_vocef_to_1.9x2.5_aave_da_110307.nc"
+  set map_fsoitex  = "lnd/clm2/mappingdata/maps/1.9x2.5/map_5minx5min_soitex_to_1.9x2.5_aave_da_110307.nc"
+  set map_firrig   = "lnd/clm2/mappingdata/maps/1.9x2.5/map_5minx5min_irrig_simyr2000_to_1.9x2.5_aave_da_110307.nc"
+  set map_fglctopo = "lnd/clm2/mappingdata/maps/1.9x2.5/map_10minx10min_topo_to_1.9x2.5_aave_da_110307.nc"
+  set map_flndtopo = "lnd/clm2/mappingdata/maps/1.9x2.5/map_10minx10min_topo_to_1.9x2.5_aave_da_110307.nc"
+  set clmC_bfn_dir = "unknown"
+  set clm2gcam_mapfile = "unknown"
+  set iac_base_clmfile = "unknown"
+  set mksurfout_init = "unknown"
+  set gcam2glm_basecrop = "unknown"
+  set gcam2glm_basepast = "unknown"
+  set gcam2glm_baseothr = "unknown"
+  set gcam2glm_basebiomass = "unknown"
+  set gcam2glm_aezmap = "unknown"
+endif
+
+if ($LND_GRID =~ 0.9x1.25* ) then
+  set map_landuse  = "lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc"
+  set map_fmax     = "lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc"
+  set map_flanwat  = "lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc"
+  set map_fvocef   = "lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_vocef_to_0.9x1.25_aave_da_110307.nc"
+  set map_fsoitex  = "lnd/clm2/mappingdata/maps/0.9x1.25/map_5minx5min_soitex_to_0.9x1.25_aave_da_110307.nc"
+  set map_firrig   = "lnd/clm2/mappingdata/maps/0.9x1.25/map_5minx5min_irrig_simyr2000_to_0.9x1.25_aave_da_110307.nc"
+  set map_fglctopo = "lnd/clm2/mappingdata/maps/0.9x1.25/map_10minx10min_topo_to_0.9x1.25_aave_da_110307.nc"
+  set map_flndtopo = "lnd/clm2/mappingdata/maps/0.9x1.25/map_10minx10min_topo_to_0.9x1.25_aave_da_110307.nc"
+  set clmC_bfn_dir = "iac/giac/iac2gcam/iESM_exp1.2"
+  set clm2gcam_mapfile = "iac/giac/iac2gcam/CCSM_2_GCAM_lut.nc"
+  set iac_base_clmfile = "iac/giac/iac2gcam/clm_for_gcam_15yr_means/year_1990-2004_exp1.2/iESM_exp1.2.clm2.h1.1990-2004_mean_exp1.2.nc"
+  set mksurfout_init = "surfdata.pftdyn_0.9x1.25_simyr2005_Expt1.2_c130808.nc"
+  set gcam2glm_basecrop = "iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gcrop_1500-2005.nc"
+  set gcam2glm_basepast = "iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gpast_1500-2005.nc"
+  set gcam2glm_baseothr = "iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gothr_1500-2005.nc"
+  set gcam2glm_basebiomass = "iac/giac/glm/inputs/miami_biomass_conform_0.5x0.5_map.nc"
+  set gcam2glm_aezmap = "iac/giac/glm/inputs/aez_18_reg_14_0.5x0.5_map.nc"
+endif
+
+if ($LND_GRID =~ halfdeg* ) then
+  set map_landuse  = "lnd/clm2/mappingdata/maps/halfdeg/map_0.5x0.5_MODIS_to_0360x0720_nomask_aave_da_c120329.nc"
+  set map_fmax     = "lnd/clm2/mappingdata/maps/halfdeg/map_0.5x0.5_USGS_to_0360x0720_nomask_aave_da_c120329.nc"
+  set map_flanwat  = "lnd/clm2/mappingdata/maps/halfdeg/map_0.5x0.5_AVHRR_to_0360x0720_nomask_aave_da_c120329.nc"
+  set map_fvocef   = "lnd/clm2/mappingdata/maps/halfdeg/map_0.5x0.5_AVHRR_to_0360x0720_nomask_aave_da_c120329.nc"
+  set map_fsoitex  = "lnd/clm2/mappingdata/maps/halfdeg/map_5x5min_IGBP-GSDP_to_0360x0720_nomask_aave_da_c120329.nc"
+  set map_firrig   = " "
+  set map_fglctopo = "lnd/clm2/mappingdata/maps/halfdeg/map_10x10min_nomask_to_0360x0720_nomask_aave_da_c120329.nc"
+  set map_flndtopo = "lnd/clm2/mappingdata/maps/halfdeg/map_10x10min_nomask_to_0360x0720_nomask_aave_da_c120329.nc"
+  set clmC_bfn_dir = "iac/giac/iac2gcam/iESM_exp1.1"
+  set clm2gcam_mapfile = "iac/giac/iac2gcam/CCSM05d_2_GCAM_Lut.nc"
+  set iac_base_clmfile = "iac/giac/iac2gcam/clm_for_gcam_15yr_means/year_1990-2004_exp1.1/iESM_exp1.1.clm2.h1.1990-2004_mean_exp1.1.nc"
+  set mksurfout_init = "surfdata_iESM_ZGICN24a_2006to2005a.nc"
+  set gcam2glm_basecrop = "iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gcrop_1500-2005.nc"
+  set gcam2glm_basepast = "iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gpast_1500-2005.nc"
+  set gcam2glm_baseothr = "iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gothr_1500-2005.nc"
+  set gcam2glm_basebiomass = "iac/giac/glm/inputs/miami_biomass_conform_0.5x0.5_map.nc"
+  set gcam2glm_aezmap = "iac/giac/glm/inputs/aez_18_reg_14_0.5x0.5_map.nc"
+endif
+
+cat >! $CASEBUILD/giac.buildnml.csh << EOF1
+#! /bin/csh -f 
+
+set exedir = \$RUNDIR; cd \$exedir
+
+# copy in input files
+set gcamtop = \$CODEROOT/iac/giac/gcam
+cp \$gcamtop/exe/configuration_exp1_clmcarbon.xml ./configuration.xml
+cp \$gcamtop/exe/log_conf.xml .
+cp \$gcamtop/exe/carbon_tax_4p5.xml .
+# cp \$gcamtop/cvs/objects/model_data/EERE/erbinput2.csv .
+cp \$gcamtop/cvs/objects/model_data/base/core_model_input.xml .
+cp \$gcamtop/cvs/objects/model_data/base/iesm_cdensadj.xml .
+cp \$gcamtop/cvs/objects/magicc/inputs/input_gases.emk .
+cp \$gcamtop/cvs/objects/model_data/base/solver_config.xml .
+cp \$gcamtop/cvs/objects/magicc/inputs/co2hist_c.in .
+cp \$gcamtop/cvs/objects/magicc/inputs/maguser_c.cfg .
+cp \$gcamtop/cvs/objects/magicc/inputs/maggas_c.cfg .
+cp \$gcamtop/cvs/objects/magicc/inputs/magice_c.cfg .
+cp \$gcamtop/cvs/objects/magicc/inputs/magmod_c.cfg .
+cp \$gcamtop/cvs/objects/magicc/inputs/magrun_c.cfg .
+cp \$gcamtop/cvs/objects/magicc/inputs/magxtra_c.cfg .
+cp \$gcamtop/cvs/objects/magicc/inputs/qhalos_c.in .
+cp \$gcamtop/cvs/objects/magicc/inputs/qextra_c.in .
+cp \$gcamtop/cvs/objects/magicc/inputs/Co2input_c.dat .
+cp \$gcamtop/cvs/objects/magicc/inputs/BCOCHist_c.csv .
+
+set glmtop = \$CODEROOT/iac/giac/glm
+
+#create glm namelist files 
+
+cat >! glm.fut.conf <<EOF
+[old control]
+hist_option       = 2
+trun              = tone
+cat3              = inputs/other/
+cat5              = inputs/hyde_3.0/half_deg_grids/
+cat6              = inputs/future/RCP_MiniCam/
+foutput_dir        = output/
+
+[control]
+top level glm dir = \$DIN_LOC_ROOT/iac/giac/glm/
+case name         = test_chdata
+runtype           = initial   # initial or restart
+start year        = 2005
+stop year         = 2100
+output_text         = 0         # write out text state and lu
+output_netcdf       = 1         # write out netcdf state and lu
+input_text_files    = 0         # read in txt wood harvest files
+input_netcdf_files  = 1         # read in netcdf wood harvest files
+use_urban           = 0       # 1[Y] or 0[N]
+res option          = 2       # 1 (1 degree) or 2 (0.5 degree) only option 2 is valid
+number of countries = 192
+future rate option  = 0       # HIST(0) | GCAM(3) | AIM(4) | IMAGE(5) | MESSAGE(6)
+future scenario     = 0       # HIST(0) | GCAM(3) | AIM(4) | IMAGE(5) | MESSAGE(6)
+num_regions         = 14      # HIST=0,GCAM=14,AIM=24,IMAGE=24,MESSAGE=24
+gridded_woodharvest = 2       # HIST=0,GCAM=0,AIM=1,IMAGE=0,MESSAGE=1,GCAM_AEZ=2
+logging_option      = 1       #  0=wh=zero,1=standard wh data, 4="nodata"
+zdis_option         = 1       # option for algorithm for spatial allocation of wood harvest
+                              # only option 1 is supported in this version
+
+#priority for clearing and wood harvest
+smart_flow_option        = 1       # primary(1) or secondary(2)
+
+#agricultural residence option
+#minimum flows only or 
+#shifting cultivation within the locations defined by our SC map
+adjust_smart_flow_option = 5  # minimum(1) or shifting(5)
+
+# choose whether clearing for agriculture is counted 
+# towards meeting wood harvest demand Y(2) or not N(1)
+converted_forest_land_option  = 1 
+
+#historical land-use dataset = HYDE         # HYDE or No-Data
+nodata_option = 5                           # 5=HYDE3 or 6=No-Data
+
+maxz                         = 21       # Maximum z before we get tired, and spread remaining harvest over all forested cells with z >= this value
+best_case                    = 1        # 1= best case, 0= other case
+best_case_min_flows_t5       = 1
+best_case_min_flows_t4       = 0
+total_harvest_switch         = 1
+secondary_harvest_switch     = 1
+virgin_harvest_switch        = 1
+force_harvest_switch         = 1
+cpavg                        = 1
+tb2bb                        = 1.0     # total biomass to bole biomass ratio, value of 2.0 assumes the WH numbers are bole biomass only 
+                                       # and we need to cut twice as much biomass  */
+
+phbio_filename               =  inputs/other/phbio.average.7states.txt
+phbio_length                 =  50    # filelength of probability of harvest given biomass
+
+output_updated_states        = 1
+output_updated_states2       = 0
+output_updated_states3       = 0
+output_lu                    = 1
+country_primeflow_print      = 1
+
+#glm.future options
+region_test_tmp              = 0
+region_test_gcode            = 11
+region_test_index            = 6
+conterminous                  = 0
+
+
+
+[output_files]
+static_regions_file=static_regions_file.txt
+static_vba_file=static_vba_file.txt
+
+[output directory]
+output dir = /lustre/data/jet/GLM/output
+
+[hyde_datasets]
+
+hyde_crop_path = \$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gcrop_1500-2005.nc
+hyde_othr_path =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gothr_1500-2005.nc
+hyde_past_path =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gpast_1500-2005.nc
+hyde_watr_path =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gwatr.1500-1501.nc
+hyde_icew_path =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/gicew.1500-1501.nc
+
+[hyde_datasets_nodata]
+
+crop_nodata_path =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/nodata/gcrop_1500-1510.nc
+other_nodata_path =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/nodata/gothr_1500-1510.nc
+past_nodata_path  =\$DIN_LOC_ROOT/iac/giac/glm/inputs/hyde_3.0/half_deg_grids/nodata/gpast_1500-1510.nc
+
+[future_datasets]
+
+future_crop_constructed_states = inputs/GCAM_Expt1_constructed_states_2005-2100/gcrop.2005-2100.nc
+future_secd_constructed_states = inputs/GCAM_Expt1_constructed_states_2005-2100/gsecd.2005-2100.nc
+future_othr_constructed_states = inputs/GCAM_Expt1_constructed_states_2005-2100/gothr.2005-2100.nc
+future_past_constructed_states = inputs/GCAM_Expt1_constructed_states_2005-2100/gpast.2005-2100.nc
+future_watr_constructed_states = inputs/hyde_3.0/half_deg_grids/gwatr.1500-1501.nc
+future_icew_constructed_states = inputs/hyde_3.0/half_deg_grids/gicew.1500-1501.nc
+updated_initial_state = \$DIN_LOC_ROOT/iac/giac/glm/inputs/initial/initial_state_Expt1_AEZ_2005.nc
+
+[woodharvest_datasets]
+woodharvest_file =\$DIN_LOC_ROOT/iac/giac/glm/inputs/other/wood_harvest/woodharvest_1500-2005.nc
+woodharvest_nodata_file =\$DIN_LOC_ROOT/iac/giac/glm/inputs/woodharvest_nodata_1500-2005.nc
+rcp_woodharvest_file =\$DIN_LOC_ROOT/iac/giac/glm/inputs/other/wood_harvest/RCP/woodharvest_minicam_rcp_2005_2100.nc
+rcp_woodharvest_nodata_file =\$DIN_LOC_ROOT/iac/giac/glm/inputs/other/wood_harvest/RCP/woodharvest_minicam_rcp_2005_2100.nc
+rcp_woodharvest_aez_file =\$DIN_LOC_ROOT/iac/giac/glm/inputs/other/wood_harvest/RCP/woodharvest_rcp45_aez_nd_2005_2100.nc
+rcp_woodharvest_nodata_aez_file =\$DIN_LOC_ROOT/iac/giac/glm/inputs/other/wood_harvest/RCP/woodharvest_rcp45_aez_nd_2005_2100.nc
+
+[other_datasets]
+
+wh_region_codes_file   = inputs/other/wood_harvest/codes_halfdeg_minicam.txt
+wh_cont2region_codes_file = inputs/other/wood_harvest/continent_codes_minicam_test.txt
+whcodes2glm_map  = inputs/other/wood_harvest/codes2glm_gcam_turkey_in_ee.txt
+aez_region_grid_file = inputs/other/wood_harvest/AEZ_region_grid.txt
+aez_region_zone_file = inputs/other/wood_harvest/AEZ_zone_grid.txt
+
+cellinfo_file  = inputs/other/cellarea/cellarea_halfdeg.txt
+ccodes_file    = inputs/other/ccodes/ccodes.txt.sort2wh
+ccodes_map     = inputs/other/ccodes/ccodes_half_deg.txt
+cnames_file    = inputs/other/ccodes/cnames.txt.sort2wh
+regnames_file  = inputs/other/wood_harvest/names_minicam.txt
+contcodes_file = inputs/other/ccodes/continent.codes.txt.sort2wh
+shiftcult_map  = inputs/other/shift_cult/shiftcult_map_halfdeg.txt
+regcodes_map     = inputs/other/wood_harvest/regcodes_halfdeg.txt
+gcodes_cont_map  = inputs/other/ccodes/gcodes_continent_half_deg_DUMMY.asc
+miami_biomass_file_vba = inputs/other/miami_biomass_v3/miami_halfdeg_conform.txt
+miami_biomass_file_vnppa = inputs/other/miami_npp/miami.half_deg.in_conform
+
+[debug options]
+smart_flow_bug_print         = 1
+state_print                  = 0
+state_bug_print              = 1
+flow_bug_print               = 1
+
+EOF
+
+#1 change start stop years in glm config file
+sed -i 's/start year.*/start year =   2005/' glm.fut.conf
+sed -i 's/stop year.*/stop year  =   2085/' glm.fut.conf
+sed -i 's/runtype.*/runtype    =    initial/' glm.fut.conf
+
+if (\${CONTINUE_RUN} == TRUE) then
+
+#2 change runtype in glm config file
+   sed -i 's/runtype.*/runtype    =    restart/' glm.fut.conf
+
+#3 modify configuration.xml with restart-period value from rpointer.file
+   sed -i '/restart-period/d' configuration.xml
+   set period = \`sed -n '2p' rpointer.gcam\`
+   sed -i '/climateOutputInterval/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <Value name="restart-period">'"\$period"'</Value>' configuration.xml
+
+#4 modify configure with restart filename from rpointer.gcam
+   sed -i '/xmlInputFileName/d' configuration.xml
+   set gcamfile = \`sed -n '1p' rpointer.gcam\`
+   sed -i '/xmlOutputFileName/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <Value name="xmlInputFileName">'"\$gcamfile"'</Value>' configuration.xml
+
+else
+#2 change runtype in glm config file
+   sed -i 's/runtype.*/runtype    =    initial/' glm.fut.conf
+
+#3 modify configuration.xml with restart-period value from rpointer.file
+   sed -i '/restart-period/d' configuration.xml
+
+#4 modify configure with restart filename from rpointer.gcam
+   sed -i '/xmlInputFileName/d' configuration.xml
+   set gcamfile = "core_model_input.xml"
+   sed -i '/xmlOutputFileName/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <Value name="xmlInputFileName">'"\$gcamfile"'</Value>' configuration.xml
+endif
+
+# for glm2iac
+set giactop = \$DIN_LOC_ROOT/iac/giac
+set mksurfin = mksurf_landuse_iESM_720x360.nc
+set mksurfout = surfdata_iESM
+cp -f \$giactop/glm2iac/pftregridparams.txt .
+cp -f \$giactop/glm2iac/surfdata_360x720_mcrop2000.nc .
+cp -f \$giactop/glm2iac/surfdata_360x720_potveg.nc .
+cp -f \$giactop/glm2iac/mksrf_landuse_ingrid.nc ./\$mksurfin
+cp -f \$giactop/glm2iac/iESM_Expt1_C_S2_CropPast_Ref.nc ./iESM_Ref_CropPast.nc
+chmod 666 ./iESM_Ref_CropPast.nc   
+if (\${CONTINUE_RUN} == FALSE) then
+  cp -f \$giactop/glm2iac/${mksurfout_init} \${mksurfout}_dyn.nc
+endif
+
+# mksrf_fdynuse      = './mksrf_landuse.nc'
+
+set initrun = '.true.'
+if (\$CONTINUE_RUN == 'TRUE') set initrun = '.false.'
+
+cat >! iac_in <<EOF
+&iacnml
+ npp_hr_on = .true.
+ clm_iac_carbon_scaling = .true.
+ fast_oneway_iac_coupling = .false.
+ sneakermode = .false.
+ initial_run = \$initrun
+ clmC_bfn_dir = '\$DIN_LOC_ROOT/${clmC_bfn_dir}'
+ clm2gcam_mapfile = '\$DIN_LOC_ROOT/${clm2gcam_mapfile}'
+ iac_base_clmfile = '\$DIN_LOC_ROOT/${iac_base_clmfile}'
+ gcam2glm_basecrop = '\$DIN_LOC_ROOT/${gcam2glm_basecrop}'
+ gcam2glm_basepast =  '\$DIN_LOC_ROOT/${gcam2glm_basepast}'
+ gcam2glm_baseothr =  '\$DIN_LOC_ROOT/${gcam2glm_baseothr}'
+ gcam2glm_basebiomass =  '\$DIN_LOC_ROOT/${gcam2glm_basebiomass}'
+ gcam2glm_aezmap =  '\$DIN_LOC_ROOT/${gcam2glm_aezmap}'
+ clm_nx = \$LND_NX
+ clm_ny = \$LND_NY
+/
+
+&mksurfnml
+ mksrf_fgrid    = '\$DIN_LOC_ROOT/${map_landuse}'
+ mksrf_fsoitex  = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_soitex.10level.c010119.nc'
+ mksrf_forganic = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_organic.10level.0.5deg.081112.nc'
+ mksrf_flanwat  = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_lanwat.050425.nc'
+ mksrf_fmax     = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_fmax.070406.nc'
+ mksrf_fglacier = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_glacier.060929.nc'
+ mksrf_furban   = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_urban_3den_0.5x0.5_simyr2000.c090223_v1.nc'
+ mksrf_fvegtyp  = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_landuse_rc2000_c090630.nc'
+ mksrf_fsoicol  = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_soilcol_global_c090324.nc'
+ mksrf_flai     = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_lai_global_c090506.nc'
+ mksrf_fglctopo = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_topo.10min.c080912.nc'
+ mksrf_flndtopo = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/topodata_10min_USGS_071205.nc'
+ mksrf_fvocef   = '\$DIN_LOC_ROOT/lnd/clm2/rawdata/mksrf_vocef.c060502.nc'
+ mksrf_firrig   = ' '
+ mksrf_fdynuse  = '\$mksurfin'
+ map_fpft       = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_fglacier   = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_fsoicol    = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_furban     = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_fmax       = '\$DIN_LOC_ROOT/${map_fmax}'
+ map_forganic   = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_fglcmec_g2g= '\$DIN_LOC_ROOT/${map_landuse}'
+ map_flai       = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_fharvest   = '\$DIN_LOC_ROOT/${map_landuse}'
+ map_flanwat    = '\$DIN_LOC_ROOT/${map_flanwat}'
+ map_fvocef     = '\$DIN_LOC_ROOT/${map_fvocef}'
+ map_fsoitex    = '\$DIN_LOC_ROOT/${map_fsoitex}'
+ map_firrig     = '\$DIN_LOC_ROOT/${map_firrig}'
+ map_fglctopo   = '\$DIN_LOC_ROOT/${map_fglctopo}'
+ map_flndtopo   = '\$DIN_LOC_ROOT/${map_flndtopo}'
+ map_fglcmec_t2g= '\$DIN_LOC_ROOT/lnd/clm2/mappingdata/maps/topo/map_10minx10min_topo_to_0.5x0.5_landuse_aave_da_110228.nc'
+ outnc_double   = .true.
+ outnc_dims     = 2
+ fsurdat        = '\${mksurfout}.nc'
+ fsurlog        = '\${mksurfout}.log'
+ fdyndat        = '\${mksurfout}_dyn.nc '
+
+/
+EOF
+
+EOF1
+
+# ---------------------------------------------------------------------------
+#  Create script to build dead model
+# ---------------------------------------------------------------------------
+
+cat >! $CASEBUILD/giac.buildexe.csh << EOF2
+#! /bin/csh -f
+set objdir = \$OBJROOT/iac/obj; if !(-d \$objdir) mkdir -p \$objdir
+set srcdir = \$OBJROOT/iac/obj; if !(-d \$srcdir) mkdir -p \$srcdir
+set comp = 'unknown'
+if (\$COMP_INTERFACE == 'MCT' ) set comp = mct
+if (\$COMP_INTERFACE == 'ESMF') set comp = esmf
+set gcamtop = \$CODEROOT/iac/giac/gcam
+set glmtop = \$CODEROOT/iac/giac/glm
+
+#------------------------------------------------------------------------------
+# Build the library
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Build GCAM
+cd \$srcdir
+cp -p -r \$gcamtop/cvs .
+cp -p \$INCROOT/iac_fields_mod* cvs/objects/ccsmcpl/source/ 
+cd cvs/objects/build/linux
+mkdir ./objs
+gmake gcamccsm
+cp libgcamlib.a \$LIBROOT/libiac.a
+#cp libgcamlib.a \$LIBROOT/libgcam.a
+cp ../../ccsmcpl/source/gcam_comp_mod.mod \$INCROOT/
+
+#------------------------------------------------------------------------------
+#Build GLM
+cd \$srcdir
+cp -p -r \$glmtop .
+cd glm
+gmake clean
+cp -p \$INCROOT/iac_fields_mod* .
+gmake glmlib
+ar ru \$LIBROOT/libiac.a ccsm_glm_interface.o  glm_comp_mod.o  glm.future.iesm.o
+cp glm_comp_mod.mod \$INCROOT/
+
+#------------------------------------------------------------------------------
+#Build iac interface, couplers,and share code again into lib
+cd \$objdir
+cat >! Filepath << EOF
+\$CASEROOT/SourceMods/src.giac
+\$CODEROOT/iac/giac/coupling
+\$CODEROOT/iac/giac/coupling/cpl_\$comp
+\$CODEROOT/csm_share/shr
+EOF
+
+rm *.o
+gmake complib -j \$GMAKE_J MODEL=giac COMPLIB=\$LIBROOT/libiac.a -f \$CASETOOLS/Makefile MACFILE=\$CASEROOT/Macros.\$MACH || exit 2
+
+cp ./*.mod \$INCROOT/
+cp ./iac_comp_mod.mod \$INCROOT/
+#------------------------------------------------------------------------------
+
+EOF2
+

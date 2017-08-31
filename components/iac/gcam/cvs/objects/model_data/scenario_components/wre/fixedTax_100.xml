@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Son H. Kim (PNNL) -->
+<scenario name="WRE550">
+	<output-meta-data>
+		<summary>Fixed 100 dollar tax scenario</summary>
+	</output-meta-data>
+	<world>
+		<region name="USA">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+				<isFixedTax>1</isFixedTax>
+				<fixedTax year="2020" fillout="1">100</fixedTax>
+			</ghgpolicy>
+		</region>
+		<region name="Canada">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Western Europe">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Japan">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Australia_NZ">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Former Soviet Union">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="China">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Middle East">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Africa">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Latin America">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Southeast Asia">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Eastern Europe">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Korea">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="India">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+	</world>
+</scenario>

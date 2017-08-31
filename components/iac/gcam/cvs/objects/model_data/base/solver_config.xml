@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario>
+	<!-- This is the default solution configuration file.  In this configuration file,
+         the user-configurable-solver enables specification of solver components and their ordering.
+         The available solver components are (See SolverComponentFactory for more info):
+             - bisect-all-solver-component
+             - log-newton-raphson-solver-component
+             - log-newton-raphson-save-deriv-solver-component
+             - bisect-one-solver-component
+             - bisect-policy-solver-component
+
+         Each solver component has some default parameters for SolutionInfo objects
+         as well as max iterations for that component.  They also have the ability to
+         parse a logic string to determine which markets (or SolutionInfo) to include.
+         In this syntax (See SolutionInfoFilterFactory for more info), the following operators
+         are allowed:
+             - ( .. ) Paranthesis to group logic as necessary
+             - !( .. ) The logical NOT operator
+             - || The logical OR operator
+             - && The logical AND operator (Note that & alone is an illegal XML character
+               so the XML substitue "&amp;" must be used)
+         The available operands:
+             - all Includes ALL markets
+             - solvable If the market has been tagged solvable (see Market::shouldSolve)
+             - solvable-nr If the market has been tagged solvable with newton-raphson
+                  (see Market::shouldSolveNR)
+             - market-type="[type]" If the market is of type [type]
+                  (see Market::convert_type_to_string for type names)
+             - market-name="[name]" If the Market::getName() equals [name]
+             - unsolved If the market is not currently solved to it's tolerance.
+
+         See SolverFactory for available solvers, note that the default solver is 
+         BisectionNRSolver and a different solver can be used for each period.
+    -->
+	<!-- In 1990 initial trial prices are far from solution.  Therefore, it is more effective to use bisection
+         first and then to utilize newton-raphson for finding solution prices.
+    -->
+	<user-configurable-solver year="1990">
+		<solution-tolerance>0.001</solution-tolerance>
+		<solution-floor>0.0001</solution-floor>
+		<calibration-tolerance>0.01</calibration-tolerance>
+		<max-model-calcs>2000</max-model-calcs>
+		<bisect-all-solver-component>
+			<bracket-interval>0.4</bracket-interval>
+			<max-bracket-iterations>40</max-bracket-iterations>
+			<max-iterations>30</max-iterations>
+			<solution-info-filter>unsolved &amp;&amp; solvable</solution-info-filter>
+		</bisect-all-solver-component>
+		<log-newton-raphson-solver-component>
+			<delta-price>1e-6</delta-price>
+			<max-iterations>4</max-iterations>
+			<max-price-change>1.2</max-price-change>
+			<solution-info-filter>solvable-nr</solution-info-filter>
+		</log-newton-raphson-solver-component>
+	</user-configurable-solver>
+	<user-configurable-solver year="2005">
+		<solution-tolerance>0.001</solution-tolerance>
+		<solution-floor>0.0001</solution-floor>
+		<calibration-tolerance>0.01</calibration-tolerance>
+		<max-model-calcs>2000</max-model-calcs>
+		<log-newton-raphson-solver-component>
+			<delta-price>1e-6</delta-price>
+			<max-iterations>4</max-iterations>
+			<max-price-change>1.2</max-price-change>
+			<!-- include the tax market in the newton-raphson -->
+			<solution-info-filter>solvable-nr</solution-info-filter>
+		</log-newton-raphson-solver-component>
+		<bisect-all-solver-component>
+			<bracket-interval>0.4</bracket-interval>
+			<max-bracket-iterations>40</max-bracket-iterations>
+			<max-iterations>30</max-iterations>
+			<solution-info-filter>unsolved &amp;&amp; solvable</solution-info-filter>
+		</bisect-all-solver-component>
+	</user-configurable-solver>
+	<!-- For all other periods, newton-raphson is called before the bisection after bisection on the
+          carbon market only (if it exists):
+        1) Bisect the carbon market
+        2) Call newton-raphson on ALL solvable markets
+        3) Bisect the remaining unsolved markets
+    -->
+	<user-configurable-solver year="2010" fillout="1">
+		<solution-tolerance>0.001</solution-tolerance>
+		<solution-floor>0.0001</solution-floor>
+		<calibration-tolerance>0.01</calibration-tolerance>
+		<max-model-calcs>2000</max-model-calcs>
+		<bisect-all-solver-component>
+			<bracket-interval>0.4</bracket-interval>
+			<max-bracket-iterations>40</max-bracket-iterations>
+			<max-iterations>30</max-iterations>
+			<solution-info-filter>market-name="globalCO2" &amp;&amp; solvable</solution-info-filter>
+		</bisect-all-solver-component>
+		<!-- The purpose of the bisection call here is to move prices of solvable markets into a regime such that
+		       they can be included in the solvable set for Newton-Rhapson. -->
+		<bisect-all-solver-component>
+			<bracket-interval>0.4</bracket-interval>
+			<max-bracket-iterations>40</max-bracket-iterations>
+			<max-iterations>30</max-iterations>
+			<solution-info-filter>unsolved &amp;&amp; solvable &amp;&amp; !(solvable-nr)</solution-info-filter>
+		</bisect-all-solver-component>
+		<log-newton-raphson-solver-component>
+			<delta-price>1e-6</delta-price>
+			<max-iterations>4</max-iterations>
+			<max-price-change>1.2</max-price-change>
+			<!-- include the tax market in the newton-raphson -->
+			<solution-info-filter>solvable-nr || (market-type="Tax" &amp;&amp; solvable)</solution-info-filter>
+		</log-newton-raphson-solver-component>
+		<bisect-all-solver-component>
+			<bracket-interval>0.4</bracket-interval>
+			<max-bracket-iterations>40</max-bracket-iterations>
+			<max-iterations>30</max-iterations>
+			<solution-info-filter>unsolved &amp;&amp; solvable</solution-info-filter>
+		</bisect-all-solver-component>
+	</user-configurable-solver>
+	<!-- The SolutionInfoParamParser object allows us to specify the following solution algorithm
+         parameters with varying granularity.
+         The parameters which can be parsed:
+             - solution-tolerance
+             - solution-floor
+             - bracket-interval
+             - max-price-change
+             - delta-price
+         
+         These values can be read by "market-type" or "good" for a given "period" and "region".
+         Should a region attribute not be provided, it is assumed to be applied for ALL regions for market-type only.
+         If multiple parameters could apply to a single market they are resolved with the following
+         priority:
+             1) Matches good name and region name
+             2) Matches market type and region name
+             3) Matches market type with the global region
+             4) Default values from the Solver/SolverComponent
+    -->
+	<solution-info-param-parser>
+		<!-- applies to all regions since region attribute is not included -->
+		<max-price-change fillout="1" market-type="Trial-Value" period="1">10</max-price-change>
+		<bracket-interval good="unconventional oil" region="global" period="3">0.005</bracket-interval>
+		<max-price-change good="unconventional oil" region="global" period="3">1.005</max-price-change>
+		<bracket-interval good="unconventional oil" region="global" period="4">0.005</bracket-interval>
+		<max-price-change good="unconventional oil" region="global" period="4">1.005</max-price-change>
+		<bracket-interval good="unconventional oil" region="global" period="5">0.005</bracket-interval>
+		<max-price-change good="unconventional oil" region="global" period="5">1.005</max-price-change>
+	</solution-info-param-parser>
+</scenario>

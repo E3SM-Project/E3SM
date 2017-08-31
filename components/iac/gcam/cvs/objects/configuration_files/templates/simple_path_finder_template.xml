@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    This scenario is controlled by the "simple-find-path" boolean.
+    It reads from the filename specified by "sPolicyInputFileName" and outputs to
+    the filename specified by "sPolicyOutputFileName".  The default output filename
+    is sPolicyFinalEmissionsCurve.xml.
+-->
+<SimplePolicyTargetRunner>
+	<target-year>2050</target-year>
+	<target-value>485</target-value>
+	<target-tolerance>0.005</target-tolerance>
+	<target-type>concentration</target-type>
+	<Curve type="PointSetCurve" name="lower-bound" wre="450">
+		<PointSet type="ExplicitPointSet">
+			<DataPoint type="XYDataPoint">
+				<x>2020</x>
+				<y>7625</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2035</x>
+				<y>6007</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2050</x>
+				<y>4669</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2065</x>
+				<y>4035</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2080</x>
+				<y>3556</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2095</x>
+				<y>3240</y>
+			</DataPoint>
+		</PointSet>
+	</Curve>
+	<Curve type="PointSetCurve" name="upper-bound" wre="550">
+		<PointSet type="ExplicitPointSet">
+			<DataPoint type="XYDataPoint">
+				<x>2020</x>
+				<y>9375</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2035</x>
+				<y>9947</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2050</x>
+				<y>9459</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2065</x>
+				<y>8639</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2080</x>
+				<y>7570</y>
+			</DataPoint>
+			<DataPoint type="XYDataPoint">
+				<x>2095</x>
+				<y>6593</y>
+			</DataPoint>
+		</PointSet>
+	</Curve>
+</SimplePolicyTargetRunner>
+
+
+
+

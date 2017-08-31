@@ -1,0 +1,938 @@
+
+Module iac_comp_mod
+  
+!---------------------------------------------------------------------------
+!BOP
+!
+! !MODULE: iac_comp_mod
+!
+!  Interface of the integrated assessment component in CCSM
+!
+! !DESCRIPTION:
+!
+! !USES:
+  use gcam_comp_mod
+  use glm_comp_mod
+  use iac2gcam_mod
+  use gcam2glm_mod
+  use glm2iac_mod
+  use iac_fields_mod
+  use shr_cal_mod
+  use shr_file_mod
+  use shr_sys_mod
+  use netcdf
+
+  implicit none
+  SAVE
+  private                              ! By default make data private
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+  public :: iac_init_mod               ! clm initialization
+  public :: iac_run_mod                ! clm run phase
+  public :: iac_final_mod              ! clm finalization/cleanup
+
+! !PUBLIC DATA MEMBERS: None
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+
+! !PRIVATE DATA MEMBERS:
+
+  real*8, pointer :: gcami(:,:)
+  real*8, pointer :: gcamo(:,:)
+  real*8, pointer :: glmi(:,:)
+  real*8, pointer :: glmi_wh(:,:)
+  real*8, pointer :: glmo(:,:)
+  integer,save :: iulog
+  integer,save :: iacymd_fudge = -1
+
+!EOP
+!===============================================================
+contains
+!===============================================================
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac_init_mod
+
+! !INTERFACE:
+  subroutine iac_init_mod( EClock, cdata, iaci, iaco)
+
+! !DESCRIPTION:
+! Initialize interface for iac
+
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+    integer, pointer :: EClock(:)
+    type(iac_cdata_type) :: cdata
+    real*8, pointer :: iaci(:,:)
+    real*8, pointer :: iaco(:,:)
+
+! !LOCAL VARIABLES:
+    character(len=*),parameter :: subname='(iac_init_mod)'
+    integer :: ymdtest,iacymd,iactod
+    integer :: gcam_data_size
+    integer :: glm_data_size
+    integer :: iac_data_size
+    integer :: nunit, ier
+
+    character(len=128) :: casename
+    character(len=512) :: clm2gcam_mapfile
+    character(len=512) :: iac_base_clmfile
+    logical :: fast_oneway_iac_coupling
+    logical :: npp_hr_on
+    logical :: initial_run
+    integer :: clm_nx, clm_ny
+    namelist /iacnml/   &
+      fast_oneway_iac_coupling,npp_hr_on,initial_run, &
+      clm2gcam_mapfile, iac_base_clmfile, clm_nx, clm_ny
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!-----------------------------------------------------------------------
+
+  fast_oneway_iac_coupling = .false.
+  npp_hr_on = .false.
+  initial_run = .true.
+  clm2gcam_mapfile = 'unknown'
+  iac_base_clmfile = 'unknown'
+  clm_nx = -1
+  clm_ny = -1
+  write(iulog,*) 'tcx b1',clm_nx,clm_ny
+  nunit = shr_file_getUnit()
+  open(nunit,file="iac_in",status="old",action="read")
+  read(nunit, iacnml, iostat=ier)
+  if (ier /= 0) then
+     write(iulog,*)'error: iacnml namelist input resulted in error code ',ier
+     call shr_sys_abort(subname//' ERROR: iacnml error')
+  endif
+  close(nunit)
+  call shr_file_freeUnit(nunit)
+  write(iulog,*) 'tcx b2',clm_nx,clm_ny
+
+  iulog = cdata%i(iac_cdatai_logunit)
+  cdata%l(iac_cdatal_fastiac) = fast_oneway_iac_coupling
+  cdata%l(iac_cdatal_npphr)   = npp_hr_on
+  cdata%l(iac_cdatal_initrun) = initial_run
+  cdata%c(iac_cdatac_clm2gcam) = trim(clm2gcam_mapfile)
+  cdata%c(iac_cdatac_ibclmfile) = trim(iac_base_clmfile)
+  cdata%i(iac_cdatai_iac_nx)  = clm_nx
+  cdata%i(iac_cdatai_iac_ny)  = clm_ny
+  cdata%i(iac_cdatai_iac_size) = clm_nx * clm_ny
+  casename = trim(cdata%c(iac_cdatac_casename))
+  write(iulog,*) 'tcx b3',clm_nx,clm_ny
+
+  write(iulog,*) subname,' iacnml settings:'
+  write(iulog,*) subname,' clm_nx    = ',cdata%i(iac_cdatai_iac_nx)
+  write(iulog,*) subname,' clm_ny    = ',cdata%i(iac_cdatai_iac_ny)
+  write(iulog,*) subname,' fastiac   = ',cdata%l(iac_cdatal_fastiac)
+  write(iulog,*) subname,' npphr     = ',cdata%l(iac_cdatal_npphr)
+  write(iulog,*) subname,' initrun   = ',cdata%l(iac_cdatal_initrun)
+  write(iulog,*) subname,' clm2gcam  = ',trim(cdata%c(iac_cdatac_clm2gcam))
+  write(iulog,*) subname,' ibclmfile = ',trim(cdata%c(iac_cdatac_ibclmfile))
+
+  call iac_fields_init()
+
+  iac_data_size = cdata%i(iac_cdatai_iac_size)
+  allocate(iaci(iac_iaci_nflds,iac_data_size))
+  allocate(iaco(iac_iaco_nflds,iac_data_size))
+  iaci = iac_spval
+  iaco = iac_spval
+  cdata%l(iac_cdatal_iac_present) = .true.
+  cdata%l(iac_cdatal_iac_prognostic) = .true.
+
+  !--- initialize models ---
+  write(iulog,*) subname,'call gcam_init_mod'
+  call shr_sys_flush(iulog)
+  call gcam_init_mod(EClock, cdata, gcami, gcamo  )
+
+  write(iulog,*) subname,'call glm_init_mod'
+  call shr_sys_flush(iulog)
+  call glm_init_mod (EClock, cdata, glmi , glmi_wh, glmo )
+
+  !--- initialize couplers ---
+  write(iulog,*) subname,'call iac2gcam_init_mod'
+  call shr_sys_flush(iulog)
+  call iac2gcam_init_mod(EClock, cdata, iaci, gcami)
+
+  write(iulog,*) subname,'call gcam2glm_init_mod'
+  call shr_sys_flush(iulog)
+  call gcam2glm_init_mod(EClock, cdata, gcamo, glmi, glmi_wh )
+
+  write(iulog,*) subname,'call glm2iac_init_mod'
+  call shr_sys_flush(iulog)
+  call glm2iac_init_mod (EClock, cdata, glmo,  iaco)
+
+  gcam_data_size = size(gcamo,2)
+  glm_data_size = size(glmi,2)
+  write(iulog,*) trim(subname),' case name  = ',trim(casename)
+  write(iulog,*) trim(subname),' iac size   = ',iac_data_size
+  write(iulog,*) trim(subname),' gcamo size = ',gcam_data_size
+  write(iulog,*) trim(subname),' glm size   = ',glm_data_size
+
+  !--- Run GCAM up to current date and initialize gcam2glm with starting data ---
+
+  iacymd = EClock(iac_EClock_ymd)
+  iactod = EClock(iac_Eclock_tod)
+  !jt rem following debug
+  write(6,*)'running gcam up to current date ',iacymd
+  do ymdtest=19700101,iacymd,10000
+     EClock(iac_EClock_ymd) = ymdtest
+     call gcam_run_mod(EClock, cdata, gcami, gcamo)
+  enddo
+
+  end subroutine iac_init_mod
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac_run_mod
+
+! !INTERFACE:
+  subroutine iac_run_mod( EClock, cdata, iaci, iaco)
+
+! !DESCRIPTION:
+! Run interface for iac
+
+! !USES:
+    implicit none
+
+! !ARGUMENTS:
+    integer, pointer :: EClock(:)
+    type(iac_cdata_type) :: cdata
+    real*8, pointer :: iaci(:,:)
+    real*8, pointer :: iaco(:,:)
+
+! !LOCAL VARIABLES:
+    integer :: i,j,ij,h,k,iu,nx,ny,ifld,ji,jr
+    integer :: ymdtest,iacymd,iactod,iacymd_orig,iactod_orig,iacymd_hold
+    integer :: yyyy,mm,dd,yyyym1
+    character(len=128) :: hfile,vname,string,filename
+    integer :: ncid,dimid,varid,nmode,n,ierr
+    integer :: dimidiac(2),dimidgcamo(3),dimidgcami(2),dimidglm(2),dimidglmiwh(2)
+    integer :: start3(3),count3(3)
+    real*8, allocatable :: array3(:,:,:)
+    real*8, allocatable :: array2(:,:)
+    real*8, allocatable :: arin(:)
+    character(len=*),parameter :: subname='(iac_run_mod)'
+    character(len=128) :: casename
+    logical :: fast_oneway_iac_coupling
+    integer :: glmyear=14990101
+    integer :: day,naez,nreg
+    logical :: datagcam
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!-----------------------------------------------------------------------
+  datagcam=.false.
+
+  iulog = cdata%i(iac_cdatai_logunit)
+  fast_oneway_iac_coupling = cdata%l(iac_cdatal_fastiac)
+  casename = trim(cdata%c(iac_cdatac_casename))
+  write(6,*)'iulog is ',iulog
+  if (fast_oneway_iac_coupling) then
+     ! save original ymd/tod value
+     iacymd_orig = EClock(iac_EClock_ymd)
+     iactod_orig = EClock(iac_Eclock_tod)
+
+     write(iulog,*) trim(subname),'current model ymd =',iacymd_orig,' tod =',iactod_orig
+     write(6,*) trim(subname),'current model ymd =',iacymd_orig,' tod =',iactod_orig
+     !--- reset iac ymd Clock
+     if (iacymd_fudge < 0) then
+        iacymd_fudge = 20050101
+     else
+        iacymd_fudge = iacymd_fudge + 100
+        if (mod(iacymd_fudge,10000) > 1231) iacymd_fudge = (iacymd_fudge/10000+1)*10000 + 0101
+     endif
+
+     EClock(iac_Eclock_ymd) = iacymd_fudge
+     EClock(iac_Eclock_tod) = EClock(iac_Eclock_dt)
+  endif
+
+  ! iac time
+  iacymd = EClock(iac_EClock_ymd)
+  iactod = EClock(iac_Eclock_tod)
+  call shr_cal_date2ymd(iacymd,yyyy,mm,dd)
+
+  ! compute "alarms" 0 = off, 1 = on
+  EClock(iac_EClock_Agcam) = 0
+  EClock(iac_EClock_Aglm)  = 0
+  EClock(iac_EClock_AclmC) = 0
+  if (iactod == EClock(iac_EClock_dt)) then   ! first timestep of day
+     if (dd==1) &
+        EClock(iac_EClock_AclmC) = 1   ! every month
+     if (dd==1 .and. mm==1) &
+        EClock(iac_EClock_Aglm)  = 1   ! every year
+     if (dd==1 .and. mm==1) &
+        EClock(iac_EClock_Agcam) = 1   ! every year
+  endif
+
+  write(iulog,*) trim(subname),'current model date1 ',iacymd,iactod
+  write(iulog,*) trim(subname),'current model date2 ',yyyy,mm,dd
+  write(iulog,*) trim(subname),'current model alarm ', &
+     EClock(iac_Eclock_Agcam),EClock(iac_Eclock_Aglm),EClock(iac_Eclock_AclmC)
+
+  write(6,*) trim(subname),'current model date1 ',iacymd,iactod
+  write(6,*) trim(subname),'current model date2 ',yyyy,mm,dd
+  write(6,*) trim(subname),'current model alarm ', &
+     EClock(iac_Eclock_Agcam),EClock(iac_Eclock_Aglm),EClock(iac_Eclock_AclmC)
+
+  if (EClock(iac_EClock_AclmC) == 1) then
+     write(iulog,*) trim(subname),'calling iac2gcam_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     write(6,*) trim(subname),'calling iac2gcam_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+! nothing to diagnose
+!     call iac_diag(' iaci: ',iaci)
+     call iac2gcam_run_mod(EClock,cdata,iaci,gcami)
+     call iac_diag(' gcami: ',gcami)
+  endif
+
+  if (EClock(iac_EClock_Agcam) == 1) then
+     iacymd_hold = EClock(iac_Eclock_ymd)
+     EClock(iac_Eclock_ymd) = EClock(iac_Eclock_ymd) + 50000
+     write(6,*) trim(subname),'calling gcam_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     write(iulog,*) trim(subname),'calling gcam_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     call gcam_run_mod(EClock, cdata, gcami, gcamo)
+     EClock(iac_Eclock_ymd) = iacymd_hold
+  end if
+
+  if (EClock(iac_EClock_Aglm) == 1) then
+     iacymd_hold = EClock(iac_Eclock_ymd)
+     EClock(iac_Eclock_ymd) = EClock(iac_Eclock_ymd) + 10000
+     write(6,*) trim(subname),'calling gcam2glm_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     write(iulog,*) trim(subname),'calling gcam2glm_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     call gcam2glm_run_mod(EClock, cdata, gcamo, glmi, glmi_wh)
+     call iac_diag(' glmi: ',glmi)
+     write(6,*) trim(subname),'calling glm_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     write(iulog,*) trim(subname),'calling glm_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     call glm_run_mod (EClock, cdata, glmi, glmi_wh, glmo )
+     EClock(iac_Eclock_ymd) = iacymd_hold
+  endif
+
+
+  ! Need to reverse glmo order, north->south, east->west to south->north, east->west
+  ! use array2 as temporary
+
+  allocate(array2(size(glmo,dim=1),size(glmo,dim=2)))
+  array2 = glmo
+  do j = 1,iac_glm_ny
+  do i = 1,iac_glm_nx
+    ji = (j-1)*iac_glm_nx + i
+    jr = (iac_glm_ny - j)*iac_glm_nx + i
+    do k = 1,iac_glmo_nflds
+      glmo(k,ji) = array2(k,jr)
+    enddo
+  enddo
+  enddo
+  deallocate(array2)
+
+!
+!   ij = 0
+!   do k = 1,size(glmo,dim=1)
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      write(6,*)'after glm run mode glmo3d(',i,',',j,',',k,')=',glmo(k,ij),'ij=',ij
+!   enddo
+!   enddo
+!   enddo
+
+! !---tcx fill glmo temporarily from PL netcdf file
+
+!   glmyear = 1999
+
+!   allocate(array3(cdata%i(iac_cdatai_glm_nx),cdata%i(iac_cdatai_glm_ny),1))
+!   start3 = 1
+!   count3(1) = cdata%i(iac_cdatai_glm_nx)
+!   count3(2) = cdata%i(iac_cdatai_glm_ny)
+!   count3(3) = glmyear-1999+1
+!   ierr = nf90_open('/tmp/proj/ccsm/inputdata/iac/giac/glm2iac/iESM_Expt0_Ref_gfrac.nc',nf90_nowrite,ncid)
+!   ierr = nf90_inq_varid(ncid,'GCROP',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gcrop,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GPAST',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gpast,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GOTHR',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gothr,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GSECD',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gsecd,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_close(ncid)
+
+!   start3 = 1
+!   count3(1) = cdata%i(iac_cdatai_glm_nx)
+!   count3(2) = cdata%i(iac_cdatai_glm_ny)
+!   count3(3) = glmyear-1999
+
+!   if (count3(3) < 1) then
+!      glmo(iac_glmo_gfvh1,:) = 0.0
+!      glmo(iac_glmo_gfvh2,:) = 0.0
+!      glmo(iac_glmo_gfsh1,:) = 0.0
+!      glmo(iac_glmo_gfsh2,:) = 0.0
+!      glmo(iac_glmo_gfsh3,:) = 0.0
+!   else
+
+!   ierr = nf90_open('/tmp/proj/ccsm/inputdata/iac/giac/glm2iac/iESM_Expt0_Ref_harvest.nc',nf90_nowrite,ncid)
+!   ierr = nf90_inq_varid(ncid,'GFVH1',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gfvh1,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GFVH2',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gfvh2,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GFSH1',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gfsh1,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GFSH2',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gfsh2,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_inq_varid(ncid,'GFSH3',varid)
+!   ierr = nf90_get_var(ncid,varid,array3,start3,count3)
+!   ij = 0
+!   do j = 1,cdata%i(iac_cdatai_glm_ny)
+!   do i = 1,cdata%i(iac_cdatai_glm_nx)
+!      ij = ij + 1
+!      glmo(iac_glmo_gfsh3,ij) = array3(i,j,1)
+!   enddo
+!   enddo
+!   ierr = nf90_close(ncid)
+
+!   endif   ! count3(3) < 1
+
+!   deallocate(array3)
+
+! !---tcx end fill glmo temporarily
+
+  !--- tcx fill from glm txt output data
+  !--- !!! tcx NOTE that harvest fields use prior year, what do we do with active coupling? !!!!
+#if (1 == 0) 
+  iu = 1105
+  nx = iac_glm_nx
+  ny = iac_glm_ny
+  allocate(arin(nx))
+  call shr_cal_date2ymd(iacymd,yyyy,mm,dd)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gcrop.',yyyy,'.txt'
+  ifld = iac_glmo_gcrop
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gpast.',yyyy,'.txt'
+  ifld = iac_glmo_gpast
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gothr.',yyyy,'.txt'
+  ifld = iac_glmo_gothr
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gsecd.',yyyy,'.txt'
+  ifld = iac_glmo_gsecd
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  ! data starts at 2005
+  yyyym1 = max(yyyy-1,2005)
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gfvh1.',yyyym1,'.txt'
+  ifld = iac_glmo_gfvh1
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gfvh2.',yyyym1,'.txt'
+  ifld = iac_glmo_gfvh2
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gfsh1.',yyyym1,'.txt'
+  ifld = iac_glmo_gfsh1
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gfsh2.',yyyym1,'.txt'
+  ifld = iac_glmo_gfsh2
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+
+  write(filename,'(a,i4.4,a)') '/tmp/work/tcraig/expt1/glm_output_S2/gfsh3.',yyyym1,'.txt'
+  ifld = iac_glmo_gfsh3
+  open(iu,file=trim(filename),form='formatted')
+  do n = 1,6
+    read(iu,*) string
+  enddo
+  ij = 0
+  do j = 1,360
+     read(iu,*) arin
+     do i = 1,720
+        ij = (360-j)*720 + i
+        glmo(ifld,ij) = arin(i)
+     enddo
+  enddo
+  close (iu)
+  deallocate(arin)
+#endif
+
+  !--- tcx end fill
+
+  if (EClock(iac_EClock_Aglm) == 1) then
+     iacymd_hold = EClock(iac_Eclock_ymd)
+     EClock(iac_Eclock_ymd) = EClock(iac_Eclock_ymd) + 10000
+     write(iulog,*) trim(subname),'calling glm2iac_run',EClock(iac_EClock_ymd),EClock(iac_EClock_tod)
+     call iac_diag(' glmo: ',glmo)
+     call glm2iac_run_mod(EClock, cdata, glmo, iaco)
+     EClock(iac_Eclock_ymd) = iacymd_hold
+! nothing to diagnose
+!     call iac_diag(' iaco: ',iaco)
+
+!-------- history file ---------------------------------------------------
+  write(hfile,'(a,i4.4,a,i2.2,a,i2.2,ai5.5,a)') trim(casename)//'.iac.hi.',yyyy,'-',mm,'-',dd,'-',iactod,'.nc'
+  write(iulog,*) trim(subname),' writing history file ',trim(hfile)
+
+  nmode = ior(NF90_CLOBBER,NF90_64BIT_OFFSET)
+  ierr = nf90_create(trim(hfile),nmode,ncid)
+  call iac_ncerr(ierr,'create')
+  ierr = nf90_put_att(ncid,NF90_GLOBAL,'missing_value',iac_spval)
+  call iac_ncerr(ierr,'putatt_missval')
+
+  ierr = nf90_def_dim(ncid,'iac_nx' ,cdata%i(iac_cdatai_iac_nx) ,dimid)
+  call iac_ncerr(ierr,'defdim_iacnx')
+  dimidiac(1) = dimid
+  ierr = nf90_def_dim(ncid,'iac_ny' ,cdata%i(iac_cdatai_iac_ny) ,dimidiac(2))
+  call iac_ncerr(ierr,'defdim_iacny')
+  ierr = nf90_def_dim(ncid,'gcami_nreg',cdata%i(iac_cdatai_gcam_nreg),dimidgcami(2))
+  call iac_ncerr(ierr,'defdim_gcaminreg')
+  ierr = nf90_def_dim(ncid,'gcami_naez',cdata%i(iac_cdatai_gcam_naez),dimidgcami(1))
+  call iac_ncerr(ierr,'defdim_gcaminaez')
+  ierr = nf90_def_dim(ncid,'gcamo_ntime',cdata%i(iac_cdatai_gcamo_ntime),dimidgcamo(3))
+  call iac_ncerr(ierr,'defdim_gcamontime')
+  ierr = nf90_def_dim(ncid,'gcamo_nreg',cdata%i(iac_cdatai_gcam_nreg),dimidgcamo(2))
+  call iac_ncerr(ierr,'defdim_gcamonreg')
+  ierr = nf90_def_dim(ncid,'gcamo_naez',cdata%i(iac_cdatai_gcam_naez),dimidgcamo(1))
+  call iac_ncerr(ierr,'defdim_gcamonaez')
+  ierr = nf90_def_dim(ncid,'glm_nx' ,cdata%i(iac_cdatai_glm_nx) ,dimidglm(1))
+  call iac_ncerr(ierr,'defdim_glmnx')
+  ierr = nf90_def_dim(ncid,'glm_ny' ,cdata%i(iac_cdatai_glm_ny) ,dimidglm(2))
+  call iac_ncerr(ierr,'defdim_glmny')
+  ierr = nf90_def_dim(ncid,'glmiwh_nreg' ,cdata%i(iac_cdatai_gcam_nreg) ,dimidglmiwh(1))
+  call iac_ncerr(ierr,'defdim_glminreg')
+  ierr = nf90_def_dim(ncid,'glmiwh_naez' ,cdata%i(iac_cdatai_gcam_naez) ,dimidglmiwh(2))
+  call iac_ncerr(ierr,'defdim_glminaez')
+
+!  do n = 1,size(iaci,dim=1)
+!     write(vname,'(a,i2.2)') 'iaci',n
+!     ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidiac,varid)
+!     call iac_ncerr(ierr,'defvar_'//trim(vname))
+!  enddo
+!  do n = 1,size(iaco,dim=1)
+!     write(vname,'(a,i2.2)') 'iaco',n
+!     ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidiac,varid)
+!     call iac_ncerr(ierr,'defvar_'//trim(vname))
+!  enddo
+
+  do n = 1,size(gcami,dim=1)
+     write(vname,'(a,i2.2)') 'gcami',n
+     ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidgcami,varid)
+     call iac_ncerr(ierr,'defvar_'//trim(vname))
+  enddo
+  do n = 1,size(gcamo,dim=1)
+     write(vname,'(a,i2.2)') 'gcamo',n
+     ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidgcamo,varid)
+     call iac_ncerr(ierr,'defvar_'//trim(vname))
+  enddo
+
+  do n = 1,size(glmi,dim=1)
+     write(vname,'(a,i2.2)') 'glmi',n
+     ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidglm,varid)
+     call iac_ncerr(ierr,'defvar_'//trim(vname))
+  enddo
+
+  write(vname,'(a,i2.2)') 'glmiwh',1
+  ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidglmiwh,varid)
+  call iac_ncerr(ierr,'defvar_'//trim(vname))
+
+  do n = 1,size(glmo,dim=1)
+     write(vname,'(a,i2.2)') 'glmo',n
+     ierr = nf90_def_var(ncid,vname,NF90_DOUBLE,dimidglm,varid)
+     call iac_ncerr(ierr,'defvar_'//trim(vname))
+  enddo
+
+  ierr = nf90_enddef(ncid)
+  call iac_ncerr(ierr,'enddef')
+
+! nothing to write here
+!  allocate(array2(cdata%i(iac_cdatai_iac_nx),cdata%i(iac_cdatai_iac_ny)))
+!  do n = 1,size(iaci,dim=1)
+!     ij = 0
+!     do j = 1,cdata%i(iac_cdatai_iac_ny)
+!     do i = 1,cdata%i(iac_cdatai_iac_nx)
+!        ij = ij+1
+!        array2(i,j) = iaci(n,ij)
+!     enddo
+!     enddo
+!     write(vname,'(a,i2.2)') 'iaci',n
+!     ierr = nf90_inq_varid(ncid,vname,varid)
+!     call iac_ncerr(ierr,'inqvar_'//trim(vname))
+!     ierr = nf90_put_var(ncid,varid,array2)
+!     call iac_ncerr(ierr,'putvar_'//trim(vname))
+!  enddo
+!  do n = 1,size(iaco,dim=1)
+!     ij = 0
+!     do j = 1,cdata%i(iac_cdatai_iac_ny)
+!     do i = 1,cdata%i(iac_cdatai_iac_nx)
+!        ij = ij+1
+!        array2(i,j) = iaco(n,ij)
+!     enddo
+!     enddo
+!     write(vname,'(a,i2.2)') 'iaco',n
+!     ierr = nf90_inq_varid(ncid,vname,varid)
+!     call iac_ncerr(ierr,'inqvar_'//trim(vname))
+!     ierr = nf90_put_var(ncid,varid,array2)
+!     call iac_ncerr(ierr,'putvar_'//trim(vname))
+!  enddo
+!  deallocate(array2)
+
+  allocate(array2(cdata%i(iac_cdatai_gcam_naez),cdata%i(iac_cdatai_gcam_nreg)))
+  do n = 1,size(gcami,dim=1)
+     ij = 0
+     do j = 1,cdata%i(iac_cdatai_gcam_nreg)
+     do i = 1,cdata%i(iac_cdatai_gcam_naez)
+        ij = ij+1
+        array2(i,j) = gcami(n,ij)
+     enddo
+     enddo
+     write(vname,'(a,i2.2)') 'gcami',n
+     ierr = nf90_inq_varid(ncid,vname,varid)
+     call iac_ncerr(ierr,'inqvar_'//trim(vname))
+     ierr = nf90_put_var(ncid,varid,array2)
+     call iac_ncerr(ierr,'putvar_'//trim(vname))
+  enddo
+  deallocate(array2)
+
+  allocate(array3(cdata%i(iac_cdatai_gcam_naez),cdata%i(iac_cdatai_gcam_nreg),cdata%i(iac_cdatai_gcamo_ntime)))
+  do n = 1,size(gcamo,dim=1)
+     ij = 0
+     do k = 1,cdata%i(iac_cdatai_gcamo_ntime)
+     do j = 1,cdata%i(iac_cdatai_gcam_nreg)
+     do i = 1,cdata%i(iac_cdatai_gcam_naez)
+        ij = ij+1
+        array3(i,j,k) = gcamo(n,ij)
+     enddo
+     enddo
+     enddo
+     write(vname,'(a,i2.2)') 'gcamo',n
+     ierr = nf90_inq_varid(ncid,vname,varid)
+     call iac_ncerr(ierr,'inqvar_'//trim(vname))
+     ierr = nf90_put_var(ncid,varid,array3)
+     call iac_ncerr(ierr,'putvar_'//trim(vname))
+  enddo
+  deallocate(array3)
+
+  allocate(array2(cdata%i(iac_cdatai_glm_nx),cdata%i(iac_cdatai_glm_ny)))
+  do n = 1,size(glmi,dim=1)
+     ij = 0
+     do j = 1,cdata%i(iac_cdatai_glm_ny)
+     do i = 1,cdata%i(iac_cdatai_glm_nx)
+        ij = ij+1
+        array2(i,j) = glmi(n,ij)
+     enddo
+     enddo
+     write(vname,'(a,i2.2)') 'glmi',n
+     ierr = nf90_inq_varid(ncid,vname,varid)
+     call iac_ncerr(ierr,'inqvar_'//trim(vname))
+     ierr = nf90_put_var(ncid,varid,array2)
+     call iac_ncerr(ierr,'putvar_'//trim(vname))
+  enddo
+
+  write(vname,'(a,i2.2)') 'glmi_wh',1
+  ierr = nf90_inq_varid(ncid,vname,varid)
+  call iac_ncerr(ierr,'inqvar_'//trim(vname))
+  ierr = nf90_put_var(ncid,varid,glmi_wh)
+  call iac_ncerr(ierr,'putvar_'//trim(vname))
+
+  do n = 1,size(glmo,dim=1)
+     ij = 0
+     do j = 1,cdata%i(iac_cdatai_glm_ny)
+     do i = 1,cdata%i(iac_cdatai_glm_nx)
+        ij = ij+1
+        array2(i,j) = glmo(n,ij)
+     enddo
+     enddo
+     write(vname,'(a,i2.2)') 'glmo',n
+     ierr = nf90_inq_varid(ncid,vname,varid)
+     call iac_ncerr(ierr,'inqvar_'//trim(vname))
+     ierr = nf90_put_var(ncid,varid,array2)
+     call iac_ncerr(ierr,'putvar_'//trim(vname))
+  enddo
+  deallocate(array2)
+
+  ierr = nf90_close(ncid)
+  call iac_ncerr(ierr,'close')
+
+!-------- end history file ------------
+  
+  endif ! Aglm = 1
+
+  if (fast_oneway_iac_coupling) then
+     EClock(iac_EClock_ymd) = iacymd_orig
+     EClock(iac_Eclock_tod) = iactod_orig
+  endif
+
+  end subroutine iac_run_mod
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac_final_mod
+
+! !INTERFACE:
+  subroutine iac_final_mod( )
+
+! !DESCRIPTION:
+! Finalize iac model
+
+!------------------------------------------------------------------------------
+
+   implicit none
+! !ARGUMENTS:
+
+! !LOCAL VARIABLES:
+    character(len=*),parameter :: subname='(iac_final_mod)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!---------------------------------------------------------------------------
+
+  !  Cleanup GCAM
+  call gcam_final_mod()
+  call glm_final_mod()
+
+  end subroutine iac_final_mod
+
+!====================================================================================
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac_diag
+
+! !INTERFACE:
+  subroutine iac_diag(string,array)
+
+! !DESCRIPTION:
+! iac array diagnostic
+
+!------------------------------------------------------------------------------
+
+   implicit none
+! !ARGUMENTS:
+    character(len=*) :: string
+    real*8, pointer :: array(:,:)
+
+! !LOCAL VARIABLES:
+    integer :: nj,j
+    character(len=*),parameter :: subname='(iac_diag)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!---------------------------------------------------------------------------
+
+     nj = size(array,dim=1)
+     do j = 1,nj
+        write(iulog,'(2a,i3,2f13.6)') trim(subname)//' ',trim(string),j, &
+              minval(array(j,:)),maxval(array(j,:))
+     enddo
+
+  end subroutine iac_diag
+
+!---------------------------------------------------------------------------
+!BOP
+
+! !IROUTINE: iac_ncerr
+
+! !INTERFACE:
+  subroutine iac_ncerr(ierr,str)
+
+! !DESCRIPTION:
+! iac netcdf error diagnostic
+
+!------------------------------------------------------------------------------
+
+   implicit none
+! !ARGUMENTS:
+    integer :: ierr
+    character(len=*),optional :: str
+
+! !LOCAL VARIABLES:
+    integer :: nj,j
+    character(len=128) :: lstr
+    character(len=*),parameter :: subname='(iac_ncerr)'
+
+! !REVISION HISTORY:
+! Author: T Craig
+
+!EOP
+!---------------------------------------------------------------------------
+
+     lstr = ' '
+     if (present(str)) then
+        lstr = trim(str)
+     endif
+
+     if (ierr /= NF90_NOERR) then
+        write(iulog,*) trim(subname),':',trim(lstr),':',trim(nf90_strerror(ierr))
+     endif
+
+  end subroutine iac_ncerr
+
+!====================================================================================
+
+end module iac_comp_mod

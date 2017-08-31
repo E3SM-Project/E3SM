@@ -1,0 +1,1182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Son H. Kim (PNNL) -->
+<scenario name="TransporationforUSA" date="2003-01-11T09:30:47-05:00">
+	<output-meta-data>
+		<summary>SRES B2 Scenario is used for this Reference Scenario that includes a new transportation sector for the US</summary>
+	</output-meta-data>
+	<world>
+		<region name="USA">
+      			<demandsector name="transportation" delete="1"/>
+			<tranSector name="Passenger" perCapitaBased="1">
+				<market/>
+				<price year="1975">0</price>
+				<serviceoutput year="1975" unit="mil pass-mi">4000864</serviceoutput>
+				<percentLicensed year="1975">0.6</percentLicensed>
+				<percentLicensed year="1990">0.68</percentLicensed>
+				<percentLicensed year="2005">0.69027171</percentLicensed>
+				<percentLicensed year="2020">0.70069858</percentLicensed>
+				<percentLicensed year="2035">0.711282951</percentLicensed>
+				<percentLicensed year="2050">0.722027205</percentLicensed>
+				<percentLicensed year="2065">0.732933755</percentLicensed>
+				<percentLicensed year="2080">0.744005054</percentLicensed>
+				<percentLicensed year="2095">0.75524359</percentLicensed>
+				<incomeelasticity year="1975">1.0</incomeelasticity>
+				<incomeelasticity year="1990">1.0</incomeelasticity>
+				<incomeelasticity year="2005">0.8</incomeelasticity>
+				<incomeelasticity year="2020">0.8</incomeelasticity>
+				<incomeelasticity year="2035">0.8</incomeelasticity>
+				<incomeelasticity year="2050">0.8</incomeelasticity>
+				<incomeelasticity year="2065">0.8</incomeelasticity>
+				<incomeelasticity year="2080">0.8</incomeelasticity>
+				<incomeelasticity year="2095">0.8</incomeelasticity>
+				<aeei year="1975" fillout="1">0.0</aeei>
+				<priceelasticity year="1975" fillout="1">-0.4</priceelasticity>
+				<tranSubsector name="Auto">
+					<serviceoutput year="1975" unit="mil pass-mi">2282000</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">1.62</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">0.01</popDenseElasticity>
+					<speed year="1975" fillout="1">30</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity unit="Btu/veh-mi">6352</intensity>
+							<nonenergycost>0.45408</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+						<period year="2020" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0.95</sharewt>
+							<intensity unit="Btu/veh-mi">6352</intensity>
+							<nonenergycost>0.45408</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity unit="Btu/veh-mi">6352</intensity>
+							<nonenergycost>0.3784</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0.01</sharewt>
+							<intensity>6352</intensity>
+							<nonenergycost>0.45408</nonenergycost>
+							<serviceoutput>22820</serviceoutput>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>6352</intensity>
+							<nonenergycost>0.3784</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0.04</sharewt>
+							<intensity>6352</intensity>
+							<nonenergycost>0.3784</nonenergycost>
+							<serviceoutput>91280</serviceoutput>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gasoline">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>0.95</sharewt>
+							<intensity>6352</intensity>
+							<nonenergycost>0.3784</nonenergycost>
+							<serviceoutput>2167900</serviceoutput>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.005</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Diesel">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>0.0</sharewt>
+							<intensity>6352</intensity>
+							<nonenergycost>0.3784</nonenergycost>
+							<serviceoutput>2167900</serviceoutput>
+							<loadFactor>1.62</loadFactor>
+							<techchange>0.0</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Truck">
+					<serviceoutput year="1975" unit="mil pass-mi">1146200</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">1.6</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">0.01</popDenseElasticity>
+					<speed year="1975" fillout="1">30</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.48</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+						<period year="2020" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0.95</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.48</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.48</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0.05</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput>57310</serviceoutput>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gasoline">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>0.95</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput>1088890</serviceoutput>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.005</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Diesel">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>0.0</sharewt>
+							<intensity>7987</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput>1088890</serviceoutput>
+							<loadFactor>1.6</loadFactor>
+							<techchange>0.0</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Bus">
+					<serviceoutput year="1975" unit="mil pass-mi">142593</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">23.68</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">25</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>27401</intensity>
+							<nonenergycost>1.44</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>23.68</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>27401</intensity>
+							<nonenergycost>1.2</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>23.68</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0.03</sharewt>
+							<intensity>27401</intensity>
+							<nonenergycost>1.44</nonenergycost>
+							<serviceoutput>4277.79</serviceoutput>
+							<loadFactor>23.68</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>27401</intensity>
+							<nonenergycost>1.2</nonenergycost>
+							<serviceoutput/>
+							<techchange>0.0018</techchange>
+							<loadFactor>23.68</loadFactor>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0.04</sharewt>
+							<intensity>27401</intensity>
+							<nonenergycost>1.2</nonenergycost>
+							<serviceoutput>5703.72</serviceoutput>
+							<loadFactor>23.68</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>0.93</sharewt>
+							<intensity>27401</intensity>
+							<nonenergycost>1.2</nonenergycost>
+							<serviceoutput>132611.49</serviceoutput>
+							<loadFactor>23.68</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Rail">
+					<serviceoutput year="1975" unit="mil pass-mi">19171</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">23.5</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">35</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>74388</intensity>
+							<nonenergycost>4.8</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>23.5</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>74388</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>23.5</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0.3</sharewt>
+							<intensity>74388</intensity>
+							<nonenergycost>4.8</nonenergycost>
+							<serviceoutput>5751.3</serviceoutput>
+							<loadFactor>23.5</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>74388</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>23.5</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>74388</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>23.5</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>0.7</sharewt>
+							<intensity>74388</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput>13419.7</serviceoutput>
+							<loadFactor>23.5</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Air">
+					<serviceoutput year="1975" unit="mil pass-mi">358900</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">90.6</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">0.5</popDenseElasticity>
+					<speed year="1975" fillout="1">400</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>447125</intensity>
+							<nonenergycost>14.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>90.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>447125</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>90.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>447125</intensity>
+							<nonenergycost>14.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>90.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>447125</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>90.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>447125</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>90.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>447125</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput>358900</serviceoutput>
+							<loadFactor>90.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Ship">
+					<serviceoutput year="1975" unit="mil pass-mi">40000</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">4</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">5</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>30913</intensity>
+							<nonenergycost>1.2</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>4</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>30913</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>4</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>30913</intensity>
+							<nonenergycost>1.2</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>4</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>30913</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>4</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>30913</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>4</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>30913</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput>40000</serviceoutput>
+							<loadFactor>4</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Motorcycle">
+					<serviceoutput year="1975" unit="mil pass-mi">11468</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="pass/veh">1.27</loadFactor>
+					<sharewt year="1975" fillout="1">1</sharewt>
+					<logitexp year="1975" fillout="1">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">0.01</popDenseElasticity>
+					<speed year="1975" fillout="1">35</speed>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>2596</intensity>
+							<nonenergycost>0.18</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.27</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>2596</intensity>
+							<nonenergycost>0.15</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.27</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>2596</intensity>
+							<nonenergycost>0.18</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.27</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>2596</intensity>
+							<nonenergycost>0.15</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.27</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>2596</intensity>
+							<nonenergycost>0.15</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1.27</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>2596</intensity>
+							<nonenergycost>0.15</nonenergycost>
+							<serviceoutput>11468</serviceoutput>
+							<loadFactor>1.27</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+			</tranSector>
+			<tranSector name="Freight" perCapitaBased="0">
+				<market/>
+				<price year="1975">0</price>
+				<serviceoutput year="1975" unit="mil ton-mi">2611577</serviceoutput>
+				<percentLicensed year="1975" fillout="1">1</percentLicensed>
+				<incomeelasticity year="1975">1</incomeelasticity>
+				<incomeelasticity year="1990">1</incomeelasticity>
+				<incomeelasticity year="2005">0.9</incomeelasticity>
+				<incomeelasticity year="2020">0.9</incomeelasticity>
+				<incomeelasticity year="2035">0.9</incomeelasticity>
+				<incomeelasticity year="2050">0.9</incomeelasticity>
+				<incomeelasticity year="2065">0.9</incomeelasticity>
+				<incomeelasticity year="2080">0.9</incomeelasticity>
+				<incomeelasticity year="2095">0.9</incomeelasticity>
+				<aeei year="1975" fillout="1">0.0</aeei>
+				<priceelasticity year="1975" fillout="1">-0.6</priceelasticity>
+				<tranSubsector name="Truck">
+					<serviceoutput year="1975" unit="mil ton-mi">735000</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="tons/veh">8.65</loadFactor>
+					<sharewt year="1975">1</sharewt>
+					<sharewt year="1990">1</sharewt>
+					<sharewt year="2005">1</sharewt>
+					<sharewt year="2020">1</sharewt>
+					<sharewt year="2035">1</sharewt>
+					<sharewt year="2050">1</sharewt>
+					<sharewt year="2065">1</sharewt>
+					<sharewt year="2080">1</sharewt>
+					<sharewt year="2095">1</sharewt>
+					<logitexp year="1975">-3</logitexp>
+					<logitexp year="1990">-3</logitexp>
+					<logitexp year="2005">-3</logitexp>
+					<logitexp year="2020">-3</logitexp>
+					<logitexp year="2035">-3</logitexp>
+					<logitexp year="2050">-3</logitexp>
+					<logitexp year="2065">-3</logitexp>
+					<logitexp year="2080">-3</logitexp>
+					<logitexp year="2095">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">30</speed>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>26309</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput>735000</serviceoutput>
+							<loadFactor>8.65</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>26309</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>8.65</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>26309</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>8.65</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>26309</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>8.65</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>26309</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>8.65</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>26309</intensity>
+							<nonenergycost>0.4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>8.65</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Rail">
+					<serviceoutput year="1975" unit="mil ton-mi">1033969</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="tons/veh">39.6</loadFactor>
+					<sharewt year="1975">1</sharewt>
+					<sharewt year="1990">1</sharewt>
+					<sharewt year="2005">1</sharewt>
+					<sharewt year="2020">1</sharewt>
+					<sharewt year="2035">1</sharewt>
+					<sharewt year="2050">1</sharewt>
+					<sharewt year="2065">1</sharewt>
+					<sharewt year="2080">1</sharewt>
+					<sharewt year="2095">1</sharewt>
+					<logitexp year="1975">-3</logitexp>
+					<logitexp year="1990">-3</logitexp>
+					<logitexp year="2005">-3</logitexp>
+					<logitexp year="2020">-3</logitexp>
+					<logitexp year="2035">-3</logitexp>
+					<logitexp year="2050">-3</logitexp>
+					<logitexp year="2065">-3</logitexp>
+					<logitexp year="2080">-3</logitexp>
+					<logitexp year="2095">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">35</speed>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>16819</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput>1033969</serviceoutput>
+							<loadFactor>39.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>16819</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>39.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>16819</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>39.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>16819</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>39.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>16819</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>39.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>16819</intensity>
+							<nonenergycost>4</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>39.6</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Air">
+					<serviceoutput year="1975" unit="mil ton-mi">9064</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="tons/veh">12</loadFactor>
+					<sharewt year="1975">1</sharewt>
+					<sharewt year="1990">1</sharewt>
+					<sharewt year="2005">1</sharewt>
+					<sharewt year="2020">1</sharewt>
+					<sharewt year="2035">1</sharewt>
+					<sharewt year="2050">1</sharewt>
+					<sharewt year="2065">1</sharewt>
+					<sharewt year="2080">1</sharewt>
+					<sharewt year="2095">1</sharewt>
+					<logitexp year="1975">-3</logitexp>
+					<logitexp year="1990">-3</logitexp>
+					<logitexp year="2005">-3</logitexp>
+					<logitexp year="2020">-3</logitexp>
+					<logitexp year="2035">-3</logitexp>
+					<logitexp year="2050">-3</logitexp>
+					<logitexp year="2065">-3</logitexp>
+					<logitexp year="2080">-3</logitexp>
+					<logitexp year="2095">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">400</speed>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>450553</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput>9064</serviceoutput>
+							<loadFactor>12</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>450553</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>12</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>450553</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>12</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>450553</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>12</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>450553</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>12</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>450553</intensity>
+							<nonenergycost>12</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>12</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+				<tranSubsector name="Ship">
+					<serviceoutput year="1975" unit="mil ton-mi">833544</serviceoutput>
+					<loadFactor year="1975" fillout="1" unit="tons/veh">1000</loadFactor>
+					<sharewt year="1975">1</sharewt>
+					<sharewt year="1990">1</sharewt>
+					<sharewt year="2005">1</sharewt>
+					<sharewt year="2020">1</sharewt>
+					<sharewt year="2035">1</sharewt>
+					<sharewt year="2050">1</sharewt>
+					<sharewt year="2065">1</sharewt>
+					<sharewt year="2080">1</sharewt>
+					<sharewt year="2095">1</sharewt>
+					<logitexp year="1975">-3</logitexp>
+					<logitexp year="1990">-3</logitexp>
+					<logitexp year="2005">-3</logitexp>
+					<logitexp year="2020">-3</logitexp>
+					<logitexp year="2035">-3</logitexp>
+					<logitexp year="2050">-3</logitexp>
+					<logitexp year="2065">-3</logitexp>
+					<logitexp year="2080">-3</logitexp>
+					<logitexp year="2095">-3</logitexp>
+					<popDenseElasticity year="1975" fillout="1">1</popDenseElasticity>
+					<speed year="1975" fillout="1">5</speed>
+					<tranTechnology name="Oil">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>refined oil</fuelname>
+							<sharewt>1</sharewt>
+							<intensity>1288107</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput>833544</serviceoutput>
+							<loadFactor>1000</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Gas">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered gas</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>1288107</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1000</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Coal">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered coal</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>1288107</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1000</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Electric">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>elect_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>1288107</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1000</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Biomass">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>delivered biomass</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>1288107</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1000</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+					<tranTechnology name="Hydrogen">
+						<period year="1975" fillout="1">
+							
+							
+							<fuelname>hydrogen_td_trn</fuelname>
+							<sharewt>0</sharewt>
+							<intensity>1288107</intensity>
+							<nonenergycost>1</nonenergycost>
+							<serviceoutput/>
+							<loadFactor>1000</loadFactor>
+							<techchange>0.0018</techchange>
+							<logitexp>-3</logitexp>
+						</period>
+					</tranTechnology>
+				</tranSubsector>
+			</tranSector>
+		</region>
+	</world>
+</scenario>

@@ -1,0 +1,105 @@
+/*!
+\page faq Frequently Asked Questions
+
+\section cplusplusques C++ Questions
+
+\subsection faqitem1 How does a STL container iterator work?
+Container iterators are declared as <code><i>containerName</i><type>::iterator <i>iteratorName</i></code>. The iterator then behaves as a pointer
+to the item within the container it points at, and pointer operations can be perfomed on it, such as dereferencing. If 
+the container held pointers to objects, the iterator must be dereferenced twice in order to access the object.
+
+Example of using an iterator to iterate over a container of objects:<br>
+<code>
+for( vector<object>::iterator <i>i</i> = <i>objectVector</i>.begin(); i != <i>objectVector</i>.end(); i++ ) {
+	<i>i</i>-><i>doSomething()</i>;
+}
+</code>
+
+Example of using an iterator to iterator over a container of pointers to objects:<br>
+<code>
+for( vector<object*>::iterator <i>i</i> = <i>pointerVector</i>.begin(); i != <i>pointerVector</i>.end(); i++ ) {
+	<i>( *i )</i>-><i>doSomething()</i>;
+}
+</code>
+
+\subsection faqitem2 When should I forward declare a class?
+Forward declaration is a very useful technique for reducing compilation dependencies, but can be difficult to use correctly. Forward declaration
+tells the compiler to create a placeholder for the class definition, so that you can define it at a later time. Here is a list of criteria for 
+when you can use a forward declaration
+<ul>
+<li>You are working on a header file.
+<li>The class you are trying to forward declare is NOT an STL class.
+<li>The only use of the class is a datamember which is a pointer to the class, or the argument to a function.
+<li>The header file does not contain any inline functions which use the class or its functions. 
+</ul>
+
+If these criteria are met, you may forward declare the class with the line: 
+<code>class className</code><br>
+Make sure to do this before the class documentation so that doxygen is not confused.
+
+\subsection faqitem3 When should I pass an argument by reference?
+C++ supports two different methods of passing arguments, pass-by-value and pass-by-reference. Pass-by-value is the default, in this method
+the compiler generates a temporary copy of the argument which is available during the function and then discarded. Pass-by-reference passes
+the memory location of the variable, so the original variable can be used in the function. There are two reasons for using pass-by-reference.
+<ol>
+<li> The function needs to modify and return the original variable. This is often done when a function needs to return multiple values. 
+<li> To speed up the execution of the program, the argument can be passed by reference to avoid the copy constructor and destructor caused by
+passing by value. This is only effective if the object is non-elemental, or not an int, float, bool, etc. In this case, make sure to declare
+the argument const to prevent accidental modification.
+</ol>
+
+\subsection faqitem4 What does <code>virtual void <i>function name</i> = 0 </code>mean?
+When any function in a header file is declared with an = 0 after the definition, the class is an abstract class. An abstract class cannot 
+be instantiated, it is instead used as a base class for other classes. Abstract base classes may have code and member variables. Any function 
+which is defined with an =0 in the base class must be defined in the derived class, or the compiler will report an error. Abstract functions
+in base classes may have code, but the code is not called by default. It may be called from within the derived function using the syntax
+<code><i>BaseClassName</i>::</i>FunctionName()</i></code>.
+
+\subsection faqitem5 When should I declare variables within functions?
+In C++, unlike Fortran, it is considered good style to declare variables at the latest possible position in code, unlike Fortran where 
+variables are declared in an initial block. This allows a programmer to quickly understand how a variable is both declared and used, minimizes
+duplicate initialization and lines of code, and allows the compiler to reuse memory locations when variables go out of scope. The exception to this
+rule is when a variable is used in a loop, and the initialization of this variable is expensive. Then the variable should be declared outside the loop. 
+This would only apply to vectors, strings, and other large objects. Doubles and integers are very inexpensive to construct, and should be declared within
+the loop.
+
+\subsection faqitem6 What does it mean when functions are declared explicit?
+The explicit keyword is added to constructors to signify that the constructor may only be called explicitally. This is because when the compiler
+sees a comparison between two objects, it is allowed to choose an intermediate single-argument constructor to turn one argument into the other. This is most often
+not the desired behavior, and an artifact of a code error. The explicit keyword should be added to single argument constructors to prevent this conversion
+from automatically occurring. Constructors with no arguments, or more than one argument are not eligible for conversion, and thus do not have this problem. 
+Copy constructors, which are single argument constructors, also do not have this problem as the argument and class are of the same type. 
+
+\subsection faqitem7 When should I define a copy constructor?
+A copy constructor should be defined whenever the object being copied has dynamically allocated memory that must be copied when the object itself is copied. 
+This is called a deep copy, which means making a copy of all objects that the object being copied has pointers to. If there is no dynamically allocated memory,
+the compiler generated shallow copy will perform correctly. This is true even if the base class of the object has dynamically allocated memory, in this case
+the compiler generated constructor will automatically call the correct base class copy constructor. A simple rule to remember is that if there is a destructor,
+there should be a copy constructor and assignment operator, as the three work in tandem. If the class has dynamically allocated memory, but a copy constructor would 
+not be logical, then a private copy constructor and assignment operator should be defined to prevent a user or the compiler from accidentally calling the incorrect copy 
+or assignment operator.
+
+\subsection faqitem8 What is an auto_ptr and how do I use it?
+An auto_ptr is a member of the standard library which is used to contain a pointer a dynamically allocated object. The purpose of an auto_ptr is to automatically
+handle the deallocation of memory when an object goes out of scope. This allows the use of dynamic memory, which is often advantagous, without having to remember to
+deallocate the memory. To use an auto_ptr, you must include the <memory> file. Then declare an auto_ptr as auto_ptr<ObjectType>( new Object ). If you need to declare the auto_ptr
+prior to allocation, such as when using it as a member variable, you must use the auto_ptr's reset function to assign the new object to the auto_ptr. If you need to pass the object to
+another function, use the get function of the auto_ptr. Do not pass the auto_ptr itself, as only one auto_ptr can have responsibility for an object, so copying an auto_ptr assigns
+the memory to the auto_ptr you are copying into. auto_ptrs may not be used inside containers, such as vectors. This may compile, but will cause runtime errors. 
+
+\subsection faqitem9 Why is iosfwd included in header files instead of iostream?
+iosfwd is the forward declared version of iostream. iostream is a very large file, and should not be included in a header file unless the class contains a member variable of an iostream type.
+Otherwise, always use iosfwd as this will make compilation faster.
+ 
+\section modelques Model Questions
+
+\subsection modelques1 How do the simultaneity markets work?
+When a NormalMarket is turned into a simultaneity market, the NormalMarket is separated into two markets, a PriceMarket and a DemandMarket. 
+Both markets are solved, but only the PriceMarket is accessable from outside the marketplace. Both markets contain a pointer to the other market. 
+Calls to PriceMarket::getDemand, PriceMarket::getSupply, PriceMarket::addToDemand, and PriceMarket::addToSupply are redirected to the DemandMarket. 
+PriceMarket::setPrice is also a special function, it sets demand equal to the new price and supply equal to the current price. DemandMarket::getDemand
+and DemandMarket::addToSupply are also overridden so that DemandMarket::getDemand returns the price and DemandMarket::addToDemand sets the supply
+equal to the price. These are the functions used from outside the Marketplace, the Market also contains a set of functions with the word "Raw"
+in the name which return or set the true values of the Market::price, Market::supply and Market::demand variables. These are the functions used by the Solver to clear
+the markets. 
+*/

@@ -1,0 +1,1769 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario>
+	<world>
+		<region name="USA">
+			<depresource name="carbon storage">
+				<market>USA</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>545</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>1335.82</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>1001.86</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>667.91</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>333.95</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>327</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>6497.45</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>4873.09</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>3248.73</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1624.36</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>327</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>3860.07</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>2895.05</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1930.04</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>965.02</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>297777.05</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>223332.79</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>148888.53</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>74444.26</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>148888.53</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>111666.40</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>74444.26</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>37222.13</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Canada">
+			<depresource name="carbon storage">
+				<market>Canada</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>372</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>267.16</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>200.37</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>133.58</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>66.79</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>11</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>1299.49</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>974.62</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>649.75</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>324.87</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>62</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>772.01</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>579.01</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>386.01</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>193.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>102272.73</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>102272.73</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>102272.73</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>34090.91</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>12784.09</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>12784.09</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>51136.36</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>51136.36</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Western Europe">
+			<depresource name="carbon storage">
+				<market>Western Europe</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>172</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>70.91</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>5.45</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1581.82</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>229.09</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>95</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>103.64</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>49.09</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>441.82</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>441.82</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>143</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>4009.09</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>1827.27</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>4281.82</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1009.09</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>4880.45</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>4880.45</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>7808.73</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1952.18</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>20400.00</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>9163.64</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>117272.73</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>24763.64</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Japan">
+			<depresource name="carbon storage">
+				<market>Japan</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>10</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.00</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>0.00</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>17</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>13.64</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>13.64</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>27.27</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>218.18</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>11</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.26</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>6.95</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1.84</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1.27</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.26</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>6.95</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1.84</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1.27</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>2.59</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>69.55</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>18.44</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>12.65</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Australia_NZ">
+			<depresource name="carbon storage">
+				<market>Australia_NZ</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>18</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>60.00</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>114.55</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>87.27</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>60</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>381.82</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>1172.73</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>3300.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>3300.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>22</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>518.18</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>790.91</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1445.45</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>13889.45</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>13889.45</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>13889.45</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>13889.45</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>32408.73</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>32408.73</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>32408.73</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>32408.73</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Former Soviet Union">
+			<depresource name="carbon storage">
+				<market>Former Soviet Union</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>876</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>54.55</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>5983.64</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>60.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>520</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>300.00</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>818.18</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>2018.18</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>2018.18</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>386</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>1800.00</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>65072.73</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>2590.91</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>25382.23</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>25382.23</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>35535.12</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>15229.34</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>9272.73</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>355281.82</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>13254.55</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="China">
+			<depresource name="carbon storage">
+				<market>China</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>230</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>654.55</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>572.73</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>5.45</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>185</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>190.91</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>518.18</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1377.27</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1377.27</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>82</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>654.55</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>1418.18</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>300.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>22534.09</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>22534.09</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>36054.55</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>9013.64</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>6545.45</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>9954.55</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1527.27</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Middle East">
+			<depresource name="carbon storage">
+				<market>Middle East</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>1939</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>245.45</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>8541.82</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>54.55</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>10</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>16.36</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>28.64</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>16.36</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>20.45</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>424</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>14290.91</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>34696.36</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>3000.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>12165.82</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>24331.64</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>18248.73</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>6082.91</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>1216.58</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>1216.58</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>811.05</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>811.05</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Africa">
+			<depresource name="carbon storage">
+				<market>Africa</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>1058</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>163.64</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>2563.64</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>1145.45</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>28</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>136.36</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>354.55</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>681.82</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>681.82</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>162</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>2454.55</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>5541.82</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>9245.45</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>7917.95</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>7917.95</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>12668.73</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>3167.18</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>11876.93</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>11876.93</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>29296.43</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>10293.34</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Latin America">
+			<depresource name="carbon storage">
+				<market>Latin America</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>540</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>3109.09</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>823.64</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>65.45</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>169.09</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>5</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>409.09</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>545.45</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>204.55</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>204.55</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>176</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>6845.45</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>3905.45</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1418.18</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>681.82</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>12763.64</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>12763.64</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>17869.09</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>7658.18</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>3956.73</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>3956.73</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>5539.42</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>2374.04</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Southeast Asia">
+			<depresource name="carbon storage">
+				<market>Southeast Asia</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>289</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>81.82</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>32.73</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>327.27</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>529.09</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>19</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>463.64</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>1336.36</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>2359.09</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>2359.09</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>109</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>381.82</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>845.45</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>2618.18</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>4063.64</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>2318.18</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>6681.82</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>11795.45</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>11795.45</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>3477.27</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>10022.73</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>17693.18</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>17693.18</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Eastern Europe">
+			<depresource name="carbon storage">
+				<market>Eastern Europe</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>19</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>278.18</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>5.45</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>23</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.00</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>54.55</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>409.09</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>409.09</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>7</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>1063.64</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>763.64</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>7320.68</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>7320.68</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>11713.09</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>2928.27</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>732.07</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>732.07</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>1171.31</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>292.83</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="Korea">
+			<depresource name="carbon storage">
+				<market>Korea</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>10</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.00</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>0.00</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>10</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>1.91</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>5.18</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>13.77</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>13.77</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>10</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.00</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>0.00</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.00</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>0.00</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>0.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>0.00</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>0.00</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>0.00</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>54.55</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>54.55</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+		<region name="India">
+			<depresource name="carbon storage">
+				<market>India</market>
+				<price year="1975">1</price>
+				<subresource name="depleted oil plays">
+					<minShortTermSLimit>289</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>190.91</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>27.27</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>5.45</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>5.45</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="coal basins">
+					<minShortTermSLimit>19</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>27.27</available>
+						<extractioncost>0.37</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>136.36</available>
+						<extractioncost>7.33</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>668.18</available>
+						<extractioncost>36.67</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>668.18</available>
+						<extractioncost>183.33</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>185</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="natural gas basins">
+					<minShortTermSLimit>109</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>627.27</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>109.09</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>300.00</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>736.36</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation onshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>12691.12</available>
+						<extractioncost>18.33</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>12691.12</available>
+						<extractioncost>44</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>17767.56</available>
+						<extractioncost>110</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>7614.67</available>
+						<extractioncost>366.67</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>370</extractioncost>
+					</grade>
+				</subresource>
+				<subresource name="deep saline formation offshore">
+					<minShortTermSLimit>818</minShortTermSLimit>
+					<priceElas>0.5</priceElas>
+					<grade name="grade 1">
+						<available>9518.34</available>
+						<extractioncost>91.67</extractioncost>
+					</grade>
+					<grade name="grade 2">
+						<available>9518.34</available>
+						<extractioncost>220</extractioncost>
+					</grade>
+					<grade name="grade 3">
+						<available>20940.34</available>
+						<extractioncost>550</extractioncost>
+					</grade>
+					<grade name="grade 4">
+						<available>10787.45</available>
+						<extractioncost>1100</extractioncost>
+					</grade>
+					<grade name="grade 5">
+						<available/>
+						<extractioncost>1110</extractioncost>
+					</grade>
+				</subresource>
+			</depresource>
+		</region>
+	</world>
+</scenario>

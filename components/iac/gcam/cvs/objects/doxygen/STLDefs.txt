@@ -1,0 +1,8 @@
+namespace std {
+  //! A dummy definition of the stl vector class which helps doxygen to produce better documentation.
+  template<class T> class vector { public: T element; };
+  //! A dummy definition of the stl map class which helps doxygen to produce better documentation.
+  template<class Key, class Value> class map { public: Key key; Value value; };
+  //! A dummy definition of the stl auto_ptr class which helps doxygen to produce better documentation.
+  template<class P> class auto_ptr { public: P element; };
+}

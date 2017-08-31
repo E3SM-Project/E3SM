@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Josh Lurz (PNNL) -->
+<Configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="D:/cvs/Code/Ciam/Configuration.xsd">
+	<Files>
+		<Value name="erbInputFileName">./erbinput2.csv</Value>
+		<Value name="outFileName">outFile.csv</Value>
+		<Value name="bugOutFileName">bugoutfile.csv</Value>
+		<Value name="logOutFileName">logfile.csv</Value>
+		<Value name="climatFileName">gas.emk</Value>
+		<Value name="xmlInputFileName">./core_model_input.xml</Value>
+		<Value name="xmlOutputFileName">./output.xml</Value>
+		<Value name="xmlDebugFileName">debug.xml</Value>
+		<Value name="sdCurveFileName">sdcurve.csv</Value>
+		<Value name="sdFileName">sdall.csv</Value>
+		<Value name="dbOutFileName">dbout.csv</Value>
+		<Value name="dbFileName">./output.mdb</Value>
+		<Value name="supplyDemandOutputFileName">SDCurves.csv</Value>
+		<Value name="xmldb-location">./database.dbxml</Value>
+		<Value name="GHGInputFileName">./input_gases.emk</Value>
+		<Value name="dependencyGraphName">DependencyGraph</Value>
+		<Value name="policy-target-file">./policy_target.xml</Value>
+		<Value name="BatchFileName">batch_emf.xml</Value>
+	</Files>
+	<ScenarioComponents>
+		<Value name="solver_config">./solver_config.xml</Value>
+		<Value name="tax">./carbon_tax_4p5.xml</Value>
+	</ScenarioComponents>
+	<Strings>
+		<Value name="scenarioName">RCP4p5_exp1_2035</Value>
+	</Strings>
+	<Bools>
+		<Value name="debugChecking">0</Value>
+		<Value name="write-access-db">0</Value>
+		<Value name="write-xml-db">1</Value>
+		<Value name="BatchMode">0</Value>
+		<Value name="timestamp">0</Value>
+		<Value name="agSectorActive">0</Value>
+		<Value name="agSubsidy">1</Value>
+		<Value name="agBioMarketSet">0</Value>
+		<Value name="simulActive">1</Value>
+		<Value name="CalibrationActive">0</Value>
+		<Value name="trackMaxED">0</Value>
+		<Value name="PrintDependencyGraphs">0</Value>
+		<Value name="PrintValuesOnGraphs">1</Value>
+		<Value name="debugFindSD">0</Value>
+		<Value name="PrintSectorDependencies">0</Value>
+		<Value name="ShowNullPaths">0</Value>
+		<Value name="PrintPrices">1</Value>
+		<Value name="createCostCurve">0</Value>
+		<Value name="estimateCosts">0</Value>
+		<Value name="find-path">0</Value>
+		<Value name="addLUCtoMarket">1</Value>
+	</Bools>
+	<Ints>
+		<Value name="numMarketsToFindSD">10</Value>
+		<Value name="numPointsForSD">21</Value>
+		<Value name="numPointsForCO2CostCurve">5</Value>
+		<Value name="carbon-output-start-year">1705</Value>
+		<Value name="climateOutputInterval">5</Value>
+	</Ints>
+	<Doubles>
+	</Doubles>
+</Configuration>

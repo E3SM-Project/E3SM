@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BatchRunner xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="batch_runner.xsd">
+	<ComponentSet name="TechnologyCases">
+		<FileSet name="High">
+			<Value name="CCTechs">CarbonCaptureTechs.xml</Value>
+		</FileSet>
+	</ComponentSet>
+</BatchRunner>

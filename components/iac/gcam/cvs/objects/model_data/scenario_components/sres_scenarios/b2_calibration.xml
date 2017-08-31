@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Son H. Kim (PNNL) -->
+<scenario date="2003-01-11T09:30:47-05:00" name="B2 Reference">
+   <output-meta-data>
+      <summary>SRES B2 Scenario is used for this Reference Scenario</summary>
+   </output-meta-data>
+   <world>
+      <region name="USA">
+         <calibrationdata>
+            <GDPcal year="1975">3469850</GDPcal>
+            <GDPcal year="1990">5519600</GDPcal>
+            <GDPcalPerCapita year="1990">22166</GDPcalPerCapita>
+            <GDPcal year="2005">8559839</GDPcal>
+            <GDPcal year="2020">11704628</GDPcal>
+            <GDPcal year="2035">14474230</GDPcal>
+            <GDPcal year="2050">17219996</GDPcal>
+            <GDPcal year="2065">20308123</GDPcal>
+            <GDPcal year="2080">24299173</GDPcal>
+            <GDPcal year="2095">29086532</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">21.51</cal-final-energy>
+            <cal-final-energy year="2020">24.05</cal-final-energy>
+            <cal-final-energy year="2035">26.88</cal-final-energy>
+            <cal-final-energy year="2050">28.81</cal-final-energy>
+            <cal-final-energy year="2065">30.49</cal-final-energy>
+            <cal-final-energy year="2080">33.24</cal-final-energy>
+            <cal-final-energy year="2095">35.22</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">24.05</cal-final-energy>
+            <cal-final-energy year="2020">25.85</cal-final-energy>
+            <cal-final-energy year="2035">27.26</cal-final-energy>
+            <cal-final-energy year="2050">27.32</cal-final-energy>
+            <cal-final-energy year="2065">27.25</cal-final-energy>
+            <cal-final-energy year="2080">28.10</cal-final-energy>
+            <cal-final-energy year="2095">29.28</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">31.55</cal-final-energy>
+            <cal-final-energy year="2020">36.74</cal-final-energy>
+            <cal-final-energy year="2035">41.40</cal-final-energy>
+            <cal-final-energy year="2050">45.50</cal-final-energy>
+            <cal-final-energy year="2065">49.55</cal-final-energy>
+            <cal-final-energy year="2080">51.78</cal-final-energy>
+            <cal-final-energy year="2095">55.09</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Canada">
+         <calibrationdata>
+            <GDPcal year="1975">319777</GDPcal>
+            <GDPcal year="1990">547623</GDPcal>
+            <GDPcal year="2005">771176</GDPcal>
+            <GDPcal year="2020">1053068</GDPcal>
+            <GDPcal year="2035">1303987</GDPcal>
+            <GDPcal year="2050">1579834</GDPcal>
+            <GDPcal year="2065">1817861</GDPcal>
+            <GDPcal year="2080">2110449</GDPcal>
+            <GDPcal year="2095">2463134</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">2.98</cal-final-energy>
+            <cal-final-energy year="2020">3.37</cal-final-energy>
+            <cal-final-energy year="2035">3.68</cal-final-energy>
+            <cal-final-energy year="2050">3.91</cal-final-energy>
+            <cal-final-energy year="2065">3.91</cal-final-energy>
+            <cal-final-energy year="2080">3.99</cal-final-energy>
+            <cal-final-energy year="2095">3.96</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">3.92</cal-final-energy>
+            <cal-final-energy year="2020">4.32</cal-final-energy>
+            <cal-final-energy year="2035">4.54</cal-final-energy>
+            <cal-final-energy year="2050">4.52</cal-final-energy>
+            <cal-final-energy year="2065">4.25</cal-final-energy>
+            <cal-final-energy year="2080">4.03</cal-final-energy>
+            <cal-final-energy year="2095">3.95</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">2.91</cal-final-energy>
+            <cal-final-energy year="2020">3.43</cal-final-energy>
+            <cal-final-energy year="2035">3.82</cal-final-energy>
+            <cal-final-energy year="2050">4.20</cal-final-energy>
+            <cal-final-energy year="2065">4.35</cal-final-energy>
+            <cal-final-energy year="2080">4.28</cal-final-energy>
+            <cal-final-energy year="2095">4.27</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Western Europe">
+         <calibrationdata>
+            <GDPcal year="1975">4874390</GDPcal>
+            <GDPcal year="1990">7033360</GDPcal>
+            <GDPcal year="2005">10363051</GDPcal>
+            <GDPcal year="2020">12860964</GDPcal>
+            <GDPcal year="2035">14347126</GDPcal>
+            <GDPcal year="2050">15544075</GDPcal>
+            <GDPcal year="2065">16431657</GDPcal>
+            <GDPcal year="2080">17382954</GDPcal>
+            <GDPcal year="2095">19166584</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">16.68</cal-final-energy>
+            <cal-final-energy year="2020">15.95</cal-final-energy>
+            <cal-final-energy year="2035">15.46</cal-final-energy>
+            <cal-final-energy year="2050">14.94</cal-final-energy>
+            <cal-final-energy year="2065">13.94</cal-final-energy>
+            <cal-final-energy year="2080">13.41</cal-final-energy>
+            <cal-final-energy year="2095">13.02</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">22.59</cal-final-energy>
+            <cal-final-energy year="2020">23.65</cal-final-energy>
+            <cal-final-energy year="2035">23.33</cal-final-energy>
+            <cal-final-energy year="2050">21.48</cal-final-energy>
+            <cal-final-energy year="2065">19.83</cal-final-energy>
+            <cal-final-energy year="2080">17.57</cal-final-energy>
+            <cal-final-energy year="2095">16.62</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">18.18</cal-final-energy>
+            <cal-final-energy year="2020">18.14</cal-final-energy>
+            <cal-final-energy year="2035">18.00</cal-final-energy>
+            <cal-final-energy year="2050">18.15</cal-final-energy>
+            <cal-final-energy year="2065">17.53</cal-final-energy>
+            <cal-final-energy year="2080">16.48</cal-final-energy>
+            <cal-final-energy year="2095">16.17</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Japan">
+         <calibrationdata>
+            <GDPcal year="1975">1824590</GDPcal>
+            <GDPcal year="1990">2952300</GDPcal>
+            <GDPcal year="2005">3384540</GDPcal>
+            <GDPcal year="2020">3860552</GDPcal>
+            <GDPcal year="2035">4024037</GDPcal>
+            <GDPcal year="2050">4210928</GDPcal>
+            <GDPcal year="2065">4482265</GDPcal>
+            <GDPcal year="2080">4839737</GDPcal>
+            <GDPcal year="2095">5271149</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">3.94</cal-final-energy>
+            <cal-final-energy year="2020">3.94</cal-final-energy>
+            <cal-final-energy year="2035">3.70</cal-final-energy>
+            <cal-final-energy year="2050">3.48</cal-final-energy>
+            <cal-final-energy year="2065">3.23</cal-final-energy>
+            <cal-final-energy year="2080">3.07</cal-final-energy>
+            <cal-final-energy year="2095">2.80</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">9.31</cal-final-energy>
+            <cal-final-energy year="2020">8.97</cal-final-energy>
+            <cal-final-energy year="2035">8.01</cal-final-energy>
+            <cal-final-energy year="2050">7.06</cal-final-energy>
+            <cal-final-energy year="2065">6.27</cal-final-energy>
+            <cal-final-energy year="2080">5.60</cal-final-energy>
+            <cal-final-energy year="2095">4.98</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">4.79</cal-final-energy>
+            <cal-final-energy year="2020">5.03</cal-final-energy>
+            <cal-final-energy year="2035">4.87</cal-final-energy>
+            <cal-final-energy year="2050">4.49</cal-final-energy>
+            <cal-final-energy year="2065">4.14</cal-final-energy>
+            <cal-final-energy year="2080">3.61</cal-final-energy>
+            <cal-final-energy year="2095">3.35</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Australia_NZ">
+         <calibrationdata>
+            <GDPcal year="1975">128142</GDPcal>
+            <GDPcal year="1990">323328</GDPcal>
+            <GDPcal year="2005">485840</GDPcal>
+            <GDPcal year="2020">678611</GDPcal>
+            <GDPcal year="2035">841400</GDPcal>
+            <GDPcal year="2050">1008713</GDPcal>
+            <GDPcal year="2065">1169385</GDPcal>
+            <GDPcal year="2080">1332121</GDPcal>
+            <GDPcal year="2095">1522298</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">0.82</cal-final-energy>
+            <cal-final-energy year="2020">0.95</cal-final-energy>
+            <cal-final-energy year="2035">1.05</cal-final-energy>
+            <cal-final-energy year="2050">1.13</cal-final-energy>
+            <cal-final-energy year="2065">1.16</cal-final-energy>
+            <cal-final-energy year="2080">1.20</cal-final-energy>
+            <cal-final-energy year="2095">1.20</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">1.99</cal-final-energy>
+            <cal-final-energy year="2020">2.23</cal-final-energy>
+            <cal-final-energy year="2035">2.36</cal-final-energy>
+            <cal-final-energy year="2050">2.36</cal-final-energy>
+            <cal-final-energy year="2065">2.28</cal-final-energy>
+            <cal-final-energy year="2080">2.19</cal-final-energy>
+            <cal-final-energy year="2095">2.12</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">1.75</cal-final-energy>
+            <cal-final-energy year="2020">2.11</cal-final-energy>
+            <cal-final-energy year="2035">2.34</cal-final-energy>
+            <cal-final-energy year="2050">2.55</cal-final-energy>
+            <cal-final-energy year="2065">2.68</cal-final-energy>
+            <cal-final-energy year="2080">2.64</cal-final-energy>
+            <cal-final-energy year="2095">2.65</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Former Soviet Union">
+         <calibrationdata>
+            <GDPcal year="1975">309837</GDPcal>
+            <GDPcal year="1990">944457</GDPcal>
+            <GDPcal year="2005">626496</GDPcal>
+            <GDPcal year="2020">966682</GDPcal>
+            <GDPcal year="2035">2038656</GDPcal>
+            <GDPcal year="2050">3929571</GDPcal>
+            <GDPcal year="2065">5937552</GDPcal>
+            <GDPcal year="2080">7535338</GDPcal>
+            <GDPcal year="2095">8890428</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">6.66</cal-final-energy>
+            <cal-final-energy year="2020">8.42</cal-final-energy>
+            <cal-final-energy year="2035">9.59</cal-final-energy>
+            <cal-final-energy year="2050">11.26</cal-final-energy>
+            <cal-final-energy year="2065">12.06</cal-final-energy>
+            <cal-final-energy year="2080">13.25</cal-final-energy>
+            <cal-final-energy year="2095">13.66</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">17.76</cal-final-energy>
+            <cal-final-energy year="2020">19.06</cal-final-energy>
+            <cal-final-energy year="2035">24.68</cal-final-energy>
+            <cal-final-energy year="2050">29.16</cal-final-energy>
+            <cal-final-energy year="2065">29.94</cal-final-energy>
+            <cal-final-energy year="2080">30.33</cal-final-energy>
+            <cal-final-energy year="2095">30.62</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">3.95</cal-final-energy>
+            <cal-final-energy year="2020">5.92</cal-final-energy>
+            <cal-final-energy year="2035">9.57</cal-final-energy>
+            <cal-final-energy year="2050">13.56</cal-final-energy>
+            <cal-final-energy year="2065">15.93</cal-final-energy>
+            <cal-final-energy year="2080">17.03</cal-final-energy>
+            <cal-final-energy year="2095">17.66</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="China">
+         <calibrationdata>
+            <GDPcal year="1975">62245</GDPcal>
+            <GDPcal year="1990">358285</GDPcal>
+            <GDPcal year="2005">1370421</GDPcal>
+            <GDPcal year="2020">4718253</GDPcal>
+            <GDPcal year="2035">11166656</GDPcal>
+            <GDPcal year="2050">19826725</GDPcal>
+            <GDPcal year="2065">26183582</GDPcal>
+            <GDPcal year="2080">31608743</GDPcal>
+            <GDPcal year="2095">36556890</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">10.43</cal-final-energy>
+            <cal-final-energy year="2020">11.07</cal-final-energy>
+            <cal-final-energy year="2035">14.80</cal-final-energy>
+            <cal-final-energy year="2050">19.52</cal-final-energy>
+            <cal-final-energy year="2065">22.85</cal-final-energy>
+            <cal-final-energy year="2080">27.31</cal-final-energy>
+            <cal-final-energy year="2095">31.34</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">22.65</cal-final-energy>
+            <cal-final-energy year="2020">33.64</cal-final-energy>
+            <cal-final-energy year="2035">44.60</cal-final-energy>
+            <cal-final-energy year="2050">53.95</cal-final-energy>
+            <cal-final-energy year="2065">58.37</cal-final-energy>
+            <cal-final-energy year="2080">61.33</cal-final-energy>
+            <cal-final-energy year="2095">65.66</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">7.12</cal-final-energy>
+            <cal-final-energy year="2020">12.62</cal-final-energy>
+            <cal-final-energy year="2035">20.64</cal-final-energy>
+            <cal-final-energy year="2050">27.90</cal-final-energy>
+            <cal-final-energy year="2065">34.21</cal-final-energy>
+            <cal-final-energy year="2080">38.95</cal-final-energy>
+            <cal-final-energy year="2095">44.68</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Middle East">
+         <calibrationdata>
+            <GDPcal year="1975">47091</GDPcal>
+            <GDPcal year="1990">444748</GDPcal>
+            <GDPcal year="2005">720541</GDPcal>
+            <GDPcal year="2020">1202035</GDPcal>
+            <GDPcal year="2035">2347368</GDPcal>
+            <GDPcal year="2050">4169756</GDPcal>
+            <GDPcal year="2065">5917276</GDPcal>
+            <GDPcal year="2080">7224619</GDPcal>
+            <GDPcal year="2095">7899916</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">1.64</cal-final-energy>
+            <cal-final-energy year="2020">2.13</cal-final-energy>
+            <cal-final-energy year="2035">2.97</cal-final-energy>
+            <cal-final-energy year="2050">3.85</cal-final-energy>
+            <cal-final-energy year="2065">4.86</cal-final-energy>
+            <cal-final-energy year="2080">6.04</cal-final-energy>
+            <cal-final-energy year="2095">6.44</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">9.53</cal-final-energy>
+            <cal-final-energy year="2020">13.81</cal-final-energy>
+            <cal-final-energy year="2035">17.02</cal-final-energy>
+            <cal-final-energy year="2050">18.71</cal-final-energy>
+            <cal-final-energy year="2065">20.60</cal-final-energy>
+            <cal-final-energy year="2080">20.83</cal-final-energy>
+            <cal-final-energy year="2095">20.28</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">4.44</cal-final-energy>
+            <cal-final-energy year="2020">7.01</cal-final-energy>
+            <cal-final-energy year="2035">10.12</cal-final-energy>
+            <cal-final-energy year="2050">13.94</cal-final-energy>
+            <cal-final-energy year="2065">17.64</cal-final-energy>
+            <cal-final-energy year="2080">20.99</cal-final-energy>
+            <cal-final-energy year="2095">21.75</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Africa">
+         <calibrationdata>
+            <GDPcal year="1975">75664</GDPcal>
+            <GDPcal year="1990">379399</GDPcal>
+            <GDPcal year="2005">534486</GDPcal>
+            <GDPcal year="2020">934063</GDPcal>
+            <GDPcal year="2035">2300023</GDPcal>
+            <GDPcal year="2050">5588434</GDPcal>
+            <GDPcal year="2065">11120607</GDPcal>
+            <GDPcal year="2080">18181925</GDPcal>
+            <GDPcal year="2095">24972741</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">10.45</cal-final-energy>
+            <cal-final-energy year="2020">12.66</cal-final-energy>
+            <cal-final-energy year="2035">14.87</cal-final-energy>
+            <cal-final-energy year="2050">17.54</cal-final-energy>
+            <cal-final-energy year="2065">23.98</cal-final-energy>
+            <cal-final-energy year="2080">36.31</cal-final-energy>
+            <cal-final-energy year="2095">48.20</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">5.87</cal-final-energy>
+            <cal-final-energy year="2020">8.73</cal-final-energy>
+            <cal-final-energy year="2035">12.41</cal-final-energy>
+            <cal-final-energy year="2050">15.48</cal-final-energy>
+            <cal-final-energy year="2065">22.15</cal-final-energy>
+            <cal-final-energy year="2080">30.12</cal-final-energy>
+            <cal-final-energy year="2095">37.44</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">3.04</cal-final-energy>
+            <cal-final-energy year="2020">4.91</cal-final-energy>
+            <cal-final-energy year="2035">7.89</cal-final-energy>
+            <cal-final-energy year="2050">11.54</cal-final-energy>
+            <cal-final-energy year="2065">18.70</cal-final-energy>
+            <cal-final-energy year="2080">27.94</cal-final-energy>
+            <cal-final-energy year="2095">37.20</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Latin America">
+         <calibrationdata>
+            <GDPcal year="1975">464659</GDPcal>
+            <GDPcal year="1990">1085530</GDPcal>
+            <GDPcal year="2005">1863557</GDPcal>
+            <GDPcal year="2020">3064914</GDPcal>
+            <GDPcal year="2035">5982282</GDPcal>
+            <GDPcal year="2050">10646577</GDPcal>
+            <GDPcal year="2065">15505288</GDPcal>
+            <GDPcal year="2080">19168985</GDPcal>
+            <GDPcal year="2095">21317629</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">7.72</cal-final-energy>
+            <cal-final-energy year="2020">9.55</cal-final-energy>
+            <cal-final-energy year="2035">11.00</cal-final-energy>
+            <cal-final-energy year="2050">12.35</cal-final-energy>
+            <cal-final-energy year="2065">14.45</cal-final-energy>
+            <cal-final-energy year="2080">17.41</cal-final-energy>
+            <cal-final-energy year="2095">18.67</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">11.37</cal-final-energy>
+            <cal-final-energy year="2020">15.17</cal-final-energy>
+            <cal-final-energy year="2035">18.23</cal-final-energy>
+            <cal-final-energy year="2050">19.62</cal-final-energy>
+            <cal-final-energy year="2065">23.03</cal-final-energy>
+            <cal-final-energy year="2080">24.77</cal-final-energy>
+            <cal-final-energy year="2095">25.44</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">9.44</cal-final-energy>
+            <cal-final-energy year="2020">13.75</cal-final-energy>
+            <cal-final-energy year="2035">18.73</cal-final-energy>
+            <cal-final-energy year="2050">23.75</cal-final-energy>
+            <cal-final-energy year="2065">30.94</cal-final-energy>
+            <cal-final-energy year="2080">37.16</cal-final-energy>
+            <cal-final-energy year="2095">39.44</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Southeast Asia">
+         <calibrationdata>
+            <GDPcal year="1975">135170</GDPcal>
+            <GDPcal year="1990">416910</GDPcal>
+            <GDPcal year="2005">818696</GDPcal>
+            <GDPcal year="2020">2208234</GDPcal>
+            <GDPcal year="2035">4984811</GDPcal>
+            <GDPcal year="2050">9348387</GDPcal>
+            <GDPcal year="2065">13309088</GDPcal>
+            <GDPcal year="2080">17677882</GDPcal>
+            <GDPcal year="2095">21794407</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">6.24</cal-final-energy>
+            <cal-final-energy year="2020">9.32</cal-final-energy>
+            <cal-final-energy year="2035">13.31</cal-final-energy>
+            <cal-final-energy year="2050">17.56</cal-final-energy>
+            <cal-final-energy year="2065">20.00</cal-final-energy>
+            <cal-final-energy year="2080">23.34</cal-final-energy>
+            <cal-final-energy year="2095">25.90</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">8.65</cal-final-energy>
+            <cal-final-energy year="2020">14.96</cal-final-energy>
+            <cal-final-energy year="2035">21.34</cal-final-energy>
+            <cal-final-energy year="2050">25.34</cal-final-energy>
+            <cal-final-energy year="2065">27.27</cal-final-energy>
+            <cal-final-energy year="2080">28.93</cal-final-energy>
+            <cal-final-energy year="2095">31.18</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">6.26</cal-final-energy>
+            <cal-final-energy year="2020">12.08</cal-final-energy>
+            <cal-final-energy year="2035">19.85</cal-final-energy>
+            <cal-final-energy year="2050">28.28</cal-final-energy>
+            <cal-final-energy year="2065">34.05</cal-final-energy>
+            <cal-final-energy year="2080">38.45</cal-final-energy>
+            <cal-final-energy year="2095">41.25</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Eastern Europe">
+         <calibrationdata>
+            <GDPcal year="1975">90402</GDPcal>
+            <GDPcal year="1990">212197</GDPcal>
+            <GDPcal year="2005">308828</GDPcal>
+            <GDPcal year="2020">646083</GDPcal>
+            <GDPcal year="2035">1378931</GDPcal>
+            <GDPcal year="2050">2382435</GDPcal>
+            <GDPcal year="2065">3154677</GDPcal>
+            <GDPcal year="2080">3537302</GDPcal>
+            <GDPcal year="2095">3831800</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">2.14</cal-final-energy>
+            <cal-final-energy year="2020">2.33</cal-final-energy>
+            <cal-final-energy year="2035">2.64</cal-final-energy>
+            <cal-final-energy year="2050">2.86</cal-final-energy>
+            <cal-final-energy year="2065">2.82</cal-final-energy>
+            <cal-final-energy year="2080">2.84</cal-final-energy>
+            <cal-final-energy year="2095">2.78</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">4.91</cal-final-energy>
+            <cal-final-energy year="2020">5.96</cal-final-energy>
+            <cal-final-energy year="2035">6.97</cal-final-energy>
+            <cal-final-energy year="2050">7.26</cal-final-energy>
+            <cal-final-energy year="2065">6.81</cal-final-energy>
+            <cal-final-energy year="2080">6.34</cal-final-energy>
+            <cal-final-energy year="2095">6.09</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">1.10</cal-final-energy>
+            <cal-final-energy year="2020">1.55</cal-final-energy>
+            <cal-final-energy year="2035">2.09</cal-final-energy>
+            <cal-final-energy year="2050">2.51</cal-final-energy>
+            <cal-final-energy year="2065">2.67</cal-final-energy>
+            <cal-final-energy year="2080">2.63</cal-final-energy>
+            <cal-final-energy year="2095">2.65</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="Korea">
+         <calibrationdata>
+            <GDPcal year="1975">23360</GDPcal>
+            <GDPcalPerCapita year="1990">5880.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2005">12570.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2020">24630.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2035">33950.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2050">40620.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2065">42450.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2080">43880.</GDPcalPerCapita>
+            <GDPcalPerCapita year="2095">45110.</GDPcalPerCapita>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">1.82</cal-final-energy>
+            <cal-final-energy year="2020">2.13</cal-final-energy>
+            <cal-final-energy year="2035">2.34</cal-final-energy>
+            <cal-final-energy year="2050">2.37</cal-final-energy>
+            <cal-final-energy year="2065">2.32</cal-final-energy>
+            <cal-final-energy year="2080">2.33</cal-final-energy>
+            <cal-final-energy year="2095">2.25</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">3.98</cal-final-energy>
+            <cal-final-energy year="2020">4.34</cal-final-energy>
+            <cal-final-energy year="2035">4.31</cal-final-energy>
+            <cal-final-energy year="2050">3.97</cal-final-energy>
+            <cal-final-energy year="2065">3.69</cal-final-energy>
+            <cal-final-energy year="2080">3.42</cal-final-energy>
+            <cal-final-energy year="2095">3.27</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">2.04</cal-final-energy>
+            <cal-final-energy year="2020">2.50</cal-final-energy>
+            <cal-final-energy year="2035">2.74</cal-final-energy>
+            <cal-final-energy year="2050">2.82</cal-final-energy>
+            <cal-final-energy year="2065">2.81</cal-final-energy>
+            <cal-final-energy year="2080">2.69</cal-final-energy>
+            <cal-final-energy year="2095">2.57</cal-final-energy>
+         </demandsector>
+      </region>
+      <region name="India">
+         <calibrationdata>
+            <GDPcal year="1975">49088</GDPcal>
+            <GDPcal year="1990">294601</GDPcal>
+            <GDPcal year="2005">667398</GDPcal>
+            <GDPcal year="2020">1960058</GDPcal>
+            <GDPcal year="2035">4820255</GDPcal>
+            <GDPcal year="2050">9688303</GDPcal>
+            <GDPcal year="2065">14648756</GDPcal>
+            <GDPcal year="2080">20391237</GDPcal>
+            <GDPcal year="2095">26236040</GDPcal>
+         </calibrationdata>
+         <demandsector name="building" nocreate="1">
+            <cal-final-energy year="2005">5.97</cal-final-energy>
+            <cal-final-energy year="2020">8.24</cal-final-energy>
+            <cal-final-energy year="2035">12.05</cal-final-energy>
+            <cal-final-energy year="2050">16.90</cal-final-energy>
+            <cal-final-energy year="2065">20.67</cal-final-energy>
+            <cal-final-energy year="2080">25.58</cal-final-energy>
+            <cal-final-energy year="2095">29.50</cal-final-energy>
+         </demandsector>
+         <demandsector name="industry" nocreate="1">
+            <cal-final-energy year="2005">8.94</cal-final-energy>
+            <cal-final-energy year="2020">15.82</cal-final-energy>
+            <cal-final-energy year="2035">24.76</cal-final-energy>
+            <cal-final-energy year="2050">33.46</cal-final-energy>
+            <cal-final-energy year="2065">39.22</cal-final-energy>
+            <cal-final-energy year="2080">44.27</cal-final-energy>
+            <cal-final-energy year="2095">49.32</cal-final-energy>
+         </demandsector>
+         <demandsector name="transportation" nocreate="1">
+            <cal-final-energy year="2005">2.80</cal-final-energy>
+            <cal-final-energy year="2020">5.98</cal-final-energy>
+            <cal-final-energy year="2035">10.92</cal-final-energy>
+            <cal-final-energy year="2050">16.41</cal-final-energy>
+            <cal-final-energy year="2065">21.21</cal-final-energy>
+            <cal-final-energy year="2080">25.06</cal-final-energy>
+            <cal-final-energy year="2095">28.90</cal-final-energy>
+         </demandsector>
+      </region>
+   </world>
+</scenario>

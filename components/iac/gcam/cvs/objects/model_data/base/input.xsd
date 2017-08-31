@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="scenario">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="summary"/>
+        <xs:element ref="modeltime"/>
+        <xs:element ref="world"/>
+      </xs:sequence>
+      <xs:attribute name="date" use="required" type="xs:NMTOKEN"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="summary" type="xs:string"/>
+  <xs:element name="modeltime">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="startyear"/>
+        <xs:element ref="interyear1"/>
+        <xs:element ref="interyear2"/>
+        <xs:element ref="endyear"/>
+        <xs:element ref="timestep1"/>
+        <xs:element ref="timestep2"/>
+        <xs:element ref="timestep3"/>
+        <xs:element ref="dataend"/>
+        <xs:element ref="datatimestep"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="startyear" type="xs:integer"/>
+  <xs:element name="interyear1" type="xs:integer"/>
+  <xs:element name="interyear2" type="xs:integer"/>
+  <xs:element name="endyear" type="xs:integer"/>
+  <xs:element name="timestep1" type="xs:integer"/>
+  <xs:element name="timestep2" type="xs:integer"/>
+  <xs:element name="timestep3" type="xs:integer"/>
+  <xs:element name="dataend" type="xs:integer"/>
+  <xs:element name="datatimestep" type="xs:integer"/>
+  <xs:element name="world">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="primaryFuelName"/>
+        <xs:element maxOccurs="unbounded" ref="region"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="primaryFuelName" type="xs:string"/>
+  <xs:element name="region">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="PrimaryFuelCO2Coef"/>
+        <xs:element maxOccurs="unbounded" ref="CarbonTaxFuelCoef"/>
+        <xs:element ref="demographics"/>
+        <xs:element ref="GDP"/>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element ref="depresource"/>
+          <xs:element ref="renewresource"/>
+        </xs:choice>
+        <xs:element maxOccurs="unbounded" ref="supplysector"/>
+        <xs:element maxOccurs="unbounded" ref="demandsector"/>
+        <xs:element ref="agsector"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="PrimaryFuelCO2Coef">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="name" use="required"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CarbonTaxFuelCoef">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="name" use="required"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="demographics">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="populationMiniCAM"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="populationMiniCAM">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="totalPop"/>
+      </xs:sequence>
+      <xs:attribute name="year" use="required" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="totalPop" type="xs:double"/>
+  <xs:element name="GDP">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="PPPConvert"/>
+        <xs:element ref="baseGDP"/>
+        <xs:element ref="e_GDP_elas"/>
+        <xs:element maxOccurs="unbounded" ref="laborproductivity"/>
+        <xs:element maxOccurs="unbounded" ref="laborforce"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="PPPConvert">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="constRatio" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="baseGDP" type="xs:double"/>
+  <xs:element name="e_GDP_elas" type="xs:decimal"/>
+  <xs:element name="laborproductivity">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="laborforce">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="depresource">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="market"/>
+        <xs:element ref="price"/>
+        <xs:element minOccurs="0" ref="subresource"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="renewresource">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="market"/>
+        <xs:element ref="price"/>
+        <xs:element ref="subresource"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="supplysector">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="price"/>
+        <xs:element ref="output"/>
+        <xs:element maxOccurs="unbounded" ref="subsector"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="demandsector">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="price"/>
+        <xs:element ref="output"/>
+        <xs:element minOccurs="0" ref="perCapitaBased"/>
+        <xs:element maxOccurs="unbounded" ref="priceelasticity"/>
+        <xs:element maxOccurs="unbounded" ref="serviceoutput"/>
+        <xs:element maxOccurs="unbounded" ref="incomeelasticity"/>
+        <xs:element maxOccurs="unbounded" ref="aeei"/>
+        <xs:element maxOccurs="unbounded" ref="subsector"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="perCapitaBased" type="xs:integer"/>
+  <xs:element name="priceelasticity">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="serviceoutput">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="incomeelasticity">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="aeei">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="agsector">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="market" type="xs:string"/>
+  <xs:element name="price">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="subresource">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="environCost"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="gdpExpans"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="severanceTax"/>
+        <xs:element minOccurs="0" ref="annualprod"/>
+        <xs:sequence minOccurs="0">
+          <xs:element ref="maxSubResource"/>
+          <xs:element ref="gdpSupplyElast"/>
+          <xs:element ref="subResourceVariance"/>
+          <xs:element ref="subResourceCapacityFactor"/>
+        </xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="techChange"/>
+        <xs:sequence minOccurs="0">
+          <xs:element ref="minShortTermSLimit"/>
+          <xs:element ref="priceElas"/>
+        </xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="grade"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="environCost">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="gdpExpans">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="severanceTax">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="annualprod">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="maxSubResource" type="xs:decimal"/>
+  <xs:element name="gdpSupplyElast" type="xs:decimal"/>
+  <xs:element name="subResourceVariance" type="xs:integer"/>
+  <xs:element name="subResourceCapacityFactor" type="xs:integer"/>
+  <xs:element name="techChange">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="minShortTermSLimit" type="xs:integer"/>
+  <xs:element name="priceElas" type="xs:decimal"/>
+  <xs:element name="grade">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="available"/>
+        <xs:element ref="extractioncost"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="available" type="xs:decimal"/>
+  <xs:element name="extractioncost" type="xs:decimal"/>
+  <xs:element name="output">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:double">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="subsector">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="sharewt"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="logitexp"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="fuelprefElasticity"/>
+        <xs:element maxOccurs="unbounded" ref="technology"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="fuelprefElasticity">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" use="required" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="technology">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="period"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="period">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="fuelname"/>
+        <xs:choice minOccurs="0">
+          <xs:element ref="sharewt"/>
+          <xs:element ref="calInputValue"/>
+        </xs:choice>
+        <xs:element ref="lifetime"/>
+        <xs:element minOccurs="0" ref="efficiency"/>
+        <xs:element ref="nonenergycost"/>
+        <xs:choice minOccurs="0">
+          <xs:element ref="fixedOutput"/>
+          <xs:element ref="non-energy-use-capture-component"/>
+          <xs:element ref="techchange"/>
+        </xs:choice>
+        <xs:element minOccurs="0" ref="fMultiplier"/>
+        <xs:element minOccurs="0" ref="logitexp"/>
+        <xs:choice minOccurs="0">
+          <xs:element ref="pMultiplier"/>
+          <xs:element ref="phased-shutdown-decider"/>
+        </xs:choice>
+        <xs:element ref="GHG"/>
+      </xs:sequence>
+      <xs:attribute name="year" use="required" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="fuelname" type="xs:string"/>
+  <xs:element name="calInputValue" type="xs:decimal"/>
+  <xs:element name="lifetime" type="xs:integer"/>
+  <xs:element name="efficiency" type="xs:decimal"/>
+  <xs:element name="nonenergycost" type="xs:decimal"/>
+  <xs:element name="fixedOutput" type="xs:decimal"/>
+  <xs:element name="non-energy-use-capture-component">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="removefrac"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="removefrac" type="xs:integer"/>
+  <xs:element name="techchange" type="xs:decimal"/>
+  <xs:element name="fMultiplier" type="xs:decimal"/>
+  <xs:element name="pMultiplier" type="xs:decimal"/>
+  <xs:element name="phased-shutdown-decider">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="shutdown-rate"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="shutdown-rate" type="xs:decimal"/>
+  <xs:element name="GHG">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="emisscoef"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="emisscoef" type="xs:decimal"/>
+  <xs:element name="sharewt">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:decimal">
+          <xs:attribute name="year" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="logitexp">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:integer">
+          <xs:attribute name="year" type="xs:integer"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
