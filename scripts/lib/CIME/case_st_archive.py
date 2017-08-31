@@ -7,7 +7,7 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
-from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime
+from CIME.utils                     import run_and_log_case_status, ls_sorted_by_mtime, symlink_force
 from os.path                        import isdir, join
 import datetime
 
@@ -285,7 +285,7 @@ def _archive_restarts_date(case, archive,
         logger.info('Archiving restarts for {} ({})'.format(compname, compclass))
 
         # archive restarts
-        histfiles_savein_rundir = _archive_restarts_comp_date(case, archive, archive_entry,
+        histfiles_savein_rundir = _archive_restarts_date_comp(case, archive, archive_entry,
                                                               compclass, compname,
                                                               datename, datename_is_last,
                                                               archive_restdir, archive_file_fn)
@@ -294,15 +294,20 @@ def _archive_restarts_date(case, archive,
     return histfiles_savein_rundir_by_compname
 
 ###############################################################################
-def _archive_restarts_comp_date(case, archive, archive_entry,
+def _archive_restarts_date_comp(case, archive, archive_entry,
                                 compclass, compname, datename, datename_is_last,
-                                archive_restdir, archive_file_fn):
+                                archive_restdir, archive_file_fn,
+                                link_to_last_restart_files=False):
 ###############################################################################
     """
-    Archive restart files for a single component and single date
+    Archive restart files for a single date and single component
+
+    If link_to_last_restart_files is True, then make a symlink to the
+    last set of restart files (i.e., the set with datename_is_last
+    True); if False (the default), copy them. (This has no effect on the
+    history files that are associated with these restart files.)
     """
 
-    # determine directory for archiving restarts based on datename
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
     if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
@@ -319,6 +324,14 @@ def _archive_restarts_comp_date(case, archive, archive_entry,
     # move all but latest restart files into the archive restart directory
     # copy latest restart files to archive restart directory
     histfiles_savein_rundir = []
+
+    # determine function to use for last set of restart files
+    if link_to_last_restart_files:
+        last_restart_file_fn = symlink_force
+        last_restart_file_fn_msg = "linking"
+    else:
+        last_restart_file_fn = shutil.copy
+        last_restart_file_fn_msg = "copying"
 
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
@@ -364,8 +377,9 @@ def _archive_restarts_comp_date(case, archive, archive_entry,
                 if datename_is_last:
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
-                    shutil.copy(srcfile, destfile)
-                    logger.info("copying \n{} to \n{}".format(srcfile, destfile))
+                    last_restart_file_fn(srcfile, destfile)
+                    logger.info("{} \n{} to \n{}".format(
+                        last_restart_file_fn_msg, srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
@@ -468,7 +482,7 @@ def restore_from_archive(case, rest_dir=None):
         shutil.copy(item, rundir)
 
 ###############################################################################
-def archive_last_restarts(case, archive_restdir):
+def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
 ###############################################################################
     """
     Convenience function for archiving just the last set of restart
@@ -478,6 +492,10 @@ def archive_last_restarts(case, archive_restdir):
     archived (e.g., history files, log files).
 
     Files are copied to the directory given by archive_restdir.
+
+    If link_to_restart_files is True, then symlinks rather than copies
+    are done for the restart files. (This has no effect on the history
+    files that are associated with these restart files.)
     """
     archive = _get_archive_object(case)
     datenames = _get_datenames(case)
@@ -493,7 +511,8 @@ def archive_last_restarts(case, archive_restdir):
                                datename=last_datename,
                                datename_is_last=True,
                                archive_restdir=archive_restdir,
-                               archive_file_fn=archive_file_fn)
+                               archive_file_fn=archive_file_fn,
+                               link_to_last_restart_files=link_to_restart_files)
 
 ###############################################################################
 def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
