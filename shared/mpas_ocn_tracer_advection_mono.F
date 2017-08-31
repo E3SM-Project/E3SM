@@ -505,15 +505,15 @@ module ocn_tracer_advection_mono
           !$omp do schedule(runtime) private(k)
           do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
-              if(tracer_new(k,iCell) < tracer_min_hor(k, iCell)-eps) then
+              if (tracer_new(k,iCell) < min(tracer_min_hor(k, iCell), tracer_min_vert(k, iCell)) -eps) then
                  call mpas_log_write( &
-                    'Minimum out of bounds on tracer: $i $f $f ', &
+                    'Minimum out of bounds on tracer: $i $r $r ', &
                     MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_min_hor(k, iCell), tracer_new(k,iCell) /) )
               end if
 
-              if(tracer_new(k,iCell) > tracer_max_hor(k,iCell)+eps) then
+              if (tracer_new(k,iCell) > max(tracer_max_hor(k,iCell), tracer_max_vert(k,iCell)) +eps) then
                  call mpas_log_write( &
-                    'Maximum out of bounds on tracer: $i $f $f ', &
+                    'Maximum out of bounds on tracer: $i $r $r ', &
                     MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_max_hor(k, iCell), tracer_new(k,iCell) /) )
               end if
             end do
