@@ -83,6 +83,7 @@ _TEST_SUITES = {
                             ("SMS_D_Ln5.ne4_ne4.FC5",
                              "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
+                             ("SMS.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
                              "SMS_R_Ld5.T42_T42.FSCM5A97",
                              "SMS_D_Ln5.ne4_ne4.FC5AV1C-L")
                             ),
@@ -95,13 +96,25 @@ _TEST_SUITES = {
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
-
-    "acme_atm_weekly" : (None, None,
+    #atmopheric tests for extra coverage
+    "acme_atm_extra_coverage" : (None, None,
                          ("SMS_Lm1.ne4_ne4.FC5AV1C-L",
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
+                          "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
+                          ("ERP_Ln5.ne30_ne30.FC5AV1C-L"),                          
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
+    #atmopheric tests for hi-res
+    "acme_atm_hi_res" : (None, None,
+                         ("SMS_Ln5.ne120_ne120.FC5AV1C-L",
+                          )
+                         ),
+    #atmopheric tests to mimic low res production runs
+    "acme_atm_prod" : (None, None,
+                       (("SMS_Ln5.ne30_ne30.FC5AV1C-L", "cam-cosplite"),
+                        )
+                       ),
 
     "acme_developer" : (("acme_land_developer","acme_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
@@ -135,8 +148,16 @@ _TEST_SUITES = {
                            "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.f09_g16_a.MPASLIALB")
                           ),
+    #acme tests for extra coverage
+    "acme_extra_coverage" : (("acme_atm_extra_coverage",),None,
+                     () ),
 
-    "acme_weekly" : (("acme_atm_weekly",),None,
+    #acme tests for hi-res
+    "acme_hi_res" : (("acme_atm_hi_res",),None,
+                     () ),
+
+    #acme tests to mimic production runs
+    "acme_prod" : (("acme_atm_prod",),None,
                      () ),
 
     "fates" : (None, None,
