@@ -403,8 +403,9 @@ module ocn_tracer_advection_mono
             tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
 
             ! mrp 170818 WARNING: scale factor is only chosen from horizontal
-            ! min and max.  This is incorrect, but better than only limiting in
-            ! the vertical, which is what occurred before 170812.
+            ! min and max.  This is still monotonic scheme, and in the great majority of cells this creates a
+            ! tighter bound than if vertical neighbors are included.  This
+            ! results in a lower scale factor, making advection more diffusive.
             scale_factor = (tracer_max_hor(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
             flux_incoming(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
 
@@ -505,15 +506,15 @@ module ocn_tracer_advection_mono
           !$omp do schedule(runtime) private(k)
           do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
-              if(tracer_new(k,iCell) < tracer_min_hor(k, iCell)-eps) then
+              if (tracer_new(k,iCell) < min(tracer_min_hor(k, iCell), tracer_min_vert(k, iCell)) -eps) then
                  call mpas_log_write( &
-                    'Minimum out of bounds on tracer: $i $f $f ', &
+                    'Minimum out of bounds on tracer: $i $r $r ', &
                     MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_min_hor(k, iCell), tracer_new(k,iCell) /) )
               end if
 
-              if(tracer_new(k,iCell) > tracer_max_hor(k,iCell)+eps) then
+              if (tracer_new(k,iCell) > max(tracer_max_hor(k,iCell), tracer_max_vert(k,iCell)) +eps) then
                  call mpas_log_write( &
-                    'Maximum out of bounds on tracer: $i $f $f ', &
+                    'Maximum out of bounds on tracer: $i $r $r ', &
                     MPAS_LOG_WARN, intArgs=(/iTracer/), realArgs=(/ tracer_max_hor(k, iCell), tracer_new(k,iCell) /) )
               end if
             end do
