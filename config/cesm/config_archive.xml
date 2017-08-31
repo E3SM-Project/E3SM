@@ -78,11 +78,11 @@
     <hist_file_extension>\.h.*.nc$|\.d[dovt]\.</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer.ocn.restart$NINST_STRING</rpointer_file>
+      <rpointer_file>rpointer.ocn$NINST_STRING.restart</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</rpointer_content>
     </rpointer>
     <rpointer>
-      <rpointer_file>rpointer.ocn.ovf$NINST_STRING</rpointer_file>
+      <rpointer_file>rpointer.ocn$NINST_STRING.ovf</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.ro.$DATENAME</rpointer_content>
     </rpointer>
   </comp_archive_spec>
