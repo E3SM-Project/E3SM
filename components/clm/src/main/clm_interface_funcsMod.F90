@@ -259,7 +259,7 @@ contains
          !
          cellorg            => soilstate_vars%cellorg_col                           , & !  Input:  [real(r8) (:,:)  ]  column 3D org (kg/m3 organic matter) (nlevgrnd)
          !
-         porosity           => soilstate_vars%porosity_col                          , &
+!          porosity           => soilstate_vars%porosity_col                          , &
          eff_porosity       => soilstate_vars%eff_porosity_col                      , &
          !
          rootfr             => soilstate_vars%rootfr_col                            , & ! pft-level effective fraction of roots in each soil layer
@@ -304,7 +304,7 @@ contains
         clm_idata%watmin_col(c,:)        = watmin(c,:)
         clm_idata%sucmin_col(c,:)        = sucmin(c,:)
 
-        clm_idata%porosity_col(c,:)      = porosity(c,:)
+        clm_idata%porosity_col(c,:)      = watsat(c,:)
         clm_idata%eff_porosity_col(c,:)  = eff_porosity(c,:)
 
         clm_idata%cellorg_col(c,:)       = cellorg(c,:)
@@ -1059,7 +1059,7 @@ contains
             phr_vr(c,:) = clm_bgc_data%phr_vr_col(c,:)
             fphr(c,:)   = clm_bgc_data%fphr_col(c,:)
 
-            do k = 1, ndecomp_pools
+            do k = 1, ndecomp_cascade_transitions
                 decomp_cascade_hr_vr_col(c,:,k)         = clm_bgc_data%decomp_cascade_hr_vr_col(c,:,k)
                 decomp_cascade_ctransfer_vr_col(c,:,k)  = clm_bgc_data%decomp_cascade_ctransfer_vr_col(c,:,k)
                 decomp_cascade_ntransfer_vr_col(c,:,k)  = clm_bgc_data%decomp_cascade_ntransfer_vr_col(c,:,k)
@@ -1494,10 +1494,10 @@ contains
     do fc = 1, num_soilc
         c = filter_soilc(fc)
 
-        plant_ndemand_col(c) = clm_interface_data%bgc%plant_ndemand_col(c)
-        plant_pdemand_col(c) = clm_interface_data%bgc%plant_pdemand_col(c)
+        plant_ndemand_col(c)        = clm_interface_data%bgc%plant_ndemand_col(c)
+        plant_pdemand_col(c)        = clm_interface_data%bgc%plant_pdemand_col(c)
 
-        finundated(c)        = clm_interface_data%bgc%finundated_col(c)
+        finundated(c)               = clm_interface_data%bgc%finundated_col(c)
 
         bd(c,:)                     = clm_interface_data%bd_col(c,:)
         watsat(c,:)                 = clm_interface_data%watsat_col(c,:)
@@ -1632,58 +1632,60 @@ contains
          )
 
     !---------------------------------------------------------------------------
-        clm_bgc_data%fpg_col                          = fpg
-        clm_bgc_data%fpi_col                          = fpi
-        clm_bgc_data%fpi_vr_col                       = fpi_vr
-        clm_bgc_data%fpg_p_col                        = fpg_p
-        clm_bgc_data%fpi_p_col                        = fpi_p
-        clm_bgc_data%fpi_p_vr_col                     = fpi_p_vr
-        clm_bgc_data%potential_immob_col              = potential_immob
-        clm_bgc_data%actual_immob_col                 = actual_immob
-        clm_bgc_data%sminn_to_plant_col               = sminn_to_plant
-        clm_bgc_data%sminn_to_denit_excess_vr_col     = sminn_to_denit_excess_vr
-        clm_bgc_data%pot_f_nit_vr_col                 = pot_f_nit_vr
-        clm_bgc_data%pot_f_denit_vr_col               = pot_f_denit_vr
-        clm_bgc_data%f_nit_vr_col                     = f_nit_vr
-        clm_bgc_data%f_denit_vr_col                   = f_denit_vr
-        clm_bgc_data%actual_immob_no3_vr_col          = actual_immob_no3_vr
-        clm_bgc_data%actual_immob_nh4_vr_col          = actual_immob_nh4_vr
-        clm_bgc_data%smin_no3_to_plant_vr_col         = smin_no3_to_plant_vr
-        clm_bgc_data%smin_nh4_to_plant_vr_col         = smin_nh4_to_plant_vr
-        clm_bgc_data%n2_n2o_ratio_denit_vr_col        = n2_n2o_ratio_denit_vr
-        clm_bgc_data%f_n2o_denit_vr_col               = f_n2o_denit_vr
-        clm_bgc_data%f_n2o_nit_vr_col                 = f_n2o_nit_vr
-        clm_bgc_data%supplement_to_sminn_vr_col       = supplement_to_sminn_vr
-        clm_bgc_data%sminn_to_plant_vr_col            = sminn_to_plant_vr
-        clm_bgc_data%potential_immob_vr_col           = potential_immob_vr
-        clm_bgc_data%actual_immob_vr_col              = actual_immob_vr
-        clm_bgc_data%potential_immob_p_col            = potential_immob_p
-        clm_bgc_data%actual_immob_p_col               = actual_immob_p
-        clm_bgc_data%sminp_to_plant_col               = sminp_to_plant
-        clm_bgc_data%supplement_to_sminp_vr_col       = supplement_to_sminp_vr
-        clm_bgc_data%sminp_to_plant_vr_col            = sminp_to_plant_vr
-        clm_bgc_data%potential_immob_p_vr_col         = potential_immob_p_vr
-        clm_bgc_data%actual_immob_p_vr_col            = actual_immob_p_vr
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            clm_bgc_data%fpg_col(c)                                   = fpg(c)
+            clm_bgc_data%fpi_col(c)                                   = fpi(c)
+            clm_bgc_data%fpi_vr_col(c,:)                              = fpi_vr(c,:)
+            clm_bgc_data%fpg_p_col(c)                                 = fpg_p(c)
+            clm_bgc_data%fpi_p_col(c)                                 = fpi_p(c)
+            clm_bgc_data%fpi_p_vr_col(c,:)                            = fpi_p_vr(c,:)
+            clm_bgc_data%potential_immob_col(c)                       = potential_immob(c)
+            clm_bgc_data%actual_immob_col(c)                          = actual_immob(c)
+            clm_bgc_data%sminn_to_plant_col(c)                        = sminn_to_plant(c)
+            clm_bgc_data%sminn_to_denit_excess_vr_col(c,:)            = sminn_to_denit_excess_vr(c,:)
+            clm_bgc_data%pot_f_nit_vr_col(c,:)                        = pot_f_nit_vr(c,:)
+            clm_bgc_data%pot_f_denit_vr_col(c,:)                      = pot_f_denit_vr(c,:)
+            clm_bgc_data%f_nit_vr_col(c,:)                            = f_nit_vr(c,:)
+            clm_bgc_data%f_denit_vr_col(c,:)                          = f_denit_vr(c,:)
+            clm_bgc_data%actual_immob_no3_vr_col(c,:)                 = actual_immob_no3_vr(c,:)
+            clm_bgc_data%actual_immob_nh4_vr_col(c,:)                 = actual_immob_nh4_vr(c,:)
+            clm_bgc_data%smin_no3_to_plant_vr_col(c,:)                = smin_no3_to_plant_vr(c,:)
+            clm_bgc_data%smin_nh4_to_plant_vr_col(c,:)                = smin_nh4_to_plant_vr(c,:)
+            clm_bgc_data%n2_n2o_ratio_denit_vr_col(c,:)               = n2_n2o_ratio_denit_vr(c,:)
+            clm_bgc_data%f_n2o_denit_vr_col(c,:)                      = f_n2o_denit_vr(c,:)
+            clm_bgc_data%f_n2o_nit_vr_col(c,:)                        = f_n2o_nit_vr(c,:)
+            clm_bgc_data%supplement_to_sminn_vr_col(c,:)              = supplement_to_sminn_vr(c,:)
+            clm_bgc_data%sminn_to_plant_vr_col(c,:)                   = sminn_to_plant_vr(c,:)
+            clm_bgc_data%potential_immob_vr_col(c,:)                  = potential_immob_vr(c,:)
+            clm_bgc_data%actual_immob_vr_col(c,:)                     = actual_immob_vr(c,:)
+            clm_bgc_data%potential_immob_p_col(c)                     = potential_immob_p(c)
+            clm_bgc_data%actual_immob_p_col(c)                        = actual_immob_p(c)
+            clm_bgc_data%sminp_to_plant_col(c)                        = sminp_to_plant(c)
+            clm_bgc_data%supplement_to_sminp_vr_col(c,:)              = supplement_to_sminp_vr(c,:)
+            clm_bgc_data%sminp_to_plant_vr_col(c,:)                   = sminp_to_plant_vr(c,:)
+            clm_bgc_data%potential_immob_p_vr_col(c,:)                = potential_immob_p_vr(c,:)
+            clm_bgc_data%actual_immob_p_vr_col(c,:)                   = actual_immob_p_vr(c,:)
 
-        clm_bgc_data%decomp_cascade_ntransfer_vr_col      = decomp_cascade_ntransfer_vr
-        clm_bgc_data%decomp_cascade_sminn_flux_vr_col     = decomp_cascade_sminn_flux_vr
-        clm_bgc_data%potential_immob_vr_col               = potential_immob_vr
-        clm_bgc_data%sminn_to_denit_decomp_cascade_vr_col = sminn_to_denit_decomp_cascade_vr
-        clm_bgc_data%gross_nmin_vr_col                    = gross_nmin_vr
-        clm_bgc_data%net_nmin_vr_col                      = net_nmin_vr
+            clm_bgc_data%decomp_cascade_ntransfer_vr_col(c,:,:)       = decomp_cascade_ntransfer_vr(c,:,:)
+            clm_bgc_data%decomp_cascade_sminn_flux_vr_col(c,:,:)      = decomp_cascade_sminn_flux_vr(c,:,:)
+            clm_bgc_data%sminn_to_denit_decomp_cascade_vr_col(c,:,:)  = sminn_to_denit_decomp_cascade_vr(c,:,:)
+            clm_bgc_data%gross_nmin_vr_col(c,:)                       = gross_nmin_vr(c,:)
+            clm_bgc_data%net_nmin_vr_col(c,:)                         = net_nmin_vr(c,:)
 
-        ! phosphorus
-        clm_bgc_data%decomp_cascade_ptransfer_vr_col      = decomp_cascade_ptransfer_vr
-        clm_bgc_data%decomp_cascade_sminp_flux_vr_col     = decomp_cascade_sminp_flux_vr
-        clm_bgc_data%potential_immob_p_vr_col             = potential_immob_p_vr
-        clm_bgc_data%gross_pmin_vr_col                    = gross_pmin_vr
-        clm_bgc_data%net_pmin_vr_col                      = net_pmin_vr
+            ! phosphorus
+            clm_bgc_data%decomp_cascade_ptransfer_vr_col(c,:,:)       = decomp_cascade_ptransfer_vr(c,:,:)
+            clm_bgc_data%decomp_cascade_sminp_flux_vr_col(c,:,:)      = decomp_cascade_sminp_flux_vr(c,:,:)
+            clm_bgc_data%potential_immob_p_vr_col(c,:)                = potential_immob_p_vr(c,:)
+            clm_bgc_data%gross_pmin_vr_col(c,:)                       = gross_pmin_vr(c,:)
+            clm_bgc_data%net_pmin_vr_col(c,:)                         = net_pmin_vr(c,:)
 
-        clm_bgc_data%decomp_cascade_hr_vr_col             = decomp_cascade_hr_vr
-        clm_bgc_data%decomp_cascade_ctransfer_vr_col      = decomp_cascade_ctransfer_vr
+            clm_bgc_data%decomp_cascade_hr_vr_col(c,:,:)              = decomp_cascade_hr_vr(c,:,:)
+            clm_bgc_data%decomp_cascade_ctransfer_vr_col(c,:,:)       = decomp_cascade_ctransfer_vr(c,:,:)
 
-        clm_bgc_data%phr_vr_col                           = phr_vr
-        clm_bgc_data%fphr_col                             = fphr
+            clm_bgc_data%phr_vr_col(c,:)                              = phr_vr(c,:)
+            clm_bgc_data%fphr_col(c,:)                                = fphr(c,:)
+        end do
 
 
     end associate
