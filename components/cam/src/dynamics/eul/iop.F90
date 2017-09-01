@@ -94,7 +94,7 @@ contains
    endif
   end subroutine init_iop_fields
 
-subroutine readiopdata( )
+subroutine readiopdata( iop_update_surface )
 
 
 !-----------------------------------------------------------------------
@@ -124,6 +124,8 @@ subroutine readiopdata( )
 #endif
 !------------------------------Locals-----------------------------------
 !     
+   logical, intent(in) :: iop_update_surface 
+
    integer NCID, status
    integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
            mod_varID,sps_varID,sps_dimID
@@ -238,7 +240,7 @@ subroutine readiopdata( )
 ! =====================================================
 !     read observed aersol data
  
- if(scm_observed_aero) then
+ if(scm_observed_aero .and. .not. iop_update_surface) then
    status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
@@ -387,624 +389,627 @@ endif !scm_observed_aero
    cnt4(3)  = 1
    cnt4(4)  = 1
 
-   status = nf90_inq_varid( ncid, 'Ps', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_ps = .false.
-      write(iulog,*)'Could not find variable Ps'
-      if ( .not. use_userdata ) then
-         status = NF90_CLOSE( ncid )
-         return
-      else
-         if ( get_nstep() .eq. 0 ) write(iulog,*) 'Using value from Analysis Dataset'
-      endif
-   else
-      status = nf90_get_var(ncid, varid, ps(1,1,n3), strt4)
-      have_ps = .true.
-   endif
+   if (.not. iop_update_surface) then
+
+     status = nf90_inq_varid( ncid, 'Ps', varid   )
+     if ( status .ne. nf90_noerr ) then
+        have_ps = .false.
+        write(iulog,*)'Could not find variable Ps'
+        if ( .not. use_userdata ) then
+           status = NF90_CLOSE( ncid )
+           return
+        else
+           if ( get_nstep() .eq. 0 ) write(iulog,*) 'Using value from Analysis Dataset'
+        endif
+     else
+        status = nf90_get_var(ncid, varid, ps(1,1,n3), strt4)
+        have_ps = .true.
+     endif
 
 
-!  for reproducing CAM output don't do interpolation.
-!  the most expedient way of doing this is to set      
-!  the dataset pressure levels to the current
-!  scam model levels
+!    for reproducing CAM output don't do interpolation.
+!    the most expedient way of doing this is to set      
+!    the dataset pressure levels to the current
+!    scam model levels
 	
-   if ( use_camiop ) then
-      do i = 1, plev
-         dplevs( i ) = 1000.0_r8 * hyam( i ) + ps(1,1,n3) * hybm( i ) / 100.0_r8
-      end do
-   endif
+     if ( use_camiop ) then
+        do i = 1, plev
+           dplevs( i ) = 1000.0_r8 * hyam( i ) + ps(1,1,n3) * hybm( i ) / 100.0_r8
+        end do
+     endif
 
-!     add the surface pressure to the pressure level data, so that
-!     surface boundary condition will be set properly,
-!     making sure that it is the highest pressure in the array.
+!    add the surface pressure to the pressure level data, so that
+!    surface boundary condition will be set properly,
+!    making sure that it is the highest pressure in the array.
 !
 
-   total_levs = nlev+1
-   dplevs(nlev+1) = ps(1,1,n3)/100 ! ps is expressed in pascals
-   do i= nlev, 1, -1
-      if ( dplevs(i) .GT. ps(1,1,n3)/100.0_r8) then
-         total_levs = i
-         dplevs(i) = ps(1,1,n3)/100
-      end if
-   end do
-   if (.not. use_camiop ) then
-      nlev = total_levs
-   endif
-   if ( nlev .eq. 1 ) then
-      write(iulog,*) 'Error - Readiopdata.F: Ps too low!'
-      return
-   endif
+     total_levs = nlev+1
+     dplevs(nlev+1) = ps(1,1,n3)/100 ! ps is expressed in pascals
+     do i= nlev, 1, -1
+        if ( dplevs(i) .GT. ps(1,1,n3)/100.0_r8) then
+           total_levs = i
+           dplevs(i) = ps(1,1,n3)/100
+        end if
+     end do
+     if (.not. use_camiop ) then
+        nlev = total_levs
+     endif
+     if ( nlev .eq. 1 ) then
+        write(iulog,*) 'Error - Readiopdata.F: Ps too low!'
+        return
+     endif
 
 !=====================================================================
 
 
-   status =  nf90_inq_varid( ncid, 'Tsair', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_tsair = .false.
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tsair)
-      have_tsair = .true.
-   endif
+     status =  nf90_inq_varid( ncid, 'Tsair', varid   )
+     if ( status .ne. nf90_noerr ) then
+        have_tsair = .false.
+     else
+        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tsair)
+        have_tsair = .true.
+     endif
 
 !
-!      read in Tobs  For cam generated iop readin small t to avoid confusion
-!      with capital T defined in cam
+!    read in Tobs  For cam generated iop readin small t to avoid confusion
+!    with capital T defined in cam
 !
 
-   if ( get_nstep() .le. 1  ) then
-     tobs(:)=t3(1,:,1,1)
-   else
-     tobs(:)= t3(1,:,1,n3)
-   endif
+     if ( get_nstep() .le. 1  ) then
+       tobs(:)=t3(1,:,1,1)
+     else
+       tobs(:)= t3(1,:,1,n3)
+     endif
 
-   if ( use_camiop ) then
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
+     if ( use_camiop ) then
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
           tsair(1), fill_ends, &
           dplevs, nlev,ps(1,1,n3),tobs, status )
-   else
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'T', have_tsair, &
+     else
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'T', have_tsair, &
           tsair(1), fill_ends, &
           dplevs, nlev,ps(1,1,n3), tobs, status )
-   endif
-   if ( status .ne. nf90_noerr ) then
-      have_t = .false.
-      write(iulog,*)'Could not find variable T'
-      if ( .not. use_userdata ) then
-         status = NF90_CLOSE( ncid )
-         return
-      else
-         write(iulog,*) 'Using value from Analysis Dataset'
-      endif
+     endif
+     if ( status .ne. nf90_noerr ) then
+        have_t = .false.
+        write(iulog,*)'Could not find variable T'
+        if ( .not. use_userdata ) then
+           status = NF90_CLOSE( ncid )
+           return
+        else
+           write(iulog,*) 'Using value from Analysis Dataset'
+        endif
 !     
-!     set T3 to Tobs on first time step
+!       set T3 to Tobs on first time step
 !     
-   else
-      have_t = .true.
-      if (.not.use_camiop .and. get_nstep() .eq. 0) then
-         do i=1, PLEV
-            t3(1,i,1,n3)=tobs(i)  !     set t to tobs at first time step
-         end do
-      endif
-   endif
+     else
+        have_t = .true.
+        if (.not.use_camiop .and. get_nstep() .eq. 0) then
+           do i=1, PLEV
+              t3(1,i,1,n3)=tobs(i)  !     set t to tobs at first time step
+           end do
+        endif
+     endif
 
-   status = nf90_inq_varid( ncid, 'Tg', varid   )
-   if (status .ne. nf90_noerr) then
-      write(iulog,*)'Could not find variable Tg'
-      if ( have_tsair ) then
-         write(iulog,*) 'Using Tsair'
-         tground = tsair     ! use surface value from T field
-      else
-         write(iulog,*) 'Using T at lowest level'
-         tground = t3(1,plev,1,n3)
-      endif
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
-      have_tg = .true.
-   endif
-
-   status = nf90_inq_varid( ncid, 'qsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'qsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+        have_srf = .false.
+     else
+        status = nf90_get_var(ncid, varid, srf(1), strt4)
+        have_srf = .true.
+     endif
 !
-   if ( get_nstep() .le. 1  ) then
-     qobs(:)= q3(1,:,1,1,1)
-   else
-     qobs(:)= q3(1,:,1,1,n3)
-   endif
+     if ( get_nstep() .le. 1  ) then
+       qobs(:)= q3(1,:,1,1,1)
+     else
+       qobs(:)= q3(1,:,1,1,n3)
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'q', have_srf, &
-      srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), qobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_q = .false.
-      write(iulog,*)'Could not find variable q'
-      if ( .not. use_userdata ) then
-         status = nf90_close( ncid )
-         return
-      else
-         write(iulog,*) 'Using values from Analysis Dataset'
-      endif
-   else
-      if (.not. use_camiop .and. get_nstep() .eq. 0) then
-         do i=1, PLEV
-            q3(1,i,1,1,n3)=qobs(i)
-         end do
-         have_q = .true.
-      endif
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'q', have_srf, &
+        srf(1), fill_ends, &
+        dplevs, nlev,ps(1,1,n3), qobs, status )
+     if ( status .ne. nf90_noerr ) then
+        have_q = .false.
+        write(iulog,*)'Could not find variable q'
+        if ( .not. use_userdata ) then
+           status = nf90_close( ncid )
+           return
+        else
+           write(iulog,*) 'Using values from Analysis Dataset'
+        endif
+     else
+        if (.not. use_camiop .and. get_nstep() .eq. 0) then
+           do i=1, PLEV
+              q3(1,i,1,1,n3)=qobs(i)
+           end do
+           have_q = .true.
+        endif
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'cld', .false., &
-      dummy, fill_ends, dplevs, nlev,ps(1,1,n3), cldobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_cld = .false.
-   else
-      have_cld = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'cld', .false., &
+        dummy, fill_ends, dplevs, nlev,ps(1,1,n3), cldobs, status )
+     if ( status .ne. nf90_noerr ) then
+        have_cld = .false.
+     else
+        have_cld = .true.
+     endif
    
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'clwp', .false., &
-      dummy, fill_ends, dplevs, nlev,ps(1,1,n3), clwpobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_clwp = .false.
-   else
-      have_clwp = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'clwp', .false., &
+        dummy, fill_ends, dplevs, nlev,ps(1,1,n3), clwpobs, status )
+     if ( status .ne. nf90_noerr ) then
+        have_clwp = .false.
+     else
+        have_clwp = .true.
+     endif
 
 !
-!	read divq (horizontal advection)
+!    read divq (horizontal advection)
 !      
-   status = nf90_inq_varid( ncid, 'divqsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'divqsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+        have_srf = .false.
+     else
+        status = nf90_get_var(ncid, varid, srf(1), strt4)
+        have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
         'divq', have_srf, srf(1), fill_ends, &
         dplevs, nlev,ps(1,1,n3), divq(:,1), status )
-   if ( status .ne. nf90_noerr ) then
-      have_divq = .false.
-   else
-      have_divq = .true.
-   endif
+     if ( status .ne. nf90_noerr ) then
+        have_divq = .false.
+     else
+        have_divq = .true.
+     endif
 
 !
-!     read vertdivq if available
+!    read vertdivq if available
 !
-   status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+        have_srf = .false.
+     else
+        status = nf90_get_var(ncid, varid, srf(1), strt4)
+        have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivq', &
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivq', &
         have_srf, srf(1), fill_ends, &
         dplevs, nlev,ps(1,1,n3), vertdivq(:,1), status )
-   if ( status .ne. nf90_noerr ) then
-      have_vertdivq = .false.
-   else
-      have_vertdivq = .true.
-   endif
+     if ( status .ne. nf90_noerr ) then
+        have_vertdivq = .false.
+     else
+        have_vertdivq = .true.
+     endif
 
-   status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+        have_srf = .false.
+     else
+        status = nf90_get_var(ncid, varid, srf(1), strt4)
+        have_srf = .true.
+     endif
 
 
 !
-!   add calls to get dynamics tendencies for all prognostic consts
+!    add calls to get dynamics tendencies for all prognostic consts
 !
-   do m = 1, pcnst
+     do m = 1, pcnst
 
-      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), divq3d(:,m), status )
-   if ( status .ne. nf90_noerr ) then
-      have_cnst(m) = .false.
-      divq3d(1:,m)=0._r8
-   else
-      have_cnst(m) = .true.
-   endif
+        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten', &
+          have_srf, srf(1), fill_ends, &
+          dplevs, nlev,ps(1,1,n3), divq3d(:,m), status )
+        if ( status .ne. nf90_noerr ) then
+          have_cnst(m) = .false.
+          divq3d(1:,m)=0._r8
+        else
+          have_cnst(m) = .true.
+        endif
 
-      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dqfx', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), coldata, status )
-       if ( STATUS .NE. NF90_NOERR ) then
-         dqfxcam=0._r8
-      else
-         dqfxcam(1,:,m)=coldata(:)
-      endif
+        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dqfx', &
+          have_srf, srf(1), fill_ends, &
+          dplevs, nlev,ps(1,1,n3), coldata, status )
+        if ( STATUS .NE. NF90_NOERR ) then
+          dqfxcam=0._r8
+        else
+          dqfxcam(1,:,m)=coldata(:)
+        endif
 
-      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_alph', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), tmpdata, status )
-      if ( status .ne. nf90_noerr ) then
+        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_alph', &
+          have_srf, srf(1), fill_ends, &
+          dplevs, nlev,ps(1,1,n3), tmpdata, status )
+        if ( status .ne. nf90_noerr ) then
 !         have_cnst(m) = .false.
-         alphacam(m)=0._r8
-      else
+          alphacam(m)=0._r8
+        else
           alphacam(m)=tmpdata(1)
 !         have_cnst(m) = .true.
-      endif
+        endif
 
-   end do
+     end do
 
 
-   call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
-   if ( inumliq > 0 ) then
-      have_srf = .false.
-      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMLIQ', &
+     call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
+     if ( inumliq > 0 ) then
+       have_srf = .false.
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMLIQ', &
          have_srf, srf(1), fill_ends, &
          dplevs, nlev,ps(1,1,n3), numliqobs, status )
-      if ( status .ne. nf90_noerr ) then
+       if ( status .ne. nf90_noerr ) then
          have_numliq = .false.
-      else
+       else
          have_numliq = .true.
          if ( get_nstep() .eq. 0) then
             do i=1, PLEV
                q3(1,i,inumliq,1,n3)=numliqobs(i)
             end do
          endif
-     endif
-   end if
+       endif
+     end if
 
-   call cnst_get_ind('CLDLIQ', icldliq)
+     call cnst_get_ind('CLDLIQ', icldliq)
 
-   have_srf = .false.
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'CLDLIQ', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), cldliqobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_cldliq = .false.
-   else
-      have_cldliq = .true.
-      if ( get_nstep() .eq. 0) then
+     have_srf = .false.
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'CLDLIQ', &
+       have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), cldliqobs, status )
+     if ( status .ne. nf90_noerr ) then
+       have_cldliq = .false.
+     else
+       have_cldliq = .true.
+       if ( get_nstep() .eq. 0) then
          do i=1, PLEV
-            q3(1,i,icldliq,1,n3)=cldliqobs(i)
+           q3(1,i,icldliq,1,n3)=cldliqobs(i)
          end do
-      endif
-   endif
+       endif
+     endif
 
-   call cnst_get_ind('CLDICE', icldice)
+     call cnst_get_ind('CLDICE', icldice)
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'CLDICE', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), cldiceobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_cldice = .false.
-   else
-      have_cldice = .true.
-      if ( get_nstep() .eq. 0) then
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'CLDICE', &
+       have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), cldiceobs, status )
+     if ( status .ne. nf90_noerr ) then
+       have_cldice = .false.
+     else
+       have_cldice = .true.
+       if ( get_nstep() .eq. 0) then
          do i=1, PLEV
             q3(1,i,icldice,1,n3)=cldiceobs(i)
          end do
-      endif
-   endif
+       endif
+     endif
 
-   call cnst_get_ind('NUMICE', inumice, abort=.false.)
-   if ( inumice > 0 ) then
-      have_srf = .false.
+     call cnst_get_ind('NUMICE', inumice, abort=.false.)
+     if ( inumice > 0 ) then
+       have_srf = .false.
 
-      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMICE', &
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMICE', &
          have_srf, srf(1), fill_ends, &
          dplevs, nlev,ps(1,1,n3), numiceobs, status )
-      if ( status .ne. nf90_noerr ) then
+       if ( status .ne. nf90_noerr ) then
          have_numice = .false.
-      else
+       else
          have_numice = .true.
          if ( get_nstep() .eq. 0) then
             do i=1, PLEV
                q3(1,i,inumice,1,n3)=numiceobs(i)
             end do
          endif
-      endif
-   end if
+        endif
+     end if
 
 !
 !	read divu (optional field)
 !      
-   status = nf90_inq_varid( ncid, 'divusrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'divusrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divu', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), divu, status )
-   if ( status .ne. nf90_noerr ) then
-      have_divu = .false.
-   else
-      have_divu = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divu', &
+       have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), divu, status )
+     if ( status .ne. nf90_noerr ) then
+       have_divu = .false.
+     else
+       have_divu = .true.
+     endif
 !
 !	read divv (optional field)
 !      
-   status = nf90_inq_varid( ncid, 'divvsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'divvsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divv', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), divv, status )
-   if ( status .ne. nf90_noerr ) then
-      have_divv = .false.
-   else
-      have_divv = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divv', &
+       have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), divv, status )
+     if ( status .ne. nf90_noerr ) then
+       have_divv = .false.
+     else
+       have_divv = .true.
+     endif
 !
 !	read divt (optional field)
 !      
-   status = nf90_inq_varid( ncid, 'divtsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'divtsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-      'divT', have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), divt, status )
-   if ( status .ne. nf90_noerr ) then
-      have_divt = .false.
-   else
-      have_divt = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'divT', have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), divt, status )
+     if ( status .ne. nf90_noerr ) then
+       have_divt = .false.
+     else
+       have_divt = .true.
+     endif
 
 !
 !     read vertdivt if available
 !
-   status = nf90_inq_varid( ncid, 'vertdivTsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'vertdivTsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivT', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), vertdivt, status )
-   if ( status .ne. nf90_noerr ) then
-      have_vertdivt = .false.
-   else
-      have_vertdivt = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivT', &
+       have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), vertdivt, status )
+     if ( status .ne. nf90_noerr ) then
+       have_vertdivt = .false.
+     else
+       have_vertdivt = .true.
+     endif
 !
 !	read divt3d (combined vertical/horizontal advection)
 !      (optional field)
 
-   status = nf90_inq_varid( ncid, 'divT3dsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'divT3dsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d', &
-      have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), divt3d, status )
-   if ( status .ne. nf90_noerr ) then
-      have_divt3d = .false.
-   else
-      have_divt3d = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d', &
+       have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), divt3d, status )
+     if ( status .ne. nf90_noerr ) then
+       have_divt3d = .false.
+     else
+       have_divt3d = .true.
+     endif
 
-   status = nf90_inq_varid( ncid, 'Ptend', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_ptend = .false.
-      write(iulog,*)'Could not find variable Ptend. Setting to zero'
-      ptend = 0.0_r8
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      have_ptend = .true.
-      ptend= srf(1)
-   endif
+     status = nf90_inq_varid( ncid, 'Ptend', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_ptend = .false.
+       write(iulog,*)'Could not find variable Ptend. Setting to zero'
+       ptend = 0.0_r8
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       have_ptend = .true.
+       ptend= srf(1)
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-      'omega', .true., ptend, fill_ends, &
-      dplevs, nlev,ps(1,1,n3), wfld, status )
-   if ( status .ne. nf90_noerr ) then
-      have_omega = .false.
-      write(iulog,*)'Could not find variable omega'
-      if ( .not. use_userdata ) then
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'omega', .true., ptend, fill_ends, &
+       dplevs, nlev,ps(1,1,n3), wfld, status )
+     if ( status .ne. nf90_noerr ) then
+       have_omega = .false.
+       write(iulog,*)'Could not find variable omega'
+       if ( .not. use_userdata ) then
          status = nf90_close( ncid )
          return
-      else
+       else
          write(iulog,*) 'Using value from Analysis Dataset'
-      endif
-   else
-      have_omega = .true.
-   endif
-   call plevs0(1    ,plon   ,plev    ,ps(1,1,n3)   ,pint,pmid ,pdel)
-   call shr_sys_flush( iulog )
+       endif
+     else
+       have_omega = .true.
+     endif
+     call plevs0(1    ,plon   ,plev    ,ps(1,1,n3)   ,pint,pmid ,pdel)
+     call shr_sys_flush( iulog )
 !
 ! Build interface vector for the specified omega profile
 ! (weighted average in pressure of specified level values)
 !
-   wfldh(1) = 0.0_r8
+     wfldh(1) = 0.0_r8
 
-   do k=2,plev
-      weight = (pint(k) - pmid(k-1))/(pmid(k) - pmid(k-1))
-      wfldh(k) = (1.0_r8 - weight)*wfld(k-1) + weight*wfld(k)
-   end do
+     do k=2,plev
+       weight = (pint(k) - pmid(k-1))/(pmid(k) - pmid(k-1))
+       wfldh(k) = (1.0_r8 - weight)*wfld(k-1) + weight*wfld(k)
+     end do
 
-   wfldh(plevp) = 0.0_r8
+     wfldh(plevp) = 0.0_r8
 
+     status = nf90_inq_varid( ncid, 'usrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,srf)
+       have_srf = .true.
+     endif
 
-   status = nf90_inq_varid( ncid, 'usrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,srf)
-      have_srf = .true.
-   endif
-
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-      'u', have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), uobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_u = .false.
-   else
-      have_u = .true.
-      if (.not. use_camiop .and. get_nstep() .eq. 0 ) then
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'u', have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), uobs, status )
+     if ( status .ne. nf90_noerr ) then
+       have_u = .false.
+     else
+       have_u = .true.
+       if (.not. use_camiop .and. get_nstep() .eq. 0 ) then
          do i=1, PLEV
-            u3(1,i,1,n3) = uobs(i)  !     set u to uobs at first time step
+           u3(1,i,1,n3) = uobs(i)  !     set u to uobs at first time step
          end do
-      endif
-   endif
+        endif
+     endif
 
-   status = nf90_inq_varid( ncid, 'vsrf', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_srf = .false.
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,srf)
-      have_srf = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'vsrf', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_srf = .false.
+     else
+       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,srf)
+       have_srf = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-      'v', have_srf, srf(1), fill_ends, &
-      dplevs, nlev,ps(1,1,n3), vobs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_v = .false.
-   else
-      have_v = .true.
-      if (.not. use_camiop .and. get_nstep() .eq. 0 ) then
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'v', have_srf, srf(1), fill_ends, &
+       dplevs, nlev,ps(1,1,n3), vobs, status )
+     if ( status .ne. nf90_noerr ) then
+       have_v = .false.
+     else
+       have_v = .true.
+       if (.not. use_camiop .and. get_nstep() .eq. 0 ) then
          do i=1, PLEV
-            v3(1,i,1,n3) = vobs(i)  !     set u to uobs at first time step
+           v3(1,i,1,n3) = vobs(i)  !     set u to uobs at first time step
          end do
-      endif
-   endif
-   call shr_sys_flush( iulog )
+       endif
+     endif
+     call shr_sys_flush( iulog )
 
 
-   status = nf90_inq_varid( ncid, 'Prec', varid   )
-   if ( status .ne. nf90_noerr ) then
-      have_prec = .false.
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,precobs)
-      have_prec = .true.
-   endif
+     status = nf90_inq_varid( ncid, 'Prec', varid   )
+     if ( status .ne. nf90_noerr ) then
+       have_prec = .false.
+     else
+       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,precobs)
+       have_prec = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q1', &
-      .false., dummy, fill_ends, & ! datasets don't contain Q1 at surface
-      dplevs, nlev,ps(1,1,n3), q1obs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_q1 = .false.
-   else
-      have_q1 = .true.
-   endif
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q1', &
+       .false., dummy, fill_ends, & ! datasets don't contain Q1 at surface
+       dplevs, nlev,ps(1,1,n3), q1obs, status )
+     if ( status .ne. nf90_noerr ) then
+       have_q1 = .false.
+     else
+       have_q1 = .true.
+     endif
 
-   call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q2', &
-      .false., dummy, fill_ends, & ! datasets don't contain Q2 at surface
-      dplevs, nlev,ps(1,1,n3), q1obs, status )
-   if ( status .ne. nf90_noerr ) then
-      have_q2 = .false.
-   else
-      have_q2 = .true.
-   endif
-
-!  Test for BOTH 'lhflx' and 'lh' without overwriting 'have_lhflx'.  
-!  Analagous changes made for the surface heat flux
-
-   status = nf90_inq_varid( ncid, 'lhflx', varid   )
-   if ( status .ne. nf90_noerr ) then
-      status = nf90_inq_varid( ncid, 'lh', varid   )
-      if ( status .ne. nf90_noerr ) then
-        have_lhflx = .false.
-      else
-        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
-        have_lhflx = .true.
-      endif
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
-      have_lhflx = .true.
-   endif
-
-   status = nf90_inq_varid( ncid, 'shflx', varid   )
-   if ( status .ne. nf90_noerr ) then
-      status = nf90_inq_varid( ncid, 'sh', varid   )
-      if ( status .ne. nf90_noerr ) then
-        have_shflx = .false.
-      else
-        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
-        have_shflx = .true.
-      endif
-   else
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
-      have_shflx = .true.
-   endif
-
-   call shr_sys_flush( iulog )
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q2', &
+       .false., dummy, fill_ends, & ! datasets don't contain Q2 at surface
+       dplevs, nlev,ps(1,1,n3), q1obs, status )
+     if ( status .ne. nf90_noerr ) then
+       have_q2 = .false.
+     else
+       have_q2 = .true.
+     endif
 
 !
 !     fill in 3d forcing variables if we have both horizontal
 !     and vertical components, but not the 3d
 !
-   if ( .not. have_cnst(1) .and. have_divq .and. have_vertdivq ) then
-      do k=1,plev
+     if ( .not. have_cnst(1) .and. have_divq .and. have_vertdivq ) then
+       do k=1,plev
          do m=1,pcnst
-            divq3d(k,m) = divq(k,m) + vertdivq(k,m)
+           divq3d(k,m) = divq(k,m) + vertdivq(k,m)
          enddo
-      enddo
-      have_divq3d = .true.
-   endif
+       enddo
+       have_divq3d = .true.
+     endif
 
-   if ( .not. have_divt3d .and. have_divt .and. have_vertdivt ) then
-      write(iulog,*) 'Don''t have divt3d - using divt and vertdivt'
-      do k=1,plev
+     if ( .not. have_divt3d .and. have_divt .and. have_vertdivt ) then
+       write(iulog,*) 'Don''t have divt3d - using divt and vertdivt'
+       do k=1,plev
          divt3d(k) = divt(k) + vertdivt(k)
-      enddo
-      have_divt3d = .true.
-   endif
+       enddo
+       have_divt3d = .true.
+     endif
 !
 !     make sure that use_3dfrc flag is set to true if we only have
 !     3d forcing available
 !
-   if ( .not. have_divt .or. .not. have_divq ) then
-      use_3dfrc = .true.
-   endif
-   call shr_sys_flush( iulog )
+     if ( .not. have_divt .or. .not. have_divq ) then
+       use_3dfrc = .true.
+     endif
+     call shr_sys_flush( iulog )
 
-   status =  nf90_inq_varid( ncid, 'CLAT', varid   )
-   if ( status .eq. nf90_noerr ) then
-      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,clat)
-      clat_p(1)=clat(1)
-      latdeg(1) = clat(1)*45._r8/atan(1._r8)
-   endif
+     status =  nf90_inq_varid( ncid, 'CLAT', varid   )
+     if ( status .eq. nf90_noerr ) then
+       call wrap_get_vara_realx (ncid,varid,strt4,cnt4,clat)
+       clat_p(1)=clat(1)
+       latdeg(1) = clat(1)*45._r8/atan(1._r8)
+     endif
 
-   status =  nf90_inq_varid( ncid, 'beta', varid   )
-   if ( status .ne. nf90_noerr ) then
-      betacam = 0._r8
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      betacam=srf(1) 
-   endif
+     status =  nf90_inq_varid( ncid, 'beta', varid   )
+     if ( status .ne. nf90_noerr ) then
+       betacam = 0._r8
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       betacam=srf(1) 
+     endif
 
-   status =  nf90_inq_varid( ncid, 'fixmas', varid   )
-   if ( status .ne. nf90_noerr ) then
-      fixmascam=1.0_r8
-   else
-      status = nf90_get_var(ncid, varid, srf(1), strt4)
-      fixmascam=srf(1)
+     status =  nf90_inq_varid( ncid, 'fixmas', varid   )
+     if ( status .ne. nf90_noerr ) then
+       fixmascam=1.0_r8
+     else
+       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       fixmascam=srf(1)
+     endif
+   
+   else ! if read in surface information
+   
+     status = nf90_inq_varid( ncid, 'Tg', varid   )
+     if (status .ne. nf90_noerr) then
+        write(iulog,*)'Could not find variable Tg'
+        if ( have_tsair ) then
+           write(iulog,*) 'Using Tsair'
+           tground = tsair     ! use surface value from T field
+        else
+           write(iulog,*) 'Using T at lowest level'
+           tground = t3(1,plev,1,n3)
+        endif
+     else
+        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
+        have_tg = .true.
+     endif
+   
+!    Test for BOTH 'lhflx' and 'lh' without overwriting 'have_lhflx'.  
+!    Analagous changes made for the surface heat flux
+
+     status = nf90_inq_varid( ncid, 'lhflx', varid   )
+     if ( status .ne. nf90_noerr ) then
+        status = nf90_inq_varid( ncid, 'lh', varid   )
+        if ( status .ne. nf90_noerr ) then
+          have_lhflx = .false.
+        else
+          call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
+          have_lhflx = .true.
+        endif
+     else
+        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,lhflxobs)
+        have_lhflx = .true.
+     endif
+
+     status = nf90_inq_varid( ncid, 'shflx', varid   )
+     if ( status .ne. nf90_noerr ) then
+        status = nf90_inq_varid( ncid, 'sh', varid   )
+        if ( status .ne. nf90_noerr ) then
+          have_shflx = .false.
+        else
+          call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
+          have_shflx = .true.
+        endif
+     else
+        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,shflxobs)
+        have_shflx = .true.
+     endif   
+   
    endif
 
    call shr_sys_flush( iulog )
