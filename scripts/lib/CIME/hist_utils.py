@@ -401,10 +401,12 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
-    newestcpllogfile = case.get_latest_cpl_log()
-    if newestcpllogfile:
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
+    if newestcpllogfile is None:
+        logger.warn("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+    else:
         shutil.copyfile(newestcpllogfile,
-                        os.path.join(basegen_dir, "cpl.log.gz"))
+                    os.path.join(basegen_dir, "cpl.log.gz"))
 
     expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
     #make sure permissions are open in baseline directory
