@@ -2738,13 +2738,13 @@ contains
            do k = 1, ndecomp_pools
               do c = bounds%begc, bounds%endc
                  do j = 1, nlevdecomp
-		            if ( exit_spinup ) then
-		               m = decomp_cascade_con%spinup_factor(k)
-                       if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+		    if ( exit_spinup ) then
+		       m = decomp_cascade_con%spinup_factor(k)
+                       if (decomp_cascade_con%spinup_factor(k) > 1 .and. nu_com .eq. 'RD') m = m / cnstate_vars%scalaravg_col(c)
                     else if ( enter_spinup ) then 
-		               m = 1. / decomp_cascade_con%spinup_factor(k)
-		               if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
-		            end if
+		       m = 1. / decomp_cascade_con%spinup_factor(k)
+		       if (decomp_cascade_con%spinup_factor(k) > 1 .and. nu_com .eq. 'RD') m = m * cnstate_vars%scalaravg_col(c)
+		    end if
                     this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
                  end do
               end do

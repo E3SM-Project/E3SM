@@ -105,8 +105,8 @@ module VegetationPropertiesType
      real(r8)              :: km_nit                   ! km for nitrifier nh4 uptake
      real(r8)              :: km_den                   ! km for denitrifier no3 uptake
      real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gc/m3
-     real(r8)              :: vmax_nfix                ! vmax of symbiotic n2 fixation
-     real(r8)              :: km_nfix                  ! km of symbiotic n2 fixation
+     real(r8), allocatable :: vmax_nfix(:)             ! vmax of symbiotic n2 fixation
+     real(r8), allocatable :: km_nfix(:)               ! km of symbiotic n2 fixation
      real(r8), allocatable :: vmax_ptase_vr(:)         ! vmax of biochemical p production
      real(r8)              :: km_ptase                 ! km of biochemical p production
      real(r8)              :: lamda_ptase              ! critical value that incur biochemical production
@@ -250,6 +250,8 @@ contains
     allocate( this%vmax_ptase_vr(1:nlevdecomp))                  ; this%vmax_ptase_vr(:)         =nan
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
+    allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
+    allocate( this%km_nfix(0:numpft))                            ; this%km_nfix(:)               =nan
     allocate( this%fnr(0:numpft))                                ; this%fnr(:)                   =nan
     allocate( this%act25(0:numpft))                              ; this%act25(:)                 =nan
     allocate( this%kcha(0:numpft))                               ; this%kcha(:)                  =nan
@@ -364,6 +366,8 @@ contains
         this%km_plant_p(m)     = km_plant_p(m)
         this%i_vc(m)           = i_vc(m)
         this%s_vc(m)           = s_vc(m)
+        this%vmax_nfix(m)      = vmax_nfix(m)
+        this%km_nfix(m)        = km_nfix(m)
 
         do j = 1 , nlevdecomp
            this%decompmicc_patch_vr(m,j) = decompmicc_patch_vr(j,m)
@@ -393,8 +397,6 @@ contains
     this%km_decomp_p   = km_decomp_p
     this%km_nit        = km_nit
     this%km_den        = km_den
-    this%vmax_nfix     = vmax_nfix
-    this%km_nfix       = km_nfix
     this%km_ptase      = km_ptase
     this%lamda_ptase   = lamda_ptase
 

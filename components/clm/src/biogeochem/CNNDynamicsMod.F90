@@ -644,7 +644,6 @@ contains
     real(r8) :: r_nup                      ! carbon cost of root N uptake, gC/gN
     real(r8) :: f_nodule                   ! empirical, fraction of root that is nodulated
     real(r8) :: N2_aq                      ! aqueous N2 bulk concentration gN/m3 soil
-    real(r8) :: km_n2                      ! MM parameter for N2 fixation
     !-----------------------------------------------------------------------
 
     associate(& 
@@ -658,7 +657,8 @@ contains
          pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
          benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
          t_soi10cm_col         => temperature_vars%t_soi10cm_col       , &
-         h2osoi_vol            => waterstate_vars%h2osoi_vol_col      &
+         h2osoi_vol            => waterstate_vars%h2osoi_vol_col       , &
+         t_scalar              => carbonflux_vars%t_scalar_col           &
          )
 
       do fc=1,num_soilc
@@ -671,17 +671,15 @@ contains
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
                   r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
                   ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
-                  !f_nodule = 1 - min(1.0_r8,r_fix * r_nup / (r_nup*r_nup + 1.e-20_r8) )
-                  f_nodule = 1 - min(1.0_r8,r_fix / r_nup )
+                  f_nodule = 1 - min(1.0_r8,r_fix / max(r_nup, 1e-20_r8))
                   ! np limitation factor of n2 fixation (not considered now)
                   ! calculate aqueous N2 concentration and bulk aqueous N2 concentration
                   ! aqueous N2 concentration under pure nitrogen is 6.1e-4 mol/L/atm (based on Hery's law)
                   ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e3L/m3 * water content m3/m3 at 10 cm
                   N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * h2osoi_vol(c,4)
-                  km_n2 = 5._r8 ! calibrated value
                   ! calculate n2 fixation rate for each pft and add it to column total
-                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * frootc(p) * cn_scalar(p) *f_nodule * &
-                     N2_aq/ (N2_aq + km_n2) * veg_pp%wtcol(p)
+                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
+                     N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) * veg_pp%wtcol(p)
               end if
           end do
       end do
