@@ -1,5 +1,183 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 9-01-2017
+Tag: cime5.3.0-alpha.33
+Answer Changes: None
+Tests:  scripts_regression_tests.py N_TestUnitTest 
+        cime_developer using pio1 and latest pio2 develop code
+Dependencies:
+
+Brief Summary:
+    - Rewrite ERP with SystemTestsCompareTwo.
+    - Convert the ERR and ERRI test to the compare2 framework.
+    - Get PFUnit working on melvin.
+    - Do not print message about leaving case directory if the directory was
+      never created. 
+    - Allow user to adjust ulimits.
+    - Fix runtime issues with latest pio2 development.
+    - Preserve test order in test_scheduler.
+    - Update README
+    - Documentation tool updates and st_archive fix.
+    - Make the unsupported warning from create_newcase more prominent in the
+      output.
+    - Add irt test.
+    - Move inputdata location on pleiades.
+    - Fix issue with clone to new user.
+    - Fix for cime_output_root doesnt exist.  
+    - Compare two test case names match.
+    - Fix Cmake path in fortran unit tests.
+    - Fix typo in config_machines.xml.
+    - Fix race condition for updated test_schedule use_existing test.
+    - Homebrew generic mac port.
+    - Add valid_lists for some of the *_OPTION entries that lacked them.
+    - Move from cime/src/externals/CMake to cime/src/CMake.
+    - Add message at end of successful build.
+    - Upgrade build system.
+    - Fix issue with update and alternate compiler.
+    - Fix use-existing feature for create_test.
+
+    
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+c3459de Merge pull request #1855 from billsacks/erp2systemcomparetwo_refactor
+a3bcaa0 Merge pull request #1852 from jedwards4b/err_2_compare_two
+751fd7a Merge pull request #1844 from ESMCI/jgfouca/get_pfunit_working_on_melvin
+0b8afd9 Merge pull request #1850 from jedwards4b/fix_error_message
+dd04e87 Merge pull request #1847 from jedwards4b/user_resource_setting
+65ac258 Merge pull request #1842 from jedwards4b/pio2_fix
+33113cb Merge pull request #1843 from ESMCI/jgfouca/create_test_preserve_test_order
+591c51b Update README
+8b2c8a1 Merge pull request #1838 from bertinia/master
+fef051e Merge pull request #1840 from jedwards4b/enhance_warning
+fab7ccd Merge pull request #1837 from jedwards4b/add_irt_test
+994d884 Merge pull request #1836 from fvitt/pleiades_inputdata
+8545d9c Merge pull request #1835 from jedwards4b/clone_new_user_fix 
+3523743 fix for cime_output_root doesnt exist
+00ac08a Merge pull request #1832 from jedwards4b/match_names_in_cases 
+7be7fb3 fix Cmake path in fortran unit tests
+3dcdcb2 fix typo in config_machines.xml
+730ed8b Merge pull request #1829 from ESMCI/jgfouca/fixes_for_test_scheduler_tests
+9ec6020 Merge pull request #1820 from jedwards4b/homebrew_port
+c4efac7 Merge pull request #1831 from ESMCI/jgfouca/add_valid_lists_for_options
+33b8378 Merge pull request #1828 from ESMCI/jgfouca/move_cmake_stuff
+02a9486 Merge pull request #1826 from billsacks/successful_build
+2f9eacb Merge pull request #1823 from ESMCI/jgfouca/build_system_upgrades
+8db85c7 fix issue with update and alternate compiler
+356501d Merge pull request #1822 from ESMCI/jgfouca/fix_use_existing
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/config_archive.xml
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/cesm/config_archive.xml
+M	config/cesm/config_files.xml
+M	config/cesm/machines/Makefile
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	config/xml_schemas/env_mach_specific.xsd
+M	doc/README
+A	doc/source/glossary.rst
+M	doc/source/index.rst
+M	doc/source/users_guide/index.rst
+M	doc/source/what_cime/index.rst
+M	scripts/Tools/case.build
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/erri.py
+A	scripts/lib/CIME/SystemTests/irt.py
+A	scripts/lib/CIME/SystemTests/restart_tests.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/compsets.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+A	src/CMake/.gitignore
+A	src/CMake/CESM_utils.cmake
+A	src/CMake/CIME_initial_setup.cmake
+A	src/CMake/CIME_utils.cmake
+A	src/CMake/ChangeLog
+A	src/CMake/Compilers.cmake
+A	src/CMake/FindpFUnit.cmake
+A	src/CMake/LICENSE
+A	src/CMake/README.md
+A	src/CMake/Sourcelist_utils.cmake
+A	src/CMake/TryCSizeOf.f90
+A	src/CMake/TryMPIIO.f90
+A	src/CMake/TryMPIMod.f90
+A	src/CMake/TryMPISERIAL.f90
+A	src/CMake/TryPnetcdf_inc.f90
+A	src/CMake/TryPnetcdf_mod.f90
+A	src/CMake/genf90_utils.cmake
+A	src/CMake/mpiexec.cmake
+A	src/CMake/pFUnit_utils.cmake
+M	src/components/data_comps/datm/cime_config/config_archive.xml
+M	src/components/data_comps/desp/esp_utils.F90
+M	src/components/data_comps/dice/cime_config/config_archive.xml
+M	src/components/data_comps/dlnd/cime_config/config_archive.xml
+M	src/components/data_comps/docn/cime_config/config_archive.xml
+M	src/components/data_comps/drof/cime_config/config_archive.xml
+M	src/components/data_comps/dwav/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+D	src/drivers/mct/doc/bookinfo.xml
+D	src/drivers/mct/doc/chap1.xml
+D	src/drivers/mct/doc/chap2.xml
+D	src/drivers/mct/doc/figx1.jpg
+D	src/drivers/mct/doc/namelist.xml
+D	src/drivers/mct/doc/rundocbook.csh
+D	src/drivers/mct/doc/stylesheet.dsl
+D	src/drivers/mct/doc/ug.xml
+D	src/externals/CMake/.gitignore
+D	src/externals/CMake/CESM_utils.cmake
+D	src/externals/CMake/CIME_initial_setup.cmake
+D	src/externals/CMake/CIME_utils.cmake
+D	src/externals/CMake/ChangeLog
+D	src/externals/CMake/Compilers.cmake
+D	src/externals/CMake/FindpFUnit.cmake
+D	src/externals/CMake/LICENSE
+D	src/externals/CMake/README.md
+D	src/externals/CMake/Sourcelist_utils.cmake
+D	src/externals/CMake/TryCSizeOf.f90
+D	src/externals/CMake/TryMPIIO.f90
+D	src/externals/CMake/TryMPIMod.f90
+D	src/externals/CMake/TryMPISERIAL.f90
+D	src/externals/CMake/TryPnetcdf_inc.f90
+D	src/externals/CMake/TryPnetcdf_mod.f90
+D	src/externals/CMake/genf90_utils.cmake
+D	src/externals/CMake/mpiexec.cmake
+D	src/externals/CMake/pFUnit_utils.cmake
+M	src/share/util/shr_pcdf_mod.F90
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 8-16-2017
 Tag: cime5.3.0-alpha.32
