@@ -91,6 +91,9 @@ class SEQ(SystemTestsCommon):
         # update the pelayout settings for this run
         self._case.read_xml()
 
+        case_setup(self._case, test_mode=True, reset=True)
+        self._case.set_value("BUILD_COMPLETE", True) # rootpe changes should not require a rebuild
+
         self.run_indv()
 
         restore("env_mach_pes.SEQ2.xml", newname="env_mach_pes.xml")
@@ -102,6 +105,9 @@ class SEQ(SystemTestsCommon):
         logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
         # update the pelayout settings for this run
         self._case.read_xml()
+
+        case_setup(self._case, test_mode=True, reset=True)
+        self._case.set_value("BUILD_COMPLETE", True) # rootpe changes should not require a rebuild
 
         self.run_indv(suffix="seq")
         self._component_compare_test("base", "seq")
