@@ -49,6 +49,10 @@ Call = namedtuple('Call', ['method', 'arguments'])
 # moving forward (which is another reason to use constants rather than
 # hard-coded strings in the tests).
 
+METHOD_case_one_custom_prerun_action = "_case_one_custom_prerun_action"
+METHOD_case_one_custom_postrun_action = "_case_one_custom_postrun_action"
+METHOD_case_two_custom_prerun_action = "_case_two_custom_prerun_action"
+METHOD_case_two_custom_postrun_action = "_case_two_custom_postrun_action"
 METHOD_component_compare_test = "_component_compare_test"
 METHOD_link_to_case2_output = "_link_to_case2_output"
 METHOD_run_indv = "_run_indv"
@@ -69,6 +73,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
                  case1,
                  run_one_suffix = 'base',
                  run_two_suffix = 'test',
+                 multisubmit = False,
                  case2setup_raises_exception = False,
                  run_one_should_pass = True,
                  run_two_should_pass = True):
@@ -83,6 +88,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
             run_one_suffix (str, optional): Suffix used for first run. Defaults
                 to 'base'. Currently MUST be 'base'.
             run_two_suffix (str, optional): Suffix used for the second run. Defaults to 'test'.
+            multisubmit (bool, optional): Passed to SystemTestsCompareTwo.__init__
             case2setup_raises_exception (bool, optional): If True, then the call
                 to _case_two_setup will raise an exception. Default is False.
             run_one_should_pass (bool, optional): Whether the run_indv method should
@@ -105,7 +111,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
             self,
             case1,
             separate_builds = False,
-            run_two_suffix = run_two_suffix)
+            run_two_suffix = run_two_suffix,
+            multisubmit = multisubmit)
 
         # Need to tell test status that all phases prior to the run phase have
         # passed, since this is checked in the run call (at least for the build
@@ -225,6 +232,18 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         if self._case2setup_raises_exception:
             raise RuntimeError
 
+    def _case_one_custom_prerun_action(self):
+        self.log.append(Call(METHOD_case_one_custom_prerun_action, {}))
+
+    def _case_one_custom_postrun_action(self):
+        self.log.append(Call(METHOD_case_one_custom_postrun_action, {}))
+
+    def _case_two_custom_prerun_action(self):
+        self.log.append(Call(METHOD_case_two_custom_prerun_action, {}))
+
+    def _case_two_custom_postrun_action(self):
+        self.log.append(Call(METHOD_case_two_custom_postrun_action, {}))
+
 # ========================================================================
 # Test class itself
 # ========================================================================
@@ -242,6 +261,14 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         os.chdir(self.original_wd)
 
         shutil.rmtree(self.tempdir, ignore_errors=True)
+
+    def get_caseroots(self, casename='mytest'):
+        """
+        Returns a tuple (case1root, case2root)
+        """
+        case1root = os.path.join(self.tempdir, casename)
+        case2root = os.path.join(case1root, 'case2', casename)
+        return case1root, case2root
 
     def test_setup(self):
         # Ensure that test setup properly sets up case 1 and case 2
@@ -342,9 +369,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Setup
         run_one_suffix = 'base'
         run_two_suffix = 'run2'
-        casename = 'mytest'
-        case1root = os.path.join(self.tempdir, casename)
-        case2root = os.path.join(case1root, 'case2', casename)
+        case1root, case2root = self.get_caseroots()
         case1 = CaseFake(case1root)
         mytest = SystemTestsCompareTwoFake(case1,
             run_one_suffix = run_one_suffix,
@@ -355,10 +380,77 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
 
         # Verify
         expected_calls = [
+            Call(METHOD_case_one_custom_prerun_action, {}),
             Call(METHOD_run_indv,
                  {'suffix': run_one_suffix, 'CASEROOT': case1root}),
+            Call(METHOD_case_one_custom_postrun_action, {}),
+            Call(METHOD_case_two_custom_prerun_action, {}),
             Call(METHOD_run_indv,
                  {'suffix': run_two_suffix, 'CASEROOT': case2root}),
+            Call(METHOD_case_two_custom_postrun_action, {}),
+            Call(METHOD_link_to_case2_output, {}),
+            Call(METHOD_component_compare_test,
+                {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
+        ]
+        self.assertEqual(expected_calls, mytest.log)
+
+    def test_run_phase_internal_calls_multisubmit_phase1(self):
+        # Make sure that the correct calls are made to methods stubbed out by
+        # SystemTestsCompareTwoFake (when runs succeed), when we have a
+        # multi-submit test, in the first phase
+
+        # Setup
+        run_one_suffix = 'base'
+        run_two_suffix = 'run2'
+        case1root, _ = self.get_caseroots()
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(
+            case1 = case1,
+            run_one_suffix = run_one_suffix,
+            run_two_suffix = run_two_suffix,
+            multisubmit = True)
+        # RESUBMIT=1 signals first phase
+        case1.set_value("RESUBMIT", 1)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        expected_calls = [
+            Call(METHOD_case_one_custom_prerun_action, {}),
+            Call(METHOD_run_indv,
+                 {'suffix': run_one_suffix, 'CASEROOT': case1root}),
+            Call(METHOD_case_one_custom_postrun_action, {}),
+        ]
+        self.assertEqual(expected_calls, mytest.log)
+
+    def test_run_phase_internal_calls_multisubmit_phase2(self):
+        # Make sure that the correct calls are made to methods stubbed out by
+        # SystemTestsCompareTwoFake (when runs succeed), when we have a
+        # multi-submit test, in the second phase
+
+        # Setup
+        run_one_suffix = 'base'
+        run_two_suffix = 'run2'
+        case1root, case2root = self.get_caseroots()
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(
+            case1 = case1,
+            run_one_suffix = run_one_suffix,
+            run_two_suffix = run_two_suffix,
+            multisubmit = True)
+        # RESUBMIT=0 signals second phase
+        case1.set_value("RESUBMIT", 0)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        expected_calls = [
+            Call(METHOD_case_two_custom_prerun_action, {}),
+            Call(METHOD_run_indv,
+                 {'suffix': run_two_suffix, 'CASEROOT': case2root}),
+            Call(METHOD_case_two_custom_postrun_action, {}),
             Call(METHOD_link_to_case2_output, {}),
             Call(METHOD_component_compare_test,
                 {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
