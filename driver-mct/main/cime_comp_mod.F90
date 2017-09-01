@@ -855,7 +855,7 @@ subroutine cime_pre_init2()
    !| Initialize infodata
    !----------------------------------------------------------
 
-   if (len(cpl_inst_tag) > 0) then
+   if (len_trim(cpl_inst_tag) > 0) then
       call seq_infodata_init(infodata,nlfilename, GLOID, pioid, &
                              cpl_tag=cpl_inst_tag)
    else
@@ -3587,7 +3587,7 @@ end subroutine cime_init
          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
               atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-              fractions_rx, fractions_gx, fractions_wx, tag=trim(cpl_inst_tag))
+              fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
@@ -4096,7 +4096,7 @@ subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
     open(unit = nu, file = NLFileName, status = 'old', iostat = ierr)
     rewind(unit = nu)
     ierr = 1
-    do while ( ierr /= 0 ) 
+    do while ( ierr /= 0 )
        read(unit = nu, nml = cime_driver_inst, iostat = ierr)
        if (ierr < 0) then
           call shr_sys_abort( subname//':: namelist read returns an'// &

@@ -1955,7 +1955,7 @@
     <valid_values>TRUE,FALSE</valid_values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>MULTI_DRIVER mode provides a separate driver (and coupler) component for each
+    <desc>MULTI_DRIVER mode provides a separate driver/coupler component for each
     ensemble member.  All components must have an equal number of members.  If
     MULTI_DRIVER mode is False prognostic components must have the same number
     of members but data or stub components may also have 1 member. </desc>
