@@ -125,7 +125,7 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         ncpl = 0
         for compclass in self.case.get_values("COMP_CLASSES"):
-            ncpl = max(ncpl, self.case.get_value("%s_NCPL"%compclass))
+            ncpl = max(ncpl, self.case.get_value("{}_NCPL".format(compclass)))
         ocn_ncpl = self.case.get_value("OCN_NCPL")
 
         compset = self.case.get_value("COMPSET")
@@ -163,11 +163,11 @@ class _TimingParser:
             inittype = "TRUE"
 
         if inst > 0:
-            inst_label = '_%04d' % inst
+            inst_label = '_{04d}'.format(inst)
         else:
             inst_label = ''
 
-        binfilename = os.path.join(rundir, "timing", "model_timing%s_stats" % inst_label)
+        binfilename = os.path.join(rundir, "timing", "model_timing{}_stats" . format(inst_label))
         finfilename = os.path.join(self.caseroot, "timing",
                                    "{}_timing{}_stats.{}".format(cime_model, inst_label, self.lid))
         foutfilename = os.path.join(self.caseroot, "timing",

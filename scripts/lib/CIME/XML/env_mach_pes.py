@@ -20,7 +20,8 @@ class EnvMachPes(EnvBase):
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
-
+        # Special variable NINST_MAX is used to determine the number of
+        # drivers in multi-driver mode.
         if vid == "NINST_MAX":
             value = 1
             for comp in self._components:

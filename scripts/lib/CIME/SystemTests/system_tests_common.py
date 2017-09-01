@@ -366,8 +366,10 @@ class SystemTestsCommon(object):
             for log in cpllogs:
                 if log in lastcpllogs:
                     continue
+
                 if log.endswith(suffix):
                     lastcpllogs.append(log)
+
         return lastcpllogs
 
     def _compare_baseline(self):

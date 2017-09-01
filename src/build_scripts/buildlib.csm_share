@@ -32,7 +32,7 @@ my $NINST_ESP		= 1;
 
 if ($multi_driver eq "FALSE") {
     $NINST_ATM		= `./xmlquery NINST_ATM		--value`;
-    $NINST_ICE		        = `./xmlquery NINST_ICE		--value`;
+    $NINST_ICE	        = `./xmlquery NINST_ICE		--value`;
     $NINST_GLC		= `./xmlquery NINST_GLC		--value`;
     $NINST_LND		= `./xmlquery NINST_LND		--value`;
     $NINST_OCN		= `./xmlquery NINST_OCN		--value`;

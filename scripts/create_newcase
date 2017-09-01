@@ -52,8 +52,8 @@ OR
 
     parser.add_argument("--ninst",default=1,
                         help="Specify number of model ensemble instances. "
-                        "Default is multiple components and one coupler.  Use --multi-driver to "
-                        "run multiple couplers in the ensemble.")
+                        "Default is multiple components and one driver/coupler.  Use --multi-driver to "
+                        "run multiple driver/couplers in the ensemble.")
 
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "

@@ -95,6 +95,7 @@ class PRE(SystemTestsCompareTwo):
                     ninst = 1
             else:
                 ninst = self._case.get_value("NINST_{}".format(comp.upper()))
+
             comp_name = self._case.get_value('COMP_{}'.format(comp.upper()))
             for index in range(1,ninst+1):
                 if ninst == 1:
