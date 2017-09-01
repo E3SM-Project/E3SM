@@ -105,3 +105,5 @@ Also keep these important points in mind:
 #. In **create_test** these options can be invoked with testname modifiers _N# for the single driver mode and _C# for the multi-driver mode.  These are mutually exclusive options, they cannot be combined.
 
 #. In create_newcase you may use --ninst # to set the number of instances and --multi-driver for multi-driver mode.
+
+#. In multi-driver mode you will always get 1 instance of each component for each driver/coupler, if you change a case using xmlchange MULTI_COUPLER=TRUE you will get a number of driver/couplers equal to the maximum NINST value over all components.
