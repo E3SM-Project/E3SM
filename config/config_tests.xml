@@ -125,7 +125,6 @@ NCR    multi-instance validation vs single instance - concurrent PE for instance
        do an initial run test with NINST 1 (suffix: base)
        do an initial run test with NINST 2 (suffix: multiinst for both _0001 and _0002)
         compare base and _0001 and _0002
-       (***note that NCR_script and NCK_script are the same - but NCR_build.csh and NCK_build.csh are different***)
 
 NOC    multi-instance validation for single instance ocean (default length)
        do an initial run test with NINST 2 (other than ocn), with mod to instance 1 (suffix: inst1_base, inst2_mod)
