@@ -1,0 +1,3 @@
+use_clm_interface = .true.
+use_pflotran = .true.
+pflotran_prefix = 'pflotran_clm'

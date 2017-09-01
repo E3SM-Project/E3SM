@@ -75,6 +75,7 @@ _TEST_SUITES = {
                              ("ERS.f19_g16.I1850CLM45","clm-betr"),
                              ("ERS.f19_g16.I1850CLM45","clm-vst"),
                              ("ERS.f09_g16.I1850CLM45CN","clm-bgcinterface"),
+                             ("ERS.f19_g16.I1850CLM45CN","clm-pflotran"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),

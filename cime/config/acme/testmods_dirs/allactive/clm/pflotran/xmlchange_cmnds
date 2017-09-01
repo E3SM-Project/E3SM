@@ -1,0 +1,7 @@
+./xmlchange CLM_USE_PETSC=TRUE
+./xmlchange CLM_PFLOTRAN_COUPLED=TRUE
+./xmlchange CLM_PFLOTRAN_COLMODE=TRUE
+./xmlchange ATM_DOMAIN_FILE='domain.lnd.fv1.9x2.5_gx1v6.090206_vji.nc'
+./xmlchange LND_DOMAIN_FILE='domain.lnd.fv1.9x2.5_gx1v6.090206_vji.nc'
+
+
