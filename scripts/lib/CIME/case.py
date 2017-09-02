@@ -1250,10 +1250,12 @@ class Case(object):
                     logger.info(comment)
                     expect(False, "env_build.xml cannot be changed in usermods if keepexe is an option")
 
-                # Remove the new case SourceMods directory and link SourceMods to the clone directory
-                shutil.rmtree(os.path.join(newcase_root, "SourceMods"))
-                os.symlink(os.path.join(cloneroot, "SourceMods"),
-                           os.path.join(newcase_root, "SourceMods"))
+        # If keep executable, then remove the new case SourceMods directory and link SourceMods to
+        # the clone directory
+        if keepexe:
+            shutil.rmtree(os.path.join(newcase_root, "SourceMods"))
+            os.symlink(os.path.join(cloneroot, "SourceMods"),
+                       os.path.join(newcase_root, "SourceMods"))
 
         # Update README.case
         fclone   = open(cloneroot + "/README.case", "r")

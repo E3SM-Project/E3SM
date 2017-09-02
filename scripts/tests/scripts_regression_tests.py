@@ -316,10 +316,14 @@ class J_TestCreateNewcase(unittest.TestCase):
         prevtestdir = cls._testdirs[0]
         cls._testdirs.append(testdir)
 
-        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --keepexe" %
-                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
+        user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test3")
+        with self.assertRaisesRegexp(SystemExit,
+                                     "cannot change env_build.xml if keepexe"):
+            cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" % (SCRIPT_DIR, prevtestdir, testdir, user_mods_dir)
+            stat, output, errput = run_cmd(cmd, from_dir=SCRIPT_DIR, verbose=True)
 
         cls._do_teardown.append(testdir)
+
 
     def test_d_create_clone_new_user(self):
         cls = self.__class__

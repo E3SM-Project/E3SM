@@ -112,6 +112,13 @@ class TestUserModSupport(unittest.TestCase):
                            expected_sourcemod = "foo\n",
                            msg = "test_basic")
 
+    def test_keepexe(self):
+        self.createUserMod("foo")
+        with self.assertRaisesRegexp(SystemExit,
+                                     "cannot have any source mods"):
+            apply_user_mods(self._caseroot,
+                            os.path.join(self._user_mods_parent_dir, "foo"), keepexe=True)
+
     def test_two_applications(self):
         """If apply_user_mods is called twice, the second should appear after the first so that it takes precedence."""
 
