@@ -114,8 +114,7 @@ class TestUserModSupport(unittest.TestCase):
 
     def test_keepexe(self):
         self.createUserMod("foo")
-        with self.assertRaisesRegexp(SystemExit,
-                                     "cannot have any source mods"):
+        with self.assertRaises(SystemExit):
             apply_user_mods(self._caseroot,
                             os.path.join(self._user_mods_parent_dir, "foo"), keepexe=True)
 

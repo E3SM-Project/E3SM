@@ -1242,13 +1242,13 @@ class Case(object):
             # Now apply contents of user_mods directory
             apply_user_mods(newcase_root, user_mods_dir, keepexe=keepexe)
 
-            # Determine if env_build.xml has changed and if there are any sourcemods in u
+            # Determine if env_build.xml has changed
             if keepexe:
                 success, comment = compare_files(os.path.join(newcaseroot, "env_build.xml"),
                                                  os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
                 if not success:
                     logger.info(comment)
-                    expect(False, "env_build.xml cannot be changed in usermods if keepexe is an option")
+                    expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option")
 
         # If keep executable, then remove the new case SourceMods directory and link SourceMods to
         # the clone directory
