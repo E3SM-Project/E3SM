@@ -1231,8 +1231,8 @@ class Case(object):
         lock_file("env_case.xml", newcaseroot)
 
         # apply user_mods if appropriate
+        newcase_root = newcase.get_value("CASEROOT")
         if user_mods_dir is not None:
-            newcase_root = newcase.get_value("CASEROOT")
             if keepexe:
                 # If keepexe CANNOT change any env_build.xml variables - so make a temporary copy of
                 # env_build.xml and verify that it has not been modified
@@ -1250,7 +1250,7 @@ class Case(object):
                     logger.info(comment)
                     expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option")
 
-        # If keep executable, then remove the new case SourceMods directory and link SourceMods to
+        # if keep executable, then remove the new case SourceMods directory and link SourceMods to
         # the clone directory
         if keepexe:
             shutil.rmtree(os.path.join(newcase_root, "SourceMods"))
