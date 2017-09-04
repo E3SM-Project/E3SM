@@ -7,7 +7,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob, itertools
+import os, shutil, sys, glob, itertools, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -179,6 +179,25 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #--------------------------------
     # (2) Write out seq_map.rc file
     #--------------------------------
+    # first determine if there are invalid idmap settings
+    # if source and destination grid are different, mapping file must not be "idmap"
+    gridvalue = {}
+    for item in ["ATM", "LND", "OCN", "ICE", "ROF", "MASK", "GLC", "WAV"]:
+        gridvalue[item.lower()] = case.get_value(item + "_GRID" )
+
+    group_variables = nmlgen.get_group_variables("seq_maps")
+    for name in group_variables:
+        value = group_variables[name]
+        if "type" not in name:
+            value = re.sub('\"', '', value)
+            if 'idmap' == value:
+                grid1 = name[0:3]
+                grid2 = name[4:7]
+                expect(gridvalue[grid1] == gridvalue[grid2],
+                       "invalid idmap value for grids that are not the same \n %s=%s and  %s=%s" \
+                       %(grid1, gridvalue[grid1], grid2, gridvalue[grid2]))
+
+    # now write out the file
     seq_maps_file = os.path.join(confdir, "seq_maps.rc")
     nmlgen.write_seq_maps(seq_maps_file)
 
