@@ -6,7 +6,7 @@
 
 
 /*
- * Private data structures for the list 
+ * Private data structures for the list
  *
  */
 

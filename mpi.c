@@ -35,9 +35,9 @@ FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
                            int *f_MPI_COMM_NULL, int *f_MPI_REQUEST_NULL,
 			   int *f_MPI_GROUP_NULL, int *f_MPI_GROUP_EMPTY,
 			   int *f_MPI_UNDEFINED,
-                           int *f_MPI_MAX_ERROR_STRING, 
-                           int *f_MPI_MAX_PROCESSOR_NAME, 
-                           int *f_MPI_STATUS_SIZE, 
+                           int *f_MPI_MAX_ERROR_STRING,
+                           int *f_MPI_MAX_PROCESSOR_NAME,
+                           int *f_MPI_STATUS_SIZE,
                            int *f_MPI_SOURCE, int *f_MPI_TAG, int *f_MPI_ERROR,
 			   int *f_status,
 			   int *fsource, int *ftag, int *ferror,
@@ -156,7 +156,7 @@ FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
     abort();
 }
 
-int MPI_Init(int *argc, char **argv[]) 
+int MPI_Init(int *argc, char **argv[])
 {
   MPI_Comm my_comm_world;
 
@@ -323,7 +323,21 @@ int MPI_Get_library_version(char *version, int *resultlen)
   return(MPI_SUCCESS);
 }
 
+/**********/
+void FC_FUNC( mpi_get_version, MPI_GET_VERSION )(int *mpi_vers, int *mpi_subvers, int *ierror)
+{
+  MPI_Get_Version(mpi_vers, mpi_subvers);
 
+  *ierror=MPI_SUCCESS;
+}
+
+int MPI_Get_Version(int *mpi_vers, int *mpi_subvers)
+{
+  *mpi_vers = 1;
+  *mpi_subvers = 0;
+
+  return (MPI_SUCCESS);
+}
 
 /**********/
 

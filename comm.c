@@ -203,10 +203,10 @@ int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
     *group= MPI_GROUP_ONE;
 
   return(MPI_SUCCESS);
-}    
+}
 
 /* Intercomm_create
- * 
+ *
  */
 
 FC_FUNC(mpi_intercomm_create, MPI_INTERCOMM_CREATE)(
@@ -220,7 +220,7 @@ FC_FUNC(mpi_intercomm_create, MPI_INTERCOMM_CREATE)(
 
 int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader,
                           MPI_Comm peer_comm, int remote_leader,
-                          int tag, MPI_Comm *newintercomm) 
+                          int tag, MPI_Comm *newintercomm)
 {
   if (local_comm==MPI_COMM_NULL && peer_comm==MPI_COMM_NULL)
     *newintercomm = MPI_COMM_NULL;

@@ -1,7 +1,7 @@
       program test
       use mpi
       implicit none
-      
+
         call test_contiguous()
         call test_vector()
         call test_simple_hvector()
@@ -12,7 +12,7 @@
         call test_multiple()
         stop
       end
-      
+
 !!!!!!!!!!!!!!!!!!!
 ! Contiguous type.  Simplest example.  Strings 5
 !  integers together and tests their equality after
@@ -31,9 +31,9 @@
 
       print *, "Test Contiguous of 5 x MPI_INTEGER"
       call mpi_type_contiguous(5, mpi_integer, datatype,ierr)
-     
+
       call mpi_type_commit(datatype, ierr)
-      
+
       call print_typemap(datatype,ierr)
       call copy_data2(a,1,datatype, b,1,datatype, ierr)
 
@@ -47,12 +47,12 @@
       end
 
 !!!!!!!!!!!!!!!!!!!!!!!!
-! Vector type.  collect a series of indices with 
+! Vector type.  collect a series of indices with
 ! set stride from an array.
 !!!!!!!!!!!!!!!!!!!!!!!!
 
       subroutine test_vector()
-      use mpi 
+      use mpi
       integer ierr
       integer datatype
       integer a(10) != (1,2,3,4,5,6,7,8,9,0)
@@ -82,7 +82,7 @@
 !!!!!!!!!!!!!!!!!!!!!
 ! Byte-addressed vector.
 ! values calculated with mpi_type_extent(),
-! so basically we are doing the work here in the 
+! so basically we are doing the work here in the
 ! test program instead of in the library
 !!!!!!!!!!!!!!!!!!!!!
 
@@ -174,7 +174,7 @@
         data index_test/1,2,5,6,8,9/
         print *, "Block indexed type"
 
-        call mpi_type_indexed_block(3,2,disps,mpi_integer, & 
+        call mpi_type_indexed_block(3,2,disps,mpi_integer, &
                         indexed_type, ierr)
 
         call mpi_type_commit(indexed_type, ierr)
@@ -252,7 +252,7 @@
         integer(kind=mpi_address_kind) disps(3)
         integer pos
 
-        
+
         x = 10
         f = 14.333
         c = (100, 20)
@@ -260,8 +260,8 @@
 
         pos = 0
         data blens/1,2,1/, disps/0,4,8/
-             
-        print *, "Packed type " 
+
+        print *, "Packed type "
 
         call mpi_pack(x, 1, mpi_integer, buf, 100, pos, 0, ierr)
         call mpi_pack(f, 1, mpi_real, buf, 100, pos, 0, ierr)
@@ -287,9 +287,9 @@
         end if
 
         print *, ">>>PASSED: mpi_pack"
-        
+
       end subroutine
-       
+
 !!!!!!!!!!!!!!!!!!!!!!!!!
 ! Test an indexed send with a multiple receive
 !!!!!!!!!!!!!!!!!!!!!!!!!
