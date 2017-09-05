@@ -163,7 +163,7 @@ class _TimingParser:
             inittype = "TRUE"
 
         if inst > 0:
-            inst_label = '_{04d}'.format(inst)
+            inst_label = '_{:04d}'.format(inst)
         else:
             inst_label = ''
 
