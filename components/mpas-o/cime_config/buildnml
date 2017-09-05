@@ -60,16 +60,16 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30v3' ) {
         $grid_date .= '161222';
-        $grid_prefix .= 'oEC60to30v3';
-        $ic_date .= '161222';
-        $ic_prefix .= 'oEC60to30v3';
+        $grid_prefix .= 'oEC60to30v3_60layer';
+        $ic_date .= '170905';
+        $ic_prefix .= 'oEC60to30v3_60layer';
         $decomp_prefix .= 'mpas-o.graph.info.';
         $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
         $grid_date .= '161222';
-        $grid_prefix .= 'oEC60to30v3';
-        $ic_date .= '170331';
-        $ic_prefix .= 'oEC60to30v3.restartFrom_anvil0320';
+        $grid_prefix .= 'oEC60to30v3_60layer';
+        $ic_date .= '170905';
+        $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0824';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30wLI' ) {
         $grid_date .= '160830';
@@ -357,20 +357,12 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="volumeEdgeGlobal"/>' . "\n";
         print $stream_file '    <var name="CFLNumberGlobal"/>' . "\n";
         print $stream_file '    <var name="BruntVaisalaFreqTop"/>' . "\n";
-        print $stream_file '    <var name="vertDiffTopOfCell"/>' . "\n";
-        print $stream_file '    <var name="vertViscTopOfCell"/>' . "\n";
-        print $stream_file '    <var name="vertViscTopOfEdge"/>' . "\n";
         print $stream_file '    <var name="vertVelocityTop"/>' . "\n";
-        print $stream_file '    <var name="RiTopOfCell"/>' . "\n";
-        print $stream_file '    <var name="vertNonLocalFlux"/>' . "\n";
-        print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
-        print $stream_file '    <var name="bulkRichardsonNumberBuoy"/>' . "\n";
         print $stream_file '    <var name="velocityZonal"/>' . "\n";
         print $stream_file '    <var name="velocityMeridional"/>' . "\n";
         print $stream_file '    <var name="displacedDensity"/>' . "\n";
         print $stream_file '    <var name="potentialDensity"/>' . "\n";
         print $stream_file '    <var name="pressure"/>' . "\n";
-        print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
         print $stream_file '    <var name="refBottomDepth"/>' . "\n";
         print $stream_file '    <var name="zMid"/>' . "\n";
         print $stream_file '    <var name="bottomDepth"/>' . "\n";
@@ -591,8 +583,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <stream name="mesh"/>' . "\n";
 	print $stream_file '    <var name="tThreshMLD"/>' . "\n";
 	print $stream_file '    <var name="dThreshMLD"/>' . "\n";
-	print $stream_file '    <var name="tGradMLD"/>' . "\n";
-	print $stream_file '    <var name="dGradMLD"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsDailyOutput"' . "\n";
@@ -662,8 +652,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var_array name="vertSumMaxGlobalStats"/>' . "\n";
 	print $stream_file '    <var name="tThreshMLD"/>' . "\n";
 	print $stream_file '    <var name="dThreshMLD"/>' . "\n";
-	print $stream_file '    <var name="tGradMLD"/>' . "\n";
-	print $stream_file '    <var name="dGradMLD"/>' . "\n";
 	print $stream_file '    <var name="normalVelocity"/>' . "\n";
 	print $stream_file '    <var name="vertVelocityTop"/>' . "\n";
 	print $stream_file '    <var name="normalTransportVelocity"/>' . "\n";
@@ -685,6 +673,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="iceRunoffFlux"/>' . "\n";
 	print $stream_file '    <var name="rainFlux"/>' . "\n";
 	print $stream_file '    <var name="snowFlux"/>' . "\n";
+        print $stream_file '    <var name="vertNonLocalFlux"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerSurfaceFluxTendency"/>' . "\n";
         print $stream_file '    <var_array name="temperatureShortWaveTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerNonLocalTendency"/>' . "\n";
@@ -699,6 +688,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="maxLevelCell"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeTop"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeBot"/>' . "\n";
+        print $stream_file '    <var name="vertDiffTopOfCell"/>' . "\n";
+        print $stream_file '    <var name="vertViscTopOfCell"/>' . "\n";
+        print $stream_file '    <var name="RiTopOfCell"/>' . "\n";
+        print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
+        print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
