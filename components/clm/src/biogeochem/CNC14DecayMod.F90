@@ -101,7 +101,7 @@ contains
          seedc(c) = seedc(c) *  (1._r8 - decay_const * dt)
       end do ! end of columns loop
 
-      if (is_active_betr_bgc) then
+      if (.not. is_active_betr_bgc) then
          do l = 1, ndecomp_pools
             if ( spinup_state .eq. 1) then
                ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
