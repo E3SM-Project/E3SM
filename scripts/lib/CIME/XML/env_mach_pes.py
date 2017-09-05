@@ -38,6 +38,24 @@ class EnvMachPes(EnvBase):
 
         return value
 
+    def set_value(self, vid, value, subgroup=None, ignore_type=False):
+        """
+        Set the value of an entry-id field to value
+        Returns the value or None if not found
+        subgroup is ignored in the general routine and applied in specific methods
+        """
+        if vid == "MULTI_DRIVER" and value:
+            ninst_max = self.get_value("NINST_MAX")
+            for comp in self._components:
+                if comp == "CPL":
+                    continue
+                ninst = self.get_value("NINST_{}".format(comp))
+                expect(ninst == ninst_max,
+                       "All components must have the same NINST value in multi_driver mode.  NINST_{}={} shoud be {}".format(comp,ninst,ninst_max))
+
+        return EnvBase.set_value(self, vid, value, subgroup=subgroup, ignore_type=ignore_type)
+
+
     def get_max_thread_count(self, comp_classes):
         ''' Find the maximum number of openmp threads for any component in the case '''
         max_threads = 1

@@ -36,7 +36,10 @@ def _build_usernl_files(case, model, comp):
     ninst = 1
     multi_driver = case.get_value("MULTI_DRIVER")
     if multi_driver:
-        ninst = case.get_value("NINST_MAX")
+        ninst_max = case.get_value("NINST_MAX")
+        if model not in ("DRV","CPL"):
+            ninst_model = case.get_value("NINST_{}".format(model))
+            expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
