@@ -77,7 +77,7 @@ This configuration will run each component instance on the original 144 tasks bu
 
    > ./case.setup
 
-A new **user_nl_xxx_NNNN** file (where NNNN is the number of the component instances) is generated when **case.setup** is called.
+A new **user_nl_xxx_NNNN** file is generated for each component instance when case.setup is called (where xxx is the component type and NNNN is the number of the component instance).
 When calling **case.setup** with the **env_mach_pes.xml** file specifically, these files are created in **$CASEROOT**:
 ::
 
