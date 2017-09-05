@@ -295,7 +295,7 @@ contains
     enddo
 
     ! Add sum of mass mixing ratios for each aerosol class
-    if (history_aerosol .and. history_verbose == .false. ) then
+    if (history_aerosol .and. .not. history_verbose) then
        call addfld( 'Mass_bc',   (/ 'lev' /), 'A', 'kg/kg ', &
             'sum of bc mass concentration bc_a1+bc_c1+bc_a3+bc_c3+bc_a4+bc_c4')
        call add_default( 'Mass_bc', 1, ' ' )
