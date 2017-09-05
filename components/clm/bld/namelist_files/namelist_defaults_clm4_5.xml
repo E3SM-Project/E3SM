@@ -339,6 +339,8 @@ lnd/clm2/surfdata_map/surfdata_ne16np4_simyr2000_c160108.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne11np4_simyr2000_c160614.nc</fsurdat>
 <fsurdat hgrid="ne4np4"      sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2000_c160614.nc</fsurdat>
+<fsurdat hgrid="ne240np4"      sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c170821.nc</fsurdat>
 
 <!-- Crop surface datasets -->
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".true." >
@@ -396,6 +398,8 @@ lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1850_c160211.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne11np4_simyr1850_c160614.nc</fsurdat>
 <fsurdat hgrid="ne4np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr1850_c160614.nc</fsurdat>
+<fsurdat hgrid="ne240np4"      sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne240np4_simyr18500_c170821.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
@@ -1752,6 +1756,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/ne240np4/map_1km-merge-10min_HYDRO1K-merge-nomask_to_ne240np4_nomask_aave_da_c130405.nc</map>
 <map frm_hgrid="ne240np4"    frm_lmask="nomask" to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne240np4/map_ne240np4_nomask_to_0.5x0.5_nomask_aave_da_c110922.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne240np4"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/ne240np4/map_0.5x0.5_GSDTG2000_to_ne240np4_nomask_aave_da_c170821.nc</map>
 
 <!-- mapping files for 0.125x0.125 START added on Fri Aug  1 15:44:32 2014-->
 <!-- Created by lnd/clm/bld/namelist_files/createMapEntry.pl--> 
