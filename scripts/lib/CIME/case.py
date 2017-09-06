@@ -1247,8 +1247,10 @@ class Case(object):
                 success, comment = compare_files(os.path.join(newcaseroot, "env_build.xml"),
                                                  os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
                 if not success:
-                    logger.info(comment)
-                    expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option")
+                    logger.warn(comment)
+                    shutil.rmtree(newcase_root)
+                    expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option: \n "
+                           "Failed to clone case, removed {}\n".format(newcase_root))
 
         # if keep executable, then remove the new case SourceMods directory and link SourceMods to
         # the clone directory

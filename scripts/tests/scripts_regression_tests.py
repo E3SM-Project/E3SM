@@ -321,8 +321,6 @@ class J_TestCreateNewcase(unittest.TestCase):
               % (SCRIPT_DIR, prevtestdir, testdir, user_mods_dir)
         run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR, expected_stat=1)
 
-        cls._do_teardown.append(testdir)
-
     def test_d_create_clone_new_user(self):
         cls = self.__class__
 

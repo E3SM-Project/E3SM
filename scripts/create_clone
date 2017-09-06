@@ -24,7 +24,7 @@ def parse_command_line(args):
                         "If not a full pathname, then the case to be cloned"
                         "is assumed to be under then current working directory ")
 
-    parser.add_argument("--user-mods-dir", "-user_mods_dir",
+    parser.add_argument("--user-mods-dir",
                         help="Path to directory with user_nl_* files and xmlchange "
                         "commands to utilize. This can also include SourceMods. "
                         "This can be an absolute path, a path relative to the "
@@ -32,11 +32,15 @@ def parse_command_line(args):
                         "cime_config/usermods_dirs/ under the primary component "
                         "for the given compset (for example, in an F compset "
                         "whose primary component is cam, '--user-mods-dir foo' "
-                        "could be found in components/cam/cime_config/usermods_dirs/foo).")
+                        "could be found in $SRCROOT/components/cam/cime_config/usermods_dirs/foo). "
+                        "If this argument is used in conjunction with the --keepexe flag, then "
+                        "no changes will be permitted to the env_build.xml in the --case entry directory. ")
 
     parser.add_argument("--keepexe", "-keepexe", action="store_true",
                         help="Sets EXEROOT to point to original build, it is highly recommended"
-                        "that the original case be built before cloning if using the --keepexe flag")
+                        "that the original case be built before cloning if using the --keepexe flag "
+                        "This flag will make SourceMods in the --case entry directory a symbolic link "
+                        " to the SourceMods in the --clone entry directory ")
 
     parser.add_argument("--mach-dir", "-mach_dir",
                         help="Specify the locations of the Machines directory, other than the default"
@@ -79,11 +83,7 @@ def _main_func():
             user_mods_dir = os.path.abspath(user_mods_dir)
 
     with Case(cloneroot, read_only=False) as clone:
-        if user_mods_dir is not None:
-            clone.create_clone(case, keepexe, mach_dir, project, cime_output_root, user_mods_dir)
-        else:
-            clone.create_clone(case, keepexe, mach_dir, project, cime_output_root)
-
+        clone.create_clone(case, keepexe, mach_dir, project, cime_output_root, user_mods_dir)
 
 ###############################################################################
 
