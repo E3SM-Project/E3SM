@@ -197,7 +197,6 @@ module mpas_stream_manager
 
         threadNum = mpas_threading_get_thread_num()
 
-        ! DH* note that this is written to fort.1 if STREAM_DEBUG_WRITE is enabled (log file already closed?)
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_finalize()') 
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
@@ -208,7 +207,6 @@ module mpas_stream_manager
            !
            stream_cursor => manager % streams % head
            do while (associated(stream_cursor))
-               ! DH* note that this is written to fort.1 if STREAM_DEBUG_WRITE is enabled (log file already closed?)
                STREAM_DEBUG_WRITE(' -- deleting stream '//trim(stream_cursor % name))
                call MPAS_stream_mgr_destroy_stream(manager, stream_cursor % name, ierr=err_local)
                stream_cursor => manager % streams % head
@@ -440,7 +438,6 @@ module mpas_stream_manager
 
         threadNum = mpas_threading_get_thread_num()
 
-        ! DH* note that this is written to fort.1 if STREAM_DEBUG_WRITE is enabled (log file already closed?)
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_destroy_stream()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
