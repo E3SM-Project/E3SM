@@ -456,11 +456,11 @@ class Case(object):
                     return compset_alias, science_support
 
         if compset_alias is None:
-            logger.info("Did not find an alias or longname compset match for longname {} ".format(compset_name))
+            logger.info("Did not find an alias or longname compset match for {} ".format(compset_name))
             self._compsetname = compset_name
-            # if this is a valiid compset longname there will be at least 6 components.
+            # if this is a valiid compset longname there will be at least 7 components.
             components = self.get_compset_components()
-            expect('_' in compset_name and len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname. {}".format(compset_name, components))
+            expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
 
         return None, science_support
 
