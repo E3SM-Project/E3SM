@@ -560,7 +560,7 @@ contains
 
        call t_startf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
-       if(.not.use_clm_interface) then
+       if( .not.use_clm_bgc .and. .not.(use_pflotran .and. pf_cmode) ) then
             ! directly run clm-bgc
             ! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
             call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &

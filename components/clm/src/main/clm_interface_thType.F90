@@ -23,8 +23,9 @@ module clm_interface_thType
      real(r8), pointer :: frac_sno_eff_col                          (:)     ! col fraction of ground covered by snow (0 to 1)
      real(r8), pointer :: frac_h2osfc_col                           (:)     ! col fractional area with surface water greater than zero
      real(r8), pointer :: h2osoi_vol_col                            (:,:)   ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-     real(r8), pointer :: h2osoi_liq_col                            (:,:)   ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-     real(r8), pointer :: h2osoi_ice_col                            (:,:)   ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2osoi_liq_col                            (:,:)   ! col liquid water (kg/m2) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2osoi_ice_col                            (:,:)   ! col ice lens (kg/m2) (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: h2osfc_col                                (:)     ! col surface water (mm H2O)
 
      ! temperature_vars:
      real(r8), pointer :: t_soisno_col                              (:,:)   ! col soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
@@ -44,11 +45,18 @@ module clm_interface_thType
      real(r8), pointer :: qflx_evap_h2osfc_col                      (:)     ! col evaporation flux from surface water (mm H2O /s) [+ to atm] ! note: the energy unit of orginal definition incorrect
      real(r8), pointer :: qflx_tran_veg_col                         (:)     ! col vegetation transpiration (mm H2O/s) (+ = to atm)
      real(r8), pointer :: qflx_rootsoil_col                         (:,:)   ! col p-aggregated vertically-resolved vegetation/soil water exchange (m H2O/s) (+ = to atm)
+     ! new: when coupling with pflotran, evap+tran from CLM is to be as an input, which may be re-adjusted by pflotran flow module.
+     real(r8), pointer :: qflx_et_reduced_col                       (:)     ! col net water exchange re-adjusted for mass-balance check (m H2O/s) (+ = to atm)
 
      real(r8), pointer :: qflx_infl_col                             (:)     ! col infiltration (mm H2O/s)
-     real(r8), pointer :: qflx_surf_col                             (:)     ! col surface runoff (mm H2O/s)
-     real(r8), pointer :: qflx_drain_col                            (:)     ! col sub-surface runoff (mm H2O/s)
-     real(r8), pointer :: qflx_drain_vr_col                         (:,:)   ! col liquid water losted as drainage (mm H2O/s)
+     real(r8), pointer :: qflx_exfl_col                             (:)     ! col saturate soil excess outflow upwardly (mm H2O/s)
+     real(r8), pointer :: qflx_surf_col                             (:)     ! col ground surface runoff/flood/overland flow (mm H2O/s)
+     real(r8), pointer :: qflx_h2osfc_col                           (:)     ! col water-covered (pond) surface runoff/flood/overflow (mm H2O/s)
+     real(r8), pointer :: qflx_base_col                             (:)     ! col drainage/upflow at bottom (baseflow) (mm H2O/s)
+     real(r8), pointer :: qflx_drain_col                            (:)     ! col liquid water losted as drainage (mm H2O/s)
+     real(r8), pointer :: qflx_drain_vr_col                         (:,:)   ! col vertically-resolved liquid water losted as drainage (mm H2O/s)
+     real(r8), pointer :: qflx_lateral_col                          (:)     ! col net liquid water lateral flow (mm H2O/s)
+     real(r8), pointer :: qflx_lateral_vr_col                       (:,:)   ! col vertically-resolved net liquid water lateral flow (mm H2O/s)
 
      ! energyflux_vars:
      real(r8), pointer :: htvp_col                                  (:)     ! latent heat of vapor of water (or sublimation) [j/kg]
@@ -118,6 +126,7 @@ contains
     allocate(this%h2osoi_liq_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_liq_col       (:,:) = nan
     allocate(this%h2osoi_ice_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_ice_col       (:,:) = nan
     allocate(this%h2osoi_vol_col        (begc:endc, 1:nlevgrnd))            ; this%h2osoi_vol_col       (:,:) = nan
+    allocate(this%h2osfc_col            (begc:endc))                        ; this%h2osfc_col           (:)   = nan
 
     ! temperature_vars:
     allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd))    ; this%t_soisno_col         (:,:) = nan
@@ -139,10 +148,16 @@ contains
     allocate(this%qflx_subl_snow_col    (begc:endc))                        ; this%qflx_subl_snow_col    (:)   = ival
     allocate(this%qflx_tran_veg_col     (begc:endc))                        ; this%qflx_tran_veg_col     (:)   = ival
     allocate(this%qflx_rootsoil_col     (begc:endc,1:nlevgrnd))             ; this%qflx_rootsoil_col     (:,:) = ival
+    allocate(this%qflx_et_reduced_col   (begc:endc))                        ; this%qflx_et_reduced_col   (:)   = ival
     allocate(this%qflx_infl_col         (begc:endc))                        ; this%qflx_infl_col         (:)   = ival
+    allocate(this%qflx_exfl_col         (begc:endc))                        ; this%qflx_exfl_col         (:)   = ival
     allocate(this%qflx_surf_col         (begc:endc))                        ; this%qflx_surf_col         (:)   = ival
+    allocate(this%qflx_base_col         (begc:endc))                        ; this%qflx_base_col         (:)   = ival
     allocate(this%qflx_drain_col        (begc:endc))                        ; this%qflx_drain_col        (:)   = ival
     allocate(this%qflx_drain_vr_col     (begc:endc,1:nlevgrnd))             ; this%qflx_drain_vr_col     (:,:) = ival
+    allocate(this%qflx_lateral_col      (begc:endc))                        ; this%qflx_lateral_col      (:)   = ival
+    allocate(this%qflx_lateral_vr_col   (begc:endc,1:nlevgrnd))             ; this%qflx_lateral_vr_col   (:,:) = ival
+    allocate(this%qflx_h2osfc_col       (begc:endc))                        ; this%qflx_h2osfc_col       (:)   = ival
 
 
     ! energyflux_vars:
