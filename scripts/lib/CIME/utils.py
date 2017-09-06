@@ -230,6 +230,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         stat, output, errput = run_cmd("{} {}".format(cmd, cmdargs), input_str=input_str, from_dir=from_dir,
                                  verbose=verbose, arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env,
                                  combine_output=combine_output)
+        expect(stat==0, errput)
 
         logger.info(output)
         # refresh case xml object from file
