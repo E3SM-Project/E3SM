@@ -7,11 +7,27 @@
                         "ref_name": "GPCP_v2.2",
                         "reference_name": "GPCP (yrs1979-2014)",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "regions": ["polar_S", "polar_N"],
-                        "contour_levels": [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                        "diff_levels": [-5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5]
+                        "regions": ["polar_S"],
+                        "test_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "reference_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "diff_colormap": "BrBG",
+                        "contour_levels": [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5],
+                        "diff_levels": [-2, -1.5, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.5, 2]
                 },
-
+                {
+                        "sets": ["polar"],
+                        "case_id": "GPCP_v2.2",
+                        "variables": ["PRECT"],
+                        "ref_name": "GPCP_v2.2",
+                        "reference_name": "GPCP (yrs1979-2014)",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_N"],
+                        "test_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "reference_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "diff_colormap": "BrBG",
+                        "contour_levels": [0.5, 1, 1.5, 2, 3, 4, 5, 7.5, 10],
+                        "diff_levels": [-2, -1.5, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.5, 2]
+                },
                 {
                         "sets": ["polar"],
                         "case_id": "SST_CL_HadISST",
@@ -21,7 +37,7 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "contour_levels": [-1, 0, 1, 3, 5, 7, 9, 11, 13, 15],
-                        "diff_levels": [-9, -7, -5, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7, 9]
+                        "diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0.2, 0.5, 1, 2, 3, 4, 5]
                 },
                 {
                         "sets": ["polar"],
@@ -32,7 +48,7 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "contour_levels": [-1, 0, 1, 3, 5, 7, 9, 11, 13, 15],
-                        "diff_levels": [-9, -7, -5, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7, 9]
+                        "diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0.2, 0.5, 1, 2, 3, 4, 5]
                 },
                 {
                         "sets": ["polar"],
@@ -43,7 +59,7 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "contour_levels": [-1, 0, 1, 3, 5, 7, 9, 11, 13, 15],
-                        "diff_levels": [-9, -7, -5, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7, 9]
+                        "diff_levels": [-5, -4, -3, -2, -1, -0.5, -0.2, 0.2, 0.5, 1, 2, 3, 4, 5]
                 },
                 {
                         "sets": ["polar"],
@@ -219,7 +235,9 @@
                         "ref_name": "ceres_ebaf_surface_v2.8",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "regions": ["polar_S", "polar_N"],
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 10, 20, 30, 40, 50, 60, 70, 80],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["polar"],
@@ -228,7 +246,9 @@
                         "ref_name": "ceres_ebaf_surface_v2.8",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "regions": ["polar_S", "polar_N"],
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, -2, 2, 5, 10, 20, 30, 40, 50]
                 },
                 {
                         "sets": ["polar"],
@@ -293,9 +313,26 @@
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "regions": ["polar_S", "polar_N"],
-                        "contour_levels": [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                        "diff_levels": [-5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5]
+                        "regions": ["polar_S"],
+                        "test_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "reference_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "diff_colormap": "BrBG",
+                        "contour_levels": [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5],
+                        "diff_levels": [-2, -1.5, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.5, 2]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["PRECT"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_N"],
+                        "test_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "reference_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "diff_colormap": "BrBG",
+                        "contour_levels": [0.5, 1, 1.5, 2, 3, 4, 5, 7.5, 10],
+                        "diff_levels": [-2, -1.5, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.5, 2]
                 },
                 {
                         "sets": ["polar"],
@@ -305,8 +342,8 @@
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
-                        "contour_levels": [0, 1, 2, 4, 6, 8, 12, 14, 16, 18, 20, 22, 24, 26, 28],
-                        "diff_levels": [-11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11]
+                        "contour_levels": [0, 1, 2, 4, 6, 8, 12, 14, 16, 18, 20, 22],
+                        "diff_levels": [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
                 },
                 {
                         "sets": ["polar"],
@@ -317,8 +354,10 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [850.0],
-                        "contour_levels": [-20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20],
-                        "diff_levels": [-15, -10, -8, -6, -4, -2, -1, 1, 2, 4, 6, 8, 10, 15]
+                        "test_colormap": "PiYG_r",
+                        "reference_colormap": "PiYG_r",
+                        "contour_levels": [-20, -15, -10, -8, -5, -3, -1, 1, 3, 5, 8, 10, 15, 20],
+                        "diff_levels": [-8, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 8]
                 },
                 {
                         "sets": ["polar"],
@@ -329,8 +368,10 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [200.0],
-                        "contour_levels": [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60],
-                        "diff_levels": [-15, -10, -8, -6, -4, -2, -1, 1, 2, 4, 6, 8, 10, 15]
+                        "test_colormap": "PiYG_r",
+                        "reference_colormap": "PiYG_r",
+                        "contour_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50],
+                        "diff_levels": [-8, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 8]
                 },
                 {
                         "sets": ["polar"],
@@ -341,7 +382,7 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [500.0],
-                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
+                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56],
                         "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]
                 },
                 {
@@ -350,7 +391,31 @@
                         "variables": ["T"],
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
+                        "regions": ["polar_S"],
+                        "plevs": [850.0],
+                        "contour_levels": [240, 244, 248, 252, 256, 260, 264, 268, 272],
+                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["T"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["ANN"],
+                        "regions": ["polar_N"],
+                        "plevs": [850.0],
+                        "contour_levels": [256, 258, 260, 262, 264, 268, 270, 272, 274, 276],
+                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["T"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [850.0],
                         "contour_levels": [230, 240, 250, 260, 270, 280, 290, 300, 310],
@@ -362,18 +427,42 @@
                         "variables": ["T"],
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
+                        "regions": ["polar_S"],
+                        "plevs": [200.0],
+                        "contour_levels": [210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["T"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["ANN"],
+                        "regions": ["polar_N"],
+                        "plevs": [200.0],
+                        "contour_levels": [215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["T"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [200.0],
                         "contour_levels": [200, 205, 210, 215, 220, 225, 230, 235, 240],
-                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
                 },
                 {
                         "sets": ["polar"],
                         "case_id": "MERRA2",
                         "variables": ["LHFLX"],
                         "ref_name": "MERRA2",
-                        "reference_name": "MERRA2 Reanalysis 1979-2015",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "contour_levels": [-15, 0, 15, 30, 45, 60, 75, 90, 105, 120],
@@ -386,9 +475,26 @@
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "regions": ["polar_S", "polar_N"],
-                        "contour_levels": [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                        "diff_levels": [-5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5]
+                        "regions": ["polar_S"],
+                        "test_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "reference_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "diff_colormap": "BrBG",
+                        "contour_levels": [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5],
+                        "diff_levels": [-2, -1.5, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.5, 2]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["PRECT"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_N"],
+                        "test_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "reference_colormap": "WhiteBlueGreenYellowRed.rgb",
+                        "diff_colormap": "BrBG",
+                        "contour_levels": [0.5, 1, 1.5, 2, 3, 4, 5, 7.5, 10],
+                        "diff_levels": [-2, -1.5, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.5, 2]
                 },
                 {
                         "sets": ["polar"],
@@ -398,8 +504,48 @@
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
-                        "contour_levels": [0, 1, 2, 4, 6, 8, 12, 14, 16, 18, 20, 22, 24, 26, 28],
-                        "diff_levels": [-11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11]
+                        "contour_levels": [0, 1, 2, 4, 6, 8, 12, 14, 16, 18, 20, 22],
+                        "diff_levels": [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["U"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_S", "polar_N"],
+                        "plevs": [850.0],
+                        "test_colormap": "PiYG_r",
+                        "reference_colormap": "PiYG_r",
+                        "contour_levels": [-20, -15, -10, -8, -5, -3, -1, 1, 3, 5, 8, 10, 15, 20],
+                        "diff_levels": [-8, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 8]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["U"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_S", "polar_N"],
+                        "plevs": [200.0],
+                        "test_colormap": "PiYG_r",
+                        "reference_colormap": "PiYG_r",
+                        "contour_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50],
+                        "diff_levels": [-8, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 8]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["Z3"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_S", "polar_N"],
+                        "plevs": [500.0],
+                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56],
+                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]
                 },
                 {
                         "sets": ["polar"],
@@ -407,7 +553,31 @@
                         "variables": ["T"],
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
+                        "regions": ["polar_S"],
+                        "plevs": [850.0],
+                        "contour_levels": [240, 244, 248, 252, 256, 260, 264, 268, 272],
+                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["T"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN"],
+                        "regions": ["polar_N"],
+                        "plevs": [850.0],
+                        "contour_levels": [256, 258, 260, 262, 264, 268, 270, 272, 274, 276],
+                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["T"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [850.0],
                         "contour_levels": [230, 240, 250, 260, 270, 280, 290, 300, 310],
@@ -419,49 +589,36 @@
                         "variables": ["T"],
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "seasons": ["ANN"],
+                        "regions": ["polar_S"],
+                        "plevs": [200.0],
+                        "contour_levels": [210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["T"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN"],
+                        "regions": ["polar_N"],
+                        "plevs": [200.0],
+                        "contour_levels": [215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225],
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
+                },
+                {
+                        "sets": ["polar"],
+                        "case_id": "MERRA2",
+                        "variables": ["T"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["DJF", "MAM", "JJA", "SON"],
                         "regions": ["polar_S", "polar_N"],
                         "plevs": [200.0],
                         "contour_levels": [200, 205, 210, 215, 220, 225, 230, 235, 240],
-                        "diff_levels": [-15, -10, -7.5, -5, -2.5, -1, 1, 2.5, 5, 7.5, 10, 15]
-                },
-                {
-                        "sets": ["polar"],
-                        "case_id": "MERRA2",
-                        "variables": ["U"],
-                        "ref_name": "MERRA2",
-                        "reference_name": "MERRA2 Reanalysis 1980-2016",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "regions": ["polar_S", "polar_N"],
-                        "plevs": [850.0],
-                        "contour_levels": [-20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20],
-                        "diff_levels": [-15, -10, -8, -6, -4, -2, -1, 1, 2, 4, 6, 8, 10, 15]
-                },
-                {
-                        "sets": ["polar"],
-                        "case_id": "MERRA2",
-                        "variables": ["U"],
-                        "ref_name": "MERRA2",
-                        "reference_name": "MERRA2 Reanalysis 1980-2016",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "regions": ["polar_S", "polar_N"],
-                        "plevs": [200.0],
-                        "contour_levels": [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60],
-                        "diff_levels": [-15, -10, -8, -6, -4, -2, -1, 1, 2, 4, 6, 8, 10, 15]
-                },
-                {
-                        "sets": ["polar"],
-                        "case_id": "MERRA2",
-                        "variables": ["Z3"],
-                        "ref_name": "MERRA2",
-                        "reference_name": "MERRA2 Reanalysis 1980-2016",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "regions": ["polar_S", "polar_N"],
-                        "plevs": [500.0],
-                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
-                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]
+                        "diff_levels": [-10, -7.5, -5, -4, -3, -2, -1, -0.5, 0.5, 1, 2, 3, 4, 5, 7.5, 10]
                 }
-
         ]
 }
 

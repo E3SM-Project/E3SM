@@ -210,6 +210,18 @@ def lwcf(flntoa, flntoac):
     var.long_name = "TOA longwave cloud forcing"
     return var
 
+def netcf2(swcf, lwcf):
+    """TOA net cloud forcing """
+    var = swcf + lwcf
+    var.long_name = "TOA net cloud forcing"
+    return var
+
+def netcf4(fsntoa, fsntoac, flntoa, flntoac):
+    """TOA net cloud forcing """
+    var = fsntoa - fsntoac + flntoa - flntoac
+    var.long_name = "TOA net cloud forcing"
+    return var
+
 def fldsc(ts, flnsc):
     """Clearsky Surf LW downwelling flux"""
     var = 5.67e-8 * ts**4 - flnsc
@@ -361,11 +373,20 @@ derived_variables = {
         (('sfc_cre_net_lw_mon'), rename),
         (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
+    'NETCF': OrderedDict([
+        (('toa_net_sw_all_mon','toa_net_sw_clr_mon','toa_net_lw_all_mon','toa_net_lw_clr_mon'),
+          lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+        (('toa_cre_sw_mon','toa_cre_lw_mon'), lambda swcf, lwcf: netcf2(swcf, lwcf)),
+        (('SWCF','LWCF'), lambda swcf, lwcf: netcf2(swcf, lwcf)),
+        (('FSNTOA','FSNTOAC','FLNTOA','FLNTOAC'),
+         lambda fsntoa, fsntoac, flntoa, flntoac: netcf4(fsntoa, fsntoac, flntoa, flntoac))
+    ]),
+
     'FLNS': OrderedDict([
-        (('sfc_net_lw_all_mon'), rename)
+        (('sfc_net_lw_all_mon'), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon)
     ]),
     'FLNSC': OrderedDict([
-        (('sfc_net_lw_clr_mon'), rename)
+        (('sfc_net_lw_clr_mon'), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
     ]),
     'FLDS': OrderedDict([
         (('rlds'), rename)

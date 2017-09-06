@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+import colorcet as cc
 import cartopy.crs as ccrs
 import matplotlib.path as mpath
 from acme_diags.metrics import rmse, corr
@@ -50,6 +51,15 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
     if len(clevels) > 0:
         levels = [-1.0e8] + clevels + [1.0e8]
         norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
+
+    # Test for custom color maps
+    # (Note: this will need to be re-implemented properly)
+    if cmap.endswith('rgb'):
+
+        from matplotlib.colors import LinearSegmentedColormap
+        rgb = np.loadtxt(cmap)
+        rgb = rgb / 255.
+        cmap = LinearSegmentedColormap.from_list(name = 'custom', colors = rgb)
 
     # Contour plot
     ax = fig.add_axes(panel[n],projection=proj)
