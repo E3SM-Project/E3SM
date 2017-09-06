@@ -89,7 +89,8 @@ for mct, etc.
   <ADD_FFLAGS  MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE"> -I$(CLM_PFLOTRAN_SOURCE_DIR) </ADD_FFLAGS>
   <ADD_CPPDEFS MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE"> -DCLM_PFLOTRAN </ADD_CPPDEFS>
   <ADD_CPPDEFS MODEL="clm"    CLM_PFLOTRAN_COUPLED="TRUE" CLM_PFLOTRAN_COLMODE="TRUE"> -DCOLUMN_MODE </ADD_CPPDEFS>
-  <ADD_LDFLAGS MODEL="driver" CLM_PFLOTRAN_COUPLED="TRUE"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran $(PETSC_LIB) </ADD_LDFLAGS>
+  <ADD_LDFLAGS MODEL="driver" CLM_PFLOTRAN_COUPLED="TRUE"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran \
+      -L$(PETSC_PATH)/lib -lpetsc -lmetis -lparmetis </ADD_LDFLAGS>
 </compiler>
 <!-- end of hacking 'Macros.make' for coupling with pflotran -->
 
@@ -465,6 +466,40 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="mymac" >
+    <!-- for Mac OSX high sierra, clang-based gcc may have issue with '-mcmodel=medium' for libcsm_share.a, as following
+         ld: in ../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a(dSFMT.o), 
+             in section __TEXT,__text reloc 3: length != 2 and X86_64_RELOC_GOT not supported file 
+             '../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a' for architecture x86_64
+         collect2: error: ld returned 1 exit status 
+    -->
+  <CFLAGS> -mcmodel=small </CFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
+  <ADD_CFLAGS> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
+  <ADD_CFLAGS MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
+  <FFLAGS> -mcmodel=small</FFLAGS>
+  <ADD_FFLAGS> -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </ADD_FFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -fopenmp  </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O  </ADD_FFLAGS>
+  <ADD_FFLAGS> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
+  <ADD_LDFLAGS> -framework Accelerate </ADD_LDFLAGS>
+  <ADD_LDFLAGS MODEL="driver"> -L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf \
+              -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran \
+              -L$(CC_ROOT)/lib -lgomp </ADD_LDFLAGS>
+              <!-- ADD_LDFLAGS MODEL="driver">-L$(PNETCDF_PATH)/lib -lpnetcdf </ADD_LDFLAGS> -->
+  <ADD_SLIBS> -L$(NETCDF_PATH) -lnetcdff -lnetcdf -framework Accelerate </ADD_SLIBS>
+  <SFC>$(FC_ROOT)/bin/gfortran</SFC>
+  <SCC>$(CC_ROOT)/bin/gcc</SCC>
+  <SCXX>$(CC_ROOT)/bin/g++</SCXX>
+  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
+  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
+  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
+</compiler>
+
 <compiler COMPILER="pathscale">
   <!-- http://www.pathscale.com/node/70 -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRPATHSCALE </ADD_CPPDEFS>
@@ -545,7 +580,7 @@ for mct, etc.
 
 <compiler OS="Darwin">
    <ADD_CPPDEFS> -DSYSDARWIN </ADD_CPPDEFS>
-   <ADD_LDFLAGS MODEL="driver"> -all_load </ADD_LDFLAGS>
+   <!--  ADD_LDFLAGS MODEL="driver"> -all_load </ADD_LDFLAGS> -->
 </compiler>
 
 <compiler COMPILER="intel" OS="Darwin" >
