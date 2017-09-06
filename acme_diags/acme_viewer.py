@@ -24,7 +24,7 @@ from acme_diags.driver.utils import get_output_dir, get_set_name
 # Order is page(set_num) -> group(case_id) -> row(row_name) -> col(season) -> filename
 # Used when actually inserting the cols into the viewer
 # needed so we can have a cols in order of ANN, DJF, MAM, JJA, SON
-ROW_INFO = {}
+ROW_INFO = collections.OrderedDict()
 
 def _copy_acme_logo(root_dir):
     """Copy over ACME_Logo.png to root_dir/viewer"""
@@ -183,9 +183,9 @@ def create_viewer(root_dir, parameters, ext):
 
                         for row_name, fnm in row_name_and_fnm:
                             if parameter.case_id not in ROW_INFO[set_num]:
-                                ROW_INFO[set_num][parameter.case_id] = {}
+                                ROW_INFO[set_num][parameter.case_id] = collections.OrderedDict()
                             if row_name not in ROW_INFO[set_num][parameter.case_id]:
-                                ROW_INFO[set_num][parameter.case_id][row_name] = {}
+                                ROW_INFO[set_num][parameter.case_id][row_name] = collections.OrderedDict()
                                 ROW_INFO[set_num][parameter.case_id][row_name]['descr'] = _get_description(var, parameter)
                             # format fnm to support relative paths
                             ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('..', '{}'.format(set_num), parameter.case_id, fnm)
@@ -200,7 +200,7 @@ def create_viewer(root_dir, parameters, ext):
             except RuntimeError:
                 viewer.add_group(group)
 
-            for row_name in sorted(ROW_INFO[set_num][group]):
+            for row_name in ROW_INFO[set_num][group]:
                 try:
                      viewer.set_row(row_name)
                 except RuntimeError:
