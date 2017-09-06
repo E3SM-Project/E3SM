@@ -3418,6 +3418,9 @@ contains
                    curmr_ratio = curmr / mr
                    xsmr_ratio = 1 - curmr_ratio
                    availc(p) = gpp(p)
+                else
+                   curmr_ratio = 0._r8
+                   xsmr_ratio = 0._r8
                 end if
              else
                 if (mr > 0._r8 .and.  gpp(p) <= mr) then
@@ -3430,6 +3433,9 @@ contains
                    curmr_ratio = curmr / mr
                    xsmr_ratio = 0
                    availc(p) = gpp(p) - mr
+                else
+                   curmr_ratio = 0._r8
+                   xsmr_ratio = 0._r8
                 end if
              end if
              
