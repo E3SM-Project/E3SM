@@ -1285,10 +1285,12 @@ def analyze_build_log(comp, log, compiler):
         logger.info("Component {} build complete with {} warnings".format(comp, warncnt))
 
 def is_python_executable(filepath):
-    with open(filepath, "r") as f:
-        first_line = f.readline()
+    if os.path.isfile(filepath):
+        with open(filepath, "r") as f:
+            first_line = f.readline()
 
-    return first_line.startswith("#!") and "python" in first_line
+        return first_line.startswith("#!") and "python" in first_line
+    return False
 
 def get_umask():
     current_umask = os.umask(0)
