@@ -107,8 +107,12 @@ module mpas_init_atm_gwd
          case('GMTED2010')
             call mpas_log_write('--- Using GMTED2010 terrain dataset for GWDO static fields')
             geog_sub_path = 'topo_gmted2010_30s/'
+
+            ! NB: the GMTED2010 data on disk actually has start_lon = 0.0, but the read_global_30s_topo()
+            !     routine will shift the dataset when writing to the topo array so that the start_lon seen
+            !     by the rest of this code is -180.0.
             start_lat =  -90.0_RKIND
-            start_lon =    0.0_RKIND
+            start_lon = -180.0_RKIND
          case('default')
             call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
             call mpas_log_write('Invalid topography dataset '''//trim(config_topo_data) &
@@ -255,7 +259,7 @@ module mpas_init_atm_gwd
       integer, parameter :: tile_bdr = 3        ! number of layers of border/halo points surrounding each tile
 
       integer :: istatus
-      integer :: ix, iy
+      integer :: ix, iy, ishift, ix_shift
       integer :: isigned, endian, wordsize, nx, ny, nz
       real (kind=R4KIND) :: scalefactor
       real (kind=R4KIND), dimension(:,:,:), allocatable :: tile
@@ -271,6 +275,16 @@ module mpas_init_atm_gwd
       ny = tile_y + 2*tile_bdr
       nz = 1
 
+      ishift = 0
+
+      !
+      ! For GMTED2010 data, the dataset starts at 0.0 longitude, but we need to shift the starting location
+      ! in the topo array to -180.0, so we introduce an offset in the x-coordinate of topo_x/2
+      !
+      if (trim(sub_path) == 'topo_gmted2010_30s/') then
+         ishift = topo_x / 2
+      end if
+
       do iy=1,topo_y,tile_y
       do ix=1,topo_x,tile_x
          write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//trim(sub_path), ix, '-', (ix+tile_x-1), '.', &
@@ -283,7 +297,8 @@ module mpas_init_atm_gwd
             return
          end if
 
-         topo(ix:(ix+tile_x-1),iy:(iy+tile_y-1)) = tile((tile_bdr+1):(tile_x+tile_bdr),(tile_bdr+1):(tile_y+tile_bdr),1)
+         ix_shift = mod((ix-1) + ishift, topo_x) + 1
+         topo(ix_shift:(ix_shift+tile_x-1),iy:(iy+tile_y-1)) = tile((tile_bdr+1):(tile_x+tile_bdr),(tile_bdr+1):(tile_y+tile_bdr),1)
 
       end do
       end do
