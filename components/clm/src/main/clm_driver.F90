@@ -962,7 +962,7 @@ contains
                            phosphorusflux_vars, phosphorusstate_vars,           &
                            ch4_vars)
                     call t_stopf('clm-bgc via interface')
-                 end if !if (use_pflotran .and. pf_cmode)
+                 end if !if (use_clm_bgc)
              end if !if (use_clm_interface)
              !--------------------------------------------------------------------------------
 

@@ -84,15 +84,16 @@ module clm_interface_funcsMod
 
 
   !--------------------------------------------------------------------------------------
-  ! (1) GENERIC SUBROUTINES: used by any specific soil BGC module
-  ! pass clm variables to clm_bgc_data
-  public    :: get_clm_data                 ! STEP-1: clm vars -> clm_interface_data
+  ! (1) GENERIC SUBROUTINES: used by any specific soil BGC/TH module
+  ! pass clm variables to clm_interface_data
+  public    :: get_clm_data                 !! STEP-1: clm vars -> clm_interface_data
 
-  ! pass clm variables to clm_interface_data, called by get_clm_data
-  private   :: get_clm_soil_property        ! STEP-1.1: soil properties
-  private   :: get_clm_soil_th_state        ! STEP-1.2: thermohydrology (TH) state vars
-  private   :: get_clm_bgc_state            ! STEP-1.3: state vars
-  private   :: get_clm_bgc_flux             ! STEP-1.4: flux vars
+  !! pass clm variables to clm_interface_data, called by get_clm_data
+  private   :: get_clm_soil_property        !! STEP-1.1: soil properties
+  private   :: get_clm_soil_th_state        !! STEP-1.2: thermohydrology (TH) state vars
+  private   :: get_clm_soil_th_flux         !! STEP-1.3: thermohydrology (TH) flux vars
+  private   :: get_clm_bgc_state            !! STEP-1.4: state vars
+  private   :: get_clm_bgc_flux             !! STEP-1.5: flux vars
 
   ! STEP-3.x: clm_interface_data -> clm vars
   ! update clm variables from clm_interface_data,
@@ -224,7 +225,8 @@ contains
     ! !USES:
     use CNDecompCascadeConType, only : decomp_cascade_con
     use clm_varctl            , only : spinup_state
-    !
+    use clm_varcon            , only : tkice, thk_bedrock
+
     ! !ARGUMENTS:
 
     implicit none
@@ -246,9 +248,9 @@ contains
 
     associate ( &
          ! Assign local pointer to derived subtypes components (column-level)
-         z                  => col_pp%z                                                , & !  [real(r8) (:,:)]  layer depth (m)
-         dz                 => col_pp%dz                                               , & !  [real(r8) (:,:)]  layer thickness depth (m)
-         zi                 => col_pp%zi                                               , & !
+         z                  => col_pp%z                                             , & !  [real(r8) (:,:)]  layer depth (m)
+         dz                 => col_pp%dz                                            , & !  [real(r8) (:,:)]  layer thickness depth (m)
+         zi                 => col_pp%zi                                            , & !
 
          bd                 => soilstate_vars%bd_col                                , & !
          bsw                => soilstate_vars%bsw_col                               , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
@@ -256,8 +258,13 @@ contains
          sucsat             => soilstate_vars%sucsat_col                            , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
          watsat             => soilstate_vars%watsat_col                            , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
          watfc              => soilstate_vars%watfc_col                             , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
-         watmin             => soilstate_vars%watmin_col                            , & !   col minimum volumetric soil water (nlevsoi)
-         sucmin             => soilstate_vars%sucmin_col                            , & !   col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
+         watmin             => soilstate_vars%watmin_col                            , & !  [real(r8) (:,:)]  col minimum volumetric soil water (nlevsoi)
+         sucmin             => soilstate_vars%sucmin_col                            , & !  [real(r8) (:,:)]  col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
+         !
+         tkmg               => soilstate_vars%tkmg_col                              , & !  [real(r8) (:,:)]  ! col thermal conductivity, soil minerals  [W/m-K] (nlevgrnd)
+         tkdry              => soilstate_vars%tkdry_col                             , & !  [real(r8) (:,:)]  ! col thermal conductivity, dry soil [W/m-K] (nlevgrnd)
+         tksatu             => soilstate_vars%tksatu_col                            , & !  [real(r8) (:,:)]  ! col thermal conductivity, saturated soil [W/m-K] (nlevgrnd)
+         hcsoil             => soilstate_vars%csol_col                              , & !  [real(r8) (:,:)]  ! col heat capacity, soil solids (J/m**3/Kelvin) (nlevgrnd)
          !
          cellorg            => soilstate_vars%cellorg_col                           , & !  Input:  [real(r8) (:,:)  ]  column 3D org (kg/m3 organic matter) (nlevgrnd)
          !
@@ -317,6 +324,11 @@ contains
 
         clm_idata%rootfr_col(c,:)        = rootfr(c,:)
 
+        clm_idata%tkwet_col(c,:)         = tksatu(c,:)
+        clm_idata%tkdry_col(c,:)         = tkdry(c,:)
+        clm_idata%tkfrz_col(c,:)         = tkice
+        clm_idata%csol_col(c,:)          = hcsoil(c,:)
+
         !
         do k = 1, ndecomp_cascade_transitions
             clm_idata%bgc%rf_decomp_cascade_col(c,:,k)           = rf_decomp_cascade(c,:,k)
@@ -369,6 +381,7 @@ contains
       h2osoi_vol            => waterstate_vars%h2osoi_vol_col           , & ! [real(r8) (:,:)] volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
       h2osoi_liq            => waterstate_vars%h2osoi_liq_col           , & ! [real(r8) (:,:)] liquid water (kg/m2) (-nlevsno+1:nlevgrnd)
       h2osoi_ice            => waterstate_vars%h2osoi_ice_col           , & ! [real(r8) (:,:)] ice lens (kg/m2) (-nlevsno+1:nlevgrnd)
+      h2osfc                => waterstate_vars%h2osfc_col               , & ! [real(r8) (:)] surface water (mmH2O)
       !
       t_soisno              => temperature_vars%t_soisno_col            , & ! [real(r8) (:,:)] snow-soil temperature (Kelvin) (-nlevsno+1:nlevgrnd)
       t_grnd                => temperature_vars%t_grnd_col              , & ! [real(r8) (:)] ground (snow/soil1/surfwater-mixed) temperature (Kelvin)
@@ -388,6 +401,7 @@ contains
 
         clm_idata_th%frac_sno_eff_col(c)         = frac_sno_eff(c)
         clm_idata_th%frac_h2osfc_col(c)          = frac_h2osfc(c)
+        clm_idata_th%h2osfc_col(c)               = h2osfc(c)
 
         clm_idata_th%t_grnd_col(c)               = t_grnd(c)
         clm_idata_th%t_h2osfc_col(c)             = t_h2osfc(c)
@@ -416,7 +430,7 @@ contains
                        waterflux_vars, energyflux_vars)
   !
   ! !DESCRIPTION:
-  !  get soil temperature/saturation from CLM to soil BGC module
+  !  get soil thermal-hydrological fluxes from CLM to soil TH module
   !
   ! !USES:
     use clm_time_manager    , only : get_nstep
@@ -440,13 +454,13 @@ contains
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-      qflx_top_soil     => waterflux_vars%qflx_top_soil_col         , & ! [real(:,:)] net liq. water input into top of soil column (mmH2O/s)
+      qflx_top_soil     => waterflux_vars%qflx_top_soil_col         , & ! [real(:)] ! net liq. water input into top of soil column (mmH2O/s)
       qflx_evap_soil    => waterflux_vars%qflx_ev_soil_col          , & ! [real(:)] ! col soil surface evaporation (mm H2O/s) (+ = to atm)
       qflx_evap_h2osfc  => waterflux_vars%qflx_ev_h2osfc_col        , & ! [real(:)] ! col water surface evaporation (mm H2O/s) (+ = to atm)
       qflx_evap_snow    => waterflux_vars%qflx_ev_snow_col          , & ! [real(:)] ! col snow surface evaporation (mm H2O/s) (+ = to atm)
       qflx_subl_snow    => waterflux_vars%qflx_sub_snow_col         , & ! [real(:)] ! col snow sublimation (mm H2O/s) (+ = to atm)
       qflx_tran_veg     => waterflux_vars%qflx_tran_veg_col         , & ! [real(:)] ! col plant transpiration (mm H2O/s) (+ = to atm)
-      qflx_rootsoil     => waterflux_vars%qflx_rootsoi_col          , & ! [real(:,:)] ! col vertically-resolved root and soil water exchange [mm H2O/s] [+ into root]
+      qflx_rootsoil     => waterflux_vars%qflx_rootsoi_col          , & ! [real(:,:)] ! col vertically-resolved (nlevsoi) root and soil water exchange [mm H2O/s] [+ into root]
       !
       htvp              => energyflux_vars%htvp_col                 , & ! [real(:) ! latent heat of vapor of water (or sublimation) [j/kg]
       eflx_bot          => energyflux_vars%eflx_bot_col             , & ! [real(:) ! col heat flux from beneath the soil or ice column (W/m**2)
@@ -475,7 +489,11 @@ contains
         clm_idata_th%qflx_tran_veg_col(c)        = qflx_tran_veg(c)
 
         do j = 1,nlevgrnd
-            clm_idata_th%qflx_rootsoil_col(c,j)  = qflx_rootsoil(c,j)
+            if (j<=nlevsoi) then
+               clm_idata_th%qflx_rootsoil_col(c,j) = qflx_rootsoil(c,j)
+            else
+               clm_idata_th%qflx_rootsoil_col(c,j) = 0._r8
+            end if
         end do
 
         clm_idata_th%htvp_col(c)                 = htvp(c)
@@ -746,8 +764,8 @@ contains
 
 !--------------------------------------------------------------------------------------
   subroutine update_soil_moisture(clm_idata_th,     &
-           bounds, num_soilc, filter_soilc,   &
-           soilstate_vars, waterstate_vars)
+           bounds, num_soilc, filter_soilc,         &
+           soilstate_vars, waterstate_vars, waterflux_vars)
 
   !
   ! !DESCRIPTION:
@@ -763,6 +781,7 @@ contains
     integer, intent(in) :: filter_soilc(:)  ! column filter for soil points
     type(soilstate_type), intent(inout)  :: soilstate_vars
     type(waterstate_type), intent(inout) :: waterstate_vars
+    type(waterflux_type), intent(inout)  :: waterflux_vars
 
     type(clm_interface_th_datatype), intent(in) :: clm_idata_th
 
@@ -776,8 +795,29 @@ contains
          !
          h2osoi_liq_col =>  waterstate_vars%h2osoi_liq_col      , &
          h2osoi_ice_col =>  waterstate_vars%h2osoi_ice_col      , &
-         h2osoi_vol_col =>  waterstate_vars%h2osoi_vol_col        &
+         h2osoi_vol_col =>  waterstate_vars%h2osoi_vol_col      , &
+         !
+         qflx_drain_perched     => waterflux_vars%qflx_drain_perched_col      , & ! Output: [real(r8) (:)   ]  sub-surface runoff from perched zwt (mm H2O /s)
+         qflx_rsub_sat          => waterflux_vars%qflx_rsub_sat_col           , & ! Output: [real(r8) (:)   ]  soil saturation excess flow (exfiltraion) [mm h2o/s]
+         qflx_drain             => waterflux_vars%qflx_drain_col              , & ! Output: [real(r8) (:)   ]  sub-surface runoff/drainage at bottom (mm H2O /s)
+         qflx_lateral           => waterflux_vars%qflx_lateral_col            , & ! Output: [real(r8) (:)   ]  sub-surface runoff/drainage laterally (mm H2O /s)
+         qflx_surf              => waterflux_vars%qflx_surf_col               , & ! Output: [real(r8) (:)   ]  soil surface runoff (mm H2O /s)
+         qflx_h2osfc_surf       => waterflux_vars%qflx_h2osfc_surf_col        , & ! Output: [real(r8) (:)   ]  surface (pond) water runoff (mm/s)
+         qflx_infl              => waterflux_vars%qflx_infl_col               , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)
+         qflx_qrgwl             => waterflux_vars%qflx_qrgwl_col              , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes
+         qflx_runoff            => waterflux_vars%qflx_runoff_col               & ! Output: [real(r8) (:)   ]  total water losses to currents from column (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
     )
+
+    ! states
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+
+        soilpsi_col(c,:)    =  clm_idata_th%soilpsi_col(c,:)
+
+        h2osoi_liq_col(c,:) =  clm_idata_th%h2osoi_liq_col(c,:)
+        h2osoi_ice_col(c,:) =  clm_idata_th%h2osoi_ice_col(c,:)
+        h2osoi_vol_col(c,:) =  clm_idata_th%h2osoi_vol_col(c,:)
+    end do
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
@@ -788,6 +828,38 @@ contains
         h2osoi_ice_col(c,:) =  clm_idata_th%h2osoi_ice_col(c,:)
         h2osoi_vol_col(c,:) =  clm_idata_th%h2osoi_vol_col(c,:)
     end do
+
+    ! fluxes
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+
+        ! NOTES from pflotran coupling
+        ! (1) 'qflx_drain_perched' setting to zero because included in 'qflx_drain'
+        !    (if needed, it requires re-calculation from vertical-drain/lateral-flow in enclosed/local saturation zone)
+        ! (2) 'qflx_drain' is the NET water flow in/out of soil column bottom interface.
+        ! (3) 'qflx_surf' is the NET water flow in/out of soil column top interface.
+        ! (4) 'qflx_lateral' is the NET water flow in/out of soil column sides interface.
+
+        qflx_drain (c)        = clm_idata_th%qflx_drain_col(c)
+        qflx_rsub_sat (c)     = clm_idata_th%qflx_exfl_col(c)
+        qflx_infl (c)         = clm_idata_th%qflx_infl_col(c)
+        qflx_surf (c)         = clm_idata_th%qflx_surf_col(c)
+        qflx_h2osfc_surf(c)   = clm_idata_th%qflx_h2osfc_col(c)
+        qflx_lateral(c)       = clm_idata_th%qflx_lateral_col(c)
+
+        qflx_qrgwl(c)         = 0._r8
+        qflx_drain_perched(c) = 0._r8
+
+        ! add amount of ET adjusted by PFLOTRAN into 'qflx_surf' so that counted correctly in balance-checking
+        ! NOTE: this is a work-around, especially when surface module not coupled with pflotran.
+        qflx_surf(c) = qflx_surf(c) - clm_idata_th%qflx_et_reduced_col(c)
+
+        !summary of all water loss to currents
+        qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
+
+
+    end do
+
 
     end associate
   end subroutine update_soil_moisture
@@ -868,7 +940,7 @@ contains
     if (pf_hmode) then
         call update_soil_moisture(clm_idata_th,         &
                    bounds, num_soilc, filter_soilc,     &
-                   soilstate_vars, waterstate_vars)
+                   soilstate_vars, waterstate_vars, waterflux_vars)
     end if
 
   end subroutine update_th_data_pf2clm
