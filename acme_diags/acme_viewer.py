@@ -138,13 +138,28 @@ def _add_pages_and_top_row(viewer, parameters):
         for s in ['ANN', 'DJF', 'MAM', 'JJA', 'SON']:
             if s in seasons:
                 col_labels.append(s)
-        viewer.add_page("{}".format(set_num), col_labels)
+        viewer.add_page("{}".format(_better_page_name(set_num)), col_labels)
 
 def _get_description(var, parameters):
     """Get the description for the variable from the parameters"""
     if hasattr(parameters, 'viewer_descr') and var in parameters.viewer_descr:
         return parameters.viewer_descr[var]
     return var
+
+def _better_page_name(old_name):
+    """Use a longer, more descriptive name for the pages."""
+    if old_name == 'zonal_mean_xy':
+        return 'Zonal mean line plots'
+    elif old_name == 'zonal_mean_2d':
+        return 'Pressure-Latitude zonal mean contour plots'
+    elif old_name == 'lat_lon':
+        return 'Latitude-Longitude contour maps'
+    elif old_name == 'polar':
+        return 'Polar contour maps'
+    elif old_name == 'cosp_histogram':
+        return 'CloudTopHeight-Tau joint histograms'
+    else:
+        return old_name
 
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
@@ -192,7 +207,7 @@ def create_viewer(root_dir, parameters, ext):
 
     # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
     for set_num in ROW_INFO:
-        viewer.set_page("{}".format(set_num))
+        viewer.set_page("{}".format(_better_page_name(set_num)))
 
         for group in ROW_INFO[set_num]:
             try:             
