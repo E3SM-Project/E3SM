@@ -109,4 +109,4 @@ def run_diag(parameter):
             
         f_obs.close()
         f_mod.close()
-        return parameter
+    return parameter
