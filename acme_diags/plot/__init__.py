@@ -56,16 +56,18 @@ def get_colormap(colormap, parameters):
         raise IOError(msg.format(colormap, pth))
 
     rgb_arr = numpy.loadtxt(colormap)
-    rgb_arr = rgb_arr / 255.0
 
     if parameters.backend in ['cartopy', 'mpl', 'matplotlib']:
         from matplotlib.colors import LinearSegmentedColormap
 
+        rgb_arr = rgb_arr / 255.0
         cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr)
         return cmap
 
     elif parameters.backend in ['vcs']:
         from vcs import createcolormap
+
+        rgb_arr = rgb_arr / 2.55
 
         cmap = createcolormap()
         cmap_range = range(len(rgb_arr))
