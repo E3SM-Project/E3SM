@@ -355,6 +355,56 @@ for mct, etc.
   <SFC> nagfor </SFC>
 </compiler>
 
+<compiler MACH="mymac" COMPILER="gnu">
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH> <!-- this is needed for cmake list of CLM, and cannot be passing from machine configuration (weired) -->
+  <CFLAGS>
+    <!-- for Mac OSX high sierra, clang-based gcc may have issue with '-mcmodel=medium' for libcsm_share.a, as following
+         ld: in ../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a(dSFMT.o), 
+             in section __TEXT,__text reloc 3: length != 2 and X86_64_RELOC_GOT not supported file 
+             '../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a' for architecture x86_64
+         collect2: error: ld returned 1 exit status 
+    -->
+    <base> -mcmodel=small </base>
+    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
+  </CFLAGS>
+  <FFLAGS>
+    <base> -mcmodel=small -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
+    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append> -framework Accelerate </append>
+    <append MODEL="driver">-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
+    <append MODEL="driver">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
+    <append MODEL="driver">-L$(PNETCDF_PATH)/lib -lpnetcdf </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -framework Accelerate </append>
+  </SLIBS>
+  <SFC>$(FC_ROOT)/bin/gfortran</SFC>
+  <SCC>$(CC_ROOT)/bin/gcc</SCC>
+  <SCXX>$(CC_ROOT)/bin/g++</SCXX>
+  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
+  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
+  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
+</compiler>
+
+<compiler MACH="mymac" COMPILER="pgi" >
+  <LDFLAGS>
+    <append>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
+    <append>-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
+    <!-- append>-L$(PNETCDF_PATH)/lib -lpnetcdf </append> -->
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+  </SLIBS>
+  <SFC>$(FC_ROOT)/bin/pgfortran</SFC>
+  <SCC>$(CC_ROOT)/bin/pgcc</SCC>
+  <SCXX>$(CC_ROOT)/bin/pgc++</SCXX>
+  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
+  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
+  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
+</compiler>
+
 <compiler COMPILER="pathscale">
   <CFLAGS>
     <append compile_threaded="TRUE"> -mp </append>
@@ -657,9 +707,13 @@ for mct, etc.
   <CPPDEFS>
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
+  <!-- The following may cause duplicate symbol issue, especially with Mac OSX high sierra -->
+  <!-- NOTE: it's observed when coupled with pflotran, which uses PETSc library
   <LDFLAGS>
     <append MODEL="driver"> -all_load </append>
   </LDFLAGS>
+  -->
+  
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">

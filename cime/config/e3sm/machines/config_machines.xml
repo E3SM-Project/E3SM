@@ -488,6 +488,48 @@
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
   </machine>
 
+  <machine MACH="mymac">
+    <DESC>Mac OS/X workstation or laptop</DESC>
+    <NODENAME_REGEX>macbook-pro.local</NODENAME_REGEX>
+    <OS>Darwin</OS>
+    <COMPILERS>gnu,pgi</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/project_acme/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/project_acme/cesm-inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/project_acme/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/project_acme/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>yuanf_at_ornl_dot_gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>$ENV{MPI_ROOT}/bin/mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"></module_system>   
+    <RUNDIR>$ENV{HOME}/project_acme/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/project_acme/scratch/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="PATH">$ENV{FC_ROOT}/bin:$ENV{CC_ROOT}/bin:/usr/local/CMake.App/Contents/bin/:/usr/local/bin/:/opt/local/sbin/:/opt/local/bin:/usr/bin/:/bin/</env>   <!--This is needed, especially when called by external scripts and $PATH not found -->
+    </environment_variables>       
+    <environment_variables>
+      <!-- NOTE: the following $ENV{} must be available in your .bashrc, otherwise explicitly give the directories -->
+      <env name="CC_ROOT">$ENV{CC_ROOT}</env>
+      <env name="FC_ROOT">$ENV{FC_ROOT}</env>
+      <env name="MPI_ROOT">$ENV{MPI_ROOT}</env>
+      <env name="HDF5_PATH">$ENV{HDF5_PATH}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_PATH}</env>
+      <env name="BLASLAPACK_DIR">$ENV{BLASLAPACK_DIR}</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX>none</NODENAME_REGEX>
