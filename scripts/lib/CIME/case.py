@@ -456,8 +456,11 @@ class Case(object):
                     return compset_alias, science_support
 
         if compset_alias is None:
-            logger.info("Did not find a compset match for longname {} ".format(compset_name))
+            logger.info("Did not find an alias or longname compset match for longname {} ".format(compset_name))
             self._compsetname = compset_name
+            # if this is a valiid compset longname there will be at least 6 components.
+            components = self.get_compset_components()
+            expect('_' in compset_name and len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname. {}".format(compset_name, components))
 
         return None, science_support
 
@@ -549,7 +552,7 @@ class Case(object):
         if compset is None:
             compset = self._compsetname
         expect(compset is not None,
-               "ERROR: compset is not set")
+               "compset is not set")
         # the first element is always the date operator - skip it
         elements = compset.split('_')[1:] # pylint: disable=maybe-no-member
         for element in elements:
