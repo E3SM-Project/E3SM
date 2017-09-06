@@ -618,6 +618,58 @@
     <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
 </machine>
 
+<machine MACH="mymac">
+    <DESC>Mac OS/X workstation or laptop</DESC>
+    <NODENAME_REGEX>macbook-pro.local</NODENAME_REGEX>
+    <TESTS>acme_user</TESTS>
+    <OS>Darwin</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <RUNDIR>$ENV{HOME}/project_acme/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/project_acme/scratch/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/project_acme/cesm-inputdata</DIN_LOC_ROOT>    
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/project_acme/cesm-inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/project_acme/scratch/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CESMSCRATCHROOT>$ENV{HOME}/project_acme/scratch</CESMSCRATCHROOT>
+	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
+    <CCSM_BASELINE>$ENV{HOME}/project_acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <SUPPORTED_BY>YOUR_NAME</SUPPORTED_BY>
+    <GMAKE>/usr/local/bin/gmake</GMAKE>    <!-- have to add full path, otherwise './case.build -clean' has issue  -->
+    <GMAKE_J>1</GMAKE_J>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <mpirun mpilib="default" compiler="gnu">
+      <executable>/usr/local/mpich-3.2-gcc53/bin/mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"></module_system>   
+    <environment_variables>
+      <env name="PATH">/usr/local/CMake.App/Contents/bin/:/usr/local/bin/:/opt/local/sbin/:/opt/local/bin:/usr/bin/:/bin/</env>   <!--This is for Cmake, needed by PIO -->
+    </environment_variables>       
+    <environment_variables compiler="gnu">
+      <env name="GCC_ROOT">/usr/local/gcc-5.3.0</env>
+      <env name="MPI_ROOT">/usr/local/mpich-3.2-gcc53</env>
+      <env name="HDF5_PATH">/usr/local/hdf5-1.8.16-mpich32-gcc53</env>
+      <env name="NETCDF_PATH">/usr/local/netcdf-4.4-mpich32-gcc53</env>
+      <env name="PETSC_PATH">/usr/local/petsc-mpich32-gcc53</env>      
+    </environment_variables>       
+
+    <environment_variables>
+      <!-- hack for PFLOTRAN coupling (this is a temporary solution, 
+          and user must manually edit the following in 'env_mach_specific.xml' after case.setup)-->
+      <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+      <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+      <env name="CLM_PFLOTRAN_SOURCE_DIR">/Users/$USER/mygitlab/pflotran-interface/src/clm-pflotran</env>
+    </environment_variables>       
+</machine>
+
 <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX></NODENAME_REGEX>
