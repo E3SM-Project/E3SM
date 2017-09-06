@@ -125,7 +125,6 @@ NCR    multi-instance validation vs single instance - concurrent PE for instance
        do an initial run test with NINST 1 (suffix: base)
        do an initial run test with NINST 2 (suffix: multiinst for both _0001 and _0002)
         compare base and _0001 and _0002
-       (***note that NCR_script and NCK_script are the same - but NCR_build.csh and NCK_build.csh are different***)
 
 NOC    multi-instance validation for single instance ocean (default length)
        do an initial run test with NINST 2 (other than ocn), with mod to instance 1 (suffix: inst1_base, inst2_mod)
@@ -515,6 +514,17 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <REST_OPTION>none</REST_OPTION>
     <DOUT_S>FALSE</DOUT_S>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
+  <test NAME="MCC">
+    <DESC>multi-driver validation vs single-instance (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <MULTI_DRIVER>TRUE</MULTI_DRIVER>
   </test>
 
   <test NAME="NCK">

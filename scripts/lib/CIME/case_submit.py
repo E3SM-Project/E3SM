@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
             mail_user=None, mail_type='never', batch_args=None):
-    caseroot = case.get_value("CASEROOT")
-
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
@@ -33,7 +31,7 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
             case.set_value("CONTINUE_RUN", True)
     else:
         if job in ("case.test","case.run"):
-            check_case(case, caseroot)
+            check_case(case)
             check_DA_settings(case)
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
@@ -107,8 +105,8 @@ def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
 
         raise
 
-def check_case(case, caseroot):
-    check_lockedfiles(caseroot)
+def check_case(case):
+    check_lockedfiles(case)
     create_namelists(case) # Must be called before check_all_input_data
     logger.info("Checking that inputdata is available as part of case submission")
     check_all_input_data(case)

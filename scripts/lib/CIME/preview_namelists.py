@@ -76,7 +76,6 @@ def create_namelists(case, component=None):
             compname = "drv"
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
-
         if component is None or component == model_str:
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")

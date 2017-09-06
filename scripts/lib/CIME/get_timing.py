@@ -93,6 +93,18 @@ class _TimingParser:
         return (0, 0, False)
 
     def getTiming(self):
+        ninst = 1
+        multi_driver = self.case.get_value("MULTI_DRIVER")
+        if multi_driver:
+            ninst = self.case.get_value("NINST_MAX")
+
+        if ninst > 1:
+            for inst in range(ninst):
+                self._getTiming(inst+1)
+        else:
+            self._getTiming()
+
+    def _getTiming(self, inst=0):
         components=self.case.get_values("COMP_CLASSES")
         for s in components:
             self.models[s] = _GetTimingInfo(s)
@@ -113,7 +125,7 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         ncpl = 0
         for compclass in self.case.get_values("COMP_CLASSES"):
-            ncpl = max(ncpl, self.case.get_value("%s_NCPL"%compclass))
+            ncpl = max(ncpl, self.case.get_value("{}_NCPL".format(compclass)))
         ocn_ncpl = self.case.get_value("OCN_NCPL")
 
         compset = self.case.get_value("COMPSET")
@@ -150,11 +162,16 @@ class _TimingParser:
                 not continue_run:
             inittype = "TRUE"
 
-        binfilename = os.path.join(rundir, "timing", "model_timing_stats")
+        if inst > 0:
+            inst_label = '_{:04d}'.format(inst)
+        else:
+            inst_label = ''
+
+        binfilename = os.path.join(rundir, "timing", "model_timing{}_stats" . format(inst_label))
         finfilename = os.path.join(self.caseroot, "timing",
-                                   "{}_timing_stats.{}".format(cime_model, self.lid))
+                                   "{}_timing{}_stats.{}".format(cime_model, inst_label, self.lid))
         foutfilename = os.path.join(self.caseroot, "timing",
-                                    "{}_timing.{}.{}".format(cime_model, caseid, self.lid))
+                                    "{}_timing{}.{}.{}".format(cime_model, inst_label, caseid, self.lid))
 
         timingDir = os.path.join(self.caseroot, "timing")
         if not os.path.isdir(timingDir):
@@ -239,7 +256,11 @@ class _TimingParser:
         maxthrds = 0
         for k in self.case.get_values("COMP_CLASSES"):
             m = self.models[k]
-            self.write("  {} = {:<8s}   {:<6d}      {:<6d}   {:<6d} x {:<6d}  {:<6d} ({:<6d}) \n".format(m.name.lower(), m.comp, (m.ntasks*m.nthrds *smt_factor), m.rootpe, m.ntasks, m.nthrds, m.ninst, m.pstrid))
+            if m.comp == "cpl":
+                comp_label = m.comp + inst_label
+            else:
+                comp_label = m.comp
+            self.write("  {} = {:<8s}   {:<6d}      {:<6d}   {:<6d} x {:<6d}  {:<6d} ({:<6d}) \n".format(m.name.lower(), comp_label, (m.ntasks*m.nthrds *smt_factor), m.rootpe, m.ntasks, m.nthrds, m.ninst, m.pstrid))
             if m.nthrds > maxthrds:
                 maxthrds = m.nthrds
         nmax  = self.gettime(' CPL:INIT ')[1]

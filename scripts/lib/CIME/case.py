@@ -635,7 +635,8 @@ class Case(object):
 
         self.clean_up_lookups()
 
-    def _setup_mach_pes(self, pecount, ninst, machine_name, mpilib):
+
+    def _setup_mach_pes(self, pecount, multi_driver, ninst, machine_name, mpilib):
         #--------------------------------------------
         # pe layout
         #--------------------------------------------
@@ -719,18 +720,17 @@ class Case(object):
                 val = -1*val*pes_per_node
             if val > pesize:
                 pesize = val
+        if multi_driver:
+            pesize *= int(ninst)
+            mach_pes_obj.set_value("MULTI_DRIVER", True)
 
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:
+            key = "NINST_{}".format(compclass)
             if compclass == "CPL":
                 continue
-            key = "NINST_{}".format(compclass)
-            # ESP models are currently limited to 1 instance
-            if compclass == "ESP":
-                mach_pes_obj.set_value(key, 1)
-            else:
-                mach_pes_obj.set_value(key, ninst)
+            mach_pes_obj.set_value(key, ninst)
 
             key = "NTASKS_{}".format(compclass)
             if key not in pes_ntasks.keys():
@@ -744,8 +744,10 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
-                  pesfile=None,user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
+                  pesfile=None,user_grid=False, gridfile=None,
+                  multi_driver=False, ninst=1, test=False,
+                  walltime=None, queue=None, output_root=None,
+                  run_unsupported=False, answer=None,
                   input_dir=None):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
@@ -834,7 +836,10 @@ class Case(object):
         env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
-        pesize = self._setup_mach_pes(pecount, ninst, machine_name, mpilib)
+        pesize = self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
+
+        if multi_driver and ninst>1:
+            logger.info(" Driver/Coupler has %s instances" % ninst)
 
         #--------------------------------------------
         # batch system
@@ -1077,6 +1082,9 @@ class Case(object):
                len(self._component_description[component_class])>0:
                 append_status("Component {} is {}".format(component_class, self._component_description[component_class]),"README.case", caseroot=self._caseroot)
             if component_class == "CPL":
+                append_status("Using %s coupler instances" %
+                              (self.get_value("NINST_CPL")),
+                              "README.case", caseroot=self._caseroot)
                 continue
             comp_grid = "{}_GRID".format(component_class)
 
@@ -1446,10 +1454,13 @@ class Case(object):
         else:
             return None
 
-    def create(self, casename, srcroot, compset_name, grid_name, user_mods_dir=None, machine_name=None,
+    def create(self, casename, srcroot, compset_name, grid_name,
+               user_mods_dir=None, machine_name=None,
                project=None, pecount=None, compiler=None, mpilib=None,
-               pesfile=None,user_grid=False, gridfile=None, ninst=1, test=False,
-               walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None,
+               pesfile=None,user_grid=False, gridfile=None,
+               multi_driver=False, ninst=1, test=False,
+               walltime=None, queue=None, output_root=None,
+               run_unsupported=False, answer=None,
                input_dir=None):
         try:
             # Set values for env_case.xml
@@ -1458,10 +1469,13 @@ class Case(object):
             self.set_lookup_value("SRCROOT", srcroot)
 
             # Configure the Case
-            self.configure(compset_name, grid_name, machine_name=machine_name, project=project,
+            self.configure(compset_name, grid_name, machine_name=machine_name,
+                           project=project,
                            pecount=pecount, compiler=compiler, mpilib=mpilib,
-                           pesfile=pesfile,user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                           walltime=walltime, queue=queue, output_root=output_root,
+                           pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                           multi_driver=multi_driver, ninst=ninst, test=test,
+                           walltime=walltime, queue=queue,
+                           output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
                            input_dir=input_dir)
 

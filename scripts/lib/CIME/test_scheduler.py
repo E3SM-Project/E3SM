@@ -395,6 +395,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --user-mods-dir {}".format(test_mod_file)
 
         mpilib = None
+        ninst = 1
+        ncpl = 1
         if case_opts is not None:
             for case_opt in case_opts: # pylint: disable=not-an-iterable
                 if case_opt.startswith('M'):
@@ -402,9 +404,15 @@ class TestScheduler(object):
                     create_newcase_cmd += " --mpilib {}".format(mpilib)
                     logger.debug (" MPILIB set to {}".format(mpilib))
                 if case_opt.startswith('N'):
+                    expect(ncpl == 1,"Cannot combine _C and _N options")
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst {}".format(ninst)
                     logger.debug (" NINST set to {}".format(ninst))
+                if case_opt.startswith('C'):
+                    expect(ninst == 1,"Cannot combine _C and _N options")
+                    ncpl = case_opt[1:]
+                    create_newcase_cmd += " --ninst {} --multi-driver" .format(ncpl)
+                    logger.debug (" NCPL set to {}" .format(ncpl))
                 if case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
@@ -522,6 +530,9 @@ class TestScheduler(object):
                     continue
 
                 elif opt.startswith('N'):
+                    # handled in create_newcase
+                    continue
+                elif opt.startswith('C'):
                     # handled in create_newcase
                     continue
                 elif opt.startswith('IOP'):

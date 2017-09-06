@@ -41,6 +41,23 @@
   -->
 
   <!-- =========================== -->
+  <!-- group cime_driver_inst              -->
+  <!-- =========================== -->
+
+  <entry id="ninst_driver" modify_via_xml="NINST_MAX">
+    <type>integer</type>
+    <category>cime_driver_inst</category>
+    <group>cime_driver_inst</group>
+    <desc>
+      Number of CESM driver instances.  Only used if MULTI_DRIVER is TRUE.
+    </desc>
+    <values>
+      <value>1</value>
+      <value MULTI_DRIVER=".true.">$NINST_MAX</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
   <!-- group seq_cplflds_inparm    -->
   <!-- =========================== -->
 
