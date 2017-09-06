@@ -13,6 +13,7 @@ import cartopy.crs as ccrs
 import matplotlib.path as mpath
 from acme_diags.metrics import rmse, corr
 from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize':11.5}
 plotSideTitle = {'fontsize':9.0}
@@ -33,16 +34,12 @@ def get_ax_size(fig,ax):
     height *= fig.dpi
     return width, height
 
-def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
-
-#    var_min = float(var.min())
-#    var_max = float(var.max())
-#    var_mean = cdutil.averager(var, axis='xy', weights='generate')
+def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, parameters, stats=None):
 
     var = add_cyclic(var)
     lon = var.getLongitude()
     lat = var.getLatitude()
-    var = ma.squeeze( var.asma() )
+    var = ma.squeeze(var.asma())
 
     # Contour levels
     levels = None
@@ -61,7 +58,7 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, stats=None):
     elif pole == 'S':
       ax.set_extent([-180, 180, -55, -90], crs=ccrs.PlateCarree())
 
-
+    cmap = get_colormap(cmap, parameters)
     p1 = ax.contourf(lon, lat, var,
                      transform=ccrs.PlateCarree(), 
                      norm=norm,
@@ -140,14 +137,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     mean1 = metrics_dict['test']['mean']
     max1  = metrics_dict['test']['max']
     if test.count() >1: 
-        plot_panel(0, fig, proj, pole, test, parameter.contour_levels, parameter.test_colormap, [parameter.test_name,parameter.test_title,test.units],stats=(max1,mean1,min1))
+        plot_panel(0, fig, proj, pole, test, parameter.contour_levels, parameter.test_colormap, [parameter.test_name,parameter.test_title,test.units], parameter, stats=(max1,mean1,min1))
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
 
     if reference.count() >1: 
-        plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, parameter.reference_colormap, [parameter.reference_name,parameter.reference_title,reference.units],stats=(max2,mean2,min2))
+        plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, parameter.reference_colormap, [parameter.reference_name,parameter.reference_title,reference.units], parameter, stats=(max2,mean2,min2))
 
     # Third panel
     min3  = metrics_dict['diff']['min']
@@ -157,7 +154,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     c = metrics_dict['misc']['corr']
 
     if diff.count() >1: 
-        plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, parameter.diff_colormap, [None,parameter.diff_title,None], stats=(max3,mean3,min3,r,c))
+        plot_panel(2, fig, proj, pole, diff, parameter.diff_levels, parameter.diff_colormap, [None,parameter.diff_title,None], parameter,  stats=(max3,mean3,min3,r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.97, fontsize=18)
