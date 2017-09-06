@@ -9,6 +9,7 @@ import cdms2
 import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.plot import get_colormap
 
 textcombined_objs = {}
 
@@ -73,13 +74,65 @@ def plot_rmse_and_corr(canvas, metrics_dict):
     canvas.plot(rmse_value)
     canvas.plot(corr_value)
 
-def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
+
+def get_color_range(gm):
+    """For some graphic method colors, it needs a range of (16, 240)"""
+    if gm.colormap in ['AMIP',
+        'NCAR',
+        'bl_to_darkred',
+        'bl_to_drkorang',
+        'blends',
+        'blue2darkorange',
+        'blue2darkred',
+        'blue2green',
+        'blue2grey',
+        'blue2orange',
+        'blue2orange2red',
+        'blue_to_grey',
+        'blue_to_grn',
+        'blue_to_orange',
+        'blue_to_orgred',
+        'brown2blue',
+        'brown_to_blue',
+        'categorical',
+        'classic',
+        'green2magenta',
+        'grn_to_magenta',
+        'inferno',
+        'lightblue2darkblue',
+        'ltbl_to_drkbl',
+        'rainbow',
+        'rainbow_no_grn',
+        'rainbownogreen',
+        'sequential',
+        'white2blue',
+        'white2green',
+        'white2magenta',
+        'white2red',
+        'white2yellow',
+        'white_to_blue',
+        'white_to_green',
+        'white_to_magenta',
+        'white_to_red',
+        'white_to_yellow']:
+        return range(16, 240)
+    else:
+        return range(256)
+
+def set_colormap_of_graphics_method(canvas, parameter_colormap, method, parameters):
     if parameter_colormap is not '':
-        if parameter_colormap in vcs.listelements('colormap'):
-            method.colormap = vcs.getcolormap(parameter_colormap)
+        cmap = get_colormap(parameter_colormap, parameters)
+        if isinstance(cmap, str):
+            if cmap in vcs.listelements('colormap'):
+                method.colormap = vcs.getcolormap(cmap)
+            else:
+                method.colormap = vcs.matplotlib2vcs(cmap)
+            cmap_range = get_color_range(method)
         else:
-            method.colormap = vcs.matplotlib2vcs(parameter_colormap)
-        colors = vcs.getcolors(method.levels, colors=range(6, 240), white=[100, 100, 100])
+            # cmap is of type vcs.colormap.Cp
+            cmap, cmap_range = cmap
+            method.colormap = cmap
+        colors = vcs.getcolors(method.levels, colors=cmap_range, white=[100, 100, 100], split=0)
         method.fillareacolors = colors
 
 def set_levels_of_graphics_method(method, levels, data, data2=None):
@@ -150,9 +203,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
         diff_isofill.ext_1 = True
         diff_isofill.ext_2 = True
 
-    set_colormap_of_graphics_method(vcs_canvas, parameter.reference_colormap, reference_isofill)
-    set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
-    set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)
+    set_colormap_of_graphics_method(vcs_canvas, parameter.reference_colormap, reference_isofill, parameter)
+    set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill, parameter)
+    set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill, parameter)
 
     vcs_canvas.plot(add_cyclic(test), template_test, test_isofill)
     vcs_canvas.plot(add_cyclic(reference), template_ref, reference_isofill)
@@ -183,4 +236,3 @@ def plot(reference, test, diff, metrics_dict, parameter):
             _chown(fnm + '.svg', parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()
-    

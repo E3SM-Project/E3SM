@@ -46,11 +46,15 @@ def run_diag(parameters):
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
-        try:
-            module = importlib.import_module(mod_str)
+        #try:
+        module = importlib.import_module(mod_str)
+        '''
         except ImportError as e:
+            print('Import error in {}: {}'.format(mod_str, e))
             print('Set {} is not supported yet. Please give us time.'.format(set_name))
             continue
+        '''
+        
         print('Starting to run ACME Diagnostics.')
         single_result = module.run_diag(parameters)
         results.append(single_result)
