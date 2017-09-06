@@ -620,7 +620,68 @@
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
   </machine>
 
-  <machine MACH="linux-generic">
+<machine MACH="mymac">
+    <DESC>Mac OS/X workstation or laptop</DESC>
+    <NODENAME_REGEX>macbook-pro.local</NODENAME_REGEX>
+    <OS>Darwin</OS>
+    <COMPILERS>gnu,pgi</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/project_acme/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/project_acme/cesm-inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/project_acme/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/project_acme/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>YOUR_NAME</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>$ENV{MPI_ROOT}/bin/mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"></module_system>   
+    <RUNDIR>$ENV{HOME}/project_acme/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/project_acme/scratch/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="PATH">/usr/local/CMake.App/Contents/bin/:/usr/local/bin/:/opt/local/sbin/:/opt/local/bin:/usr/bin/:/bin/</env>   <!--This is for Cmake, needed by PIO -->
+    </environment_variables>       
+    <environment_variables>
+      <!-- NOTE: the following $ENV{} must be available in your .bashrc, otherwise explicitly give the directories -->
+      <env name="CC_ROOT">$ENV{CC_ROOT}</env>
+      <env name="FC_ROOT">$ENV{CC_ROOT}</env>
+      <env name="MPI_ROOT">$ENV{MPI_ROOT}</env>
+      <env name="HDF5_PATH">$ENV{HDF5_PATH}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_PATH}</env>
+      <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
+      <!-- the following is PETSc v.3.8.x or above -->
+      <env name="PETSC_PATH">$ENV{PETSC_DIR}</env>
+    </environment_variables>       
+
+    <!-- hack for PFLOTRAN coupling to build ELM model.
+         this is a temporary solution, and user must manually edit the following
+         in 'env_mach_specific.xml' after case.setup,
+         Otherwise, model will build/run as non-PFLOTRAN coupled.
+      IF building with PFLOTRAN codes, in addition to the following options,
+      you may need to modify 'CLM_USE_PETSC' in 'env_build.xml' to be 'TRUE'.
+    -->
+    <environment_variables>
+      <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+      <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+      <!-- The following implies that pflotran codes are pre-built as libpflotran.a -->
+      <env name="CLM_PFLOTRAN_SOURCE_DIR">/Users/$USER/mygitlab/pflotran-interface/src/clm-pflotran</env>
+
+      <!-- by blanking the following 2 names, PETSC libs excluded in e3sm.exe when NOT coupling with PFLOTRAN -->
+      <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_DIR}/include</env>
+      <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lmetis -lparmetis</env>
+    </environment_variables>
+</machine>
+
+<machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX>none</NODENAME_REGEX>
     <OS>LINUX</OS>
