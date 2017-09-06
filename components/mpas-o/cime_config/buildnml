@@ -39,110 +39,92 @@ if (! -d "$CASEBUILD/mpas-oconf" ) {
 # Determine date stamp, from grid names
 #--------------------------------------------------------------------
 
-my $grid_date = '';
-my $grid_prefix = '';
+my $decomp_date = '';
 my $decomp_prefix = '';
 my $ic_date = '';
 my $ic_prefix = '';
 my $restoring_file = '';
 
 if ( $OCN_GRID eq 'oEC60to30' ) {
-	$grid_date .= '151031';
-	$grid_prefix .= 'oEC60to30';
 	$ic_date .= '151031';
 	$ic_prefix .= 'oEC60to30';
+	$decomp_date .= '151031';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30_ICG' ) {
-        $grid_date .= '151031';
-        $grid_prefix .= 'oEC60to30';
         $ic_date .= '160827';
         $ic_prefix .= 'oEC60to30.restartFrom_eos1b';
+	$decomp_date .= '151031';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30v3' ) {
-        $grid_date .= '161222';
-        $grid_prefix .= 'oEC60to30v3_60layer';
         $ic_date .= '170905';
         $ic_prefix .= 'oEC60to30v3_60layer';
+	$decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
         $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
-        $grid_date .= '161222';
-        $grid_prefix .= 'oEC60to30v3_60layer';
         $ic_date .= '170905';
         $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0824';
+        $decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30wLI' ) {
-        $grid_date .= '160830';
-        $grid_prefix .= 'oEC60to30wLI';
         $ic_date .= '160830';
         $ic_prefix .= 'oEC60to30wLI';
+	$decomp_date .= '160830';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU240' ) {
-	$grid_date .= '151209';
-	$grid_prefix .= 'ocean.QU.240km';
 	$ic_date .= '151209';
 	$ic_prefix .= 'ocean.QU.240km';
+	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU240wLI' ) {
-        $grid_date .= '160929';
-        $grid_prefix .= 'ocean.QU.240wLI';
         $ic_date .= '160929';
         $ic_prefix .= 'ocean.QU.240wLI';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU120' ) {
-	$grid_date .= '160318';
- 	$grid_prefix .= 'ocean.QU.120km';
 	$ic_date .= '160318';
  	$ic_prefix .= 'ocean.QU.120km';
+	$decomp_date .= '160318';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'mpas120' ) {
-	$grid_date .= '151031';
-	$grid_prefix .= 'ocean120km';
 	$ic_date .= '151031';
 	$ic_prefix .= 'ocean120km';
+	$decomp_date .= '151031';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS30to10' ) {
-	$grid_date .= '151031';
-	$grid_prefix .= 'ocean.RRS.30-10km';
 	$ic_date .= '151031';
 	$ic_prefix .= 'ocean.RRS.30-10km';
+	$decomp_date .= '151031';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS30to10v3' ) {
-	$grid_date .= '161221';
-	$grid_prefix .= 'oRRS30to10v3';
 	$ic_date .= '161221';
 	$ic_prefix .= 'oRRS30to10v3';
+	$decomp_date .= '161221';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS30to10wLI' ) {
-        $grid_date .= '160930';
-        $grid_prefix .= 'ocean.RRS30to10wLI';
         $ic_date .= '160930';
         $ic_prefix .= 'ocean.RRS30to10wLI';
+	$decomp_date .= '160930';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS18to6' ) {
-	$grid_date .= '160830';
-	$grid_prefix .= 'ocean.RRS.18-6km';
 	$ic_date .= '160830';
 	$ic_prefix .= 'ocean.RRS.18-6km';
+	$decomp_date .= '160830';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS18to6v3' ) {
-	$grid_date .= '170111';
-	$grid_prefix .= 'oRRS18to6v3';
 	$ic_date .= '170111';
 	$ic_prefix .= 'oRRS18to6v3';
+	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 	$restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc';
 } elsif ( $OCN_GRID eq 'oRRS18to6v3_ICG' ) {
-	$grid_date .= '170111';
-	$grid_prefix .= 'oRRS18to6v3';
 	$ic_date .= '170622';
 	$ic_prefix .= 'oRRS18to6v3.restartFrom_titan0228';
+	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
-	$grid_date .= '151209';
-	$grid_prefix .= 'ocean.RRS.15-5km';
 	$ic_date .= '151209';
 	$ic_prefix .= 'ocean.RRS.15-5km';
+	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 }
 
@@ -165,13 +147,13 @@ if ($OCN_FORCING eq 'core_forced') {
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
-print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc\n";
+print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
 print $input_list "ic = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
 if ( $OCN_FORCING eq 'core_forced_restoring' ) {
 	print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
 }
-#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date\n";
-print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date.part.$NTASKS_OCN\n";
+#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$decomp_date\n";
+print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$decomp_date.part.$NTASKS_OCN\n";
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -226,7 +208,7 @@ while ($inst_counter <= $NINST_OCN) {
 	$sysmod .= " -casebuild $CASEBUILD";
 	$sysmod .= " -cimeroot $CIMEROOT";
 	$sysmod .= " -inst_string '$inst_string'";
-	$sysmod .= " -date_stamp '$grid_date'";
+	$sysmod .= " -date_stamp '$decomp_date'";
 	$sysmod .= " -ocn_grid '$OCN_MASK'";
 	$sysmod .= " -ocn_forcing '$OCN_FORCING'";
     # pass in OCN_MASK for now as a short-cut for the grid
@@ -269,7 +251,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file '                  io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         }
 	print $stream_file "                  filename_template=" . '"'
-					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc"
+					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc"
 					. '"' . "\n";
 	print $stream_file '/>' . "\n";
 	print $stream_file '<immutable_stream name="input"' . "\n";
@@ -693,6 +675,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="RiTopOfCell"/>' . "\n";
         print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
         print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
+        print $stream_file '    <var name="potentialDensity"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
