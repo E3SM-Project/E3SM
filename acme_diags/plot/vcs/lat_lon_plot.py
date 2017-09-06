@@ -96,3 +96,4 @@ def plot(reference, test, diff, metrics_dict, parameter):
             _chown(fnm + '.svg', parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()
+
