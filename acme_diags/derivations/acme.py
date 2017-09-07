@@ -241,32 +241,69 @@ def restoa(fsnt, flnt):
     var.long_name = "TOA(top of atmosphere) Radiative flux"
     return var
 
-def cosp_bin_sum(cld, prs_low, prs_high, tau_low, tau_high):
+def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
     """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
     prs = cld.getAxis(0)
     tau = cld.getAxis(1)
-    if prs_low is None:  prs_low = prs[0]
-    if prs_high is None: prs_high = prs[-1]
-    if tau_low is None:  tau_low = tau[0]
-    if tau_high is None: tau_high = tau[-1]
+
+    prs_low = prs[0]
+    prs_high = prs[-1]
+    if prs_low0:
+        prs_low = prs_low0
+    if prs_high0:
+        prs_high = prs_high0
+    if prs_low0 is None and prs_high0 is None:
+        prs_lim = 'total cloud fraction'
+        
+    tau_low = tau[0]
+    tau_high = tau[-1]
+
+
+    if tau_low0 is None and tau_high0:  
+        tau_high =  tau_high0
+        tau_lim = 'tau <'+str(tau_high0)
+    elif tau_high0 is None and tau_low0: 
+        tau_low = tau_low0
+        tau_lim = 'tau >'+str(tau_low0)
+    elif tau_low0 is None and tau_high0 is None:
+        tau_lim = str(tau_low)+'< tau < '+str(tau_high)
+    else:
+        tau_low = tau_low0
+        tau_high = tau_high0
+        tau_lim = str(tau_low)+'< tau < '+str(tau_high)
 
     if cld.id == 'FISCCP1_COSP':   #ISCCP model
         cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
+        simulator = 'ISCCP'
     if cld.id == 'CLISCCP':        #ISCCP obs
         cld_bin = cld(isccp_prs = (prs_low, prs_high), isccp_tau = (tau_low, tau_high))
 
     if cld.id == 'CLMODIS':   #MODIS 
         try: 
             cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau_modis = (tau_low, tau_high)) #MODIS model
+            if prs_high ==440:
+                prs_lim = 'high cloud fraction'
+            else:
+                prs_lim = ''
+            simulator = 'MODIS'
         except:
             cld_bin = cld(modis_prs = (prs_low, prs_high), modis_tau = (tau_low, tau_high))  #MODIS obs
 
     if cld.id == 'CLD_MISR':        #MISR model
         cld_bin = cld(cosp_htmisr = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
+        if prs_high == 3:
+            prs_lim = 'low cloud fraction'
+        else:
+            prs_lim = ''
+        simulator = 'MISR'
     if cld.id == 'CLMISR':        #MISR obs
         cld_bin = cld(misr_cth = (prs_low, prs_high), misr_tau = (tau_low, tau_high))
 
     cld_bin_sum = MV2.sum(MV2.sum(cld_bin,axis=1),axis=0)
+    try:
+        cld_bin_sum.long_name = simulator + ': ' + prs_lim + ' with ' + tau_lim
+    except:
+        pass
     return cld_bin_sum
 
 def cosp_histogram_standardize(cld):
