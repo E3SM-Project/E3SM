@@ -622,6 +622,7 @@ class Case(object):
             node_name = 'CONFIG_' + comp_class + '_FILE'
             # Add the group and elements for the config_files.xml
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
+            expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
