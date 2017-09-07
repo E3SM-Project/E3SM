@@ -283,18 +283,22 @@ def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
             cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau_modis = (tau_low, tau_high)) #MODIS model
             if prs_high ==440:
                 prs_lim = 'high cloud fraction'
-            else:
-                prs_lim = ''
+            if prs_high == 680 and prs_low == 440:
+                prs_lim = 'middle cloud fraction'
+            if prs_low == 680:
+                prs_lim = 'low cloud fraction' 
             simulator = 'MODIS'
         except:
             cld_bin = cld(modis_prs = (prs_low, prs_high), modis_tau = (tau_low, tau_high))  #MODIS obs
 
     if cld.id == 'CLD_MISR':        #MISR model
         cld_bin = cld(cosp_htmisr = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
+        if prs_low ==7:
+            prs_lim = 'high cloud fraction'
+        if prs_high == 7 and prs_low == 3:
+            prs_lim = 'middle cloud fraction'
         if prs_high == 3:
             prs_lim = 'low cloud fraction'
-        else:
-            prs_lim = ''
         simulator = 'MISR'
     if cld.id == 'CLMISR':        #MISR obs
         cld_bin = cld(misr_cth = (prs_low, prs_high), misr_tau = (tau_low, tau_high))
