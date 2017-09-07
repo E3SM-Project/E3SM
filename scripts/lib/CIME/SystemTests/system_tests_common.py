@@ -387,10 +387,14 @@ class SystemTestsCommon(object):
             #comparing ypd so bigger is better
             if baseline is not None and current is not None:
                 diff = (baseline - current)/baseline
-                if(diff < 0.25):
+                tolerance = self._case.get_value("TEST_TPUT_TOLERANCE")
+                if tolerance is None:
+                    tolerance = 0.25
+                expect(tolerance > 0.0, "Bad value for throughput tolerance in test")
+                if diff < tolerance:
                     self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
                 else:
-                    comment = "Error: Computation time increase > 25% from baseline"
+                    comment = "Error: Computation time increase > %f pct from baseline" % tolerance*100
                     self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_testlog(comment)
 

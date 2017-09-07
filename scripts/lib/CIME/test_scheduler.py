@@ -467,6 +467,7 @@ class TestScheduler(object):
         envtest.set_value("GENERATE_BASELINE", self._baseline_gen_name is not None)
         envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
+        envtest.set_value("TEST_TPUT_TOLERANCE", self._machobj.get_value("TEST_TPUT_TOLERANCE", resolved=False))
 
         # Add the test instructions from config_test to env_test in the case
         config_test = Tests()
