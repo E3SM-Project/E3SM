@@ -4,22 +4,23 @@
 module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use ppgrid,       only: pcols, pver, pverp, psubcols
+  use ppgrid,       only: pcols, pver, psubcols
   use constituents, only: pcnst, qmin, cnst_name
-  use geopotential, only: geopotential_dse, geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
-  use dycore,       only: dycore_is
-  use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
   use cam_logfile,  only: iulog
   use cam_abortutils,   only: endrun
-  use phys_control, only: waccmx_is, use_mass_borrower
   use shr_const_mod,only: shr_const_rwv
-  use perf_mod,     only: t_startf, t_stopf
+!!  use perf_mod,     only: t_startf, t_stopf
+!!  use geopotential, only: geopotential_dse
+!!  use dycore,       only: dycore_is
+!!  use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
+!!  use phys_control, only: waccmx_is, use_mass_borrower
 
   implicit none
   private          ! Make default type private to the module
 
   logical, parameter :: adjust_te = .FALSE.
+  logical            :: pergro_test_active = .FALSE.
 
 ! Public types:
 
@@ -30,21 +31,21 @@ module physics_types
 ! Public interfaces
 
   public physics_update
-  public physics_state_check ! Check state object for invalid data.
+!!$  public physics_state_check ! Check state object for invalid data.
   public physics_ptend_reset
   public physics_ptend_init
-  public physics_state_set_grid
+!!$  public physics_state_set_grid
   public physics_dme_adjust  ! adjust dry mass and energy for change in water
                              ! cannot be applied to eul or sld dycores
   public physics_state_copy  ! copy a physics_state object
   public physics_ptend_copy  ! copy a physics_ptend object
-  public physics_ptend_sum   ! accumulate physics_ptend objects
+!!$  public physics_ptend_sum   ! accumulate physics_ptend objects
   public physics_ptend_scale ! Multiply physics_ptend objects by a constant factor.
   public physics_tend_init   ! initialize a physics_tend object
 
-  public set_state_pdry      ! calculate dry air masses in state variable
-  public set_wet_to_dry
-  public set_dry_to_wet
+!!$  public set_state_pdry      ! calculate dry air masses in state variable
+!!$  public set_wet_to_dry
+!!$  public set_dry_to_wet
   public physics_type_alloc
 
   public physics_state_alloc   ! allocate individual components within state
@@ -186,6 +187,8 @@ contains
 
     do lchnk=begchunk,endchunk
        call physics_state_alloc(phys_state(lchnk),lchnk,pcols)
+       phys_state(lchnk)%ncol=pcols
+       phys_state(lchnk)%lchnk=lchnk
     end do
 
     allocate(phys_tend(begchunk:endchunk), stat=ierr)
@@ -199,32 +202,18 @@ contains
     end do
 
   end subroutine physics_type_alloc
-!===============================================================================
-  subroutine physics_update(state, ptend, dt, tend, chunk_smry, do_hole_fill)
+!!$!===============================================================================
+
+  subroutine physics_update(state, ptend, dt, tend)
 !-----------------------------------------------------------------------
 ! Update the state and or tendency structure with the parameterization tendencies
 !-----------------------------------------------------------------------
-    use shr_sys_mod,  only: shr_sys_flush
+!!$    use shr_sys_mod,  only: shr_sys_flush
+!!$    use geopotential, only: geopotential_dse
     use constituents, only: cnst_get_ind, cnst_mw
-    use scamMod,      only: scm_crm_mode, single_column
-    use phys_control, only: phys_getopts
+!!$    use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
-    use glb_verif_smry,only: tp_stat_smry, get_chunk_smry
-
-#ifdef CLUBB_SGS
-    !--- Needed for CLUBB's hole filling code <janhft 09/17/2014> ------
-    use shr_const_mod, only: &
-        shr_const_pi, &
-        shr_const_rhofw
-
-    use physconst, only: rair, cpair, latvap, latice
-
-    use clubb_api_module, only: setup_grid_heights_api, &
-                                fill_holes_vertical_api, &
-                                zt2zm_api
-    !-------------------------------------------------------------------
-#endif
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -235,15 +224,12 @@ contains
 
     type(physics_tend ), intent(inout), optional  :: tend  ! Physics tendencies over timestep
                     ! This is usually only needed by calls from physpkg.
-
-    logical, optional, intent(in) :: do_hole_fill
-    type(tp_stat_smry),intent(inout), optional :: chunk_smry(:)
 !
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
     integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
-    integer :: ixsnow, ixnumsnow, ixrain, ixnumrain, ixrelevant_mixing_ratio
+    integer :: ixnumsnow, ixnumrain
     integer :: ncol                                ! number of columns
     character*40 :: name    ! param and tracer name for qneg3
 
@@ -251,72 +237,19 @@ contains
 
     real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
 
-    real(r8),allocatable :: cpairv_loc(:,:,:)
-    real(r8),allocatable :: rairv_loc(:,:,:)
-
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
-         (/ "stratiform", "cldwat    ", "micro_mg  ", "macro_park" /)
+         (/ "stratiform", "cldwat    ", "micro_mg  ", "macropk   " /)
 
     ! cldliq/ice limits that are always on.
     character(len=24), parameter :: cldlim_names(2) = &
-         (/ "convect_deep", "zm_conv_tend" /)
-
-    ! Whether to do validation of state on each call.
-    logical :: state_debug_checks
-
-#ifdef CLUBB_SGS
-    ! Whether to do hole filling rather than hard clipping (default false)
-    logical :: clubb_hole_fill = .false.  
-
-    !--- Needed for CLUBB's hole filling code <janhft 09/17/2014> ------
-    real( r8 ), parameter :: & 
-      four_third   = 4/3_r8,           &
-      rho_ice      = 917.0_r8,         & ! Accepted value is 0.40 (+/-) 0.01      [-]
-      rho_lw       = shr_const_rhofw,  & ! Density of liquid water    
-      pi           = shr_const_pi,     &
-      mvr_rain_max = 5.0E-3_r8, & ! Max. avg. mean vol. rad. rain    [m]
-      mvr_ice_max  = 1.3E-4_r8    ! Max. avg. mean vol. rad. ice     [m]
-
-    logical, parameter :: l_implemented = .true.
-
-    integer, parameter :: grid_type = 3
-
-    real(r8), parameter :: p0_clubb = 100000._r8
-
-    integer :: ixwatervapor
-
-    real( r8 ) :: sfc_elevation  ! Input to CLUBB setup_grid call
-
-    integer :: begin_height, end_height  ! Output from setup_grid call
-
-    real( r8 ), dimension( pver ) :: dz_g
-
-    real( r8 ), dimension( pverp ) :: &
-      constituent_flipped, &
-      rho_ds_zm, &
-      rho_ds_zt, &
-      zt_g, zi_g  
-      
-    real( r8 ) :: Nxm_min_coef, latheat
-
-    real( r8 ) :: rtdt
-
-   ! CHARACTER(LEN=80) :: FMT
-
-    integer :: icol
-
-    !-----------------------------------------------------------------------
-#endif
-
-    ! The column radiation model does not update the state
-    if(single_column.and.scm_crm_mode) return
+         (/ "convect_deep", "zm_convt    " /)
 
 
     !-----------------------------------------------------------------------
     ! If no fields are set, then return
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
-       ptend%name  = "none"
+       ptend%name  = "none_pupif"
        ptend%psetcols = 0
        return
     end if
@@ -335,40 +268,34 @@ contains
        end if
     end if
 
-    call t_startf ('physics_update')
-    !-----------------------------------------------------------------------
-    ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
-    ! If psetcols == pcols, the cpairv is the correct size and just copy
-    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('physics_update: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
-    if (state%psetcols == pcols) then
-       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rair
-    else
-       call endrun('physics_update: rairv_loc is not allowed to vary when subcolumns are turned on')
-    end if
+!!$    call t_startf ('physics_update')
+!!$    !-----------------------------------------------------------------------
+!!$    ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
+!!$    ! If psetcols == pcols, the cpairv is the correct size and just copy
+!!$    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
+!!$    if (state%psetcols == pcols) then
+!!$       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!!$       cpairv_loc(:,:,:) = cpairv(:,:,:)
+!!$    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+!!$       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+!!$       cpairv_loc(:,:,:) = cpair
+!!$    else
+!!$       call endrun('physics_update: cpairv is not allowed to vary when subcolumns are turned on')
+!!$    end if
+!!$    if (state%psetcols == pcols) then
+!!$       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
+!!$       rairv_loc(:,:,:) = rairv(:,:,:)
+!!$    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
+!!$       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+!!$       rairv_loc(:,:,:) = rair
+!!$    else
+!!$       call endrun('physics_update: rairv_loc is not allowed to vary when subcolumns are turned on')
+!!$    end if
+!!$
+!!$    !-----------------------------------------------------------------------
+!!$    call phys_getopts(state_debug_checks_out=state_debug_checks, &
+!!$         pergro_test_active_out   = pergro_test_active)
 
-    !-----------------------------------------------------------------------
-    call phys_getopts(state_debug_checks_out=state_debug_checks)
-
-#ifdef CLUBB_SGS
-    if(present(do_hole_fill)) then
-      clubb_hole_fill = do_hole_fill
-    else
-      clubb_hole_fill = .false.
-    endif
-#endif
 
     ncol = state%ncol
 
@@ -396,307 +323,28 @@ contains
     ! the indices will be set to -1)
     call cnst_get_ind('NUMICE', ixnumice, abort=.false.)
     call cnst_get_ind('NUMLIQ', ixnumliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('NUMRAI', ixnumrain, abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
     call cnst_get_ind('NUMSNO', ixnumsnow, abort=.false.)
   
-#ifdef CLUBB_SGS
-    call cnst_get_ind('Q', ixwatervapor, abort=.false.)
-#endif
-
     do m = 1, pcnst
        if(ptend%lq(m)) then
           do k = ptend%top_level, ptend%bot_level
              state%q(:ncol,k,m) = state%q(:ncol,k,m) + ptend%q(:ncol,k,m) * dt
           end do
 
-#ifdef CLUBB_SGS
-
-          rtdt = 1._r8/dt
-
-
-          ! now test for mixing ratios which are too small
-          if( clubb_hole_fill ) then
-             !<janhft 09/17/2014>
-             
-          ! don't track number concentrations summary 
-          if (m /= ixnumice  .and.  m /= ixnumliq .and. &
-              m /= ixnumrain .and.  m /= ixnumsnow ) then
-             name = trim(ptend%name) // '/' // trim(cnst_name(m))
-
-             !HuiWan 2017-07: Use module glb_verif_smry to provide consise summary for negative values +++
-             !HuiWan 2017-07: For now this module is used only for diagnostics. Later we will consider
-             !                replacing qneg3.
-             if (present(chunk_smry)) then
-                call t_startf('get_chunk_smry')
-                call get_chunk_smry( trim(cnst_name(m))//' @'//trim(ptend%name), ncol, pver, state%q(:ncol,:,m), &
-                                     state%lat(:ncol), state%lon(:ncol), chunk_smry(:) )
-                call t_stopf('get_chunk_smry')
-             end if
-             !HuiWan:2017-07 ===
-
-             if (present(chunk_smry)) then
-             call t_startf('hole_filling_in_physics_update')
-             end if
-
-          end if 
-
-             do icol= 1, ncol
-
-             ! Create a Clubb grid object. This must be done for each
-             ! column as the z-distance between hybrid pressure levels can 
-             ! change easily. This code is taken directly from clubb_intr.F90.
-             sfc_elevation = state%zi(icol,pver+1)
-             ! Define the CLUBB momentum grid (in height, units of m)
-             do k=1,pverp
-               zi_g(k) = state%zi(icol,pverp-k+1)-sfc_elevation
-             enddo
-             ! Define the CLUBB thermodynamic grid (in units of m)
-             do k=1,pver
-                zt_g(k+1) = state%zm(icol,pver-k+1)-state%zi(icol,pver+1)
-                dz_g(k) = state%zi(icol,k)-state%zi(icol,k+1) ! compute thickness for SILHS
-             enddo
-             ! Thermodynamic ghost point is below surface
-             zt_g(1) = -1._r8*zt_g(2)
-             ! allocate grid object
-             call setup_grid_heights_api(l_implemented, grid_type, &
-                         zi_g(2), zi_g(1), zi_g(1:pverp), &
-                         zt_g(1:pverp))
-
-             ! Calculate rho for each column once to be used for liq & ice
-
-             do k=1,pver
-                rho_ds_zt(k+1) = (1._r8/gravit)*(state%pdel(icol,pver-k+1)/dz_g(pver-k+1))
-             enddo
-             rho_ds_zt(1) = rho_ds_zt(2) ! Set the ghost point to avoid Nan's
-             rho_ds_zm = zt2zm_api(rho_ds_zt)
-
-             ! Call CLUBB hole filling code for rain & ice mixing ratios 
-
-             if( m.eq.ixcldliq .or. m.eq.ixcldice .or. m.eq.ixrain .or. m.eq.ixsnow ) then
-
-                ! We need to flip the cloud ice/cloud liquid mixing ratio arrays in order to use 
-                ! the hole filling algorithm on those
-                do k=1, pver
-                   constituent_flipped(k+1) = state%q(icol,pver-k+1,m)
-                enddo ! k=1, pver
-
-                constituent_flipped(1) = constituent_flipped(2)
-                
-                call fill_holes_vertical_api( 6, qmin(m), "zt", &
-                                              rho_ds_zt, rho_ds_zm, &
-                                              constituent_flipped )
-
-                ! Flip the cloud ice/cloud liquid mixing ratios back to CAM's grid
-                do k=1, pver
-                   state%q(icol,k,m) = constituent_flipped(pver-k+2)
-                enddo ! k=1, pver 
-
-                ! Water vaper hole filling (fills holes in ice or liquid mixing ratios)
-                if (any(state%q(icol,1:pver,m) < qmin(m))) then
-
-                   do k = 1, pver
-
-                      if ( ( state%q(icol,k,m) < qmin(m) ) .and. &
-                           ( state%q(icol,k,ixwatervapor) - qmin(ixwatervapor) >= qmin(m) - state%q(icol,k,m) ) ) &
-                      then
-
-                         ! Adjust the vapor mixing ratio rvm accordingly
-                         state%q(icol,k,ixwatervapor) = state%q(icol,k,ixwatervapor) - ( qmin(m) - state%q(icol,k,m) )
-
-                         ! Adjust the temperature according to whether the effect is evaporation
-                         ! or sublimation.
-                         if ( m.eq.ixcldliq .or. m.eq.ixrain ) then
-                            latheat = latvap
-                         elseif ( m.eq.ixcldice .or. m.eq.ixsnow ) then
-                            latheat = latvap+latice
-                         else
-                            stop "Shouldn't be here in physics_update"
-                         endif
-
-!                        V. Larson updated ptend%s here so that tend%dtdt is updated later
-                         ptend%s(icol,k) = ptend%s(icol,k) + &
-                           (latheat) * (qmin(m)-state%q(icol,k,m)) / dt
-
-                         ! Set the mixing ratio to 0
-                         state%q(icol,k,m) = qmin(m)
-
-                      endif ! state%q(icol,k,m) < qmin(m)
-
-                   enddo ! k = 1, pver
-                endif ! any(state%q(icol,1:pver,m) < qmin(m)   
-
-                ! If the hole filling was not able to fill all the holes, we use the hard clipping
-                if (any(state%q(icol,1:pver,m) < qmin(m))) then
-                   if(use_mass_borrower) then 
-                      call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
-                      call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
-                   else
-                      call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
-                   end if 
-                endif ! any(state%q(icol,1:pver,m) < qmin(m)      
-
-             ! Clipping on the ice number concentration to ensure a reasonable droplet size
-             elseif ( (m.eq.ixnumice) .or. (m.eq.ixnumsnow) ) then
-
-                Nxm_min_coef = 1._r8 / ( four_third * pi * rho_ice * mvr_ice_max**3 )
-                   do k = 1, pver, 1
-                      if (m .eq. ixnumice) then
-                        ixrelevant_mixing_ratio = ixcldice
-                      else if (m .eq. ixnumsnow) then
-                        ixrelevant_mixing_ratio = ixsnow
-                      else
-                        stop "Error: shouldn't be here"
-                      end if
-                      if ( state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8 ) then
-
-                         ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
-                         state%q(icol,k,m) = &
-                            max( state%q(icol,k,m), Nxm_min_coef * state%q(icol,k,ixrelevant_mixing_ratio) )
-
-                      else ! <rx> = 0
-  
-                         state%q(icol,k,m) = 0._r8
-
-                      endif ! state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8
- 
-                   enddo ! k = 1, pver, 1
-
-             ! Clipping on the cloud liquid number concentration to ensure a reasonable droplet size
-             elseif ( (m.eq.ixnumliq) .or. (m.eq.ixnumrain) ) then
-
-                Nxm_min_coef = 1._r8 / ( four_third * pi * rho_lw * mvr_rain_max**3 )
-                   do k = 1, pver, 1
-                      if (m .eq. ixnumliq) then
-                        ixrelevant_mixing_ratio = ixcldliq
-                      else if (m .eq. ixnumrain) then
-                        ixrelevant_mixing_ratio = ixrain
-                      else
-                        stop "Error: shouldn't be here"
-                      end if
-                      if ( state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8 ) then
-
-                         ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
-                         state%q(icol,k,m) = &
-                            max( state%q(icol,k,m), Nxm_min_coef * state%q(icol,k,ixrelevant_mixing_ratio) )
-
-                      else ! <rx> = 0
-  
-                         state%q(icol,k,m) = 0._r8
-
-                      endif ! state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8
- 
-                   enddo ! k = 1, pver, 1
-
-             else ! For all other advected consituents do the old hard clipping
-
-                name = trim(ptend%name) // '/' // trim(cnst_name(m))
-                if(use_mass_borrower) then 
-                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
-                   call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
-                else
-                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
-                end if 
-
-             end if    
-
-             enddo ! icol=1,ncol
-
-          if (m /= ixnumice  .and.  m /= ixnumliq .and. &
-              m /= ixnumrain .and.  m /= ixnumsnow ) then
-             name = trim(ptend%name) // '/' // trim(cnst_name(m))
-
-             if (present(chunk_smry)) then
-             call t_startf('hole_filling_in_physics_update')
-             end if
-
-          end if 
-
-
-          else  ! ~clubb_hole_fill
-
-            ! Original code for hard clipping negative values is unchanged
-            !     don't call qneg3 for number concentration variables
-
-            ! don't call qneg3 for number concentration variables
-            if (m /= ixnumice  .and.  m /= ixnumliq .and. &
-                m /= ixnumrain .and.  m /= ixnumsnow ) then
-                name = trim(ptend%name) // '/' // trim(cnst_name(m))
-
-
-             !HuiWan 2017-07: Use module glb_verif_smry to provide consise summary for negative values +++
-             !HuiWan 2017-07: For now this module is used only for diagnostics. Later we will consider
-             !                replacing qneg3.
-             if (present(chunk_smry)) then
-                call t_startf('get_chunk_smry')
-                call get_chunk_smry( trim(cnst_name(m))//' @'//trim(ptend%name), ncol, pver, state%q(:ncol,:,m), &
-                                     state%lat(:ncol), state%lon(:ncol), chunk_smry(:) )
-                call t_stopf('get_chunk_smry')
-             end if
-             !HuiWan:2017-07 ===
-
-             if (present(chunk_smry)) then
-             call t_startf('qneg3_in_physics_update')
-             end if
-
-
-
-                if(use_mass_borrower) then 
-                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
-                   call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
-                else
-                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
-                end if 
-
-             if (present(chunk_smry)) then
-             call t_stopf('qneg3_in_physics_update')
-             end if
-
-            else
-                do k = ptend%top_level, ptend%bot_level
-                   ! checks for number concentration
-                   state%q(:ncol,k,m) = max(1.e-12_r8,state%q(:ncol,k,m))
-                   state%q(:ncol,k,m) = min(1.e10_r8,state%q(:ncol,k,m))
-                end do
-            end if
-
-
-          end if ! clubb_hole_fill
-#else
           ! now test for mixing ratios which are too small
           ! don't call qneg3 for number concentration variables
           if (m /= ixnumice  .and.  m /= ixnumliq .and. &
               m /= ixnumrain .and.  m /= ixnumsnow ) then
              name = trim(ptend%name) // '/' // trim(cnst_name(m))
-
-             !HuiWan 2017-07: Use module glb_verif_smry to provide consise summary for negative values +++
-             !HuiWan 2017-07: For now this module is used only for diagnostics. Later we will consider
-             !                replacing qneg3.
-             if (present(chunk_smry)) then
-                call t_startf('get_chunk_smry')
-                call get_chunk_smry( trim(cnst_name(m))//' @'//trim(ptend%name), ncol, pver, state%q(:ncol,:,m), &
-                                     state%lat(:ncol), state%lon(:ncol), chunk_smry(:) )
-                call t_stopf('get_chunk_smry')
-             end if
-             !HuiWan:2017-07 ===
-
-             if (present(chunk_smry)) then
-             call t_startf('qneg3_in_physics_update')
-             end if
-
+!!$!!== KZ_WATCON 
+!!$             if(use_mass_borrower) then 
+!!$                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
+!!$                call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
+!!$             else
+!!$                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
+!!$             end if 
 !!== KZ_WATCON 
-             if(use_mass_borrower) then 
-                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
-                call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
-             else
-                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
-             end if 
-!!== KZ_WATCON 
-             if (present(chunk_smry)) then
-             call t_stopf('qneg3_in_physics_update')
-             end if
-
           else
              do k = ptend%top_level, ptend%bot_level
                 ! checks for number concentration
@@ -705,27 +353,26 @@ contains
              end do
           end if
 
-#endif
-       end if ! ptend%lq(m)
+       end if
 
-    end do  ! m=1,pcnst
+    end do
 
-    !------------------------------------------------------------------------
-    ! This is a temporary fix for the large H, H2 in WACCM-X
-    ! Well, it was supposed to be temporary, but it has been here
-    ! for a while now.
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       call cnst_get_ind('H', ixh)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh) = min(state%q(:ncol,k,ixh), 0.01_r8)
-       end do
-
-       call cnst_get_ind('H2', ixh2)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh2) = min(state%q(:ncol,k,ixh2), 6.e-5_r8)
-       end do
-    endif
+!!$    !------------------------------------------------------------------------
+!!$    ! This is a temporary fix for the large H, H2 in WACCM-X
+!!$    ! Well, it was supposed to be temporary, but it has been here
+!!$    ! for a while now.
+!!$    !------------------------------------------------------------------------
+!!$    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+!!$       call cnst_get_ind('H', ixh)
+!!$       do k = ptend%top_level, ptend%bot_level
+!!$          state%q(:ncol,k,ixh) = min(state%q(:ncol,k,ixh), 0.01_r8)
+!!$       end do
+!!$
+!!$       call cnst_get_ind('H2', ixh2)
+!!$       do k = ptend%top_level, ptend%bot_level
+!!$          state%q(:ncol,k,ixh2) = min(state%q(:ncol,k,ixh2), 6.e-5_r8)
+!!$       end do
+!!$    endif
 
     ! Special tests for cloud liquid and ice:
     ! Enforce a minimum non-zero value.
@@ -751,69 +398,83 @@ contains
        end if
     end if
 
-    !------------------------------------------------------------------------
-    ! Get indices for molecular weights and call WACCM-X physconst_update
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      call cnst_get_ind('O', ixo)
-      call cnst_get_ind('O2', ixo2)
-      call cnst_get_ind('N', ixn)             
+!!$    !------------------------------------------------------------------------
+!!$    ! Get indices for molecular weights and call WACCM-X physconst_update
+!!$    !------------------------------------------------------------------------
+!!$    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
+!!$      call cnst_get_ind('O', ixo)
+!!$      call cnst_get_ind('O2', ixo2)
+!!$      call cnst_get_ind('N', ixn)             
+!!$
+!!$      call physconst_update(state%q, state%t, &
+!!$	         cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
+!!$	                              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
+!!$    endif	  
+!!$   
+!!$    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
+!!$      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
+!!$    else
+!!$      zvirv(:,:) = zvir    
+!!$    endif
 
-      call physconst_update(state%q, state%t, &
-	         cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
-	                              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
-    endif	  
-   
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
-    else
-      zvirv(:,:) = zvir    
-    endif
-
-    !-------------------------------------------------------------------------------------------------------------
-    ! Update temperature from dry static energy (moved from above for WACCM-X so updating after cpairv_loc update)
-    !-------------------------------------------------------------------------------------------------------------
-
+    !-------------------------------------------------------------------------------------------
+    ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
+    !-------------------------------------------------------------------------------------------
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
-          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)*dt/cpairv_loc(:ncol,k,state%lchnk)
+          state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
           if (present(tend)) &
-               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpair!!v_loc(:ncol,k,state%lchnk)
        end do
     end if
 
-    ! Derive new geopotential fields if heating or water tendency not 0.
-
-    if (ptend%ls .or. ptend%lq(1)) then
-       call geopotential_t  (                                                                    &
-            state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel  , state%rpdel  , &
-            state%t     , state%q(:,:,1), rairv_loc(:,:,state%lchnk), gravit  , zvirv          , &
-            state%zi    , state%zm      , ncol         )
-       ! update dry static energy for use in next process
-       do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk) &
-                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
-       end do
-    end if
+!!$    ! Derive new temperature and geopotential fields if heating or water tendency not 0.
+!!$    if (ptend%ls .or. ptend%lq(1)) then
+!!$       call geopotential_dse(  &
+!!$            state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel  , state%rpdel  , &
+!!$            state%s     , state%q(:,:,1),state%phis , rairv_loc(:,:,state%lchnk), gravit  , cpairv_loc(:,:,state%lchnk), &
+!!$            zvirv    , state%t     , state%zi    , state%zm    , ncol         )
+!!$    end if
 
     ! Good idea to do this regularly.
     ! (The following causes a 'recursive I/O' error with some compilers.)
     ! call shr_sys_flush(iulog)
 
-    if (state_debug_checks) call physics_state_check(state, ptend%name)
+!!$    if (state_debug_checks) call physics_state_check(state, ptend%name)
+!!$
+!!$    deallocate(cpairv_loc, rairv_loc)
 
-    deallocate(cpairv_loc, rairv_loc)
 
+!!$    if (pergro_test_active) then
+!!$       !BSINGH - for pergrow
+!!$       
+!!$       !BSINGH - Added these calls to output fields
+!!$       str_T = 'T_'//trim(adjustl(ptend%name))
+!!$       call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
+!!$       
+!!$       str_S = 'S_'//trim(adjustl(ptend%name))
+!!$       call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
+!!$       
+!!$       !str_Stend = 'St_'//trim(adjustl(ptend%name))
+!!$       !call outfld( trim(adjustl(str_Stend)), ptend%s, pcols, state%lchnk )
+!!$       
+!!$       str_QV = 'QV_'//trim(adjustl(ptend%name))
+!!$       call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )
+!!$       
+!!$       !str_QVtend = 'QVt_'//trim(adjustl(ptend%name))
+!!$       !call outfld( trim(adjustl(str_QVtend)), ptend%q(:,:,1), pcols, state%lchnk )
+!!$    endif
+!!$
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
 
-    ptend%name  = "none"
+    ptend%name  = "nonepup"
     ptend%lq(:) = .false.
     ptend%ls    = .false.
     ptend%lu    = .false.
     ptend%lv    = .false.
     ptend%psetcols = 0
-    call t_stopf ('physics_update')
+!!$    call t_stopf ('physics_update')
 
   contains
 
@@ -849,193 +510,193 @@ contains
 
 !===============================================================================
 
-  subroutine physics_state_check(state, name)
-!-----------------------------------------------------------------------
-! Check a physics_state object for invalid data (e.g NaNs, negative
-! temperatures).
-!-----------------------------------------------------------------------
-    use shr_infnan_mod, only: shr_infnan_inf_type, assignment(=), &
-                              shr_infnan_posinf, shr_infnan_neginf
-    use shr_assert_mod, only: shr_assert, shr_assert_in_domain
-    use physconst,      only: pi
-    use constituents,   only: pcnst, qmin
-
-!------------------------------Arguments--------------------------------
-    ! State to check.
-    type(physics_state), intent(in)           :: state
-    ! Name of the package responsible for this state.
-    character(len=*),    intent(in), optional :: name
-
-!---------------------------Local storage-------------------------------
-    ! Shortened name for ncol.
-    integer :: ncol
-    ! Double precision positive/negative infinity.
-    real(r8) :: posinf_r8, neginf_r8
-    ! Canned message.
-    character(len=64) :: msg
-    ! Constituent index
-    integer :: m
-
-!-----------------------------------------------------------------------
-
-    ncol = state%ncol
-
-    posinf_r8 = shr_infnan_posinf
-    neginf_r8 = shr_infnan_neginf
-
-    ! It may be reasonable to check some of the integer components of the
-    ! state as well, but this is not yet implemented.
-
-    ! Check for NaN first to avoid any IEEE exceptions.
-
-    if (present(name)) then
-       msg = "NaN produced in physics_state by package "// &
-            trim(name)//"."
-    else
-       msg = "NaN found in physics_state."
-    end if
-
-    ! 1-D variables
-    call shr_assert_in_domain(state%ps(:ncol),          is_nan=.false., &
-         varname="state%ps",        msg=msg)
-    call shr_assert_in_domain(state%psdry(:ncol),       is_nan=.false., &
-         varname="state%psdry",     msg=msg)
-    call shr_assert_in_domain(state%phis(:ncol),        is_nan=.false., &
-         varname="state%phis",      msg=msg)
-    call shr_assert_in_domain(state%te_ini(:ncol),      is_nan=.false., &
-         varname="state%te_ini",    msg=msg)
-    call shr_assert_in_domain(state%te_cur(:ncol),      is_nan=.false., &
-         varname="state%te_cur",    msg=msg)
-    call shr_assert_in_domain(state%tw_ini(:ncol),      is_nan=.false., &
-         varname="state%tw_ini",    msg=msg)
-    call shr_assert_in_domain(state%tw_cur(:ncol),      is_nan=.false., &
-         varname="state%tw_cur",    msg=msg)
-
-    ! 2-D variables (at midpoints)
-    call shr_assert_in_domain(state%t(:ncol,:),         is_nan=.false., &
-         varname="state%t",         msg=msg)
-    call shr_assert_in_domain(state%u(:ncol,:),         is_nan=.false., &
-         varname="state%u",         msg=msg)
-    call shr_assert_in_domain(state%v(:ncol,:),         is_nan=.false., &
-         varname="state%v",         msg=msg)
-    call shr_assert_in_domain(state%s(:ncol,:),         is_nan=.false., &
-         varname="state%s",         msg=msg)
-    call shr_assert_in_domain(state%omega(:ncol,:),     is_nan=.false., &
-         varname="state%omega",     msg=msg)
-    call shr_assert_in_domain(state%pmid(:ncol,:),      is_nan=.false., &
-         varname="state%pmid",      msg=msg)
-    call shr_assert_in_domain(state%pmiddry(:ncol,:),   is_nan=.false., &
-         varname="state%pmiddry",   msg=msg)
-    call shr_assert_in_domain(state%pdel(:ncol,:),      is_nan=.false., &
-         varname="state%pdel",      msg=msg)
-    call shr_assert_in_domain(state%pdeldry(:ncol,:),   is_nan=.false., &
-         varname="state%pdeldry",   msg=msg)
-    call shr_assert_in_domain(state%rpdel(:ncol,:),     is_nan=.false., &
-         varname="state%rpdel",     msg=msg)
-    call shr_assert_in_domain(state%rpdeldry(:ncol,:),  is_nan=.false., &
-         varname="state%rpdeldry",  msg=msg)
-    call shr_assert_in_domain(state%lnpmid(:ncol,:),    is_nan=.false., &
-         varname="state%lnpmid",    msg=msg)
-    call shr_assert_in_domain(state%lnpmiddry(:ncol,:), is_nan=.false., &
-         varname="state%lnpmiddry", msg=msg)
-    call shr_assert_in_domain(state%exner(:ncol,:),     is_nan=.false., &
-         varname="state%exner",     msg=msg)
-    call shr_assert_in_domain(state%zm(:ncol,:),        is_nan=.false., &
-         varname="state%zm",        msg=msg)
-
-    ! 2-D variables (at interfaces)
-    call shr_assert_in_domain(state%pint(:ncol,:),      is_nan=.false., &
-         varname="state%pint",      msg=msg)
-    call shr_assert_in_domain(state%pintdry(:ncol,:),   is_nan=.false., &
-         varname="state%pintdry",   msg=msg)
-    call shr_assert_in_domain(state%lnpint(:ncol,:),    is_nan=.false., &
-         varname="state%lnpint",    msg=msg)
-    call shr_assert_in_domain(state%lnpintdry(:ncol,:), is_nan=.false., &
-         varname="state%lnpintdry", msg=msg)
-    call shr_assert_in_domain(state%zi(:ncol,:),        is_nan=.false., &
-         varname="state%zi",        msg=msg)
-
-    ! 3-D variables
-    call shr_assert_in_domain(state%q(:ncol,:,:),       is_nan=.false., &
-         varname="state%q",         msg=msg)
-
-    ! Now run other checks (i.e. values are finite and within a range that
-    ! is physically meaningful).
-
-    if (present(name)) then
-       msg = "Invalid value produced in physics_state by package "// &
-            trim(name)//"."
-    else
-       msg = "Invalid value found in physics_state."
-    end if
-
-    ! 1-D variables
-    call shr_assert_in_domain(state%ps(:ncol),          lt=posinf_r8, gt=0._r8, &
-         varname="state%ps",        msg=msg)
-    call shr_assert_in_domain(state%psdry(:ncol),       lt=posinf_r8, gt=0._r8, &
-         varname="state%psdry",     msg=msg)
-    call shr_assert_in_domain(state%phis(:ncol),        lt=posinf_r8, gt=neginf_r8, &
-         varname="state%phis",      msg=msg)
-    call shr_assert_in_domain(state%te_ini(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%te_ini",    msg=msg)
-    call shr_assert_in_domain(state%te_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%te_cur",    msg=msg)
-    call shr_assert_in_domain(state%tw_ini(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%tw_ini",    msg=msg)
-    call shr_assert_in_domain(state%tw_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%tw_cur",    msg=msg)
-
-    ! 2-D variables (at midpoints)
-    call shr_assert_in_domain(state%t(:ncol,:),         lt=posinf_r8, gt=0._r8, &
-         varname="state%t",         msg=msg)
-    call shr_assert_in_domain(state%u(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
-         varname="state%u",         msg=msg)
-    call shr_assert_in_domain(state%v(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
-         varname="state%v",         msg=msg)
-    call shr_assert_in_domain(state%s(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
-         varname="state%s",         msg=msg)
-    call shr_assert_in_domain(state%omega(:ncol,:),     lt=posinf_r8, gt=neginf_r8, &
-         varname="state%omega",     msg=msg)
-    call shr_assert_in_domain(state%pmid(:ncol,:),      lt=posinf_r8, gt=0._r8, &
-         varname="state%pmid",      msg=msg)
-    call shr_assert_in_domain(state%pmiddry(:ncol,:),   lt=posinf_r8, gt=0._r8, &
-         varname="state%pmiddry",   msg=msg)
-    call shr_assert_in_domain(state%pdel(:ncol,:),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%pdel",      msg=msg)
-    call shr_assert_in_domain(state%pdeldry(:ncol,:),   lt=posinf_r8, gt=neginf_r8, &
-         varname="state%pdeldry",   msg=msg)
-    call shr_assert_in_domain(state%rpdel(:ncol,:),     lt=posinf_r8, gt=neginf_r8, &
-         varname="state%rpdel",     msg=msg)
-    call shr_assert_in_domain(state%rpdeldry(:ncol,:),  lt=posinf_r8, gt=neginf_r8, &
-         varname="state%rpdeldry",  msg=msg)
-    call shr_assert_in_domain(state%lnpmid(:ncol,:),    lt=posinf_r8, gt=neginf_r8, &
-         varname="state%lnpmid",    msg=msg)
-    call shr_assert_in_domain(state%lnpmiddry(:ncol,:), lt=posinf_r8, gt=neginf_r8, &
-         varname="state%lnpmiddry", msg=msg)
-    call shr_assert_in_domain(state%exner(:ncol,:),     lt=posinf_r8, gt=0._r8, &
-         varname="state%exner",     msg=msg)
-    call shr_assert_in_domain(state%zm(:ncol,:),        lt=posinf_r8, gt=neginf_r8, &
-         varname="state%zm",        msg=msg)
-
-    ! 2-D variables (at interfaces)
-    call shr_assert_in_domain(state%pint(:ncol,:),      lt=posinf_r8, gt=0._r8, &
-         varname="state%pint",      msg=msg)
-    call shr_assert_in_domain(state%pintdry(:ncol,:),   lt=posinf_r8, gt=0._r8, &
-         varname="state%pintdry",   msg=msg)
-    call shr_assert_in_domain(state%lnpint(:ncol,:),    lt=posinf_r8, gt=neginf_r8, &
-         varname="state%lnpint",    msg=msg)
-    call shr_assert_in_domain(state%lnpintdry(:ncol,:), lt=posinf_r8, gt=neginf_r8, &
-         varname="state%lnpintdry", msg=msg)
-    call shr_assert_in_domain(state%zi(:ncol,:),        lt=posinf_r8, gt=neginf_r8, &
-         varname="state%zi",        msg=msg)
-
-    ! 3-D variables
-    do m = 1,pcnst
-       call shr_assert_in_domain(state%q(:ncol,:,m),    lt=posinf_r8, ge=qmin(m), &
-            varname="state%q ("//trim(cnst_name(m))//")", msg=msg)
-    end do
-
-  end subroutine physics_state_check
+!!$  subroutine physics_state_check(state, name)
+!!$!-----------------------------------------------------------------------
+!!$! Check a physics_state object for invalid data (e.g NaNs, negative
+!!$! temperatures).
+!!$!-----------------------------------------------------------------------
+!!$    use shr_infnan_mod, only: shr_infnan_inf_type, assignment(=), &
+!!$                              shr_infnan_posinf, shr_infnan_neginf
+!!$    use shr_assert_mod, only: shr_assert, shr_assert_in_domain
+!!$    use physconst,      only: pi
+!!$    use constituents,   only: pcnst, qmin
+!!$
+!!$!------------------------------Arguments--------------------------------
+!!$    ! State to check.
+!!$    type(physics_state), intent(in)           :: state
+!!$    ! Name of the package responsible for this state.
+!!$    character(len=*),    intent(in), optional :: name
+!!$
+!!$!---------------------------Local storage-------------------------------
+!!$    ! Shortened name for ncol.
+!!$    integer :: ncol
+!!$    ! Double precision positive/negative infinity.
+!!$    real(r8) :: posinf_r8, neginf_r8
+!!$    ! Canned message.
+!!$    character(len=64) :: msg
+!!$    ! Constituent index
+!!$    integer :: m
+!!$
+!!$!-----------------------------------------------------------------------
+!!$
+!!$    ncol = state%ncol
+!!$
+!!$    posinf_r8 = shr_infnan_posinf
+!!$    neginf_r8 = shr_infnan_neginf
+!!$
+!!$    ! It may be reasonable to check some of the integer components of the
+!!$    ! state as well, but this is not yet implemented.
+!!$
+!!$    ! Check for NaN first to avoid any IEEE exceptions.
+!!$
+!!$    if (present(name)) then
+!!$       msg = "NaN produced in physics_state by package "// &
+!!$            trim(name)//"."
+!!$    else
+!!$       msg = "NaN found in physics_state."
+!!$    end if
+!!$
+!!$    ! 1-D variables
+!!$    call shr_assert_in_domain(state%ps(:ncol),          is_nan=.false., &
+!!$         varname="state%ps",        msg=msg)
+!!$    call shr_assert_in_domain(state%psdry(:ncol),       is_nan=.false., &
+!!$         varname="state%psdry",     msg=msg)
+!!$    call shr_assert_in_domain(state%phis(:ncol),        is_nan=.false., &
+!!$         varname="state%phis",      msg=msg)
+!!$    call shr_assert_in_domain(state%te_ini(:ncol),      is_nan=.false., &
+!!$         varname="state%te_ini",    msg=msg)
+!!$    call shr_assert_in_domain(state%te_cur(:ncol),      is_nan=.false., &
+!!$         varname="state%te_cur",    msg=msg)
+!!$    call shr_assert_in_domain(state%tw_ini(:ncol),      is_nan=.false., &
+!!$         varname="state%tw_ini",    msg=msg)
+!!$    call shr_assert_in_domain(state%tw_cur(:ncol),      is_nan=.false., &
+!!$         varname="state%tw_cur",    msg=msg)
+!!$
+!!$    ! 2-D variables (at midpoints)
+!!$    call shr_assert_in_domain(state%t(:ncol,:),         is_nan=.false., &
+!!$         varname="state%t",         msg=msg)
+!!$    call shr_assert_in_domain(state%u(:ncol,:),         is_nan=.false., &
+!!$         varname="state%u",         msg=msg)
+!!$    call shr_assert_in_domain(state%v(:ncol,:),         is_nan=.false., &
+!!$         varname="state%v",         msg=msg)
+!!$    call shr_assert_in_domain(state%s(:ncol,:),         is_nan=.false., &
+!!$         varname="state%s",         msg=msg)
+!!$    call shr_assert_in_domain(state%omega(:ncol,:),     is_nan=.false., &
+!!$         varname="state%omega",     msg=msg)
+!!$    call shr_assert_in_domain(state%pmid(:ncol,:),      is_nan=.false., &
+!!$         varname="state%pmid",      msg=msg)
+!!$    call shr_assert_in_domain(state%pmiddry(:ncol,:),   is_nan=.false., &
+!!$         varname="state%pmiddry",   msg=msg)
+!!$    call shr_assert_in_domain(state%pdel(:ncol,:),      is_nan=.false., &
+!!$         varname="state%pdel",      msg=msg)
+!!$    call shr_assert_in_domain(state%pdeldry(:ncol,:),   is_nan=.false., &
+!!$         varname="state%pdeldry",   msg=msg)
+!!$    call shr_assert_in_domain(state%rpdel(:ncol,:),     is_nan=.false., &
+!!$         varname="state%rpdel",     msg=msg)
+!!$    call shr_assert_in_domain(state%rpdeldry(:ncol,:),  is_nan=.false., &
+!!$         varname="state%rpdeldry",  msg=msg)
+!!$    call shr_assert_in_domain(state%lnpmid(:ncol,:),    is_nan=.false., &
+!!$         varname="state%lnpmid",    msg=msg)
+!!$    call shr_assert_in_domain(state%lnpmiddry(:ncol,:), is_nan=.false., &
+!!$         varname="state%lnpmiddry", msg=msg)
+!!$    call shr_assert_in_domain(state%exner(:ncol,:),     is_nan=.false., &
+!!$         varname="state%exner",     msg=msg)
+!!$    call shr_assert_in_domain(state%zm(:ncol,:),        is_nan=.false., &
+!!$         varname="state%zm",        msg=msg)
+!!$
+!!$    ! 2-D variables (at interfaces)
+!!$    call shr_assert_in_domain(state%pint(:ncol,:),      is_nan=.false., &
+!!$         varname="state%pint",      msg=msg)
+!!$    call shr_assert_in_domain(state%pintdry(:ncol,:),   is_nan=.false., &
+!!$         varname="state%pintdry",   msg=msg)
+!!$    call shr_assert_in_domain(state%lnpint(:ncol,:),    is_nan=.false., &
+!!$         varname="state%lnpint",    msg=msg)
+!!$    call shr_assert_in_domain(state%lnpintdry(:ncol,:), is_nan=.false., &
+!!$         varname="state%lnpintdry", msg=msg)
+!!$    call shr_assert_in_domain(state%zi(:ncol,:),        is_nan=.false., &
+!!$         varname="state%zi",        msg=msg)
+!!$
+!!$    ! 3-D variables
+!!$    call shr_assert_in_domain(state%q(:ncol,:,:),       is_nan=.false., &
+!!$         varname="state%q",         msg=msg)
+!!$
+!!$    ! Now run other checks (i.e. values are finite and within a range that
+!!$    ! is physically meaningful).
+!!$
+!!$    if (present(name)) then
+!!$       msg = "Invalid value produced in physics_state by package "// &
+!!$            trim(name)//"."
+!!$    else
+!!$       msg = "Invalid value found in physics_state."
+!!$    end if
+!!$
+!!$    ! 1-D variables
+!!$    call shr_assert_in_domain(state%ps(:ncol),          lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%ps",        msg=msg)
+!!$    call shr_assert_in_domain(state%psdry(:ncol),       lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%psdry",     msg=msg)
+!!$    call shr_assert_in_domain(state%phis(:ncol),        lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%phis",      msg=msg)
+!!$    call shr_assert_in_domain(state%te_ini(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%te_ini",    msg=msg)
+!!$    call shr_assert_in_domain(state%te_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%te_cur",    msg=msg)
+!!$    call shr_assert_in_domain(state%tw_ini(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%tw_ini",    msg=msg)
+!!$    call shr_assert_in_domain(state%tw_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%tw_cur",    msg=msg)
+!!$
+!!$    ! 2-D variables (at midpoints)
+!!$    call shr_assert_in_domain(state%t(:ncol,:),         lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%t",         msg=msg)
+!!$    call shr_assert_in_domain(state%u(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%u",         msg=msg)
+!!$    call shr_assert_in_domain(state%v(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%v",         msg=msg)
+!!$    call shr_assert_in_domain(state%s(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%s",         msg=msg)
+!!$    call shr_assert_in_domain(state%omega(:ncol,:),     lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%omega",     msg=msg)
+!!$    call shr_assert_in_domain(state%pmid(:ncol,:),      lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%pmid",      msg=msg)
+!!$    call shr_assert_in_domain(state%pmiddry(:ncol,:),   lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%pmiddry",   msg=msg)
+!!$    call shr_assert_in_domain(state%pdel(:ncol,:),      lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%pdel",      msg=msg)
+!!$    call shr_assert_in_domain(state%pdeldry(:ncol,:),   lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%pdeldry",   msg=msg)
+!!$    call shr_assert_in_domain(state%rpdel(:ncol,:),     lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%rpdel",     msg=msg)
+!!$    call shr_assert_in_domain(state%rpdeldry(:ncol,:),  lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%rpdeldry",  msg=msg)
+!!$    call shr_assert_in_domain(state%lnpmid(:ncol,:),    lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%lnpmid",    msg=msg)
+!!$    call shr_assert_in_domain(state%lnpmiddry(:ncol,:), lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%lnpmiddry", msg=msg)
+!!$    call shr_assert_in_domain(state%exner(:ncol,:),     lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%exner",     msg=msg)
+!!$    call shr_assert_in_domain(state%zm(:ncol,:),        lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%zm",        msg=msg)
+!!$
+!!$    ! 2-D variables (at interfaces)
+!!$    call shr_assert_in_domain(state%pint(:ncol,:),      lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%pint",      msg=msg)
+!!$    call shr_assert_in_domain(state%pintdry(:ncol,:),   lt=posinf_r8, gt=0._r8, &
+!!$         varname="state%pintdry",   msg=msg)
+!!$    call shr_assert_in_domain(state%lnpint(:ncol,:),    lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%lnpint",    msg=msg)
+!!$    call shr_assert_in_domain(state%lnpintdry(:ncol,:), lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%lnpintdry", msg=msg)
+!!$    call shr_assert_in_domain(state%zi(:ncol,:),        lt=posinf_r8, gt=neginf_r8, &
+!!$         varname="state%zi",        msg=msg)
+!!$
+!!$    ! 3-D variables
+!!$    do m = 1,pcnst
+!!$       call shr_assert_in_domain(state%q(:ncol,:,m),    lt=posinf_r8, ge=qmin(m), &
+!!$            varname="state%q ("//trim(cnst_name(m))//")", msg=msg)
+!!$    end do
+!!$
+!!$  end subroutine physics_state_check
 
 !===============================================================================
 
@@ -1056,7 +717,7 @@ contains
     integer :: ierr = 0
 
 !-----------------------------------------------------------------------
-    call t_startf('physics_ptend_sum')
+!!$    call t_startf('physics_ptend_sum')
     if (ptend%psetcols /= ptend_sum%psetcols) then
        call endrun('physics_ptend_sum error: ptend and ptend_sum must have the same value for psetcols')
     end if
@@ -1185,7 +846,7 @@ contains
        end do
 
     end if
-    call t_stopf('physics_ptend_sum')
+!!$    call t_stopf('physics_ptend_sum')
 
   end subroutine physics_ptend_sum
 
@@ -1211,7 +872,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-    call t_startf('physics_ptend_scale')
+!!$    call t_startf('physics_ptend_scale')
 ! Update u,v fields
     if (ptend%lu) &
          call multiply_tendency(ptend%u, &
@@ -1232,7 +893,7 @@ contains
             call multiply_tendency(ptend%q(:,:,m), &
             ptend%cflx_srf(:,m), ptend%cflx_top(:,m))
     end do
-    call t_stopf('physics_ptend_scale')
+!!$    call t_stopf('physics_ptend_scale')
 
   contains
 
@@ -1415,43 +1076,43 @@ end subroutine physics_ptend_copy
 
 !===============================================================================
 
-  subroutine physics_state_set_grid(lchnk, phys_state)
-!-----------------------------------------------------------------------
-! Set the grid components of the physics_state object
-!-----------------------------------------------------------------------
-
-    integer,             intent(in)    :: lchnk
-    type(physics_state), intent(inout) :: phys_state
-
-    ! local variables
-    integer  :: i, ncol
-    real(r8) :: rlon(pcols)
-    real(r8) :: rlat(pcols)
-
-    !-----------------------------------------------------------------------
-    ! get_ncols_p requires a state which does not have sub-columns
-    if (phys_state%psetcols .ne. pcols) then
-       call endrun('physics_state_set_grid: cannot pass in a state which has sub-columns')
-    end if
-
-    ncol = get_ncols_p(lchnk)
-
-    if(ncol<=0) then
-       write(iulog,*) lchnk, ncol
-       call endrun('physics_state_set_grid')
-    end if
-
-    call get_rlon_all_p(lchnk, ncol, rlon)
-    call get_rlat_all_p(lchnk, ncol, rlat)
-    phys_state%ncol  = ncol
-    phys_state%lchnk = lchnk
-    do i=1,ncol
-       phys_state%lat(i) = rlat(i)
-       phys_state%lon(i) = rlon(i)
-    end do
-    call init_geo_unique(phys_state,ncol)
-
-  end subroutine physics_state_set_grid
+!!$  subroutine physics_state_set_grid(lchnk, phys_state)
+!!$!-----------------------------------------------------------------------
+!!$! Set the grid components of the physics_state object
+!!$!-----------------------------------------------------------------------
+!!$
+!!$    integer,             intent(in)    :: lchnk
+!!$    type(physics_state), intent(inout) :: phys_state
+!!$
+!!$    ! local variables
+!!$    integer  :: i, ncol
+!!$    real(r8) :: rlon(pcols)
+!!$    real(r8) :: rlat(pcols)
+!!$
+!!$    !-----------------------------------------------------------------------
+!!$    ! get_ncols_p requires a state which does not have sub-columns
+!!$    if (phys_state%psetcols .ne. pcols) then
+!!$       call endrun('physics_state_set_grid: cannot pass in a state which has sub-columns')
+!!$    end if
+!!$
+!!$    ncol = get_ncols_p(lchnk)
+!!$
+!!$    if(ncol<=0) then
+!!$       write(iulog,*) lchnk, ncol
+!!$       call endrun('physics_state_set_grid')
+!!$    end if
+!!$
+!!$    call get_rlon_all_p(lchnk, ncol, rlon)
+!!$    call get_rlat_all_p(lchnk, ncol, rlat)
+!!$    phys_state%ncol  = ncol
+!!$    phys_state%lchnk = lchnk
+!!$    do i=1,ncol
+!!$       phys_state%lat(i) = rlat(i)
+!!$       phys_state%lon(i) = rlon(i)
+!!$    end do
+!!$    call init_geo_unique(phys_state,ncol)
+!!$
+!!$  end subroutine physics_state_set_grid
 
 
   subroutine init_geo_unique(phys_state,ncol)
@@ -1499,7 +1160,7 @@ end subroutine physics_ptend_copy
     phys_state%uloncnt=uloncnt
     phys_state%ulatcnt=ulatcnt
 
-    call get_gcol_all_p(phys_state%lchnk,pcols,phys_state%cid)
+!!$    call get_gcol_all_p(phys_state%lchnk,pcols,phys_state%cid)
 
 
   end subroutine init_geo_unique
@@ -1531,7 +1192,6 @@ end subroutine physics_ptend_copy
     !-----------------------------------------------------------------------
 
     use constituents, only : cnst_get_type_byind
-    use ppgrid,       only : begchunk, endchunk
 
     implicit none
     !
@@ -1553,20 +1213,14 @@ end subroutine physics_ptend_copy
     real(r8) :: vtmp(pcols)   ! temp variable for recalculating the initial v values
 
     real(r8) :: zvirv(pcols,pver)    ! Local zvir array pointer
-
-    real(r8),allocatable :: cpairv_loc(:,:,:)
-
     !
     !-----------------------------------------------------------------------
     ! verify that the dycore is FV
-    if (.not. dycore_is('LR') ) return
+!!    if (.not. dycore_is('LR') ) return
 
-    if (state%psetcols .ne. pcols) then
-       call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
-    end if
-    if (adjust_te) then
-       call endrun('physics_dme_adjust: must update code based on the "correct" energy before turning on "adjust_te"')
-    end if
+!!$    if (state%psetcols .ne. pcols) then
+!!$       call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
+!!$    end if
 
     lchnk = state%lchnk
     ncol  = state%ncol
@@ -1609,35 +1263,19 @@ end subroutine physics_ptend_copy
        state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
     end do
 
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
-    else
-      zvirv(:,:) = zvir    
-    endif
+!!$    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
+!!$      zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
+!!$    else
+!!$      zvirv(:,:) = zvir    
+!!$    endif
 
 ! compute new T,z from new s,q,dp
     if (adjust_te) then
-! cpairv_loc needs to be allocated to a size which matches state and ptend
-! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
-! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-
-       if (state%psetcols == pcols) then
-          allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-          cpairv_loc(:,:,:) = cpairv(:,:,:)
-       else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-          allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-          cpairv_loc(:,:,:) = cpair
-       else
-          call endrun('physics_dme_adjust: cpairv is not allowed to vary when subcolumns are turned on')
-       end if
-
        call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
             state%pmid  , state%pdel    , state%rpdel,  &
             state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-            gravit, cpairv_loc(:,:,state%lchnk), zvirv, &
+	    gravit, cpairv(:,:,state%lchnk), zvirv, &
             state%t     , state%zi      , state%zm   , ncol)
-
-       deallocate(cpairv_loc)
     end if
 
   end subroutine physics_dme_adjust
@@ -1766,93 +1404,93 @@ end subroutine physics_tend_init
 
 !===============================================================================
 
-subroutine set_state_pdry (state,pdeld_calc)
-
-  use ppgrid,  only: pver
-  use pmgrid,  only: plev, plevp
-  implicit none
-
-  type(physics_state), intent(inout) :: state
-  logical, optional, intent(in) :: pdeld_calc    !  .true. do calculate pdeld [default]
-                                                 !  .false. don't calculate pdeld 
-  integer ncol
-  integer i, k
-  logical do_pdeld_calc
-
-  if ( present(pdeld_calc) ) then
-     do_pdeld_calc = pdeld_calc
-  else
-     do_pdeld_calc = .true.
-  endif
-  
-  ncol = state%ncol
-
-
-  state%psdry(:ncol) = state%pint(:ncol,1)
-  state%pintdry(:ncol,1) = state%pint(:ncol,1)
-
-  if (do_pdeld_calc)  then
-     do k = 1, pver
-        state%pdeldry(:ncol,k) = state%pdel(:ncol,k)*(1._r8-state%q(:ncol,k,1))
-     end do
-  endif
-  do k = 1, pver
-     state%pintdry(:ncol,k+1) = state%pintdry(:ncol,k)+state%pdeldry(:ncol,k)
-     state%pmiddry(:ncol,k) = (state%pintdry(:ncol,k+1)+state%pintdry(:ncol,k))/2._r8
-     state%psdry(:ncol) = state%psdry(:ncol) + state%pdeldry(:ncol,k)
-  end do
-
-  state%rpdeldry(:ncol,:) = 1._r8/state%pdeldry(:ncol,:)
-  state%lnpmiddry(:ncol,:) = log(state%pmiddry(:ncol,:))
-  state%lnpintdry(:ncol,:) = log(state%pintdry(:ncol,:))
-
-end subroutine set_state_pdry 
-
-!===============================================================================
-
-subroutine set_wet_to_dry (state)
-
-  use constituents,  only: pcnst, cnst_type
-
-  type(physics_state), intent(inout) :: state
-
-  integer m, ncol
-  
-  ncol = state%ncol
-
-  do m = 1,pcnst
-     if (cnst_type(m).eq.'dry') then
-        state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdel(:ncol,:)/state%pdeldry(:ncol,:)
-     endif
-  end do
-
-end subroutine set_wet_to_dry 
+!!$subroutine set_state_pdry (state,pdeld_calc)
+!!$
+!!$  use ppgrid,  only: pver
+!!$  use pmgrid,  only: plev, plevp
+!!$  implicit none
+!!$
+!!$  type(physics_state), intent(inout) :: state
+!!$  logical, optional, intent(in) :: pdeld_calc    !  .true. do calculate pdeld [default]
+!!$                                                 !  .false. don't calculate pdeld 
+!!$  integer ncol
+!!$  integer i, k
+!!$  logical do_pdeld_calc
+!!$
+!!$  if ( present(pdeld_calc) ) then
+!!$     do_pdeld_calc = pdeld_calc
+!!$  else
+!!$     do_pdeld_calc = .true.
+!!$  endif
+!!$  
+!!$  ncol = state%ncol
+!!$
+!!$
+!!$  state%psdry(:ncol) = state%pint(:ncol,1)
+!!$  state%pintdry(:ncol,1) = state%pint(:ncol,1)
+!!$
+!!$  if (do_pdeld_calc)  then
+!!$     do k = 1, pver
+!!$        state%pdeldry(:ncol,k) = state%pdel(:ncol,k)*(1._r8-state%q(:ncol,k,1))
+!!$     end do
+!!$  endif
+!!$  do k = 1, pver
+!!$     state%pintdry(:ncol,k+1) = state%pintdry(:ncol,k)+state%pdeldry(:ncol,k)
+!!$     state%pmiddry(:ncol,k) = (state%pintdry(:ncol,k+1)+state%pintdry(:ncol,k))/2._r8
+!!$     state%psdry(:ncol) = state%psdry(:ncol) + state%pdeldry(:ncol,k)
+!!$  end do
+!!$
+!!$  state%rpdeldry(:ncol,:) = 1._r8/state%pdeldry(:ncol,:)
+!!$  state%lnpmiddry(:ncol,:) = log(state%pmiddry(:ncol,:))
+!!$  state%lnpintdry(:ncol,:) = log(state%pintdry(:ncol,:))
+!!$
+!!$end subroutine set_state_pdry 
 
 !===============================================================================
 
-subroutine set_dry_to_wet (state)
+!!$subroutine set_wet_to_dry (state)
+!!$
+!!$  use constituents,  only: pcnst, cnst_type
+!!$
+!!$  type(physics_state), intent(inout) :: state
+!!$
+!!$  integer m, ncol
+!!$  
+!!$  ncol = state%ncol
+!!$
+!!$  do m = 1,pcnst
+!!$     if (cnst_type(m).eq.'dry') then
+!!$        state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdel(:ncol,:)/state%pdeldry(:ncol,:)
+!!$     endif
+!!$  end do
+!!$
+!!$end subroutine set_wet_to_dry 
 
-  use constituents,  only: pcnst, cnst_type
+!===============================================================================
 
-  type(physics_state), intent(inout) :: state
-
-  integer m, ncol
-  
-  ncol = state%ncol
-
-  do m = 1,pcnst
-     if (cnst_type(m).eq.'dry') then
-        state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)/state%pdel(:ncol,:)
-     endif
-  end do
-
-end subroutine set_dry_to_wet
+!!$subroutine set_dry_to_wet (state)
+!!$
+!!$  use constituents,  only: pcnst, cnst_type
+!!$
+!!$  type(physics_state), intent(inout) :: state
+!!$
+!!$  integer m, ncol
+!!$  
+!!$  ncol = state%ncol
+!!$
+!!$  do m = 1,pcnst
+!!$     if (cnst_type(m).eq.'dry') then
+!!$        state%q(:ncol,:,m) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)/state%pdel(:ncol,:)
+!!$     endif
+!!$  end do
+!!$
+!!$end subroutine set_dry_to_wet
 
 !===============================================================================
 
 subroutine physics_state_alloc(state,lchnk,psetcols)
 
-  use infnan, only : inf, assignment(=)
+!!$  use infnan, only : inf, assignment(=)
 
 ! allocate the individual state components
 
@@ -1865,7 +1503,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   state%lchnk    = lchnk
   state%psetcols = psetcols
-  state%ngrdcol  = get_ncols_p(lchnk)  ! Number of grid columns
+!!  state%ngrdcol  = get_ncols_p(lchnk)  ! Number of grid columns
 
   !----------------------------------
   ! Following variables will be overwritten by sub-column generator, if sub-columns are being used
@@ -1979,41 +1617,41 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%cid(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cid')
 
-  state%lat(:) = inf
-  state%lon(:) = inf
-  state%ulat(:) = inf
-  state%ulon(:) = inf
-  state%ps(:) = inf
-  state%psdry(:) = inf
-  state%phis(:) = inf
-  state%t(:,:) = inf
-  state%u(:,:) = inf
-  state%v(:,:) = inf
-  state%s(:,:) = inf
-  state%omega(:,:) = inf
-  state%pmid(:,:) = inf
-  state%pmiddry(:,:) = inf
-  state%pdel(:,:) = inf
-  state%pdeldry(:,:) = inf
-  state%rpdel(:,:) = inf
-  state%rpdeldry(:,:) = inf
-  state%lnpmid(:,:) = inf
-  state%lnpmiddry(:,:) = inf
-  state%exner(:,:) = inf
-  state%zm(:,:) = inf
-  state%q(:,:,:) = inf
-      
-  state%pint(:,:) = inf
-  state%pintdry(:,:) = inf
-  state%lnpint(:,:) = inf
-  state%lnpintdry(:,:) = inf
-  state%zi(:,:) = inf
-      
-  state%te_ini(:) = inf
-  state%te_cur(:) = inf
-  state%tw_ini(:) = inf
-  state%tw_cur(:) = inf
-
+!!$  state%lat(:) = inf
+!!$  state%lon(:) = inf
+!!$  state%ulat(:) = inf
+!!$  state%ulon(:) = inf
+!!$  state%ps(:) = inf
+!!$  state%psdry(:) = inf
+!!$  state%phis(:) = inf
+!!$  state%t(:,:) = inf
+!!$  state%u(:,:) = inf
+!!$  state%v(:,:) = inf
+!!$  state%s(:,:) = inf
+!!$  state%omega(:,:) = inf
+!!$  state%pmid(:,:) = inf
+!!$  state%pmiddry(:,:) = inf
+!!$  state%pdel(:,:) = inf
+!!$  state%pdeldry(:,:) = inf
+!!$  state%rpdel(:,:) = inf
+!!$  state%rpdeldry(:,:) = inf
+!!$  state%lnpmid(:,:) = inf
+!!$  state%lnpmiddry(:,:) = inf
+!!$  state%exner(:,:) = inf
+!!$  state%zm(:,:) = inf
+!!$  state%q(:,:,:) = inf
+!!$      
+!!$  state%pint(:,:) = inf
+!!$  state%pintdry(:,:) = inf
+!!$  state%lnpint(:,:) = inf
+!!$  state%lnpintdry(:,:) = inf
+!!$  state%zi(:,:) = inf
+!!$      
+!!$  state%te_ini(:) = inf
+!!$  state%te_cur(:) = inf
+!!$  state%tw_ini(:) = inf
+!!$  state%tw_cur(:) = inf
+!!$
 end subroutine physics_state_alloc
 
 !===============================================================================
@@ -2136,7 +1774,7 @@ end subroutine physics_state_dealloc
 
 subroutine physics_tend_alloc(tend,psetcols)
 
-  use infnan, only : inf, assignment(=)
+!!$  use infnan, only : inf, assignment(=)
 ! allocate the individual tend components
 
   type(physics_tend), intent(inout)  :: tend
@@ -2165,12 +1803,12 @@ subroutine physics_tend_alloc(tend,psetcols)
   allocate(tend%tw_tnd(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_tend_alloc error: allocation error for tend%tw_tnd')
 
-  tend%dtdt(:,:) = inf
-  tend%dudt(:,:) = inf
-  tend%dvdt(:,:) = inf
-  tend%flx_net(:) = inf
-  tend%te_tnd(:) = inf
-  tend%tw_tnd(:) = inf
+!!$  tend%dtdt(:,:) = inf
+!!$  tend%dudt(:,:) = inf
+!!$  tend%dvdt(:,:) = inf
+!!$  tend%flx_net(:) = inf
+!!$  tend%te_tnd(:) = inf
+!!$  tend%tw_tnd(:) = inf
 
 end subroutine physics_tend_alloc
 

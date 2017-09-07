@@ -1,0 +1,4 @@
+&test_nl
+!ic_filepath= '/ACME/components/cam/src/physics/granular_tests/test_input/' ,
+ ic_filepath= '/Users/wanh895/Documents/codes/ACME/components/cam/src/physics/granular_tests/test_input/' ,
+/

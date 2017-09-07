@@ -153,7 +153,9 @@ end subroutine microp_driver_init
 
 !===============================================================================
 
-subroutine microp_driver_tend(state, ptend, dtime, pbuf)
+subroutine microp_driver_tend(state, ptend, dtime, pbuf, chunk_smry)
+
+   use glb_verif_smry, only: tp_stat_smry
 
    ! Call the microphysics parameterization run methods.
 
@@ -162,6 +164,7 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
    type(physics_state), intent(in)    :: state       ! State variables
    type(physics_ptend), intent(out)   :: ptend       ! Package tendencies
    type(physics_buffer_desc), pointer :: pbuf(:)
+   type(tp_stat_smry), intent(inout) :: chunk_smry(:) ! shape: (nfld)
 
    real(r8), intent(in)  :: dtime                    ! Timestep
 
@@ -180,7 +183,7 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
    select case (microp_scheme)
    case ('MG')
       call t_startf('microp_mg_cam_tend')
-      call micro_mg_cam_tend(state, ptend, dtime, pbuf)
+      call micro_mg_cam_tend(state, ptend, dtime, pbuf, chunk_smry)
       call t_stopf('microp_mg_cam_tend')
    case ('RK')
       ! microp_driver doesn't handle this one

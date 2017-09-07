@@ -112,16 +112,16 @@ subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
             end if
          end if
       end do
-      if (lfix) then 
-         if (found .and. abs(worst)>max(qmin(m),1.e-8_r8)) then 
+
+      if (print_fixer_message .and. found .and. abs(worst)>max(qmin(m),1.e-8_r8)) then 
+         if (lfix) then 
             write(iulog,9000)subnam,m,idx,nvals,qmin(m),worst,iw,kw
-         end if
-      else
-         if (print_fixer_message .and. found .and. abs(worst)>max(qmin(m),1.e-8_r8)) then 
+         else
             write(iulog,8000)subnam,m,idx,nvals,worst,iw,kw
          end if
       end if
-   end do
+
+   end do ! constituent loop
 !
    return
 8000 format(' QNEG3 from ',a,':m=',i3,' lat/lchnk=',i7, &

@@ -19,7 +19,7 @@ module physconst
 
    private
    public  :: physconst_init
-   public  :: physconst_readnl
+!!   public  :: physconst_readnl
    public  :: physconst_update
    save
    
@@ -103,11 +103,6 @@ module physconst
    real(r8), public           :: tms_orocnst
    real(r8), public           :: tms_z0fac
 
-!---------------  Variables below are for conservation checks -----------------------
-
-   real(r8), public           ::   rounding_tol = 1.e-14_r8  ! rounding error tolerance
-   real(r8), public           :: water_cnsv_tol = 1.e-10_r8  ! tolerance for total water conservation
-
 !================================================================================================
 contains
 !================================================================================================
@@ -146,115 +141,104 @@ contains
 
 !==============================================================================     
 
-   ! Read namelist variables.
-   subroutine physconst_readnl(nlfile)
-
-      use namelist_utils,  only: find_group_name
-      use units,           only: getunit, freeunit
-      use mpishorthand
-      use spmd_utils,      only: masterproc
-      use cam_abortutils,      only: endrun
-      use cam_logfile,     only: iulog
-
-      character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
-
-      ! Local variables
-      integer :: unitn, ierr
-      character(len=*), parameter :: subname = 'physconst_readnl'
-      logical       newg, newsday, newmwh2o, newcpwv, newmwdry, newrearth, newtmelt
-
-      ! Physical constants needing to be reset (ie. for aqua planet experiments)
-      namelist /physconst_nl/  cpwv, gravit, mwdry, mwh2o, rearth, sday, tmelt, tms_orocnst, tms_z0fac &
-                             , rounding_tol, water_cnsv_tol
-
-      !-----------------------------------------------------------------------------
-
-      if (masterproc) then
-         unitn = getunit()
-         open( unitn, file=trim(nlfile), status='old' )
-         call find_group_name(unitn, 'physconst_nl', status=ierr)
-         if (ierr == 0) then
-            read(unitn, physconst_nl, iostat=ierr)
-            if (ierr /= 0) then
-               call endrun(subname // ':: ERROR reading namelist')
-            end if
-         end if
-         close(unitn)
-         call freeunit(unitn)
-      end if
-
-#ifdef SPMD
-      ! Broadcast namelist variables
-      call mpibcast(cpwv,      1,                   mpir8,   0, mpicom)
-      call mpibcast(gravit,    1,                   mpir8,   0, mpicom)
-      call mpibcast(mwdry,     1,                   mpir8,   0, mpicom)
-      call mpibcast(mwh2o,     1,                   mpir8,   0, mpicom)
-      call mpibcast(rearth,    1,                   mpir8,   0, mpicom)
-      call mpibcast(sday,      1,                   mpir8,   0, mpicom)
-      call mpibcast(tmelt,     1,                   mpir8,   0, mpicom)
-      call mpibcast(tms_orocnst, 1,                 mpir8,   0, mpicom)
-      call mpibcast(tms_z0fac, 1,                   mpir8,   0, mpicom)
-      call mpibcast(rounding_tol,1,                 mpir8,   0, mpicom)
-      call mpibcast(water_cnsv_tol,1,               mpir8,   0, mpicom)
-#endif
-
-
-      
-      newg     =  gravit .ne. shr_const_g 
-      newsday  =  sday   .ne. shr_const_sday
-      newmwh2o =  mwh2o  .ne. shr_const_mwwv
-      newcpwv  =  cpwv   .ne. shr_const_cpwv
-      newmwdry =  mwdry  .ne. shr_const_mwdair
-      newrearth=  rearth .ne. shr_const_rearth
-      newtmelt =  tmelt  .ne. shr_const_tkfrz
-      
-      
-      
-      if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt) then
-         if (masterproc) then
-            write(iulog,*)'****************************************************************************'
-            write(iulog,*)'***    New Physical Constant Values set via namelist                     ***'
-            write(iulog,*)'***                                                                      ***'
-            write(iulog,*)'***    Physical Constant    Old Value                  New Value         ***'
-            if (newg)       write(iulog,*)'***       GRAVITY   ',shr_const_g,gravit,'***'
-            if (newsday)    write(iulog,*)'***       SDAY      ',shr_const_sday,sday,'***'
-            if (newmwh2o)   write(iulog,*)'***       MWH20     ',shr_const_mwwv,mwh2o,'***'
-            if (newcpwv)    write(iulog,*)'***       CPWV      ',shr_const_cpwv,cpwv,'***'
-            if (newmwdry)   write(iulog,*)'***       MWDRY     ',shr_const_mwdair,mwdry,'***'
-            if (newrearth)  write(iulog,*)'***       REARTH    ',shr_const_rearth,rearth,'***'
-            if (newtmelt)   write(iulog,*)'***       TMELT     ',shr_const_tkfrz,tmelt,'***'
-            write(iulog,*)'****************************************************************************'
-         end if
-         rga         = 1._r8/gravit 
-         ra          = 1._r8/rearth
-         omega       = 2.0_R8*pi/sday
-         cpvir       = cpwv/cpair - 1._r8
-         epsilo      = mwh2o/mwdry      
-         
-         !  rair and rh2o have to be defined before any of the variables that use them
-         
-         rair        = r_universal/mwdry
-         rh2o        = r_universal/mwh2o  
-         
-         cappa       = rair/cpair       
-         rhodair     = pstd/(rair*tmelt)
-         zvir        =  (rh2o/rair)-1.0_R8
-         ez          = omega / sqrt(0.375_r8)
-         Cpd_on_Cpv  = cpair/cpwv
-         
-      else
-         ez          = omega / sqrt(0.375_r8)
-      end if
-
-      if (masterproc) then
-         write(iulog,*)'****************************************************************************'
-         write(iulog,*)'***    Tolerances for conservation checks set via namelist'
-         write(iulog,*)'***        rounding_tol = ',rounding_tol
-         write(iulog,*)'***      water_cnsv_tol = ',water_cnsv_tol
-         write(iulog,*)'****************************************************************************'
-      end if
-      
-    end subroutine physconst_readnl
+!!$   ! Read namelist variables.
+!!$   subroutine physconst_readnl(nlfile)
+!!$
+!!$      use namelist_utils,  only: find_group_name
+!!$      use units,           only: getunit, freeunit
+!!$      use mpishorthand
+!!$      use spmd_utils,      only: masterproc
+!!$      use cam_abortutils,      only: endrun
+!!$      use cam_logfile,     only: iulog
+!!$
+!!$      character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+!!$
+!!$      ! Local variables
+!!$      integer :: unitn, ierr
+!!$      character(len=*), parameter :: subname = 'physconst_readnl'
+!!$      logical       newg, newsday, newmwh2o, newcpwv, newmwdry, newrearth, newtmelt
+!!$
+!!$      ! Physical constants needing to be reset (ie. for aqua planet experiments)
+!!$      namelist /physconst_nl/  cpwv, gravit, mwdry, mwh2o, rearth, sday, tmelt, tms_orocnst, tms_z0fac
+!!$
+!!$      !-----------------------------------------------------------------------------
+!!$
+!!$      if (masterproc) then
+!!$         unitn = getunit()
+!!$         open( unitn, file=trim(nlfile), status='old' )
+!!$         call find_group_name(unitn, 'physconst_nl', status=ierr)
+!!$         if (ierr == 0) then
+!!$            read(unitn, physconst_nl, iostat=ierr)
+!!$            if (ierr /= 0) then
+!!$               call endrun(subname // ':: ERROR reading namelist')
+!!$            end if
+!!$         end if
+!!$         close(unitn)
+!!$         call freeunit(unitn)
+!!$      end if
+!!$
+!!$#ifdef SPMD
+!!$      ! Broadcast namelist variables
+!!$      call mpibcast(cpwv,      1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(gravit,    1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(mwdry,     1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(mwh2o,     1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(rearth,    1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(sday,      1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(tmelt,     1,                   mpir8,   0, mpicom)
+!!$      call mpibcast(tms_orocnst, 1,                 mpir8,   0, mpicom)
+!!$      call mpibcast(tms_z0fac, 1,                   mpir8,   0, mpicom)
+!!$#endif
+!!$
+!!$
+!!$      
+!!$      newg     =  gravit .ne. shr_const_g 
+!!$      newsday  =  sday   .ne. shr_const_sday
+!!$      newmwh2o =  mwh2o  .ne. shr_const_mwwv
+!!$      newcpwv  =  cpwv   .ne. shr_const_cpwv
+!!$      newmwdry =  mwdry  .ne. shr_const_mwdair
+!!$      newrearth=  rearth .ne. shr_const_rearth
+!!$      newtmelt =  tmelt  .ne. shr_const_tkfrz
+!!$      
+!!$      
+!!$      
+!!$      if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt) then
+!!$         if (masterproc) then
+!!$            write(iulog,*)'****************************************************************************'
+!!$            write(iulog,*)'***    New Physical Constant Values set via namelist                     ***'
+!!$            write(iulog,*)'***                                                                      ***'
+!!$            write(iulog,*)'***    Physical Constant    Old Value                  New Value         ***'
+!!$            if (newg)       write(iulog,*)'***       GRAVITY   ',shr_const_g,gravit,'***'
+!!$            if (newsday)    write(iulog,*)'***       SDAY      ',shr_const_sday,sday,'***'
+!!$            if (newmwh2o)   write(iulog,*)'***       MWH20     ',shr_const_mwwv,mwh2o,'***'
+!!$            if (newcpwv)    write(iulog,*)'***       CPWV      ',shr_const_cpwv,cpwv,'***'
+!!$            if (newmwdry)   write(iulog,*)'***       MWDRY     ',shr_const_mwdair,mwdry,'***'
+!!$            if (newrearth)  write(iulog,*)'***       REARTH    ',shr_const_rearth,rearth,'***'
+!!$            if (newtmelt)   write(iulog,*)'***       TMELT     ',shr_const_tkfrz,tmelt,'***'
+!!$            write(iulog,*)'****************************************************************************'
+!!$         end if
+!!$         rga         = 1._r8/gravit 
+!!$         ra          = 1._r8/rearth
+!!$         omega       = 2.0_R8*pi/sday
+!!$         cpvir       = cpwv/cpair - 1._r8
+!!$         epsilo      = mwh2o/mwdry      
+!!$         
+!!$         !  rair and rh2o have to be defined before any of the variables that use them
+!!$         
+!!$         rair        = r_universal/mwdry
+!!$         rh2o        = r_universal/mwh2o  
+!!$         
+!!$         cappa       = rair/cpair       
+!!$         rhodair     = pstd/(rair*tmelt)
+!!$         zvir        =  (rh2o/rair)-1.0_R8
+!!$         ez          = omega / sqrt(0.375_r8)
+!!$         Cpd_on_Cpv  = cpair/cpwv
+!!$         
+!!$      else
+!!$         ez          = omega / sqrt(0.375_r8)
+!!$      end if
+!!$      
+!!$    end subroutine physconst_readnl
     
 !===============================================================================
   

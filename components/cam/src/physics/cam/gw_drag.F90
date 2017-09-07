@@ -192,9 +192,10 @@ subroutine gw_init()
   use interpolate_data, only: lininterp
   use phys_control,     only: phys_getopts
   use physics_buffer,   only: pbuf_get_index
+  use glb_verif_smry,   only: add_smry_field, ABS_GREATER_EQ
 
   use ref_pres,   only: pref_edge
-  use physconst,  only: gravit, rair
+  use physconst,  only: gravit, rair, rounding_tol
 
   use gw_common,  only: gw_common_init, orographic_only
   use gw_oro,     only: gw_oro_init
@@ -487,6 +488,10 @@ subroutine gw_init()
   if ( history_budget ) then
      call add_default ('TTGW', history_budget_histfile_num, ' ')
   end if
+
+   ! Register fields for global summary
+   call add_smry_field('TE_RELERR @gwdrag','-',ABS_GREATER_EQ,rounding_tol)
+
 
 end subroutine gw_init
 

@@ -14,6 +14,7 @@ use spmd_utils,    only: masterproc
 use cam_logfile,   only: iulog
 use cam_abortutils,    only: endrun
 use shr_kind_mod,  only: r8 => shr_kind_r8
+use glb_verif_smry,only: glb_verif_smry_level, l_print_smry_for_all_fields, glb_verif_smry_frq
 
 implicit none
 private
@@ -108,6 +109,8 @@ logical, public, protected :: print_fixer_message  = .false.     ! switch on err
 integer, public, protected :: ieflx_opt = 0
 logical, public, protected :: l_ieflx_fix = .false.
 
+logical :: l_old_qneg4_messages = .false.
+
 ! Macro/micro-physics co-substeps
 integer           :: cld_macmic_num_steps = 1
 
@@ -155,7 +158,7 @@ logical :: l_rad           = .true.
 contains
 !======================================================================= 
 
-subroutine phys_ctl_readnl(nlfile)
+subroutine phys_ctl_readnl(nlfile,dtime)
 
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
@@ -163,6 +166,7 @@ subroutine phys_ctl_readnl(nlfile)
    use cam_control_mod, only: cam_ctrl_set_physics_type
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+   integer,          intent(in) :: dtime   ! model time step in seconds
 
    ! Local variables
    integer :: unitn, ierr
@@ -178,6 +182,8 @@ subroutine phys_ctl_readnl(nlfile)
       ieflx_opt, &
       use_qqflx_fixer, & 
       print_fixer_message, & 
+      l_old_qneg4_messages, &
+      glb_verif_smry_frq, glb_verif_smry_level, l_print_smry_for_all_fields, &
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
@@ -233,6 +239,10 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(ieflx_opt,               1 , mpiint,  0, mpicom)
    call mpibcast(use_qqflx_fixer,                 1 , mpilog,  0, mpicom)
    call mpibcast(print_fixer_message,             1 , mpilog,  0, mpicom)
+   call mpibcast(l_old_qneg4_messages,            1 , mpilog,  0, mpicom)
+   call mpibcast(glb_verif_smry_frq,              1 , mpiint,  0, mpicom)
+   call mpibcast(glb_verif_smry_level,            1 , mpiint,  0, mpicom)
+   call mpibcast(l_print_smry_for_all_fields,     1 , mpilog,  0, mpicom)
    call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
@@ -271,6 +281,9 @@ subroutine phys_ctl_readnl(nlfile)
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)
+
+   ! unit conversion for global smry frequency
+   if (glb_verif_smry_frq<0) glb_verif_smry_frq = nint((-glb_verif_smry_frq*3600._r8)/dtime)
 
    ! Error checking:
 
@@ -403,6 +416,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         l_ieflx_fix_out, & 
                         use_qqflx_fixer_out, & 
                         print_fixer_message_out, & 
+                        l_old_qneg4_messages_out,    & 
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
@@ -448,6 +462,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: l_ieflx_fix_out
    logical,           intent(out), optional :: use_qqflx_fixer_out
    logical,           intent(out), optional :: print_fixer_message_out
+   logical,           intent(out), optional :: l_old_qneg4_messages_out
    logical,           intent(out), optional :: state_debug_checks_out
    logical,           intent(out), optional :: fix_g1_err_ndrop_out!BSINGH - bugfix for ndrop.F90
    logical,           intent(out), optional :: ssalt_tuning_out    
@@ -510,6 +525,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(l_ieflx_fix_out   ) ) l_ieflx_fix_out    = l_ieflx_fix
    if ( present(use_qqflx_fixer_out     ) ) use_qqflx_fixer_out      = use_qqflx_fixer
    if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
+   if ( present(l_old_qneg4_messages_out) ) l_old_qneg4_messages_out = l_old_qneg4_messages
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
    if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop
    if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   

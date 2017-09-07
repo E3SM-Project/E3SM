@@ -640,7 +640,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
 end subroutine phys_inidat
 
 
-subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
+subroutine phys_init( phys_state, phys_tend, pbuf2d, chunk_smry_2d, domain_smry_1d, cam_out )
 
     !----------------------------------------------------------------------- 
     ! 
@@ -649,6 +649,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !-----------------------------------------------------------------------
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
+    use glb_verif_smry,     only: tp_stat_smry, global_smry_init, add_smry_field, SMALLER_THAN
     use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
@@ -712,6 +713,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     type(physics_state), pointer       :: phys_state(:)
     type(physics_tend ), pointer       :: phys_tend(:)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(tp_stat_smry), pointer :: chunk_smry_2d(:,:)
+    type(tp_stat_smry), pointer :: domain_smry_1d(:)
 
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
 
@@ -883,6 +886,14 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     end if
 
+    ! Add additional smry field(s)
+    !--------------------------------
+    call add_smry_field('LHFLX_EXCESS @QNEG4_TPHYSAC','kg/m2/s',SMALLER_THAN,0._r8)
+
+    ! Initialize global statistics
+    !--------------------------------
+    call global_smry_init( chunk_smry_2d, domain_smry_1d, begchunk, endchunk )
+
     ! Initialize Nudging Parameters
     !--------------------------------
     if(Nudge_Model) call nudging_init
@@ -893,7 +904,7 @@ end subroutine phys_init
   !-----------------------------------------------------------------------
   !
 
-subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
+subroutine phys_run1(phys_state, ztodt, phys_tend, chunk_smry_2d, pbuf2d, cam_in, cam_out)
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -904,6 +915,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     use cam_diagnostics,only: diag_allocate, diag_physvar_ic
     use check_energy,   only: check_energy_gmean
 
+    use glb_verif_smry,         only: tp_stat_smry, nfld=>current_number_of_smry_fields
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
 #if (defined BFB_CAM_SCAM_IOP )
     use cam_history,    only: outfld
@@ -913,6 +925,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
 #endif
+
     !
     ! Input arguments
     !
@@ -922,6 +935,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     !
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
+    type(tp_stat_smry), intent(inout), dimension(begchunk:endchunk,1:nfld) :: chunk_smry_2d
 
     type(physics_buffer_desc), pointer, dimension(:,:) :: pbuf2d
     type(cam_in_t),                     dimension(begchunk:endchunk) :: cam_in
@@ -974,7 +988,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        ! Advance time information
        !-----------------------------------------------------------------------
 
-       call phys_timestep_init( phys_state, cam_in, cam_out, pbuf2d)
+       call phys_timestep_init( phys_state, cam_in, cam_out, pbuf2d, nstep)
 
        call t_stopf ('physpkg_st1')
 
@@ -1008,11 +1022,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call t_startf ('diag_physvar_ic')
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
-
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
-                       phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
+                       phys_tend(c), phys_buffer_chunk, chunk_smry_2d(c,:), fsds(1,c), landm(1,c), &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
-
        end do
 
        !call t_adj_detailf(-1)
@@ -1112,7 +1124,7 @@ end subroutine phys_run1_adiabatic_or_ideal
   !-----------------------------------------------------------------------
   !
 
-subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
+subroutine phys_run2(phys_state, ztodt, phys_tend, chunk_smry_2d, domain_smry_1d, pbuf2d, cam_out, &
        cam_in )
     !----------------------------------------------------------------------- 
     ! 
@@ -1121,6 +1133,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     ! 
     ! Modified by Kai Zhang 2017-03: add IEFLX fixer treatment 
     !-----------------------------------------------------------------------
+    use glb_verif_smry,      only: tp_stat_smry, nfld=>current_number_of_smry_fields, get_global_smry
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_deallocate, pbuf_update_tim_idx
     use mo_lightning,   only: lightning_no_prod
 
@@ -1144,6 +1157,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
+    type(tp_stat_smry), intent(inout), dimension(begchunk:endchunk,1:nfld) :: chunk_smry_2d
+    type(tp_stat_smry), intent(inout), dimension(1:nfld) :: domain_smry_1d
     type(physics_buffer_desc),pointer, dimension(:,:)     :: pbuf2d
 
     type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
@@ -1218,7 +1233,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
-            phys_state(c), phys_tend(c), phys_buffer_chunk,&
+            phys_state(c), phys_tend(c), phys_buffer_chunk, chunk_smry_2d(c,:), &
             fsds(1,c))
     end do                    ! Chunk loop
 
@@ -1228,6 +1243,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #ifdef TRACER_CHECK
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
+
+    call t_startf('get_global_smry')
+    call get_global_smry( chunk_smry_2d, domain_smry_1d, nstep)
+    call t_stopf('get_global_smry')
 
     call t_startf ('carma_accumulate_stats')
     call carma_accumulate_stats()
@@ -1277,7 +1296,7 @@ end subroutine phys_final
 
 subroutine tphysac (ztodt,   cam_in,  &
        sgh,     sgh30,                                     &
-       cam_out,  state,   tend,    pbuf,            &
+       cam_out,  state,   tend,    pbuf, chunk_smry,       &
        fsds    )
     !----------------------------------------------------------------------- 
     ! 
@@ -1295,6 +1314,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     ! Author: CCM1, CMS Contact: J. Truesdale
     ! 
     !-----------------------------------------------------------------------
+    use glb_verif_smry, only: tp_stat_smry
     use physics_buffer, only: physics_buffer_desc, pbuf_set_field, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
     use shr_kind_mod,       only: r8 => shr_kind_r8
     use chemistry,          only: chem_is_active, chem_timestep_tend, chem_emissions
@@ -1350,6 +1370,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
 
+    type(tp_stat_smry), intent(inout) :: chunk_smry(:) ! shape: (nfld)
 
     type(check_tracers_data):: tracerint             ! tracer mass integrals and cummulative boundary fluxes
 
@@ -1401,6 +1422,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+    logical :: l_old_qneg4_messages
+
     !
     !-----------------------------------------------------------------------
     !
@@ -1416,6 +1439,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                       ,l_rayleigh_out         = l_rayleigh         &
                       ,l_gw_drag_out          = l_gw_drag          &
                       ,l_ac_energy_chk_out    = l_ac_energy_chk    &
+                    ,l_old_qneg4_messages_out = l_old_qneg4_messages &
                      )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
@@ -1483,9 +1507,10 @@ end if ! l_tracer_aero
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
 
-       call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
-            state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
-            cam_in%lhf , cam_in%cflx )
+       call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,       &
+                  state%q(:,pver,:),state%rpdel(:,pver) ,cam_in%shf ,         &
+                  cam_in%lhf , cam_in%cflx, state%lat, state%lon,             &
+                  chunk_smry, l_old_qneg4_messages )
 
     end if 
 
@@ -1540,7 +1565,7 @@ if (l_vdiff) then
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
        
        ! Update surface flux constituents 
-       call physics_update(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend, chunk_smry)
 
     else
 
@@ -1625,7 +1650,7 @@ if (l_gw_drag) then
 
     call physics_update(state, ptend, ztodt, tend)
     ! Check energy integrals
-    call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
+    call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero, chunk_smry)
     call t_stopf('gw_tend')
 
     ! QBO relaxation
@@ -1738,7 +1763,7 @@ end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
-       tend,    pbuf,     fsds,    landm,            &
+       tend,    pbuf,    chunk_smry, fsds,    landm, &
        sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
@@ -1770,6 +1795,8 @@ subroutine tphysbc (ztodt,               &
     use physics_buffer,          only : pbuf_get_index, pbuf_old_tim_idx
     use physics_buffer,          only : col_type_subcol, dyn_time_lvls
     use shr_kind_mod,    only: r8 => shr_kind_r8
+
+    use glb_verif_smry,  only: tp_stat_smry
 
     use stratiform,      only: stratiform_tend
     use microp_driver,   only: microp_driver_tend
@@ -1829,6 +1856,8 @@ subroutine tphysbc (ztodt,               &
     type(physics_state), intent(inout) :: state
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
+
+    type(tp_stat_smry) :: chunk_smry(:) ! shape: (nfld)
 
     type(cam_out_t),     intent(inout) :: cam_out
     type(cam_in_t),      intent(in)    :: cam_in
@@ -2225,7 +2254,7 @@ end if
          dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
-    call physics_update(state, ptend, ztodt, tend)
+    call physics_update(state, ptend, ztodt, tend, chunk_smry)
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2245,7 +2274,7 @@ end if
 
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
+    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero, chunk_smry)
 
     !
     ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection
@@ -2426,7 +2455,7 @@ end if
                 call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
-                call physics_update(state, ptend, ztodt, tend)
+                call physics_update(state, ptend, ztodt, tend, chunk_smry)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
@@ -2463,7 +2492,7 @@ end if
 
 
           if (use_subcol_microp) then
-             call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
+             call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf, chunk_smry)
 #if defined(UWM_MISC) && defined(SILHS)
              ! Parameterize subcolumn effects on covariances, if enabled
              call subcol_SILHS_var_covar_driver( cld_macmic_ztodt, state_sc, ptend_sc, &
@@ -2483,21 +2512,23 @@ end if
              call physics_ptend_sum(ptend_aero_sc, ptend_sc, state_sc%ncol)
              call physics_ptend_dealloc(ptend_aero_sc)
 
-             ! Have to scale and apply for full timestep to get tend right
-             ! (see above note for macrophysics).
-             call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, ncol)
-
-             call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
-             call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
-                  nstep, ztodt, zero_sc, &
-                  prec_str_sc(:state_sc%ncol)/cld_macmic_num_steps, &
-                  snow_str_sc(:state_sc%ncol)/cld_macmic_num_steps, zero_sc)
+!!!- KZ 201708 to prevent too much qneg3 errors from subcols  
+!!!             ! Have to scale and apply for full timestep to get tend right
+!!!             ! (see above note for macrophysics).
+!!!             call physics_ptend_scale(ptend_sc, 1._r8/cld_macmic_num_steps, state_sc%ncol)
+!!!
+!!!             call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
+!!!             call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
+!!!                  nstep, ztodt, zero_sc, &
+!!!                  prec_str_sc(:state_sc%ncol)/cld_macmic_num_steps, &
+!!!                  snow_str_sc(:state_sc%ncol)/cld_macmic_num_steps, zero_sc)
+!!!- KZ 201708 
 
              call physics_state_dealloc(state_sc)
              call physics_tend_dealloc(tend_sc)
              call physics_ptend_dealloc(ptend_sc)
           else
-             call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
+             call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf, chunk_smry)
           end if
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then
@@ -2520,10 +2551,11 @@ end if
           call outfld('LNEGCLPTEND', liqcliptend, pcols, lchnk   )
           call outfld('VNEGCLPTEND', vapcliptend, pcols, lchnk   )
 
-          call physics_update (state, ptend, ztodt, tend, do_hole_fill=.true.)
+          call physics_update (state, ptend, ztodt, tend, chunk_smry, do_hole_fill=.true.)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
                zero, prec_str(:ncol)/cld_macmic_num_steps, &
-               snow_str(:ncol)/cld_macmic_num_steps, zero)
+               snow_str(:ncol)/cld_macmic_num_steps, zero, &
+               chunk_smry)
 
           call t_stopf('microp_tend')
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
@@ -2678,7 +2710,7 @@ end if ! l_rad
 
 end subroutine tphysbc
 
-subroutine phys_timestep_init(phys_state, cam_in, cam_out, pbuf2d)
+subroutine phys_timestep_init(phys_state, cam_in, cam_out, pbuf2d, nstep)
 !-----------------------------------------------------------------------------------
 !
 ! Purpose: The place for parameterizations to call per timestep initializations.
@@ -2713,6 +2745,7 @@ subroutine phys_timestep_init(phys_state, cam_in, cam_out, pbuf2d)
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
   use nudging,             only: Nudge_Model,nudging_timestep_init
+  use glb_verif_smry,      only: timestep_smry_init
 
   use seasalt_model,       only: advance_ocean_data, has_mam_mom
 
@@ -2723,6 +2756,7 @@ subroutine phys_timestep_init(phys_state, cam_in, cam_out, pbuf2d)
   type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
   
   type(physics_buffer_desc), pointer                 :: pbuf2d(:,:)
+  integer, intent(in) :: nstep
 
   !-----------------------------------------------------------------------------
 
@@ -2789,6 +2823,9 @@ subroutine phys_timestep_init(phys_state, cam_in, cam_out, pbuf2d)
   ! Update Nudging values, if needed
   !----------------------------------
   if(Nudge_Model) call nudging_timestep_init(phys_state)
+
+  ! For glb_verif_smry
+  call timestep_smry_init( nstep )
 
 end subroutine phys_timestep_init
 

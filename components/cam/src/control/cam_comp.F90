@@ -20,6 +20,7 @@ module cam_comp
    use perf_mod
    use cam_logfile,       only: iulog
    use physics_buffer,            only: physics_buffer_desc
+   use glb_verif_smry,    only: tp_stat_smry
 
    implicit none
    private
@@ -56,6 +57,9 @@ module cam_comp
   type(physics_state), pointer :: phys_state(:) => null()
   type(physics_tend ), pointer :: phys_tend(:) => null()
   type(physics_buffer_desc), pointer :: pbuf2d(:,:) => null()
+
+  type(tp_stat_smry), pointer :: chunk_smry_2d(:,:) => null() ! (begchunk:endchunk,nfld)
+  type(tp_stat_smry), pointer :: domain_smry_1d(:) => null()     ! (nfld)
 
   real(r8) :: wcstart, wcend     ! wallclock timestamp at start, end of timestep
   real(r8) :: usrstart, usrend   ! user timestamp at start, end of timestep
@@ -175,7 +179,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    end if
 
 
-   call phys_init( phys_state, phys_tend, pbuf2d,  cam_out )
+   call phys_init( phys_state, phys_tend, pbuf2d, chunk_smry_2d, domain_smry_1d, cam_out )
 
    call bldfld ()       ! master field list (if branch, only does hash tables)
 
@@ -247,7 +251,7 @@ subroutine cam_run1(cam_in, cam_out)
    !
    call t_barrierf ('sync_phys_run1', mpicom)
    call t_startf ('phys_run1')
-   call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
+   call phys_run1(phys_state, dtime, phys_tend, chunk_smry_2d, pbuf2d, cam_in, cam_out)
    call t_stopf  ('phys_run1')
 
 end subroutine cam_run1
@@ -282,7 +286,7 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_phys_run2', mpicom)
    call t_startf ('phys_run2')
-   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in )
+   call phys_run2(phys_state, dtime, phys_tend, chunk_smry_2d, domain_smry_1d, pbuf2d, cam_out, cam_in )
    call t_stopf  ('phys_run2')
 
    !
