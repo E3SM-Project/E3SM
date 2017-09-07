@@ -10,7 +10,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from acme_diags.metrics import rmse, corr
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize':11.5}
 plotSideTitle = {'fontsize':9.5}
@@ -28,7 +29,7 @@ def get_ax_size(fig,ax):
     height *= fig.dpi
     return width, height
 
-def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
+def plot_panel(n, fig, _ , var, clevels, cmap, title, parameters, stats=None):
 
     # Contour levels
     levels = None
@@ -43,6 +44,7 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
     x = var.getAxis(1)
     y = var.getAxis(0)
 
+    cmap = get_colormap(cmap, parameters)
     p1 = plt.pcolormesh(var, cmap=cmap,norm=norm)
     # Calculate 3 x 3 grids for cloud fraction for nine cloud class
     # Place cloud fraction of each cloud class in plot:
@@ -94,17 +96,17 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
     ax.set_xticklabels(xlabels)
     ax.set_xlabel('Cloud Optical Thickness')
     
-    #xlabels = ['%.1f' %i for i in x.getBounds()[:,0]]+['%.1f' %x.getBounds()[-1,-1]]
-    #ylabels = ['%.1f' %i for i in y.getBounds()[:,0]]+['%.1f' %y.getBounds()[-1,-1]]
+    # xlabels = ['%.1f' %i for i in x.getBounds()[:,0]]+['%.1f' %x.getBounds()[-1,-1]]
+    # ylabels = ['%.1f' %i for i in y.getBounds()[:,0]]+['%.1f' %y.getBounds()[-1,-1]]
     
-    #ax.set_xticklabels(xlabels)
-    #ax.set_yticklabels(ylabels)
+    # ax.set_xticklabels(xlabels)
+    # ax.set_yticklabels(ylabels)
     if title[0] != None: ax.set_title(title[0], loc='left', fontdict=plotSideTitle)
     if title[1] != None: ax.set_title(title[1], fontdict=plotTitle)
-    #ax.set_title('cloud frac: %.1f'%total_cf+'%', loc='right', fontdict=plotSideTitle)
+    # ax.set_title('cloud frac: %.1f'%total_cf+'%', loc='right', fontdict=plotSideTitle)
     ax.set_title('%', loc='right', fontdict=plotSideTitle)
-#    if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
-    #ax.set_ylabel('Cloud Top Height (km)')
+    # if title[2] != None: ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
+    # ax.set_ylabel('Cloud Top Height (km)')
 
     # Color bar
     cbax = fig.add_axes((panel[n][0]+0.6635,panel[n][1]+0.0215,0.0326,0.1792))
@@ -118,19 +120,19 @@ def plot_panel(n, fig, _ , var, clevels, cmap, title, stats=None):
         cbar.set_ticks(levels[1:-1])
         labels = ["%4.1f" % l for l in levels[1:-1]]
         cbar.ax.set_yticklabels(labels,ha='right')
-        #cbar.ax.set_yticklabels(labels,ha='right')
+        # cbar.ax.set_yticklabels(labels,ha='right')
         cbar.ax.tick_params( labelsize=9.0,pad=25, length=0)
 
 
-def plot(reference, test, diff,_, parameter):#underscore meanding argument not important
+def plot(reference, test, diff, _, parameter):
 
     # Create figure, projection
     projection = 'None'
     fig = plt.figure(figsize=[8.5, 11.0])
 
-    plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units))
-    plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.reference_name,parameter.reference_title,test.units))
-    plot_panel(2, fig, _, diff, parameter.diff_levels, parameter.diff_colormap, (parameter.diff_name,parameter.diff_title,test.units))
+    plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units), parameter)
+    plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.reference_name,parameter.reference_title,test.units), parameter)
+    plot_panel(2, fig, _, diff, parameter.diff_levels, parameter.diff_colormap, (parameter.diff_name,parameter.diff_title,test.units), parameter)
 
 #    min2  = metrics_dict['ref']['min']
 #    mean2 = metrics_dict['ref']['mean']
@@ -154,4 +156,5 @@ def plot(reference, test, diff,_, parameter):#underscore meanding argument not i
         f = f.lower().split('.')[-1]
         fnm = os.path.join(get_output_dir(parameter.current_set, parameter), parameter.output_file)
         plt.savefig(fnm + '.' + f)
+        _chown(fnm + '.' + f, parameter.user)
         print('Plot saved in: ' + fnm + '.' + f)
