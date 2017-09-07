@@ -46,7 +46,7 @@
           p01, p1, p15, p25, p5, p75, puny, &
           albocn, Timelt, snowpatch, awtvdr, awtidr, awtvdf, awtidf, &
           kappav, hs_min, rhofresh, rhos, nspint
-      use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero
+      use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, max_aero
       use ice_warnings, only: add_warning
 
       implicit none
@@ -1201,7 +1201,7 @@
          hi       , & ! ice thickness (all sea ice layers, m)
          fi           ! snow/bare ice fractional coverage (0 to 1)
 
-      real (kind=dbl_kind), dimension (4*n_aero) :: &
+      real (kind=dbl_kind), dimension (4*max_aero) :: &
          aero_mp      ! aerosol mass path in kg/m2
 
       integer (kind=int_kind) :: &
