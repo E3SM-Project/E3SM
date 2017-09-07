@@ -49,15 +49,6 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
         levels = [-1.0e8] + clevels + [1.0e8]
         norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
 
-    # Test for custom color maps
-    # (Note: this will need to be re-implemented properly)
-    if cmap.endswith('rgb'):
-
-        from matplotlib.colors import LinearSegmentedColormap
-        rgb = np.loadtxt(cmap)
-        rgb = rgb / 255.
-        cmap = LinearSegmentedColormap.from_list(name = 'custom', colors = rgb)
-
     # Contour plot
     ax = fig.add_axes(panel[n],projection=proj)
     ax.set_global()
