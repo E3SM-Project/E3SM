@@ -1,8 +1,9 @@
 import sys
 from setuptools import find_packages, setup
 
-data_files = [
 
+
+data_files = [
     (sys.prefix + '/share/acme_diags/zonal_mean_xy',
      ['acme_diags/driver/zonal_mean_xy_AMWG.json',
       'acme_diags/driver/zonal_mean_xy_ACME.json',
@@ -33,6 +34,11 @@ data_files = [
     (sys.prefix + '/share/acme_diags',
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
       'docs/ACME_Logo.png'
+     ]),
+    (sys.prefix + '/share/acme_diags/colormaps',
+     ['acme_diags/plot/colormaps/precip_diff_12lev.rgb',
+      'acme_diags/plot/colormaps/temp_diff_18lev.rgb',
+      'acme_diags/plot/colormaps/WhiteBlueGreenYellowRed.rgb'
      ])
 ]
 
