@@ -199,8 +199,7 @@ def _convert_to_fd(filearg, from_dir):
 _hack=object()
 
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
-                   input_str=None, from_dir=None, verbose=None,
-                   arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+                   from_dir=None, combine_output=False):
 
     # This code will try to import and run each buildnml as a subroutine
     # if that fails it will run it as a program in a seperate shell
@@ -227,10 +226,8 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
-        stat, output, errput = run_cmd("{} {}".format(cmd, cmdargs), input_str=input_str, from_dir=from_dir,
-                                 verbose=verbose, arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env,
-                                 combine_output=combine_output)
-
+        output = run_cmd_no_fail("{} {}".format(cmd, cmdargs), combine_output=combine_output,
+                                 from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
         if case is not None:
