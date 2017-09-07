@@ -315,11 +315,11 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
         prevtestdir = cls._testdirs[0]
         cls._testdirs.append(testdir)
+        user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test3")
 
-        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --keepexe" %
-                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
-
-        cls._do_teardown.append(testdir)
+        cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" \
+              % (SCRIPT_DIR, prevtestdir, testdir, user_mods_dir)
+        run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR, expected_stat=1)
 
     def test_d_create_clone_new_user(self):
         cls = self.__class__

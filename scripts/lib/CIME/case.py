@@ -32,6 +32,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
+from CIME.simple_compare            import compare_files
 from CIME.case_setup import case_setup
 from CIME.aprun import get_aprun_cmd_for_case
 
@@ -1143,7 +1144,11 @@ class Case(object):
         else:
             return comp_user_mods
 
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
+                     user_mods_dir=None):
+        """
+        Create a case clone
+        """
         if cime_output_root is None:
             cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
 
@@ -1232,6 +1237,35 @@ class Case(object):
 
         # lock env_case.xml in new case
         lock_file("env_case.xml", newcaseroot)
+
+        # apply user_mods if appropriate
+        newcase_root = newcase.get_value("CASEROOT")
+        if user_mods_dir is not None:
+            if keepexe:
+                # If keepexe CANNOT change any env_build.xml variables - so make a temporary copy of
+                # env_build.xml and verify that it has not been modified
+                shutil.copy(os.path.join(newcaseroot, "env_build.xml"),
+                            os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
+
+            # Now apply contents of user_mods directory
+            apply_user_mods(newcase_root, user_mods_dir, keepexe=keepexe)
+
+            # Determine if env_build.xml has changed
+            if keepexe:
+                success, comment = compare_files(os.path.join(newcaseroot, "env_build.xml"),
+                                                 os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
+                if not success:
+                    logger.warn(comment)
+                    shutil.rmtree(newcase_root)
+                    expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option: \n "
+                           "Failed to clone case, removed {}\n".format(newcase_root))
+
+        # if keep executable, then remove the new case SourceMods directory and link SourceMods to
+        # the clone directory
+        if keepexe:
+            shutil.rmtree(os.path.join(newcase_root, "SourceMods"))
+            os.symlink(os.path.join(cloneroot, "SourceMods"),
+                       os.path.join(newcase_root, "SourceMods"))
 
         # Update README.case
         fclone   = open(cloneroot + "/README.case", "r")
