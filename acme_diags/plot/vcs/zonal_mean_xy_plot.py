@@ -4,12 +4,9 @@ import os
 import sys
 import vcs
 from acme_diags.driver.utils import get_output_dir, _chown
+import acme_diags.plot.vcs as utils 
 
 textcombined_objs = {}
-
-def set_units(ref_or_test, units):
-    if units != '':
-        ref_or_test.units = units
 
 def managetextcombined(tt_name, to_name, vcs_canvas):
     """Caches textcombined objects"""
@@ -49,9 +46,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'zonal_mean_xy')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_3.json'))
 
-    set_units(test, parameters.test_units)
-    set_units(ref, parameters.reference_units)
-    set_units(diff, parameters.diff_units)
+    utils.set_units(test, parameters.test_units)
+    utils.set_units(ref, parameters.reference_units)
+    utils.set_units(diff, parameters.diff_units)
 
     if hasattr(test, 'long_name'):
         test.long_name = parameters.test_title if parameters.test_title is not '' else test.long_name
