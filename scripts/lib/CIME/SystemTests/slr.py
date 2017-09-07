@@ -50,6 +50,6 @@ class SLR(SystemTestsCommon):
             self._case.set_value("NTASKS_CPL",ntasks*ninst)
             self._case.flush()
 
-            case_setup(self._case, test_mode=True, reset=True)
+            case_setup(self._case, test_mode=False, reset=True)
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
