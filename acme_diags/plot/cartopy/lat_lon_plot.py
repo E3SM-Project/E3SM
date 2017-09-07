@@ -14,6 +14,7 @@ import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from acme_diags.metrics import rmse, corr
 from acme_diags.driver.utils import get_output_dir, _chown
+from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize':11.5}
 plotSideTitle = {'fontsize':9.5}
@@ -34,15 +35,12 @@ def get_ax_size(fig,ax):
     height *= fig.dpi
     return width, height
 
-def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
+def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 
-#    var_min = float(var.min())
-#    var_max = float(var.max())
-#    var_mean = cdutil.averager(var, axis='xy', weights='generate')
     var = add_cyclic(var)
     lon = var.getLongitude()
     lat = var.getLatitude()
-    var = ma.squeeze( var.asma() )
+    var = ma.squeeze(var.asma())
 
     # Contour levels
     levels = None
@@ -63,6 +61,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
     # Contour plot
     ax = fig.add_axes(panel[n],projection=proj)
     ax.set_global()
+    cmap = get_colormap(cmap, parameters)
     p1 = ax.contourf(lon, lat, var,
                      transform=ccrs.PlateCarree(), 
                      norm=norm,
@@ -131,13 +130,13 @@ def plot(reference, test, diff, metrics_dict, parameter):
     max1  = metrics_dict['test']['max']
 
     plot_panel(0, fig, proj, test, parameter.contour_levels, parameter.test_colormap, 
-               (parameter.test_name,parameter.test_title,test.units),stats=(max1,mean1,min1) )
+               (parameter.test_name,parameter.test_title,test.units), parameter, stats=(max1,mean1,min1))
 
     min2  = metrics_dict['ref']['min']
     mean2 = metrics_dict['ref']['mean']
     max2  = metrics_dict['ref']['max']
     plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap, 
-               (parameter.reference_name,parameter.reference_title,reference.units),stats=(max2,mean2,min2) )
+               (parameter.reference_name,parameter.reference_title,reference.units), parameter, stats=(max2,mean2,min2))
 
     # Third panel
     min3  = metrics_dict['diff']['min']
@@ -146,7 +145,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
     plot_panel(2, fig, proj, diff, parameter.diff_levels, parameter.diff_colormap, 
-               (None,parameter.diff_title,None), stats=(max3,mean3,min3,r,c) )
+               (None,parameter.diff_title,None), parameter, stats=(max3,mean3,min3,r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)

@@ -276,5 +276,5 @@ def run_diag(parameter):
                     "Dimensions of two variables are difference. Abort")
         f_obs.close()
         f_mod.close()
-        return parameter
+    return parameter
 

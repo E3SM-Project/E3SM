@@ -127,44 +127,7 @@
 			"variables": ["PRECT_OCN"],
 			"ref_name": "SSMI",
 			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_ANN_climo.nc",
-			"seasons": ["ANN"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PRECT_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_DJF_climo.nc",
-			"seasons": ["DJF"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PRECT_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_MAM_climo.nc",
-			"seasons": ["MAM"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PRECT_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_JJA_climo.nc",
-			"seasons": ["JJA"]
-		},                
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PRECT_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_SON_climo.nc",
-			"seasons": ["SON"]
+			"seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
 		},
 		{
 			"sets": [3],
@@ -172,44 +135,7 @@
 			"variables": ["PREH2O_OCN"],
 			"ref_name": "SSMI",
 			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_ANN_climo.nc",
-			"seasons": ["ANN"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PREH2O_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_DJF_climo.nc",
-			"seasons": ["DJF"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PREH2O_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_MAM_climo.nc",
-			"seasons": ["MAM"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PREH2O_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_JJA_climo.nc",
-			"seasons": ["JJA"]
-		},                
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["PREH2O_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_SON_climo.nc",
-			"seasons": ["SON"]
+			"seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
 		},
 		{
 			"sets": [3],
@@ -217,44 +143,7 @@
 			"variables": ["TGCLDLWP_OCN"],
 			"ref_name": "SSMI",
 			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_ANN_climo.nc",
-			"seasons": ["ANN"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["TGCLDLWP_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_DJF_climo.nc",
-			"seasons": ["DJF"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["TGCLDLWP_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_MAM_climo.nc",
-			"seasons": ["MAM"]
-		},
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["TGCLDLWP_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_JJA_climo.nc",
-			"seasons": ["JJA"]
-		},                
-		{
-			"sets": [3],
-			"case_id": "set3_SSMI",
-			"variables": ["TGCLDLWP_OCN"],
-			"ref_name": "SSMI",
-			"reference_name": "SSM/I (Wentz) 1987-2000",
-			"ref_file": "SSMI_SON_climo.nc",
-			"seasons": ["SON"]
+			"seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
 		},
 		{
 			"sets": [3],

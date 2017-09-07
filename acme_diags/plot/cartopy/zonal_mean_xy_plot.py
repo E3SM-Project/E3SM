@@ -35,7 +35,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
     fig = plt.figure(figsize=[8.5, 11.0])
-#    proj = ccrs.PlateCarree(central_longitude=180)
+    # proj = ccrs.PlateCarree(central_longitude=180)
     proj = None
     ax = fig.add_axes(panel[0])
     ax.plot(test.getLatitude()[:],ma.squeeze( test.asma() ),'k',linewidth=2)
@@ -50,22 +50,21 @@ def plot(reference, test, diff, metrics_dict, parameter):
     ax.set_xlim(-90,90)
     ax1.set_xticks([-90, -60, -30, 0, 30, 60, 90])#crs=ccrs.PlateCarree())
     ax1.set_xlim(-90,90)
-##    lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format='.0f')
+    # lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format='.0f')
     lat_formatter = LatitudeFormatter()
-#    ax.xaxis.set_major_formatter(lon_formatter)
-    #ax.xaxis.set_major_formatter(lat_formatter)
-    #ax1.xaxis.set_major_formatter(lat_formatter)
+    # ax.xaxis.set_major_formatter(lon_formatter)
+    # ax.xaxis.set_major_formatter(lat_formatter)
+    # ax1.xaxis.set_major_formatter(lat_formatter)
     ax.tick_params(labelsize=11.0, direction='out', width=1)
     ax1.tick_params(labelsize=11.0, direction='out', width=1)
     ax.xaxis.set_ticks_position('bottom')
     ax1.xaxis.set_ticks_position('bottom')
     ax.set_ylabel(test.long_name +' ('+ test.units+')')
     ax1.set_ylabel(test.long_name +' ('+ test.units+')')
-#    ax.yaxis.set_ticks_position('left')
-#
+    # ax.yaxis.set_ticks_position('left')
+
     fig.suptitle(parameter.main_title, x=0.5, y=0.95, fontsize=18)
-#    plt.show()
-#
+
     # Save figure
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]

@@ -18,23 +18,21 @@ requirements:
 
   run:
     - cdp 1.1.0
-    - vcs-nox 2.8.2017.04.04.16.48.c22e1d924a0145ef526b56a8ca123484adfd660a
-    - vtk-cdat-nox 7.1.0.2.8.2017.03.23.16.48.73fb094d17ccdd594a6abf9ff8732149c88dc2e6
-    - mesalib <8
-    - ffmpeg <3
-    - vcsaddons-nox 2.8
-    - dv3d-nox 2.8
-    - cdms2 2.10
-    - cdutil 2.10
+    - vcs 2.12
+    - vtk-cdat 7.1.0.2.12
+    - vcsaddons 2.12
+    - dv3d 2.12
+    - cdms2 2.12
+    - cdutil 2.12
     - genutil 2.10
-    - cdtime 2.10
+    - cdtime 2.12
     - output_viewer
     - numpy
     - matplotlib
     - cartopy
-    - dask
     - beautifulsoup4
     - html5lib
+    - colorcet
 
 about:
     home: https://github.com/ACME-Climate/acme_diags
