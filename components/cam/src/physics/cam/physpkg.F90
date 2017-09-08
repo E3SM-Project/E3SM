@@ -52,6 +52,8 @@ module physpkg
   integer ::  qini_idx           = 0 
   integer ::  cldliqini_idx      = 0 
   integer ::  cldiceini_idx      = 0 
+  integer ::  static_ener_ac_idx = 0
+  integer ::  water_vap_ac_idx   = 0
 
   integer ::  prec_str_idx       = 0
   integer ::  snow_str_idx       = 0
@@ -188,6 +190,9 @@ subroutine phys_register
     call pbuf_add_field('QINI',      'physpkg', dtype_r8, (/pcols,pver/), qini_idx)
     call pbuf_add_field('CLDLIQINI', 'physpkg', dtype_r8, (/pcols,pver/), cldliqini_idx)
     call pbuf_add_field('CLDICEINI', 'physpkg', dtype_r8, (/pcols,pver/), cldiceini_idx)
+    call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
+    call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
+
 
     ! check energy package
     call check_energy_register
@@ -708,6 +713,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use solar_data,         only: solar_data_init
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
+    use cam_history,        only: addfld, horiz_only, add_default
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
 
 
@@ -847,6 +853,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        call conv_water_init
     end if
 
+    call addfld('DTENDTH', horiz_only, 'A', 'W/m2',   'Dynamic Tendency of Total (vertically integrated) moist static energy')
+    call addfld('DTENDTQ', horiz_only, 'A', 'kg/m2/s','Dynamic Tendency of Total (vertically integrated) specific humidity')
+    call add_default('DTENDTQ', 1, ' ')
+    call add_default('DTENDTH', 1, ' ')
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
@@ -1315,7 +1325,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice
+    use physconst,          only: rhoh2o, latvap,latice, rga
     use aero_model,         only: aero_model_drydep
     use carma_intr,         only: carma_emission_tend, carma_timestep_tend
     use carma_flags_mod,    only: carma_do_aerosol, carma_do_emission
@@ -1384,6 +1394,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: tmp_cldliq(pcols,pver) ! tmp space
     real(r8) :: tmp_cldice(pcols,pver) ! tmp space
     real(r8) :: tmp_t     (pcols,pver) ! tmp space
+    real(r8) :: ftem      (pcols,pver) ! tmp space
+    real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
+    real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1740,6 +1753,25 @@ end if ! l_ac_energy_chk
 
     call clybry_fam_set( ncol, lchnk, map2chm, state%q, pbuf )
 
+    static_ener_ac_idx = pbuf_get_index('static_ener_ac')
+    call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
+    water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
+    call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
+
+    !Integrate column static energy
+    ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    static_ener_ac_2d = ftem(:ncol,1)
+
+    !Integrate water vapor
+    ftem(:ncol,:) = state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    water_vap_ac_2d = ftem(:ncol,1)
+
 end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
@@ -1785,7 +1817,7 @@ subroutine tphysbc (ztodt,               &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld
-    use physconst,       only: cpair, latvap, gravit
+    use physconst,       only: cpair, latvap, gravit, rga
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
@@ -1963,7 +1995,10 @@ subroutine tphysbc (ztodt,               &
 
     real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
 
-
+    real(r8) :: ftem(pcols,pver)         ! tmp space
+    real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
+    real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
 
     !HuiWan (2014/15): added for a short-term time step convergence test ++ 
     logical :: l_bc_energy_fix
@@ -2001,6 +2036,32 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
+
+    static_ener_ac_idx = pbuf_get_index('static_ener_ac')
+    call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
+    water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
+    call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
+
+    ! Integrate and compute the difference
+    ! CIDiff = difference of column integrated values
+    if( nstep > dyn_time_lvls-1 ) then
+       ! MSE first
+       ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       CIDiff = (ftem(:ncol,1) - static_ener_ac_2d)*rtdt
+
+       call outfld('DTENDTH', CIDiff, pcols, lchnk )
+       ! Water vapor second
+       ftem(:ncol,:) = state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       CIDiff = (ftem(:ncol,1) - water_vap_ac_2d)*rtdt
+
+       call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+    end if
 
     ! Associate pointers with physics buffer fields
     itim_old = pbuf_old_tim_idx()

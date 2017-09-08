@@ -259,6 +259,8 @@ subroutine diag_init()
    call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water')
    call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
+   call addfld ('TUH',horiz_only,    'A','W/m',   'Total (vertically integrated) zonal MSE flux')
+   call addfld ('TVH',horiz_only,    'A','W/m',   'Total (vertically integrated) meridional MSE flux')
    call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity')
    call addfld ('RHW',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to liquid')
    call addfld ('RHI',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to ice')
@@ -374,6 +376,8 @@ subroutine diag_init()
       ! For Tier 1b global water cycle diagostics
       call add_default ('TUQ      ', 1, ' ')
       call add_default ('TVQ      ', 1, ' ')
+      call add_default ('TUH      ', 1, ' ')
+      call add_default ('TVH      ', 1, ' ')
    end if
    
    if (history_vdiag) then
@@ -1107,6 +1111,21 @@ end subroutine diag_conv_tend_ini
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     call outfld ('TVQ     ',ftem, pcols   ,lchnk     )
+
+!
+! Mass of vertically integrated MSE flux
+!
+    ftem(:ncol,:) = state%u(:ncol,:)*(state%s(:ncol,:)+latvap*state%q(:ncol,:,1))*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    call outfld ('TUH     ',ftem, pcols   ,lchnk     )
+
+    ftem(:ncol,:) = state%v(:ncol,:)*(state%s(:ncol,:)+latvap*state%q(:ncol,:,1))*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    call outfld ('TVH     ',ftem, pcols   ,lchnk     )
 
     if (moist_physics) then
 
