@@ -1217,6 +1217,8 @@ for mct, etc.
   <MPIFC> mpiifort </MPIFC>
   <MPICC> mpiicc  </MPICC>
   <MPICXX> mpiicpc </MPICXX>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
+  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="eastwind">
