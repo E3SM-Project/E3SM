@@ -37,13 +37,13 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_name = ''
         self.test_title = ''
         #self.test_colormap = 'viridis'
-        self.test_colormap = 'cet_rainbow'
+        self.test_colormap = 'cet_rainbow.rgb'
         self.test_units = ''
 
         self.reference_name = ''
         self.reference_title = ''
         #self.reference_colormap = 'viridis'
-        self.reference_colormap = 'cet_rainbow'
+        self.reference_colormap = 'cet_rainbow.rgb'
         self.reference_units = ''
 
         self.diff_name = ''

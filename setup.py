@@ -1,7 +1,13 @@
 import sys
+import os
+import glob
 from setuptools import find_packages, setup
 
 
+def get_all_files_in_dir(directory, pattern):
+    return glob.glob(os.path.join(directory, pattern))
+
+rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
 
 data_files = [
     (sys.prefix + '/share/acme_diags/zonal_mean_xy',
@@ -36,10 +42,8 @@ data_files = [
       'docs/ACME_Logo.png'
      ]),
     (sys.prefix + '/share/acme_diags/colormaps',
-     ['acme_diags/plot/colormaps/precip_diff_12lev.rgb',
-      'acme_diags/plot/colormaps/temp_diff_18lev.rgb',
-      'acme_diags/plot/colormaps/WhiteBlueGreenYellowRed.rgb'
-     ])
+     rgb_files
+    )
 ]
 
 setup(

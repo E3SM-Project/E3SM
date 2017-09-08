@@ -24,7 +24,7 @@ requirements:
     - dv3d 2.12
     - cdms2 2.12
     - cdutil 2.12
-    - genutil 2.10
+    - genutil 2.12
     - cdtime 2.12
     - output_viewer
     - numpy
@@ -32,7 +32,6 @@ requirements:
     - cartopy
     - beautifulsoup4
     - html5lib
-    - colorcet
 
 about:
     home: https://github.com/ACME-Climate/acme_diags
