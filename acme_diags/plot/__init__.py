@@ -39,6 +39,7 @@ def plot(set_num, ref, test, diff, metrics_dict, parameter):
 def get_colormap(colormap, parameters):
     """Get the colormap (string, list for vcs, or mpl colormap obj), which can be
     loaded from a local file in the cwd, installed file, or a predefined mpl/vcs one."""
+    colormap = str(colormap)  # unicode don't seem to work well with string.endswith()
     if not colormap.endswith('.rgb'):  # predefined vcs/mpl colormap
         return colormap
 
