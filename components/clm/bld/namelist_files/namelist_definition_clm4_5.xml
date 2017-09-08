@@ -1681,6 +1681,7 @@ Type of saturation function used in VSFM.
 <entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
        group="clm_inparm" valid_values="">
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
+</entry>
 
 <entry id="vsfm_lateral_model_type" type="char*32" category="clm_physics"
        group="clm_inparm"
