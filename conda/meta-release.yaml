@@ -1,0 +1,35 @@
+package:
+    name: acme_diags
+    version: 1.0.0
+
+source:
+    git_url: git://github.com/ACME-Climate/acme_diags
+
+build:
+    script: python setup.py install
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - cdp 1.1.0
+    - vcs 2.12
+    - vtk-cdat 7.1.0.2.12
+    - vcsaddons 2.12
+    - dv3d 2.12
+    - cdms2 2.12
+    - cdutil 2.12
+    - genutil 2.12
+    - cdtime 2.12
+    - output_viewer
+    - numpy
+    - matplotlib
+    - cartopy
+    - beautifulsoup4
+    - lxml
+
+about:
+    home: https://github.com/ACME-Climate/acme_diags
+    summary: This is the new version of ACME Diagnostics.
