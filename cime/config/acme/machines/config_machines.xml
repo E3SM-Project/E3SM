@@ -2028,13 +2028,12 @@
       </modules>
 
       <modules compiler="pgiacc"> <!-- changing pgi_acc to pgiacc -->
-        <command name="use">/ccs/home/norton/.modules</command>
         <command name="rm">PrgEnv-cray</command>
         <command name="rm">PrgEnv-gnu</command>
         <command name="rm">PrgEnv-intel</command>
         <command name="rm">PrgEnv-pathscale</command>
         <command name="load">PrgEnv-pgi</command>
-        <command name="switch">pgi 17.5.lustre</command>
+        <command name="switch">pgi pgi/17.5.0</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">cray-libsci</command>
         <command name="rm">atp</command>
@@ -2047,13 +2046,12 @@
         <command name="load">cudatoolkit</command>
       </modules>
       <modules compiler="pgi">
-        <command name="use">/ccs/home/norton/.modules</command>
         <command name="rm">PrgEnv-cray</command>
         <command name="rm">PrgEnv-gnu</command>
         <command name="rm">PrgEnv-intel</command>
         <command name="rm">PrgEnv-pathscale</command>
         <command name="load">PrgEnv-pgi</command>
-        <command name="switch">pgi pgi/17.5.lustre</command>
+        <command name="switch">pgi pgi/17.5.0</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">cray-libsci</command>
         <command name="rm">atp</command>
