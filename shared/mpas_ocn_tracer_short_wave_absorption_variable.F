@@ -154,7 +154,7 @@ contains
       call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
       call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
 
-      nCells = nCellsArray( 1 )
+      nCells = nCellsArray( 3 )
 
       !$omp do schedule(runtime) private(depth, k, cloudRatio, depLev)
       do iCell = 1, nCells
