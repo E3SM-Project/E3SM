@@ -143,7 +143,7 @@ contains
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
 
-      nCells = nCellsArray( 2 )
+      nCells = nCellsArray( 3 )
 
       !$omp do schedule(runtime) private(depth, k, depLev)
       do iCell = 1, nCells
