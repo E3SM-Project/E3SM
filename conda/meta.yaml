@@ -31,7 +31,7 @@ requirements:
     - matplotlib
     - cartopy
     - beautifulsoup4
-    - html5lib
+    - lxml
 
 about:
     home: https://github.com/ACME-Climate/acme_diags

@@ -61,7 +61,7 @@ def _add_header(path, version, model_name, time, logo_path):
 	# 	<img src="ACME_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
 	# </div>
     
-    soup = BeautifulSoup(open(path), "html5lib")
+    soup = BeautifulSoup(open(path), "lxml")
     old_header = soup.find_all("nav", "navbar navbar-default")
     if len(old_header) is not 0:
         old_header[0].decompose()
@@ -93,7 +93,7 @@ def _add_header(path, version, model_name, time, logo_path):
 
 def h1_to_h3(path):
     """Change any <h1> to <h3> because h1 is just too big"""
-    soup = BeautifulSoup(open(path), "html5lib")
+    soup = BeautifulSoup(open(path), "lxml")
     h1 = soup.find('h1')
     if h1 is None:
         return
