@@ -87,7 +87,7 @@ contains
 
 ! ************************************************************************************ !
 
-  subroutine pflotranModelCreate(mpicomm, pflotran_prefix, model)
+  subroutine pflotranModelCreate(mpicomm, pflotran_inputdir, pflotran_prefix, model)
   ! 
   ! Allocates and initializes the pflotranModel object.
   ! It performs the same sequence of commands as done in pflotran.F90
@@ -113,6 +113,7 @@ contains
 #include "petsc/finclude/petscsys.h"
 
     PetscInt, intent(in) :: mpicomm
+    character(len=256), intent(in) :: pflotran_inputdir
     character(len=256), intent(in) :: pflotran_prefix
 
     type(pflotran_model_type),      pointer :: model
@@ -134,9 +135,16 @@ contains
     ! prefix string. If the driver wants to use pflotran.in, then it
     ! should explicitly request that with 'pflotran'.
     if (len(trim(pflotran_prefix)) > 1) then
-      model%option%input_prefix = trim(pflotran_prefix)
+
+      if (len(trim(pflotran_inputdir)) > 1) then
+        model%option%input_dir = trim(pflotran_inputdir)
+        model%option%input_prefix = trim(pflotran_inputdir) // '/' //trim(pflotran_prefix)
+      else
+        model%option%input_dir = "."
+        model%option%input_prefix = trim(pflotran_prefix)
+      end if
       model%option%input_filename = trim(model%option%input_prefix) // '.in'
-      model%option%global_prefix = model%option%input_prefix
+      model%option%global_prefix = trim(pflotran_prefix)
     else
       model%option%io_buffer = 'The external driver must provide the ' // &
            'pflotran input file prefix.'
@@ -1839,8 +1847,13 @@ contains
     !
     call DiscretizationGlobalToLocal(discretization,field%porosity0, &
                                field%work_loc,ONEDOF)
+    !call MaterialSetAuxVarVecLoc(patch%aux%Material,field%work_loc, &
+    !                           POROSITY,ZERO_INTEGER)
     call MaterialSetAuxVarVecLoc(patch%aux%Material,field%work_loc, &
-                               POROSITY,ZERO_INTEGER)
+                               POROSITY,POROSITY_MINERAL)
+    call MaterialSetAuxVarVecLoc(patch%aux%Material,field%work_loc, &
+                               POROSITY,POROSITY_CURRENT)
+
 
     if(option%iflowmode==RICHARDS_MODE .or. &
        option%iflowmode==TH_MODE) then
@@ -2242,7 +2255,7 @@ subroutine pflotranModelSetInternalTHStatesfromCLM(pflotran_model, PRESSURE_DATA
     PetscErrorCode     :: ierr
     PetscInt           :: local_id, ghosted_id, istart, iend
     PetscInt           :: cur_sat_func_id
-    PetscReal          :: liquid_saturation, capillary_pressure, dx, porosity, volume
+    PetscReal          :: liquid_saturation, capillary_pressure, dx, porosity, volume, den_kgm3
     PetscReal, pointer :: xx_loc_p(:)
 
     PetscScalar, pointer :: soilt_pf_loc(:)      ! temperature [oC]
@@ -2253,21 +2266,6 @@ subroutine pflotranModelSetInternalTHStatesfromCLM(pflotran_model, PRESSURE_DATA
 
 !-------------------------------------------------------------------------
     option => pflotran_model%option
-    select type (modelsim => pflotran_model%simulation)
-      class is (simulation_subsurface_type)
-        simulation  => modelsim
-        realization => simulation%realization
-
-      class default
-        option%io_buffer = " subroutine is " // trim(subname) // &
-              "currently is Not support in this simulation."
-        call printErrMsg(option)
-    end select
-    patch           => realization%patch
-    grid            => patch%grid
-    field           => realization%field
-    global_auxvars  => patch%aux%Global%auxvars
-    material_auxvars=> patch%aux%Material%auxvars
 
     select case(option%iflowmode)
       case (RICHARDS_MODE)
@@ -2299,8 +2297,29 @@ subroutine pflotranModelSetInternalTHStatesfromCLM(pflotran_model, PRESSURE_DATA
             option%io_buffer='pflotranModelSetInitialTHStatesfromCLM ' // &
               'not implmented for this mode.'
             call printErrMsg(option)
+        else
+            ! reactive-transport without flow-mode on
+            return
         endif
     end select
+
+    !
+    select type (modelsim => pflotran_model%simulation)
+      class is (simulation_subsurface_type)
+        simulation  => modelsim
+        realization => simulation%realization
+
+      class default
+        option%io_buffer = " subroutine is " // trim(subname) // &
+              "currently is Not support in this simulation."
+        call printErrMsg(option)
+    end select
+    patch           => realization%patch
+    grid            => patch%grid
+    field           => realization%field
+    global_auxvars  => patch%aux%Global%auxvars
+    material_auxvars=> patch%aux%Material%auxvars
+
 
     call VecGetArrayF90(field%flow_xx, xx_loc_p, ierr)
     CHKERRQ(ierr)
@@ -2321,17 +2340,34 @@ subroutine pflotranModelSetInternalTHStatesfromCLM(pflotran_model, PRESSURE_DATA
        iend = local_id*option%nflowdof
        istart = iend-option%nflowdof+1
 
+       porosity = material_auxvars(ghosted_id)%porosity
+       volume   = material_auxvars(ghosted_id)%volume
+       den_kgm3 = global_auxvars(ghosted_id)%den(1)*FMWH2O ! water den = kg/m^3
+
+       ! soil hydraulic properties ID for current cell
+       cur_sat_func_id = patch%sat_func_id(ghosted_id)
+       characteristic_curves => patch% &
+         characteristic_curves_array(cur_sat_func_id)%ptr
+
        if (PRESSURE_DATAPASSING) then
          xx_loc_p(istart)  = soilpress_pf_loc(ghosted_id)
 
+         ! need to recalculate 'pressure' from saturation/water-mass
+         select type(sf => characteristic_curves%saturation_function)
+           !class is(sat_func_VG_type)
+             ! not-yet (TODO)
+           class is(sat_func_BC_type)
+             capillary_pressure = option%reference_pressure - xx_loc_p(istart)
+             call sf%Saturation(capillary_pressure, liquid_saturation, dx, option)
+
+           class default
+             option%io_buffer = 'Currently ONLY support Brooks_COREY saturation function type' // &
+               ' when coupled with CLM.'
+             call printErrMsg(option)
+         end select
+
        else
          ! need to recalculate 'pressure' from saturation/water-mass
-
-         ! soil hydraulic properties ID for current cell
-         cur_sat_func_id = patch%sat_func_id(ghosted_id)
-
-         characteristic_curves => patch% &
-           characteristic_curves_array(cur_sat_func_id)%ptr
          select type(sf => characteristic_curves%saturation_function)
            !class is(sat_func_VG_type)
              ! not-yet (TODO)
@@ -2339,17 +2375,7 @@ subroutine pflotranModelSetInternalTHStatesfromCLM(pflotran_model, PRESSURE_DATA
              liquid_saturation = soillsat_pf_loc(ghosted_id)
              call sf%CapillaryPressure(liquid_saturation, capillary_pressure, option)
 
-             porosity = material_auxvars(ghosted_id)%porosity
-             volume = material_auxvars(ghosted_id)%volume
-             dx = global_auxvars(ghosted_id)%den(1)*FMWH2O ! water den = kg/m^3
-             !dx = liquid_saturation*porosity*volume  ! m3h2o
-
-print *, 'pf0 - ', ghosted_id, liquid_saturation, capillary_pressure, dx, &
-liquid_saturation*porosity*volume*dx
-
              xx_loc_p(istart) = option%reference_pressure - capillary_pressure
-
-
 
            class default
              option%io_buffer = 'Currently ONLY support Brooks_COREY saturation function type' // &
@@ -2458,6 +2484,17 @@ end subroutine pflotranModelSetInternalTHStatesfromCLM
 
 !-------------------------------------------------------------------------
     option => pflotran_model%option
+    select case(option%iflowmode)
+      case (RICHARDS_MODE)
+        press_dof = RICHARDS_PRESSURE_DOF
+      case (TH_MODE)
+        press_dof = TH_PRESSURE_DOF
+      case default
+        option%io_buffer='pflotranModelSetTHbcs ' // &
+          'not implmented for this mode.'
+        call printErrMsg(option)
+    end select
+
     select type (modelsim => pflotran_model%simulation)
       class is (simulation_subsurface_type)
         simulation  => modelsim
@@ -2519,16 +2556,6 @@ end subroutine pflotranModelSetInternalTHStatesfromCLM
     CHKERRQ(ierr)
 
     ! passing from interface to internal
-    select case(option%iflowmode)
-      case (RICHARDS_MODE)
-        press_dof = RICHARDS_PRESSURE_DOF
-      case (TH_MODE)
-        press_dof = TH_PRESSURE_DOF
-      case default
-        option%io_buffer='pflotranModelSetTHbcs ' // &
-          'not implmented for this mode.'
-        call printErrMsg(option)
-    end select
 
     ! need to check the BC list first, so that we have necessary BCs in a consistent way
     HAVE_QFLUX_TOPBC = PETSC_FALSE  ! top BC: (water) flux type (NEUMANN)
@@ -3401,7 +3428,6 @@ write(option%myrank+200,*) 'checking pflotran-model 2 (PF->CLM lsat):  ', &
         'idata%sat_pfp(local_id)=',soillsat_pf_p(local_id)
 #endif
 
-
       if (option%iflowmode == RICHARDS_MODE) then
         soilpsi_pf_p(local_id) = -rich_auxvars(ghosted_id)%pc
 
@@ -3675,7 +3701,15 @@ write(option%myrank+200,*) 'checking pflotran-model 2 (PF->CLM lsat):  ', &
              if (ghosted_id <= 0 .or. local_id <= 0) cycle
              if (patch%imat(ghosted_id) < 0) cycle
 
-             if(StringCompare(boundary_condition%name,'clm_gpress_bc')) then          ! infilitration (+)
+             ! for infiltration, the BC is either by 'pressure head' or by 'water flux', but not both
+             if(StringCompare(boundary_condition%name,'clm_gpress_bc')) then              ! infilitration (+) (TYPE II)
+                qinfl_subsurf_pf_loc(iconn) = &
+                               -global_auxvars_bc(offset+iconn)%mass_balance(1,1)
+
+                ! 'mass_balance' IS accumulative, so need to reset to Zero for next desired time-step
+                global_auxvars_bc(offset+iconn)%mass_balance(1,1) = 0.d0
+
+             elseif(StringCompare(boundary_condition%name,'clm_gwflux_bc')) then          ! infilitration (+) (TYPE I)
                 qinfl_subsurf_pf_loc(iconn) = &
                                -global_auxvars_bc(offset+iconn)%mass_balance(1,1)
 
@@ -3684,7 +3718,7 @@ write(option%myrank+200,*) 'checking pflotran-model 2 (PF->CLM lsat):  ', &
 
              endif
 
-             if(StringCompare(boundary_condition%name,'exfiltration')) then          ! exfiltration (-)
+             if(StringCompare(boundary_condition%name,'clm_exfiltration_bc')) then         ! exfiltration (-)
                 qsurf_subsurf_pf_loc(iconn) = &
                                -global_auxvars_bc(offset+iconn)%mass_balance(1,1)
 
@@ -3694,7 +3728,7 @@ write(option%myrank+200,*) 'checking pflotran-model 2 (PF->CLM lsat):  ', &
              endif
 
              ! retrieving H2O flux at bottom BC
-             if(StringCompare(boundary_condition%name,'clm_bflux_bc')) then          ! bottom water flux
+             if(StringCompare(boundary_condition%name,'clm_bflux_bc')) then                ! bottom water flux
                 qflux_subbase_pf_loc(iconn) = &
                                -global_auxvars_bc(offset+iconn)%mass_balance(1,1)
 

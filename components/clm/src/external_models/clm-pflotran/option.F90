@@ -217,6 +217,7 @@ module Option_module
     character(len=MAXSTRINGLENGTH) :: inline_surface_region_name
     
 #ifdef CLM_PFLOTRAN
+    character(len=MAXSTRINGLENGTH) :: input_dir
     PetscBool :: mapping_files
 #endif
 
@@ -529,6 +530,7 @@ subroutine OptionInitRealization(option)
 !fmy: mass_balance for bc/ss IS needed by default if coupled with CLM
 #ifdef CLM_PFLOTRAN
   option%compute_mass_balance_new = PETSC_TRUE
+  option%input_dir = ""
   option%mapping_files = PETSC_FALSE
   ! user-defined CLM-PFLOTRAN mesh maps NOT provided (default)
 #endif
