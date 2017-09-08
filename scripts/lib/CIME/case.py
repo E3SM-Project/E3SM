@@ -654,6 +654,7 @@ class Case(object):
             new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
             self.update_env(new_mach_pes_obj, "mach_pes")
             return new_mach_pes_obj.get_value("TOTALPES")
+
         pesobj = Pes(self._pesfile)
 
         match1 = re.match('(.+)x([0-9]+)', "" if pecount is None else pecount)
@@ -847,20 +848,6 @@ class Case(object):
             logger.info(" Driver/Coupler has %s instances" % ninst)
 
         #--------------------------------------------
-        # batch system
-        #--------------------------------------------
-        env_batch = self.get_env("batch")
-
-        batch_system_type = machobj.get_value("BATCH_SYSTEM")
-        batch = Batch(batch_system=batch_system_type, machine=machine_name)
-        bjobs = batch.get_batch_jobs()
-
-        env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=pesize, walltime=walltime, force_queue=queue, allow_walltime_override=test)
-        self.schedule_rewrite(env_batch)
-
-        #--------------------------------------------
         # archiving system
         #--------------------------------------------
         env_archive = self.get_env("archive")
@@ -931,6 +918,20 @@ class Case(object):
             self.set_value("TEST",True)
 
         self.initialize_derived_attributes()
+
+        #--------------------------------------------
+        # batch system (must come after initialize_derived_attributes)
+        #--------------------------------------------
+        env_batch = self.get_env("batch")
+
+        batch_system_type = machobj.get_value("BATCH_SYSTEM")
+        batch = Batch(batch_system=batch_system_type, machine=machine_name)
+        bjobs = batch.get_batch_jobs()
+
+        env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
+        env_batch.create_job_groups(bjobs)
+        env_batch.set_job_defaults(bjobs, pesize=pesize, num_nodes=self.num_nodes, walltime=walltime, force_queue=queue, allow_walltime_override=test)
+        self.schedule_rewrite(env_batch)
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:

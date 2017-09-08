@@ -312,7 +312,8 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="1024" walltimemax="06:00:00" default="true">ec</queue>
+      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
+      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
@@ -321,7 +322,8 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="1024" walltimemax="06:00:00" default="true">ec</queue>
+      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
+      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
@@ -423,7 +425,7 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
+      <queue walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
   </batch_system>
 
@@ -435,7 +437,7 @@
       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
+      <queue walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
   </batch_system>
 
@@ -443,17 +445,17 @@
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>
-      <task_count>default</task_count>
+      <node_count>default</node_count>
       <prereq>$BUILD_COMPLETE and not $TEST</prereq>
     </job>
     <job name="case.test">
       <template>template.case.test</template>
-      <task_count>default</task_count>
+      <node_count>default</node_count>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
     <job name="case.st_archive">
       <template>template.st_archive</template>
-      <task_count>1</task_count>
+      <node_count>1</node_count>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
       <dependency>case.run case.test</dependency>
       <prereq>$DOUT_S</prereq>

@@ -809,12 +809,12 @@
     <executable></executable>
   </mpirun>
   <module_system type="module">
-    <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-    <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-    <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-    <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-    <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-    <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+    <init_path lang="python">/usr/share/lmod/lmod/init/python.py</init_path>
+    <init_path lang="perl">/usr/share/lmod/lmod/init/perl.pm</init_path>
+    <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+    <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+    <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+    <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
     <cmd_path lang="csh">module</cmd_path>
     <cmd_path lang="sh">module</cmd_path>
     <modules>
@@ -824,16 +824,14 @@
       <command name="load">sems-python/2.7.9</command>
       <command name="load">sems-cmake</command>
       <command name="load">gnu/4.9.2</command>
-      <command name="load">intel/intel-15.0.3.187</command>
-      <command name="load">libraries/intel-mkl-15.0.2.164</command>
+      <command name="load">sems-intel/16.0.2</command>
+      <command name="load">mkl/16.0</command>
     </modules>
     <modules mpilib="!mpi-serial">
-      <command name="load">openmpi-intel/1.6</command>
-      <command name="load">sems-hdf5/1.8.12/parallel</command>
+      <command name="load">sems-openmpi/1.10.5</command>
       <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
     </modules>
     <modules mpilib="mpi-serial">
-      <command name="load">sems-hdf5/1.8.12/base</command>
       <command name="load">sems-netcdf/4.4.1/exo</command>
     </modules>
   </module_system>

@@ -9,7 +9,7 @@ from CIME.utils import transform_vars, get_cime_root, convert_to_seconds
 
 from copy import deepcopy
 from collections import OrderedDict
-import stat, re, math
+import stat, re
 
 logger = logging.getLogger(__name__)
 
@@ -162,14 +162,15 @@ class EnvBatch(EnvBase):
         self.num_tasks = total_tasks
         self.tasks_per_numa = tasks_per_node / 2
         self.thread_count = thread_count
-        task_count = self.get_value("task_count", subgroup=job)
+        node_count = self.get_value("node_count", subgroup=job)
 
-        if task_count == "default":
+        if node_count == "default":
             self.total_tasks = total_tasks
             self.num_nodes = num_nodes
         else:
-            self.total_tasks = task_count
-            self.num_nodes = int(math.ceil(float(task_count)/float(tasks_per_node)))
+            self.total_tasks = 1
+            self.num_nodes = int(node_count)
+            expect(self.num_nodes == 1, "Invalid setting for node_count, must be '1' or 'default'")
 
         self.pedocumentation = ""
         self.job_id = case.get_value("CASE") + os.path.splitext(job)[1]
@@ -185,7 +186,7 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, batch_jobs, pesize=None, walltime=None, force_queue=None, allow_walltime_override=False):
+    def set_job_defaults(self, batch_jobs, pesize=None, num_nodes=None, walltime=None, force_queue=None, allow_walltime_override=False):
         if self.batchtype is None:
             self.batchtype = self.get_batch_system_type()
 
@@ -193,24 +194,26 @@ class EnvBatch(EnvBase):
             return
 
         for job, jsect in batch_jobs:
-            task_count = jsect["task_count"]
-            if task_count is None or task_count == "default":
+            node_count = jsect["node_count"]
+            if node_count is None or node_count == "default":
                 task_count = pesize
+                node_count = num_nodes
             else:
-                task_count = int(task_count)
+                task_count = 1
+                node_count = int(node_count)
 
             if force_queue:
-                if not self.queue_meets_spec(force_queue, task_count, walltime=walltime, job=job):
+                if not self.queue_meets_spec(force_queue, task_count, node_count, walltime=walltime, job=job):
                     logger.warning("WARNING: User-requested queue '{}' does not meet requirements for job '{}'".format(force_queue, job))
                 queue = force_queue
             else:
-                queue = self.select_best_queue(task_count, walltime=walltime, job=job)
+                queue = self.select_best_queue(task_count, node_count, walltime=walltime, job=job)
                 if queue is None and walltime is not None:
                     # Try to see if walltime was the holdup
-                    queue = self.select_best_queue(task_count, walltime=None, job=job)
+                    queue = self.select_best_queue(task_count, node_count, walltime=None, job=job)
                     if queue is not None:
                         # It was, override the walltime if a test, otherwise just warn the user
-                        new_walltime = self.get_queue_specs(queue)[3]
+                        new_walltime = self._get_queue_specs(queue)[5]
                         expect(new_walltime is not None, "Should never make it here")
                         logger.warning("WARNING: Requested walltime '{}' could not be matched by any queue".format(walltime))
                         if allow_walltime_override:
@@ -223,16 +226,16 @@ class EnvBatch(EnvBase):
                     logger.warning("WARNING: No queue on this system met the requirements for this job. Falling back to defaults")
                     default_queue_node = self.get_default_queue()
                     queue = default_queue_node.text
-                    walltime = self.get_queue_specs(queue)[3]
+                    walltime = self._get_queue_specs(queue)[5]
 
             if walltime is None:
                 # Figure out walltime
-                specs = self.get_queue_specs(queue)
+                specs = self._get_queue_specs(queue)
                 if specs is None:
                     # Queue is unknown, use specs from default queue
                     walltime = self.get_default_queue().get("walltimemax")
                 else:
-                    walltime = specs[3]
+                    walltime = specs[5]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
 
@@ -485,23 +488,22 @@ class EnvBatch(EnvBase):
         jobid = search_match.group(1)
         return jobid
 
-    def queue_meets_spec(self, queue, num_pes, walltime=None, job=None):
-        specs = self.get_queue_specs(queue)
+    def queue_meets_spec(self, queue, num_pes, num_nodes, walltime=None, job=None):
+        specs = self._get_queue_specs(queue)
         if specs is None:
             logger.warning("WARNING: queue '{}' is unknown to this system".format(queue))
             return True
 
-        jobmin, jobmax, jobname, walltimemax, strict = specs
+        jobmin, jobmax, nodemin, nodemax, jobname, walltimemax, strict = specs
 
         # A job name match automatically meets spec
         if job is not None and jobname is not None:
             return jobname == job
 
-        if jobmin is not None and num_pes < int(jobmin):
-            return False
-
-        if jobmax is not None and num_pes > int(jobmax):
-            return False
+        for minval, maxval, val in [(jobmin, jobmax, num_pes), (nodemin, nodemax, num_nodes)]:
+            if (minval is not None and val < int(minval)) or \
+               (maxval is not None and val > int(maxval)):
+                return False
 
         if walltime is not None and walltimemax is not None and strict:
             walltime_s = convert_to_seconds(walltime)
@@ -511,7 +513,7 @@ class EnvBatch(EnvBase):
 
         return True
 
-    def select_best_queue(self, num_pes, walltime=None, job=None):
+    def select_best_queue(self, num_pes, num_nodes, walltime=None, job=None):
         # Make sure to check default queue first.
         all_queues = []
         all_queues.append( self.get_default_queue())
@@ -519,12 +521,12 @@ class EnvBatch(EnvBase):
         for queue in all_queues:
             if queue is not None:
                 qname = queue.text
-                if self.queue_meets_spec(qname, num_pes, walltime=walltime, job=job):
+                if self.queue_meets_spec(qname, num_pes, num_nodes, walltime=walltime, job=job):
                     return qname
 
         return None
 
-    def get_queue_specs(self, queue):
+    def _get_queue_specs(self, queue):
         """
         Get queue specifications by name.
 
@@ -534,11 +536,13 @@ class EnvBatch(EnvBase):
             if queue_node.text == queue:
                 jobmin = queue_node.get("jobmin")
                 jobmax = queue_node.get("jobmax")
+                nodemin = queue_node.get("nodemin")
+                nodemax = queue_node.get("nodemax")
                 jobname = queue_node.get("jobname")
                 walltimemax = queue_node.get("walltimemax")
                 strict = queue_node.get("strict") == "true"
 
-                return jobmin, jobmax, jobname, walltimemax, strict
+                return jobmin, jobmax, nodemin, nodemax, jobname, walltimemax, strict
 
         return None
 
