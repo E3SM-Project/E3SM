@@ -460,15 +460,15 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          if (config_check_ssh_consistency) then
             consistentSSH = .true.
             do iCell = 1,nCells
-               ! Check if abs(ssh)>2m.  If so, print warning.
-               if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0_RKIND) then
+               ! Check if abs(ssh)>20m.  If so, print warning.
+               if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>20.0_RKIND) then
                   consistentSSH = .false.
-                  call mpas_log_write(' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.', &
+                  call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.' // & 
+                     '  Most likely, initial layerThickness does not match bottomDepth.', &
                      MPAS_LOG_ERR)
-! mrp log this later
-                  !call mpas_log_write(' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
-                  !              iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
-                  !              layerThickness(maxLevelCell(iCell),iCell)
+                  call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r, sum(h): $r', &
+                     intArgs=(/iCell, maxLevelCell(iCell) /), &
+                     realArgs=(/ bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)) /) )
                endif
             enddo
 
@@ -484,11 +484,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                if (bottomDepth(iCell) > refBottomDepth(maxLevelCell(iCell)).or. &
                    bottomDepth(iCell) < refBottomDepthTopOfCell(maxLevelCell(iCell))) then
                   call mpas_log_write(' fatal error: bottomDepth and maxLevelCell do not match:', MPAS_LOG_ERR)
-! mrp add this text back in later
-!                  call mpas_log_write(' iCell, maxLevelCell(iCell), bottomDepth(iCell): ', &
-!                                iCell, maxLevelCell(iCell), bottomDepth(iCell)
-!                  call mpas_log_write(' refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
-!                                refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell))
+                  call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r', &
+                     intArgs=(/iCell, maxLevelCell(iCell) /), &
+                     realArgs=(/ bottomDepth(iCell) /) )
                endif
 
             enddo
