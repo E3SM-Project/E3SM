@@ -9,7 +9,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import colorcet as cc
 from acme_diags.metrics import rmse, corr
 from acme_diags.driver.utils import get_output_dir, _chown
 from acme_diags.plot import get_colormap
