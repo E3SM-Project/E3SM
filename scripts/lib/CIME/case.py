@@ -457,8 +457,11 @@ class Case(object):
                     return compset_alias, science_support
 
         if compset_alias is None:
-            logger.info("Did not find a compset match for longname {} ".format(compset_name))
+            logger.info("Did not find an alias or longname compset match for {} ".format(compset_name))
             self._compsetname = compset_name
+            # if this is a valiid compset longname there will be at least 7 components.
+            components = self.get_compset_components()
+            expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
 
         return None, science_support
 
@@ -550,7 +553,7 @@ class Case(object):
         if compset is None:
             compset = self._compsetname
         expect(compset is not None,
-               "ERROR: compset is not set")
+               "compset is not set")
         # the first element is always the date operator - skip it
         elements = compset.split('_')[1:] # pylint: disable=maybe-no-member
         for element in elements:
@@ -620,6 +623,7 @@ class Case(object):
             node_name = 'CONFIG_' + comp_class + '_FILE'
             # Add the group and elements for the config_files.xml
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
+            expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
