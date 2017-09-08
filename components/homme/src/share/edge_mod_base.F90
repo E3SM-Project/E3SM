@@ -193,13 +193,6 @@ contains
 !$OMP MASTER
     edge%nlyr=nlyr
     edge%nbuf=nbuf
-!$OMP END MASTER
-!$OMP BARRIER
-
-    if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
-
-
-!$OMP MASTER
     !
     ! Keep a counter of how many times initedgebuffer is called.  
     ! This is used to assign a unique message ID for the boundary exchange
@@ -207,6 +200,13 @@ contains
     initedgebuffer_callid=initedgebuffer_callid+1
     edge%id  = initedgebuffer_callid
     edge%tag = BNDRY_TAG_BASE + MODULO(edge%id, MAX_ACTIVE_MSG) 
+!$OMP END MASTER
+!$OMP BARRIER
+
+    if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
+
+
+!$OMP MASTER
 
     iam = par%rank
     allocate(edge%putmap(max_neigh_edges,nelemd))
