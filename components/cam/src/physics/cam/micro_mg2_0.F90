@@ -1289,6 +1289,7 @@ subroutine micro_mg_tend ( &
                  weight = (beta_grad * qt(:,1) + (1. - beta_grad) * qt(:,2) + qsmall) &
                       / (qt(:,2) + qsmall)
               end where
+              weight = max(weight, 0._r8)
               precip_frac(:,k) = weight * precip_frac(:,k-1) + &
                    (1._r8 - weight) * precip_frac(:,k)
            end where
