@@ -121,7 +121,7 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, parameters, stats=
 def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
-    fig = plt.figure(figsize=[8.5, 11.0], dpi=parameter.dpi)
+    fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
 
     # Create projection
     print(parameter.var_region)
