@@ -713,7 +713,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use solar_data,         only: solar_data_init
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
-    use cam_history,        only: addfld, horiz_only, add_default
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
 
 
@@ -852,11 +851,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        call microp_driver_init(pbuf2d)
        call conv_water_init
     end if
-
-    call addfld('DTENDTH', horiz_only, 'A', 'W/m2',   'Dynamic Tendency of Total (vertically integrated) moist static energy')
-    call addfld('DTENDTQ', horiz_only, 'A', 'kg/m2/s','Dynamic Tendency of Total (vertically integrated) specific humidity')
-    call add_default('DTENDTQ', 1, ' ')
-    call add_default('DTENDTH', 1, ' ')
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
@@ -1763,14 +1757,14 @@ end if ! l_ac_energy_chk
     do k=2,pver
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
-    static_ener_ac_2d = ftem(:ncol,1)
+    static_ener_ac_2d(:ncol) = ftem(:ncol,1)
 
     !Integrate water vapor
     ftem(:ncol,:) = state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
     do k=2,pver
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
-    water_vap_ac_2d = ftem(:ncol,1)
+    water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
 end subroutine tphysac
 
@@ -2044,13 +2038,17 @@ subroutine tphysbc (ztodt,               &
 
     ! Integrate and compute the difference
     ! CIDiff = difference of column integrated values
-    if( nstep > dyn_time_lvls-1 ) then
+    if( nstep == 0 ) then
+       CIDiff(:ncol) = 0.0_r8
+       call outfld('DTENDTH', CIDiff, pcols, lchnk )
+       call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+    else
        ! MSE first
        ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
        do k=2,pver
           ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
        end do
-       CIDiff = (ftem(:ncol,1) - static_ener_ac_2d)*rtdt
+       CIDiff(:ncol) = (ftem(:ncol,1) - static_ener_ac_2d(:ncol))*rtdt
 
        call outfld('DTENDTH', CIDiff, pcols, lchnk )
        ! Water vapor second
@@ -2058,7 +2056,7 @@ subroutine tphysbc (ztodt,               &
        do k=2,pver
           ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
        end do
-       CIDiff = (ftem(:ncol,1) - water_vap_ac_2d)*rtdt
+       CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
 
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
     end if

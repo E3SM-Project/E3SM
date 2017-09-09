@@ -261,6 +261,8 @@ subroutine diag_init()
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
    call addfld ('TUH',horiz_only,    'A','W/m',   'Total (vertically integrated) zonal MSE flux')
    call addfld ('TVH',horiz_only,    'A','W/m',   'Total (vertically integrated) meridional MSE flux')
+   call addfld ('DTENDTH', horiz_only, 'A', 'W/m2',   'Dynamic Tendency of Total (vertically integrated) moist static energy')
+   call addfld ('DTENDTQ', horiz_only, 'A', 'kg/m2/s','Dynamic Tendency of Total (vertically integrated) specific humidity')
    call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity')
    call addfld ('RHW',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to liquid')
    call addfld ('RHI',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to ice')
@@ -378,6 +380,8 @@ subroutine diag_init()
       call add_default ('TVQ      ', 1, ' ')
       call add_default ('TUH      ', 1, ' ')
       call add_default ('TVH      ', 1, ' ')
+      call add_default ('DTENDTQ', 1, ' ')
+      call add_default ('DTENDTH', 1, ' ')
    end if
    
    if (history_vdiag) then
