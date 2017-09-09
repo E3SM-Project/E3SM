@@ -128,7 +128,7 @@ def plot(reference, test, diff, _, parameter):
 
     # Create figure, projection
     projection = 'None'
-    fig = plt.figure(figsize=[8.5, 11.0])
+    fig = plt.figure(figsize=[8.5, 11.0], dpi=parameter.dpi)
 
     plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow', (parameter.test_name,parameter.test_title,test.units), parameter)
     plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow', (parameter.reference_name,parameter.reference_title,test.units), parameter)

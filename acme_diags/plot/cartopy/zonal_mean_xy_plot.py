@@ -34,7 +34,7 @@ def get_ax_size(fig,ax):
 def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
-    fig = plt.figure(figsize=[8.5, 11.0])
+    fig = plt.figure(figsize=[8.5, 11.0], dpi=parameter.dpi)
     # proj = ccrs.PlateCarree(central_longitude=180)
     proj = None
     ax = fig.add_axes(panel[0])

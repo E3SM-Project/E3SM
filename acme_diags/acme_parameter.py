@@ -24,12 +24,13 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         # Plotting related
         self.main_title = ''
-        self.backend = 'vcs'
+        self.backend = 'mpl'
         self.save_netcdf = False
         self.output_file = 'output'
         self.output_format = ['png']
         self.canvas_size_w = 1212
         self.canvas_size_h = 1628
+        self.dpi = 150
         self.arrows = True
         self.logo = False
 
