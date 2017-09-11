@@ -1,4 +1,4 @@
-name: acme_diags_v1.0.0
+name: acme_diags_env
 channels:
 - acme
 - uvcdat

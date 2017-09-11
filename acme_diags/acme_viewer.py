@@ -223,7 +223,7 @@ def create_viewer(root_dir, parameters, ext):
                      viewer.add_row(row_name)
                      viewer.add_col(ROW_INFO[set_num][group][row_name]['descr'])  # the description, currently the var
 
-                for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
+                for col_season in ROW_INFO[set_num][group][row_name]: 
                     fnm = ROW_INFO[set_num][group][row_name][col_season]
                     formatted_files = []
                     if parameters[0].save_netcdf:
