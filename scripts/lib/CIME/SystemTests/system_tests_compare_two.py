@@ -38,6 +38,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
 from CIME.case_submit import check_case
+from CIME.case_st_archive import archive_last_restarts
 
 import shutil, os, glob
 
@@ -221,19 +222,32 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 self._activate_case2()
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
-                    check_case(self._case2, self._caseroot2)
+                    check_case(self._case2)
                 self._force_case2_settings()
 
                 self._case_two_custom_prerun_action()
                 self.run_indv(suffix = self._run_two_suffix)
                 self._case_two_custom_postrun_action()
+            # Compare results
+            # Case1 is the "main" case, and we need to do the comparisons from there
+            self._activate_case1()
+            self._link_to_case2_output()
 
-        # Compare results
-        # Case1 is the "main" case, and we need to do the comparisons from there
-        self._activate_case1()
-        self._link_to_case2_output()
+            self._component_compare_test(self._run_one_suffix, self._run_two_suffix, success_change=success_change)
 
-        self._component_compare_test(self._run_one_suffix, self._run_two_suffix, success_change=success_change)
+    def copy_case1_restarts_to_case2(self):
+        """
+        Makes a copy (or symlink) of restart files and related files
+        (necessary history files, rpointer files) from case1 to case2.
+
+        This is not done automatically, but can be called by individual
+        tests where case2 does a continue_run using case1's restart
+        files.
+        """
+        rundir2 = self._case2.get_value("RUNDIR")
+        archive_last_restarts(case = self._case1,
+                              archive_restdir = rundir2,
+                              link_to_restart_files = True)
 
     # ========================================================================
     # Private methods

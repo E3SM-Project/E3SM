@@ -41,6 +41,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')
+    config['MULTI_DRIVER'] = '.true.' if case.get_value('MULTI_DRIVER') else '.false.'
     config['OS'] = case.get_value('OS')
     config['glc_nec'] = 0 if case.get_value('GLC_NEC') == 0 else case.get_value('GLC_NEC')
     config['single_column'] = 'true' if case.get_value('PTS_MODE') else 'false'
@@ -247,28 +248,30 @@ def _create_component_modelio_namelists(case, files):
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
+    models = case.get_values("COMP_CLASSES")
+    #if we are in multi-coupler mode the number of instances of cpl will be the max
+    # of any NINST_* value
+    maxinst = 1
+    if case.get_value("MULTI_DRIVER"):
+        maxinst = case.get_value("NINST_MAX")
 
-    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
     for model in models:
+        model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-
-            if model == 'cpl':
-                inst_count = 1
-            else:
+            if maxinst == 1 and model != 'cpl':
                 inst_count = case.get_value("NINST_" + model.upper())
+            else:
+                inst_count = maxinst
 
+            inst_string = ""
             inst_index = 1
             while inst_index <= inst_count:
-                inst_string = inst_index
-                if inst_index <= 999:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  99:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  9:
-                    inst_string = "0" + str(inst_string)
+                # determine instance string
+                if inst_count > 1:
+                    inst_string = '_{:04d}'.format(inst_index)
 
                 # set default values
                 for entry in entries:
@@ -281,17 +284,11 @@ def _create_component_modelio_namelists(case, files):
                 moddiro = case.get_value('RUNDIR')
                 nmlgen.set_value('diro', moddiro)
 
-                if inst_count > 1:
-                    logfile = model + "_" + inst_string + ".log." + str(lid)
-                else:
-                    logfile = model + ".log." + str(lid)
+                logfile = model + inst_string + ".log." + str(lid)
                 nmlgen.set_value('logfile', logfile)
 
                 # Write output file
-                if inst_count > 1:
-                    modelio_file = model + "_modelio.nml_" + str(inst_string)
-                else:
-                    modelio_file = model + "_modelio.nml"
+                modelio_file = model + "_modelio.nml" + inst_string
                 nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
 
                 inst_index = inst_index + 1

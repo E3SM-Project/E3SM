@@ -9,6 +9,7 @@ they can be run outside the context of TestScheduler.
 """
 
 import traceback, stat, threading, time, glob
+from collections import OrderedDict
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
@@ -192,7 +193,7 @@ class TestScheduler(object):
         # Each test has it's own value and setting/retrieving items from a dict
         # is atomic, so this should be fine to use without mutex.
         # name -> (phase, status)
-        self._tests = {}
+        self._tests = OrderedDict()
         for test_name in test_names:
             self._tests[test_name] = (TEST_START, TEST_PASS_STATUS)
 
@@ -394,6 +395,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --user-mods-dir {}".format(test_mod_file)
 
         mpilib = None
+        ninst = 1
+        ncpl = 1
         if case_opts is not None:
             for case_opt in case_opts: # pylint: disable=not-an-iterable
                 if case_opt.startswith('M'):
@@ -401,9 +404,15 @@ class TestScheduler(object):
                     create_newcase_cmd += " --mpilib {}".format(mpilib)
                     logger.debug (" MPILIB set to {}".format(mpilib))
                 if case_opt.startswith('N'):
+                    expect(ncpl == 1,"Cannot combine _C and _N options")
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst {}".format(ninst)
                     logger.debug (" NINST set to {}".format(ninst))
+                if case_opt.startswith('C'):
+                    expect(ninst == 1,"Cannot combine _C and _N options")
+                    ncpl = case_opt[1:]
+                    create_newcase_cmd += " --ninst {} --multi-driver" .format(ncpl)
+                    logger.debug (" NCPL set to {}" .format(ncpl))
                 if case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
@@ -521,6 +530,9 @@ class TestScheduler(object):
                     continue
 
                 elif opt.startswith('N'):
+                    # handled in create_newcase
+                    continue
+                elif opt.startswith('C'):
                     # handled in create_newcase
                     continue
                 elif opt.startswith('IOP'):
@@ -708,12 +720,14 @@ class TestScheduler(object):
             num_threads_launched_this_iteration = 0
             for test in self._tests:
                 logger.debug("test_name: " + test)
-                # If we have no workers available, immediately wait
-                if len(threads_in_flight) == self._parallel_jobs:
-                    self._wait_for_something_to_finish(threads_in_flight)
 
                 if self._work_remains(test):
                     work_to_do = True
+
+                    # If we have no workers available, immediately break out of loop so we can wait
+                    if len(threads_in_flight) == self._parallel_jobs:
+                        break
+
                     if test not in threads_in_flight:
                         test_phase, test_status = self._get_test_data(test)
                         expect(test_status != TEST_PEND_STATUS, test)

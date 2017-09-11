@@ -545,7 +545,7 @@ subroutine shr_pcdf_defvar0d(fid,fname,vtype)
 
   implicit none
 
-  type(file_desc_t),intent(in) :: fid
+  type(file_desc_t),intent(inout) :: fid
   character(len=*) ,intent(in) :: fname
   integer(IN)      ,intent(in) :: vtype
 
@@ -557,7 +557,11 @@ subroutine shr_pcdf_defvar0d(fid,fname,vtype)
   !-------------
 
   rcode = pio_def_var(fid,trim(fname),vtype,varid)
-
+  if (vtype == PIO_DOUBLE) then
+     rcode = PIO_put_att(fid, varid, '_FillValue', fillvalue)
+  else
+     rcode = PIO_put_att(fid, varid, '_FillValue', ifillvalue)
+  endif
 end subroutine shr_pcdf_defvar0d
 
 !===============================================================================
@@ -565,7 +569,7 @@ subroutine shr_pcdf_defvar1d(fid,fname,vtype,dimid)
 
   implicit none
 
-  type(file_desc_t),intent(in) :: fid
+  type(file_desc_t),intent(inout) :: fid
   character(len=*) ,intent(in) :: fname
   integer(IN)      ,intent(in) :: vtype
   integer(IN)      ,intent(in) :: dimid(:)
@@ -578,6 +582,11 @@ subroutine shr_pcdf_defvar1d(fid,fname,vtype,dimid)
   !-------------
 
   rcode = pio_def_var(fid,trim(fname),vtype,dimid,varid)
+  if (vtype == PIO_DOUBLE) then
+     rcode = PIO_put_att(fid, varid, '_FillValue', fillvalue)
+  else
+     rcode = PIO_put_att(fid, varid, '_FillValue', ifillvalue)
+  endif
 
 end subroutine shr_pcdf_defvar1d
 
@@ -639,6 +648,7 @@ subroutine shr_pcdf_writer1d(fid,fname,iodesc,r1d)
   lfillvalue = fillvalue
 
   rcode = pio_inq_varid(fid,trim(fname),varid)
+
   call pio_write_darray(fid, varid, iodesc, r1d, rcode, fillval=lfillvalue)
 
 end subroutine shr_pcdf_writer1d

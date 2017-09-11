@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno
 import stat as statlib
 import warnings
 from contextlib import contextmanager
@@ -199,8 +199,7 @@ def _convert_to_fd(filearg, from_dir):
 _hack=object()
 
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
-                   input_str=None, from_dir=None, verbose=None,
-                   arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+                   from_dir=None, combine_output=False):
 
     # This code will try to import and run each buildnml as a subroutine
     # if that fails it will run it as a program in a seperate shell
@@ -227,10 +226,8 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
-        stat, output, errput = run_cmd("{} {}".format(cmd, cmdargs), input_str=input_str, from_dir=from_dir,
-                                 verbose=verbose, arg_stdout=arg_stdout, arg_stderr=arg_stderr, env=env,
-                                 combine_output=combine_output)
-
+        output = run_cmd_no_fail("{} {}".format(cmd, cmdargs), combine_output=combine_output,
+                                 from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
         if case is not None:
@@ -601,6 +598,21 @@ def safe_copy(src_dir, tgt_dir, file_map):
         if (os.path.isfile(full_tgt)):
             os.remove(full_tgt)
         shutil.copy2(full_src, full_tgt)
+
+def symlink_force(target, link_name):
+    """
+    Makes a symlink from link_name to target. Unlike the standard
+    os.symlink, this will work even if link_name already exists (in
+    which case link_name will be overwritten).
+    """
+    try:
+        os.symlink(target, link_name)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            os.remove(link_name)
+            os.symlink(target, link_name)
+        else:
+            raise e
 
 def find_proc_id(proc_name=None,
                  children_only=False,
@@ -1270,10 +1282,12 @@ def analyze_build_log(comp, log, compiler):
         logger.info("Component {} build complete with {} warnings".format(comp, warncnt))
 
 def is_python_executable(filepath):
-    with open(filepath, "r") as f:
-        first_line = f.readline()
+    if os.path.isfile(filepath):
+        with open(filepath, "r") as f:
+            first_line = f.readline()
 
-    return first_line.startswith("#!") and "python" in first_line
+        return first_line.startswith("#!") and "python" in first_line
+    return False
 
 def get_umask():
     current_umask = os.umask(0)

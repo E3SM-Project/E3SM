@@ -642,8 +642,6 @@ class Grids(GenericXML):
             name = domain_node.get("name")
             if name == 'null':
                 continue
-            nx = self.get_node("nx", root=domain_node).text
-            ny = self.get_node("ny", root=domain_node).text
             desc = self.get_node("desc", root=domain_node).text
             ##support = self.get_optional_node("support", root=domain_node).text
             files = ""

@@ -5,7 +5,6 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
 from xml.dom import minidom
-
 import getpass
 
 logger = logging.getLogger(__name__)
@@ -284,6 +283,7 @@ class GenericXML(object):
         return None
 
     def get_raw_record(self, root=None):
+        logger.debug("writing file {}".format(self.filename))
         if root is None:
             root = self.root
         try:

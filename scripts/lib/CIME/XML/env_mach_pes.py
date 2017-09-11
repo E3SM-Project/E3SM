@@ -20,6 +20,14 @@ class EnvMachPes(EnvBase):
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
+        # Special variable NINST_MAX is used to determine the number of
+        # drivers in multi-driver mode.
+        if vid == "NINST_MAX":
+            value = 1
+            for comp in self._components:
+                value = max(value, self.get_value("NINST_{}".format(comp)))
+            return value
+
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
 
         if "NTASKS" in vid or "ROOTPE" in vid:
@@ -29,6 +37,24 @@ class EnvMachPes(EnvBase):
                 value = -1*value*pes_per_node
 
         return value
+
+    def set_value(self, vid, value, subgroup=None, ignore_type=False):
+        """
+        Set the value of an entry-id field to value
+        Returns the value or None if not found
+        subgroup is ignored in the general routine and applied in specific methods
+        """
+        if vid == "MULTI_DRIVER" and value:
+            ninst_max = self.get_value("NINST_MAX")
+            for comp in self._components:
+                if comp == "CPL":
+                    continue
+                ninst = self.get_value("NINST_{}".format(comp))
+                expect(ninst == ninst_max,
+                       "All components must have the same NINST value in multi_driver mode.  NINST_{}={} shoud be {}".format(comp,ninst,ninst_max))
+
+        return EnvBase.set_value(self, vid, value, subgroup=subgroup, ignore_type=ignore_type)
+
 
     def get_max_thread_count(self, comp_classes):
         ''' Find the maximum number of openmp threads for any component in the case '''
@@ -57,12 +83,16 @@ class EnvMachPes(EnvBase):
 
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
+        maxinst = 1
         for comp in comp_classes:
             ntasks = self.get_value("NTASKS", attribute={"component":comp})
             rootpe = self.get_value("ROOTPE", attribute={"component":comp})
             pstrid = self.get_value("PSTRID", attribute={"component":comp})
+            maxinst = max(maxinst, self.get_value("NINST", attribute={"component":comp}))
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
+        if self.get_value("MULTI_DRIVER"):
+            total_tasks *= maxinst
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):

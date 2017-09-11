@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -28,7 +28,7 @@ def pre_run_check(case, lid, skip_pnl=False):
         shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
-    check_lockedfiles(case.get_value("CASEROOT"))
+    check_lockedfiles(case)
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
@@ -152,21 +152,34 @@ def post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
+    cpl_ninst = 1
+    if case.get_value("MULTI_DRIVER"):
+        cpl_ninst = case.get_value("NINST_MAX")
+    cpl_logs = []
+    if cpl_ninst > 1:
+        for inst in range(cpl_ninst):
+            cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
+    else:
+        cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
+    cpl_logfile = cpl_logs[0]
 
     # find the last model.log and cpl.log
     model_logfile = os.path.join(rundir, model + ".log." + lid)
-    cpl_logfile = os.path.join(rundir, "cpl" + ".log." + lid)
 
     if not os.path.isfile(model_logfile):
         expect(False, "Model did not complete, no {} log file ".format(model_logfile))
-    elif not os.path.isfile(cpl_logfile):
-        expect(False, "Model did not complete, no cpl log file '{}'".format(cpl_logfile))
     elif os.stat(model_logfile).st_size == 0:
         expect(False, "Run FAILED")
     else:
-        with open(cpl_logfile, 'r') as fd:
-            if 'SUCCESSFUL TERMINATION' not in fd.read():
-                expect(False, "Model did not complete - see {} \n ".format(cpl_logfile))
+        count_ok = 0
+        for cpl_logfile in cpl_logs:
+            if not os.path.isfile(cpl_logfile):
+                break
+            with open(cpl_logfile, 'r') as fd:
+                if 'SUCCESSFUL TERMINATION' in fd.read():
+                    count_ok += 1
+        if count_ok != cpl_ninst:
+            expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
 
 ###############################################################################
 def save_logs(case, lid):
@@ -244,7 +257,7 @@ def case_run(case, skip_pnl=False):
            "You are not calling the run script via the submit script. "
            "As a result, short-term archiving will not be called automatically."
            "Please submit your run using the submit script like so:"
-           " ./case.submit")
+           " ./case.submit Time: {}".format(get_timestamp()))
 
     # Forces user to use case.submit if they re-submit
     if case.get_value("TESTCASE") is None:

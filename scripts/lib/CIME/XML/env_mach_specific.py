@@ -5,7 +5,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
-import string
+import string, resource
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class EnvMachSpecific(EnvBase):
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
-        items = ("module_system", "environment_variables", "mpirun", "run_exe","run_misc_suffix")
+        items = ("module_system", "environment_variables", "resource_limits", "mpirun", "run_exe","run_misc_suffix")
         default_run_exe_node = machobj.get_node("default_run_exe")
         default_run_misc_suffix_node = machobj.get_node("default_run_misc_suffix")
 
@@ -84,6 +84,20 @@ class EnvMachSpecific(EnvBase):
         envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
+
+
+        self._get_resources_for_case(compiler, debug, mpilib)
+
+    def _get_resources_for_case(self, compiler, debug, mpilib):
+        resource_nodes = self.get_nodes("resource_limits")
+        if resource_nodes is not None:
+            nodes = self._compute_resource_actions(resource_nodes, compiler, debug, mpilib)
+            for name, val in nodes:
+                attr = getattr(resource, name)
+                limits = resource.getrlimit(attr)
+                logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
+                limits = (int(val), limits[1])
+                resource.setrlimit(attr, limits)
 
     def load_modules(self, modules_to_load):
         module_system = self.get_module_system_type()
@@ -162,6 +176,11 @@ class EnvMachSpecific(EnvBase):
 
     def _compute_env_actions(self, env_nodes, compiler, debug, mpilib):
         return self._compute_actions(env_nodes, "env", compiler, debug, mpilib)
+
+    def _compute_resource_actions(self, resource_nodes, compiler, debug, mpilib):
+        return self._compute_actions(resource_nodes, "resource", compiler, debug, mpilib)
+
+
 
     def _compute_actions(self, nodes, child_tag, compiler, debug, mpilib):
         result = [] # list of tuples ("name", "argument")
