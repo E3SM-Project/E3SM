@@ -445,17 +445,15 @@
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>
-      <node_count>default</node_count>
       <prereq>$BUILD_COMPLETE and not $TEST</prereq>
     </job>
     <job name="case.test">
       <template>template.case.test</template>
-      <node_count>default</node_count>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
     <job name="case.st_archive">
       <template>template.st_archive</template>
-      <node_count>1</node_count>
+      <task_count>1</task_count>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
       <dependency>case.run case.test</dependency>
       <prereq>$DOUT_S</prereq>

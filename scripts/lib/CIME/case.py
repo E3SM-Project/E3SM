@@ -930,7 +930,7 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=pesize, num_nodes=self.num_nodes, walltime=walltime, force_queue=queue, allow_walltime_override=test)
+        env_batch.set_job_defaults(bjobs, pesize=pesize, num_nodes=self.num_nodes, tasks_per_node=self.tasks_per_node, walltime=walltime, force_queue=queue, allow_walltime_override=test)
         self.schedule_rewrite(env_batch)
 
         # Make sure that parallel IO is not specified if total_tasks==1

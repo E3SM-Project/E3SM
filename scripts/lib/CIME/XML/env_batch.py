@@ -9,7 +9,7 @@ from CIME.utils import transform_vars, get_cime_root, convert_to_seconds
 
 from copy import deepcopy
 from collections import OrderedDict
-import stat, re
+import stat, re, math
 
 logger = logging.getLogger(__name__)
 
@@ -162,15 +162,14 @@ class EnvBatch(EnvBase):
         self.num_tasks = total_tasks
         self.tasks_per_numa = tasks_per_node / 2
         self.thread_count = thread_count
-        node_count = self.get_value("node_count", subgroup=job)
+        task_count = self.get_value("task_count", subgroup=job)
 
-        if node_count == "default":
+        if task_count is None:
             self.total_tasks = total_tasks
             self.num_nodes = num_nodes
         else:
-            self.total_tasks = 1
-            self.num_nodes = int(node_count)
-            expect(self.num_nodes == 1, "Invalid setting for node_count, must be '1' or 'default'")
+            self.total_tasks = int(task_count)
+            self.num_nodes = int(math.ceil(float(task_count)/float(tasks_per_node)))
 
         self.pedocumentation = ""
         self.job_id = case.get_value("CASE") + os.path.splitext(job)[1]
@@ -186,7 +185,7 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, batch_jobs, pesize=None, num_nodes=None, walltime=None, force_queue=None, allow_walltime_override=False):
+    def set_job_defaults(self, batch_jobs, pesize=None, num_nodes=None, tasks_per_node=None, walltime=None, force_queue=None, allow_walltime_override=False):
         if self.batchtype is None:
             self.batchtype = self.get_batch_system_type()
 
@@ -194,13 +193,14 @@ class EnvBatch(EnvBase):
             return
 
         for job, jsect in batch_jobs:
-            node_count = jsect["node_count"]
-            if node_count is None or node_count == "default":
+            task_count = jsect["task_count"] if "task_count" in jsect else None
+            if task_count is None:
                 task_count = pesize
                 node_count = num_nodes
             else:
-                task_count = 1
-                node_count = int(node_count)
+                expect(tasks_per_node is not None, "Must provide tasks_per_node for custom task_count job '{}'".format(job))
+                task_count = task_count
+                node_count = int(math.ceil(float(task_count)/float(tasks_per_node)))
 
             if force_queue:
                 if not self.queue_meets_spec(force_queue, task_count, node_count, walltime=walltime, job=job):
