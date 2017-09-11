@@ -1400,5 +1400,6 @@ class Case(object):
     def create_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
                  user_mods_dir=None):
         """ moved to case_clone """
-        create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
-                 user_mods_dir=None)
+        create_case_clone(case, newcase, keepexe=keepexe, mach_dir=mach_dir,
+                          project=project, cime_output_root=cime_output_root,
+                          user_mods_dir=user_mods_dir)
