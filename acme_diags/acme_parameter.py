@@ -24,7 +24,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         # Plotting related
         self.main_title = ''
-        self.backend = 'mpl'
+        self.backend = 'vcs'
         self.save_netcdf = False
         self.output_file = 'output'
         self.output_format = ['png']
