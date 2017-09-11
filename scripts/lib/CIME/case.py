@@ -33,6 +33,7 @@ from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
+from CIME.case_clone import create_case_clone
 
 logger = logging.getLogger(__name__)
 
@@ -1396,3 +1397,8 @@ class Case(object):
                     logger.warn("Leaving broken case dir {}".format(self._caseroot))
 
             raise
+    def create_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
+                 user_mods_dir=None):
+        """ moved to case_clone """
+        create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
+                 user_mods_dir=None)

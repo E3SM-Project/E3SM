@@ -38,7 +38,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
 from CIME.case_submit import check_case
-from CIME.case_clone import create_clone
 from CIME.case_st_archive import archive_last_restarts
 
 import shutil, os, glob
@@ -301,7 +300,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
                 case2_output_root = os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
                                                   self._case1.get_value("CASE"), "case2")
-                self._case2 = create_clone(self._case1,
+                self._case2 = self._case1.create_clone(
                     newcase = self._caseroot2,
                     keepexe = not self._separate_builds,
                     cime_output_root = case2_output_root)

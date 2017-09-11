@@ -4,7 +4,6 @@ CIME ERI test  This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.check_input_data import check_all_input_data
-from CIME.case_clone import create_clone
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ class ERI(SystemTestsCommon):
             if os.path.exists(clone_path):
                 shutil.rmtree(clone_path)
 
-        clone1, clone2 = [create_clone(self._case, clone_path, keepexe=True) for clone_path in [clone1_path, clone2_path]]
+        clone1, clone2 = [self._case.create_clone(clone_path, keepexe=True) for clone_path in [clone1_path, clone2_path]]
         orig_case = self._case
         orig_casevar = orig_case.get_value("CASE")
         #
