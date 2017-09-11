@@ -1896,7 +1896,7 @@
                               desired layout (change '${group}/${USER}' to your
         prefered location). -->
       <DESC> OR-CONDO, CADES-CCSI, os is Linux, 16 pes/nodes, batch system is PBS</DESC>
-      <NODENAME_REGEX>or-condo-*.ornl.gov</NODENAME_REGEX>
+      <NODENAME_REGEX>or-condo</NODENAME_REGEX>
       <TESTS>acme_developer</TESTS>
       <OS>LINUX</OS>
       <COMPILERS>gnu,intel</COMPILERS>

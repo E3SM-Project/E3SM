@@ -1,0 +1,18 @@
+./xmlchange CLM_USE_PETSC=TRUE
+./xmlchange CLM_PFLOTRAN_COUPLED=TRUE
+./xmlchange CLM_PFLOTRAN_COLMODE=TRUE
+./xmlchange ATM_DOMAIN_FILE='domain.lnd.fv1.9x2.5_gx1v6.090206_vji.nc'
+./xmlchange LND_DOMAIN_FILE='domain.lnd.fv1.9x2.5_gx1v6.090206_vji.nc'
+
+DIN_LOC_ROOT=$(./xmlquery DIN_LOC_ROOT -value)
+RUNDIR=$(./xmlquery RUNDIR -value)
+PFLOTRAN_INPUTDIR=lnd/clm2/pflotran
+PFLOTRAN_PREFIX=pflotran_clm
+
+if [ ! -f ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}/${PFLOTRAN_PREFIX}.in ]; then
+        svn export --force https://acme-svn2.ornl.gov/acme-repo/${PFLOTRAN_INPUTDIR} ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}
+fi
+
+mkdir -p ${RUNDIR}
+cp ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}/${PFLOTRAN_PREFIX}.in ${RUNDIR}
+cp ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}/CLM-CN_database.dat ${RUNDIR}
