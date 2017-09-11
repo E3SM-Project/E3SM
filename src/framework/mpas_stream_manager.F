@@ -1470,7 +1470,6 @@ module mpas_stream_manager
             end if
         end if
 
-        
         if ( threadNum == 0 ) then
            if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
                if (associated(stream)) then
@@ -1743,7 +1742,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_int
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -1807,7 +1806,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_char
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -1917,7 +1916,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_logical
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -2994,7 +2993,7 @@ module mpas_stream_manager
                    ! Look for exact record (in the case of overwriting)
                    ! This also gets the number of records in the file.
                    stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords, local_ierr/))
+                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
     
                    if ( stream % nRecords == 0 ) then
                        ! If we didn't find an exact time, set record to point to the end of the file.
@@ -3079,7 +3078,6 @@ module mpas_stream_manager
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
                        stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                       STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
                        STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
            
                        if ( stream % nRecords == 0 ) then
@@ -5914,7 +5912,6 @@ subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, package
-    integer :: idirection
     integer :: ierr
 
 
