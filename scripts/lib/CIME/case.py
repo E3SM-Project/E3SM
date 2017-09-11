@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy import deepcopy
-import glob, os, shutil, math, string
+import glob, os, shutil, math
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
@@ -32,8 +32,6 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
-from CIME.simple_compare            import compare_files
-from CIME.case_setup import case_setup
 from CIME.aprun import get_aprun_cmd_for_case
 
 logger = logging.getLogger(__name__)
@@ -1147,142 +1145,6 @@ class Case(object):
             return None
         else:
             return comp_user_mods
-
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
-                     user_mods_dir=None):
-        """
-        Create a case clone
-        """
-        if cime_output_root is None:
-            cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
-
-        newcaseroot = os.path.abspath(newcase)
-        expect(not os.path.isdir(newcaseroot),
-               "New caseroot directory {} already exists".format(newcaseroot))
-        newcasename = os.path.basename(newcaseroot)
-        newcase_cimeroot = os.path.abspath(get_cime_root())
-
-        # create clone from self to case
-        clone_cimeroot = self.get_value("CIMEROOT")
-        if newcase_cimeroot != clone_cimeroot:
-            logger.warning(" case  CIMEROOT is {} ".format(newcase_cimeroot))
-            logger.warning(" clone CIMEROOT is {} ".format(clone_cimeroot))
-            logger.warning(" It is NOT recommended to clone cases from different versions of CIME.")
-
-        # *** create case object as deepcopy of clone object ***
-        srcroot = os.path.join(newcase_cimeroot,"..")
-        newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
-        newcase.set_value("CIMEROOT", newcase_cimeroot)
-
-        # if we are cloning to a different user modify the output directory
-        olduser = self.get_value("USER")
-        newuser = os.environ.get("USER")
-        if olduser != newuser:
-            cime_output_root = string.replace(cime_output_root, olduser, newuser)
-            newcase.set_value("USER", newuser)
-        newcase.set_value("CIME_OUTPUT_ROOT", cime_output_root)
-
-        # try to make the new output directory and raise an exception
-        # on any error other than directory already exists.
-        if os.path.isdir(cime_output_root):
-            expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable"
-                   "by this user.  Use the --cime-output-root flag to provide a writable "
-                   "scratch directory".format(cime_output_root))
-        else:
-            try:
-                os.makedirs(cime_output_root)
-            except:
-                if not os.path.isdir(cime_output_root):
-                    raise
-
-        # determine if will use clone executable or not
-        if keepexe:
-            orig_exeroot = self.get_value("EXEROOT")
-            newcase.set_value("EXEROOT", orig_exeroot)
-            newcase.set_value("BUILD_COMPLETE","TRUE")
-            orig_bld_complete = self.get_value("BUILD_COMPLETE")
-            if not orig_bld_complete:
-                logger.warn("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
-                logger.warn("Avoid this message by building case one before you clone.\n")
-        else:
-            newcase.set_value("BUILD_COMPLETE","FALSE")
-
-        # set machdir
-        if mach_dir is not None:
-            newcase.set_value("MACHDIR", mach_dir)
-
-        # Set project id
-        # Note: we do not just copy this from the clone because it seems likely that
-        # users will want to change this sometimes, especially when cloning another
-        # user's case. However, note that, if a project is not given, the fallback will
-        # be to copy it from the clone, just like other xml variables are copied.
-        if project is None:
-            project = self.get_value("PROJECT", subgroup="case.run")
-        if project is not None:
-            newcase.set_value("PROJECT", project)
-
-        # create caseroot
-        newcase.create_caseroot(clone=True)
-        newcase.flush(flushall=True)
-
-        # copy user_ files
-        cloneroot = self._caseroot
-        files = glob.glob(cloneroot + '/user_*')
-
-        for item in files:
-            shutil.copy(item, newcaseroot)
-
-        # copy SourceMod and Buildconf files
-        # if symlinks exist, copy rather than follow links
-        for casesub in ("SourceMods", "Buildconf"):
-            shutil.copytree(os.path.join(cloneroot, casesub),
-                            os.path.join(newcaseroot, casesub),
-                            symlinks=True)
-
-        # lock env_case.xml in new case
-        lock_file("env_case.xml", newcaseroot)
-
-        # apply user_mods if appropriate
-        newcase_root = newcase.get_value("CASEROOT")
-        if user_mods_dir is not None:
-            if keepexe:
-                # If keepexe CANNOT change any env_build.xml variables - so make a temporary copy of
-                # env_build.xml and verify that it has not been modified
-                shutil.copy(os.path.join(newcaseroot, "env_build.xml"),
-                            os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
-
-            # Now apply contents of user_mods directory
-            apply_user_mods(newcase_root, user_mods_dir, keepexe=keepexe)
-
-            # Determine if env_build.xml has changed
-            if keepexe:
-                success, comment = compare_files(os.path.join(newcaseroot, "env_build.xml"),
-                                                 os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
-                if not success:
-                    logger.warn(comment)
-                    shutil.rmtree(newcase_root)
-                    expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option: \n "
-                           "Failed to clone case, removed {}\n".format(newcase_root))
-
-        # if keep executable, then remove the new case SourceMods directory and link SourceMods to
-        # the clone directory
-        if keepexe:
-            shutil.rmtree(os.path.join(newcase_root, "SourceMods"))
-            os.symlink(os.path.join(cloneroot, "SourceMods"),
-                       os.path.join(newcase_root, "SourceMods"))
-
-        # Update README.case
-        fclone   = open(cloneroot + "/README.case", "r")
-        fnewcase = open(newcaseroot  + "/README.case", "a")
-        fnewcase.write("\n    *** original clone README follows ****")
-        fnewcase.write("\n " +  fclone.read())
-
-        clonename = self.get_value("CASE")
-        logger.info(" Successfully created new case {} from clone case {} ".format(newcasename, clonename))
-
-        case_setup(newcase)
-
-        return newcase
 
     def submit_jobs(self, no_batch=False, job=None, skip_pnl=False,
                     mail_user=None, mail_type='never', batch_args=None,
