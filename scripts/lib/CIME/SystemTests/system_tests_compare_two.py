@@ -301,7 +301,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 case2_output_root = os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
                                                   self._case1.get_value("CASE"), "case2")
                 self._case2 = self._case1.create_clone(
-                    newcase = self._caseroot2,
+                    self._caseroot2,
                     keepexe = not self._separate_builds,
                     cime_output_root = case2_output_root)
                 self._setup_cases()

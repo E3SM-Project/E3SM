@@ -57,6 +57,12 @@ ERRPUT: %s
     return output
 
 ###############################################################################
+def assert_test_status(test_obj, test_name, test_status_obj, test_phase, expected_stat):
+###############################################################################
+    test_status = test_status_obj.get_status(test_phase)
+    test_obj.assertEqual(test_status, expected_stat, msg="Problem with {}: for phase '{}': has status '{}', expected '{}'".format(test_name, test_phase, test_status, expected_stat))
+
+###############################################################################
 class A_RunUnitTests(unittest.TestCase):
 ###############################################################################
 
@@ -900,33 +906,35 @@ class O_TestTestScheduler(TestCreateTestCommon):
             self.assertEqual(len(log_files), 1, "Expected exactly one TestStatus.log file, found %d" % len(log_files))
             log_file = log_files[0]
             if (test_name == build_fail_test):
-                self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+
+
+                assert_test_status(self, test_name, ts, MODEL_BUILD_PHASE, TEST_FAIL_STATUS)
                 data = open(log_file, "r").read()
                 self.assertTrue("Intentional fail for testing infrastructure" in data,
                                 "Broken test did not report build error:\n%s" % data)
             elif (test_name == build_fail_exc_test):
                 data = open(log_file, "r").read()
-                self.assertEqual(ts.get_status(SHAREDLIB_BUILD_PHASE), TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, SHAREDLIB_BUILD_PHASE, TEST_FAIL_STATUS)
                 self.assertTrue("Exception from init" in data,
                                 "Broken test did not report build error:\n%s" % data)
             elif (test_name == run_fail_test):
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_FAIL_STATUS)
             elif (test_name == run_fail_exc_test):
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_FAIL_STATUS)
                 data = open(log_file, "r").read()
                 self.assertTrue("Exception from run_phase" in data,
                                 "Broken test did not report run error:\n%s" % data)
             elif (test_name == mem_fail_test):
-                self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_FAIL_STATUS)
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS)
+                assert_test_status(self, test_name, ts, MEMLEAK_PHASE, TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
             elif (test_name == test_diff_test):
-                self.assertEqual(ts.get_status("COMPARE_base_rest"), TEST_FAIL_STATUS, msg="Problem with %s" % test_diff_test)
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS)
+                assert_test_status(self, test_name, ts, "COMPARE_base_rest", TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS, msg=test_name)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
                 if (test_name == mem_pass_test):
-                    self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS, msg=test_name)
+                    assert_test_status(self, test_name, ts, MEMLEAK_PHASE, TEST_PASS_STATUS)
 
     ###########################################################################
     def test_c_use_existing(self):
@@ -960,18 +968,18 @@ class O_TestTestScheduler(TestCreateTestCommon):
             ts = TestStatus(test_dir=casedir)
             test_name = ts.get_name()
             if test_name == build_fail_test:
-                self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, MODEL_BUILD_PHASE, TEST_FAIL_STATUS)
                 with TestStatus(test_dir=casedir) as ts:
                     ts.set_status(MODEL_BUILD_PHASE, TEST_PEND_STATUS)
             elif test_name == run_fail_test:
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_FAIL_STATUS)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_FAIL_STATUS)
                 with TestStatus(test_dir=casedir) as ts:
                     ts.set_status(SUBMIT_PHASE, TEST_PEND_STATUS)
             else:
                 self.assertTrue(test_name == pass_test)
-                self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_PASS_STATUS)
-                self.assertEqual(ts.get_status(SUBMIT_PHASE), TEST_PASS_STATUS)
-                self.assertEqual(ts.get_status(RUN_PHASE), TEST_PASS_STATUS)
+                assert_test_status(self, test_name, ts, MODEL_BUILD_PHASE, TEST_PASS_STATUS)
+                assert_test_status(self, test_name, ts, SUBMIT_PHASE, TEST_PASS_STATUS)
+                assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
 
         os.environ["TESTBUILDFAIL_PASS"] = "True"
         os.environ["TESTRUNFAIL_PASS"] = "True"
@@ -991,9 +999,10 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
-            self.assertEqual(ts.get_status(MODEL_BUILD_PHASE), TEST_PASS_STATUS)
-            self.assertEqual(ts.get_status(SUBMIT_PHASE),      TEST_PASS_STATUS)
-            self.assertEqual(ts.get_status(RUN_PHASE),         TEST_PASS_STATUS)
+            test_name = ts.get_name()
+            assert_test_status(self, test_name, ts, MODEL_BUILD_PHASE, TEST_PASS_STATUS)
+            assert_test_status(self, test_name, ts, SUBMIT_PHASE, TEST_PASS_STATUS)
+            assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
 
 ###############################################################################
 class P_TestJenkinsGenericJob(TestCreateTestCommon):

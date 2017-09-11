@@ -788,7 +788,8 @@
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
   <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
-  <CCSM_CPRNC>/projects/ccsm/cprnc/build.new/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+  <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+  <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
@@ -796,7 +797,7 @@
   <PES_PER_NODE>16</PES_PER_NODE>
   <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <PROJECT>fy150001P</PROJECT>
+  <PROJECT>fy150001</PROJECT>
 
   <mpirun mpilib="default">
     <executable>mpiexec</executable>
@@ -844,6 +845,7 @@
   <environment_variables mpilib="!mpi-serial">
     <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
   </environment_variables>
+
 </machine>
 
 <machine MACH="ghost">
