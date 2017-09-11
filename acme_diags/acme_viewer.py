@@ -223,13 +223,16 @@ def create_viewer(root_dir, parameters, ext):
                      viewer.add_row(row_name)
                      viewer.add_col(ROW_INFO[set_num][group][row_name]['descr'])  # the description, currently the var
 
-                for col_season in ROW_INFO[set_num][group][row_name]: 
-                    fnm = ROW_INFO[set_num][group][row_name][col_season]
-                    formatted_files = []
-                    if parameters[0].save_netcdf:
-                        nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
-                        formatted_files = [{'url': f, 'title': f} for f in nc_files]
-                    viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
+                for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
+                    if col_season not in ROW_INFO[set_num][group][row_name]:
+                        viewer.add_col('-----', is_file=True, title='-----')
+                    else:
+                        fnm = ROW_INFO[set_num][group][row_name][col_season]
+                        formatted_files = []
+                        if parameters[0].save_netcdf:
+                            nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
+                            formatted_files = [{'url': f, 'title': f} for f in nc_files]
+                        viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
 
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
