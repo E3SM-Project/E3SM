@@ -39,7 +39,7 @@
                         "case_id": "CERES-EBAF-TOA-v4.0",
                         "variables": ["SOLIN"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
@@ -47,7 +47,7 @@
                         "case_id": "CERES-EBAF-TOA-v4.0",
                         "variables": ["ALBEDO"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
@@ -55,55 +55,7 @@
                         "case_id": "CERES-EBAF-TOA-v4.0",
                         "variables": ["ALBEDOC"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
-                },
-                {
-                        "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-TOA-v4.0",
-                        "variables": ["FLUT"],
-                        "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
-                },
-                {
-                        "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-TOA-v4.0",
-                        "variables": ["FLUTC"],
-                        "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
-                },
-                {
-                        "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-TOA-v4.0",
-                        "variables": ["FSNTOA"],
-                        "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
-                },
-                {
-                        "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-TOA-v4.0",
-                        "variables": ["FSNTOAC"],
-                        "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
-                },
-                {
-                        "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-TOA-v4.0",
-                        "variables": ["SWCF"],
-                        "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
-                },
-                {
-                        "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-TOA-v4.0",
-                        "variables": ["LWCF"],
-                        "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
@@ -111,94 +63,150 @@
                         "case_id": "CERES-EBAF-TOA-v4.0",
                         "variables": ["RESTOM"],
                         "ref_name": "ceres_ebaf_toa_v4.0",
-                        "reference_name": "CERES-EBAF Jan 2000-Dec 2015",
+                        "reference_name": "CERES-EBAF 2001-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FLUT"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FLUTC"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FSNTOA"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["FSNTOAC"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["SWCF"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["LWCF"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-TOA-v4.0",
+                        "variables": ["NETCF"],
+                        "ref_name": "ceres_ebaf_toa_v4.0",
+                        "reference_name": "CERES-EBAF 2001-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
+                },
+                {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["ALBEDO_SRF"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["SWCFSRF"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["LWCFSRF"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FLDS"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FLDSC"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FLNS"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FLNSC"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FSDS"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FSDSC"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FSNS"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "CERES-EBAF-surface-v2.8",
+                        "case_id": "CERES-EBAF-surface-v4.0",
                         "variables": ["FSNSC"],
-                        "ref_name": "ceres_ebaf_surface_v2.8",
+                        "ref_name": "ceres_ebaf_surface_v4.0",
                         "reference_name": "CERES-EBAF March 2000-AUG 2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"]
                 },
@@ -242,7 +250,7 @@
                         "ref_name": "ERA-Interim",
                         "reference_name": "ERA-Interim Reanalysis 1979-2015",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "plevs": [500.0, 300.0]
+                        "plevs": [500.0]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
@@ -285,7 +293,7 @@
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
-                        "plevs": [300.0, 500.0]
+                        "plevs": [500.0]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
@@ -298,7 +306,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_ISCCP",
+                        "case_id": "Cloud ISCCP",
                         "variables": ["CLDTOT_TAU1.3_ISCCP"],
                         "ref_name": "ISCCPCOSP",
                         "reference_name": "ISCCP 1983 Jul-2008 Jun",
@@ -306,7 +314,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_ISCCP",
+                        "case_id": "Cloud ISCCP",
                         "variables": ["CLDTOT_TAU1.3_9.4_ISCCP"],
                         "ref_name": "ISCCPCOSP",
                         "reference_name": "ISCCP 1983 Jul-2008 Jun",
@@ -314,7 +322,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_ISCCP",
+                        "case_id": "Cloud ISCCP",
                         "variables": ["CLDTOT_TAU9.4_ISCCP"],
                         "ref_name": "ISCCPCOSP",
                         "reference_name": "ISCCP 1983 Jul-2008 Jun",
@@ -322,7 +330,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MISR",
+                        "case_id": "Cloud MISR",
                         "variables": ["CLDTOT_TAU1.3_MISR"],
                         "ref_name": "MISRCOSP",
                         "reference_name": "MISR Simulator",
@@ -330,7 +338,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MISR",
+                        "case_id": "Cloud MISR",
                         "variables": ["CLDTOT_TAU1.3_9.4_MISR"],
                         "ref_name": "MISRCOSP",
                         "reference_name": "MISR Simulator",
@@ -338,7 +346,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MISR",
+                        "case_id": "Cloud MISR",
                         "variables": ["CLDTOT_TAU9.4_MISR"],
                         "ref_name": "MISRCOSP",
                         "reference_name": "MISR Simulator",
@@ -346,7 +354,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MISR",
+                        "case_id": "Cloud MISR",
                         "variables": ["CLDLOW_TAU1.3_MISR"],
                         "ref_name": "MISRCOSP",
                         "reference_name": "MISR Simulator",
@@ -354,7 +362,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MISR",
+                        "case_id": "Cloud MISR",
                         "variables": ["CLDLOW_TAU1.3_9.4_MISR"],
                         "ref_name": "MISRCOSP",
                         "reference_name": "MISR Simulator",
@@ -362,7 +370,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MISR",
+                        "case_id": "Cloud MISR",
                         "variables": ["CLDLOW_TAU9.4_MISR"],
                         "ref_name": "MISRCOSP",
                         "reference_name": "MISR Simulator",
@@ -370,7 +378,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MODIS",
+                        "case_id": "Cloud MODIS",
                         "variables": ["CLDTOT_TAU1.3_MODIS"],
                         "ref_name": "MODISCOSP",
                         "reference_name": "MODIS Simulator",
@@ -378,7 +386,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MODIS",
+                        "case_id": "Cloud MODIS",
                         "variables": ["CLDTOT_TAU1.3_9.4_MODIS"],
                         "ref_name": "MODISCOSP",
                         "reference_name": "MODIS Simulator",
@@ -386,7 +394,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MODIS",
+                        "case_id": "Cloud MODIS",
                         "variables": ["CLDTOT_TAU9.4_MODIS"],
                         "ref_name": "MODISCOSP",
                         "reference_name": "MODIS Simulator",
@@ -394,7 +402,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MODIS",
+                        "case_id": "Cloud MODIS",
                         "variables": ["CLDHGH_TAU1.3_MODIS"],
                         "ref_name": "MODISCOSP",
                         "reference_name": "MODIS Simulator",
@@ -402,7 +410,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MODIS",
+                        "case_id": "Cloud MODIS",
                         "variables": ["CLDHGH_TAU1.3_9.4_MODIS"],
                         "ref_name": "MODISCOSP",
                         "reference_name": "MODIS Simulator",
@@ -410,7 +418,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_MODIS",
+                        "case_id": "Cloud MODIS",
                         "variables": ["CLDHGH_TAU9.4_MODIS"],
                         "ref_name": "MODISCOSP",
                         "reference_name": "MODIS Simulator",
@@ -418,7 +426,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_Calipso",
+                        "case_id": "Cloud Calipso",
                         "variables": ["CLDHGH_CAL"],
                         "ref_name": "CALIPSOCOSP",
                         "reference_name": "CALIPSO-GOCCP Jan2007-Jan2010",
@@ -426,7 +434,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_Calipso",
+                        "case_id": "Cloud Calipso",
                         "variables": ["CLDLOW_CAL"],
                         "ref_name": "CALIPSOCOSP",
                         "reference_name": "CALIPSO-GOCCP Jan2007-Jan2010",
@@ -434,7 +442,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_Calipso",
+                        "case_id": "Cloud Calipso",
                         "variables": ["CLDMED_CAL"],
                         "ref_name": "CALIPSOCOSP",
                         "reference_name": "CALIPSO-GOCCP Jan2007-Jan2010",
@@ -442,7 +450,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_Calipso",
+                        "case_id": "Cloud Calipso",
                         "variables": ["CLDTOT_CAL"],
                         "ref_name": "CALIPSOCOSP",
                         "reference_name": "CALIPSO-GOCCP Jan2007-Jan2010",
@@ -450,7 +458,7 @@
                 },
                 {
                         "sets": ["zonal_mean_xy"],
-                        "case_id": "tier1b_cloud_SSM/I",
+                        "case_id": "Cloud SSM/I",
                         "variables": ["TGCLDLWP_OCN"],
                         "ref_name": "SSMI",
                         "reference_name": "SSM/I (Wentz) 1987-2000",
