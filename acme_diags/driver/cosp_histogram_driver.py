@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import cdms2
-import MV2
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
@@ -36,9 +35,10 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
 
     return metrics_dict
 
+
 def run_diag(parameter):
-    reference_data_path = parameter.reference_data_path
-    test_data_path = parameter.test_data_path
+    parameter.reference_data_path
+    parameter.test_data_path
 
     variables = parameter.variables
     seasons = parameter.seasons
@@ -51,7 +51,8 @@ def run_diag(parameter):
             filename2 = utils.get_ref_filename(parameter, season)
         except IOError as e:
             print(e)
-            # the file for the current parameters wasn't found, move to next parameters
+            # the file for the current parameters wasn't found, move to next
+            # parameters
             continue
 
         print('test file: {}'.format(filename1))
@@ -60,18 +61,19 @@ def run_diag(parameter):
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
-        #save land/ocean fraction for masking  
+        # save land/ocean fraction for masking
         try:
             land_frac = f_mod('LANDFRAC')
             ocean_frac = f_mod('OCNFRAC')
-        except:
-            mask_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'acme_ne30_ocean_land_mask.nc')
-            f0 =  cdms2.open(mask_path)
+        except BaseException:
+            mask_path = os.path.join(
+                sys.prefix, 'share', 'acme_diags', 'acme_ne30_ocean_land_mask.nc')
+            f0 = cdms2.open(mask_path)
             land_frac = f0('LANDFRAC')
             ocean_frac = f0('OCNFRAC')
             f0.close()
 
-        for var in variables: 
+        for var in variables:
             print('Variable: {}'.format(var))
             parameter.var_id = var
             mv1 = acme.process_derived_var(
@@ -79,16 +81,18 @@ def run_diag(parameter):
             mv2 = acme.process_derived_var(
                 var, acme.derived_variables, f_obs, parameter)
 
-            parameter.viewer_descr[var] = mv1.long_name if hasattr(mv1, 'long_name') else 'No long_name attr in test data.'
+            parameter.viewer_descr[var] = mv1.long_name if hasattr(
+                mv1, 'long_name') else 'No long_name attr in test data.'
 
-            #select region
+            # select region
             if len(regions) == 0:
                 regions = ['global']
 
             for region in regions:
                 print("Selected region: {}".format(region))
 
-                mv1_domain, mv2_domain = utils.select_region(region, mv1, mv2, land_frac,ocean_frac,parameter)
+                mv1_domain, mv2_domain = utils.select_region(
+                    region, mv1, mv2, land_frac, ocean_frac, parameter)
 
                 parameter.output_file = '-'.join(
                     [ref_name, var, season, region])
@@ -102,11 +106,11 @@ def run_diag(parameter):
                 mv2_domain_mean.id = var
                 diff.id = var
                 parameter.backend = 'cartopy'
-                plot(parameter.current_set, mv2_domain_mean, mv1_domain_mean, diff, {}, parameter)
+                plot(parameter.current_set, mv2_domain_mean,
+                     mv1_domain_mean, diff, {}, parameter)
 #                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 #                    utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
-    
-            
+
         f_obs.close()
         f_mod.close()
     return parameter

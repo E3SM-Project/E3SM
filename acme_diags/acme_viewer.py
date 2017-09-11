@@ -1,7 +1,5 @@
 import os
 import sys
-import glob
-import urllib2
 import fnmatch
 import datetime
 import shutil
@@ -9,9 +7,9 @@ import collections
 from bs4 import BeautifulSoup
 import acme_diags
 from cdp.cdp_viewer import OutputViewer
-from acme_diags.driver.utils import get_output_dir, get_set_name
+from acme_diags.driver.utils import get_set_name
 
-# Dict of 
+# Dict of
 # {
 #   set_num: {
 #       case_id: {
@@ -26,14 +24,16 @@ from acme_diags.driver.utils import get_output_dir, get_set_name
 # needed so we can have a cols in order of ANN, DJF, MAM, JJA, SON
 ROW_INFO = collections.OrderedDict()
 
+
 def _copy_acme_logo(root_dir):
     """Copy over ACME_Logo.png to root_dir/viewer"""
     src_pth = os.path.join(sys.prefix, "share", "acme_diags", "ACME_Logo.png")
     dst_path = os.path.join(root_dir, "viewer")
     shutil.copy(src_pth, dst_path)
 
+
 def _get_acme_logo_path(root_dir, html_path):
-    """Based of the root dir of the viewer and the current 
+    """Based of the root dir of the viewer and the current
     dir of the html, get the relative path of the ACME logo"""
     # when current_dir = myresults-07-11/viewer/index.html, the image is in myresults-07-11/viewer/viewer/ACME_Logo.png
     # so there's no need to move some number of directories up.
@@ -46,27 +46,29 @@ def _get_acme_logo_path(root_dir, html_path):
     pth = os.path.join(pth, 'viewer', 'ACME_Logo.png')
     return pth
 
+
 def _add_header(path, version, model_name, time, logo_path):
     """Add the header to the html located at path"""
 
     # We're inserting the following in the body under navbar navbar-default
     # <div id="acme-header" style="background-color:#dbe6c5; float:left; width:45%">
-	# 	<p style="margin-left:5em">
-	# 		<b>ACME Diagnostics Package [VERSION]</b><br>
-	# 		Test model name: [SOMETHING]<br>
-	# 		Date created: [DATE]<br>
-	# 	</p>
-	# </div>
-	# <div id="acme-header2" style="background-color:#dbe6c5; float:right; width:55%">
-	# 	<img src="ACME_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
-	# </div>
-    
+    # 	<p style="margin-left:5em">
+    # 		<b>ACME Diagnostics Package [VERSION]</b><br>
+    # 		Test model name: [SOMETHING]<br>
+    # 		Date created: [DATE]<br>
+    # 	</p>
+    # </div>
+    # <div id="acme-header2" style="background-color:#dbe6c5; float:right; width:55%">
+    # 	<img src="ACME_logo.png" alt="logo" style="width:161px; height:70px; background-color:#dbe6c5">
+    # </div>
+
     soup = BeautifulSoup(open(path), "lxml")
     old_header = soup.find_all("nav", "navbar navbar-default")
     if len(old_header) is not 0:
         old_header[0].decompose()
 
-    header_div = soup.new_tag("div", id="acme-header", style="background-color:#dbe6c5; float:left; width:45%")
+    header_div = soup.new_tag(
+        "div", id="acme-header", style="background-color:#dbe6c5; float:left; width:45%")
     p = soup.new_tag("p", style="margin-left:5em")
 
     bolded_title = soup.new_tag("b")
@@ -82,14 +84,17 @@ def _add_header(path, version, model_name, time, logo_path):
     header_div.append(p)
     soup.body.insert(0, header_div)
 
-    img_div = soup.new_tag("div", id="acme-header2", style="background-color:#dbe6c5; float:right; width:55%")
-    img = soup.new_tag("img", src=logo_path, alt="logo", style="width:161px; height:71px; background-color:#dbe6c5")
+    img_div = soup.new_tag("div", id="acme-header2",
+                           style="background-color:#dbe6c5; float:right; width:55%")
+    img = soup.new_tag("img", src=logo_path, alt="logo",
+                       style="width:161px; height:71px; background-color:#dbe6c5")
     img_div.append(img)
     soup.body.insert(1, img_div)
 
     html = soup.prettify("utf-8")
     with open(path, "wb") as f:
         f.write(html)
+
 
 def h1_to_h3(path):
     """Change any <h1> to <h3> because h1 is just too big"""
@@ -114,12 +119,14 @@ def _extras(root_dir, parameters):
             pth = os.path.join(root, filename)
             index_files.append(pth)
     dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    img_path = os.path.join('viewer', 'ACME_Logo.png')
+    os.path.join('viewer', 'ACME_Logo.png')
 
     for f in index_files:
         path = _get_acme_logo_path(root_dir, f)
-        _add_header(f, acme_diags.__version__, parameters[0].test_name, dt, path)
+        _add_header(f, acme_diags.__version__,
+                    parameters[0].test_name, dt, path)
         h1_to_h3(f)
+
 
 def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
@@ -140,11 +147,13 @@ def _add_pages_and_top_row(viewer, parameters):
                 col_labels.append(s)
         viewer.add_page("{}".format(_better_page_name(set_num)), col_labels)
 
+
 def _get_description(var, parameters):
     """Get the description for the variable from the parameters"""
     if hasattr(parameters, 'viewer_descr') and var in parameters.viewer_descr:
         return parameters.viewer_descr[var]
     return var
+
 
 def _better_page_name(old_name):
     """Use a longer, more descriptive name for the pages."""
@@ -161,6 +170,7 @@ def _better_page_name(old_name):
     else:
         return old_name
 
+
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
     extension ext and create the viewer in root_dir."""
@@ -172,9 +182,6 @@ def create_viewer(root_dir, parameters, ext):
         for set_num in parameter.sets:
             set_num = get_set_name(set_num)
 
-            # Add all of the files with extension ext from the case_id/ folder'
-            pth = get_output_dir(set_num, parameter)  # ex: myresults/lat_lon
-
             # Filenames are like:
             # ref_name-variable-season-region
             # or
@@ -183,57 +190,70 @@ def create_viewer(root_dir, parameters, ext):
             for var in parameter.variables:
                 for season in parameter.seasons:
                     for region in parameter.regions:
-                        row_name_and_fnm = []  # because some parameters have plevs, there might be more than one row_name, fnm pair
-
+                        # because some parameters have plevs, there might be
+                        # more than one row_name, fnm pair
+                        row_name_and_fnm = []
 
                         if parameter.plevs == []:  # 2d variables
                             row_name = '{} {}'.format(var, region)
-                            fnm = '{}-{}-{}-{}'.format(ref_name, var, season, region)
+                            fnm = '{}-{}-{}-{}'.format(ref_name,
+                                                       var, season, region)
                             row_name_and_fnm.append((row_name, fnm))
                         else:  # 3d variables
                             for plev in parameter.plevs:
-                                row_name = '{} {} {}'.format(var, str(int(plev)) + ' mb', region)
-                                fnm = '{}-{}-{}-{}-{}'.format(ref_name, var, int(plev), season, region)
+                                row_name = '{} {} {}'.format(
+                                    var, str(int(plev)) + ' mb', region)
+                                fnm = '{}-{}-{}-{}-{}'.format(
+                                    ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
 
                         for row_name, fnm in row_name_and_fnm:
                             if parameter.case_id not in ROW_INFO[set_num]:
-                                ROW_INFO[set_num][parameter.case_id] = collections.OrderedDict()
+                                ROW_INFO[set_num][parameter.case_id] = collections.OrderedDict(
+                                )
                             if row_name not in ROW_INFO[set_num][parameter.case_id]:
-                                ROW_INFO[set_num][parameter.case_id][row_name] = collections.OrderedDict()
-                                ROW_INFO[set_num][parameter.case_id][row_name]['descr'] = _get_description(var, parameter)
+                                ROW_INFO[set_num][parameter.case_id][row_name] = collections.OrderedDict(
+                                )
+                                ROW_INFO[set_num][parameter.case_id][row_name]['descr'] = _get_description(
+                                    var, parameter)
                             # format fnm to support relative paths
-                            ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join('..', '{}'.format(set_num), parameter.case_id, fnm)
+                            ROW_INFO[set_num][parameter.case_id][row_name][season] = os.path.join(
+                                '..', '{}'.format(set_num), parameter.case_id, fnm)
 
-    # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA, SON order
+    # add all of the files in from the case_id/ folder in ANN, DJF, MAM, JJA,
+    # SON order
     for set_num in ROW_INFO:
         viewer.set_page("{}".format(_better_page_name(set_num)))
 
         for group in ROW_INFO[set_num]:
-            try:             
+            try:
                 viewer.set_group(group)
             except RuntimeError:
                 viewer.add_group(group)
 
             for row_name in ROW_INFO[set_num][group]:
                 try:
-                     viewer.set_row(row_name)
+                    viewer.set_row(row_name)
                 except RuntimeError:
-                     # row of row_name wasn't in the viewer, so add it
-                     viewer.add_row(row_name)
-                     viewer.add_col(ROW_INFO[set_num][group][row_name]['descr'])  # the description, currently the var
+                    # row of row_name wasn't in the viewer, so add it
+                    viewer.add_row(row_name)
+                    # the description, currently the var
+                    viewer.add_col(ROW_INFO[set_num][group][row_name]['descr'])
 
-                for col_season in viewer.page.columns[1:]:  # [1:] is to ignore 'Description' col 
+                # [1:] is to ignore 'Description' col
+                for col_season in viewer.page.columns[1:]:
                     if col_season not in ROW_INFO[set_num][group][row_name]:
                         viewer.add_col('-----', is_file=True, title='-----')
                     else:
                         fnm = ROW_INFO[set_num][group][row_name][col_season]
                         formatted_files = []
                         if parameters[0].save_netcdf:
-                            nc_files = [fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
-                            formatted_files = [{'url': f, 'title': f} for f in nc_files]
-                        viewer.add_col(fnm + '.' + ext, is_file=True, title=col_season, other_files=formatted_files)
+                            nc_files = [
+                                fnm + nc_ext for nc_ext in ['_test.nc', '_ref.nc', '_diff.nc']]
+                            formatted_files = [
+                                {'url': f, 'title': f} for f in nc_files]
+                        viewer.add_col(fnm + '.' + ext, is_file=True,
+                                       title=col_season, other_files=formatted_files)
 
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
-

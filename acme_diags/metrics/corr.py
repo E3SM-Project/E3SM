@@ -4,6 +4,7 @@ import numpy
 import genutil
 import cdp.cdp_metric
 
+
 class CORR(cdp.cdp_metric.CDPMetric):
     def __init__(self):
         metric_path = __file__
@@ -12,7 +13,8 @@ class CORR(cdp.cdp_metric.CDPMetric):
     def compute(self, model, obs, axis='xy'):
         corr = -numpy.infty
         try:
-            corr = float(genutil.statistics.correlation(model, obs, axis=axis, weights='generate'))
-        except Exception, err:
+            corr = float(genutil.statistics.correlation(
+                model, obs, axis=axis, weights='generate'))
+        except Exception as err:
             print(err)
         return corr

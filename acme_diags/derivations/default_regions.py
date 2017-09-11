@@ -1,5 +1,4 @@
 import cdutil
-from cdms2.selectors import Selector
 
 regions_specs = {
     'NHEX': {'domain': cdutil.region.domain(latitude=(30., 90, 'ccb'))},
@@ -20,13 +19,13 @@ regions_specs = {
     'land_TROPICS': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(-30., 30, 'ccb'))},
     'ocean_NHEX': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(30., 90, 'ccb'))},
     'ocean_SHEX': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(-90., -30, 'ccb'))},
-    #follow AMWG polar range,more precise selector
-    'polar_N':{'domain': cdutil.region.domain(latitude=(50., 90., 'ccb'))}, 
-    'polar_S':{'domain': cdutil.region.domain(latitude=(-90., -55., 'ccb'))}, 
-    #To match AMWG results, the bounds is not as precise in this case
-    #'polar_N_AMWG':{'domain': Selector(latitude=(50., 90.))},
-    #'polar_S_AMWG':{'domain': Selector(latitude=(-90., -55.))},
-    
+    # follow AMWG polar range,more precise selector
+    'polar_N': {'domain': cdutil.region.domain(latitude=(50., 90., 'ccb'))},
+    'polar_S': {'domain': cdutil.region.domain(latitude=(-90., -55., 'ccb'))},
+    # To match AMWG results, the bounds is not as precise in this case
+    # 'polar_N_AMWG':{'domain': Selector(latitude=(50., 90.))},
+    # 'polar_S_AMWG':{'domain': Selector(latitude=(-90., -55.))},
+
     # Below is for modes of variability
     "NAM": {'domain': cdutil.region.domain(latitude=(20., 90, 'ccb'), longitude=(-180, 180, 'ccb'))},
     "NAO": {'domain': cdutil.region.domain(latitude=(20., 80, 'ccb'), longitude=(-90, 40, 'ccb'))},
@@ -49,4 +48,3 @@ regions_specs = {
     # Australian Monsoon
     'AUSM': {'domain': cdutil.region.domain(latitude=(-45., 0., 'ccb'), longitude=(90., 160., 'ccb'))},
 }
-

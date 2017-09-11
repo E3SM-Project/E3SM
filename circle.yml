@@ -11,7 +11,7 @@ machine:
 
 dependencies:
   override:
-    - ${HOME}/miniconda/bin/conda install python=2.7.13 cdms2 cdp cdutil genutil beautifulsoup4 -c conda-forge -c uvcdat -y
+    - ${HOME}/miniconda/bin/conda install python=2.7.13 cdms2 cdp cdutil genutil beautifulsoup4 flake8 -c conda-forge -c uvcdat -y
     - ${HOME}/miniconda/bin/python setup.py install
 
 test:

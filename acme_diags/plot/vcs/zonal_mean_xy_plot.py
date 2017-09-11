@@ -4,24 +4,29 @@ import os
 import sys
 import vcs
 from acme_diags.driver.utils import get_output_dir, _chown
-import acme_diags.plot.vcs as utils 
+import acme_diags.plot.vcs as utils
 
 textcombined_objs = {}
+
 
 def managetextcombined(tt_name, to_name, vcs_canvas):
     """Caches textcombined objects"""
     new_name = "%s:::%s" % (tt_name, to_name)
     mytc = textcombined_objs.get(new_name, None)
     if mytc is None:
-        mytc = vcs_canvas.createtextcombined(Tt_source=tt_name, To_source=to_name)
+        mytc = vcs_canvas.createtextcombined(
+            Tt_source=tt_name, To_source=to_name)
         textcombined_objs[new_name] = mytc
     return mytc
 
+
 def plot(ref, test, diff, metrics_dict, parameters):
-    vcs_canvas = vcs.init(bg=True, geometry=(parameters.canvas_size_w, parameters.canvas_size_h))
+    vcs_canvas = vcs.init(bg=True, geometry=(
+        parameters.canvas_size_w, parameters.canvas_size_h))
 
     # Line options, see here: https://uvcdat.llnl.gov/documentation/vcs/vcs-10.html
-    # Other options not in the above link: https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
+    # Other options not in the above link:
+    # https://uvcdat.llnl.gov/docs/vcs/graphics/unified1D.html
     ref_plot_linetype = 0
     ref_plot_color = 215  # 6 to 239
     ref_plot_width = 3  # 1 to 100
@@ -43,7 +48,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_plot_markersize = 1
     diff_plot_markercolor = 1
 
-    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'zonal_mean_xy')
+    file_path = os.path.join(
+        sys.prefix, 'share', 'acme_diags', 'zonal_mean_xy')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_3.json'))
 
     utils.set_units(test, parameters.test_units)
@@ -57,19 +63,25 @@ def plot(ref, test, diff, metrics_dict, parameters):
     if hasattr(diff, 'long_name'):
         diff.long_name = parameters.diff_title if parameters.diff_title is not '' else diff.long_name
 
-    test.id = str(parameters.test_name) if parameters.test_name is not '' else test.id
-    ref.id = str(parameters.reference_name) if parameters.reference_name is not '' else ref.id
-    diff.id = str(parameters.diff_name) if parameters.diff_name is not '' else diff.id
-    
+    test.id = str(
+        parameters.test_name) if parameters.test_name is not '' else test.id
+    ref.id = str(
+        parameters.reference_name) if parameters.reference_name is not '' else ref.id
+    diff.id = str(
+        parameters.diff_name) if parameters.diff_name is not '' else diff.id
+
     # use vcs_canvas.show('colormap') to view all colormaps
-    vcs_canvas.setcolormap('rainbow')  # 6 to 239 are purple to red in rainbow order
+    # 6 to 239 are purple to red in rainbow order
+    vcs_canvas.setcolormap('rainbow')
 
     ref_test_template = vcs.gettemplate('ref_test_template')
 
-    ref_test_yaxis_title = managetextcombined('ref_test_yaxis_title', 'ref_test_yaxis_title', vcs_canvas)
+    ref_test_yaxis_title = managetextcombined(
+        'ref_test_yaxis_title', 'ref_test_yaxis_title', vcs_canvas)
     ref_test_yaxis_title.angle = 270
     ref_test_yaxis_title.halign = 'center'
-    ref_test_yaxis_title.y = (ref_test_template.data.y1 + ref_test_template.data.y2) / 2
+    ref_test_yaxis_title.y = (
+        ref_test_template.data.y1 + ref_test_template.data.y2) / 2
     ref_test_yaxis_title.x = ref_test_template.data.x1 - 0.08
     ref_test_yaxis_title.string = test.long_name + ' (' + test.units + ')'
     vcs_canvas.plot(ref_test_yaxis_title)
@@ -124,7 +136,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     diff_template = vcs.gettemplate('diff_template')
 
-    diff_yaxis_title = managetextcombined('diff_yaxis_title', 'diff_yaxis_title', vcs_canvas)
+    diff_yaxis_title = managetextcombined(
+        'diff_yaxis_title', 'diff_yaxis_title', vcs_canvas)
     diff_yaxis_title.angle = 270
     diff_yaxis_title.halign = 'center'
     diff_yaxis_title.y = (diff_template.data.y1 + diff_template.data.y2) / 2
@@ -173,7 +186,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
                             -30: "30S", 0: "Eq", 30: "30N",
                             60: "60N", 90: "90N"}
 
-
     test_line = vcs_canvas.getxvsy('test_plot')
     test_line.datawc_y1 = min(ref.min(), test.min())
     test_line.datawc_y2 = max(ref.max(), test.max())
@@ -189,8 +201,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
                              -30: "30S", 0: "Eq", 30: "30N",
                              60: "60N", 90: "90N"}
 
-
-    #ref_line.line = ref_plot_linetype
+    # ref_line.line = ref_plot_linetype
     ref_line.linetype = ref_plot_linetype
     ref_line.linecolor = ref_plot_color
     ref_line.linewidth = ref_plot_width
@@ -198,7 +209,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_line.markersize = ref_plot_markersize
     ref_line.markercolor = ref_plot_markercolor
 
-    #test_line.line = test_plot_linetype
+    # test_line.line = test_plot_linetype
     test_line.linetype = test_plot_linetype
     test_line.linecolor = test_plot_color
     test_line.linewidth = test_plot_width
@@ -207,7 +218,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test_line.markercolor = test_plot_markercolor
     # test_line.smooth = 1
 
-    #diff_line.line = diff_plot_linetype
+    # diff_line.line = diff_plot_linetype
     diff_line.linetype = diff_plot_linetype
     diff_line.linecolor = diff_plot_color
     diff_line.linewidth = diff_plot_width
@@ -218,10 +229,10 @@ def plot(ref, test, diff, metrics_dict, parameters):
     blank_template = vcs_canvas.gettemplate('blank_template')
     blank_template.legend.priority = 0
     blank_template.data.priority = 1
-    #blank_template.blank()
-    #blank_template.legend.priority = 1
-    #blank_template.legend.y1 -= 0.05
-    #blank_template.legend.y2 -= 0.05
+    # blank_template.blank()
+    # blank_template.legend.priority = 1
+    # blank_template.legend.y1 -= 0.05
+    # blank_template.legend.y2 -= 0.05
 
     # vcs_canvas.plot(ref, ref_line, ref_test_template, xname='Latitude')
     vcs_canvas.plot(ref, ref_line, ref_test_template)
@@ -232,7 +243,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # Plot the main title
     main_title = managetextcombined('main_title', 'main_title', vcs_canvas)
     main_title.string = parameters.main_title
-    vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
+    # for some reason, this needs to be before a call to vcs_canvas.plot()
+    vcs_canvas.portrait()
     vcs_canvas.plot(main_title)
 
     test_title = managetextcombined('test_title', 'test_title', vcs_canvas)
@@ -266,7 +278,8 @@ def plot(ref, test, diff, metrics_dict, parameters):
     # test_title.script('plot_set_3.json')
     # ref_title.script('plot_set_3.json')
 
-    fnm = os.path.join(get_output_dir(parameters.current_set, parameters), parameters.output_file)
+    fnm = os.path.join(get_output_dir(parameters.current_set,
+                                      parameters), parameters.output_file)
     for f in parameters.output_format:
         f = f.lower().split('.')[-1]
         if f == 'png':

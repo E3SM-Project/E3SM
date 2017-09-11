@@ -3,15 +3,14 @@ from __future__ import print_function
 
 import os
 import sys
-import json
 import getpass
 import datetime
 import importlib
 import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
-from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name
+
 
 def _get_default_diags(set_num, dataset):
     """Returns the path from the json corresponding to set_num"""
@@ -21,8 +20,10 @@ def _get_default_diags(set_num, dataset):
     pth = os.path.join(sys.prefix, 'share', 'acme_diags', folder, fnm)
     print('Using {} for {}'.format(pth, set_num))
     if not os.path.exists(pth):
-        raise RuntimeError("Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
+        raise RuntimeError(
+            "Plotting via set '{}' not supported, file {} not installed".format(set_num, fnm))
     return pth
+
 
 def _collaspse_results(parameters):
     """When using cdp_run, parameters is a list of lists: [[Parameters], ...].
@@ -38,6 +39,7 @@ def _collaspse_results(parameters):
 
     return output_parameters
 
+
 def run_diag(parameters):
     """For a single set of parameters, run the corresponding diags."""
     results = []
@@ -46,7 +48,7 @@ def run_diag(parameters):
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
-        #try:
+        # try:
         module = importlib.import_module(mod_str)
         '''
         except ImportError as e:
@@ -54,11 +56,12 @@ def run_diag(parameters):
             print('Set {} is not supported yet. Please give us time.'.format(set_name))
             continue
         '''
-        
+
         print('Starting to run ACME Diagnostics.')
         single_result = module.run_diag(parameters)
         results.append(single_result)
     return results
+
 
 if __name__ == '__main__':
     parser = ACMEParser()
@@ -68,8 +71,9 @@ if __name__ == '__main__':
         original_parameter = parser.get_orig_parameters(default_vars=False)
 
         if not hasattr(original_parameter, 'sets'):
-            original_parameter.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
-            
+            original_parameter.sets = [
+                'zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
+
         # load the default jsons
         default_jsons_paths = []
 
@@ -79,11 +83,14 @@ if __name__ == '__main__':
                 datasets = original_parameter.datasets
             for ds in datasets:
                 default_jsons_paths.append(_get_default_diags(set_num, ds))
-        other_parameters = parser.get_other_parameters(files_to_open=default_jsons_paths, check_values=False)
+        other_parameters = parser.get_other_parameters(
+            files_to_open=default_jsons_paths, check_values=False)
         # Don't put the sets from the Python parameters to the default.
-        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the default jsons like lat_lon_AMWG_default.json
+        # Ex. if sets=[5, 7] in the Python parameters, don't change sets in the
+        # default jsons like lat_lon_AMWG_default.json
         vars_to_ignore = ['sets']
-        parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=vars_to_ignore)
+        parameters = parser.get_parameters(
+            orig_parameters=original_parameter, other_parameters=other_parameters, vars_to_ignore=vars_to_ignore)
 
     elif not args.parameters and args.other_parameters:  # -d only
         other_parameters = parser.get_other_parameters(check_values=True)
@@ -92,7 +99,8 @@ if __name__ == '__main__':
     elif args.parameters and args.other_parameters:  # -p and -d
         original_parameter = parser.get_orig_parameters(default_vars=False)
         other_parameters = parser.get_other_parameters(check_values=False)
-        parameters = parser.get_parameters(orig_parameters=original_parameter, other_parameters=other_parameters)
+        parameters = parser.get_parameters(
+            orig_parameters=original_parameter, other_parameters=other_parameters)
 
     else:
         raise RuntimeError('You tried running the diags without -p and/or -d')
@@ -107,7 +115,7 @@ if __name__ == '__main__':
             p.results_dir = '{}-{}'.format('acme_diags_results', dt)
 
     if not os.path.exists(parameters[0].results_dir):
-        os.makedirs(parameters[0].results_dir, 0775)
+        os.makedirs(parameters[0].results_dir, 0o775)
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
     elif parameters[0].distributed:
@@ -122,4 +130,3 @@ if __name__ == '__main__':
         os.makedirs(pth)
 
     create_viewer(pth, parameters, parameters[0].output_format[0])
-

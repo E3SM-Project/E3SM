@@ -1,5 +1,6 @@
 import cdp.cdp_metric
 
+
 class Min(cdp.cdp_metric.CDPMetric):
     def __init__(self):
         metric_path = __file__

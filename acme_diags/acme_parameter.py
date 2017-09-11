@@ -38,19 +38,19 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.contour_levels = []  # used both in test and reference
         self.test_name = ''
         self.test_title = ''
-        #self.test_colormap = 'viridis'
+        # self.test_colormap = 'viridis'
         self.test_colormap = 'cet_rainbow.rgb'
         self.test_units = ''
 
         self.reference_name = ''
         self.reference_title = ''
-        #self.reference_colormap = 'viridis'
+        # self.reference_colormap = 'viridis'
         self.reference_colormap = 'cet_rainbow.rgb'
         self.reference_units = ''
 
         self.diff_name = ''
         self.diff_title = 'Model - Observation'
-        #self.diff_colormap = 'cet_diverging_bwr_55_98_c37'
+        # self.diff_colormap = 'cet_diverging_bwr_55_98_c37'
         self.diff_colormap = 'diverging_bwr.rgb'
         self.diff_levels = []
         self.diff_units = ''
@@ -59,12 +59,14 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.distributed = False
 
     def check_values(self):
-        if not hasattr(self, 'reference_data_path') or self.reference_data_path == '':
+        if not hasattr(
+                self, 'reference_data_path') or self.reference_data_path == '':
             print('You need to specify reference_data_path in the parameters file or in the command line using --reference_data_path')
             sys.exit()
         if not hasattr(self, 'test_data_path') or self.test_data_path == '':
             print('You need to specify test_data_path in the parameters file or in the command line using --test_data_path')
             sys.exit()
-        if hasattr(self, 'multiprocessing') and hasattr(self, 'distributed') and self.multiprocessing and self.distributed:
+        if hasattr(self, 'multiprocessing') and hasattr(
+                self, 'distributed') and self.multiprocessing and self.distributed:
             print("Why are you trying to run the diags multiprocessed and distributedly? You can't do this, only choose one or none.")
             sys.exit()

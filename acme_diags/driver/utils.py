@@ -10,16 +10,17 @@ import genutil
 import cdms2
 from acme_diags.derivations.default_regions import regions_specs
 
+
 def get_set_name(set_name):
     """Get the correct set name from the argument.
     Ex: '3' -> 'zonal_mean_xy', etc. """
 
     names = {
-       ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
-       ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
-       ('5', 'lat_lon'): 'lat_lon',
-       ('7', 'polar'): 'polar',
-       ('13', 'cosp_histogram'): 'cosp_histogram',
+        ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
+        ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
+        ('5', 'lat_lon'): 'lat_lon',
+        ('7', 'polar'): 'polar',
+        ('13', 'cosp_histogram'): 'cosp_histogram',
     }
 
     set_name = str(set_name)
@@ -29,17 +30,19 @@ def get_set_name(set_name):
 
     raise RuntimeError('Invalid set option: {}'.format(set_name))
 
+
 def _findfile(path_name, data_name, season):
     """Locate file name based on data_name and season."""
     dir_files = os.listdir(path_name)
     for filename in dir_files:
-       if filename.startswith(data_name + '_' + season):
-           return os.path.join(path_name, filename)
+        if filename.startswith(data_name + '_' + season):
+            return os.path.join(path_name, filename)
     # only ran on model data, because a shorter name is used
     for filename in dir_files:
-       if filename.startswith(data_name) and season in filename:
-           return os.path.join(path_name, filename)
+        if filename.startswith(data_name) and season in filename:
+            return os.path.join(path_name, filename)
     raise IOError("No file found for {} and {}".format(data_name, season))
+
 
 def _chown(path, user, group=-1):
     """Chown the path with the user and group"""
@@ -47,6 +50,7 @@ def _chown(path, user, group=-1):
     if group != -1:
         group = grp.getgrnam(group).gr_gid
     os.chown(path, uid, group)
+
 
 def get_test_filename(parameters, season):
     """Return the test file name based on
@@ -56,8 +60,10 @@ def get_test_filename(parameters, season):
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
     else:
-        fnm = _findfile(parameters.test_data_path, parameters.test_name, season)
+        fnm = _findfile(parameters.test_data_path,
+                        parameters.test_name, season)
     return fnm
+
 
 def get_ref_filename(parameters, season):
     """Return the reference file name based on
@@ -67,24 +73,27 @@ def get_ref_filename(parameters, season):
         if not os.path.exists(fnm):
             raise IOError('File not found: {}'.format(fnm))
     else:
-        fnm = _findfile(parameters.reference_data_path, parameters.ref_name, season)
+        fnm = _findfile(parameters.reference_data_path,
+                        parameters.ref_name, season)
     return fnm
+
 
 def hybrid_to_plevs(var, hyam, hybm, ps, plev):
     """Convert from hybrid pressure coordinate to desired pressure level(s)."""
-    p0 = 1000. # mb
-    ps = ps /100. # convert unit from 'Pa' to mb
+    p0 = 1000.  # mb
+    ps = ps / 100.  # convert unit from 'Pa' to mb
     levels_orig = cdutil.vertical.reconstructPressureFromHybrid(
         ps, hyam, hybm, p0)
     levels_orig.units = 'mb'
     # Make sure z is positive down
     if var.getLevel()[0] > var.getLevel()[-1]:
-        var = var(lev=slice(-1,None,-1)) 
-        levels_orig = levels_orig(lev=slice(-1,None,-1)) 
+        var = var(lev=slice(-1, None, -1))
+        levels_orig = levels_orig(lev=slice(-1, None, -1))
     var_p = cdutil.vertical.logLinearInterpolation(
         var(squeeze=1), levels_orig(squeeze=1), plev)
 
     return var_p
+
 
 def pressure_to_plevs(var, plev):
     """Convert from pressure coordinate to desired pressure level(s)."""
@@ -100,14 +109,14 @@ def pressure_to_plevs(var, plev):
     # from TOP (level 0) to BOTTOM (last level), i.e P value
     # going up with each level"
     if var.getLevel()[0] > var.getLevel()[-1]:
-        var = var(lev=slice(-1,None,-1)) 
-        levels_orig = levels_orig(lev=slice(-1,None,-1)) 
+        var = var(lev=slice(-1, None, -1))
+        levels_orig = levels_orig(lev=slice(-1, None, -1))
     var_p = cdutil.vertical.logLinearInterpolation(
         var(squeeze=1), levels_orig(squeeze=1), plev)
     return var_p
 
 
-def select_region(region, var1, var2, land_frac,ocean_frac,parameter):
+def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
     """Select desired regions from transient variables."""
     domain = None
     # if region != 'global':
@@ -118,7 +127,7 @@ def select_region(region, var1, var2, land_frac,ocean_frac,parameter):
             land_ocean_frac = ocean_frac
         region_value = regions_specs[region]['value']
         print('region_value', region_value)
-    
+
         var1_domain = mask_by(
             var1, land_ocean_frac, low_limit=region_value)
         var2_domain = var2.regrid(
@@ -128,18 +137,18 @@ def select_region(region, var1, var2, land_frac,ocean_frac,parameter):
     else:
         var1_domain = var1
         var2_domain = var2
-    
+
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]['domain']
         print(domain)
-    except:
+    except BaseException:
         print("no domain selector")
     var1_domain = var1_domain(domain)
     var2_domain = var2_domain(domain)
     var1_domain.units = var1.units
     var2_domain.units = var1.units
-    
+
     return var1_domain, var2_domain
 
 
@@ -163,9 +172,11 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
                              regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
+
 def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
-    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
-    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
+    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit.
+    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity.
+    var is changed and returned; we don't make a new variable.
     var and maskvar: dimensioned the same variables.
     low_limit and high_limit: scalars.
     """
@@ -221,17 +232,20 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         file_diff.close()
         _chown(diff_pth, parameter.user)
 
+
 def get_output_dir(set_num, parameter):
     """Get the directory of where to save the outputs for a run."""
-    pth = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id)
+    pth = os.path.join(parameter.results_dir,
+                       '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
-        # When running diags in parallel, sometimes another process will create the dir
+        # When running diags in parallel, sometimes another process will create
+        # the dir
         try:
-            os.makedirs(pth, 0775)
+            os.makedirs(pth, 0o775)
         except OSError as e:
             if e.errno != os.errno.EEXIST:
                 raise
-            pass 
-    _chown(os.path.join(parameter.results_dir, '{}'.format(set_num)), parameter.user)
+    _chown(os.path.join(parameter.results_dir,
+                        '{}'.format(set_num)), parameter.user)
     _chown(pth, parameter.user)
     return pth

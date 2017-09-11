@@ -2,8 +2,6 @@ from __future__ import print_function
 
 import copy
 from collections import OrderedDict
-from numbers import Number
-import cdms2
 from genutil import udunits
 import MV2
 import numpy as np
@@ -27,7 +25,8 @@ def _add_user_derived_vars(derived_vars_dict, parameter):
         # append the user-defined vars to the already defined ones
         # add to an existing entry, otherwise create a new one
         if key in derived_vars_dict:
-            new_dict = OrderedDict(user_derived_vars)  # has user-defined derived vars first
+            # has user-defined derived vars first
+            new_dict = OrderedDict(user_derived_vars)
             # add all of the default derived vars to the end of new_dict
             for k in derived_vars_dict[key]:
                 if k in new_dict:  # don't overwrite the user-defined var with a default derived var
@@ -87,7 +86,7 @@ def convert_units(var, target_units):
 
     if not hasattr(var, 'units') and var.id == 'SST':
         var.units = target_units
-    elif not hasattr(var, 'units') and var.id =='ICEFRAC':
+    elif not hasattr(var, 'units') and var.id == 'ICEFRAC':
         var.units = target_units
         var = 100.0 * var
     elif var.units == 'fraction':
@@ -99,11 +98,11 @@ def convert_units(var, target_units):
         var = var / 9.8 / 100  # convert to hecto meter
         var.units = target_units
     elif var.units == 'Pa/s':
-         var = var /100.0*24*3600
-         var.units = target_units
+        var = var / 100.0 * 24 * 3600
+        var.units = target_units
     elif var.units == 'mb/day':
-         var = var 
-         var.units = target_units
+        var = var
+        var.units = target_units
     else:
         temp = udunits(1.0, var.units)
         coeff, offset = temp.how(target_units)
@@ -114,8 +113,9 @@ def convert_units(var, target_units):
 
 
 def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
-    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
-    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
+    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit.
+    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity.
+    var is changed and returned; we don't make a new variable.
     var and maskvar: dimensioned the same variables.
     low_limit and high_limit: scalars.
     """
@@ -145,6 +145,7 @@ def qflxconvert_units(var):
         var.units = 'mm/day'
     return var
 
+
 def prect(precc, precl):
     """Total precipitation flux = convective + large-scale"""
     var = precc + precl
@@ -160,12 +161,14 @@ def albedo(rsdt, rsut):
     var.long_name = "TOA albedo"
     return var
 
+
 def albedoc(rsdt, rsutcs):
     """TOA (top-of-atmosphere) albedo clear-sky, rsutcs / rsdt, unit is nondimension"""
     var = rsutcs / rsdt
     var.units = "dimensionless"
     var.long_name = "TOA albedo clear-sky"
     return var
+
 
 def albedo_srf(rsds, rsus):
     """Surface albedo, rsus / rsds, unit is nondimension"""
@@ -174,11 +177,13 @@ def albedo_srf(rsds, rsus):
     var.long_name = "Surface albedo"
     return var
 
+
 def rst(rsdt, rsut):
     """TOA (top-of-atmosphere) net shortwave flux"""
     var = rsdt - rsut
     var.long_name = "TOA net shortwave flux"
     return var
+
 
 def rstcs(rsdt, rsutcs):
     """TOA (top-of-atmosphere) net shortwave flux clear-sky"""
@@ -186,11 +191,13 @@ def rstcs(rsdt, rsutcs):
     var.long_name = "TOA net shortwave flux clear-sky"
     return var
 
+
 def swcfsrf(fsns, fsnsc):
     """Surface shortwave cloud forcing """
     var = fsns - fsnsc
     var.long_name = "Surface shortwave cloud forcing"
     return var
+
 
 def lwcfsrf(flns, flnsc):
     """Surface longwave cloud forcing, for ACME model, upward is postitive for LW , for ceres, downward is postive for both LW and SW"""
@@ -198,11 +205,13 @@ def lwcfsrf(flns, flnsc):
     var.long_name = "Surface longwave cloud forcing"
     return var
 
+
 def swcf(fsntoa, fsntoac):
     """TOA shortwave cloud forcing """
     var = fsntoa - fsntoac
     var.long_name = "TOA shortwave cloud forcing"
     return var
+
 
 def lwcf(flntoa, flntoac):
     """TOA longwave cloud forcing """
@@ -210,17 +219,20 @@ def lwcf(flntoa, flntoac):
     var.long_name = "TOA longwave cloud forcing"
     return var
 
+
 def netcf2(swcf, lwcf):
     """TOA net cloud forcing """
     var = swcf + lwcf
     var.long_name = "TOA net cloud forcing"
     return var
 
+
 def netcf4(fsntoa, fsntoac, flntoa, flntoac):
     """TOA net cloud forcing """
     var = fsntoa - fsntoac + flntoa - flntoac
     var.long_name = "TOA net cloud forcing"
     return var
+
 
 def fldsc(ts, flnsc):
     """Clearsky Surf LW downwelling flux"""
@@ -229,11 +241,13 @@ def fldsc(ts, flnsc):
     var.long_name = "Clearsky Surf LW downwelling flux"
     return var
 
+
 def restom(fsnt, flnt):
     """TOM(top of model) Radiative flux"""
     var = fsnt - flnt
     var.long_name = "TOM(top of model) Radiative flux"
     return var
+
 
 def restoa(fsnt, flnt):
     """TOA(top of atmosphere) Radiative flux"""
@@ -241,8 +255,10 @@ def restoa(fsnt, flnt):
     var.long_name = "TOA(top of atmosphere) Radiative flux"
     return var
 
+
 def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
-    """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
+    """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and
+    cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
     prs = cld.getAxis(0)
     tau = cld.getAxis(1)
 
@@ -254,115 +270,125 @@ def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
         prs_high = prs_high0
     if prs_low0 is None and prs_high0 is None:
         prs_lim = 'total cloud fraction'
-        
+
     tau_low = tau[0]
     tau_high = tau[-1]
 
-
-    if tau_low0 is None and tau_high0:  
-        tau_high =  tau_high0
-        tau_lim = 'tau <'+str(tau_high0)
-    elif tau_high0 is None and tau_low0: 
+    if tau_low0 is None and tau_high0:
+        tau_high = tau_high0
+        tau_lim = 'tau <' + str(tau_high0)
+    elif tau_high0 is None and tau_low0:
         tau_low = tau_low0
-        tau_lim = 'tau >'+str(tau_low0)
+        tau_lim = 'tau >' + str(tau_low0)
     elif tau_low0 is None and tau_high0 is None:
-        tau_lim = str(tau_low)+'< tau < '+str(tau_high)
+        tau_lim = str(tau_low) + '< tau < ' + str(tau_high)
     else:
         tau_low = tau_low0
         tau_high = tau_high0
-        tau_lim = str(tau_low)+'< tau < '+str(tau_high)
+        tau_lim = str(tau_low) + '< tau < ' + str(tau_high)
 
-    if cld.id == 'FISCCP1_COSP':   #ISCCP model
-        cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
+    if cld.id == 'FISCCP1_COSP':  # ISCCP model
+        cld_bin = cld(cosp_prs=(prs_low, prs_high),
+                      cosp_tau=(tau_low, tau_high))
         simulator = 'ISCCP'
-    if cld.id == 'CLISCCP':        #ISCCP obs
-        cld_bin = cld(isccp_prs = (prs_low, prs_high), isccp_tau = (tau_low, tau_high))
+    if cld.id == 'CLISCCP':  # ISCCP obs
+        cld_bin = cld(isccp_prs=(prs_low, prs_high),
+                      isccp_tau=(tau_low, tau_high))
 
-    if cld.id == 'CLMODIS':   #MODIS 
-        try: 
-            cld_bin = cld(cosp_prs = (prs_low, prs_high), cosp_tau_modis = (tau_low, tau_high)) #MODIS model
-            if prs_high ==440:
+    if cld.id == 'CLMODIS':  # MODIS
+        try:
+            cld_bin = cld(cosp_prs=(prs_low, prs_high),
+                          cosp_tau_modis=(tau_low, tau_high))  # MODIS model
+            if prs_high == 440:
                 prs_lim = 'high cloud fraction'
             if prs_high == 680 and prs_low == 440:
                 prs_lim = 'middle cloud fraction'
             if prs_low == 680:
-                prs_lim = 'low cloud fraction' 
+                prs_lim = 'low cloud fraction'
             simulator = 'MODIS'
-        except:
-            cld_bin = cld(modis_prs = (prs_low, prs_high), modis_tau = (tau_low, tau_high))  #MODIS obs
+        except BaseException:
+            cld_bin = cld(modis_prs=(prs_low, prs_high),
+                          modis_tau=(tau_low, tau_high))  # MODIS obs
 
-    if cld.id == 'CLD_MISR':        #MISR model
-        cld_bin = cld(cosp_htmisr = (prs_low, prs_high), cosp_tau = (tau_low, tau_high))
-        if prs_low ==7:
+    if cld.id == 'CLD_MISR':  # MISR model
+        cld_bin = cld(cosp_htmisr=(prs_low, prs_high),
+                      cosp_tau=(tau_low, tau_high))
+        if prs_low == 7:
             prs_lim = 'high cloud fraction'
         if prs_high == 7 and prs_low == 3:
             prs_lim = 'middle cloud fraction'
         if prs_high == 3:
             prs_lim = 'low cloud fraction'
         simulator = 'MISR'
-    if cld.id == 'CLMISR':        #MISR obs
-        cld_bin = cld(misr_cth = (prs_low, prs_high), misr_tau = (tau_low, tau_high))
+    if cld.id == 'CLMISR':  # MISR obs
+        cld_bin = cld(misr_cth=(prs_low, prs_high),
+                      misr_tau=(tau_low, tau_high))
 
-    cld_bin_sum = MV2.sum(MV2.sum(cld_bin,axis=1),axis=0)
+    cld_bin_sum = MV2.sum(MV2.sum(cld_bin, axis=1), axis=0)
     try:
         cld_bin_sum.long_name = simulator + ': ' + prs_lim + ' with ' + tau_lim
-    except:
+    except BaseException:
         pass
     return cld_bin_sum
 
+
 def cosp_histogram_standardize(cld):
-    """standarize cloud top pressure and cloud thickness bins to dimensions that suitable for plotting, input variable has dimention (cosp_prs,cosp_tau)"""
+    """standarize cloud top pressure and cloud thickness bins to dimensions that
+    suitable for plotting, input variable has dimention (cosp_prs,cosp_tau)"""
     prs = cld.getAxis(0)
     tau = cld.getAxis(1)
 
-    prs_low = prs[0]
+    prs[0]
     prs_high = prs[-1]
-    tau_low = tau[0]
+    tau[0]
     tau_high = tau[-1]
 
-    prs_bounds = getattr(prs,'bounds')
+    prs_bounds = getattr(prs, 'bounds')
     if prs_bounds is None:
-        cloud_prs_bounds = np.array([[1000.,800.],[800.,680.],[680.,560.],[560.,440.],[440.,310.],[310.,180.],[180.,0.]])  # length 7
-        prs.setBounds( np.array(cloud_prs_bounds,dtype=np.float32) )
+        cloud_prs_bounds = np.array([[1000., 800.], [800., 680.], [680., 560.], [
+                                    560., 440.], [440., 310.], [310., 180.], [180., 0.]])  # length 7
+        prs.setBounds(np.array(cloud_prs_bounds, dtype=np.float32))
 
-    tau_bounds =  getattr(tau,'bounds')
+    tau_bounds = getattr(tau, 'bounds')
     if tau_bounds is None:
-        cloud_tau_bounds = np.array([[0.3,1.3],[1.3,3.6],[3.6,9.4],[9.4,23],[23,60],[60,379]]) # length 6
-        tau.setBounds( np.array(cloud_tau_bounds,dtype=np.float32) )
+        cloud_tau_bounds = np.array([[0.3, 1.3], [1.3, 3.6], [3.6, 9.4], [
+                                    9.4, 23], [23, 60], [60, 379]])  # length 6
+        tau.setBounds(np.array(cloud_tau_bounds, dtype=np.float32))
 
-    if cld.id == 'FISCCP1_COSP':   #ISCCP model
-        cld_hist = cld(cosp_tau = (0.3, tau_high))
-    if cld.id == 'CLISCCP':        #ISCCP obs
-        cld_hist = cld(isccp_tau = (0.3, tau_high))
+    if cld.id == 'FISCCP1_COSP':  # ISCCP model
+        cld_hist = cld(cosp_tau=(0.3, tau_high))
+    if cld.id == 'CLISCCP':  # ISCCP obs
+        cld_hist = cld(isccp_tau=(0.3, tau_high))
 
-    if cld.id == 'CLMODIS':   #MODIS 
-        try: 
-            cld_hist = cld( cosp_tau_modis = (0.3, tau_high)) #MODIS model
-        except:
-            cld_hist = cld( modis_tau = (0.3, tau_high))  #MODIS obs
+    if cld.id == 'CLMODIS':  # MODIS
+        try:
+            cld_hist = cld(cosp_tau_modis=(0.3, tau_high))  # MODIS model
+        except BaseException:
+            cld_hist = cld(modis_tau=(0.3, tau_high))  # MODIS obs
 
-    if cld.id == 'CLD_MISR':        #MISR model
-        cld_hist = cld(cosp_tau = (0.3, tau_high), cosp_htmisr=(0,prs_high))
-    if cld.id == 'CLMISR':        #MISR obs
-        cld_hist = cld(misr_tau = (0.3, tau_high),misr_cth =(0,prs_high))
+    if cld.id == 'CLD_MISR':  # MISR model
+        cld_hist = cld(cosp_tau=(0.3, tau_high), cosp_htmisr=(0, prs_high))
+    if cld.id == 'CLMISR':  # MISR obs
+        cld_hist = cld(misr_tau=(0.3, tau_high), misr_cth=(0, prs_high))
 
     return cld_hist
-       
 
-# derived_variables is a dictionary to accomodate user specified derived variables. 
+
+# derived_variables is a dictionary to accomodate user specified derived variables.
 # The driver search for available variable keys and functions to calculate derived variable.
-# For example 
+# For example
 # In derived_variable there is an entry for 'PRECT':
 # If 'PRECT' is not available, but both 'PRECC' and 'PRECT' are available in the netcdf variable keys,
 # PRECT is calculated using fuction prect() with precc and precl as inputs.
 
 derived_variables = {
     'PRECT': OrderedDict([
-        (('pr'), lambda pr:  qflxconvert_units(rename(pr))),
+        (('pr'), lambda pr: qflxconvert_units(rename(pr))),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
     'SST': OrderedDict([
-        (('sst'),rename),# lambda sst: convert_units(rename(sst),target_units="degC")),
+        # lambda sst: convert_units(rename(sst),target_units="degC")),
+        (('sst'), rename),
         (('SST'), lambda sst: convert_units(sst, target_units="degC")),
         (('TS', 'OCNFRAC'), lambda ts, ocnfrac: mask_by(
             convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9))
@@ -376,50 +402,56 @@ derived_variables = {
     ]),
     'ALBEDO': OrderedDict([
         (('ALBEDO'), rename),
-        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, solin-fsntoa)),
+        (('SOLIN', 'FSNTOA'), lambda solin, fsntoa: albedo(solin, solin - fsntoa)),
         (('rsdt', 'rsut'), lambda rsdt, rsut: albedo(rsdt, rsut))
     ]),
     'ALBEDOC': OrderedDict([
         (('ALBEDOC'), rename),
-        (('SOLIN', 'FSNTOAC'), lambda solin, fsntoac: albedoc(solin, solin-fsntoac)),
+        (('SOLIN', 'FSNTOAC'), lambda solin,
+         fsntoac: albedoc(solin, solin - fsntoac)),
         (('rsdt', 'rsutcs'), lambda rsdt, rsutcs: albedoc(rsdt, rsutcs))
     ]),
     'ALBEDO_SRF': OrderedDict([
         (('ALBEDO_SRF'), rename),
         (('rsds', 'rsus'), lambda rsds, rsus: albedo_srf(rsds, rsus)),
-        (('FSDS', 'FSNS'), lambda fsds, fsns: albedo_srf(fsds, fsds-fsns))
+        (('FSDS', 'FSNS'), lambda fsds, fsns: albedo_srf(fsds, fsds - fsns))
     ]),
-    #Pay attention to the positive direction of SW and LW fluxes
+    # Pay attention to the positive direction of SW and LW fluxes
     'SWCF': OrderedDict([
         (('SWCF'), rename),
-        (('toa_net_sw_all_mon','toa_net_sw_clr_mon'), lambda net_all,net_clr: swcf(net_all,net_clr)),
+        (('toa_net_sw_all_mon', 'toa_net_sw_clr_mon'),
+         lambda net_all, net_clr: swcf(net_all, net_clr)),
         (('toa_cre_sw_mon'), rename),
         (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ]),
     'SWCFSRF': OrderedDict([
         (('SWCFSRF'), rename),
-        (('sfc_net_sw_all_mon','sfc_net_sw_clr_mon'), lambda net_all,net_clr: swcfsrf(net_all,net_clr)),
+        (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_mon'),
+         lambda net_all, net_clr: swcfsrf(net_all, net_clr)),
         (('sfc_cre_net_sw_mon'), rename),
         (('FSNS', 'FSNSC'), lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ]),
     'LWCF': OrderedDict([
         (('LWCF'), rename),
-        (('toa_net_lw_all_mon','toa_net_lw_clr_mon'), lambda net_all,net_clr: lwcf(net_clr,net_all)),
+        (('toa_net_lw_all_mon', 'toa_net_lw_clr_mon'),
+         lambda net_all, net_clr: lwcf(net_clr, net_all)),
         (('toa_cre_lw_mon'), rename),
         (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ]),
     'LWCFSRF': OrderedDict([
         (('LWCFSRF'), rename),
-        (('sfc_net_lw_all_mon','sfc_net_lw_clr_mon'), lambda net_all,net_clr: lwcfsrf(net_clr,net_all)),
+        (('sfc_net_lw_all_mon', 'sfc_net_lw_clr_mon'),
+         lambda net_all, net_clr: lwcfsrf(net_clr, net_all)),
         (('sfc_cre_net_lw_mon'), rename),
         (('FLNS', 'FLNSC'), lambda flns, flnsc: lwcfsrf(flns, flnsc))
     ]),
     'NETCF': OrderedDict([
-        (('toa_net_sw_all_mon','toa_net_sw_clr_mon','toa_net_lw_all_mon','toa_net_lw_clr_mon'),
-          lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
-        (('toa_cre_sw_mon','toa_cre_lw_mon'), lambda swcf, lwcf: netcf2(swcf, lwcf)),
-        (('SWCF','LWCF'), lambda swcf, lwcf: netcf2(swcf, lwcf)),
-        (('FSNTOA','FSNTOAC','FLNTOA','FLNTOAC'),
+        (('toa_net_sw_all_mon', 'toa_net_sw_clr_mon', 'toa_net_lw_all_mon', 'toa_net_lw_clr_mon'),
+         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+        (('toa_cre_sw_mon', 'toa_cre_lw_mon'),
+         lambda swcf, lwcf: netcf2(swcf, lwcf)),
+        (('SWCF', 'LWCF'), lambda swcf, lwcf: netcf2(swcf, lwcf)),
+        (('FSNTOA', 'FSNTOAC', 'FLNTOA', 'FLNTOAC'),
          lambda fsntoa, fsntoac, flntoa, flntoac: netcf4(fsntoa, fsntoac, flntoa, flntoac))
     ]),
 
@@ -510,9 +542,6 @@ derived_variables = {
     'TREFHT': OrderedDict([
         (('TREFHT'), lambda t: convert_units(t, target_units="K"))
     ]),
-    'TREFHT': OrderedDict([
-        (('TREFHT'), lambda t: convert_units(t, target_units="K"))
-    ]),
     'QFLX': OrderedDict([
         (('QFLX'), lambda qflx: qflxconvert_units(qflx))
     ]),
@@ -524,15 +553,18 @@ derived_variables = {
     ]),
     'TGCLDLWP_OCN': OrderedDict([
         (('TGCLDLWP_OCEAN'), lambda x: convert_units(x, target_units='g/m^2')),
-        (('TGCLDLWP', 'OCNFRAC'), lambda tgcldlwp, ocnfrac: mask_by(convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit=0.65))
+        (('TGCLDLWP', 'OCNFRAC'), lambda tgcldlwp, ocnfrac: mask_by(
+            convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit=0.65))
     ]),
     'PRECT_OCN': OrderedDict([
         (('PRECT_OCEAN'), lambda x: convert_units(x, target_units='mm/day')),
-        (('PRECC', 'PRECL', 'OCNFRAC'), lambda a, b, ocnfrac: mask_by(aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit=0.65))
+        (('PRECC', 'PRECL', 'OCNFRAC'), lambda a, b, ocnfrac: mask_by(
+            aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit=0.65))
     ]),
     'PREH2O_OCN': OrderedDict([
         (('PREH2O_OCEAN'), lambda x: convert_units(x, target_units='mm')),
-        (('TMQ', 'OCNFRAC'), lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65))
+        (('TMQ', 'OCNFRAC'), lambda preh2o,
+         ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65))
     ]),
     'CLDHGH': OrderedDict([
         (('CLDHGH'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
@@ -546,8 +578,8 @@ derived_variables = {
     'CLDTOT': OrderedDict([
         (('CLDTOT'), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
-#below for COSP output
-    #CLIPSO
+    # below for COSP output
+    # CLIPSO
     'CLDHGH_CAL': OrderedDict([
         (('CLDHGH_CAL'), lambda cldhgh: convert_units(cldhgh, target_units="%"))
     ]),
@@ -560,74 +592,98 @@ derived_variables = {
     'CLDTOT_CAL': OrderedDict([
         (('CLDTOT_CAL'), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
-    #ISCCP
+    # ISCCP
     'CLDTOT_TAU1.3_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%")),
-        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%"))
+        (('FISCCP1_COSP'), lambda cld: convert_units(
+            cosp_bin_sum(cld, None, None, 1.3, None), target_units="%")),
+        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 1.3, None), target_units="%"))
     ]),
     'CLDTOT_TAU1.3_9.4_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%")),
-        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%"))
+        (('FISCCP1_COSP'), lambda cld: convert_units(
+            cosp_bin_sum(cld, None, None, 1.3, 9.4), target_units="%")),
+        (('CLISCCP'), lambda cld: convert_units(
+            cosp_bin_sum(cld, None, None, 1.3, 9.4), target_units="%"))
     ]),
     'CLDTOT_TAU9.4_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%")),
-        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%"))
+        (('FISCCP1_COSP'), lambda cld: convert_units(
+            cosp_bin_sum(cld, None, None, 9.4, None), target_units="%")),
+        (('CLISCCP'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 9.4, None), target_units="%"))
     ]),
-    #MODIS
+    # MODIS
     'CLDTOT_TAU1.3_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%")),
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 1.3, None), target_units="%")),
     ]),
     'CLDTOT_TAU1.3_9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%")),
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 1.3, 9.4), target_units="%")),
     ]),
     'CLDTOT_TAU9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%")),
+        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 9.4, None), target_units="%")),
     ]),
     'CLDHGH_TAU1.3_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,0, 440, 1.3, None), target_units="%")),
+        (('CLMODIS'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 440, 1.3, None), target_units="%")),
     ]),
     'CLDHGH_TAU1.3_9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,0, 440, 1.3, 9.4), target_units="%")),
+        (('CLMODIS'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 440, 1.3, 9.4), target_units="%")),
     ]),
     'CLDHGH_TAU9.4_MODIS': OrderedDict([
-        (('CLMODIS'), lambda cld: convert_units(cosp_bin_sum(cld,0, 440, 9.4, None), target_units="%")),
+        (('CLMODIS'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 440, 9.4, None), target_units="%")),
     ]),
-    #MISR
+    # MISR
     'CLDTOT_TAU1.3_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, None), target_units="%"))
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 1.3, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 1.3, None), target_units="%"))
     ]),
     'CLDTOT_TAU1.3_9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 1.3, 9.4), target_units="%"))
+        (('CLD_MISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, None, None, 1.3, 9.4), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 1.3, 9.4), target_units="%"))
     ]),
     'CLDTOT_TAU9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,None,None, 9.4, None), target_units="%"))
+        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 9.4, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(
+            cld, None, None, 9.4, None), target_units="%"))
     ]),
     'CLDLOW_TAU1.3_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld,0, 3, 1.3, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld,0, 3, 1.3, None), target_units="%"))
+        (('CLD_MISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 3, 1.3, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 3, 1.3, None), target_units="%"))
     ]),
     'CLDLOW_TAU1.3_9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%"))
+        (('CLD_MISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 3, 1.3, 9.4), target_units="%"))
     ]),
     'CLDLOW_TAU9.4_MISR': OrderedDict([
-        (('CLD_MISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%")),
-        (('CLMISR'), lambda cld: convert_units(cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%"))
+        (('CLD_MISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%")),
+        (('CLMISR'), lambda cld: convert_units(
+            cosp_bin_sum(cld, 0, 3, 9.4, None), target_units="%"))
     ]),
-# COSP cloud fraction joint histogram     
+    # COSP cloud fraction joint histogram
     'COSP_HISTOGRAM_MISR': OrderedDict([
-        (('CLD_MISR'),lambda cld: cosp_histogram_standardize(rename(cld))),
-        (('CLMISR'),lambda cld: cosp_histogram_standardize(rename(cld)))
+        (('CLD_MISR'), lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLMISR'), lambda cld: cosp_histogram_standardize(rename(cld)))
     ]),
     'COSP_HISTOGRAM_MODIS': OrderedDict([
-        (('CLMODIS'),lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLMODIS'), lambda cld: cosp_histogram_standardize(rename(cld))),
     ]),
     'COSP_HISTOGRAM_ISCCP': OrderedDict([
-        (('FISCCP1_COSP'),lambda cld: cosp_histogram_standardize(rename(cld))),
-        (('CLISCCP'),lambda cld: cosp_histogram_standardize(rename(cld)))
+        (('FISCCP1_COSP'), lambda cld: cosp_histogram_standardize(rename(cld))),
+        (('CLISCCP'), lambda cld: cosp_histogram_standardize(rename(cld)))
     ]),
     'ICEFRAC': OrderedDict([
         (('ICEFRAC'), lambda icefrac: convert_units(icefrac, target_units="%"))
@@ -635,7 +691,7 @@ derived_variables = {
     'RELHUM': OrderedDict([
         (('hur'), lambda hur: convert_units(hur, target_units="%")),
         (('RELHUM'), lambda relhum: convert_units(relhum, target_units="%"))
-#        (('RELHUM'), rename)
+        #        (('RELHUM'), rename)
     ]),
     'OMEGA': OrderedDict([
         (('wap'), lambda wap: convert_units(wap, target_units="mbar/day")),

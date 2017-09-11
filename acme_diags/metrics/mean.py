@@ -1,6 +1,7 @@
 import cdutil
 import cdp.cdp_metric
 
+
 class Mean(cdp.cdp_metric.CDPMetric):
     def __init__(self):
         metric_path = __file__

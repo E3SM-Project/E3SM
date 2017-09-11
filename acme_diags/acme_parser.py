@@ -1,4 +1,3 @@
-import ast
 import cdp.cdp_parser
 import acme_diags.acme_parameter
 
@@ -175,7 +174,7 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='backend',
             help='Graphical backend',
             required=False)
-        
+
         self.add_argument(
             '--multiprocessing',
             dest='multiprocessing',
@@ -199,4 +198,3 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             action='store_const',
             const=True,
             required=False)
-

@@ -2,25 +2,22 @@ from __future__ import print_function
 
 import os
 import sys
-import numpy
-import cdutil
 import vcs
-import cdms2
-import genutil.statistics
-from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver.utils import get_output_dir, _chown
-import acme_diags.plot.vcs as utils 
+import acme_diags.plot.vcs as utils
 
 textcombined_objs = {}
 
+
 def plot(reference, test, diff, metrics_dict, parameter):
-    vcs_canvas = vcs.init(bg=True, geometry=(parameter.canvas_size_w, parameter.canvas_size_h))
-    case_id = parameter.case_id
+    vcs_canvas = vcs.init(bg=True, geometry=(
+        parameter.canvas_size_w, parameter.canvas_size_h))
+    parameter.case_id
 
     file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'polar')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_7_new.json'))
-    
+
     template_test = vcs_canvas.gettemplate('plotset7_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset7_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset7_0_x_2')
@@ -56,9 +53,11 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff.id = parameter.diff_name
 
     # model and observation graph
-    utils.plot_min_max_mean(textcombined_objs, vcs_canvas, metrics_dict, 'test')
+    utils.plot_min_max_mean(
+        textcombined_objs, vcs_canvas, metrics_dict, 'test')
     utils.plot_min_max_mean(textcombined_objs, vcs_canvas, metrics_dict, 'ref')
-    utils.plot_min_max_mean(textcombined_objs, vcs_canvas, metrics_dict, 'diff')
+    utils.plot_min_max_mean(
+        textcombined_objs, vcs_canvas, metrics_dict, 'diff')
 
     reference_isofill = vcs.getisofill('reference_isofill')
     reference_isofill.missing = 'grey'
@@ -66,28 +65,31 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test_isofill.missing = 'grey'
     diff_isofill = vcs.getisofill('diff_isofill')
     diff_isofill.missing = 'grey'
-    if parameter.var_region.lower().find('polar') !=-1:
+    if parameter.var_region.lower().find('polar') != -1:
         reference_isofill.projection = 'polar'
         test_isofill.projection = 'polar'
         diff_isofill.projection = 'polar'
-        if parameter.var_region.find('S') !=-1: 
-            lat_y1 = -90 
-            lat_y2 = -55 
-        elif parameter.var_region.find('N') !=-1:
-            lat_y1 = 90 
-            lat_y2 = 50 
- 
-        reference_isofill.datawc_y1 = lat_y1  # this should extracted from selected domain
+        if parameter.var_region.find('S') != -1:
+            lat_y1 = -90
+            lat_y2 = -55
+        elif parameter.var_region.find('N') != -1:
+            lat_y1 = 90
+            lat_y2 = 50
+
+        # this should extracted from selected domain
+        reference_isofill.datawc_y1 = lat_y1
         reference_isofill.datawc_y2 = lat_y2
         test_isofill.datawc_y1 = lat_y1  # this should extracted from selected domain
         test_isofill.datawc_y2 = lat_y2
         diff_isofill.datawc_y1 = lat_y1  # this should extracted from selected domain
         diff_isofill.datawc_y2 = lat_y2
 
-
-    utils.set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference, test)
-    utils.set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test, reference)
-    utils.set_levels_of_graphics_method(diff_isofill, parameter.diff_levels, diff)
+    utils.set_levels_of_graphics_method(
+        reference_isofill, parameter.contour_levels, reference, test)
+    utils.set_levels_of_graphics_method(
+        test_isofill, parameter.contour_levels, test, reference)
+    utils.set_levels_of_graphics_method(
+        diff_isofill, parameter.diff_levels, diff)
 
     if parameter.arrows:
         reference_isofill.ext_1 = True
@@ -97,27 +99,34 @@ def plot(reference, test, diff, metrics_dict, parameter):
         diff_isofill.ext_1 = True
         diff_isofill.ext_2 = True
 
-    utils.set_colormap_of_graphics_method(vcs_canvas, parameter.reference_colormap, reference_isofill, parameter)
-    utils.set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill, parameter)
-    utils.set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill, parameter)
+    utils.set_colormap_of_graphics_method(
+        vcs_canvas, parameter.reference_colormap, reference_isofill, parameter)
+    utils.set_colormap_of_graphics_method(
+        vcs_canvas, parameter.test_colormap, test_isofill, parameter)
+    utils.set_colormap_of_graphics_method(
+        vcs_canvas, parameter.diff_colormap, diff_isofill, parameter)
 
     vcs_canvas.plot(utils.add_cyclic(test), template_test, test_isofill)
-    vcs_canvas.plot(utils.add_cyclic(reference), template_ref, reference_isofill)
+    vcs_canvas.plot(utils.add_cyclic(reference),
+                    template_ref, reference_isofill)
     vcs_canvas.plot(utils.add_cyclic(diff), template_diff, diff_isofill)
 
     utils.plot_rmse_and_corr(textcombined_objs, vcs_canvas, metrics_dict)
 
     # Plotting the main title
-    main_title = utils.managetextcombined(textcombined_objs, 'main_title', 'main_title', vcs_canvas)
+    main_title = utils.managetextcombined(
+        textcombined_objs, 'main_title', 'main_title', vcs_canvas)
     main_title.string = parameter.main_title
     main_title.y = [0.985]
-    vcs_canvas.portrait()  # for some reason, this needs to be before a call to vcs_canvas.plot()
+    # for some reason, this needs to be before a call to vcs_canvas.plot()
+    vcs_canvas.portrait()
     vcs_canvas.plot(main_title)
 
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    fnm = os.path.join(get_output_dir(parameter.current_set, parameter), parameter.output_file)
+    fnm = os.path.join(get_output_dir(parameter.current_set,
+                                      parameter), parameter.output_file)
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
         if f == 'png':
