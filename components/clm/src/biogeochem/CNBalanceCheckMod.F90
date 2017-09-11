@@ -29,7 +29,7 @@ module CNBalanceCheckMod
   use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
   use clm_time_manager    , only : get_curr_date
-  use CNStateType         , only : fert_type , fert_continue, fert_dose
+  use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl          , only : forest_fert_exp
 
   !
@@ -340,13 +340,14 @@ contains
          col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
          if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
               fert_to_sminn(c) + soyfixn_to_sminn(c)
+         
          ! forest fertilization
-         if (forest_fert_exp) then
-            call get_curr_date(kyr, kmo, kda, mcsec)
-            if (kda == 1  .and. mcsec == 0 ) then
-               if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
-                  col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
-               end if
+         call get_curr_date(kyr, kmo, kda, mcsec)
+         if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
+            if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+               .and. fert_type(c) == 1 &
+               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
+               col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
              end if
          end if
 
@@ -562,14 +563,15 @@ contains
 !         if (crop_prog) col_pinputs(c) = col_pinputs(c) + fert_p_to_sminp(c) 
 
          ! forest fertilization
-         if (forest_fert_exp) then
-            call get_curr_date(kyr, kmo, kda, mcsec)
-            if (kda == 1  .and. mcsec == 0 ) then
-               if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
-                  col_pinputs(c) = col_pinputs(c) + fert_dose(c,kmo)/dt
-               end if
+         call get_curr_date(kyr, kmo, kda, mcsec)
+         if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
+            if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+               .and. fert_type(c) == 2 &
+               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
+               col_pinputs(c) = col_pinputs(c) + fert_dose(c,kmo)/dt
              end if
          end if
+
          col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
 !         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt

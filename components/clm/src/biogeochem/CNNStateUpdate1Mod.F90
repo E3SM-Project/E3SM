@@ -22,7 +22,7 @@ module CNNStateUpdate1Mod
   use clm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
   use clm_time_manager       , only : get_curr_date
-  use CNStateType            , only : fert_type , fert_continue, fert_dose
+  use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
   !
   implicit none
@@ -282,33 +282,29 @@ contains
       endif  !end if is_active_betr_bgc 
 
       ! forest fertilization
-      if (forest_fert_exp) then
-         call get_curr_date(kyr, kmo, kda, mcsec)
-         if (.not. use_nitrif_denitrif) then
-            if (kda == 1  .and. mcsec == 0 .and. kyr >= 1981) then
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
-                      do j = 1, nlevdecomp
-                          ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
-                      end do
-                  end if
-              end do
-            end if
-         else
-            if (kda == 1  .and. mcsec == 0 .and. kyr >= 1981) then
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  if ( (( (fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 1 ) then
-                      do j = 1, nlevdecomp
-                          ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
-                          ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
-                          ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
-                      end do
-                  end if
-              end do
-            end if
-         end if
+      call get_curr_date(kyr, kmo, kda, mcsec)
+      if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
+         if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+               .and. fert_type(c) == 1 &
+               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
+            if (.not. use_nitrif_denitrif) then
+               do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   do j = 1, nlevdecomp
+                      ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+                   end do
+               end do
+            else
+               do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   do j = 1, nlevdecomp
+                      ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
+                      ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
+                      ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
+                   end do
+               end do
+             end if
+          end if
       end if
 
       ! patch loop

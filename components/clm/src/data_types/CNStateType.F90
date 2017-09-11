@@ -26,9 +26,11 @@ module CNStateType
   ! !PRIVATE MEMBER FUNCTIONS: 
   private :: checkDates
   ! !PUBLIC TYPES:
-  integer(r8), pointer, public :: fert_type         (:)
-  integer(r8), pointer, public :: fert_continue     (:)
+  integer    , pointer, public :: fert_type         (:)
+  integer    , pointer, public :: fert_continue     (:)
   real(r8)   , pointer, public :: fert_dose         (:,:)
+  integer    , pointer, public :: fert_start        (:)
+  integer    , pointer, public :: fert_end          (:)
   ! 
   ! !PUBLIC TYPES:
   type, public :: cnstate_type
@@ -346,6 +348,9 @@ contains
     allocate(this%secp_col                    (begc:endc))                   ; this%secp_col(:) = nan
     allocate(this%occp_col                    (begc:endc))                   ; this%occp_col(:) = nan
     allocate(this%prip_col                    (begc:endc))                   ; this%prip_col(:) = nan
+
+    allocate(fert_start                       (begc:endc))                   ; fert_start    (:) = 0
+    allocate(fert_end                         (begc:endc))                   ; fert_end      (:) = 0
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -690,6 +695,9 @@ contains
     real(r8) ,pointer  :: secp_g (:)                       ! read in - SECONDARY_P
     real(r8) ,pointer  :: occp_g (:)                       ! read in - OCCLUDED_P
     real(r8) ,pointer  :: prip_g (:)                       ! read in - APATITE_P
+
+    integer     ,pointer     :: fert_start_rdin (:)
+    integer     ,pointer     :: fert_end_rdin (:)
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -802,7 +810,31 @@ contains
           end do
        end do
        deallocate(fert_dose_rdin)
+
+       allocate(fert_start_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='fert_startyr', flag='read',data=fert_start_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_start NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          fert_start(c) = fert_start_rdin(g)
+       end do
+       deallocate(fert_start_rdin)
+
+       allocate(fert_end_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='fert_endyr', flag='read',data=fert_end_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: fert_endyr NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          fert_end(c) = fert_end_rdin(g)
+       end do
+       deallocate(fert_end_rdin)
+
     end if
+
     ! --------------------------------------------------------------------
 
     ! --------------------------------------------------------------------
