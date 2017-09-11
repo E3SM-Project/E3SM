@@ -163,8 +163,10 @@ contains
      use clm_varctl        , only : create_glacier_mec_landunit
      use clm_time_manager  , only : get_step_size, get_nstep
      use clm_initializeMod , only : surfalb_vars
+     use domainMod         , only : ldomain
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
+
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)    :: bounds  
@@ -301,13 +303,19 @@ contains
        ! Water balance check
 
        do c = bounds%begc, bounds%endc
+          g = col%gridcell(c)
 
           ! add qflx_drain_perched and qflx_flood
           if (col%active(c)) then
 
+        !     endwb(c) = begwb(c) + (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
+        !          - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
+        !          - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)) * dtime
+
+
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
-                  - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
+                  - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) - qflx_irrig(c) * ldomain%f_grd(g) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)) * dtime
              dwb(c) = (endwb(c)-begwb(c))/dtime
           else
@@ -371,6 +379,7 @@ contains
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
              write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
+             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
@@ -395,6 +404,7 @@ contains
              write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_glcice_melt           = ',qflx_glcice_melt(indexc)
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc) 
+             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))

@@ -101,6 +101,7 @@ module WaterfluxType
      ! Irrigation
      real(r8), pointer :: qflx_irrig_patch         (:)   ! patch irrigation flux (mm H2O/s)
      real(r8), pointer :: qflx_irrig_col           (:)   ! col irrigation flux (mm H2O/s)
+     real(r8), pointer :: qflx_irr_demand_col      (:)   ! col surface irrigation demand (mm H2O /s)
      real(r8), pointer :: irrig_rate_patch         (:)   ! current irrigation rate [mm/s]
      integer , pointer :: n_irrig_steps_left_patch (:)   ! number of time steps for which we still need to irrigate today (if 0, ignore)
 
@@ -243,6 +244,7 @@ contains
 
     allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
     allocate(this%qflx_irrig_col           (begc:endc))              ; this%qflx_irrig_col           (:)   = nan
+    allocate(this%qflx_irr_demand_col      (begc:endc))              ; this%qflx_irr_demand_col      (:)   = nan
     allocate(this%irrig_rate_patch         (begp:endp))              ; this%irrig_rate_patch         (:)   = nan
     allocate(this%n_irrig_steps_left_patch (begp:endp))              ; this%n_irrig_steps_left_patch (:)   = 0
 
@@ -303,6 +305,11 @@ contains
     call hist_addfld1d (fname='QOVER',  units='mm/s',  &
          avgflag='A', long_name='surface runoff', &
          ptr_col=this%qflx_surf_col, c2l_scale_type='urbanf')
+    
+    this%qflx_irr_demand_col(begc:endc) = 0._r8
+    call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
+         avgflag='A', long_name='Irrigation demand sent to MOSART/WM', &
+         ptr_col=this%qflx_irr_demand_col, c2l_scale_type='urbanf')
 
     this%qflx_qrgwl_col(begc:endc) = spval
     call hist_addfld1d (fname='QRGWL',  units='mm/s',  &
@@ -534,12 +541,14 @@ contains
     this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
 
     this%dwb_col(bounds%begc:bounds%endc) = 0._r8
+
     ! needed for CNNLeaching 
     do c = bounds%begc, bounds%endc
        l = col%landunit(c)
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
           this%qflx_drain_col(c) = 0._r8
           this%qflx_surf_col(c)  = 0._r8
+          this%qflx_irr_demand_col(c)  = 0._r8
        end if
     end do
 

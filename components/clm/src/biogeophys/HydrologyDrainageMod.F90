@@ -16,6 +16,7 @@ module HydrologyDrainageMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
+  use SoilHydrologyMod  , only : WaterTable
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
   !
@@ -51,6 +52,7 @@ contains
     use SoilHydrologyMod , only : CLMVICMap, Drainage
     use TracerParamsMod  , only : pre_diagnose_soilcol_water_flux, diagnose_drainage_water_flux    
     use clm_varctl       , only : use_vsfm
+    use domainMod        , only : ldomain
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -99,6 +101,7 @@ contains
          total_plant_stored_h2o => waterstate_vars%total_plant_stored_h2o_col , & ! Input [real(r8) (:) dynamic water stored in plants]
          qflx_evap_tot          => waterflux_vars%qflx_evap_tot_col           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
          qflx_irrig             => waterflux_vars%qflx_irrig_col              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)                       
+         qflx_irr_demand        => waterflux_vars%qflx_irr_demand_col         , & ! Input:  [real(r8) (:)   ]  irrigation demand sent to MOSART/WM (mm H2O /s)                       
          qflx_glcice_melt       => waterflux_vars%qflx_glcice_melt_col        , & ! Input:  [real(r8) (:)]  ice melt (positive definite) (mm H2O/s)      
          qflx_h2osfc_surf       => waterflux_vars%qflx_h2osfc_surf_col        , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)                        
          qflx_drain_perched     => waterflux_vars%qflx_drain_perched_col      , & ! Output: [real(r8) (:)   ]  sub-surface runoff from perched zwt (mm H2O /s)   
@@ -140,6 +143,9 @@ contains
          call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
               h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
       endif
+
+!      call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+!           soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars)
 
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec
@@ -264,8 +270,13 @@ contains
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
          if ((lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) .and. col%active(c)) then
-            qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
+           ! qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
+           qflx_irr_demand(c) = -1.0_r8 * qflx_irrig(c) * ldomain%f_surf(g)
+ 
+         else
+           qflx_irr_demand(c) = 0._r8
          end if
+
          if (lun%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
          else if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
@@ -273,6 +284,9 @@ contains
          end if
 
       end do
+
+!      call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+!           soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars)
 
     end associate
 

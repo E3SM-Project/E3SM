@@ -104,6 +104,7 @@ contains
     use pftvarcon          , only : irrigated
     use clm_varcon         , only : c14ratio
     use perf_mod           , only : t_startf, t_stopf
+    use domainMod          , only : ldomain
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
@@ -439,7 +440,7 @@ contains
       ! Determine step size
 
       dtime = get_step_size()
-      irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
+      irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)*6._r8  ! round up
 
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
@@ -629,6 +630,7 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = pft%column(p)
+            g = pft%gridcell(p)
             if (check_for_irrig(p) .and. .not. frozen_soil(p)) then
                ! if level L was frozen, then we don't look at any levels below L
                if (t_soisno(c,j) <= SHR_CONST_TKFRZ) then
@@ -643,11 +645,12 @@ contains
                   ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
                   h2osoi_liq_so  = vol_liq_so * denh2o * col%dz(c,j)
                   h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col%dz(c,j)
-                  deficit        = max((h2osoi_liq_so + irrig_factor*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
+                 ! deficit        = max((h2osoi_liq_so + irrig_factor*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
 
+                  deficit        = max((h2osoi_liq_so + ldomain%firrig(g)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
                   ! Add deficit to irrig_rate, converting units from mm to mm/sec
                   irrig_rate(p)  = irrig_rate(p) + deficit/(dtime*irrig_nsteps_per_day)
-
+                  
                end if  ! else if (rootfr(p,j) > 0)
             end if     ! if (check_for_irrig(p) .and. .not. frozen_soil(p))
          end do        ! do f

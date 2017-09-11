@@ -524,8 +524,11 @@ contains
 !          col_poutputs(c) = sminp_to_plant(c)
 
          ! calculate the total column-level phosphorus balance error for this time step
+         col_endpb(c) = (col_pinputs(c) - col_poutputs(c))*dt + col_begpb(c)
+
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
+
 
          if (abs(col_errpb(c)) > 1e-8_r8) then
             err_found = .true.

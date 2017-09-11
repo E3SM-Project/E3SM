@@ -98,6 +98,7 @@ contains
          qflx_evap_grnd   =>    waterflux_vars%qflx_evap_grnd_col   , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
          qflx_top_soil    =>    waterflux_vars%qflx_top_soil_col    , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)         
          qflx_surf        =>    waterflux_vars%qflx_surf_col        , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         qflx_irrig       =>    waterflux_vars%qflx_irrig_col       , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
 
          zwt              =>    soilhydrology_vars%zwt_col          , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
          max_moist        =>    soilhydrology_vars%max_moist_col    , & ! Input:  [real(r8) (:,:) ]  maximum soil moisture (ice + liq, mm)            
@@ -530,6 +531,8 @@ contains
      use clm_varpar       , only : nlevsoi
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm
+     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop
+     use domainMod        , only : ldomain
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds  
@@ -544,7 +547,7 @@ contains
      type(waterflux_type)     , intent(inout) :: waterflux_vars
      !
      ! !LOCAL VARIABLES:
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: l,c,j,fc,i,g                            ! indices
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi) ! layer thickness (mm)
@@ -580,6 +583,7 @@ contains
      real(r8) :: q_perch
      real(r8) :: q_perch_max
      real(r8) :: dflag=0._r8
+     real(r8) :: qcharge_temp
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
@@ -604,7 +608,7 @@ contains
           sucsat             =>    soilstate_vars%sucsat_col             , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
           watsat             =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
           eff_porosity       =>    soilstate_vars%eff_porosity_col       , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
-
+          qflx_irrig         =>    waterflux_vars%qflx_irrig_col         , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
           zwt                =>    soilhydrology_vars%zwt_col            , & ! Output: [real(r8) (:)   ]  water table depth (m)                             
           zwt_perched        =>    soilhydrology_vars%zwt_perched_col    , & ! Output: [real(r8) (:)   ]  perched water table depth (m)                     
           frost_table        =>    soilhydrology_vars%frost_table_col    , & ! Output: [real(r8) (:)   ]  frost table depth (m)                             
@@ -666,6 +670,26 @@ contains
           rous=max(rous,0.02_r8)
 
           !--  water table is below the soil column  --------------------------------------
+          g = col%gridcell(c)
+          l = col%landunit(c)
+
+       !   qcharge_temp = qcharge(c)
+       !   if ((lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) .and. col%active(c)) then
+           ! qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
+         !   qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c) *ldomain%f_surf(g)
+         !   wa(c) =  max(0.0_r8, wa(c) - qflx_irrig(c) * dtime *
+         !   ldomain%f_grd(g))
+         !    qcharge_temp = qcharge(c)
+       !      qcharge(c) = qcharge(c) - qflx_irrig(c) * ldomain%f_grd(g)
+       !   end if
+
+
+          qcharge_temp = qcharge(c)
+         ! qcharge(c) = qcharge(c) - qflx_irrig(c) * ldomain%f_grd(g)
+
+          wa(c)  = wa(c) - qflx_irrig(c) * ldomain%f_grd(g) * dtime
+          zwt(c) = zwt(c) + (qflx_irrig(c) * ldomain%f_grd(g) * dtime)/1000._r8/rous
+
           if(jwt(c) == nlevsoi) then             
              wa(c)  = wa(c) + qcharge(c)  * dtime
              zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
@@ -719,6 +743,8 @@ contains
                 end if
              enddo
           endif
+
+          qcharge(c) = qcharge_temp
        enddo
 
 

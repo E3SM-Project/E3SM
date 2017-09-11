@@ -240,6 +240,7 @@ module seq_diag_mct
    integer :: index_l2x_Flrl_rofsub
    integer :: index_l2x_Flrl_rofdto
    integer :: index_l2x_Flrl_rofi
+   integer :: index_l2x_Flrl_demand
    integer :: index_l2x_Flrl_irrig
 
    integer :: index_x2l_Faxa_lwdn
@@ -259,6 +260,7 @@ module seq_diag_mct
    integer :: index_x2r_Flrl_rofsub
    integer :: index_x2r_Flrl_rofdto
    integer :: index_x2r_Flrl_rofi
+   integer :: index_x2r_Flrl_demand
    integer :: index_x2r_Flrl_irrig
 
    integer :: index_o2x_Fioo_frazil ! currently used by acme
@@ -852,6 +854,7 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
          index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_l,'Flrl_rofsub')
          index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
          index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
+         index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_l,'Flrl_demand')
          index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
 
          index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
@@ -882,6 +885,7 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
          if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
+                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_demand,n) &
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
          if (index_l2x_Flrl_irrig /= 0) then
             if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
@@ -1064,6 +1068,7 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
       index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto')
       index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig', perrWith='quiet')
       index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi')
+      index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand')
 
       index_x2r_Flrl_rofl_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_16O', perrWith='quiet')
       if ( index_x2r_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
@@ -1086,6 +1091,7 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
       if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofsur,n) &
                                                                 + dr*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
                                                                 + dr*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
+                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_demand,n) &
                                                                 + dr*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
       if (index_x2r_Flrl_irrig /= 0) then
          if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_irrig,n)

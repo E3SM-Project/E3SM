@@ -1960,6 +1960,14 @@ module seq_flds_mod
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
 
+     call seq_flds_add(l2x_fluxes,'Flrl_demand')
+     call seq_flds_add(x2r_fluxes,'Flrl_demand')
+     longname = 'Water flux total demand in land from rof'
+     stdname  = 'water_flux_total_demand_from_runoff'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_demand'
+     call metadata_set(attname, longname, stdname, units)
+
      ! Currently only the CESM land and runoff models treat irrigation as a separate
      ! field: in ACME, this field is folded in to the other runoff fields. Eventually,
      ! ACME may want to update its land and runoff models to map irrigation specially, as

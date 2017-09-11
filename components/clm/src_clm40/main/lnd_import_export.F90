@@ -316,6 +316,11 @@ contains
        l2x(index_l2x_Flrl_rofgwl,i) = 0.0_r8
        l2x(index_l2x_Flrl_rofsub,i) = 0.0_r8
 
+       l2x(index_l2x_Flrl_demand,i) = 0.0_r8  ! fields?
+       if (l2x(index_l2x_Flrl_demand,i) > 0._r8) then
+          call endrun( sub//' ERROR: demand must be <= 0.')
+       endif
+
        ! glc coupling
 
        if (create_glacier_mec_landunit) then
