@@ -10,7 +10,7 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, nThreadsHoriz, omp_set_num_threads
     ! --------------------------------
-    use control_mod, only : restartfreq, topology, partmethod
+    use control_mod, only : restartfreq, topology, partmethod, cubed_sphere_map
     ! --------------------------------
     use namelist_mod, only : readnl
     ! --------------------------------
@@ -34,7 +34,7 @@ contains
                            MeshCubeEdgeCount
     ! --------------------------------
     use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
-         assign_node_numbers_to_elem
+         assign_node_numbers_to_elem, set_area_correction_map2
 
     ! --------------------------------
     use edge_mod, only : initedgebuffer
@@ -76,6 +76,13 @@ contains
     ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
+    use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
+    ! --------------------------------
+    use physical_constants, only : dd_pi
+    ! -------------------------------
+    use coordinate_systems_mod, only : sphere_tri_area
+    ! --------------------------------
+
 
     implicit none
 #ifdef _MPI
@@ -119,8 +126,9 @@ contains
     real(kind=real_kind) :: approx_elements_per_task, xtmp
     type (quadrature_t)   :: gp                     ! element GLL points
 
+    logical :: repro_sum_use_ddpdd, repro_sum_recompute
+    real(kind=real_kind) :: repro_sum_rel_diff_max
 
-    ! =====================================
     ! Read in model control information
     ! =====================================
     call t_startf('init')
@@ -249,6 +257,18 @@ contains
     deallocate(TailPartition)
     deallocate(HeadPartition)
 
+    call repro_sum_defaultopts(                           &
+         repro_sum_use_ddpdd_out=repro_sum_use_ddpdd,       &
+         repro_sum_rel_diff_max_out=repro_sum_rel_diff_max, &
+         repro_sum_recompute_out=repro_sum_recompute        )
+    call repro_sum_setopts(                              &
+         repro_sum_use_ddpdd_in=repro_sum_use_ddpdd,       &
+         repro_sum_rel_diff_max_in=repro_sum_rel_diff_max, &
+         repro_sum_recompute_in=repro_sum_recompute,       &
+         repro_sum_master=par%masterproc,                      &
+         repro_sum_logunit=6                           )
+    if(par%masterproc) print *, "Initialized repro_sum"
+
     ! initial 1D grids used to form tensor product element grids:
     gp=gausslobatto(np)
     if (topology=="cube") then
@@ -271,12 +291,20 @@ contains
        enddo
        if(par%masterproc) write(6,*)"...done."
     end if
+
+    ! This routine does not check whether gp is init-ed.
+    if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
+       call set_area_correction_map2(elem, nelemd, par, gp)
+    endif
+
+    deallocate(gp%points)
+    deallocate(gp%weights)
+
     ! =================================================================
     ! Run the checksum to verify communication schedule
     ! =================================================================
-    call testchecksum(elem,par,GridEdge)
 
-    
+    call testchecksum(elem,par,GridEdge)
 
     ! =================================================================
     ! Initialize mass_matrix

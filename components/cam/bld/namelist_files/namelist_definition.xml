@@ -1122,12 +1122,6 @@ IEFLX fixer options
 Default: 0
 </entry>
 
-<entry id="l_ieflx_fix" type="logical" category="fixers"
-       group="phys_ctl_nl" valid_values="" >
-Whether or not to fix ieflx
-Default: .false.
-</entry>
-
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -2710,6 +2704,12 @@ Switch for CLUBB_SGS
 Default: FALSE
 </entry>
 
+<entry id="do_aerocom_ind3" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Switch for AeroCom diagnostics
+Default: FALSE
+</entry>
+
 <entry id="shallow_scheme" type="char*16" category="conv"
        group="phys_ctl_nl" valid_values="Hack,UW,CLUBB_SGS,UNICON" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
@@ -4181,6 +4181,20 @@ Use relaxation.
 Default: FALSE
 </entry>
 
+<entry id="scm_relaxation_low" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Lowest layer to apply relaxation.  Keep to default value to apply relaxation 
+at the surface.   
+Default: 1050.0 (hPa)
+</entry>
+
+<entry id="scm_relaxation_high" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Highest layer to apply relaxation.  Keep to default value to apply relaxation 
+at the model top.   
+Default: 0.e3 (hPa)
+</entry>
+
 <entry id="scm_observed_aero" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Initialize with observed aerosols from IOP file. 
@@ -4196,6 +4210,12 @@ Default: FALSE
 <entry id="lwrad_off" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Turn off LW radiation computation.
+Default: FALSE
+</entry>
+
+<entry id="precip_off" type="logical" category="scm"
+       group="cam_inparm" valid_values="">
+Turn off microphysics computation.
 Default: FALSE
 </entry>
 

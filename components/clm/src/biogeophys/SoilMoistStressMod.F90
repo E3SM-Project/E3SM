@@ -74,7 +74,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_log_mod    , only : errMsg => shr_log_errMsg
     use decompMod      , only : bounds_type
-    use ColumnType     , only : col
+    use ColumnType     , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -103,7 +103,7 @@ contains
        do fc = 1, numf
           c = filter(fc)
           !compute the volumetric ice content
-          vol_ice=min(watsat(c,j), h2osoi_ice(c,j)/(denice*col%dz(c,j)))
+          vol_ice=min(watsat(c,j), h2osoi_ice(c,j)/(denice*col_pp%dz(c,j)))
 
           !compute the maximum soil space to fill liquid water and air
           eff_por(c,j) = watsat(c,j) - vol_ice
@@ -122,7 +122,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use decompMod      , only : bounds_type
     use shr_log_mod    , only : errMsg => shr_log_errMsg    
-    use ColumnType     , only : col
+    use ColumnType     , only : col_pp
     implicit none
     !
     ! !ARGUMENTS:
@@ -156,7 +156,7 @@ contains
           c = filter(fc)
           if (j>=jtop(c)) then
              !compute the volumetric ice content       
-             vol_ice=min(1._r8, h2osoi_ice(c,j)/(denice*col%dz(c,j)))
+             vol_ice=min(1._r8, h2osoi_ice(c,j)/(denice*col_pp%dz(c,j)))
 
              !compute the maximum snow void space to fill liquid water and air         
              eff_por(c,j) = 1._r8 - vol_ice
@@ -178,7 +178,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_log_mod    , only : errMsg => shr_log_errMsg  
     use decompMod      , only : bounds_type
-    use ColumnType     , only : col
+    use ColumnType     , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -208,7 +208,7 @@ contains
           c = filter(fc)
           if(j>=jtop(c))then
              !volume of liquid is no greater than effective void space
-             vol_liq(c,j) = min(eff_porosity(c,j), h2osoi_liq(c,j)/(col%dz(c,j)*denh2o))
+             vol_liq(c,j) = min(eff_porosity(c,j), h2osoi_liq(c,j)/(col_pp%dz(c,j)*denh2o))
           endif
        enddo
     enddo
@@ -233,7 +233,7 @@ contains
     use SoilStateType   , only : soilstate_type
     use WaterSTateType  , only : waterstate_type
     use SimpleMathMod   , only : array_normalization
-    use PatchType       , only : pft
+    use VegetationType       , only : veg_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -274,7 +274,7 @@ contains
             do j = 1, ubj
                do f = 1, fn
                   p = filterp(f)
-                  c = pft%column(p)
+                  c = veg_pp%column(p)
 
                   if ( j <= max(altmax_lastyear_indx(c), altmax_indx(c), 1) )then
                      rootfr_unf(p,j) = rootfr(p,j)
@@ -288,7 +288,7 @@ contains
             do j = 1, ubj
                do f = 1, fn
                   p = filterp(f)
-                  c = pft%column(p)
+                  c = veg_pp%column(p)
 
                   if (t_soisno(c,j) >= tfrz) then
                      rootfr_unf(p,j) = rootfr(p,j)
@@ -323,13 +323,13 @@ contains
     use shr_log_mod          , only : errMsg => shr_log_errMsg
     use decompMod            , only : bounds_type
     use clm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
-    use EcophysConType       , only : ecophyscon
+    use VegetationPropertiesType     , only : veg_vp
     use TemperatureType      , only : temperature_type
     use SoilStateType        , only : soilstate_type
     use EnergyFluxType       , only : energyflux_type
     use WaterSTateType       , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use PatchType            , only : pft
+    use VegetationType            , only : veg_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -355,9 +355,9 @@ contains
     SHR_ASSERT_ALL((ubound(rootfr_unf) == (/bounds%endp, nlevgrnd/)), errMsg(__FILE__, __LINE__))  
 
     associate(                                                &
-         smpso         => ecophyscon%smpso                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
-         smpsc         => ecophyscon%smpsc                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal closure (mm)                    
-         tc_stress     => ecophyscon%tc_stress              , & ! Input:  [real(r8)       ]  critical soil temperature for soil water stress (C)    
+         smpso         => veg_vp%smpso                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
+         smpsc         => veg_vp%smpsc                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal closure (mm)                    
+         tc_stress     => veg_vp%tc_stress              , & ! Input:  [real(r8)       ]  critical soil temperature for soil water stress (C)    
          t_soisno      => temperature_vars%t_soisno_col     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
 
          watsat        => soilstate_vars%watsat_col         , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)   (constant)                     
@@ -378,8 +378,8 @@ contains
       do j = 1,nlevgrnd
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
-            l = pft%landunit(p)
+            c = veg_pp%column(p)
+            l = veg_pp%landunit(p)
 
             ! Root resistance factors
             ! rootr effectively defines the active root fraction in each layer      
@@ -388,12 +388,12 @@ contains
             else
                s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
 
-               !smp_node = max(smpsc(pft%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
+               !smp_node = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
                call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
-               smp_node = max(smpsc(pft%itype(p)), smp_node)
+               smp_node = max(smpsc(veg_pp%itype(p)), smp_node)
 
                rresis(p,j) = min( (eff_porosity(c,j)/watsat(c,j))* &
-                    (smp_node - smpsc(pft%itype(p))) / (smpso(pft%itype(p)) - smpsc(pft%itype(p))), 1._r8)
+                    (smp_node - smpsc(veg_pp%itype(p))) / (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
 
 
                if (.not. (perchroot .or. perchroot_alt) ) then
@@ -405,15 +405,15 @@ contains
                !it is possible to further separate out a btran function, but I will leave it for the moment, jyt
                btran(p)    = btran(p) + max(rootr(p,j),0._r8)
 
-               !smp_node_lf = max(smpsc(pft%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
+               !smp_node_lf = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
                s_node = h2osoi_vol(c,j)/watsat(c,j)
 
                call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node_lf)
 
                !smp_node_lf =  -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j))
-               smp_node_lf = max(smpsc(pft%itype(p)), smp_node_lf) 
-               btran2(p)   = btran2(p) +rootfr(p,j)*min((smp_node_lf - smpsc(pft%itype(p))) / &
-                    (smpso(pft%itype(p)) - smpsc(pft%itype(p))), 1._r8)
+               smp_node_lf = max(smpsc(veg_pp%itype(p)), smp_node_lf) 
+               btran2(p)   = btran2(p) +rootfr(p,j)*min((smp_node_lf - smpsc(veg_pp%itype(p))) / &
+                    (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
             endif
          end do
       end do

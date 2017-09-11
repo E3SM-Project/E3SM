@@ -50,6 +50,14 @@
     <desc>timer output depth</desc>
   </entry>
 
+  <entry id="TIMER_LEVEL">
+    <type>integer</type>
+    <default_value>12</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer output depth</desc>
+  </entry>
+
   <entry id="BFBFLAG">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -207,6 +215,27 @@
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
+  </entry>
+
+  <entry id="GLC_AVG_PERIOD">
+    <type>char</type>
+    <valid_values>glc_coupling_period,yearly</valid_values>
+    <default_value>yearly</default_value>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Period at which coupler averages fields sent to GLC.
+    This supports doing the averaging to GLC less frequently than GLC is called
+    (i.e., separating the averaging frequency from the calling frequency).
+    This is useful because there are benefits to only averaging the GLC inputs
+    as frequently as they are really needed (yearly for CISM), but GLC needs to
+    still be called more frequently than that in order to support mid-year restarts.
+
+    Setting GLC_AVG_PERIOD to 'glc_coupling_period' means that the averaging is
+    done exactly when the GLC is called (governed by GLC_NCPL).
+
+    IMPORTANT: In order to restart mid-year when running with CISM, you MUST specify GLC_AVG_PERIOD = 'yearly'.
+    If using GLC_AVG_PERIOD = 'glc_coupling_period' with CISM, you can only restart on year boundaries.
+    </desc>
   </entry>
 
   <entry id="ROF_NCPL">

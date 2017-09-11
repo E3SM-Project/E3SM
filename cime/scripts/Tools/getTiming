@@ -21,8 +21,8 @@ def parse_command_line(args, description):
                         default="999999-999999")
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to get timing for")
-    args = parser.parse_args(args[1:])
-    CIME.utils.handle_standard_logging_options(args)
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
     return args.caseroot, args.lid
 
 def __main_func(description):

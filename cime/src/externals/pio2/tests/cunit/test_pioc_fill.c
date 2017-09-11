@@ -440,14 +440,18 @@ int create_putget_file(int iosysid, int flavor, int *dim_len, int *varid, const 
     int xtype[NUM_NETCDF_TYPES] = {PIO_BYTE, PIO_CHAR, PIO_SHORT, PIO_INT, PIO_FLOAT, PIO_DOUBLE,
                                     PIO_UBYTE, PIO_USHORT, PIO_UINT, PIO_INT64, PIO_UINT64, PIO_STRING};
     int ncid;
+    int old_mode;
     int ret;
 
     /* Create the netCDF output file. */
     if ((ret = PIOc_createfile(iosysid, &ncid, &flavor, filename, PIO_CLOBBER)))
         return ret;
 
+    /* This should not work. */
+    if (PIOc_set_fill(ncid + TEST_VAL_42, NC_FILL, &old_mode) != PIO_EBADID)
+        return ret;
+
     /* Turn on fill mode. */
-    int old_mode;
     if ((ret = PIOc_set_fill(ncid, NC_FILL, &old_mode)))
         return ret;
     printf("old_mode = %d\n", old_mode);

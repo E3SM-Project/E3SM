@@ -120,8 +120,8 @@ Note: if rtm is specified and lnd is not, then this tool will
 
 You can also set the following env variables:
   ESMFBIN_PATH - Path to ESMF binaries
-                 (Leave unset on yellowstone and caldera and the tool
-                 will be loaded from modules)
+                 (Leave unset on cheyenne, yellowstone, and caldera and the
+                 tool will be loaded from modules)
   MPIEXEC ------ Name of mpirun executable
                  (default is mpirun.lsf on yellowstone and caldera; if
                  you run interactively on yellowstone, mpi is not used)

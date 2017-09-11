@@ -15,7 +15,7 @@ module atm2lndType
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
-  use PatchType     , only : pft
+  use VegetationType     , only : veg_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -642,7 +642,7 @@ contains
 
     ! Accumulate and extract forc_solad24 & forc_solad240 
     do p = begp,endp
-       g = pft%gridcell(p)
+       g = veg_pp%gridcell(p)
        rbufslp(p) = this%forc_solad_grc(g,1)
     end do
     call update_accum_field  ('FSD240', rbufslp               , nstep)
@@ -652,7 +652,7 @@ contains
 
     ! Accumulate and extract forc_solai24 & forc_solai240 
     do p = begp,endp
-       g = pft%gridcell(p)
+       g = veg_pp%gridcell(p)
        rbufslp(p) = this%forc_solai_grc(g,1)
     end do
     call update_accum_field  ('FSI24' , rbufslp               , nstep)
@@ -661,7 +661,7 @@ contains
     call extract_accum_field ('FSI240', this%fsi240_patch     , nstep)
 
     do p = begp,endp
-       c = pft%column(p)
+       c = veg_pp%column(p)
        rbufslp(p) = this%forc_rain_downscaled_col(c) + this%forc_snow_downscaled_col(c)
     end do
 
@@ -684,7 +684,7 @@ contains
        ! also determines t_mo_min
        
        do p = begp,endp
-          c = pft%column(p)
+          c = veg_pp%column(p)
           rbufslp(p) = this%forc_t_downscaled_col(c)
        end do
        call update_accum_field  ('TDA', rbufslp, nstep)
@@ -701,14 +701,14 @@ contains
        call extract_accum_field ('PREC24', this%prec24_patch, nstep)
 
        do p = bounds%begp,bounds%endp
-          c = pft%column(p)
+          c = veg_pp%column(p)
           rbufslp(p) = this%forc_wind_grc(g) 
        end do
        call update_accum_field  ('WIND24', rbufslp, nstep)
        call extract_accum_field ('WIND24', this%wind24_patch, nstep)
 
        do p = bounds%begp,bounds%endp
-          c = pft%column(p)
+          c = veg_pp%column(p)
           rbufslp(p) = this%forc_rh_grc(g) 
        end do
        call update_accum_field  ('RH24', rbufslp, nstep)

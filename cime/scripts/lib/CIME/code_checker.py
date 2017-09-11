@@ -26,7 +26,7 @@ def _run_pylint(on_file, interactive):
     cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
         (os.path.join(cimeroot,"scripts","lib"),
          os.path.join(cimeroot,"scripts","Tools"),
-         os.path.join(cimeroot,"tools","unit_testing","python"))
+         os.path.join(cimeroot,"scripts","fortran_unit_testing","python"))
 
     cmd = "%s %s %s" % (pylint, cmd_options, on_file)
     logger.debug("pylint command is %s"%cmd)

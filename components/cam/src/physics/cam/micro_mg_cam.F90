@@ -96,6 +96,7 @@ use ref_pres,       only: top_lev=>trop_cloud_top_lev
 
 use subcol_utils,   only: subcol_get_scheme
 use perf_mod,       only: t_startf, t_stopf
+use scamMod,        only: precip_off
 
 implicit none
 private
@@ -1074,6 +1075,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    use physics_buffer,  only: pbuf_col_type_index
    use subcol,          only: subcol_field_avg
 
+   use output_aerocom_aie, only: do_aerocom_ind3
+
+
    type(physics_state),         intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: dtime
@@ -1558,6 +1562,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    real(r8), pointer :: pckdptr(:,:)
 
+   integer :: autocl_idx, accretl_idx  ! Aerocom IND3
+   integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
+
    !-------------------------------------------------------------------------------
 
    call t_startf('micro_mg_cam_tend_init')
@@ -1730,6 +1737,19 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !                      = max( liquid stratus frac, ice stratus frac )'.
    alst_mic => ast
    aist_mic => ast
+
+   if(do_aerocom_ind3) then  
+     cldliqbf_idx    = pbuf_get_index('cldliqbf')
+     cldicebf_idx    = pbuf_get_index('cldicebf')
+     numliqbf_idx    = pbuf_get_index('numliqbf')
+     numicebf_idx    = pbuf_get_index('numicebf')
+
+     call pbuf_set_field(pbuf, cldliqbf_idx, state%q(:, :, ixcldliq))
+     call pbuf_set_field(pbuf, cldicebf_idx, state%q(:, :, ixcldice))
+     call pbuf_set_field(pbuf, numliqbf_idx, state%q(:, :, ixnumliq))
+     call pbuf_set_field(pbuf, numicebf_idx, state%q(:, :, ixnumice))
+   end if
+
 
    ! Output initial in-cloud LWP (before microphysics)
 
@@ -2153,6 +2173,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_qr,              packed_qs,              &
                  packed_nr,              packed_ns,              &
                  packed_relvar,          packed_accre_enhan,     &
+		 precip_off,                                     &
                  packed_p,               packed_pdel,            &
                  packed_cldn,    packed_liqcldf, packed_icecldf, &
                  packed_rate1ord_cw2pr_st,                       &
@@ -2847,6 +2868,18 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    end where
 
    racau_grid = min(racau_grid, 1.e10_r8)
+
+   if(do_aerocom_ind3) then
+     autocl_idx = pbuf_get_index('autocl')
+     accretl_idx = pbuf_get_index('accretl')
+!     call pbuf_set_field(pbuf, autocl_idx, prao)
+!     call pbuf_set_field(pbuf, accretl_idx, prco)
+! VPRAO and VPRCO are incorreclty defined in CAM5.3
+! Here prco is autoconverion, and prao is accrection. 
+     call pbuf_set_field(pbuf, autocl_idx, prco_grid)
+     call pbuf_set_field(pbuf, accretl_idx, prao_grid)
+   end if
+
 
    ! --------------------- !
    ! History Output Fields !

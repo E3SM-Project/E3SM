@@ -12,8 +12,8 @@ module CNVerticalProfileMod
   use SoilStateType   , only : soilstate_type
   use CanopyStateType , only : canopystate_type
   use CNStateType     , only : cnstate_type
-  use ColumnType      , only : col                
-  use PatchType       , only : pft                
+  use ColumnType      , only : col_pp                
+  use VegetationType       , only : veg_pp                
   !
   implicit none
   save
@@ -139,10 +139,10 @@ contains
                ! use beta distribution parameter from Jackson et al., 1996
                do fp = 1,num_soilp
                   p = filter_soilp(fp)
-                  if (pft%itype(p) /= noveg) then
+                  if (veg_pp%itype(p) /= noveg) then
                      do j = 1, nlevdecomp
-                        cinput_rootfr(p,j) = ( rootprof_beta(pft%itype(p)) ** (zisoi(j-1)*100._r8) - &
-                             rootprof_beta(pft%itype(p)) ** (zisoi(j)*100._r8) ) &
+                        cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
+                             rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8) ) &
                              / dzsoi_decomp(j)
                      end do
                   else
@@ -162,7 +162,7 @@ contains
 
          do fp = 1,num_soilp
             p = filter_soilp(fp)
-            c = pft%column(p)
+            c = veg_pp%column(p)
             ! integrate rootfr over active layer of soil column
             rootfr_tot = 0._r8
             surface_prof_tot = 0._r8
@@ -198,10 +198,10 @@ contains
          do pi = 1,maxpatch_pft
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               if (pi <=  col%npfts(c)) then
-                  p = col%pfti(c) + pi - 1
+               if (pi <=  col_pp%npfts(c)) then
+                  p = col_pp%pfti(c) + pi - 1
                   do j = 1,nlevdecomp
-                     col_cinput_rootfr(c,j) = col_cinput_rootfr(c,j) + cinput_rootfr(p,j) * pft%wtcol(p)
+                     col_cinput_rootfr(c,j) = col_cinput_rootfr(c,j) + cinput_rootfr(p,j) * veg_pp%wtcol(p)
                   end do
                end if
             end do
@@ -265,9 +265,9 @@ contains
             write(iulog, *) 'cinput_rootfr: ', cinput_rootfr(c,:)
             write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
             write(iulog, *) 'surface_prof: ', surface_prof(:)
-            write(iulog, *) 'npfts(c): ', col%npfts(c)
-            do p = col%pfti(c), col%pfti(c) + col%npfts(c) -1
-               write(iulog, *) 'p, itype(p), wtcol(p): ', p, pft%itype(p), pft%wtcol(p)
+            write(iulog, *) 'npfts(c): ', col_pp%npfts(c)
+            do p = col_pp%pfti(c), col_pp%pfti(c) + col_pp%npfts(c) -1
+               write(iulog, *) 'p, itype(p), wtcol(p): ', p, veg_pp%itype(p), veg_pp%wtcol(p)
                write(iulog, *) 'cinput_rootfr(p,:): ', cinput_rootfr(p,:)
             end do
             call endrun(msg=" ERROR: _prof_sum-1>delta"//errMsg(__FILE__, __LINE__))

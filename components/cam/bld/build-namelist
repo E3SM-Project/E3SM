@@ -3491,6 +3491,10 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'relvar_fix');
 }
 
+add_default($nl, 'do_aerocom_ind3');
+my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');
+
+
 #in-cloud scav tuning for cloud-borne aerosol
 if ($chem =~ /_mam/) {
     add_default($nl, 'sol_facti_cloud_borne');
@@ -3977,6 +3981,14 @@ if ($cfg->get('dyn') =~ /se/) {
     my $hgrid = $cfg->get('hgrid');
     if ($hgrid =~ /ne(.*)np/) {
 	add_default($nl, 'se_ne', 'val'=>$1);
+        if ($1 > 0) { # not ne0 grid
+          my $dyn_npes = $nl->get_value('dyn_npes');
+          if (defined $dyn_npes) {
+            add_default($nl, 'dyn_npes', 'val'=>$dyn_npes);
+          } else { # request max
+            add_default($nl, 'dyn_npes', 'val'=>$1*$1*6);
+          }
+        }
     }
     else {
 	die "$ProgName - ERROR: Horizontal grid name can NOT be correctly parsed: hgrid = $hgrid. \n";

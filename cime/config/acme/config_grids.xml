@@ -446,24 +446,38 @@
     </grid>
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_arm_x8v3_lowcon_ne0np4_arm_x8v3_lowcon</sname>
-      <lname>    a%ne0np4_arm_x8v3_lowcon_l%ne0np4_arm_x8v3_lowcon_oi%ne0np4_arm_x8v3_lowcon_r%r01_m%gx1v6_g%null_w%null</lname>
+      <lname>    a%ne0np4_arm_x8v3_lowcon_l%ne0np4_arm_x8v3_lowcon_oi%ne0np4_arm_x8v3_lowcon_r%null_m%gx1v6_g%null_w%null</lname>
       <alias>armx8v3_armx8v3</alias>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_conus_x4v1_lowcon_ne0np4_conus_x4v1_lowcon</sname>
-      <lname>    a%ne0np4_conus_x4v1_lowcon_l%ne0np4_conus_x4v1_lowcon_oi%ne0np4_conus_x4v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</lname>
+      <lname>    a%ne0np4_conus_x4v1_lowcon_l%ne0np4_conus_x4v1_lowcon_oi%ne0np4_conus_x4v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
       <alias>conusx4v1_conusx4v1</alias>
     </grid>
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_svalbard_x8v1_lowcon_ne0np4_svalbard_x8v1_lowcon</sname>
-      <lname>    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</lname>
+      <lname>    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
       <alias>svalbardx8v1_svalbardx8v1</alias>
     </grid>
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_sooberingoa_x4x8v1_lowcon_ne0np4_sooberingoa_x4x8v1_lowcon</sname>
-      <lname>    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</lname>
+      <lname>    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
       <alias>sooberingoax4x8v1_sooberingoax4x8v1</alias>
+    </grid>
+
+    <!-- ENA RRM grid (all components) -->
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>ne0np4_enax4v1_ne0np4_enax4v1</sname>
+      <lname>a%ne0np4_enax4v1_l%ne0np4_enax4v1_oi%ne0np4_enax4v1_r%null_m%oRRS18to6_g%null_w%null</lname>
+      <alias>enax4v1_enax4v1</alias>
+    </grid>
+
+    <!-- ENA RRM grid (land on ne30) -->
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>ne0np4_enax4v1_ne30np4_ne0np4_enax4v1</sname>
+      <lname>a%ne0np4_enax4v1_l%ne30np4_oi%ne0np4_enax4v1_r%null_m%oRRS18to6_g%null_w%null</lname>
+      <alias>enax4v1_ne30_enax4v1</alias>
     </grid>
 
    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
@@ -751,29 +765,10 @@
       <lname>a%ne30np4_l%ne30np4_oi%oRRS30to10wLI_r%r05_m%oRRS30to10wLI_g%null_w%null</lname>
       <alias>ne30_oRRS30wLI</alias>
     </grid>
-
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne0np4_arm_x8v3_lowcon_ne0np4_arm_x8v3_lowcon</sname>
-      <lname>    a%ne0np4_arm_x8v3_lowcon_l%ne0np4_arm_x8v3_lowcon_oi%ne0np4_arm_x8v3_lowcon_r%r01_m%gx1v6_g%null_w%null</lname>
-      <alias>armx8v3_armx8v3</alias>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne0np4_conus_x4v1_lowcon_ne0np4_conus_x4v1_lowcon</sname>
-      <lname>    a%ne0np4_conus_x4v1_lowcon_l%ne0np4_conus_x4v1_lowcon_oi%ne0np4_conus_x4v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</lname>
-      <alias>conusx4v1_conusx4v1</alias>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne0np4_svalbard_x8v1_lowcon_ne0np4_svalbard_x8v1_lowcon</sname>
-      <lname>    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</lname>
-      <alias>svalbardx8v1_svalbardx8v1</alias>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne0np4_sooberingoa_x4x8v1_lowcon_ne0np4_sooberingoa_x4x8v1_lowcon</sname>
-      <lname>    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</lname>
-      <alias>sooberingoax4x8v1_sooberingoax4x8v1</alias>
+      <sname>ne0np4_twpx4v1_ne0np4_twpx4v1</sname>
+      <lname>a%ne0np4_twpx4v1_l%ne0np4_twpx4v1_oi%ne0np4_twpx4v1_r%null_m%oRRS18to6v3_g%null_w%null</lname>
+      <alias>twpx4v1_twpx4v1</alias>
     </grid>
 
     <grid compset="_CISM">
@@ -1193,13 +1188,13 @@
     <domain name="ne240np4">
       <nx>3110402</nx> <ny>1</ny>
       <file atm_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file atm_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2_111209.nc</file>
+      <file atm_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
       <file ice_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <file ice_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.121113.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <file lnd_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file lnd_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2_111209.nc</file>
+      <file lnd_mask="tx0.1v2">domain.lnd.ne240np4_tx0.1v2.170822.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <file ocn_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.121113.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.ne240np4_tx0.1v2.170822.nc</file>
       <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
       <support>Experimental for very high resolution experiments</support>
     </domain>
@@ -1451,10 +1446,24 @@
       <nx>89147</nx>
       <ny>1</ny>
       <desc>1-deg with 1/4-deg over Cont. U.S. (version 1):</desc>
-      <file atm_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.141022.nc</file>
-      <file ice_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.141022.nc</file>
-      <file lnd_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.141022.nc</file>
-      <file ocn_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.141022.nc</file>
+      <file atm_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
+      <file ice_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
+      <file lnd_mask="tx0.1v2">domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
+      <file ocn_mask="tx0.1v2">domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
+    </domain>
+
+    <domain name="ne0np4_enax4v1">
+      <nx>78788</nx>
+      <ny>1</ny>
+      <desc>1-deg with 1/4-deg over Eastern North Atlantic (version 1):</desc>
+      <file atm_mask="gx1v6">domain.lnd.enax4v1_gx1v6.170523.nc</file>
+      <file ice_mask="gx1v6">domain.ocn.enax4v1_gx1v6.170523.nc</file>
+      <file lnd_mask="gx1v6">domain.lnd.enax4v1_gx1v6.170523.nc</file>
+      <file ocn_mask="gx1v6">domain.ocn.enax4v1_gx1v6.170523.nc</file>
+      <file atm_mask="oRRS18to6">domain.lnd.enax4v1_oRRS18to6.170621.nc</file>
+      <file ice_mask="oRRS18to6">domain.ocn.enax4v1_oRRS18to6.170621.nc</file>
+      <file lnd_mask="oRRS18to6">domain.lnd.enax4v1_oRRS18to6.170621.nc</file>
+      <file ocn_mask="oRRS18to6">domain.ocn.enax4v1_oRRS18to6.170621.nc</file>
     </domain>
 
     <domain name="ne0np4_svalbard_x8v1_lowcon">
@@ -1475,6 +1484,16 @@
       <file ice_mask="tx0.1v2">domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.sooberingoax4x8v1_tx0.1v2.141022.nc</file>
       <file ocn_mask="tx0.1v2">domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</file>
+    </domain>
+
+    <domain name="ne0np4_twpx4v1">
+      <nx>81434</nx>
+      <ny>1</ny>
+      <desc>1-deg with 1/4-deg over Tropical West Pacific (version 1):</desc>
+      <file atm_mask="oRRS18to6v3">domain.lnd.twpx4v1_oRRS18to6v3.170629.nc</file>
+      <file ice_mask="oRRS18to6v3">domain.ocn.twpx4v1_oRRS18to6v3.170629.nc</file>
+      <file lnd_mask="oRRS18to6v3">domain.lnd.twpx4v1_oRRS18to6v3.170629.nc</file>
+      <file ocn_mask="oRRS18to6v3">domain.ocn.twpx4v1_oRRS18to6v3.170629.nc</file>
     </domain>
 
     <domain name="oQU240">
@@ -1747,6 +1766,29 @@
       <ATM2LND_SMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_fv0.23x0.31_aave_110428.nc</ATM2LND_SMAPNAME>
       <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_ne240np4_aave_110428.nc</LND2ATM_FMAPNAME>
       <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_ne240np4_aave_110428.nc</LND2ATM_SMAPNAME>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_enax4v1" lnd_grid="ne30np4">
+      <ATM2LND_FMAPNAME>cpl/cpl6/map_enax4v1_TO_ne30np4_aave.170517.nc</ATM2LND_FMAPNAME>
+      <ATM2LND_SMAPNAME>cpl/cpl6/map_enax4v1_TO_ne30np4_aave.170517.nc</ATM2LND_SMAPNAME>
+      <LND2ATM_FMAPNAME>cpl/cpl6/map_ne30np4_TO_enax4v1_aave.170517.nc</LND2ATM_FMAPNAME>
+      <LND2ATM_SMAPNAME>cpl/cpl6/map_ne30np4_TO_enax4v1_aave.170517.nc</LND2ATM_SMAPNAME>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_enax4v1" ocn_grid="gx1v6">
+      <ATM2OCN_FMAPNAME>cpl/cpl6/map_enax4v1_TO_gx1v6_aave.170523.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/cpl6/map_enax4v1_TO_gx1v6_blin.170523.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/cpl6/map_enax4v1_TO_gx1v6_patc.170523.nc</ATM2OCN_VMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/cpl6/map_gx1v6_TO_enax4v1_aave.170523.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/cpl6/map_gx1v6_TO_enax4v1_aave.170523.nc</OCN2ATM_SMAPNAME>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_enax4v1" ocn_grid="oRRS18to6">
+      <ATM2OCN_FMAPNAME>cpl/cpl6/map_enax4v1_TO_oRRS18to6_aave.170620.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/cpl6/map_enax4v1_TO_oRRS18to6_blin.170620.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/cpl6/map_enax4v1_TO_oRRS18to6_patc.170620.nc</ATM2OCN_VMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/cpl6/map_oRRS18to6_TO_enax4v1_aave.170620.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/cpl6/map_oRRS18to6_TO_enax4v1_aave.170620.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">

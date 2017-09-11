@@ -8,7 +8,7 @@ phases. All other phases need to handle their own status because
 they can be run outside the context of TestScheduler.
 """
 
-import shutil, traceback, stat, threading, time, glob
+import traceback, stat, threading, time, glob
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
@@ -118,6 +118,9 @@ class TestScheduler(object):
         else:
             self._project = project
 
+            # Needed in case default root depends on PROJECT
+            self._machobj.set_value("PROJECT", project)
+
         # We will not use batch system if user asked for no_batch or if current
         # machine is not a batch machine
         self._no_batch = no_batch or not self._machobj.has_batch_system()
@@ -147,7 +150,7 @@ class TestScheduler(object):
 
         if parallel_jobs is None:
             self._parallel_jobs = min(len(test_names),
-                                      int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
+                                      self._machobj.get_value("MAX_TASKS_PER_NODE"))
         else:
             self._parallel_jobs = parallel_jobs
 
@@ -325,28 +328,26 @@ class TestScheduler(object):
     def _shell_cmd_for_phase(self, test, cmd, phase, from_dir=None):
     ###########################################################################
         while True:
-            rc, output, _ = run_cmd(cmd, combine_output=True, from_dir=from_dir)
+            rc, output, errput = run_cmd(cmd, from_dir=from_dir)
             if rc != 0:
                 self._log_output(test,
                                  "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n" %
-                                 (phase, test, cmd, output))
+                                 (phase, test, cmd, output + "\n" + errput))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
                 if "bad interpreter" in output:
                     time.sleep(1)
                     continue
                 else:
-                    break
+                    return False, errput
             else:
                 # We don't want "RUN PASSED" in the TestStatus.log if the only thing that
                 # succeeded was the submission.
                 phase = "SUBMIT" if phase == RUN_PHASE else phase
                 self._log_output(test,
                                  "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n" %
-                                 (phase, test, cmd, output))
-                break
-
-        return rc == 0
+                                 (phase, test, cmd, output + "\n" + errput))
+                return True, errput
 
     ###########################################################################
     def _create_newcase_phase(self, test):
@@ -364,6 +365,8 @@ class TestScheduler(object):
             create_newcase_cmd += " --project %s " % self._project
         if self._output_root is not None:
             create_newcase_cmd += " --output-root %s " % self._output_root
+        if self._input_dir is not None:
+            create_newcase_cmd += " --input-dir %s " % self._input_dir
 
         if test_mods is not None:
             files = Files()
@@ -376,9 +379,12 @@ class TestScheduler(object):
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
-                self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
-                return False
+                error = "Missing testmod file '%s'" % test_mod_file
+                self._log_output(test, error)
+                return False, error
+
             create_newcase_cmd += " --user-mods-dir %s" % test_mod_file
+
         mpilib = None
         if case_opts is not None:
             for case_opt in case_opts: # pylint: disable=not-an-iterable
@@ -398,7 +404,6 @@ class TestScheduler(object):
         if mpilib is None and self._mpilib is not None:
             create_newcase_cmd += " --mpilib %s" % self._mpilib
             logger.debug (" MPILIB set to %s" % self._mpilib)
-
 
         if self._queue is not None:
             create_newcase_cmd += " --queue=%s" % self._queue
@@ -501,7 +506,24 @@ class TestScheduler(object):
                     envtest.set_test_parameter("STOP_N", opti)
                     logger.debug (" STOP_OPTION set to %s" %stop_option[opt])
                     logger.debug (" STOP_N      set to %s" %opti)
-
+		    
+		elif opt.startswith('R'):
+                    # R option is for testing in PTS_MODE or Single Column Model 
+                    #  (SCM) mode
+                    envtest.set_test_parameter("PTS_MODE", "TRUE")
+		    
+                    # For PTS_MODE, compile with mpi-serial
+                    envtest.set_test_parameter("MPILIB", "mpi-serial")
+                    comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
+                    for comp in comps:
+                        envtest.set_test_parameter("NTASKS_"+comp,"1") 
+		    
+                    # Set latitude and longitude for the appropriate case
+                    # Below for ARM97, default SCM test case
+                    if 'A97' in test:
+                        envtest.set_test_parameter("PTS_LAT", "36.6")
+                        envtest.set_test_parameter("PTS_LON", "262.5")
+		    
                 elif opt.startswith('M'):
                     # M option handled by create newcase
                     continue
@@ -533,10 +555,7 @@ class TestScheduler(object):
             case.set_value("TEST", True)
             case.set_value("SAVE_TIMING", self._save_timing)
 
-            if self._input_dir is not None:
-                case.set_value("DIN_LOC_ROOT", self._input_dir)
-
-        return True
+        return True, ""
 
     ###########################################################################
     def _setup_phase(self, test):
@@ -545,8 +564,9 @@ class TestScheduler(object):
         rv = self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
         # It's OK for this command to fail with baseline diffs but not catastrophically
-        cmdstat, output, _ = run_cmd("./case.cmpgen_namelists", combine_output=True, from_dir=test_dir)
-        expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % output)
+        if rv[0]:
+            cmdstat, output, _ = run_cmd("./case.cmpgen_namelists", combine_output=True, from_dir=test_dir)
+            expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % output)
 
         return rv
 
@@ -580,11 +600,10 @@ class TestScheduler(object):
             return run(test)
         except (SystemExit, Exception) as e:
             exc_tb = sys.exc_info()[2]
-            errput = "Test '%s' failed in phase '%s' with exception '%s'" % (test, phase, str(e))
+            errput = "Test '%s' failed in phase '%s' with exception '%s'\n" % (test, phase, str(e))
+            errput += ''.join(traceback.format_tb(exc_tb))
             self._log_output(test, errput)
-            logger.warning("Caught exception: %s" % str(e))
-            traceback.print_tb(exc_tb)
-            return False
+            return False, errput
 
     ###########################################################################
     def _get_procs_needed(self, test, phase, threads_in_flight=None, no_batch=False):
@@ -641,7 +660,7 @@ class TestScheduler(object):
     def _consumer(self, test, test_phase, phase_method):
     ###########################################################################
         before_time = time.time()
-        success = self._run_catch_exceptions(test, test_phase, phase_method)
+        success, errors = self._run_catch_exceptions(test, test_phase, phase_method)
         elapsed_time = time.time() - before_time
         status  = (TEST_PEND_STATUS if test_phase == RUN_PHASE and not \
                    self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
@@ -659,7 +678,9 @@ class TestScheduler(object):
                 (test_phase, test, elapsed_time, status)
 
         if not success:
-            status_str += "    Case dir: %s" % self._get_test_dir(test)
+            status_str += "\n    Case dir: %s\n" % self._get_test_dir(test)
+            status_str += "    Errors were:\n        %s\n" % "\n        ".join(errors.splitlines())
+
         logger.info(status_str)
 
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
@@ -742,7 +763,8 @@ class TestScheduler(object):
             template = open(template_file, "r").read()
             template = template.replace("<PATH>",
                                         os.path.join(self._cime_root,"scripts","Tools")).replace\
-                                        ("<TESTID>", self._test_id)
+                                        ("<TESTID>", self._test_id).replace\
+                                        ("<TESTROOT>", self._test_root)
             if not os.path.exists(self._test_root):
                 os.makedirs(self._test_root)
             cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
@@ -767,11 +789,16 @@ class TestScheduler(object):
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
-            if get_model == "cesm":
-                testreporter =  os.path.join(self._test_root,"testreporter.pl")
-                shutil.copy(os.path.join(self._cime_root,"scripts","Testing","testreporter.pl"),
-                            testreporter)
-                os.chmod(testreporter, os.stat(testreporter).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            if get_model() == "cesm":
+                template_file = os.path.join(python_libs_root, "testreporter.template")
+                template = open(template_file, "r").read()
+                template = template.replace("<PATH>",
+                                            os.path.join(self._cime_root, "scripts", "Tools"))
+                testreporter_file = os.path.join(self._test_root, "testreporter")
+                with open(testreporter_file, "w") as fd:
+                    fd.write(template)
+                os.chmod(testreporter_file, os.stat(testreporter_file).st_mode
+                         | stat.S_IXUSR | stat.S_IXGRP)
 
         except Exception as e:
             logger.warning("FAILED to set up cs files: %s" % str(e))

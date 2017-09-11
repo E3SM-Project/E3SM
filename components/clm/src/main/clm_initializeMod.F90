@@ -4,7 +4,7 @@ module clm_initializeMod
   ! Performs land model initialization
   !
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use spmdMod          , only : masterproc
+  use spmdMod          , only : masterproc, iam
   use shr_sys_mod      , only : shr_sys_flush
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type, get_proc_bounds 
@@ -18,15 +18,16 @@ module clm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use FatesInterfaceMod, only : set_fates_global_elements
+  use BeTRSimulationALM, only : create_betr_simulation_alm
   ! 
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
-  use GridcellType           , only : grc
+  use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp, top_es, top_ws
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType         , only : veg_pp                
   use clm_instMod
   !
   implicit none
@@ -54,12 +55,19 @@ contains
     use soilorder_varcon , only: soilorder_conrd
     use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
     use domainMod        , only: domain_check, ldomain, domain_init
-    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data 
+    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
     use controlMod       , only: control_init, control_print
     use ncdio_pio        , only: ncd_pio_init
-    use initGridCellsMod , only: initGridCells
+    use initGridCellsMod , only: initGridCells, initGhostGridCells
     use ch4varcon        , only: ch4conrd
     use UrbanParamsType  , only: UrbanInput
+    use CLMFatesParamInterfaceMod, only : FatesReadPFTs
+    use surfrdMod        , only: surfrd_get_grid_conn
+    use clm_varctl       , only: lateral_connectivity, domain_decomp_type
+    use decompInitMod    , only: decompInit_lnd_using_gp, decompInit_ghosts
+    use domainLateralMod , only: ldomain_lateral, domainlateral_init
+    use SoilTemperatureMod, only : init_soil_temperature
+    use ExternalModelInterfaceMod, only : EMI_Determine_Active_EMs
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -70,6 +78,15 @@ contains
     integer           :: icemec_class            ! current icemec class (1..maxpatch_glcmec)
     type(bounds_type) :: bounds_proc             
     integer ,pointer  :: amask(:)                ! global land mask
+    integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
+    integer ,pointer  :: edgesOnCell(:,:)        ! index to determine distance between neighbors from dcEdge
+    integer ,pointer  :: nEdgesOnCell(:)         ! number of edges
+    real(r8), pointer :: dcEdge(:)               ! distance between centroids of grid cells
+    real(r8), pointer :: dvEdge(:)               ! distance between vertices
+    real(r8), pointer :: areaCell(:)             ! area of grid cells [m^2]
+    integer           :: nCells_loc              ! number of grid cell level connectivity saved locally
+    integer           :: nEdges_loc              ! number of edge length saved locally
+    integer           :: maxEdges                ! max number of edges/neighbors
     character(len=32) :: subname = 'initialize1' ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -92,6 +109,8 @@ contains
     call clm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
+    call clm_petsc_init()
+    call init_soil_temperature()
 
     if (masterproc) call control_print()
 
@@ -114,12 +133,41 @@ contains
        return
     end if
 
+
+    ! ------------------------------------------------------------------------
+    ! If specified, read the grid level connectivity
+    ! ------------------------------------------------------------------------
+
+    if (lateral_connectivity) then
+       call surfrd_get_grid_conn(fatmlndfrc, cellsOnCell, edgesOnCell, &
+            nEdgesOnCell, areaCell, dcEdge, dvEdge, &
+            nCells_loc, nEdges_loc, maxEdges)
+    else
+       nullify(cellsOnCell)
+       nCells_loc = 0
+       maxEdges   = 0
+    endif
+
     ! ------------------------------------------------------------------------
     ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
 
-    call decompInit_lnd(ni, nj, amask)
-    deallocate(amask)
+    select case (trim(domain_decomp_type))
+    case ("round_robin")
+       call decompInit_lnd(ni, nj, amask)
+       deallocate(amask)
+    case ("graph_partitioning")
+       call decompInit_lnd_using_gp(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
+    case default
+       call endrun(msg='ERROR clm_initializeMod: '//&
+            'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
+    end select
+
+    if (lateral_connectivity) then
+       call domainlateral_init(ldomain_lateral, cellsOnCell, edgesOnCell, &
+            nEdgesOnCell, areaCell, dcEdge, dvEdge, &
+            nCells_loc, nEdges_loc, maxEdges)
+    endif
 
     ! *** Get JUST gridcell processor bounds ***
     ! Remaining bounds (landunits, columns, patches) will be determined 
@@ -182,6 +230,14 @@ contains
     call pftconrd()
     call soilorder_conrd()
 
+    ! Read in FATES parameter values early in the call sequence as well
+    ! The PFT file, specifically, will dictate how many pfts are used
+    ! in fates, and this will influence the amount of memory we
+    ! request from the model, which is relevant in set_fates_global_elements()
+    if (use_ed) then
+       call FatesReadPFTs()
+    end if
+
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
@@ -207,8 +263,10 @@ contains
 
     if (create_glacier_mec_landunit) then
        call decompInit_clumps(ns, ni, nj, ldomain%glcmask)
+       call decompInit_ghosts(ldomain%glcmask)
     else
        call decompInit_clumps(ns, ni, nj)
+       call decompInit_ghosts()
     endif
 
     ! *** Get ALL processor bounds - for gridcells, landunit, columns and patches ***
@@ -220,16 +278,19 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
-    call grc%Init (bounds_proc%begg, bounds_proc%endg)
+    call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
     ! --ALM-v1: add initialization for topographic unit data types. 
     ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
     call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
     call top_es%Init (bounds_proc%begg, bounds_proc%endg) ! energy state
     call top_ws%Init (bounds_proc%begg, bounds_proc%endg) ! water state
     ! --end ALM-v1 block
-    call lun%Init (bounds_proc%begl, bounds_proc%endl)
-    call col%Init (bounds_proc%begc, bounds_proc%endc)
-    call pft%Init (bounds_proc%begp, bounds_proc%endp)
+    call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
+    call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
+    call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+
+    ! Determine the number of active external models.
+    call EMI_Determine_Active_EMs()
 
     ! Build hierarchy and topological info for derived types
     ! This is needed here for the following call to decompInit_glcp
@@ -267,19 +328,19 @@ contains
     ! initialize glc_topo
     ! TODO - does this belong here?
     do c = bounds_proc%begc, bounds_proc%endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
-       if (lun%itype(l) == istice_mec) then
+       if (lun_pp%itype(l) == istice_mec) then
           ! For ice_mec landunits, initialize glc_topo based on surface dataset; this
           ! will get overwritten in the run loop by values sent from CISM
-          icemec_class = col_itype_to_icemec_class(col%itype(c))
-          col%glc_topo(c) = topo_glc_mec(g, icemec_class)
+          icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+          col_pp%glc_topo(c) = topo_glc_mec(g, icemec_class)
        else
           ! For other landunits, arbitrarily initialize glc_topo to 0 m; for landunits
           ! where this matters, this will get overwritten in the run loop by values sent
           ! from CISM
-          col%glc_topo(c) = 0._r8
+          col_pp%glc_topo(c) = 0._r8
        end if
     end do
 
@@ -296,7 +357,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
     use clm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -322,12 +383,11 @@ contains
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use CNEcosystemDynMod     , only : CNEcosystemDynInit
-    use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
     use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
-    use EcophysConType        , only : ecophysconInit 
+    use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
     use LakeCon               , only : LakeConInit 
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg
@@ -337,13 +397,11 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    use clm_varctl                          , only : use_bgc_interface, use_pflotran
-    use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
-    use betr_initializeMod    , only : betr_initialize
-    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
-    use betr_initializeMod    , only : bgc_reaction
+    use clm_varctl                          , only : use_clm_interface, use_pflotran
+    use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
+    use ALMbetrNLMod          , only : betr_namelist_buffer
     !
     ! !ARGUMENTS    
     implicit none
@@ -434,8 +492,8 @@ contains
 
     do g = bounds_proc%begg,bounds_proc%endg
        max_decl = 0.409571
-       if (grc%lat(g) < 0._r8) max_decl = -max_decl
-       grc%max_dayl(g) = daylength(grc%lat(g), max_decl)
+       if (grc_pp%lat(g) < 0._r8) max_decl = -max_decl
+       grc_pp%max_dayl(g) = daylength(grc_pp%lat(g), max_decl)
     end do
 
     ! History file variables
@@ -443,11 +501,11 @@ contains
     if (use_cn) then
        call hist_addfld1d (fname='DAYL',  units='s', &
             avgflag='A', long_name='daylength', &
-            ptr_gcell=grc%dayl, default='inactive')
+            ptr_gcell=grc_pp%dayl, default='inactive')
 
        call hist_addfld1d (fname='PREV_DAYL', units='s', &
             avgflag='A', long_name='daylength from previous timestep', &
-            ptr_gcell=grc%prev_dayl, default='inactive')
+            ptr_gcell=grc_pp%prev_dayl, default='inactive')
     end if
 
     ! ------------------------------------------------------------------------
@@ -460,22 +518,28 @@ contains
     ! First put in history calls for subgrid data structures - these cannot appear in the
     ! module for the subgrid data definition due to circular dependencies that are introduced
     
-    data2dptr => col%dz(:,-nlevsno+1:0)
-    col%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
+    data2dptr => col_pp%dz(:,-nlevsno+1:0)
+    col_pp%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
     call hist_addfld2d (fname='SNO_Z', units='m', type2d='levsno',  &
          avgflag='A', long_name='Snow layer thicknesses', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
-    col%zii(bounds_proc%begc:bounds_proc%endc) = spval
+    col_pp%zii(bounds_proc%begc:bounds_proc%endc) = spval
     call hist_addfld1d (fname='ZII', units='m', &
          avgflag='A', long_name='convective boundary height', &
-         ptr_col=col%zii, default='inactive')
+         ptr_col=col_pp%zii, default='inactive')
 
     call clm_inst_biogeophys(bounds_proc)
 
     if(use_betr)then
-      !state variables will be initialized inside betr_initialize
-      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+      !allocate memory for betr simulator
+      allocate(ep_betr, source=create_betr_simulation_alm())
+      !set internal filters for betr
+      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
+      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      is_active_betr_bgc = ep_betr%do_soibgc()
+    else
+      allocate(ep_betr, source=create_betr_simulation_alm())
     endif
     
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -486,13 +550,13 @@ contains
     ! Read in private parameters files, this should be preferred for mulitphysics
     ! implementation, jinyun Tang, Feb. 11, 2015
     ! ------------------------------------------------------------------------
-    if(use_cn) then
+    if(use_cn .or. use_ed) then
        call init_decomp_cascade_constants()
     endif
     !read bgc implementation specific parameters when needed
     call readPrivateParameters()
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        if (.not. is_active_betr_bgc)then
           if (use_century_decomp) then
            ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
@@ -550,11 +614,7 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       if(is_active_betr_bgc)then
-          call CNEcosystemDynBetrInit(bounds_proc)         
-       else
-          call CNEcosystemDynInit(bounds_proc)
-       endif
+       call CNEcosystemDynInit(bounds_proc)
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -606,7 +666,8 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
-               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
+               ep_betr,                                                                       &
+               alm_fates)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -621,14 +682,11 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            ep_betr,                                                                       &
+            alm_fates)
 
     end if
        
-    if (use_betr)then
-       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
-            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
-    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
@@ -656,7 +714,9 @@ contains
                glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
        end do
        !$OMP END PARALLEL DO
-
+       if(use_betr)then
+         call ep_betr%set_active(bounds_proc, col_pp)
+       endif
        ! Create new template file using cold start
        call restFile_write(bounds_proc, finidat_interp_dest,                               &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
@@ -666,7 +726,8 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            ep_betr,                                                                       &
+            alm_fates)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -681,7 +742,8 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+            ep_betr,                                                                       &
+            alm_fates)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
@@ -697,6 +759,9 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    if(use_betr)then
+      call ep_betr%set_active(bounds_proc, col_pp)
+    endif 
     ! ------------------------------------------------------------------------
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------
@@ -806,13 +871,12 @@ contains
     deallocate(wt_nat_patch)
 
     ! --------------------------------------------------------------
-    ! Initialise the FATES model state structure
+    ! Initialise the FATES model state structure cold-start
     ! --------------------------------------------------------------
    
     if ( use_ed .and. .not.is_restart() .and. finidat == ' ') then
-!! (FATES-INTERF)
-       
-!!       call clm_fates%init_coldstart(waterstate_vars,canopystate_vars,soilstate_vars, frictionvel_vars)
+       call alm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
+                                     soilstate_vars, frictionvel_vars)
     end if
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
@@ -828,16 +892,16 @@ contains
     deallocate(topo_glc_mec)
 
     !------------------------------------------------------------
-    !! initialize clm_bgc_interface_data_type
-    call t_startf('init_clm_bgc_interface_data & pflotran')
-    if (use_bgc_interface) then
-        call clm_bgc_data%Init(bounds_proc)
+    ! initialize clm_bgc_interface_data_type
+    call t_startf('init_clm_interface_data & pflotran')
+    if (use_clm_interface) then
+        call clm_interface_data%Init(bounds_proc)
         ! PFLOTRAN initialization
         if (use_pflotran) then
             call clm_pf_interface_init(bounds_proc)
         end if
     end if
-    call t_stopf('init_clm_bgc_interface_data & pflotran')
+    call t_stopf('init_clm_interface_data & pflotran')
     !------------------------------------------------------------
 
     !------------------------------------------------------------       
@@ -872,224 +936,124 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
-    use spmdMod                , only : mpicom
-    use clm_varctl             , only : use_vsfm
-    use filterMod              , only : filter
-    use decompMod              , only : get_proc_clumps
-    use clm_varpar             , only : nlevgrnd
-    use clm_varctl             , only : finidat
-    use shr_infnan_mod         , only : shr_infnan_isnan
-    use abortutils             , only : endrun
-    use SoilWaterMovementMod   , only : init_vsfm_condition_ids
-#ifdef USE_PETSC_LIB
-    use MultiPhysicsProbVSFM     , only : vsfm_mpp
-    use MultiPhysicsProbConstants, only : VAR_MASS
-    use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
-    use MultiPhysicsProbConstants, only : VAR_PRESSURE
-    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
-#endif
-    !
-    ! !ARGUMENTS
+    use clm_varpar               , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
+    use landunit_varcon          , only : istsoil, istcrop, istice_mec, istice_mec
+    use landunit_varcon          , only : istice, istdlak, istwet, max_lunit
+    use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use clm_varctl               , only : use_vsfm, vsfm_use_dynamic_linesearch
+    use clm_varctl               , only : vsfm_include_seepage_bc, vsfm_satfunc_type
+    use clm_varctl               , only : vsfm_lateral_model_type
+    use clm_varctl               , only : use_petsc_thermal_model
+    use clm_varctl               , only : lateral_connectivity
+    use clm_varctl               , only : finidat
+    use decompMod                , only : get_proc_clumps
+    use mpp_varpar               , only : mpp_varpar_init
+    use mpp_varcon               , only : mpp_varcon_init_landunit
+    use mpp_varcon               , only : mpp_varcon_init_column
+    use mpp_varctl               , only : mpp_varctl_init_vsfm
+    use mpp_varctl               , only : mpp_varctl_init_petsc_thermal
+    use mpp_bounds               , only : mpp_bounds_init_proc_bounds
+    use mpp_bounds               , only : mpp_bounds_init_clump
+    use ExternalModelInterfaceMod, only : EMI_Init_EM
+    use ExternalModelConstants   , only : EM_ID_VSFM
+    use ExternalModelConstants   , only : EM_ID_PTM
+
     implicit none
-    !
-#ifdef USE_PETSC_LIB
-#include "finclude/petscsys.h"
-#endif
-    !
-    ! !LOCAL VARIABLES:
-    integer               :: nclumps               ! number of clumps on this processor
-    integer               :: nc                    ! clump index
-    integer               :: c,fc,j                ! do loop indices
-    type(bounds_type)     :: bounds_proc
-    real(r8)              :: z_up, z_dn            ! [m]
 
-    real(r8), pointer     :: zi(:,:)               ! interface level below a "z" level (m)
-    real(r8), pointer     :: h2osoi_liq(:,:)       ! liquid water (kg/m2)
-    real(r8), pointer     :: h2osoi_ice(:,:)       ! ice water (kg/m2)
-    real(r8), pointer     :: smp_l(:,:)            ! soil matrix potential [mm]
-    real(r8), pointer     :: zwt(:)                ! water table depth (m)
-    real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
-    real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
-    real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    real(r8), pointer     :: mflx_snowlyr_col(:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    real(r8), pointer     :: soilp_col(:,:)        ! soil liquid pressure [Pa]
-    real(r8), pointer     :: vsfm_soilp_col_1d(:)  ! 1D soil liquid pressure for VSFM [Pa]
-    logical               :: restart_vsfm          ! does VSFM need to be restarted
-#ifdef USE_PETSC_LIB
-    PetscInt              :: jwt                   ! index of first unsaturated soil layer
-    PetscInt              :: idx                   ! 1D index for (c,j)
-    PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
-    PetscErrorCode        :: ierr                  ! get error code from PETSc
-#endif
-    character(len=32)     :: subname = 'initialize3'
-    !----------------------------------------------------------------------
-
-    zi                   =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-
-    h2osoi_liq           =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
-    h2osoi_ice           =>    waterstate_vars%h2osoi_ice_col     ! Output: [real(r8) (:,:) ]  ice water (kg/m2)
-    smp_l                =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
-    zwt                  =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
-    vsfm_mass_col_1d     =>    waterstate_vars%vsfm_mass_col_1d   ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
-    vsfm_smpl_col_1d     =>    waterstate_vars%vsfm_smpl_col_1d   ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
-    mflx_snowlyr_col_1d  =>    waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    mflx_snowlyr_col     =>    waterflux_vars%mflx_snowlyr_col    ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    vsfm_soilp_col_1d    =>    waterstate_vars%vsfm_soilp_col_1d  ! Output: [real(r8) (:)   ]  1D soil liquid pressure from VSFM [Pa]
-    soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
-
-    if (.not.use_vsfm) return
+    type(bounds_type) :: bounds_proc
+    logical           :: restart_vsfm          ! does VSFM need to be restarted
 
     call t_startf('clm_init3')
 
-#ifdef USE_PETSC_LIB
+    ! Is this a restart run?
+    restart_vsfm = .false.
+    if (nsrest == nsrStartup) then
+       if (finidat == ' ') then
+          restart_vsfm = .false.
+       else
+          restart_vsfm = .true.
+       end if
+    else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
+       restart_vsfm = .true.
+    end if
 
+    call mpp_varpar_init (nlevsoi, nlevgrnd, nlevsno, max_patch_per_col)
+
+    call mpp_varcon_init_landunit   (istsoil, istcrop, istice, istice_mec, &
+           istdlak, istwet, max_lunit)
+
+    call mpp_varcon_init_column(icol_roof, icol_sunwall, icol_shadewall, &
+      icol_road_imperv, icol_road_perv)
+
+    call mpp_varctl_init_vsfm(use_vsfm, vsfm_use_dynamic_linesearch, &
+      vsfm_include_seepage_bc, lateral_connectivity, restart_vsfm, &
+      vsfm_satfunc_type, vsfm_lateral_model_type)
+
+    call mpp_varctl_init_petsc_thermal(use_petsc_thermal_model)
+
+    call get_proc_bounds(bounds_proc)
+    call mpp_bounds_init_proc_bounds(bounds_proc%begg    , bounds_proc%endg,     &
+                                     bounds_proc%begg_all, bounds_proc%endg_all, &
+                                     bounds_proc%begc    , bounds_proc%endc,     &
+                                     bounds_proc%begc_all, bounds_proc%endc_all)
+
+    call mpp_bounds_init_clump(get_proc_clumps())
+
+    if (use_vsfm) then
+       call EMI_Init_EM(EM_ID_VSFM)
+    endif
+
+    if (use_petsc_thermal_model) then
+       call EMI_Init_EM(EM_ID_PTM)
+    endif
+
+    call t_stopf('clm_init3')
+
+
+  end subroutine initialize3
+
+  !-----------------------------------------------------------------------
+  subroutine clm_petsc_init()
+    !
+    ! !DESCRIPTION:
+    ! Initialize PETSc
+    !
+#ifdef USE_PETSC_LIB
+#include <petsc/finclude/petsc.h>
+#endif
+    ! !USES:
+    use spmdMod    , only : mpicom
+    use clm_varctl , only : use_vsfm
+    use clm_varctl , only : lateral_connectivity
+    use clm_varctl , only : use_petsc_thermal_model
+#ifdef USE_PETSC_LIB
+    use petscsys
+#endif
+    !
+    implicit none
+    !
+    ! !LOCAL VARIABLES:
+#ifdef USE_PETSC_LIB
+    PetscErrorCode        :: ierr                  ! get error code from PETSc
+#endif
+
+    if ( (.not. use_vsfm)               .and. &
+         (.not. lateral_connectivity)   .and. &
+         (.not. use_petsc_thermal_model) ) return
+
+#ifdef USE_PETSC_LIB
     ! Initialize PETSc
     PETSC_COMM_WORLD = mpicom
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
 
     PETSC_COMM_SELF  = MPI_COMM_SELF
     PETSC_COMM_WORLD = mpicom
-
-    call get_proc_bounds(bounds_proc)
-    nclumps = get_proc_clumps()
-
-    if (nclumps /= 1) then
-       call endrun(msg='ERROR clm_initializeMod: '//&
-           'VSFM model only supported for clumps = 1')
-    endif
-
-    nc = 1
-
-    ! Allocate memory and setup data structure for VSFM-MPP
-    call vsfm_mpp%Setup(bounds_proc%begc,            &
-                        bounds_proc%endc,            &
-                        filter(nc)%num_hydrologyc,   &
-                        filter(nc)%hydrologyc,       &
-                        soilstate_vars,              &
-                        waterstate_vars,             &
-                        soilhydrology_vars)
-
-    ! Determing the source-sinks IDs of VSFM to map forcing data from
-    ! CLM to VSFM.
-    call init_vsfm_condition_ids()
-
-    restart_vsfm = .false.
-
-    if (nsrest == nsrStartup) then
-
-       if (finidat == ' ') then
-       else
-          restart_vsfm = .true.
-       end if
-
-    else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
-       restart_vsfm = .true.
-    end if
-
-    if (restart_vsfm) then
-
-       if (masterproc) then
-          write(iulog,*)'Setting initial conditions for VSFM'
-       end if
-
-       ! Save data in 1D array for VSFM
-       do c = bounds_proc%begc, bounds_proc%endc
-          do j = 1, nlevgrnd
-
-             ! Ensure that soilp_col has valid values
-             if (shr_infnan_isnan(soilp_col(c,j))) then
-                write(iulog, *) 'VSFM is on and soilp_col = NaN for: '
-                write(iulog, *) 'c = ',c
-                write(iulog, *) 'j = ',j
-                write(iulog, *) 'Possible source of error: The finidat or restart file being ' // &
-                   'used may have been produced with VSFM turned off.'
-                call endrun(msg=errMsg(__FILE__, __LINE__))
-             endif
-
-             idx = (c-bounds_proc%begc)*nlevgrnd + j
-             vsfm_soilp_col_1d(idx) = soilp_col(c,j)
-          end do
-          idx = c-bounds_proc%begc+1
-          mflx_snowlyr_col_1d(idx) = mflx_snowlyr_col(c)
-       end do
-
-       ! Set the initial conditions
-       call vsfm_mpp%Restart(vsfm_soilp_col_1d)
-
-       ! PreSolve: Allows saturation value to be computed based on ICs and stored
-       !           in GE auxvar
-       call vsfm_mpp%sysofeqns%SetDtime(1.d0)
-       call vsfm_mpp%sysofeqns%PreSolve()
-
-       ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
-       !            SoE auxvar
-       call vsfm_mpp%sysofeqns%PostSolve()
-
-    else
-       mflx_snowlyr_col_1d(:) = 0._r8
-    end if
-
-
-    ! Get total mass
-    soe_auxvar_id = 1;
-    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
-                                          VAR_MASS,          &
-                                          soe_auxvar_id,     &
-                                          vsfm_mass_col_1d)
-
-    ! Get liquid soil matrix potential
-    soe_auxvar_id = 1;
-    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,       &
-                                          VAR_SOIL_MATRIX_POT,   &
-                                          soe_auxvar_id,         &
-                                          vsfm_smpl_col_1d)
-
-    ! Put the data in CLM's data structure
-    do fc = 1,filter(nc)%num_hydrologyc
-       c = filter(nc)%hydrologyc(fc)
-
-       ! initialization
-       jwt = -1
-
-       ! Loops in decreasing j so WTD can be computed in the same loop
-       do j = nlevgrnd, 1, -1
-          idx = (c-bounds_proc%begc)*nlevgrnd + j
-
-          if (.not. restart_vsfm) then
-             h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
-             h2osoi_ice(c,j) = 0.d0
-          end if
-
-          smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
-
-          if (jwt == -1) then
-             ! Find the first soil that is unsaturated
-             if (smp_l(c,j) < 0._r8) jwt = j
-          end if
-
-       end do
-
-       if (jwt == -1 .or. jwt == nlevgrnd) then
-          ! Water table below or in the last layer
-          zwt(c) = zi(c,nlevgrnd)
-       else
-          z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
-          z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
-          zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - &
-                   smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
-        endif
-    end do
-
 #else
-
-    call endrun(msg='ERROR clm_initializeMod: '//&
-                'use_vsfm = true but code was not compiled ' // &
-                'using -DUSE_PETSC_LIB')
+    call endrun(msg='ERROR clm_petsc_init: '//&
+         'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
 #endif
 
-    call t_stopf('clm_init3')
-
-  end subroutine initialize3
+  end subroutine clm_petsc_init
 
 
 end module clm_initializeMod

@@ -105,7 +105,10 @@ SYNOPSIS
     it looks for files of the form *.nc.cprnc.out.SUFFIX. (With this naming
     convention [i.e., looking for files of the form *.nc.cprnc.out], note that
     it only looks at output for baseline comparisons - NOT output from the test
-    itself, such as cprnc output files from the exact restart test.)
+    itself, such as cprnc output files from the exact restart test.) (Actually,
+    we also allow for files of the form *.nc_[0-9][0-9][0-9][0-9].cprnc.out,
+    such as *.nc_0001.cprnc.out and *.nc_0002.cprnc.out, to pick up
+    multi-instance files.)
 
     Summaries of cprnc differences (RMS and normalized RMS differences, FILLDIFFs and DIMSIZEDIFFs)
     are placed in three output files beginning with the name 'cprnc.summary', in
@@ -148,10 +151,10 @@ sub process_cprnc_output {
 
       my @cprnc_files;
       if ($output_suffix) {
-         @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out.${output_suffix}";
+         @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out.${output_suffix} ${test_dir}/run/*.nc_[0-9][0-9][0-9][0-9].cprnc.out.${output_suffix}";
       }
       else {
-         @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out";
+         @cprnc_files = glob "${test_dir}/run/*.nc.cprnc.out ${test_dir}/run/*.nc_[0-9][0-9][0-9][0-9].cprnc.out";
       }
 
       foreach my $cprnc_file (@cprnc_files) {

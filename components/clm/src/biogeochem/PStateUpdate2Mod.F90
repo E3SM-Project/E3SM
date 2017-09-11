@@ -12,9 +12,10 @@ module PStateUpdate2Mod
   use clm_varctl          , only : iulog
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
-  use PatchType           , only : pft
+  use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
-  !! bgc interface & pflotran:
+  use tracer_varcon       , only : is_active_betr_bgc
+  ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
@@ -66,7 +67,7 @@ contains
       !------------------------------------------------------------------
 
       ! column-level phosporus fluxes from gap-phase mortality
-
+      if (.not. is_active_betr_bgc) then
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -81,7 +82,7 @@ contains
                  ps%decomp_ppools_vr_col(c,j,i_cwd)     + pf%gap_mortality_p_to_cwdp_col(c,j)       * dt
          end do
       end do
-!      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      endif ! if (.not.is_active_betr_bgc))
       !------------------------------------------------------------------
 
       ! patch -level phosporus fluxes from gap-phase mortality
@@ -145,7 +146,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                      & 
-         ivt => pft%itype           , & ! Input:  [integer  (:) ]  pft vegetation type
+         ivt => veg_pp%itype           , & ! Input:  [integer  (:) ]  pft vegetation type
          pf => phosphorusflux_vars  , &
          ps => phosphorusstate_vars   &
          )
@@ -155,7 +156,7 @@ contains
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
+      if ((.not. is_active_betr_bgc) .and. .not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
 
       ! column-level phosporus fluxes from harvest mortality

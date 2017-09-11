@@ -34,7 +34,7 @@ module CNEcosystemDynMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   ! bgc interface & pflotran
-  use clm_varctl          , only : use_bgc_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
+  use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNAllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use clm_varctl          , only : nu_com
@@ -45,11 +45,10 @@ module CNEcosystemDynMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CNEcosystemDynInit          ! Ecosystem dynamics initialization
-!  public :: CNEcosystemDynNoLeaching       ! Ecosystem dynamics: phenology, vegetation, before doing N leaching
   public :: CNEcosystemDynLeaching      ! Ecosystem dynamics: phenology, vegetation, doing N leaching
-  !!----------------------------------------------------------------------
-  !! bgc interface & pflotran:
-  !! CNEcosystemDynNoLeaching is divided into 2 subroutines:
+  !----------------------------------------------------------------------
+  ! bgc&th interface & pflotran:
+  ! CNEcosystemDynNoLeaching is divided into 2 subroutines:
   public :: CNEcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc
   public :: CNEcosystemDynNoLeaching2   ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
   !-----------------------------------------------------------------------
@@ -103,8 +102,8 @@ contains
     !
     ! !USES:
     use spmdMod              , only: masterproc
-    use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
-    use PDynamicsMod           , only: PBiochemMin,PLeaching
+    use PDynamicsMod         , only: PWeathering,PAdsorption,PDesorption,POcclusion
+    use PDynamicsMod         , only: PBiochemMin,PLeaching
     use CNNDynamicsMod       , only: CNNLeaching
     use CNNStateUpdate3Mod   , only: NStateUpdate3
     use PStateUpdate3Mod     , only: PStateUpdate3
@@ -145,7 +144,7 @@ contains
   
     ! only do if ed is off
     if( .not. use_ed) then
-       if(.not.(use_pflotran.and.pf_cmode)) then
+       !if(.not.(use_pflotran.and.pf_cmode)) then
              call t_startf('PWeathering')
              call PWeathering(num_soilc, filter_soilc, &
                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -178,18 +177,18 @@ contains
                      cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
                 call t_stopf('PBiochemMin')
              end if
-       end if
+       !end if
        
-     !-----------------------------------------------------------------------
-     ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
-     if (.not. (pf_cmode .and. pf_hmode)) then
-       call CNNLeaching(bounds, num_soilc, filter_soilc, &
+       !-----------------------------------------------------------------------
+       ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
+       if (.not. (pf_cmode .and. pf_hmode)) then
+         call CNNLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 
-       call PLeaching(bounds, num_soilc, filter_soilc, &
+         call PLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-     end if !(.not. (pf_cmode .and. pf_hmode))
-     !-----------------------------------------------------------------------
+       end if !(.not. (pf_cmode .and. pf_hmode))
+       !-----------------------------------------------------------------------
 
        call t_startf('CNUpdate3')
 
@@ -231,7 +230,7 @@ contains
   end subroutine CNEcosystemDynLeaching
 
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   subroutine CNEcosystemDynNoLeaching1(bounds,                          &
        num_soilc, filter_soilc,                                         &
        num_soilp, filter_soilp,                                         &
@@ -243,11 +242,11 @@ contains
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
        ch4_vars, photosyns_vars,                                        &
        phosphorusflux_vars,phosphorusstate_vars)
-    !!-------------------------------------------------------------------
-    !! bgc interface
-    !! Phase-1 of CNEcosystemDynNoLeaching
-    !! call CNAllocation1_PlantNPDemand before soil_bgc
-    !!-------------------------------------------------------------------
+    !-------------------------------------------------------------------
+    ! bgc interface
+    ! Phase-1 of CNEcosystemDynNoLeaching
+    ! call CNAllocation1_PlantNPDemand before soil_bgc
+    !-------------------------------------------------------------------
 
     ! !DESCRIPTION:
     ! The core CN code is executed here. Calculates fluxes for maintenance
@@ -280,7 +279,7 @@ contains
     use CropType               , only: crop_type
 !    use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
-    use CNAllocationMod        , only: CNAllocation1_PlantNPDemand !! Phase-1 of CNAllocation
+    use CNAllocationMod        , only: CNAllocation1_PlantNPDemand ! Phase-1 of CNAllocation
 !    use CNDecompMod            , only: CNDecompAlloc2
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
@@ -429,25 +428,25 @@ contains
             atm2lnd_vars, phosphorusflux_vars)
        call t_stopf('PDeposition')
 
-!!-------------------------------------------------------------------------------------------------
-!! 'decomp_rate_constants' is moved to CNDecompAlloc
-!       if (use_century_decomp) then
-!          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-!       else
-!          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-!       end if
+       !-------------------------------------------------------------------------------------------------
+       ! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
+       if (use_century_decomp) then
+          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+       else
+          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
+       end if
 
-!!-------------------------------------------------------------------------------------------------
-!! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
-!! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
+       !-------------------------------------------------------------------------------------------------
+       ! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
+       ! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
        call decomp_vertprofiles(bounds,                      &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
-!!-------------------------------------------------------------------------------------------------
-        !! CNAllocation1 is always called (w/ or w/o use_bgc_interface)
-        !! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
+       !-------------------------------------------------------------------------------------------------
+       ! CNAllocation1 is always called (w/ or w/o use_clm_interface)
+       ! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
        call t_startf('CNAllocation - phase-1')
        call CNAllocation1_PlantNPDemand (bounds                             , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp            , &
@@ -462,7 +461,7 @@ contains
 
   end subroutine CNEcosystemDynNoLeaching1
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
   subroutine CNEcosystemDynNoLeaching2(bounds,                                  &
        num_soilc, filter_soilc,                                                 &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,               &
@@ -474,11 +473,11 @@ contains
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
        phosphorusflux_vars,phosphorusstate_vars)
-    !!-------------------------------------------------------------------
-    !! bgc interface
-    !! Phase-2 of CNEcosystemDynNoLeaching
-    !! call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
-    !!-------------------------------------------------------------------
+    !-------------------------------------------------------------------
+    ! bgc interface
+    ! Phase-2 of CNEcosystemDynNoLeaching
+    ! call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
+    !-------------------------------------------------------------------
 
     ! !DESCRIPTION:
     ! The core CN code is executed here. Calculates fluxes for maintenance
@@ -515,7 +514,7 @@ contains
 
 !    use CNAllocationMod        , only: cnallocation
     use CNDecompMod            , only: CNDecompAlloc
-    use CNDecompMod            , only: CNDecompAlloc2 !!after CNDecompAlloc
+    use CNDecompMod            , only: CNDecompAlloc2 !after CNDecompAlloc
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -559,9 +558,9 @@ contains
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
-       if(.not.use_bgc_interface) then
-            !! directly run clm-bgc
-            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
+       if(.not.use_clm_interface) then
+            ! directly run clm-bgc
+            ! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
             call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
@@ -570,11 +569,11 @@ contains
                        carbonstate_vars, carbonflux_vars,           &
                        nitrogenstate_vars, nitrogenflux_vars,       &
                        phosphorusstate_vars,phosphorusflux_vars)
-       end if !!if(.not.use_bgc_interface)
+       end if !if(.not.use_clm_interface)
        !----------------------------------------------------------------
-       !! CNDecompAlloc2 is called by both clm-bgc & pflotran
-       !! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
-       !! pflotran & clm-bgc : 'CNAllocation3_AG' and vertically integrate net and gross mineralization fluxes
+       ! CNDecompAlloc2 is called by both clm-bgc & pflotran
+       ! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
+       ! pflotran & clm-bgc : 'CNAllocation3_AG' and vertically integrate net and gross mineralization fluxes
        call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,             &
                 waterstate_vars, cnstate_vars, ch4_vars,                                        &

@@ -74,10 +74,10 @@ contains
     use shr_log_mod  , only : errMsg => shr_log_errMsg
     use clm_varctl   , only : iulog
     use clm_varcon   , only : nameg, namel, namec, namep
-    use GridcellType , only : grc                
-    use LandunitType , only : lun                
-    use ColumnType   , only : col                
-    use PatchType    , only : pft                
+    use GridcellType , only : grc_pp                
+    use LandunitType , only : lun_pp                
+    use ColumnType   , only : col_pp                
+    use VegetationType    , only : veg_pp                
     !
     ! Arguments:
     integer          , intent(in) :: decomp_index
@@ -92,50 +92,50 @@ contains
        igrc = decomp_index
        write(iulog,*)'local  gridcell index = ',igrc
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
-       write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
-       write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
+       write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
+       write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
 
     else if (trim(clmlevel) == namel) then
 
        ilun = decomp_index
-       igrc = lun%gridcell(ilun)
+       igrc = lun_pp%gridcell(ilun)
        write(iulog,*)'local  landunit index = ',ilun
        write(iulog,*)'global landunit index = ',GetGlobalIndex(decomp_index=ilun, clmlevel=namel)
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
-       write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
-       write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
-       write(iulog,*)'landunit type         = ',lun%itype(decomp_index)
+       write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
+       write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
+       write(iulog,*)'landunit type         = ',lun_pp%itype(decomp_index)
 
     else if (trim(clmlevel) == namec) then
 
        icol = decomp_index
-       ilun = col%landunit(icol)
-       igrc = col%gridcell(icol)
+       ilun = col_pp%landunit(icol)
+       igrc = col_pp%gridcell(icol)
        write(iulog,*)'local  column   index = ',icol
        write(iulog,*)'global column   index = ',GetGlobalIndex(decomp_index=icol, clmlevel=namec)
        write(iulog,*)'global landunit index = ',GetGlobalIndex(decomp_index=ilun, clmlevel=namel)
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
-       write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
-       write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
-       write(iulog,*)'column   type         = ',col%itype(icol)
-       write(iulog,*)'landunit type         = ',lun%itype(ilun)
+       write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
+       write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
+       write(iulog,*)'column   type         = ',col_pp%itype(icol)
+       write(iulog,*)'landunit type         = ',lun_pp%itype(ilun)
    
     else if (trim(clmlevel) == namep) then
 
        ipft = decomp_index
-       icol = pft%column(ipft)
-       ilun = pft%landunit(ipft)
-       igrc = pft%gridcell(ipft)
+       icol = veg_pp%column(ipft)
+       ilun = veg_pp%landunit(ipft)
+       igrc = veg_pp%gridcell(ipft)
        write(iulog,*)'local  pft      index = ',ipft
        write(iulog,*)'global pft      index = ',GetGlobalIndex(decomp_index=ipft, clmlevel=namep)
        write(iulog,*)'global column   index = ',GetGlobalIndex(decomp_index=icol, clmlevel=namec)
        write(iulog,*)'global landunit index = ',GetGlobalIndex(decomp_index=ilun, clmlevel=namel)
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
-       write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
-       write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
-       write(iulog,*)'pft      type         = ',pft%itype(ipft)
-       write(iulog,*)'column   type         = ',col%itype(icol)
-       write(iulog,*)'landunit type         = ',lun%itype(ilun)
+       write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
+       write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
+       write(iulog,*)'pft      type         = ',veg_pp%itype(ipft)
+       write(iulog,*)'column   type         = ',col_pp%itype(icol)
+       write(iulog,*)'landunit type         = ',lun_pp%itype(ilun)
 
     else		       
        call shr_sys_abort('clmlevel '//trim(clmlevel)//'not supported '//errmsg(__FILE__, __LINE__))

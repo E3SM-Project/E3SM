@@ -16,9 +16,9 @@ module CNCStateUpdate1Mod
   use CNCarbonFluxType       , only : carbonflux_type
   use CNStateType            , only : cnstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
-  use PatchType              , only : pft
+  use VegetationPropertiesType         , only : veg_vp
   use clm_varctl             , only : nu_com
+  use VegetationType              , only : veg_pp
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode, use_ed
   !
@@ -104,9 +104,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                     & 
-         ivt                           =>    pft%itype                                           , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+         ivt                           =>    veg_pp%itype                                           , & ! Input:  [integer  (:)     ]  pft vegetation type                                
 
-         woody                         =>    ecophyscon%woody                                    , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                         =>    veg_vp%woody                                    , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
          cascade_donor_pool            =>    decomp_cascade_con%cascade_donor_pool               , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool         =>    decomp_cascade_con%cascade_receiver_pool            , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
@@ -128,30 +128,13 @@ contains
             ! seeding fluxes, from dynamic landcover
             cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_leaf_col(c) * dt
             cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
+            cs%decomp_som2c_vr_col(c,1:nlevdecomp) = cs%decomp_cpools_vr_col(c,1:nlevdecomp,6)
          end do
       end if
 
 
-      if (is_active_betr_bgc) then
-         !summarize litter carbon input
-         ! plant to litter fluxes
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               ! phenology and dynamic land cover fluxes
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
-            enddo
-         enddo  
-
-      elseif (.not.(use_pflotran .and. pf_cmode) .and. .not.use_ed ) then
+      
+      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_ed ) then
 
          ! plant to litter fluxes
 
@@ -423,14 +406,6 @@ contains
 
    end if
 
-   if(is_active_betr_bgc)then
-      
-      !the following is introduced to fix the spinup problem with simultaneous nitrogen competition
-      
-      call p2c(bounds, num_soilc, filter_soilc, &
-            cs%frootc_patch(bounds%begp:bounds%endp), &
-            cnstate_vars%frootc_nfix_scalar_col(bounds%begc:bounds%endc))
-   endif
  end associate
 
 end subroutine CStateUpdate1

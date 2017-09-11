@@ -21,9 +21,9 @@ module CNNDynamicsMod
   use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
-  use ColumnType          , only : col                
-  use PatchType           , only : pft
-  use EcophysConType      , only : ecophyscon
+  use ColumnType          , only : col_pp                
+  use VegetationType           , only : veg_pp
+  use VegetationPropertiesType      , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -139,7 +139,7 @@ contains
       
       ! Loop through columns
       do c = bounds%begc, bounds%endc
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
          ndep_to_sminn(c) = forc_ndep(g)
       end do
 
@@ -303,7 +303,7 @@ contains
          elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col%dz(c,j))
+               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
             end do
          endif
       end do
@@ -342,12 +342,12 @@ contains
                   ! assumes that 10% of mineral nitrogen is soluble
                   disn_conc = 0._r8
                   if (h2osoi_liq(c,j) > 0._r8) then
-                     disn_conc = (sf * sminn_vr(c,j) * col%dz(c,j) )/(h2osoi_liq(c,j) )
+                     disn_conc = (sf * sminn_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
                   end if
 
                   ! calculate the N leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
-                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col%dz(c,j) )
+                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
 
                end if
 
@@ -389,12 +389,12 @@ contains
                   ! assumes that 10% of mineral nitrogen is soluble
                   disn_conc = 0._r8
                   if (h2osoi_liq(c,j) > 0._r8) then
-                     disn_conc = (sf_no3 * smin_no3_vr(c,j) * col%dz(c,j) )/(h2osoi_liq(c,j) )
+                     disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
                   end if
                   !
                   ! calculate the N leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
-                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col%dz(c,j) )
+                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
                   !
                   ! ensure that leaching rate isn't larger than soil N pool
                   smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
@@ -406,11 +406,11 @@ contains
                   ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
                   if ( zisoi(j) <= depth_runoff_Nloss )  then
                      smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                          h2osoi_liq(c,j) / ( surface_water(c) * col%dz(c,j) )
+                          h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
                   elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
                      smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
                           h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
-                          col%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
+                          col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
                   else
                      smin_no3_runoff_vr(c,j) = 0._r8
                   endif
@@ -531,11 +531,11 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
 
          ! if soybean currently growing then calculate fixation
 
-         if (pft%itype(p) == nsoybean .and. croplive(p)) then
+         if (veg_pp%itype(p) == nsoybean .and. croplive(p)) then
 
             ! difference between supply and demand
 
@@ -644,43 +644,42 @@ contains
     real(r8) :: r_nup                      ! carbon cost of root N uptake, gC/gN
     real(r8) :: f_nodule                   ! empirical, fraction of root that is nodulated
     real(r8) :: N2_aq                      ! aqueous N2 bulk concentration gN/m3 soil
-    real(r8) :: km_n2                      ! MM parameter for N2 fixation
     !-----------------------------------------------------------------------
 
     associate(& 
-         ivt                   => pft%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
+         ivt                   => veg_pp%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
-         vmax_nfix             => ecophyscon%vmax_nfix                 , &
-         km_nfix               => ecophyscon%km_nfix                   , &
+         vmax_nfix             => veg_vp%vmax_nfix                 , &
+         km_nfix               => veg_vp%km_nfix                   , &
          frootc                => carbonstate_vars%frootc_patch        , &
          nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
          benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
          t_soi10cm_col         => temperature_vars%t_soi10cm_col       , &
-         h2osoi_vol            => waterstate_vars%h2osoi_vol_col      &
+         h2osoi_vol            => waterstate_vars%h2osoi_vol_col       , &
+         t_scalar              => carbonflux_vars%t_scalar_col           &
          )
 
       do fc=1,num_soilc
           c = filter_soilc(fc)
           nfix_to_sminn(c) = 0.0_r8
-          do p = col%pfti(c), col%pftf(c)
-              if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+          do p = col_pp%pfti(c), col_pp%pftf(c)
+              if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
                   r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8*(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8) 
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
                   r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
                   ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
-                  f_nodule = 1 - min(1.0_r8,r_fix / r_nup )
+                  f_nodule = 1 - min(1.0_r8,r_fix / max(r_nup, 1e-20_r8))
                   ! np limitation factor of n2 fixation (not considered now)
                   ! calculate aqueous N2 concentration and bulk aqueous N2 concentration
                   ! aqueous N2 concentration under pure nitrogen is 6.1e-4 mol/L/atm (based on Hery's law)
                   ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e3L/m3 * water content m3/m3 at 10 cm
-                  N2_aq = 0.78_r8 * 6.1e-4_r8 *28 *1e3 * h2osoi_vol(c,4)
-                  km_n2 = 5 ! calibrated value
+                  N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * h2osoi_vol(c,4)
                   ! calculate n2 fixation rate for each pft and add it to column total
-                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * frootc(p) * cn_scalar(p) *f_nodule * &
-                     N2_aq/ (N2_aq + km_n2) * pft%wtcol(p)
+                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
+                     N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) * veg_pp%wtcol(p)
               end if
           end do
       end do

@@ -11,8 +11,8 @@ module FrictionVelocityMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use FrictionVelocityType , only : frictionvel_type
-  use LandunitType         , only : lun                
-  use PatchType            , only : pft                
+  use LandunitType         , only : lun_pp                
+  use VegetationType            , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -100,8 +100,8 @@ contains
     SHR_ASSERT_ALL((ubound(fm)      == (/ubn/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                   & 
-         pfti             => lun%pfti                          , & ! Input:  [integer  (:) ] beginning pfti index for landunit         
-         pftf             => lun%pftf                          , & ! Input:  [integer  (:) ] final pft index for landunit              
+         pfti             => lun_pp%pfti                          , & ! Input:  [integer  (:) ] beginning pfti index for landunit         
+         pftf             => lun_pp%pftf                          , & ! Input:  [integer  (:) ] final pft index for landunit              
          
          forc_hgt_u_patch => frictionvel_vars%forc_hgt_u_patch , & ! Input:  [real(r8) (:) ] observational height of wind at pft level [m]
          forc_hgt_t_patch => frictionvel_vars%forc_hgt_t_patch , & ! Input:  [real(r8) (:) ] observational height of temperature at pft level [m]
@@ -119,9 +119,9 @@ contains
       do f = 1, fn
          n = filtern(f)
          if (present(landunit_index)) then
-            g = lun%gridcell(n) 
+            g = lun_pp%gridcell(n) 
          else
-            g = pft%gridcell(n)  
+            g = veg_pp%gridcell(n)  
          end if
 
          ! Wind profile

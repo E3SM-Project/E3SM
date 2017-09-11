@@ -143,6 +143,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_full_abort_write" type="logical"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- decomposition -->
 
@@ -469,6 +477,14 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_test_ice_shelf" type="logical"
+	category="unit_test" group="unit_test">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_testing_system_test" type="logical"
 	category="unit_test" group="unit_test">
 MISSING DESCRIPTION
 

@@ -4,7 +4,7 @@
   <xs:attribute name="version" type="xs:decimal"/>
   <xs:attribute name="alias" type="xs:NMTOKEN"/>
   <xs:attribute name="compset" type="xs:token"/>
-  <xs:attribute name="not_compset" type="xs:NMTOKEN"/>
+  <xs:attribute name="not_compset" type="xs:token"/>
   <xs:attribute name="name" type="xs:NMTOKEN"/>
   <xs:attribute name="grid" type="xs:token"/>
   <xs:attribute name="lnd_mask" type="xs:NMTOKEN"/>

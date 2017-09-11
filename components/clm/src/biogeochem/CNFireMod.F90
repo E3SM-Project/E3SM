@@ -31,7 +31,7 @@ module CNFireMod
   use decompMod              , only : bounds_type
   use subgridAveMod          , only : p2c
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_vp
   use atm2lndType            , only : atm2lnd_type
   use CNDVType               , only : dgvs_type
   use CNStateType            , only : cnstate_type
@@ -43,9 +43,9 @@ module CNFireMod
   use SoilHydrologyType      , only : soilhydrology_type  
   use TemperatureType        , only : temperature_type
   use WaterstateType         , only : waterstate_type
-  use GridcellType           , only : grc                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use GridcellType           , only : grc_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType              , only : veg_pp                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
@@ -311,15 +311,15 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
               ! For crop veg types
-              if( pft%itype(p) > nc4_grass )then
-                 cropf_col(c) = cropf_col(c) + pft%wtcol(p)
+              if( veg_pp%itype(p) > nc4_grass )then
+                 cropf_col(c) = cropf_col(c) + veg_pp%wtcol(p)
               end if
               ! For natural vegetation (non-crop and non-bare-soil)
-              if( pft%itype(p) >= ndllf_evr_tmp_tree .and. pft%itype(p) <= nc4_grass )then
-                 lfwt(c) = lfwt(c) + pft%wtcol(p)
+              if( veg_pp%itype(p) >= ndllf_evr_tmp_tree .and. veg_pp%itype(p) <= nc4_grass )then
+                 lfwt(c) = lfwt(c) + veg_pp%wtcol(p)
               end if
            end if
         end do
@@ -334,16 +334,16 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
               ! For crop PFTs, fuel load includes leaf and litter; only
               ! column-level litter carbon
               ! is available, so we use leaf carbon to estimate the
               ! litter carbon for crop PFTs
-              if( pft%itype(p) > nc4_grass .and. pft%wtcol(p) > 0._r8 .and. leafc_col(c) > 0._r8 )then
+              if( veg_pp%itype(p) > nc4_grass .and. veg_pp%wtcol(p) > 0._r8 .and. leafc_col(c) > 0._r8 )then
                  fuelc_crop(c)=fuelc_crop(c) + (leafc(p) + leafc_storage(p) + &
-                      leafc_xfer(p))*pft%wtcol(p)/cropf_col(c)     + &
-                      totlitc(c)*leafc(p)/leafc_col(c)*pft%wtcol(p)/cropf_col(c)
+                      leafc_xfer(p))*veg_pp%wtcol(p)/cropf_col(c)     + &
+                      totlitc(c)*leafc(p)/leafc_col(c)*veg_pp%wtcol(p)/cropf_col(c)
               end if
            end if
         end do
@@ -370,28 +370,28 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           g = col%gridcell(c)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           g = col_pp%gridcell(c)
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
 
               ! For non-crop -- natural vegetation and bare-soil
-              if( pft%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
+              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
                  if( .not. shr_infnan_isnan(btran2(p))) then
                     if (btran2(p)  <=  1._r8 ) then
-                       btran_col(c) = btran_col(c)+btran2(p)*pft%wtcol(p)
-                       wtlf(c)      = wtlf(c)+pft%wtcol(p)
+                       btran_col(c) = btran_col(c)+btran2(p)*veg_pp%wtcol(p)
+                       wtlf(c)      = wtlf(c)+veg_pp%wtcol(p)
                     end if
                  end if
-                 if( pft%itype(p) == nbrdlf_evr_trp_tree .and. pft%wtcol(p)  >  0._r8 )then
-                    trotr1_col(c)=trotr1_col(c)+pft%wtcol(p)*col%wtgcell(c)
+                 if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
+                    trotr1_col(c)=trotr1_col(c)+veg_pp%wtcol(p)*col_pp%wtgcell(c)
                  end if
-                 if( pft%itype(p) == nbrdlf_dcd_trp_tree .and. pft%wtcol(p)  >  0._r8 )then
-                    trotr2_col(c)=trotr2_col(c)+pft%wtcol(p)*col%wtgcell(c)
+                 if( veg_pp%itype(p) == nbrdlf_dcd_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
+                    trotr2_col(c)=trotr2_col(c)+veg_pp%wtcol(p)*col_pp%wtgcell(c)
                  end if
                  if ( flanduse_timeseries /= ' ' ) then    !true when landuse data is used
-                    if( pft%itype(p) == nbrdlf_evr_trp_tree .or. pft%itype(p) == nbrdlf_dcd_trp_tree )then
+                    if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
                        if(lfpftd(p) > 0._r8)then
-                          dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col%wtgcell(c)
+                          dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col_pp%wtgcell(c)
                        end if
                     end if
                  end if
@@ -399,9 +399,9 @@ contains
                       frootc_xfer(p) + deadcrootc(p) +                &
                       deadcrootc_storage(p) + deadcrootc_xfer(p) +    &
                       livecrootc(p)+livecrootc_storage(p) +           &
-                      livecrootc_xfer(p))*pft%wtcol(p)
+                      livecrootc_xfer(p))*veg_pp%wtcol(p)
 
-                 fsr_col(c) = fsr_col(c) + fsr_pft(pft%itype(p))*pft%wtcol(p)/(1.0_r8-cropf_col(c))
+                 fsr_col(c) = fsr_col(c) + fsr_pft(veg_pp%itype(p))*veg_pp%wtcol(p)/(1.0_r8-cropf_col(c))
 
                  if( lfwt(c)  /=  0.0_r8 )then    
                     hdmlf=forc_hdm(g)
@@ -410,47 +410,47 @@ contains
 
                     if( hdmlf  >  0.1_r8 )then            
                        ! For NOT bare-soil
-                       if( pft%itype(p)  /=  noveg )then
+                       if( veg_pp%itype(p)  /=  noveg )then
                           ! For shrub and grass (crop already excluded above)
-                          if( pft%itype(p)  >=  nbrdlf_evr_shrub )then      !for shurb and grass
+                          if( veg_pp%itype(p)  >=  nbrdlf_evr_shrub )then      !for shurb and grass
                              lgdp_col(c)  = lgdp_col(c) + (0.1_r8 + 0.9_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (gdp_lf(c)/8._r8)**0.5_r8))*pft%wtcol(p) &
+                                  (gdp_lf(c)/8._r8)**0.5_r8))*veg_pp%wtcol(p) &
                                   /(1.0_r8 - cropf_col(c))
                              lgdp1_col(c) = lgdp1_col(c) + (0.2_r8 + 0.8_r8*   &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (gdp_lf(c)/7._r8)))*pft%wtcol(p)/lfwt(c)
+                                  (gdp_lf(c)/7._r8)))*veg_pp%wtcol(p)/lfwt(c)
                              lpop_col(c)  = lpop_col(c) + (0.2_r8 + 0.8_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (hdmlf/450._r8)**0.5_r8))*pft%wtcol(p)/lfwt(c)
+                                  (hdmlf/450._r8)**0.5_r8))*veg_pp%wtcol(p)/lfwt(c)
                           else   ! for trees
                              if( gdp_lf(c)  >  20._r8 )then
-                                lgdp_col(c)  =lgdp_col(c)+0.39_r8*pft%wtcol(p)/(1.0_r8 - cropf_col(c))
+                                lgdp_col(c)  =lgdp_col(c)+0.39_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                              else    
-                                lgdp_col(c) = lgdp_col(c)+pft%wtcol(p)/(1.0_r8 - cropf_col(c))
+                                lgdp_col(c) = lgdp_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                              end if
                              if( gdp_lf(c)  >  20._r8 )then   
-                                lgdp1_col(c) = lgdp1_col(c)+0.62_r8*pft%wtcol(p)/lfwt(c)
+                                lgdp1_col(c) = lgdp1_col(c)+0.62_r8*veg_pp%wtcol(p)/lfwt(c)
                              else
                                 if( gdp_lf(c)  >  8._r8 ) then
-                                   lgdp1_col(c)=lgdp1_col(c)+0.83_r8*pft%wtcol(p)/lfwt(c)
+                                   lgdp1_col(c)=lgdp1_col(c)+0.83_r8*veg_pp%wtcol(p)/lfwt(c)
                                 else
-                                   lgdp1_col(c)=lgdp1_col(c)+pft%wtcol(p)/lfwt(c)
+                                   lgdp1_col(c)=lgdp1_col(c)+veg_pp%wtcol(p)/lfwt(c)
                                 end if
                              end if
                              lpop_col(c) = lpop_col(c) + (0.4_r8 + 0.6_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (hdmlf/125._r8)))*pft%wtcol(p)/lfwt(c) 
+                                  (hdmlf/125._r8)))*veg_pp%wtcol(p)/lfwt(c) 
                           end if
                        end if
                     else
-                       lgdp_col(c)  = lgdp_col(c)+pft%wtcol(p)/(1.0_r8 - cropf_col(c))
-                       lgdp1_col(c) = lgdp1_col(c)+pft%wtcol(p)/lfwt(c)
-                       lpop_col(c)  = lpop_col(c)+pft%wtcol(p)/lfwt(c)
+                       lgdp_col(c)  = lgdp_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+                       lgdp1_col(c) = lgdp1_col(c)+veg_pp%wtcol(p)/lfwt(c)
+                       lpop_col(c)  = lpop_col(c)+veg_pp%wtcol(p)/lfwt(c)
                     end if
                  end if
 
-                 fd_col(c) = fd_col(c) + fd_pft(pft%itype(p)) * pft%wtcol(p) * secsphr / (1.0_r8-cropf_col(c))         
+                 fd_col(c) = fd_col(c) + fd_pft(veg_pp%itype(p)) * veg_pp%wtcol(p) * secsphr / (1.0_r8-cropf_col(c))         
               end if
            end if
         end do
@@ -492,14 +492,14 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           g= col%gridcell(c)
+           g= col_pp%gridcell(c)
            hdmlf=forc_hdm(g)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
               ! For crop
-              if( forc_t(c)  >=  SHR_CONST_TKFRZ .and. pft%itype(p)  >  nc4_grass .and.  &
+              if( forc_t(c)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
                    kmo == abm_lf(c) .and. forc_rain(c)+forc_snow(c) == 0._r8  .and. &
-                   burndate(p) >= 999 .and. pft%wtcol(p)  >  0._r8 )then ! catch  crop burn time
+                   burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
                  ! calculate human density impact on ag. fire
                  fhd = 0.04_r8+0.96_r8*exp(-1._r8*SHR_CONST_PI*(hdmlf/350._r8)**0.5_r8)
@@ -512,8 +512,8 @@ contains
 
                  ! crop fire only for generic crop types at this time
                  ! managed crops are treated as grasses if crop model is turned on
-                 baf_crop(c) = baf_crop(c) + cropfire_a1/secsphr*fb*fhd*fgdp*pft%wtcol(p)
-                 if( fb*fhd*fgdp*pft%wtcol(p)  >  0._r8)then
+                 baf_crop(c) = baf_crop(c) + cropfire_a1/secsphr*fb*fhd*fgdp*veg_pp%wtcol(p)
+                 if( fb*fhd*fgdp*veg_pp%wtcol(p)  >  0._r8)then
                     burndate(p)=kda
                  end if
               end if
@@ -525,8 +525,8 @@ contains
      !
      do fc = 1, num_soilc
         c = filter_soilc(fc)
-        g= col%gridcell(c)
-        if(grc%latdeg(g) < borealat )then
+        g= col_pp%gridcell(c)
+        if(grc_pp%latdeg(g) < borealat )then
            baf_peatf(c) = non_boreal_peatfire_c/secsphr*max(0._r8, &
                 min(1._r8,(4.0_r8-prec60_col(c)*secspday)/ &
                 4.0_r8))**2*peatf_lf(c)*(1._r8-fsat(c))
@@ -557,7 +557,7 @@ contains
      !
      do fc = 1, num_soilc
         c = filter_soilc(fc)
-        g = col%gridcell(c)
+        g = col_pp%gridcell(c)
         hdmlf=forc_hdm(g)
         if( cropf_col(c)  <  1.0 )then
            if (trotr1_col(c)+trotr2_col(c)>0.6_r8) then
@@ -584,7 +584,7 @@ contains
                    min(1._r8,exp(SHR_CONST_PI*(forc_t(c)-SHR_CONST_TKFRZ)/10._r8))
               lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
-              ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
+              ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
               nfire(c) = ig/secsphr*fb*fire_m*lgdp_col(c) !fire counts/km2/sec
               Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(g)))
               if ( wtlf(c) > 0.0_r8 )then
@@ -766,7 +766,7 @@ contains
         is_cwd                              =>    decomp_cascade_con%is_cwd                                   , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool                         
         is_litter                           =>    decomp_cascade_con%is_litter                                , & ! Input:  [logical  (:)     ]  TRUE => pool is a litter pool                      
 
-        woody                               =>    ecophyscon%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)             
+        woody                               =>    veg_vp%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)             
 
         nind                                =>    dgvs_vars%nind_patch                                        , & ! Input:  [real(r8) (:)     ]  number of individuals (#/m2)                      
         
@@ -1012,9 +1012,9 @@ contains
      !
      do fp = 1,num_soilp
         p = filter_soilp(fp)
-        c = pft%column(p)
+        c = veg_pp%column(p)
 
-        if( pft%itype(p) < nc3crop .and. cropf_col(c) < 1.0_r8)then
+        if( veg_pp%itype(p) < nc3crop .and. cropf_col(c) < 1.0_r8)then
            ! For non-crop (bare-soil and natural vegetation)
            if (flanduse_timeseries /= ' ') then    !true when landuse data is used
               f = (fbac(c)-baf_crop(c))/(1.0_r8-cropf_col(c))
@@ -1036,233 +1036,251 @@ contains
 
 	m_veg = 1.0_r8
         if (spinup_state == 1) m_veg = spinup_mortality_factor
-        m_leafc_to_fire(p)               =  leafc(p)              * f * cc_leaf(pft%itype(p))
-        m_leafc_storage_to_fire(p)       =  leafc_storage(p)      * f * cc_other(pft%itype(p))
-        m_leafc_xfer_to_fire(p)          =  leafc_xfer(p)         * f * cc_other(pft%itype(p))
-        m_livestemc_to_fire(p)           =  livestemc(p)          * f * cc_lstem(pft%itype(p))
-        m_livestemc_storage_to_fire(p)   =  livestemc_storage(p)  * f * cc_other(pft%itype(p))
-        m_livestemc_xfer_to_fire(p)      =  livestemc_xfer(p)     * f * cc_other(pft%itype(p))
-        m_deadstemc_to_fire(p)           =  deadstemc(p)          * m_veg * f * cc_dstem(pft%itype(p))
-        m_deadstemc_storage_to_fire(p)   =  deadstemc_storage(p)  * f * cc_other(pft%itype(p))
-        m_deadstemc_xfer_to_fire(p)      =  deadstemc_xfer(p)     * f * cc_other(pft%itype(p))
+        m_leafc_to_fire(p)               =  leafc(p)              * f * cc_leaf(veg_pp%itype(p))
+        m_leafc_storage_to_fire(p)       =  leafc_storage(p)      * f * cc_other(veg_pp%itype(p))
+        m_leafc_xfer_to_fire(p)          =  leafc_xfer(p)         * f * cc_other(veg_pp%itype(p))
+        m_livestemc_to_fire(p)           =  livestemc(p)          * f * cc_lstem(veg_pp%itype(p))
+        m_livestemc_storage_to_fire(p)   =  livestemc_storage(p)  * f * cc_other(veg_pp%itype(p))
+        m_livestemc_xfer_to_fire(p)      =  livestemc_xfer(p)     * f * cc_other(veg_pp%itype(p))
+        m_deadstemc_to_fire(p)           =  deadstemc(p)          * m_veg * f * cc_dstem(veg_pp%itype(p))
+        m_deadstemc_storage_to_fire(p)   =  deadstemc_storage(p)  * f * cc_other(veg_pp%itype(p))
+        m_deadstemc_xfer_to_fire(p)      =  deadstemc_xfer(p)     * f * cc_other(veg_pp%itype(p))
         m_frootc_to_fire(p)              =  frootc(p)             * f * 0._r8
-        m_frootc_storage_to_fire(p)      =  frootc_storage(p)     * f * cc_other(pft%itype(p)) 
-        m_frootc_xfer_to_fire(p)         =  frootc_xfer(p)        * f * cc_other(pft%itype(p))
+        m_frootc_storage_to_fire(p)      =  frootc_storage(p)     * f * cc_other(veg_pp%itype(p)) 
+        m_frootc_xfer_to_fire(p)         =  frootc_xfer(p)        * f * cc_other(veg_pp%itype(p))
         m_livecrootc_to_fire(p)          =  livecrootc(p)         * f * 0._r8
-        m_livecrootc_storage_to_fire(p)  =  livecrootc_storage(p) * f * cc_other(pft%itype(p)) 
-        m_livecrootc_xfer_to_fire(p)     =  livecrootc_xfer(p)    * f * cc_other(pft%itype(p)) 
+        m_livecrootc_storage_to_fire(p)  =  livecrootc_storage(p) * f * cc_other(veg_pp%itype(p)) 
+        m_livecrootc_xfer_to_fire(p)     =  livecrootc_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
         m_deadcrootc_to_fire(p)          =  deadcrootc(p)         * m_veg * f * 0._r8
-        m_deadcrootc_storage_to_fire(p)  =  deadcrootc_storage(p) * f*  cc_other(pft%itype(p)) 
-        m_deadcrootc_xfer_to_fire(p)     =  deadcrootc_xfer(p)    * f * cc_other(pft%itype(p)) 
-        m_gresp_storage_to_fire(p)       =  gresp_storage(p)      * f * cc_other(pft%itype(p))
-        m_gresp_xfer_to_fire(p)          =  gresp_xfer(p)         * f * cc_other(pft%itype(p))
+        m_deadcrootc_storage_to_fire(p)  =  deadcrootc_storage(p) * f*  cc_other(veg_pp%itype(p)) 
+        m_deadcrootc_xfer_to_fire(p)     =  deadcrootc_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
+        m_gresp_storage_to_fire(p)       =  gresp_storage(p)      * f * cc_other(veg_pp%itype(p))
+        m_gresp_xfer_to_fire(p)          =  gresp_xfer(p)         * f * cc_other(veg_pp%itype(p))
 
 
         ! nitrogen fluxes
-        m_leafn_to_fire(p)               =  leafn(p)              * f * cc_leaf(pft%itype(p))
-        m_leafn_storage_to_fire(p)       =  leafn_storage(p)      * f * cc_other(pft%itype(p))
-        m_leafn_xfer_to_fire(p)          =  leafn_xfer(p)         * f * cc_other(pft%itype(p))
-        m_livestemn_to_fire(p)           =  livestemn(p)          * f * cc_lstem(pft%itype(p))
-        m_livestemn_storage_to_fire(p)   =  livestemn_storage(p)  * f * cc_other(pft%itype(p))
-        m_livestemn_xfer_to_fire(p)      =  livestemn_xfer(p)     * f * cc_other(pft%itype(p))
-        m_deadstemn_to_fire(p)           =  deadstemn(p)          * m_veg * f * cc_dstem(pft%itype(p))
-        m_deadstemn_storage_to_fire(p)   =  deadstemn_storage(p)  * f * cc_other(pft%itype(p))
-        m_deadstemn_xfer_to_fire(p)      =  deadstemn_xfer(p)     * f * cc_other(pft%itype(p))
+        m_leafn_to_fire(p)               =  leafn(p)              * f * cc_leaf(veg_pp%itype(p))
+        m_leafn_storage_to_fire(p)       =  leafn_storage(p)      * f * cc_other(veg_pp%itype(p))
+        m_leafn_xfer_to_fire(p)          =  leafn_xfer(p)         * f * cc_other(veg_pp%itype(p))
+        m_livestemn_to_fire(p)           =  livestemn(p)          * f * cc_lstem(veg_pp%itype(p))
+        m_livestemn_storage_to_fire(p)   =  livestemn_storage(p)  * f * cc_other(veg_pp%itype(p))
+        m_livestemn_xfer_to_fire(p)      =  livestemn_xfer(p)     * f * cc_other(veg_pp%itype(p))
+        m_deadstemn_to_fire(p)           =  deadstemn(p)          * m_veg * f * cc_dstem(veg_pp%itype(p))
+        m_deadstemn_storage_to_fire(p)   =  deadstemn_storage(p)  * f * cc_other(veg_pp%itype(p))
+        m_deadstemn_xfer_to_fire(p)      =  deadstemn_xfer(p)     * f * cc_other(veg_pp%itype(p))
         m_frootn_to_fire(p)              =  frootn(p)             * f * 0._r8
-        m_frootn_storage_to_fire(p)      =  frootn_storage(p)     * f * cc_other(pft%itype(p))
-        m_frootn_xfer_to_fire(p)         =  frootn_xfer(p)        * f * cc_other(pft%itype(p))
+        m_frootn_storage_to_fire(p)      =  frootn_storage(p)     * f * cc_other(veg_pp%itype(p))
+        m_frootn_xfer_to_fire(p)         =  frootn_xfer(p)        * f * cc_other(veg_pp%itype(p))
         m_livecrootn_to_fire(p)          =  livecrootn(p)         * f * 0._r8 
-        m_livecrootn_storage_to_fire(p)  =  livecrootn_storage(p) * f * cc_other(pft%itype(p)) 
-        m_livecrootn_xfer_to_fire(p)     =  livecrootn_xfer(p)    * f * cc_other(pft%itype(p))
+        m_livecrootn_storage_to_fire(p)  =  livecrootn_storage(p) * f * cc_other(veg_pp%itype(p)) 
+        m_livecrootn_xfer_to_fire(p)     =  livecrootn_xfer(p)    * f * cc_other(veg_pp%itype(p))
         m_deadcrootn_to_fire(p)          =  deadcrootn(p)         * m_veg * f * 0._r8
-        m_deadcrootn_xfer_to_fire(p)     =  deadcrootn_xfer(p)    * f * cc_other(pft%itype(p)) 
-        m_deadcrootn_storage_to_fire(p)  =  deadcrootn_storage(p) * f * cc_other(pft%itype(p))
-        m_retransn_to_fire(p)            =  retransn(p)           * f * cc_other(pft%itype(p))
+        m_deadcrootn_xfer_to_fire(p)     =  deadcrootn_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
+        m_deadcrootn_storage_to_fire(p)  =  deadcrootn_storage(p) * f * cc_other(veg_pp%itype(p))
+        m_retransn_to_fire(p)            =  retransn(p)           * f * cc_other(veg_pp%itype(p))
 
         ! phosphorus fluxes
-        m_leafp_to_fire(p)               =  leafp(p)              * f * cc_leaf(pft%itype(p))
-        m_leafp_storage_to_fire(p)       =  leafp_storage(p)      * f * cc_other(pft%itype(p))
-        m_leafp_xfer_to_fire(p)          =  leafp_xfer(p)         * f * cc_other(pft%itype(p))
-        m_livestemp_to_fire(p)           =  livestemp(p)          * f * cc_lstem(pft%itype(p))
-        m_livestemp_storage_to_fire(p)   =  livestemp_storage(p)  * f * cc_other(pft%itype(p))
-        m_livestemp_xfer_to_fire(p)      =  livestemp_xfer(p)     * f * cc_other(pft%itype(p))
-        m_deadstemp_to_fire(p)           =  deadstemp(p)          * f * cc_dstem(pft%itype(p))
-        m_deadstemp_storage_to_fire(p)   =  deadstemp_storage(p)  * f * cc_other(pft%itype(p))
-        m_deadstemp_xfer_to_fire(p)      =  deadstemp_xfer(p)     * f * cc_other(pft%itype(p))
+        m_leafp_to_fire(p)               =  leafp(p)              * f * cc_leaf(veg_pp%itype(p))
+        m_leafp_storage_to_fire(p)       =  leafp_storage(p)      * f * cc_other(veg_pp%itype(p))
+        m_leafp_xfer_to_fire(p)          =  leafp_xfer(p)         * f * cc_other(veg_pp%itype(p))
+        m_livestemp_to_fire(p)           =  livestemp(p)          * f * cc_lstem(veg_pp%itype(p))
+        m_livestemp_storage_to_fire(p)   =  livestemp_storage(p)  * f * cc_other(veg_pp%itype(p))
+        m_livestemp_xfer_to_fire(p)      =  livestemp_xfer(p)     * f * cc_other(veg_pp%itype(p))
+        m_deadstemp_to_fire(p)           =  deadstemp(p)          * f * cc_dstem(veg_pp%itype(p))
+        m_deadstemp_storage_to_fire(p)   =  deadstemp_storage(p)  * f * cc_other(veg_pp%itype(p))
+        m_deadstemp_xfer_to_fire(p)      =  deadstemp_xfer(p)     * f * cc_other(veg_pp%itype(p))
         m_frootp_to_fire(p)              =  frootp(p)             * f * 0._r8
-        m_frootp_storage_to_fire(p)      =  frootp_storage(p)     * f * cc_other(pft%itype(p))
-        m_frootp_xfer_to_fire(p)         =  frootp_xfer(p)        * f * cc_other(pft%itype(p))
+        m_frootp_storage_to_fire(p)      =  frootp_storage(p)     * f * cc_other(veg_pp%itype(p))
+        m_frootp_xfer_to_fire(p)         =  frootp_xfer(p)        * f * cc_other(veg_pp%itype(p))
         m_livecrootp_to_fire(p)          =  livecrootp(p)         * f * 0._r8 
-        m_livecrootp_storage_to_fire(p)  =  livecrootp_storage(p) * f * cc_other(pft%itype(p)) 
-        m_livecrootp_xfer_to_fire(p)     =  livecrootp_xfer(p)    * f * cc_other(pft%itype(p))
+        m_livecrootp_storage_to_fire(p)  =  livecrootp_storage(p) * f * cc_other(veg_pp%itype(p)) 
+        m_livecrootp_xfer_to_fire(p)     =  livecrootp_xfer(p)    * f * cc_other(veg_pp%itype(p))
         m_deadcrootp_to_fire(p)          =  deadcrootp(p)         * f * 0._r8
-        m_deadcrootp_xfer_to_fire(p)     =  deadcrootp_xfer(p)    * f * cc_other(pft%itype(p)) 
-        m_deadcrootp_storage_to_fire(p)  =  deadcrootp_storage(p) * f * cc_other(pft%itype(p))
-        m_retransp_to_fire(p)            =  retransp(p)           * f * cc_other(pft%itype(p))
+        m_deadcrootp_xfer_to_fire(p)     =  deadcrootp_xfer(p)    * f * cc_other(veg_pp%itype(p)) 
+        m_deadcrootp_storage_to_fire(p)  =  deadcrootp_storage(p) * f * cc_other(veg_pp%itype(p))
+        m_retransp_to_fire(p)            =  retransp(p)           * f * cc_other(veg_pp%itype(p))
 
         ! mortality due to fire
         ! carbon pools
         m_leafc_to_litter_fire(p)                   =  leafc(p) * f * &
-             (1._r8 - cc_leaf(pft%itype(p))) * &
-             fm_leaf(pft%itype(p))
+             (1._r8 - cc_leaf(veg_pp%itype(p))) * &
+             fm_leaf(veg_pp%itype(p))
         m_leafc_storage_to_litter_fire(p)           =  leafc_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_leafc_xfer_to_litter_fire(p)              =  leafc_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_livestemc_to_litter_fire(p)               =  livestemc(p) * f * &
-             (1._r8 - cc_lstem(pft%itype(p))) * &
-             fm_droot(pft%itype(p))    
+             (1._r8 - cc_lstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))    
         m_livestemc_storage_to_litter_fire(p)       =  livestemc_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_livestemc_xfer_to_litter_fire(p)          =  livestemc_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p)) 
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p)) 
         m_livestemc_to_deadstemc_fire(p)            =  livestemc(p) * f * &
-             (1._r8 - cc_lstem(pft%itype(p))) * &
-             (fm_lstem(pft%itype(p))-fm_droot(pft%itype(p)))
+             (1._r8 - cc_lstem(veg_pp%itype(p))) * &
+             (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_deadstemc_to_litter_fire(p)               =  deadstemc(p) * m_veg * f * &
-             (1._r8 - cc_dstem(pft%itype(p))) * &
-             fm_droot(pft%itype(p))    
+             (1._r8 - cc_dstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))    
         m_deadstemc_storage_to_litter_fire(p)       =  deadstemc_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_deadstemc_xfer_to_litter_fire(p)          =  deadstemc_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_frootc_to_litter_fire(p)                  =  frootc(p)             * f * &
-             fm_root(pft%itype(p))
+             fm_root(veg_pp%itype(p))
         m_frootc_storage_to_litter_fire(p)          =  frootc_storage(p)     * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_frootc_xfer_to_litter_fire(p)             =  frootc_xfer(p)        * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_livecrootc_to_litter_fire(p)              =  livecrootc(p)         * f * &
-             fm_droot(pft%itype(p))
+             fm_droot(veg_pp%itype(p))
         m_livecrootc_storage_to_litter_fire(p)      =  livecrootc_storage(p) * f * &
-             fm_other(pft%itype(p)) 
+             fm_other(veg_pp%itype(p)) 
         m_livecrootc_xfer_to_litter_fire(p)         =  livecrootc_xfer(p)    * f * &
-             fm_other(pft%itype(p)) 
+             fm_other(veg_pp%itype(p)) 
         m_livecrootc_to_deadcrootc_fire(p)          =  livecrootc(p)         * f * &
-             (fm_lroot(pft%itype(p))-fm_droot(pft%itype(p)))
+             (fm_lroot(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_deadcrootc_to_litter_fire(p)              =  deadcrootc(p)   * m_veg * f * &
-             fm_droot(pft%itype(p))
+             fm_droot(veg_pp%itype(p))
         m_deadcrootc_storage_to_litter_fire(p)      =  deadcrootc_storage(p) * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_deadcrootc_xfer_to_litter_fire(p)         =  deadcrootc_xfer(p)    * f * &
-             fm_other(pft%itype(p))      
+             fm_other(veg_pp%itype(p))      
         m_gresp_storage_to_litter_fire(p)           =  gresp_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))  
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))  
         m_gresp_xfer_to_litter_fire(p)              =  gresp_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p)) 
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p)) 
 
 
         ! nitrogen pools    
         m_leafn_to_litter_fire(p)                  =  leafn(p) * f * &
-             (1._r8 - cc_leaf(pft%itype(p))) * &
-             fm_leaf(pft%itype(p))
+             (1._r8 - cc_leaf(veg_pp%itype(p))) * &
+             fm_leaf(veg_pp%itype(p))
         m_leafn_storage_to_litter_fire(p)          =  leafn_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))  
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))  
         m_leafn_xfer_to_litter_fire(p)             =  leafn_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_livestemn_to_litter_fire(p)              =  livestemn(p) * f * &
-             (1._r8 - cc_lstem(pft%itype(p))) * &
-             fm_droot(pft%itype(p))
+             (1._r8 - cc_lstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))
         m_livestemn_storage_to_litter_fire(p)      =  livestemn_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))   
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))   
         m_livestemn_xfer_to_litter_fire(p)         =  livestemn_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_livestemn_to_deadstemn_fire(p)           =  livestemn(p) * f * &
-             (1._r8 - cc_lstem(pft%itype(p))) * &
-             (fm_lstem(pft%itype(p))-fm_droot(pft%itype(p)))
+             (1._r8 - cc_lstem(veg_pp%itype(p))) * &
+             (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_frootn_to_litter_fire(p)                 =  frootn(p)             * f * &
-             fm_root(pft%itype(p))
+             fm_root(veg_pp%itype(p))
+        m_deadstemn_to_litter_fire(p)              =  deadstemn(p) * m_veg * f *  &
+             (1._r8 - cc_dstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))
+        m_deadstemn_storage_to_litter_fire(p)       =  deadstemn_storage(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
+        m_deadstemn_xfer_to_litter_fire(p)          =  deadstemn_xfer(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_frootn_storage_to_litter_fire(p)         =  frootn_storage(p)     * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_frootn_xfer_to_litter_fire(p)            =  frootn_xfer(p)        * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_livecrootn_to_litter_fire(p)             =  livecrootn(p)         * f * &
-             fm_droot(pft%itype(p))
+             fm_droot(veg_pp%itype(p))
         m_livecrootn_storage_to_litter_fire(p)     =  livecrootn_storage(p) * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_livecrootn_xfer_to_litter_fire(p)        =  livecrootn_xfer(p)    * f * &
-             fm_other(pft%itype(p)) 
+             fm_other(veg_pp%itype(p)) 
         m_livecrootn_to_deadcrootn_fire(p)         =  livecrootn(p)         * f * &
-             (fm_lroot(pft%itype(p))-fm_droot(pft%itype(p)))
+             (fm_lroot(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_deadcrootn_to_litter_fire(p)             =  deadcrootn(p)    * m_veg * f * &
-             fm_droot(pft%itype(p))
+             fm_droot(veg_pp%itype(p))
         m_deadcrootn_storage_to_litter_fire(p)     =  deadcrootn_storage(p) * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_deadcrootn_xfer_to_litter_fire(p)        =  deadcrootn_xfer(p)    * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_retransn_to_litter_fire(p)               =  retransn(p)           * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p)) 
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p)) 
 
         ! phosphorus fluxes   
         m_leafp_to_litter_fire(p)                  =  leafp(p) * f * &
-             (1._r8 - cc_leaf(pft%itype(p))) * &
-             fm_leaf(pft%itype(p))
+             (1._r8 - cc_leaf(veg_pp%itype(p))) * &
+             fm_leaf(veg_pp%itype(p))
         m_leafp_storage_to_litter_fire(p)          =  leafp_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))  
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))  
         m_leafp_xfer_to_litter_fire(p)             =  leafp_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_livestemp_to_litter_fire(p)              =  livestemp(p) * f * &
-             (1._r8 - cc_lstem(pft%itype(p))) * &
-             fm_droot(pft%itype(p))
+             (1._r8 - cc_lstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))
         m_livestemp_storage_to_litter_fire(p)      =  livestemp_storage(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))   
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))   
         m_livestemp_xfer_to_litter_fire(p)         =  livestemp_xfer(p) * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p))
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_livestemp_to_deadstemp_fire(p)           =  livestemp(p) * f * &
-             (1._r8 - cc_lstem(pft%itype(p))) * &
-             (fm_lstem(pft%itype(p))-fm_droot(pft%itype(p)))
+             (1._r8 - cc_lstem(veg_pp%itype(p))) * &
+             (fm_lstem(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_frootp_to_litter_fire(p)                 =  frootp(p)             * f * &
-             fm_root(pft%itype(p))
+             fm_root(veg_pp%itype(p))
+        m_deadstemp_to_litter_fire(p)               =  deadstemp(p) * m_veg * f *  &
+             (1._r8 - cc_dstem(veg_pp%itype(p))) * &
+             fm_droot(veg_pp%itype(p))
+        m_deadstemp_storage_to_litter_fire(p)       =  deadstemp_storage(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
+        m_deadstemp_xfer_to_litter_fire(p)          =  deadstemp_xfer(p) * f *  &
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p))
         m_frootp_storage_to_litter_fire(p)         =  frootp_storage(p)     * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_frootp_xfer_to_litter_fire(p)            =  frootp_xfer(p)        * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_livecrootp_to_litter_fire(p)             =  livecrootp(p)         * f * &
-             fm_droot(pft%itype(p))
+             fm_droot(veg_pp%itype(p))
         m_livecrootp_storage_to_litter_fire(p)     =  livecrootp_storage(p) * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_livecrootp_xfer_to_litter_fire(p)        =  livecrootp_xfer(p)    * f * &
-             fm_other(pft%itype(p)) 
+             fm_other(veg_pp%itype(p)) 
         m_livecrootp_to_deadcrootp_fire(p)         =  livecrootp(p)         * f * &
-             (fm_lroot(pft%itype(p))-fm_droot(pft%itype(p)))
+             (fm_lroot(veg_pp%itype(p))-fm_droot(veg_pp%itype(p)))
         m_deadcrootp_to_litter_fire(p)             =  deadcrootp(p)         * f * &
-             fm_droot(pft%itype(p))
+             fm_droot(veg_pp%itype(p))
         m_deadcrootp_storage_to_litter_fire(p)     =  deadcrootp_storage(p) * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_deadcrootp_xfer_to_litter_fire(p)        =  deadcrootp_xfer(p)    * f * &
-             fm_other(pft%itype(p))
+             fm_other(veg_pp%itype(p))
         m_retransp_to_litter_fire(p)               =  retransp(p)           * f * &
-             (1._r8 - cc_other(pft%itype(p))) * &
-             fm_other(pft%itype(p)) 
+             (1._r8 - cc_other(veg_pp%itype(p))) * &
+             fm_other(veg_pp%itype(p)) 
 
 
         if (use_cndv) then
-           if ( woody(pft%itype(p)) == 1._r8 )then
+           if ( woody(veg_pp%itype(p)) == 1._r8 )then
               if ( livestemc(p)+deadstemc(p) > 0._r8 )then
-                 nind(p) = nind(p)*(1._r8-1._r8*fm_droot(pft%itype(p))*f) 
+                 nind(p) = nind(p)*(1._r8-1._r8*fm_droot(veg_pp%itype(p))*f) 
               else
                  nind(p) = 0._r8
               end if
            end if
            leafcmax(p) = max(leafc(p)-m_leafc_to_fire(p)*dt, leafcmax(p))
-           if (pft%itype(p) == noveg) leafcmax(p) = 0._r8
+           if (veg_pp%itype(p) == noveg) leafcmax(p) = 0._r8
         end if
 
      end do  ! end of patches loop  
@@ -1274,47 +1292,47 @@ contains
         do pi = 1,max_patch_per_col
            do fc = 1,num_soilc
               c = filter_soilc(fc)
-              if (pi <=  col%npfts(c)) then
-                 p = col%pfti(c) + pi - 1
-                 if ( pft%active(p) ) then
+              if (pi <=  col_pp%npfts(c)) then
+                 p = col_pp%pfti(c) + pi - 1
+                 if ( veg_pp%active(p) ) then
 
                     fire_mortality_c_to_cwdc(c,j) = fire_mortality_c_to_cwdc(c,j) + &
-                         m_deadstemc_to_litter_fire(p) * pft%wtcol(p) * stem_prof(p,j)
+                         m_deadstemc_to_litter_fire(p) * veg_pp%wtcol(p) * stem_prof(p,j)
                     fire_mortality_c_to_cwdc(c,j) = fire_mortality_c_to_cwdc(c,j) + &
-                         m_deadcrootc_to_litter_fire(p) * pft%wtcol(p) * croot_prof(p,j)
+                         m_deadcrootc_to_litter_fire(p) * veg_pp%wtcol(p) * croot_prof(p,j)
                     fire_mortality_n_to_cwdn(c,j) = fire_mortality_n_to_cwdn(c,j) + &
-                         m_deadstemn_to_litter_fire(p) * pft%wtcol(p) * stem_prof(p,j)
+                         m_deadstemn_to_litter_fire(p) * veg_pp%wtcol(p) * stem_prof(p,j)
                     fire_mortality_n_to_cwdn(c,j) = fire_mortality_n_to_cwdn(c,j) + &
-                         m_deadcrootn_to_litter_fire(p) * pft%wtcol(p) * croot_prof(p,j)
+                         m_deadcrootn_to_litter_fire(p) * veg_pp%wtcol(p) * croot_prof(p,j)
                     ! add phosphorus
                     fire_mortality_p_to_cwdp(c,j) = fire_mortality_p_to_cwdp(c,j) + &
-                         m_deadstemp_to_litter_fire(p) * pft%wtcol(p) * stem_prof(p,j)
+                         m_deadstemp_to_litter_fire(p) * veg_pp%wtcol(p) * stem_prof(p,j)
                     fire_mortality_p_to_cwdp(c,j) = fire_mortality_p_to_cwdp(c,j) + &
-                         m_deadcrootp_to_litter_fire(p) * pft%wtcol(p) * croot_prof(p,j)
+                         m_deadcrootp_to_litter_fire(p) * veg_pp%wtcol(p) * croot_prof(p,j)
 
 
                     fire_mortality_c_to_cwdc(c,j) = fire_mortality_c_to_cwdc(c,j) + &
-                         m_livestemc_to_litter_fire(p) * pft%wtcol(p) * stem_prof(p,j)
+                         m_livestemc_to_litter_fire(p) * veg_pp%wtcol(p) * stem_prof(p,j)
                     fire_mortality_c_to_cwdc(c,j) = fire_mortality_c_to_cwdc(c,j) + &
-                         m_livecrootc_to_litter_fire(p) * pft%wtcol(p) * croot_prof(p,j)
+                         m_livecrootc_to_litter_fire(p) * veg_pp%wtcol(p) * croot_prof(p,j)
                     fire_mortality_n_to_cwdn(c,j) = fire_mortality_n_to_cwdn(c,j) + &
-                         m_livestemn_to_litter_fire(p) * pft%wtcol(p) * stem_prof(p,j)
+                         m_livestemn_to_litter_fire(p) * veg_pp%wtcol(p) * stem_prof(p,j)
                     fire_mortality_n_to_cwdn(c,j) = fire_mortality_n_to_cwdn(c,j) + &
-                         m_livecrootn_to_litter_fire(p) * pft%wtcol(p) * croot_prof(p,j)
+                         m_livecrootn_to_litter_fire(p) * veg_pp%wtcol(p) * croot_prof(p,j)
                     ! add phosphorus
                     fire_mortality_p_to_cwdp(c,j) = fire_mortality_p_to_cwdp(c,j) + &
-                         m_livestemp_to_litter_fire(p) * pft%wtcol(p) * stem_prof(p,j)
+                         m_livestemp_to_litter_fire(p) * veg_pp%wtcol(p) * stem_prof(p,j)
                     fire_mortality_p_to_cwdp(c,j) = fire_mortality_p_to_cwdp(c,j) + &
-                         m_livecrootp_to_litter_fire(p) * pft%wtcol(p) * croot_prof(p,j)
+                         m_livecrootp_to_litter_fire(p) * veg_pp%wtcol(p) * croot_prof(p,j)
 
 
                     m_c_to_litr_met_fire(c,j)=m_c_to_litr_met_fire(c,j) + &
-                         ((m_leafc_to_litter_fire(p)*lf_flab(pft%itype(p)) &
+                         ((m_leafc_to_litter_fire(p)*lf_flab(veg_pp%itype(p)) &
                          +m_leafc_storage_to_litter_fire(p) + &
                          m_leafc_xfer_to_litter_fire(p) + &
                          m_gresp_storage_to_litter_fire(p) &
                          +m_gresp_xfer_to_litter_fire(p))*leaf_prof(p,j) + &
-                         (m_frootc_to_litter_fire(p)*fr_flab(pft%itype(p)) &
+                         (m_frootc_to_litter_fire(p)*fr_flab(veg_pp%itype(p)) &
                          +m_frootc_storage_to_litter_fire(p) + &
                          m_frootc_xfer_to_litter_fire(p))*froot_prof(p,j) &
                          +(m_livestemc_storage_to_litter_fire(p) + &
@@ -1324,19 +1342,19 @@ contains
                          +(m_livecrootc_storage_to_litter_fire(p) + &
                          m_livecrootc_xfer_to_litter_fire(p) &
                          +m_deadcrootc_storage_to_litter_fire(p) + &
-                         m_deadcrootc_xfer_to_litter_fire(p))* croot_prof(p,j))* pft%wtcol(p)    
+                         m_deadcrootc_xfer_to_litter_fire(p))* croot_prof(p,j))* veg_pp%wtcol(p)    
                     m_c_to_litr_cel_fire(c,j)=m_c_to_litr_cel_fire(c,j) + &
-                         (m_leafc_to_litter_fire(p)*lf_fcel(pft%itype(p))*leaf_prof(p,j) + &
-                         m_frootc_to_litter_fire(p)*fr_fcel(pft%itype(p))*froot_prof(p,j))* pft%wtcol(p) 
+                         (m_leafc_to_litter_fire(p)*lf_fcel(veg_pp%itype(p))*leaf_prof(p,j) + &
+                         m_frootc_to_litter_fire(p)*fr_fcel(veg_pp%itype(p))*froot_prof(p,j))* veg_pp%wtcol(p) 
                     m_c_to_litr_lig_fire(c,j)=m_c_to_litr_lig_fire(c,j) + &
-                         (m_leafc_to_litter_fire(p)*lf_flig(pft%itype(p))*leaf_prof(p,j) + &
-                         m_frootc_to_litter_fire(p)*fr_flig(pft%itype(p))*froot_prof(p,j))* pft%wtcol(p)  
+                         (m_leafc_to_litter_fire(p)*lf_flig(veg_pp%itype(p))*leaf_prof(p,j) + &
+                         m_frootc_to_litter_fire(p)*fr_flig(veg_pp%itype(p))*froot_prof(p,j))* veg_pp%wtcol(p)  
 
                     m_n_to_litr_met_fire(c,j)=m_n_to_litr_met_fire(c,j) + &
-                         ((m_leafn_to_litter_fire(p)*lf_flab(pft%itype(p)) &
+                         ((m_leafn_to_litter_fire(p)*lf_flab(veg_pp%itype(p)) &
                          +m_leafn_storage_to_litter_fire(p) + &
                          m_leafn_xfer_to_litter_fire(p)+m_retransn_to_litter_fire(p)) &
-                         *leaf_prof(p,j) +(m_frootn_to_litter_fire(p)*fr_flab(pft%itype(p)) &
+                         *leaf_prof(p,j) +(m_frootn_to_litter_fire(p)*fr_flab(veg_pp%itype(p)) &
                          +m_frootn_storage_to_litter_fire(p) + &
                          m_frootn_xfer_to_litter_fire(p))*froot_prof(p,j) &
                          +(m_livestemn_storage_to_litter_fire(p) + &
@@ -1346,20 +1364,20 @@ contains
                          +(m_livecrootn_storage_to_litter_fire(p) + &
                          m_livecrootn_xfer_to_litter_fire(p) &
                          +m_deadcrootn_storage_to_litter_fire(p) + &
-                         m_deadcrootn_xfer_to_litter_fire(p))* croot_prof(p,j))* pft%wtcol(p)    
+                         m_deadcrootn_xfer_to_litter_fire(p))* croot_prof(p,j))* veg_pp%wtcol(p)    
                     m_n_to_litr_cel_fire(c,j)=m_n_to_litr_cel_fire(c,j) + &
-                         (m_leafn_to_litter_fire(p)*lf_fcel(pft%itype(p))*leaf_prof(p,j) + &
-                         m_frootn_to_litter_fire(p)*fr_fcel(pft%itype(p))*froot_prof(p,j))* pft%wtcol(p) 
+                         (m_leafn_to_litter_fire(p)*lf_fcel(veg_pp%itype(p))*leaf_prof(p,j) + &
+                         m_frootn_to_litter_fire(p)*fr_fcel(veg_pp%itype(p))*froot_prof(p,j))* veg_pp%wtcol(p) 
                     m_n_to_litr_lig_fire(c,j)=m_n_to_litr_lig_fire(c,j) + &
-                         (m_leafn_to_litter_fire(p)*lf_flig(pft%itype(p))*leaf_prof(p,j) + &
-                         m_frootn_to_litter_fire(p)*fr_flig(pft%itype(p))*froot_prof(p,j))* pft%wtcol(p) 
+                         (m_leafn_to_litter_fire(p)*lf_flig(veg_pp%itype(p))*leaf_prof(p,j) + &
+                         m_frootn_to_litter_fire(p)*fr_flig(veg_pp%itype(p))*froot_prof(p,j))* veg_pp%wtcol(p) 
 
                     ! add phosphorus
                     m_p_to_litr_met_fire(c,j)=m_p_to_litr_met_fire(c,j) + &
-                         ((m_leafp_to_litter_fire(p)*lf_flab(pft%itype(p)) &
+                         ((m_leafp_to_litter_fire(p)*lf_flab(veg_pp%itype(p)) &
                          +m_leafp_storage_to_litter_fire(p) + &
                          m_leafp_xfer_to_litter_fire(p)+m_retransp_to_litter_fire(p)) &
-                         *leaf_prof(p,j) +(m_frootp_to_litter_fire(p)*fr_flab(pft%itype(p)) &
+                         *leaf_prof(p,j) +(m_frootp_to_litter_fire(p)*fr_flab(veg_pp%itype(p)) &
                          +m_frootp_storage_to_litter_fire(p) + &
                          m_frootp_xfer_to_litter_fire(p))*froot_prof(p,j) &
                          +(m_livestemp_storage_to_litter_fire(p) + &
@@ -1369,13 +1387,13 @@ contains
                          +(m_livecrootp_storage_to_litter_fire(p) + &
                          m_livecrootp_xfer_to_litter_fire(p) &
                          +m_deadcrootp_storage_to_litter_fire(p) + &
-                         m_deadcrootp_xfer_to_litter_fire(p))* croot_prof(p,j))* pft%wtcol(p)    
+                         m_deadcrootp_xfer_to_litter_fire(p))* croot_prof(p,j))* veg_pp%wtcol(p)    
                     m_p_to_litr_cel_fire(c,j)=m_p_to_litr_cel_fire(c,j) + &
-                         (m_leafp_to_litter_fire(p)*lf_fcel(pft%itype(p))*leaf_prof(p,j) + &
-                         m_frootp_to_litter_fire(p)*fr_fcel(pft%itype(p))*froot_prof(p,j))* pft%wtcol(p) 
+                         (m_leafp_to_litter_fire(p)*lf_fcel(veg_pp%itype(p))*leaf_prof(p,j) + &
+                         m_frootp_to_litter_fire(p)*fr_fcel(veg_pp%itype(p))*froot_prof(p,j))* veg_pp%wtcol(p) 
                     m_p_to_litr_lig_fire(c,j)=m_p_to_litr_lig_fire(c,j) + &
-                         (m_leafp_to_litter_fire(p)*lf_flig(pft%itype(p))*leaf_prof(p,j) + &
-                         m_frootp_to_litter_fire(p)*fr_flig(pft%itype(p))*froot_prof(p,j))* pft%wtcol(p) 
+                         (m_leafp_to_litter_fire(p)*lf_flig(veg_pp%itype(p))*leaf_prof(p,j) + &
+                         m_frootp_to_litter_fire(p)*fr_flig(veg_pp%itype(p))*froot_prof(p,j))* veg_pp%wtcol(p) 
 
                  end if
               end if
@@ -1469,8 +1487,8 @@ contains
      !
      do fc = 1,num_soilc
         c = filter_soilc(fc)
-        g = col%gridcell(c)
-        if( grc%latdeg(g)  <  borealat)then
+        g = col_pp%gridcell(c)
+        if( grc_pp%latdeg(g)  <  borealat)then
            somc_fire(c)= totsomc(c)*baf_peatf(c)*6.0_r8/33.9_r8
         else
            somc_fire(c)= baf_peatf(c)*2.2e3_r8

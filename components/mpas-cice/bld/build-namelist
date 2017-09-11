@@ -438,6 +438,7 @@ add_default($nl, 'config_pio_stride');
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
+add_default($nl, 'config_full_abort_write');
 
 #################################
 # Namelist group: decomposition #
@@ -526,6 +527,7 @@ add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
 add_default($nl, 'config_use_test_ice_shelf');
+add_default($nl, 'config_testing_system_test');
 
 ###################################
 # Namelist group: velocity_solver #

@@ -28,9 +28,7 @@ def parse_command_line(args):
     parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
     parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 repository")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.cime2file is None or args.cime5file is None:
         parser.print_help()
@@ -187,8 +185,8 @@ class PesTree(grid_xml_converter.DataTree):
             tempxml = StringIO.StringIO(t3)
             super(PesTree, self).__init__(tempxml)
             tempxml.close()
-        
-        
+
+
     def populate(self):
         xmlnodes = self.root.findall('grid')
         nodeclass = Cime5PesNode

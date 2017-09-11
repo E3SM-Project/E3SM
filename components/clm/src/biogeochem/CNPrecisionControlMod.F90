@@ -10,8 +10,8 @@ module CNPrecisionControlMod
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use PatchType           , only : pft
-  use ColumnType          , only : col
+  use VegetationType           , only : veg_pp
+  use ColumnType          , only : col_pp
   !
   implicit none
   save
@@ -34,7 +34,7 @@ contains
     !
     ! !USES:
     use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_ed
-    use clm_varpar , only : nlevdecomp, crop_prog
+    use clm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    
     !
@@ -318,7 +318,7 @@ contains
                ps%frootp_xfer_patch(p) = 0._r8
             end if
 
-            if ( crop_prog .and. pft%itype(p) >= nc3crop )then
+            if ( crop_prog .and. veg_pp%itype(p) >= nc3crop )then
                ! grain C and N
                if (abs(cs%grainc_patch(p)) < ccrit) then
                   pc = pc + cs%grainc_patch(p)
@@ -620,7 +620,7 @@ contains
                endif
             end if
 
-            if ( crop_prog .and. pft%itype(p) >= nc3crop )then
+            if ( crop_prog .and. veg_pp%itype(p) >= nc3crop )then
                ! xsmrpool (C only)
                if (abs(cs%xsmrpool_patch(p)) < ccrit) then
                   pc = pc + cs%xsmrpool_patch(p)
@@ -672,7 +672,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
 
-            do j = 1,nlevdecomp
+            do j = 1,nlevdecomp_full
                ! initialize the column-level C and N truncation terms
                cc = 0._r8
                if ( use_c13 ) cc13 = 0._r8
@@ -728,7 +728,7 @@ contains
 
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               do j = 1,nlevdecomp
+               do j = 1,nlevdecomp_full
                   if (abs(ns%smin_no3_vr_col(c,j)) < ncrit/1e4_r8) then
                      if ( ns%smin_no3_vr_col(c,j)  < 0._r8 ) then
                         write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'

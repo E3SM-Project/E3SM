@@ -26,9 +26,11 @@ module restFileMod
   use CNStateType          , only : cnstate_type
   use CNNitrogenFluxType   , only : nitrogenflux_type
   use CNNitrogenStateType  , only : nitrogenstate_type
-
+  
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
+
+  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
 
   use AerosolType          , only : aerosol_type
   use CanopyStateType      , only : canopystate_type
@@ -54,6 +56,7 @@ module restFileMod
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
+  use BeTRSimulationALM    , only : betr_simulation_alm_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -97,46 +100,45 @@ contains
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
-       betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+       ep_betr,                                                                       &
+       alm_fates,                                                                     &
        rdate, noptr)
     !
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds          
-    character(len=*)         , intent(in)    :: file             ! output netcdf restart file
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    type(aerosol_type)       , intent(in)    :: aerosol_vars
-    type(canopystate_type)   , intent(inout) :: canopystate_vars ! due to EDrest call
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(in)    :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(in)    :: c14_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(ch4_type)           , intent(in)    :: ch4_vars
-    type(dgvs_type)          , intent(in)    :: dgvs_vars
-    type(energyflux_type)    , intent(in)    :: energyflux_vars
-    type(frictionvel_type)   , intent(in)    :: frictionvel_vars
-    type(lakestate_type)     , intent(in)    :: lakestate_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
-    type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(solarabs_type)      , intent(in)    :: solarabs_vars
-    type(surfalb_type)       , intent(in)    :: surfalb_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars  ! due to EDrest call
-    type(waterflux_type)     , intent(in)    :: waterflux_vars
-    type(phosphorusstate_type),intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type) ,intent(in)    :: phosphorusflux_vars
-    type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
-    type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
-    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
-    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
-    character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
-    logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
+    type(bounds_type)              , intent(in)    :: bounds          
+    character(len=*)               , intent(in)    :: file             ! output netcdf restart file
+    type(atm2lnd_type)             , intent(in)    :: atm2lnd_vars
+    type(aerosol_type)             , intent(in)    :: aerosol_vars
+    type(canopystate_type)         , intent(inout) :: canopystate_vars ! due to EDrest call
+    type(cnstate_type)             , intent(inout) :: cnstate_vars
+    type(carbonstate_type)         , intent(inout) :: carbonstate_vars
+    type(carbonstate_type)         , intent(in)    :: c13_carbonstate_vars
+    type(carbonstate_type)         , intent(in)    :: c14_carbonstate_vars
+    type(carbonflux_type)          , intent(inout) :: carbonflux_vars
+    type(ch4_type)                 , intent(in)    :: ch4_vars
+    type(dgvs_type)                , intent(in)    :: dgvs_vars
+    type(energyflux_type)          , intent(in)    :: energyflux_vars
+    type(frictionvel_type)         , intent(inout) :: frictionvel_vars
+    type(lakestate_type)           , intent(in)    :: lakestate_vars
+    type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
+    type(nitrogenflux_type)        , intent(in)    :: nitrogenflux_vars
+    type(photosyns_type)           , intent(in)    :: photosyns_vars
+    type(soilhydrology_type)       , intent(in)    :: soilhydrology_vars
+    type(soilstate_type)           , intent(in)    :: soilstate_vars
+    type(solarabs_type)            , intent(in)    :: solarabs_vars
+    type(surfalb_type)             , intent(in)    :: surfalb_vars
+    type(temperature_type)         , intent(in)    :: temperature_vars
+    type(waterstate_type)          , intent(inout) :: waterstate_vars  ! due to EDrest call
+    type(waterflux_type)           , intent(in)    :: waterflux_vars
+    type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
+    class(betr_simulation_alm_type), intent(inout):: ep_betr
+    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
+    character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
+    logical                        , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -245,11 +247,10 @@ contains
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='define')
 
-! (FATES-INTERF)
-!       call clm_fates%restart(bounds, ncid, flag='define',  &
-!             waterstate_vars=waterstate_vars, &
-!             canopystate_vars=canopystate_vars, &
-!             frictionvel_vars=frictionvel_vars)
+       call alm_fates%restart(bounds, ncid, flag='define',  &
+             waterstate_inst=waterstate_vars, &
+             canopystate_inst=canopystate_vars, &
+             frictionvel_inst=frictionvel_vars)
     end if
 
 
@@ -258,9 +259,7 @@ contains
     end if
 
     if (use_betr) then
-       call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-       call tracerflux_vars%Restart( bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-       call tracercoeff_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+       call ep_betr%BeTRRestart(bounds, ncid, flag='define')
     endif
 
     if (present(rdate)) then 
@@ -356,11 +355,11 @@ contains
 	       cnstate_vars=cnstate_vars )
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='write')
-! (FATES-INTERF)
-!       call clm_fates%restart(bounds, ncid, flag='write',  &
-!             waterstate_vars=waterstate_vars, &
-!             canopystate_vars=canopystate_vars, &
-!             frictionvel_vars=frictionvel_vars)
+
+       call alm_fates%restart(bounds, ncid, flag='write',  &
+             waterstate_inst=waterstate_vars, &
+             canopystate_inst=canopystate_vars, &
+             frictionvel_inst=frictionvel_vars)
 
     end if
 
@@ -369,9 +368,7 @@ contains
     end if
 
     if (use_betr) then
-       call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-       call tracerflux_vars%Restart( bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-       call tracercoeff_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+       call ep_betr%BeTRRestart(bounds, ncid, flag='write')
     endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
@@ -405,7 +402,8 @@ contains
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
-       betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
+       ep_betr,                                                                       &
+       alm_fates)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -416,37 +414,35 @@ contains
     use histFileMod      , only : hist_restart_ncd
     !
     ! !ARGUMENTS:
-    character(len=*)         , intent(in)    :: file  ! output netcdf restart file
-    type(bounds_type)        , intent(in)    :: bounds  
-    type(atm2lnd_type)       , intent(inout) :: atm2lnd_vars
-    type(aerosol_type)       , intent(inout) :: aerosol_vars
-    type(canopystate_type)   , intent(inout) :: canopystate_vars
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(ch4_type)           , intent(inout) :: ch4_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(energyflux_type)    , intent(inout) :: energyflux_vars
-    type(frictionvel_type)   , intent(inout) :: frictionvel_vars
-    type(lakestate_type)     , intent(inout) :: lakestate_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(photosyns_type)     , intent(inout) :: photosyns_vars
-    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
-    type(soilstate_type)     , intent(inout) :: soilstate_vars
-    type(solarabs_type)      , intent(inout) :: solarabs_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(surfalb_type)       , intent(inout) :: surfalb_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
-    type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
-    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
-    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
+    character(len=*)               , intent(in)    :: file  ! output netcdf restart file
+    type(bounds_type)              , intent(in)    :: bounds  
+    type(atm2lnd_type)             , intent(inout) :: atm2lnd_vars
+    type(aerosol_type)             , intent(inout) :: aerosol_vars
+    type(canopystate_type)         , intent(inout) :: canopystate_vars
+    type(cnstate_type)             , intent(inout) :: cnstate_vars
+    type(carbonstate_type)         , intent(inout) :: carbonstate_vars
+    type(carbonstate_type)         , intent(inout) :: c13_carbonstate_vars
+    type(carbonstate_type)         , intent(inout) :: c14_carbonstate_vars
+    type(carbonflux_type)          , intent(inout) :: carbonflux_vars
+    type(ch4_type)                 , intent(inout) :: ch4_vars
+    type(dgvs_type)                , intent(inout) :: dgvs_vars
+    type(energyflux_type)          , intent(inout) :: energyflux_vars
+    type(frictionvel_type)         , intent(inout) :: frictionvel_vars
+    type(lakestate_type)           , intent(inout) :: lakestate_vars
+    type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
+    type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
+    type(photosyns_type)           , intent(inout) :: photosyns_vars
+    type(soilhydrology_type)       , intent(inout) :: soilhydrology_vars
+    type(soilstate_type)           , intent(inout) :: soilstate_vars
+    type(solarabs_type)            , intent(inout) :: solarabs_vars
+    type(temperature_type)         , intent(inout) :: temperature_vars
+    type(surfalb_type)             , intent(inout) :: surfalb_vars
+    type(waterstate_type)          , intent(inout) :: waterstate_vars
+    type(waterflux_type)           , intent(inout) :: waterflux_vars
+    type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
+    class(betr_simulation_alm_type), intent(inout) :: ep_betr
+    type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -542,11 +538,11 @@ contains
 	       cnstate_vars=cnstate_vars)
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='read')
-! (FATES-INTERF)
-!       call clm_fates%restart(bounds, ncid, flag='read',  &
-!             waterstate_vars=waterstate_vars, &
-!             canopystate_vars=canopystate_vars, &
-!             frictionvel_vars=frictionvel_vars)
+
+       call alm_fates%restart(bounds, ncid, flag='read',  &
+             waterstate_inst=waterstate_vars, &
+             canopystate_inst=canopystate_vars, &
+             frictionvel_inst=frictionvel_vars)
     end if
 
 
@@ -555,9 +551,7 @@ contains
     end if
 
     if (use_betr) then
-      call tracerstate_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-      call tracerflux_vars%Restart( bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-      call tracercoeff_vars%Restart(bounds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
+       call ep_betr%BeTRRestart(bounds, ncid, flag='read')
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')

@@ -15,7 +15,7 @@ module surfrdMod
   use clm_varctl      , only : create_glacier_mec_landunit, use_cndv
   use surfrdUtilsMod  , only : check_sums_equal_1
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
-  use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid
+  use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
   use spmdMod                         
   !
@@ -28,6 +28,7 @@ module surfrdMod
   public :: surfrd_get_grid      ! Read grid/ladnfrac data into domain (after domain decomp)
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
+  public :: surfrd_get_grid_conn ! Reads grid connectivity information from domain file
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: surfrd_special
@@ -138,6 +139,7 @@ contains
     use clm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
+    use clm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
     integer          ,intent(in)    :: begg, endg 
@@ -159,10 +161,16 @@ contains
     logical :: isgrid2d                     ! true => file is 2d lat/lon
     logical :: istype_domain                ! true => input file is of type domain
     real(r8), allocatable :: rdata2d(:,:)   ! temporary
+    real(r8), allocatable :: rdata3d(:,:,:) ! temporary  ! pflotran
     character(len=16) :: vname              ! temporary
     character(len=256):: locfn              ! local file name
     integer :: n                            ! indices
     real(r8):: eps = 1.0e-12_r8             ! lat/lon error tolerance
+
+    ! pflotran:beg-----------------------------
+    integer :: j, np, nv
+
+    ! pflotran:end-----------------------------
     character(len=32) :: subname = 'surfrd_get_grid'     ! subroutine name
 !-----------------------------------------------------------------------
 
@@ -178,6 +186,15 @@ contains
 
     ! Determine dimensions
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
+    
+    ! pflotran:beg-----------------------------------------------
+    call ncd_inqdlen(ncid, dimid, nv, 'nv')
+    if (nv>0) then
+       ldomain%nv = nv
+    else
+       ldomain%nv = 0
+    endif
+    ! pflotran:end-----------------------------------------------
 
     ! Determine isgrid2d flag for domain
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
@@ -205,6 +222,21 @@ contains
        call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: yc NOT on file'//errMsg(__FILE__, __LINE__))
+
+       ! pflotran:beg-----------------------------------------------
+       ! user-defined grid-cell vertices (ususally 'nv' is 4,
+       ! but for future use, we set the following if condition of 'nv>=3' so that possible to use TIN grids
+       if (ldomain%nv>=3 .and. use_pflotran) then
+          call ncd_io(ncid=ncid, varname='xv', flag='read', data=ldomain%lonv, &
+            dim1name=grlnd, readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: xv  NOT on file'//errMsg(__FILE__, __LINE__))
+
+          call ncd_io(ncid=ncid, varname='yv', flag='read', data=ldomain%latv, &
+            dim1name=grlnd, readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: yv  NOT on file'//errMsg(__FILE__, __LINE__))
+
+       end if
+       ! pflotran:end-----------------------------------------------
     else
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
@@ -217,9 +249,27 @@ contains
        call ncd_io(ncid=ncid, varname= 'LATIXY', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: LATIXY NOT on file'//errMsg(__FILE__, __LINE__))
+
+       ! pflotran:beg-----------------------------------------------
+       ! user-defined grid-cell vertices (ususally 'nv' is 4,
+       ! but for future use, we set the following if condition of 'nv>=3' so that possible to use TIN grids
+       if (ldomain%nv>=3 .and. use_pflotran) then
+
+          call ncd_io(ncid=ncid, varname='LONGV', flag='read', data=ldomain%lonv, &
+            dim1name=grlnd, readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: LONGV  NOT on file'//errMsg(__FILE__, __LINE__))
+
+          call ncd_io(ncid=ncid, varname='LATIV', flag='read', data=ldomain%latv, &
+            dim1name=grlnd, readvar=readvar)
+          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: LATIV  NOT on file'//errMsg(__FILE__, __LINE__))
+
+       end if
+       ! pflotran:end-----------------------------------------------
     end if
 
-    if (isgrid2d) then
+    
+    ! let lat1d/lon1d data available for all grid-types, if coupled with PFLOTRAN.
+    if (isgrid2d .or. use_pflotran) then
        allocate(rdata2d(ni,nj), lon1d(ni), lat1d(nj))
        if (istype_domain) then
           vname = 'xc'
@@ -236,7 +286,81 @@ contains
        call ncd_io(ncid=ncid, varname=trim(vname), data=rdata2d, flag='read', readvar=readvar)
        lat1d(:) = rdata2d(1,:)
        deallocate(rdata2d)
-    end if
+
+       ! pflotran:beg-----------------------------------------------
+       ! find the origin of ldomain, if vertices of first grid known
+       if (use_pflotran) then
+         ldomain%lon0 = -9999._r8
+         ldomain%lat0 = -9999._r8
+         if (ldomain%nv==4 .and. ldomain%nv /= huge(1)) then
+          allocate(rdata3d(ni,nj,nv))
+          if (istype_domain) then
+             vname = 'xv'
+          else
+             vname = 'LONGV'
+          end if
+
+          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
+
+          if (readvar) then
+            ldomain%lon0 = 0._r8
+            np=0
+            do j=1,nv
+               ! may have issue if mixed longitude values (i.e. 0~360 or -180~180)
+               if ( ni>1 .and. &
+                    ( (rdata3d(1,1,j) < lon1d(1) .and. rdata3d(1,1,j) < lon1d(2)) .or. &
+                      (rdata3d(1,1,j) > lon1d(1) .and. rdata3d(1,1,j) > lon1d(2)) ) ) then
+                 np = np + 1
+                 ldomain%lon0 = ldomain%lon0+rdata3d(1,1,j)
+
+               else if (ni==1 .and. rdata3d(1,1,j)<lon1d(1)) then  !either side should be OK
+                 np = np + 1
+                 ldomain%lon0 = ldomain%lon0+rdata3d(1,1,j)
+               end if
+            end do
+            if (np>0) then
+              ldomain%lon0 = ldomain%lon0/np
+            else
+              ldomain%lon0 = -9999._r8
+            end if
+          end if
+
+          !
+          if (istype_domain) then
+             vname = 'yv'
+          else
+             vname = 'LATIV'
+          end if
+          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
+          if (readvar) then
+            ldomain%lat0 = 0._r8
+            np=0
+            do j=1,nv
+               if ( nj>1 .and. &
+                    ( (rdata3d(1,1,j) < lat1d(1) .and. rdata3d(1,1,j) < lat1d(2)) .or. &
+                      (rdata3d(1,1,j) > lat1d(1) .and. rdata3d(1,1,j) > lat1d(2)) ) ) then
+                 np = np + 1
+                 ldomain%lat0 = ldomain%lat0+rdata3d(1,1,j)
+
+               else if (nj==1 .and. rdata3d(1,1,j)<lat1d(1)) then  !either side should be OK
+                 np = np + 1
+                 ldomain%lat0 = ldomain%lat0+rdata3d(1,1,j)
+               end if
+            end do
+            if (np>0) then
+              ldomain%lat0 = ldomain%lat0/np
+            else
+              ldomain%lat0 = -9999._r8
+            end if
+          end if
+          !
+          deallocate(rdata3d)
+         end if
+       end if
+       ! pflotran:end-----------------------------------------------
+    end if  ! if (isgrid2d .or. use_pflotran)
+
+
 
     ! Check lat limited to -90,90
 
@@ -270,6 +394,19 @@ contains
           call endrun( msg=' ERROR: LANDFRAC NOT on fracdata file'//errMsg(__FILE__, __LINE__))
        end if
     end if
+
+    ! Read xCell
+    call check_var(ncid=ncid, varname='xCell', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname= 'xCell', flag='read', data=ldomain%xCell, &
+            dim1name=grlnd, readvar=readvar)
+    endif
+
+    call check_var(ncid=ncid, varname='yCell', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname= 'yCell', flag='read', data=ldomain%yCell, &
+            dim1name=grlnd, readvar=readvar)
+    endif
 
     call ncd_pio_closefile(ncid)
 
@@ -481,6 +618,7 @@ contains
     end if
 
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
+    surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
     call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, clmlevel=grlnd)
 
     call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
@@ -877,5 +1015,177 @@ contains
     call check_sums_equal_1(wt_nat_patch, begg, 'wt_nat_patch', subname)
 
   end subroutine surfrd_veg_dgvm
+
+  !-----------------------------------------------------------------------
+  subroutine surfrd_get_grid_conn(filename, cellsOnCell, edgesOnCell, &
+       nEdgesOnCell, areaCell, dcEdge, dvEdge, &
+       nCells_loc, nEdges_loc, maxEdges)
+    !
+    ! !DESCRIPTION:
+    ! Read grid connectivity information.
+    ! NO DOMAIN DECOMPOSITION  HAS BEEN SET YET
+    !
+    ! !USES:
+    use fileutils , only : getfil
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in)  :: filename                        ! filename
+    integer         , pointer     :: cellsOnCell(:,:)                ! cells-to-cell connection
+    integer         , pointer     :: edgesOnCell(:,:)                ! index to determine distance between neighbors from dcEdge
+    integer         , pointer     :: nEdgesOnCell(:)                 ! number of edges
+    real(r8)        , pointer     :: dcEdge(:)                       ! distance between centroids of grid cells
+    real(r8)        , pointer     :: dvEdge(:)                       ! distance between vertices
+    real(r8)        , pointer     :: areaCell(:)                     ! area of grid cells [m^2]
+    integer         , intent(out) :: nCells_loc                      ! number of local cell-to-cell connections
+    integer         , intent(out) :: maxEdges                        ! max number of edges/neighbors
+    integer         , intent(out) :: nEdges_loc                      ! number of edge length saved locally
+    !
+    ! !LOCAL VARIABLES:
+    integer                      :: dimid,varid                      ! netCDF id's
+    integer                      :: i                                ! index
+    integer                      :: ier                              ! error status
+    integer                      :: nCells                           ! global number of cell-to-cell connections
+    integer                      :: nEdges                           ! global number of edges
+    integer                      :: ibeg_c, iend_c                   ! beginning/ending index of data
+    integer                      :: ibeg_e, iend_e                   ! beginning/ending index of data
+    integer                      :: remainder                        ! temporary variable
+    type(file_desc_t)            :: ncid                             ! netcdf id
+    character(len=256)           :: varname                          ! variable name
+    character(len=256)           :: locfn                            ! local file name
+    logical                      :: readvar                          ! read variable in or not
+    logical                      :: readdim                          ! read dimension present or not
+    integer , allocatable        :: idata2d(:,:)                     ! temporary data
+    integer , allocatable        :: idata1d(:)                       ! temporary data
+    real(r8), allocatable        :: rdata1d(:)                       ! temporary data
+    character(len=32)            :: subname = 'surfrd_get_grid_conn' ! subroutine name
+
+    !-----------------------------------------------------------------------
+
+    if (masterproc) then
+       if (filename == ' ') then
+          call endrun( msg=' ERROR: filename is empty)'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end if
+
+    call getfil( filename, locfn, 0 )
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    ! Check if the dimensions are present
+
+    call ncd_inqdid(ncid,'nCells',dimid, readdim)
+
+    if ( .not.readdim ) then
+       call endrun( msg=' ERROR: Dimension nCells missing in '//filename// &
+            errMsg(__FILE__, __LINE__))
+    end if
+    ier = pio_inq_dimlen(ncid, dimid, nCells)
+
+    call ncd_inqdid(ncid,'maxEdges',dimid,readdim)
+
+    if ( .not.readdim ) then
+       call endrun( msg=' ERROR: Dimension maxEdges missing in '//filename// &
+            errMsg(__FILE__, __LINE__))
+    end if
+    ier = pio_inq_dimlen(ncid, dimid, maxEdges)
+
+    call ncd_inqdid(ncid,'nEdges',dimid,readdim)
+    if ( .not.readdim ) then
+       call endrun( msg=' ERROR: Dimension nEdges missing in '//filename// &
+            errMsg(__FILE__, __LINE__))
+    end if
+    ier = pio_inq_dimlen(ncid, dimid, nEdges)
+
+    ! Determine the size of local array that needs to be saved.
+    nCells_loc = nCells/npes
+    remainder  = nCells - nCells_loc*npes
+    if (iam < remainder) nCells_loc = nCells_loc + 1
+
+    nEdges_loc = nEdges/npes
+    remainder  = nEdges - nEdges_loc*npes
+    if (iam < remainder) nEdges_loc = nEdges_loc + 1
+
+    ! Determine the beginning and ending index of the data to
+    ! be saved
+    ibeg_c = 0
+    iend_c = 0
+    call MPI_Scan(nCells_loc, ibeg_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(  nCells_loc, iend_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    ibeg_c = ibeg_c + 1 - nCells_loc
+
+    ibeg_e = 0
+    iend_e = 0
+    call MPI_Scan(nEdges_loc, ibeg_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(  nEdges_loc, iend_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    ibeg_e = ibeg_e + 1 - nEdges_loc
+
+    ! Allocate memory
+    allocate(cellsOnCell   (maxEdges, nCells_loc))
+    allocate(edgesOnCell   (maxEdges, nCells_loc))
+    allocate(nEdgesOnCell  (nCells_loc          ))
+    allocate(areaCell      (nCells_loc          ))
+    allocate(dcEdge        (nEdges_loc          ))
+    allocate(dvEdge        (nEdges_loc          ))
+
+    ! Read the data independently (i.e. each MPI-proc reads in the entire
+    ! dataset)
+
+    allocate(idata2d(maxEdges, nCells))
+
+    ! Read cellsOnCell
+    call ncd_io(ncid=ncid, varname='cellsOnCell', data=idata2d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: cellsOnCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    cellsOnCell(:,:) = idata2d(:,ibeg_c:iend_c)
+
+    ! Read edgesOnCell
+    call ncd_io(ncid=ncid, varname='edgesOnCell', data=idata2d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: edgesOnCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    edgesOnCell(:,:) = idata2d(:,ibeg_c:iend_c)
+
+    deallocate(idata2d)
+
+    ! Read nEdgesOnCell
+    allocate(idata1d(nCells))
+    call ncd_io(ncid=ncid, varname='nEdgesOnCell', data=idata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: areaCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    nEdgesOnCell(:) = idata1d(ibeg_c:iend_c)
+    deallocate(idata1d)
+
+    ! Read areaCell
+    allocate(rdata1d(nCells))
+    call ncd_io(ncid=ncid, varname='areaCell', data=rdata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: areaCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    areaCell(:) = rdata1d(ibeg_c:iend_c)
+    deallocate(rdata1d)
+
+    ! Read dcEdge
+    allocate(rdata1d(nEdges))
+    call ncd_io(ncid=ncid, varname='dcEdge', data=rdata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: dcEdge not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    dcEdge(:) = rdata1d(ibeg_e:iend_e)
+
+    ! Read dvEdge
+    call ncd_io(ncid=ncid, varname='dvEdge', data=rdata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: dvEdge not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    dvEdge(:) = rdata1d(ibeg_e:iend_e)
+
+    deallocate(rdata1d)
+
+    ! Perform cleanup
+    call ncd_pio_closefile(ncid)
+
+  end subroutine surfrd_get_grid_conn
 
 end module surfrdMod

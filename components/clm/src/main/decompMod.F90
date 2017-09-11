@@ -23,11 +23,12 @@ module decompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public get_proc_clumps    ! number of clumps for this processor
-  public get_proc_total     ! total no. of gridcells, landunits, columns and pfts for any processor
-  public get_proc_global    ! total gridcells, landunits, columns, pfts across all processors
-  public get_clmlevel_gsize ! get global size associated with clmlevel
-  public get_clmlevel_gsmap ! get gsmap associated with clmlevel
+  public get_proc_clumps       ! number of clumps for this processor
+  public get_proc_total        ! total no. of gridcells, landunits, columns and pfts for any processor
+  public get_proc_total_ghosts ! total no. of gridcells, landunits, columns and pfts for any processor
+  public get_proc_global       ! total gridcells, landunits, columns, pfts across all processors
+  public get_clmlevel_gsize    ! get global size associated with clmlevel
+  public get_clmlevel_gsmap    ! get gsmap associated with clmlevel
 
   interface get_clump_bounds
      module procedure get_clump_bounds_old
@@ -55,34 +56,76 @@ module decompMod
   integer,public :: numCohort   ! total number of ED cohorts on all procs
 
   type bounds_type
-     integer :: begg, endg       ! beginning and ending gridcell index
-     integer :: begt, endt       ! beginning and ending topographic unit index
-     integer :: begl, endl       ! beginning and ending landunit index
-     integer :: begc, endc       ! beginning and ending column index
-     integer :: begp, endp       ! beginning and ending pft index
-     integer :: begCohort, endCohort ! beginning and ending cohort indices
+     ! The following variables correspond to "Local" quantities
+     integer :: begg, endg                       ! beginning and ending gridcell index
+     integer :: begt, endt                       ! beginning and ending topographic unit index
+     integer :: begl, endl                       ! beginning and ending landunit index
+     integer :: begc, endc                       ! beginning and ending column index
+     integer :: begp, endp                       ! beginning and ending pft index
+     integer :: begCohort, endCohort             ! beginning and ending cohort indices
 
-     integer :: level            ! whether defined on the proc or clump level
-     integer :: clump_index      ! if defined on the clump level, this gives the clump index
+     ! The following variables correspond to "Ghost/Halo" quantites
+     integer :: begg_ghost, endg_ghost           ! beginning and ending gridcell index
+     integer :: begl_ghost, endl_ghost           ! beginning and ending landunit index
+     integer :: begc_ghost, endc_ghost           ! beginning and ending column index
+     integer :: begp_ghost, endp_ghost           ! beginning and ending pft index
+     integer :: begCohort_ghost, endCohort_ghost ! beginning and ending cohort indices
+
+     ! The following variables correspond to "ALL" (=Local + Ghost) quantites
+     integer :: begg_all, endg_all               ! beginning and ending gridcell index
+     integer :: begl_all, endl_all               ! beginning and ending landunit index
+     integer :: begc_all, endc_all               ! beginning and ending column index
+     integer :: begp_all, endp_all               ! beginning and ending pft index
+     integer :: begCohort_all, endCohort_all     ! beginning and ending cohort indices
+
+     integer :: level                            ! whether defined on the proc or clump level
+     integer :: clump_index                      ! if defined on the clump level, this gives the clump index
   end type bounds_type
   public bounds_type
 
   !---global information on each pe
   type processor_type
-     integer :: nclumps          ! number of clumps for processor_type iam
-     integer,pointer :: cid(:)   ! clump indices
-     integer :: ncells           ! number of gridcells in proc
-     integer :: ntopounits       ! number of topographic units in proc
-     integer :: nlunits          ! number of landunits in proc
-     integer :: ncols            ! number of columns in proc
-     integer :: npfts            ! number of pfts in proc
-     integer :: nCohorts          ! number of cohorts in proc
-     integer :: begg, endg       ! beginning and ending gridcell index
-     integer :: begt, endt       ! beginning and ending topographic unit index
-     integer :: begl, endl       ! beginning and ending landunit index
-     integer :: begc, endc       ! beginning and ending column index
-     integer :: begp, endp       ! beginning and ending pft index
-     integer :: begCohort, endCohort ! beginning and ending cohort indices
+     integer         :: nclumps                          ! number of clumps for processor_type iam
+     integer,pointer :: cid(:)                           ! clump indices
+
+     ! The following variables correspond to "Local" quantities on a proc
+     integer         :: ncells                           ! number of gridcells in proc
+     integer         :: nlunits                          ! number of landunits in proc
+     integer         :: ntopounits                       ! number of topographic units in proc
+     integer         :: ncols                            ! number of columns in proc
+     integer         :: npfts                            ! number of pfts in proc
+     integer         :: nCohorts                         ! number of cohorts in proc
+     integer         :: begg, endg                       ! beginning and ending gridcell index
+     integer         :: begt, endt                       ! beginning and ending topographic unit index
+     integer         :: begl, endl                       ! beginning and ending landunit index
+     integer         :: begc, endc                       ! beginning and ending column index
+     integer         :: begp, endp                       ! beginning and ending pft index
+     integer         :: begCohort, endCohort             ! beginning and ending cohort indices
+
+     ! The following variables correspond to "Ghost/Halo" quantites on a proc
+     integer         :: ncells_ghost                     ! number of gridcells in proc
+     integer         :: nlunits_ghost                    ! number of landunits in proc
+     integer         :: ncols_ghost                      ! number of columns in proc
+     integer         :: npfts_ghost                      ! number of pfts in proc
+     integer         :: nCohorts_ghost                   ! number of cohorts in proc
+     integer         :: begg_ghost, endg_ghost           ! beginning and ending gridcell index
+     integer         :: begl_ghost, endl_ghost           ! beginning and ending landunit index
+     integer         :: begc_ghost, endc_ghost           ! beginning and ending column index
+     integer         :: begp_ghost, endp_ghost           ! beginning and ending pft index
+     integer         :: begCohort_ghost, endCohort_ghost ! beginning and ending cohort indices
+
+     ! The following variables correspond to "ALL" (=Local + Ghost) quantites on a proc
+     integer         :: ncells_all                       ! number of gridcells in proc
+     integer         :: nlunits_all                      ! number of landunits in proc
+     integer         :: ncols_all                        ! number of columns in proc
+     integer         :: npfts_all                        ! number of pfts in proc
+     integer         :: nCohorts_all                     ! number of cohorts in proc
+     integer         :: begg_all, endg_all               ! beginning and ending gridcell index
+     integer         :: begl_all, endl_all               ! beginning and ending landunit index
+     integer         :: begc_all, endc_all               ! beginning and ending column index
+     integer         :: begp_all, endp_all               ! beginning and ending pft index
+     integer         :: begCohort_all, endCohort_all     ! beginning and ending cohort indices
+
   end type processor_type
   public processor_type
   type(processor_type),public :: procinfo
@@ -166,6 +209,27 @@ contains
      bounds%endt = clumps(cid)%endt
      bounds%begg = clumps(cid)%begg
      bounds%endg = clumps(cid)%endg
+
+     ! clumps have no ghost quantites
+     bounds%begp_ghost = 0
+     bounds%endp_ghost = 0
+     bounds%begc_ghost = 0
+     bounds%endc_ghost = 0
+     bounds%begl_ghost = 0
+     bounds%endl_ghost = 0
+     bounds%begg_ghost = 0
+     bounds%endg_ghost = 0
+
+     ! Since clumps have no ghost quantites, all = local
+     bounds%begp_all = clumps(cid)%begp
+     bounds%endp_all = clumps(cid)%endp
+     bounds%begc_all = clumps(cid)%begc
+     bounds%endc_all = clumps(cid)%endc
+     bounds%begl_all = clumps(cid)%begl
+     bounds%endl_all = clumps(cid)%endl
+     bounds%begg_all = clumps(cid)%begg
+     bounds%endg_all = clumps(cid)%endg
+
      bounds%begCohort = clumps(cid)%begCohort
      bounds%endCohort = clumps(cid)%endCohort
      
@@ -195,6 +259,7 @@ contains
      endl = clumps(cid)%endl
      begg = clumps(cid)%begg
      endg = clumps(cid)%endg
+
      begCohort = clumps(cid)%begCohort
      endCohort = clumps(cid)%endCohort
    end subroutine get_clump_bounds_old
@@ -237,6 +302,27 @@ contains
      bounds%endt = procinfo%endt
      bounds%begg = procinfo%begg
      bounds%endg = procinfo%endg
+
+     ! Ghost
+     bounds%begp_ghost = procinfo%begp_ghost
+     bounds%endp_ghost = procinfo%endp_ghost
+     bounds%begc_ghost = procinfo%begc_ghost
+     bounds%endc_ghost = procinfo%endc_ghost
+     bounds%begl_ghost = procinfo%begl_ghost
+     bounds%endl_ghost = procinfo%endl_ghost
+     bounds%begg_ghost = procinfo%begg_ghost
+     bounds%endg_ghost = procinfo%endg_ghost
+
+     ! All = Local + Ghost
+     bounds%begp_all = procinfo%begp_all
+     bounds%endp_all = procinfo%endp_all
+     bounds%begc_all = procinfo%begc_all
+     bounds%endc_all = procinfo%endc_all
+     bounds%begl_all = procinfo%begl_all
+     bounds%endl_all = procinfo%endl_all
+     bounds%begg_all = procinfo%begg_all
+     bounds%endg_all = procinfo%endg_all
+
      bounds%begCohort = procinfo%begCohort
      bounds%endCohort = procinfo%endCohort
 
@@ -406,5 +492,31 @@ contains
     end select
 
   end subroutine get_clmlevel_gsmap
+
+   !------------------------------------------------------------------------------
+   subroutine get_proc_total_ghosts(ncells_ghost, nlunits_ghost, &
+      ncols_ghost, npfts_ghost, nCohorts_ghost)
+     !
+     ! !DESCRIPTION:
+     ! Count up ghost gridcells, landunits, columns, and pfts on process.
+     !
+     ! !ARGUMENTS:
+     integer, intent(out) :: ncells_ghost   ! number of ghost gridcells on the processor
+     integer, intent(out) :: nlunits_ghost  ! number of ghost landunits on the processor
+     integer, intent(out) :: ncols_ghost    ! number of ghost columns on the processor
+     integer, intent(out) :: npfts_ghost    ! number of ghost pfts on the processor
+     integer, intent(out) :: nCohorts_ghost ! number of ghost cohorts on the processor
+     !
+     ! !LOCAL VARIABLES:
+     integer :: cid       ! clump index
+     !------------------------------------------------------------------------------
+
+     npfts_ghost    = procinfo%ncells_ghost
+     nlunits_ghost  = procinfo%nlunits_ghost
+     ncols_ghost    = procinfo%ncols_ghost
+     npfts_ghost    = procinfo%npfts_ghost
+     nCohorts_ghost = procinfo%nCohorts_ghost
+
+   end subroutine get_proc_total_ghosts
 
 end module decompMod

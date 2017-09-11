@@ -32,6 +32,8 @@ module prep_glc_mod
 
   public :: prep_glc_calc_l2x_gx
 
+  public :: prep_glc_zero_fields
+
   public :: prep_glc_get_l2x_gx
   public :: prep_glc_get_l2gacc_lx
   public :: prep_glc_get_l2gacc_lx_cnt
@@ -441,6 +443,31 @@ contains
          l2x_g = l2x_gx(eli))
 
   end subroutine prep_glc_map_one_field_lnd2glc
+
+  !================================================================================================
+
+  subroutine prep_glc_zero_fields()
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Set glc inputs to zero
+    !
+    ! This is appropriate during time intervals when we're not sending valid data to glc.
+    ! In principle we shouldn't need to zero the fields at these times (instead, glc
+    ! should just ignore the fields at these times). However, some tests (like an ERS or
+    ! ERI test that stops the final run segment mid-year) can fail if we don't explicitly
+    ! zero the fields, because these x2g fields can then differ upon restart.
+
+    ! Local Variables
+    integer :: egi
+    type(mct_avect), pointer :: x2g_gx
+    !---------------------------------------------------------------
+
+    do egi = 1,num_inst_glc
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       call mct_aVect_zero(x2g_gx)
+    end do
+  end subroutine prep_glc_zero_fields
 
   !================================================================================================
 

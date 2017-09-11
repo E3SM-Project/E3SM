@@ -23,7 +23,8 @@ from CIME.XML.env_mach_specific import EnvMachSpecific
 
 logger = logging.getLogger(__name__)
 
-def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos):
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
+              sysos, unit_testing=False):
     """Add Macros, Depends, and env_mach_specific files to a directory.
 
     Arguments:
@@ -34,6 +35,8 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
     compiler - String containing the compiler vendor to configure for.
     mpilib - String containing the MPI implementation to configure for.
     debug - Boolean specifying whether debugging options are enabled.
+    unit_testing - Boolean specifying whether we're running unit tests (as
+                   opposed to a system run)
     """
     # Macros generation.
     suffixes = {'Makefile': 'make', 'CMake': 'cmake'}
@@ -44,7 +47,7 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
 
     _copy_depends_files(machobj.get_machine_name(), machobj.machines_dir, output_dir, compiler)
     _generate_env_mach_specific(output_dir, machobj, compiler, mpilib,
-                                debug, sysos)
+                                debug, sysos, unit_testing)
 
 def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     """
@@ -63,8 +66,17 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
             if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
                 shutil.copyfile(dfile, outputdfile)
 
+class FakeCase(object):
 
-def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sysos):
+    def __init__(self, compiler, mpilib, debug):
+        self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug}
+
+    def get_value(self, attrib):
+        expect(attrib in self._vals, "FakeCase does not support getting value of '%s'" % attrib)
+        return self._vals[attrib]
+
+def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
+                                sysos, unit_testing):
     """
     env_mach_specific generation.
     """
@@ -72,11 +84,13 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sy
     if os.path.exists(ems_path):
         logger.warn("%s already exists, delete to replace"%ems_path)
         return
-    ems_file = EnvMachSpecific(output_dir)
+    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)
     ems_file.write()
+    fake_case = FakeCase(compiler, mpilib, debug)
+    ems_file.load_env(fake_case)
     for shell in ('sh', 'csh'):
-        ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
+        ems_file.make_env_mach_specific_file(shell, fake_case)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
         with open(shell_path, 'a') as shell_file:
             if shell == 'sh':

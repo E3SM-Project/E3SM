@@ -21,9 +21,9 @@ module glc2lndMod
   use clm_varpar     , only : maxpatch_glcmec
   use clm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
-  use GridcellType   , only : grc 
-  use LandunitType   , only : lun
-  use ColumnType     , only : col
+  use GridcellType   , only : grc_pp 
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp 
   !
   ! !REVISION HISTORY:
   ! Created by William Lipscomb, Dec. 2007, based on clm_atmlnd.F90.
@@ -371,7 +371,7 @@ contains
     ! !DESCRIPTION:
     ! Update subgrid fractions based on input from GLC (via the coupler)
     !
-    ! The weights updated here are some col%wtlunit and lun%wtgcell values
+    ! The weights updated here are some col_pp%wtlunit and lun_pp%wtgcell values
     !
     ! !USES:
     use clm_varcon        , only : ispval
@@ -403,19 +403,19 @@ contains
           call set_landunit_weight(g, istice_mec, area_ice_mec)
 
           ! If new landunit area is greater than 0, then update column areas
-          ! (If new landunit area is 0, col%wtlunit is arbitrary, so we might as well keep the existing values)
+          ! (If new landunit area is 0, col_pp%wtlunit is arbitrary, so we might as well keep the existing values)
           if (area_ice_mec > 0) then
              ! Determine index of the glc_mec landunit
-             l_ice_mec = grc%landunit_indices(istice_mec, g)
+             l_ice_mec = grc_pp%landunit_indices(istice_mec, g)
              if (l_ice_mec == ispval) then
                 write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
                 call endrun()
              end if
           
              frac_assigned(1:maxpatch_glcmec) = .false.
-             do c = lun%coli(l_ice_mec), lun%colf(l_ice_mec)
-                icemec_class = col_itype_to_icemec_class(col%itype(c))
-                col%wtlunit(c) = this%frac_grc(g, icemec_class) / lun%wtgcell(l_ice_mec)
+             do c = lun_pp%coli(l_ice_mec), lun_pp%colf(l_ice_mec)
+                icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+                col_pp%wtlunit(c) = this%frac_grc(g, icemec_class) / lun_pp%wtgcell(l_ice_mec)
                 frac_assigned(icemec_class) = .true.
              end do
 
@@ -479,19 +479,19 @@ contains
     ! over all columns, even those outside the do_smb_c filter.
     
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
        ! Values from GLC are only valid within the icemask, so we only update CLM's topo values there
        if (this%icemask_grc(g) > 0._r8) then
-          if (lun%itype(l) == istice_mec) then
-             icemec_class = col_itype_to_icemec_class(col%itype(c))
+          if (lun_pp%itype(l) == istice_mec) then
+             icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
           else
              ! If not on a glaciated column, assign topography to the bare-land value determined by GLC.
              icemec_class = 0
           end if
 
-          col%glc_topo(c) = this%topo_grc(g, icemec_class)
+          col_pp%glc_topo(c) = this%topo_grc(g, icemec_class)
        end if
     end do
 

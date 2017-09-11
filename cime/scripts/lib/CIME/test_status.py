@@ -209,24 +209,26 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self, fd, prefix=''):
+    def phase_statuses_dump(self, prefix=''):
         """
         Args:
-            fd: file open for writing
             prefix: string printed at the start of each line
         """
+        result = ""
         if self._phase_statuses:
             for phase, data in self._phase_statuses.iteritems():
                 status, comments = data
                 if not comments:
-                    fd.write("%s%s %s %s\n" % (prefix, status, self._test_name, phase))
+                    result += "%s%s %s %s\n" % (prefix, status, self._test_name, phase)
                 else:
-                    fd.write("%s%s %s %s %s\n" % (prefix, status, self._test_name, phase, comments))
+                    result += "%s%s %s %s %s\n" % (prefix, status, self._test_name, phase, comments)
+
+        return result
 
     def flush(self):
         if self._phase_statuses and not self._no_io:
             with open(self._filename, "w") as fd:
-                self.phase_statuses_dump(fd)
+                fd.write(self.phase_statuses_dump())
 
     def _parse_test_status(self, file_contents):
         """

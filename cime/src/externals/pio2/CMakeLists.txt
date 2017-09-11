@@ -46,29 +46,6 @@ else()
   set(USE_MPI_SERIAL 0)
 endif()
 
-#===== Library Variables =====
-set (PIO_FILESYSTEM_HINTS IGNORE CACHE STRING "Filesystem hints (lustre or gpfs)")
-
-#===== Testing Options =====
-option (PIO_ENABLE_TESTS  "Enable the testing builds"                           ON)
-option (PIO_VALGRIND_CHECK  "Enable memory leak check using valgrind"           OFF)
-
-#==============================================================================
-#  BACKWARDS COMPATIBILITY
-#==============================================================================
-
-# Old NETCDF_DIR variable --> NetCDF_PATH
-if (DEFINED NETCDF_DIR)
-  set (NetCDF_PATH ${NETCDF_DIR}
-    CACHE STRING "Location of the NetCDF library installation")
-endif ()
-
-# Old PNETCDF_DIR variable --> PnetCDF_PATH
-if (DEFINED PNETCDF_DIR)
-  set (PnetCDF_PATH ${PNETCDF_DIR}
-    CACHE STRING "Location of the PnetCDF library installation")
-endif ()
-
 #==============================================================================
 #  PREPEND TO CMAKE MODULE PATH
 #==============================================================================
@@ -96,6 +73,46 @@ endif ()
 set (USER_CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH}
   CACHE STRING "Location of the CMake_Fortran_utils")
 list (APPEND CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH})
+
+INCLUDE (CheckTypeSize)
+
+#===== MPI =====
+if (PIO_USE_MPISERIAL)
+  find_package (MPISERIAL COMPONENTS C REQUIRED)
+  if (MPISERIAL_C_FOUND)
+    set (CMAKE_REQUIRED_INCLUDES ${MPISERIAL_C_INCLUDE_DIRS})
+  endif ()
+else ()
+  find_package (MPI REQUIRED)
+  set (CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
+endif ()
+
+SET(CMAKE_EXTRA_INCLUDE_FILES "mpi.h")
+check_type_size("MPI_Offset" SIZEOF_MPI_OFFSET)
+SET(CMAKE_EXTRA_INCLUDE_FILES)
+
+#===== Library Variables =====
+set (PIO_FILESYSTEM_HINTS IGNORE CACHE STRING "Filesystem hints (lustre or gpfs)")
+
+#===== Testing Options =====
+option (PIO_ENABLE_TESTS  "Enable the testing builds"                           ON)
+option (PIO_VALGRIND_CHECK  "Enable memory leak check using valgrind"           OFF)
+
+#==============================================================================
+#  BACKWARDS COMPATIBILITY
+#==============================================================================
+
+# Old NETCDF_DIR variable --> NetCDF_PATH
+if (DEFINED NETCDF_DIR)
+  set (NetCDF_PATH ${NETCDF_DIR}
+    CACHE STRING "Location of the NetCDF library installation")
+endif ()
+
+# Old PNETCDF_DIR variable --> PnetCDF_PATH
+if (DEFINED PNETCDF_DIR)
+  set (PnetCDF_PATH ${PNETCDF_DIR}
+    CACHE STRING "Location of the PnetCDF library installation")
+endif ()
 
 #==============================================================================
 #  HELPFUL GLOBAL VARIABLES

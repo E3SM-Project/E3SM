@@ -23,15 +23,18 @@ contains
     ! !DESCRIPTION:
     ! Finalize land surface model
     !
+#ifdef USE_PETSC_LIB
+#include <petsc/finclude/petsc.h>
+#endif
     ! !USES:
     use clm_varctl             , only : use_vsfm
+#ifdef USE_PETSC_LIB
+    use petscsys
+#endif
     !
     ! !ARGUMENTS
     implicit none
     !
-#ifdef USE_PETSC_LIB
-#include "finclude/petscsys.h"
-#endif
 
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr

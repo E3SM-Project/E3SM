@@ -34,6 +34,15 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
     rel_path = rel_path.strip('/')
     full_url = os.path.join(svn_loc, rel_path)
 
+    err = run_cmd("svn --non-interactive --trust-server-cert ls {}".format(svn_loc))[0]
+    if err != 0:
+        logging.warning(
+"""
+Could not connect to svn repo '{0}'
+This is most likely either a credential, proxy, or network issue .
+To check connection and store your credential run 'svn ls {0}' and permanently store your password""".format(svn_loc))
+        return False
+
     full_path = os.path.join(input_data_root, rel_path)
     logging.info("Trying to download file: '%s' to path '%s'" % (full_url, full_path))
     # Make sure local path exists, create if it does not
@@ -125,6 +134,7 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
     """
     # Fill in defaults as needed
     svn_loc = SVN_LOCS[get_model()] if svn_loc is None else svn_loc
+
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
     expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '%s'" % input_data_root)

@@ -34,6 +34,8 @@ module domainMod
      real(r8),pointer :: firrig(:)
      real(r8),pointer :: f_surf(:)  ! fraction of water withdraws from surfacewater by Guoyong Leng
      real(r8),pointer :: f_grd(:)   ! fraction of water withdraws from groundwater by Guoyong Leng
+     real(r8),pointer :: xCell(:)   ! x-position of grid cell (m)
+     real(r8),pointer :: yCell(:)   ! y-position of grid cell (m)
      real(r8),pointer :: area(:)    ! grid cell area (km**2)
      integer ,pointer :: pftm(:)    ! pft mask: 1=real, 0=fake, -1=notset
      integer ,pointer :: glcmask(:) ! glc mask: 1=sfc mass balance required by GLC component
@@ -41,6 +43,15 @@ module domainMod
                                     ! (glcmask is just a guess at the appropriate mask, known at initialization - in contrast to icemask, which is the true mask obtained from glc)
      character*16     :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
+
+     ! pflotran:beg-----------------------------------------------------
+     integer          :: nv           ! number of vertices
+     real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
+     real(r8),pointer :: lonv(:,:)    ! longitude of grid cell's vertices (deg)
+     real(r8)         :: lon0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
+     real(r8)         :: lat0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
+
+     ! pflotran:end-----------------------------------------------------
   end type domain_type
 
   type(domain_type)    , public :: ldomain
@@ -111,9 +122,28 @@ contains
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
              domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne),stat=ier)
+             domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
+
+    ! pflotran:beg-----------------------------------------------------
+    ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
+    if (domain%nv > 0 .and. domain%nv /= huge(1)) then
+       if(.not.associated(domain%lonv)) then
+           allocate(domain%lonv(nb:ne, 1:domain%nv), stat=ier)
+           if (ier /= 0) &
+           call shr_sys_abort('domain_init ERROR: allocate lonv ')
+           domain%lonv     = nan
+       endif
+       if(.not.associated(domain%latv)) then
+           allocate(domain%latv(nb:ne, 1:domain%nv))
+           if (ier /= 0) &
+           call shr_sys_abort('domain_init ERROR: allocate latv ')
+           domain%latv     = nan
+       endif
+    end if
+    ! pflotran:end-----------------------------------------------------
 
     if (present(clmlevel)) then
        domain%clmlevel = clmlevel
@@ -130,6 +160,8 @@ contains
     domain%topo     = 0._r8
     domain%latc     = nan
     domain%lonc     = nan
+    domain%xCell    = nan
+    domain%yCell    = nan
     domain%area     = nan
     domain%firrig     = 0.7_r8
     domain%f_surf     = 1.0_r8
@@ -181,6 +213,26 @@ end subroutine domain_init
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
+
+       ! pflotran:beg-----------------------------------------------------
+       ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
+       if (domain%nv > 0 .and. domain%nv /= huge(1)) then
+          if (associated(domain%lonv)) then
+             deallocate(domain%lonv, stat=ier)
+             if (ier /= 0) &
+             call shr_sys_abort('domain_clean ERROR: deallocate lonv ')
+             nullify(domain%lonv)
+          endif
+
+          if (associated(domain%latv)) then
+             deallocate(domain%latv, stat=ier)
+             if (ier /= 0) &
+             call shr_sys_abort('domain_clean ERROR: deallocate latv ')
+             nullify(domain%latv)
+          endif
+       endif
+       ! pflotran:beg-----------------------------------------------------
+
     else
        if (masterproc) then
           write(iulog,*) 'domain_clean WARN: clean domain unecessary '

@@ -267,7 +267,8 @@ contains
     io_system => shr_pio_getiosys(iceid)
 
     pio_iotype = shr_pio_getiotype(iceid)
-    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
+!    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
+    call MPAS_io_unset_iotype(domain % iocontext)
 
     ! ----------------
     ! Set up log file information
@@ -825,7 +826,7 @@ contains
 
         if (debugOn) call mpas_log_write('   Starting forward update', masterOnly=.true.)
         call mpas_timer_start("time integration", .false.)
-        call cice_timestep(domain, domain % clock, itimestep)
+        call cice_timestep(domain, domain % clock, itimestep, ierr)
         call mpas_timer_stop("time integration")
         if (debugOn) call mpas_log_write('   Finished forward update', masterOnly=.true.)
 

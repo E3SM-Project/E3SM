@@ -619,7 +619,7 @@ int PIOc_get_vara_longlong(int ncid, int varid, const PIO_Offset *start,
  */
 int PIOc_get_var_text(int ncid, int varid, char *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_CHAR, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_CHAR, buf);
 }
 
 /**
@@ -635,7 +635,7 @@ int PIOc_get_var_text(int ncid, int varid, char *buf)
  */
 int PIOc_get_var_uchar(int ncid, int varid, unsigned char *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_UBYTE, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_UBYTE, buf);
 }
 
 /**
@@ -651,7 +651,7 @@ int PIOc_get_var_uchar(int ncid, int varid, unsigned char *buf)
  */
 int PIOc_get_var_schar(int ncid, int varid, signed char *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_BYTE, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_BYTE, buf);
 }
 
 /**
@@ -667,7 +667,7 @@ int PIOc_get_var_schar(int ncid, int varid, signed char *buf)
  */
 int PIOc_get_var_ushort(int ncid, int varid, unsigned short *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_USHORT, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_USHORT, buf);
 }
 
 /**
@@ -683,7 +683,7 @@ int PIOc_get_var_ushort(int ncid, int varid, unsigned short *buf)
  */
 int PIOc_get_var_short(int ncid, int varid, short *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_SHORT, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_SHORT, buf);
 }
 
 /**
@@ -699,7 +699,7 @@ int PIOc_get_var_short(int ncid, int varid, short *buf)
  */
 int PIOc_get_var_uint(int ncid, int varid, unsigned int *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_UINT, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_UINT, buf);
 }
 
 /**
@@ -715,7 +715,7 @@ int PIOc_get_var_uint(int ncid, int varid, unsigned int *buf)
  */
 int PIOc_get_var_int(int ncid, int varid, int *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_INT, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_INT, buf);
 }
 
 /**
@@ -731,7 +731,7 @@ int PIOc_get_var_int(int ncid, int varid, int *buf)
  */
 int PIOc_get_var_long (int ncid, int varid, long *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, PIO_LONG_INTERNAL, buf);
+    return PIOc_get_var_tc(ncid, varid, PIO_LONG_INTERNAL, buf);
 }
 
 /**
@@ -747,7 +747,7 @@ int PIOc_get_var_long (int ncid, int varid, long *buf)
  */
 int PIOc_get_var_float(int ncid, int varid, float *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_FLOAT, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_FLOAT, buf);
 }
 
 /**
@@ -763,7 +763,7 @@ int PIOc_get_var_float(int ncid, int varid, float *buf)
  */
 int PIOc_get_var_double(int ncid, int varid, double *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_DOUBLE, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_DOUBLE, buf);
 }
 
 /**
@@ -779,7 +779,7 @@ int PIOc_get_var_double(int ncid, int varid, double *buf)
  */
 int PIOc_get_var_ulonglong(int ncid, int varid, unsigned long long *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_UINT64, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_UINT64, buf);
 }
 
 /**
@@ -795,7 +795,7 @@ int PIOc_get_var_ulonglong(int ncid, int varid, unsigned long long *buf)
  */
 int PIOc_get_var_longlong(int ncid, int varid, long long *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_INT64, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_INT64, buf);
 }
 
 /**
@@ -1044,7 +1044,7 @@ int PIOc_get_var1_longlong(int ncid, int varid, const PIO_Offset *index,
  */
 int PIOc_get_var(int ncid, int varid, void *buf)
 {
-    return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_NAT, buf);
+    return PIOc_get_var_tc(ncid, varid, NC_NAT, buf);
 }
 
 /**

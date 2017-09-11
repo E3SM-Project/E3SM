@@ -62,6 +62,7 @@ module ncdio_pio
   public :: ncd_inqvdims       ! inquire variable ndims
   public :: ncd_inqvdids       ! inquire variable dimids
   public :: ncd_inqvdlen       ! inquire variable dimension size
+  public :: ncd_inqvdname      ! inquire variable dimension name
   public :: ncd_io             ! write local data
 
   integer,parameter,public :: ncd_int       = pio_int
@@ -126,6 +127,11 @@ module ncdio_pio
      module procedure ncd_inqvdlen_byDesc
      module procedure ncd_inqvdlen_byName
   end interface
+
+  interface ncd_inqvdname
+     module procedure ncd_inqvdname_byDesc
+     module procedure ncd_inqvdname_byName
+  end interface ncd_inqvdname
 
   private :: ncd_getiodesc      ! obtain iodesc
   private :: scam_field_offsets ! get offset to proper lat/lon gridcell for SCAM
@@ -656,7 +662,7 @@ contains
   end subroutine ncd_inqvdlen_byDesc
 
 
-  !-----------------------------------------------------------------------
+  !-------------------------------------------------------------------------
   subroutine ncd_inqvdlen_byName(ncid,varname,dimnum,dlen,err_code)
     !
     ! !DESCRIPTION:
@@ -693,10 +699,100 @@ contains
        err_code = error_variable_not_found
     end if
 
-  end subroutine ncd_inqvdlen_byName
+ end subroutine ncd_inqvdlen_byName
 
+
+ !-----------------------------------------------------------------------
+ subroutine ncd_inqvdname_byDesc(ncid,vardesc,dimnum,dname,err_code)
+    !
+    ! !DESCRIPTION:
+    ! Inquire name of one of a variable's dimensions, given a vardesc
+    !
+    ! If the variable has n dimensions, then dimnum should be between 1 and n; this
+    ! routine returns the name of the dimnum'th dimension.
+    !
+    ! If there is an error condition, dname will be ' ', and err_code will hold the error
+    ! code; possible error codes are:
+    ! 0: no error
+    ! 1: dimnum out of range
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t),intent(inout) :: ncid      ! netcdf file id
+    type(Var_desc_t)  ,intent(inout) :: vardesc   ! variable descriptor
+    integer           ,intent(in)    :: dimnum    ! dimension number to query
+    character(len=*)  ,intent(out)   :: dname     ! name of the dimension
+    integer           ,intent(out)   :: err_code  ! error code (0 means no error)
+    !
+    ! !LOCAL VARIABLES:
+    integer              :: ndims      ! number of dimensions
+    integer, allocatable :: dimids(:)  ! dimension IDs
+
+    character(len=*), parameter :: dname_invalid = ' '
+    integer, parameter :: error_none = 0
+    integer, parameter :: error_dimnum_out_of_range = 1
+
+    character(len=*), parameter :: subname = 'ncd_inqvdname_byDesc'
+    !-----------------------------------------------------------------------
+    err_code = error_none
+
+    call ncd_inqvdims(ncid, ndims, vardesc)
+
+    if (dimnum > 0 .and. dimnum <= ndims) then
+       allocate(dimids(ndims))
+       call ncd_inqvdids(ncid, dimids, vardesc)
+       call ncd_inqdname(ncid, dimids(dimnum), dname)
+       deallocate(dimids)
+    else
+       dname = dname_invalid
+       err_code = error_dimnum_out_of_range
+    end if
+
+ end subroutine ncd_inqvdname_byDesc
+
+ !-----------------------------------------------------------------------
+
+ subroutine ncd_inqvdname_byName(ncid,varname,dimnum,dname,err_code)
+    !
+    ! !DESCRIPTION:
+    ! Inquire name of one of a variable's dimensions, given a variable name
+    !
+    ! If the variable has n dimensions, then dimnum should be between 1 and n; this
+    ! routine returns the name of the dimnum'th dimension.
+    !
+    ! If there is an error condition, dname will be ' ', and err_code will hold the error
+    ! code; possible error codes are:
+    ! 0: no error
+    ! 1: dimnum out of range
+    ! 11: variable not found
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t),intent(inout) :: ncid      ! netcdf file id
+    character(len=*)  ,intent(in)    :: varname   ! variable name
+    integer           ,intent(in)    :: dimnum    ! dimension number to query
+    character(len=*)  ,intent(out)   :: dname     ! name of the dimension
+    integer           ,intent(out)   :: err_code  ! error code (0 means no error)
+    !
+    ! !LOCAL VARIABLES:
+    type(Var_desc_t) :: vardesc        ! variable descriptor
+    logical          :: readvar        ! whether the variable was found
+    character(len=*), parameter :: dname_invalid = ' '
+    integer, parameter :: error_variable_not_found = 11
+
+    character(len=*), parameter :: subname = 'ncd_inqvdname_byName'
+    !-----------------------------------------------------------------------
+
+    call check_var(ncid, varname, vardesc, readvar)
+    if (readvar) then
+       call ncd_inqvdname_byDesc(ncid, vardesc, dimnum, dname, err_code)
+    else
+       dname = dname_invalid
+       err_code = error_variable_not_found
+    end if
+
+ end subroutine ncd_inqvdname_byName
 
   !-----------------------------------------------------------------------
+
   subroutine ncd_putatt_int(ncid,varid,attrib,value,xtype)
     !
     ! !DESCRIPTION:

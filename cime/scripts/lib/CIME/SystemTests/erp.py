@@ -51,12 +51,13 @@ class ERP(SystemTestsCommon):
         if is_locked(envbuild1):
             restore(envbuild1, newname="env_build.xml")
 
+        self._case.read_xml()
+
         # Build two executables, one using the original tasks and threads (ERP1) and
         # one using the modified tasks and threads (ERP2)
         # The reason we currently need two executables that CESM-CICE has a compile time decomposition
         # For cases where ERP works, changing this decomposition will not affect answers, but it will
         # affect the executable that is used
-        self._case.set_value("SMP_BUILD","0")
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
 
@@ -79,7 +80,6 @@ class ERP(SystemTestsCommon):
                 case_setup(self._case, test_mode=True, reset=True)
 
             # Now rebuild the system, given updated information in env_build.xml
-
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
@@ -133,6 +133,8 @@ class ERP(SystemTestsCommon):
                 self._case.set_value("CONTINUE_RUN", True)
                 self._case.set_value("REST_OPTION","never")
                 suffix = "rest"
+
             self.run_indv(suffix=suffix)
+            self._case.flush()
 
         self._component_compare_test("base", "rest")

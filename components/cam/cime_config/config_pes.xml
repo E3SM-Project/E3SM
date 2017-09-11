@@ -149,7 +149,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="redsky|skybridge">
+    <mach name="redsky|skybridge|chama">
       <pes compset="any" pesize="T">
         <comment>none</comment>
         <ntasks>

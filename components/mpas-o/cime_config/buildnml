@@ -8,20 +8,21 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CIMEROOT            = `./xmlquery  CIMEROOT			-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
-my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
-my $OBJROOT		= `./xmlquery  OBJROOT			-value`;
-my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
-my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT		-value`;
-my $OCN_GRID		= `./xmlquery  OCN_GRID			-value`;
-my $OCN_MASK		= `./xmlquery  MASK_GRID		-value`;
-my $OCN_FORCING		= `./xmlquery  MPASO_FORCING		-value`;
-my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN		-value`;
-#my $NINST_OCN		= `./xmlquery  NINST_OCN		-value`;
+my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
+my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
+my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
+my $SRCROOT		= `./xmlquery  SRCROOT		-value`;
+my $OBJROOT		= `./xmlquery  OBJROOT		-value`;
+my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
+my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT	-value`;
+my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
+my $OCN_MASK		= `./xmlquery  MASK_GRID	-value`;
+my $OCN_FORCING		= `./xmlquery  MPASO_FORCING	-value`;
+my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN	-value`;
+my $OCN_PIO_TYPENAME	= `./xmlquery  OCN_PIO_TYPENAME	-value`;
+#my $NINST_OCN		= `./xmlquery  NINST_OCN	-value`;
 my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
-my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
+my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
 my $STREAM_NAME		= 'streams.ocean';
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
@@ -134,7 +135,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 } elsif ( $OCN_GRID eq 'oRRS18to6v3_ICG' ) {
 	$grid_date .= '170111';
 	$grid_prefix .= 'oRRS18to6v3';
-	$ic_date .= '170321';
+	$ic_date .= '170622';
 	$ic_prefix .= 'oRRS18to6v3.restartFrom_titan0228';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
@@ -262,12 +263,22 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<immutable_stream name="mesh"' . "\n";
 	print $stream_file '                  type="none"' . "\n";
+	if ( $OCN_GRID =~ m/^oRRS1/ ) {
+		print $stream_file '                  io_type="pnetcdf,cdf5"' . "\n";
+	} else {
+		print $stream_file '                  io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
 	print $stream_file "                  filename_template=" . '"'
 					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc"
 					. '"' . "\n";
 	print $stream_file '/>' . "\n";
 	print $stream_file '<immutable_stream name="input"' . "\n";
 	print $stream_file '                  type="input"' . "\n";
+	if ( $OCN_GRID =~ m/^oRRS1/ ) {
+		print $stream_file '                  io_type="pnetcdf,cdf5"' . "\n";
+	} else {
+		print $stream_file '                  io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
 	print $stream_file '                  input_interval="initial_only"' . "\n";
 	print $stream_file "                  filename_template=" . '"'
 					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc"
@@ -286,6 +297,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '-->' . "\n";
 	print $stream_file '<immutable_stream name="restart"' . "\n";
 	print $stream_file '				  type="input;output"' . "\n";
+	if ( $OCN_GRID =~ m/^oRRS1/ ) {
+		print $stream_file '				  io_type="pnetcdf,cdf5"' . "\n";
+	} else {
+		print $stream_file '				  io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
 	print $stream_file '				  filename_template="mpaso.rst.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '				  filename_interval="output_interval"' . "\n";
 	print $stream_file '				  clobber_mode="truncate"' . "\n";
@@ -299,6 +315,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="output"' . "\n";
 	print $stream_file '		type="output"' . "\n";
+	if ( $OCN_GRID =~ m/^oRRS1/ ) {
+		print $stream_file '		io_type="pnetcdf,cdf5"' . "\n";
+	} else {
+		print $stream_file '		io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
 	print $stream_file '		filename_template="mpaso.hist.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '		filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate"' . "\n";
@@ -376,6 +397,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="block_debug_output"' . "\n";
 	print $stream_file '		type="output"' . "\n";
+	print $stream_file '		io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '		filename_template="mpaso.output_debug_block_$B.nc"' . "\n";
 	print $stream_file '		filename_interval="1000-00-00_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate"' . "\n";
@@ -412,6 +434,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         }
 	print $stream_file '<stream name="globalStatsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="netcdf"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.globalStats.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -431,6 +454,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="surfaceAreaWeightedAveragesOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="netcdf"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.surfaceAreaWeightedAverages.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -446,6 +470,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="waterMassCensusOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.waterMassCensus.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -463,6 +488,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="layerVolumeWeightedAverageOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.layerVolumeWeightedAverage.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -481,6 +507,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="zonalMeanOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.zonalMeans.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_10:00:00"' . "\n";
@@ -500,6 +527,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="okuboWeissOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.okuboWeiss.$Y.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-05_00:00:00"' . "\n";
@@ -516,6 +544,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="meridionalHeatTransportOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.meridionalHeatTransport.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -533,6 +562,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="testComputeIntervalOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.testComputeInterval.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -545,6 +575,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-05_00:00:00"' . "\n";
@@ -561,6 +592,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeFiltersOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.timeFilters.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -576,6 +608,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeFiltersRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.rst.am.timeFiltersRestart.$Y-$M-$D_$h.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -591,6 +624,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="eliassenPalmOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+        if ( $OCN_GRID =~ m/^oRRS1/ ) {
+                print $stream_file '        io_type="pnetcdf,cdf5"' . "\n";
+        } else {
+		print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
 	print $stream_file '        filename_template="mpaso.hist.am.eliassenPalm.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -628,6 +666,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="eliassenPalmRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.rst.am.eliassenPalm_restart.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -658,6 +697,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="mixedLayerDepthsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.mixedLayerDepths.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -675,6 +715,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsDailyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        filename_template="mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"' . "\n";
         print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
         print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
@@ -688,6 +729,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsMonthlyOutput"' . "\n";
         print $stream_file '        type="output"' . "\n";
+        if ( $OCN_GRID =~ m/^oRRS1/ ) {
+                print $stream_file '        io_type="pnetcdf,cdf5"' . "\n";
+        } else {
+		print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
         print $stream_file '        filename_template="mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -745,6 +791,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
         print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        filename_template="mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"' . "\n";
         print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
         print $stream_file '        output_interval="00-03-00_00:00:00"' . "\n";
@@ -756,6 +803,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsCustomOutput"' . "\n";
         print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        filename_template="mpaso.hist.am.timeSeriesStatsCustom.$Y-$M-$D.nc"' . "\n";
         print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
         print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
@@ -767,6 +815,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsDailyRestart"' . "\n";
         print $stream_file '        type="input;output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"' . "\n";
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -777,6 +826,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsMonthlyRestart"' . "\n";
         print $stream_file '        type="input;output"' . "\n";
+        if ( $OCN_GRID =~ m/^oRRS1/ ) {
+                print $stream_file '        io_type="pnetcdf,cdf5"' . "\n";
+        } else {
+		print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
         print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"' . "\n";
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -787,6 +841,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyRestart"' . "\n";
         print $stream_file '        type="input;output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"' . "\n";
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -797,6 +852,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsCustomRestart"' . "\n";
         print $stream_file '        type="input;output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -814,6 +870,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="forcing"' . "\n";
 	print $stream_file '		type="none"' . "\n";
+	print $stream_file '		io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '		filename_template="mpaso.hist.forcing_variables.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '		filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate">' . "\n";

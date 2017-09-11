@@ -8,8 +8,8 @@ module dynCNDVMod
   ! !USES:
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
-  use LandunitType , only : lun                
-  use PatchType    , only : pft                
+  use LandunitType , only : lun_pp                
+  use VegetationType    , only : veg_pp                
   use CNDVType     , only : dgvs_type
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -43,8 +43,8 @@ contains
 
      if (nsrest == nsrStartup) then
         do p = bounds%begp,bounds%endp
-           dgvs_vars%fpcgrid_patch(p) = pft%wtcol(p)
-           dgvs_vars%fpcgridold_patch(p) = pft%wtcol(p)
+           dgvs_vars%fpcgrid_patch(p) = veg_pp%wtcol(p)
+           dgvs_vars%fpcgridold_patch(p) = veg_pp%wtcol(p)
         end do
      end if
 
@@ -91,11 +91,11 @@ contains
     call get_curr_date(year, mon, day, sec, offset=int(dtime))
 
     do p = bounds%begp,bounds%endp
-       g = pft%gridcell(p)
-       l = pft%landunit(p)
+       g = veg_pp%gridcell(p)
+       l = veg_pp%landunit(p)
 
-       if (lun%itype(l) == istsoil .and. lun%wtgcell(l) > 0._r8) then ! CNDV incompatible with dynLU
-          pft%wtcol(p)   = dgvs_vars%fpcgrid_patch(p) + &
+       if (lun_pp%itype(l) == istsoil .and. lun_pp%wtgcell(l) > 0._r8) then ! CNDV incompatible with dynLU
+          veg_pp%wtcol(p)   = dgvs_vars%fpcgrid_patch(p) + &
                     wt1 * (dgvs_vars%fpcgridold_patch(p) - dgvs_vars%fpcgrid_patch(p))
 
           if (mon==1 .and. day==1 .and. sec==dtime .and. nstep>0) then

@@ -92,6 +92,14 @@ Valid values: 'uniform', 'radial'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_glp" type="logical"
+	category="velocity_solver" group="velocity_solver">
+If true, then apply Albany's grounding line parameterization
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
@@ -703,6 +711,70 @@ Default: Defined in namelist_defaults.xml
 maximum water thickness in till
 
 Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_chnl_active" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+activate channels in subglacial hydrology model
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_chnl_alpha" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+power in flux formula
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_chnl_beta" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+power in flux formula
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_chnl_conduc_coeff" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+conductivity coefficient
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_chnl_creep_coefficient" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+creep closure coefficient
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_incipient_channel_width" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+width of sheet beneath/around channel that contributes to melt within the channel
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_include_pressure_melt" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+whether to include the pressure melt term in the channel opening
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_shmip_forcing" type="char*1024"
+	category="subglacial_hydro" group="subglacial_hydro">
+calculate time-varying forcing specified by SHMIP experiments C or D
+
+Valid values: 'none', 'C1'-'C4', 'D1'-'D5'
 Default: Defined in namelist_defaults.xml
 </entry>
 

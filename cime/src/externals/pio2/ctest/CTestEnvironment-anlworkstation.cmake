@@ -23,3 +23,8 @@ endif ()
 if (DEFINED ENV{VALGRIND_CHECK})
     set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DPIO_VALGRIND_CHECK=ON")
 endif ()
+
+# If USE_MALLOC environment variable is set, then use native malloc (instead of bget package)
+if (DEFINED ENV{USE_MALLOC})
+    set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DPIO_USE_MALLOC=ON")
+endif ()

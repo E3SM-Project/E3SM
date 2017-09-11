@@ -88,7 +88,7 @@ def check_lockedfiles(caseroot=None):
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
         # ignore files used for tests such as env_mach_pes.ERP1.xml by looking for extra dots in the name
-        if lfile.count('.') > 1:
+        if fpart.count('.') > 1:
             continue
         cfile = os.path.join(caseroot, fpart)
         if os.path.isfile(cfile):

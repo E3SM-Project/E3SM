@@ -25,6 +25,7 @@
       use m_List,         only : List_init => init
       use m_List,         only : List_clean => clean
 
+      use m_AttrVect,     only : Attrvect_zero => zero
       use m_SparseMatrix, only : SparseMatrix
       use m_SparseMatrix, only : SparseMatrix_Init => init
       use m_SparseMatrix, only : SparseMatrix_Clean => clean
@@ -155,6 +156,7 @@
   nRows = dst_dims(1) * dst_dims(2)
   nColumns = src_dims(1) * src_dims(2)
   call SparseMatrix_init(sMat, nRows, nColumns, num_elements)
+  call AttrVect_zero(sMat%data)
 
        ! ...and store them.
 

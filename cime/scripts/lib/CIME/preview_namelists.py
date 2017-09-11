@@ -40,7 +40,7 @@ def create_dirs(case):
         with open(os.path.join(dir_,"CASEROOT"),"w+") as fd:
             fd.write(caseroot+"\n")
 
-def create_namelists(case):
+def create_namelists(case, component=None):
     """
     Create component namelists
     """
@@ -73,36 +73,37 @@ def create_namelists(case):
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())
 
-        cmd = os.path.join(config_dir, "buildnml")
-        do_run_cmd = False
-        # This code will try to import and run each buildnml as a subroutine
-        # if that fails it will run it as a program in a seperate shell
-        try:
-            with open(cmd, 'r') as f:
-                first_line = f.readline()
-            if "python" in first_line:
-                mod = imp.load_source("buildnml", cmd)
-                logger.info("   Calling %s buildnml"%compname)
-                mod.buildnml(case, caseroot, compname)
-            else:
-                raise SyntaxError
-        except SyntaxError as detail:
-            if 'python' in first_line:
-                expect(False, detail)
-            else:
+        if component is None or component == model_str:
+            cmd = os.path.join(config_dir, "buildnml")
+            do_run_cmd = False
+            # This code will try to import and run each buildnml as a subroutine
+            # if that fails it will run it as a program in a seperate shell
+            try:
+                with open(cmd, 'r') as f:
+                    first_line = f.readline()
+                if "python" in first_line:
+                    mod = imp.load_source("buildnml", cmd)
+                    logger.info("   Calling %s buildnml"%compname)
+                    mod.buildnml(case, caseroot, compname)
+                else:
+                    raise SyntaxError
+            except SyntaxError as detail:
+                if 'python' in first_line:
+                    expect(False, detail)
+                else:
+                    do_run_cmd = True
+            except AttributeError:
                 do_run_cmd = True
-        except AttributeError:
-            do_run_cmd = True
-        except:
-            raise
+            except:
+                raise
 
-        if do_run_cmd:
-            logger.info("   Running %s buildnml"%compname)
-            case.flush()
-            output = run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
-            logger.info(output)
-            # refresh case xml object from file
-            case.read_xml()
+            if do_run_cmd:
+                logger.info("   Running %s buildnml"%compname)
+                case.flush()
+                output = run_cmd_no_fail("%s %s" % (cmd, caseroot), combine_output=True)
+                logger.info(output)
+                # refresh case xml object from file
+                case.read_xml()
 
     logger.info("Finished creating component namelists")
 

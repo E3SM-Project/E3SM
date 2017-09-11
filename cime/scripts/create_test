@@ -20,7 +20,6 @@ import argparse, math, glob
 
 logger = logging.getLogger(__name__)
 
-
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -226,9 +225,7 @@ OR
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     # generate and compare flags may not point to the same directory
     if model == "cesm":
@@ -355,7 +352,8 @@ OR
 
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
-        args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \
+        args.namelists_only, args.project, \
+        args.test_id, args.parallel_jobs, args.walltime, \
         args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
         args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir
 
@@ -371,6 +369,8 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
         project = CIME.utils.get_project(mach)
         if project is None:
             project = mach.get_value("PROJECT")
+
+    charge_account = CIME.utils.get_charge_account(mach)
 
     #
     # Compute arg list for second call to create_test
@@ -412,7 +412,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
         submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
         submit_args = env_batch.get_submit_args(case, "case.run")
 
-    tasks_per_node = int(mach.get_value("PES_PER_NODE"))
+    tasks_per_node = mach.get_value("PES_PER_NODE")
     num_nodes = int(math.ceil(float(proc_pool) / tasks_per_node))
     if wall_time is None:
         wall_time = compute_total_time(job_cost_map, proc_pool)
@@ -420,8 +420,8 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     else:
         wall_time_bab = wall_time
 
-    queue = env_batch.select_best_queue(proc_pool)
-    wall_time_max_bab = env_batch.get_max_walltime(queue)
+    queue = env_batch.select_best_queue(proc_pool, wall_time_bab)
+    wall_time_max_bab = env_batch.get_queue_specs(queue)[3]
     if wall_time_max_bab is not None:
         wall_time_max = convert_to_seconds(wall_time_max_bab)
         if wall_time_max < wall_time:
@@ -440,6 +440,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     directives = directives.replace("{{ job_queue }}", queue)
     if project is not None:
         directives = directives.replace("{{ project }}", project)
+    directives = directives.replace("{{ charge_account }}", charge_account)
 
     expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
 

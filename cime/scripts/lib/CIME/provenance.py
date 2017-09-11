@@ -16,14 +16,17 @@ def _get_batch_job_id_for_syslog(case):
     mach_syslog only works on certain machines
     """
     mach = case.get_value("MACH")
-    if mach in ['anvil', 'titan']:
-        return os.environ["PBS_JOBID"]
-    elif mach in ['edison', 'cori-haswell', 'cori-knl']:
-        return os.environ["SLURM_JOB_ID"]
-    elif mach == 'mira':
-        return os.environ["COBALT_JOBID"]
-    else:
-        return None
+    try:
+        if mach in ['anvil', 'titan']:
+            return os.environ["PBS_JOBID"]
+        elif mach in ['edison', 'cori-haswell', 'cori-knl']:
+            return os.environ["SLURM_JOB_ID"]
+        elif mach == 'mira':
+            return os.environ["COBALT_JOBID"]
+    except:
+        pass
+
+    return None
 
 def _save_build_provenance_acme(case, lid):
     cimeroot = case.get_value("CIMEROOT")
@@ -57,7 +60,8 @@ def _save_build_provenance_acme(case, lid):
     env_prov = os.path.join(exeroot, "build_environment.%s.txt" % lid)
     if os.path.exists(env_prov):
         os.remove(env_prov)
-    copy_umask(os.path.join(caseroot, "software_environment.txt"), env_prov)
+    env_module = case.get_env("mach_specific")
+    env_module.save_all_env_info(env_prov)
 
     # For all the just-created post-build provenance files, symlink a generic name
     # to them to indicate that these are the most recent or active.
@@ -111,39 +115,40 @@ def _save_prerun_timing_acme(case, lid):
 
     # For some batch machines save queue info
     job_id = _get_batch_job_id_for_syslog(case)
-    if mach == "mira":
-        for cmd, filename in [("qstat -f", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
-            filename = "%s.%s" % (filename, lid)
-            run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach in ["edison", "cori-haswell", "cori-knl"]:
-        for cmd, filename in [("sinfo -a -l", "sinfol"), ("sqs -f %s" % job_id, "sqsf_jobid"),
-                              # ("sqs -f", "sqsf"),
-                              ("squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'", "squeuef"),
-                              ("squeue -t R -o '%.10i %R'", "squeues")]:
-            filename = "%s.%s" % (filename, lid)
-            run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach == "titan":
-        for cmd, filename in [("qstat -f %s >" % job_id, "qstatf_jobid"),
-                              ("xtnodestat >", "xtnodestat"),
-                              # ("qstat -f >", "qstatf"),
-                              # ("xtdb2proc -f", "xtdb2proc"),
-                              ("showq >", "showq")]:
-            full_cmd = cmd + " " + filename
-            run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
+    if job_id is not None:
+        if mach == "mira":
+            for cmd, filename in [("qstat -f", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
+                filename = "%s.%s" % (filename, lid)
+                run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename))
+        elif mach in ["edison", "cori-haswell", "cori-knl"]:
+            for cmd, filename in [("sinfo -a -l", "sinfol"), ("sqs -f %s" % job_id, "sqsf_jobid"),
+                                  # ("sqs -f", "sqsf"),
+                                  ("squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'", "squeuef"),
+                                  ("squeue -t R -o '%.10i %R'", "squeues")]:
+                filename = "%s.%s" % (filename, lid)
+                run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename))
+        elif mach == "titan":
+            for cmd, filename in [("qstat -f %s >" % job_id, "qstatf_jobid"),
+                                  ("xtnodestat >", "xtnodestat"),
+                                  # ("qstat -f >", "qstatf"),
+                                  # ("xtdb2proc -f", "xtdb2proc"),
+                                  ("showq >", "showq")]:
+                full_cmd = cmd + " " + filename
+                run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
-        # mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
-        # run_cmd_no_fail("./mdiag_reduce.csh", arg_stdout=mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
-        # gzip_existing_file(mdiag_reduce)
-    elif mach == "anvil":
-        for cmd, filename in [("qstat -f -1 acme >", "qstatf"),
-                              ("qstat -f %s >" % job_id, "qstatf_jobid"),
-                              ("qstat -r acme >", "qstatr")]:
-            full_cmd = cmd + " " + filename
-            run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
+            # mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
+            # run_cmd_no_fail("./mdiag_reduce.csh", arg_stdout=mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
+            # gzip_existing_file(mdiag_reduce)
+        elif mach == "anvil":
+            for cmd, filename in [("qstat -f -1 acme >", "qstatf"),
+                                  ("qstat -f %s >" % job_id, "qstatf_jobid"),
+                                  ("qstat -r acme >", "qstatr")]:
+                full_cmd = cmd + " " + filename
+                run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
@@ -160,7 +165,7 @@ def _save_prerun_timing_acme(case, lid):
         "*.xml",
         "user_nl_*",
         "*env_mach_specific*",
-        "Macros",
+        "Macros*",
         "README.case",
         "Depends.%s" % mach,
         "Depends.%s" % compiler,
@@ -279,15 +284,16 @@ def _save_postrun_timing_acme(case, lid):
     # save output files and logs
     #
     globs_to_copy = []
-    if mach == "titan":
-        globs_to_copy.append("%s*OU" % job_id)
-    elif mach == "anvil":
-        globs_to_copy.append("/home/%s/%s*OU" % (getpass.getuser(), job_id))
-    elif mach == "mira":
-        globs_to_copy.append("%s*output" % job_id)
-        globs_to_copy.append("%s*cobaltlog" % job_id)
-    elif mach in ["edison", "cori-haswell", "cori-knl"]:
-        globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
+    if job_id is not None:
+        if mach == "titan":
+            globs_to_copy.append("%s*OU" % job_id)
+        elif mach == "anvil":
+            globs_to_copy.append("/home/%s/%s*OU" % (getpass.getuser(), job_id))
+        elif mach == "mira":
+            globs_to_copy.append("%s*output" % job_id)
+            globs_to_copy.append("%s*cobaltlog" % job_id)
+        elif mach in ["edison", "cori-haswell", "cori-knl"]:
+            globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
 
     globs_to_copy.append("logs/run_environment.txt.%s" % lid)
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)

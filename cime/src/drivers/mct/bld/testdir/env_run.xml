@@ -279,7 +279,7 @@
       <valid_values/>
       <desc>Where to auto archive timing data</desc>
     </entry>
-    <entry id="TIMER_LEVEL" value="12">
+    <entry id="TIMER_LEVEL" value="20">
       <type>integer</type>
       <desc>timer output depth</desc>
     </entry>

@@ -33,12 +33,22 @@ ADD_EXECUTABLE(example1 example1.c)
 TARGET_LINK_LIBRARIES(example1 pioc)
 add_dependencies(tests example1)
 
+ADD_EXECUTABLE(darray_no_async darray_no_async.c)
+TARGET_LINK_LIBRARIES(darray_no_async pioc)
+add_dependencies(tests darray_no_async)
+
+ADD_EXECUTABLE(darray_async darray_async.c)
+TARGET_LINK_LIBRARIES(darray_async pioc)
+add_dependencies(tests darray_async)
+
 if (PIO_USE_MPISERIAL)
   add_test(NAME examplePio COMMAND examplePio)
   add_test(NAME example1 COMMAND example1)
 else ()
   add_mpi_test(examplePio EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/examplePio NUMPROCS 4 TIMEOUT 60)
   add_mpi_test(example1 EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/example1 NUMPROCS 4 TIMEOUT 60)
+  #add_mpi_test(darray_async EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/darray_async NUMPROCS 5 TIMEOUT 60)
+  add_mpi_test(darray_no_async EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/darray_no_async NUMPROCS 4 TIMEOUT 60)
 endif ()
 
 

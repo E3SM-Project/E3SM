@@ -11,9 +11,9 @@ module CanopyStateType
   use clm_varcon      , only : spval  
   use clm_varpar      , only : nlevcan
   use clm_varctl      , only : iulog, use_cn, use_ed
-  use LandunitType    , only : lun                
-  use ColumnType      , only : col                
-  use PatchType       , only : pft                
+  use LandunitType    , only : lun_pp                
+  use ColumnType      , only : col_pp                
+  use VegetationType       , only : veg_pp                
   !
   implicit none
   save
@@ -426,7 +426,7 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
 
        this%frac_veg_nosno_patch(p) = 0._r8
        this%tlai_patch(p)       = 0._r8
@@ -437,7 +437,7 @@ contains
        this%hbot_patch(p)       = 0._r8
        this%dewmx_patch(p)      = 0.1_r8
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%laisun_patch(p) = 0._r8
           this%laisha_patch(p) = 0._r8
        end if
@@ -448,9 +448,9 @@ contains
     end do
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%alt_col(c)               = 0._r8 !iniitialized to spval for all columns
           this%altmax_col(c)            = 0._r8 !iniitialized to spval for all columns
           this%altmax_lastyear_col(c)   = 0._r8 !iniitialized to spval for all columns

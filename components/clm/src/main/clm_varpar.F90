@@ -36,9 +36,6 @@ module clm_varpar
   integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
-  !ED variables
-  integer, parameter :: nlevcan_ed  =   40    ! number of leaf layers in canopy layer
-  integer, parameter :: nclmax      =   2     ! max number of canopy layers
   integer, parameter :: numwat      =   5     ! number of water types (soil, ice, 2 lakes, wetland)
   integer, parameter :: numrad      =   2     ! number of solar radiation bands: vis, nir
   integer, parameter :: ivis        =   1     ! index for visible band

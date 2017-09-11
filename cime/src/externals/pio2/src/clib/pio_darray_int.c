@@ -25,6 +25,16 @@ extern void *CN_bpool;
 /* Maximum buffer usage. */
 extern PIO_Offset maxusage;
 
+/* handler for freeing the memory buffer pool */
+void bpool_free(void *p)
+{
+  free(p);
+  if(p == CN_bpool){
+    CN_bpool = NULL;
+  }
+}
+
+
 /**
  * Initialize the compute buffer to size pio_cnbuffer_limit.
  *
@@ -49,10 +59,10 @@ int compute_buffer_init(iosystem_desc_t *ios)
         if (!CN_bpool)
             return pio_err(ios, NULL, PIO_ENOMEM, __FILE__, __LINE__);
 
-        bectl(NULL, malloc, free, pio_cnbuffer_limit);
+        bectl(NULL, malloc, bpool_free, pio_cnbuffer_limit);
     }
 #endif
-    LOG((2, "compute_buffer_init CN_bpool = %d", CN_bpool));
+    LOG((2, "compute_buffer_init complete"));
 
     return PIO_NOERR;
 }
@@ -60,7 +70,7 @@ int compute_buffer_init(iosystem_desc_t *ios)
 /**
  * Write a set of one or more aggregated arrays to output file. This
  * function is only used with parallel-netcdf and netcdf-4 parallel
- * iotypes. Serial io types use pio_write_darray_multi_nc_serial().
+ * iotypes. Serial io types use write_darray_multi_serial().
  *
  * @param file a pointer to the open file descriptor for the file
  * that will be written to
@@ -85,7 +95,7 @@ int compute_buffer_init(iosystem_desc_t *ios)
  * less than blocksize*numiotasks then some iotasks will have a NULL
  * iobuf.
  * @param frame the frame or record dimension for each of the nvars
- * variables in iobuf.
+ * variables in iobuf.  NULL if this iodesc contains non-record vars.
  * @return 0 for success, error code otherwise.
  * @ingroup PIO_write_darray
  */
@@ -122,7 +132,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, int nvars, const int *vid, int 
     vdesc = file->varlist + vid[0];
 
     /* If async is in use, send message to IO master task. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -351,6 +361,298 @@ int pio_write_darray_multi_nc(file_desc_t *file, int nvars, const int *vid, int 
 }
 
 /**
+ * Fill the tmp_start and tmp_count arrays, which contain the start
+ * and count arrays for all regions.
+ *
+ * This is an internal function which is only called on io tasks. It
+ * is called by write_darray_multi_serial().
+ *
+ * @param region pointer to the first in a linked list of regions.
+ * @param maxregions the number of regions in the list.
+ * @param fndims the number of dimensions in the file.
+ * @param iodesc_ndims the number of dimensions in the decomposition.
+ * @param vdesc pointer to an array of var_desc_t for the vars being
+ * written.
+ * @param tmp_start pointer to an already allocaed array of length
+ * fndims * maxregions. This array will get the start values for all
+ * regions.
+ * @param tmp_count pointer to an already allocaed array of length
+ * fndims * maxregions. This array will get the count values for all
+ * regions.
+ * @returns 0 for success, error code otherwise.
+ * @ingroup PIO_read_darray
+ **/
+int find_all_start_count(io_region *region, int maxregions, int fndims,
+                         int iodesc_ndims, var_desc_t *vdesc, size_t *tmp_start,
+                         size_t *tmp_count)
+{
+    /* Check inputs. */
+    pioassert(maxregions >= 0 && fndims > 0 && iodesc_ndims >= 0 && vdesc &&
+              tmp_start && tmp_count, "invalid input", __FILE__, __LINE__);
+
+    /* Find the start/count arrays for each region in the list. */
+    for (int r = 0; r < maxregions; r++)
+    {
+        /* Initialize the start/count arrays for this region to 0. */
+        for (int d = 0; d < fndims; d++)
+        {
+            tmp_start[d + r * fndims] = 0;
+            tmp_count[d + r * fndims] = 0;
+        }
+
+        if (region)
+        {
+            if (vdesc->record >= 0)
+            {
+                /* This is a record based multidimensional
+                 * array. Copy start/count for non-record
+                 * dimensions. */
+                for (int i = fndims - iodesc_ndims; i < fndims; i++)
+                {
+                    tmp_start[i + r * fndims] = region->start[i - (fndims - iodesc_ndims)];
+                    tmp_count[i + r * fndims] = region->count[i - (fndims - iodesc_ndims)];
+                    LOG((3, "tmp_start[%d] = %d tmp_count[%d] = %d", i + r * fndims,
+                         tmp_start[i + r * fndims], i + r * fndims,
+                         tmp_count[i + r * fndims]));
+                }
+            }
+            else
+            {
+                /* This is not a record based multidimensional array. */
+                for (int i = 0; i < iodesc_ndims; i++)
+                {
+                    tmp_start[i + r * fndims] = region->start[i];
+                    tmp_count[i + r * fndims] = region->count[i];
+                    LOG((3, "tmp_start[%d] = %d tmp_count[%d] = %d", i + r * fndims,
+                         tmp_start[i + r * fndims], i + r * fndims,
+                         tmp_count[i + r * fndims]));
+                }
+            }
+
+            /* Move to next region. */
+            region = region->next;
+
+        } /* endif region */
+    } /* next r */
+
+    return PIO_NOERR;
+}
+
+/**
+ * Internal function called by IO tasks other than IO task 0 to send
+ * their tmp_start/tmp_count arrays to IO task 0.
+ *
+ * This is an internal function which is only called on io tasks other
+ * than IO task 0. It is called by write_darray_multi_serial().
+ *
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
+ **/
+int send_all_start_count(iosystem_desc_t *ios, io_desc_t *iodesc, PIO_Offset llen,
+                         int maxregions, int nvars, int fndims, size_t *tmp_start,
+                         size_t *tmp_count, void *iobuf)
+{
+    MPI_Status status;     /* Recv status for MPI. */
+    int mpierr;  /* Return code from MPI function codes. */
+    int ierr;    /* Return code. */
+
+    /* Check inputs. */
+    pioassert(ios && ios->ioproc && ios->io_rank > 0 && maxregions >= 0,
+              "invalid inputs", __FILE__, __LINE__);
+
+    /* Do a handshake. */
+    if ((mpierr = MPI_Recv(&ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status)))
+        return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+
+    /* Send local length of iobuffer for each field (all
+     * fields are the same length). */
+    if ((mpierr = MPI_Send((void *)&llen, 1, MPI_OFFSET, 0, ios->io_rank, ios->io_comm)))
+        return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+    LOG((3, "sent llen = %d", llen));
+
+    /* Send the number of data regions, the start/count for
+     * all regions, and the data buffer with all the data. */
+    if (llen > 0)
+    {
+        if ((mpierr = MPI_Send((void *)&maxregions, 1, MPI_INT, 0, ios->io_rank + ios->num_iotasks,
+                               ios->io_comm)))
+            return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+        if ((mpierr = MPI_Send(tmp_start, maxregions * fndims, MPI_OFFSET, 0,
+                               ios->io_rank + 2 * ios->num_iotasks, ios->io_comm)))
+            return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+        if ((mpierr = MPI_Send(tmp_count, maxregions * fndims, MPI_OFFSET, 0,
+                               ios->io_rank + 3 * ios->num_iotasks, ios->io_comm)))
+            return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+        if ((mpierr = MPI_Send(iobuf, nvars * llen, iodesc->basetype, 0,
+                               ios->io_rank + 4 * ios->num_iotasks, ios->io_comm)))
+            return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+        LOG((3, "sent data for maxregions = %d", maxregions));
+    }
+
+    return PIO_NOERR;
+}
+
+/**
+ * This is an internal function that is run only on IO proc 0. It
+ * receives data from all the other IO tasks, and write that data to
+ * disk. This is called from write_darray_multi_serial().
+ *
+ * @param file a pointer to the open file descriptor for the file
+ * that will be written to.
+ * @param vid an array of the variable ids to be written
+ * @param frame the record dimension for each of the nvars variables
+ * in iobuf.  NULL if this iodesc contains non-record vars.
+ * @param iodesc pointer to the decomposition info.
+ * @param llen length of the iobuffer on this task for a single
+ * field.
+ * @param maxregions max number of blocks to be written from this
+ * iotask.
+ * @param nvars the number of variables to be written with this
+ * decomposition.
+ * @param fndims the number of dimensions in the file.
+ * @param tmp_start pointer to an already allocaed array of length
+ * fndims * maxregions. This array will get the start values for all
+ * regions.
+ * @param tmp_count pointer to an already allocaed array of length
+ * fndims * maxregions. This array will get the count values for all
+ * regions.
+ * @param iobuf the buffer to be written from this mpi task. May be
+ * null. for example we have 8 ionodes and a distributed array with
+ * global size 4, then at least 4 nodes will have a null iobuf. In
+ * practice the box rearranger trys to have at least blocksize bytes
+ * on each io task and so if the total number of bytes to write is
+ * less than blocksize*numiotasks then some iotasks will have a NULL
+ * iobuf.
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
+ */
+int recv_and_write_data(file_desc_t *file, const int *vid, const int *frame,
+                        io_desc_t *iodesc, PIO_Offset llen, int maxregions, int nvars,
+                        int fndims, size_t *tmp_start, size_t *tmp_count, void *iobuf)
+{
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    size_t rlen;    /* Length of IO buffer on this task. */
+    int rregions;   /* Number of regions in buffer for this task. */
+    size_t start[fndims], count[fndims];
+    size_t loffset;
+    void *bufptr;
+    var_desc_t *vdesc;     /* Contains info about the variable. */
+    MPI_Status status;     /* Recv status for MPI. */
+    int mpierr;  /* Return code from MPI function codes. */
+    int ierr;    /* Return code. */
+
+    ios = file->iosystem;
+
+    /* For each of the other tasks that are using this task
+     * for IO. */
+    for (int rtask = 0; rtask < ios->num_iotasks; rtask++)
+    {
+        /* From the remote tasks, we send information about
+         * the data regions. and also the data. */
+        if (rtask)
+        {
+            /* handshake - tell the sending task I'm ready */
+            if ((mpierr = MPI_Send(&ierr, 1, MPI_INT, rtask, 0, ios->io_comm)))
+                return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+
+            /* Get length of iobuffer for each field on this
+             * task (all fields are the same length). */
+            if ((mpierr = MPI_Recv(&rlen, 1, MPI_OFFSET, rtask, rtask, ios->io_comm,
+                                   &status)))
+                return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+            LOG((3, "received rlen = %d", rlen));
+
+            /* Get the number of regions, the start/count
+             * values for all regions, and the data buffer. */
+            if (rlen > 0)
+            {
+                if ((mpierr = MPI_Recv(&rregions, 1, MPI_INT, rtask, rtask + ios->num_iotasks,
+                                       ios->io_comm, &status)))
+                    return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+                if ((mpierr = MPI_Recv(tmp_start, rregions * fndims, MPI_OFFSET, rtask,
+                                       rtask + 2 * ios->num_iotasks, ios->io_comm, &status)))
+                    return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+                if ((mpierr = MPI_Recv(tmp_count, rregions * fndims, MPI_OFFSET, rtask,
+                                       rtask + 3 * ios->num_iotasks, ios->io_comm, &status)))
+                    return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+                if ((mpierr = MPI_Recv(iobuf, nvars * rlen, iodesc->basetype, rtask,
+                                       rtask + 4 * ios->num_iotasks, ios->io_comm, &status)))
+                    return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+                LOG((3, "received data rregions = %d fndims = %d", rregions, fndims));
+            }
+        }
+        else /* task 0 */
+        {
+            rlen = llen;
+            rregions = maxregions;
+        }
+        LOG((3, "rtask = %d rlen = %d rregions = %d", rtask, rlen, rregions));
+
+        /* If there is data from this task, write it. */
+        if (rlen > 0)
+        {
+            loffset = 0;
+            for (int regioncnt = 0; regioncnt < rregions; regioncnt++)
+            {
+                LOG((3, "writing data for region with regioncnt = %d", regioncnt));
+
+                /* Get the start/count arrays for this region. */
+                for (int i = 0; i < fndims; i++)
+                {
+                    start[i] = tmp_start[i + regioncnt * fndims];
+                    count[i] = tmp_count[i + regioncnt * fndims];
+                    LOG((3, "start[%d] = %d count[%d] = %d", i, start[i], i, count[i]));
+                }
+
+                /* Process each variable in the buffer. */
+                for (int nv = 0; nv < nvars; nv++)
+                {
+                    LOG((3, "writing buffer var %d", nv));
+                    vdesc = file->varlist + vid[0];
+
+                    /* Get a pointer to the correct part of the buffer. */
+                    bufptr = (void *)((char *)iobuf + iodesc->basetype_size * (nv * rlen + loffset));
+
+                    /* If this var has an unlimited dim, set
+                     * the start on that dim to the frame
+                     * value for this variable. */
+                    if (vdesc->record >= 0)
+                    {
+                        if (fndims > 1 && iodesc->ndims < fndims && count[1] > 0)
+                        {
+                            count[0] = 1;
+                            start[0] = frame[nv];
+                        }
+                        else if (fndims == iodesc->ndims)
+                        {
+                            start[0] += vdesc->record;
+                        }
+                    }
+
+                    /* Call the netCDF functions to write the data. */
+                    if ((ierr = nc_put_vara(file->fh, vid[nv], start, count, bufptr)))
+                        return check_netcdf2(ios, NULL, ierr, __FILE__, __LINE__);
+
+                } /* next var */
+
+                /* Calculate the total size. */
+                size_t tsize = 1;
+                for (int i = 0; i < fndims; i++)
+                    tsize *= count[i];
+
+                /* Keep track of where we are in the buffer. */
+                loffset += tsize;
+
+                LOG((3, " at bottom of loop regioncnt = %d tsize = %d loffset = %d", regioncnt,
+                     tsize, loffset));
+            } /* next regioncnt */
+        } /* endif (rlen > 0) */
+    } /* next rtask */
+
+    return PIO_NOERR;
+}
+
+/**
  * Write a set of one or more aggregated arrays to output file in
  * serial mode. This function is called for netCDF classic and
  * netCDF-4 serial iotypes. Parallel iotypes use
@@ -361,16 +663,13 @@ int pio_write_darray_multi_nc(file_desc_t *file, int nvars, const int *vid, int 
  * @param nvars the number of variables to be written with this
  * decomposition.
  * @param vid an array of the variable ids to be written
- * @param iodesc_ndims the number of dimensions explicitly in the
- * iodesc.
- * @param basetype the basic type of the minimal data unit
+ * @param iodesc pointer to the decomposition info.
  * @param maxregions max number of blocks to be written from this
  * iotask.
  * @param firstregion pointer to the first element of a linked
  * list of region descriptions. May be NULL.
  * @param llen length of the iobuffer on this task for a single
  * field.
- * @param num_aiotasks actual number of iotasks participating
  * @param iobuf the buffer to be written from this mpi task. May be
  * null. for example we have 8 ionodes and a distributed array with
  * global size 4, then at least 4 nodes will have a null iobuf. In
@@ -379,48 +678,47 @@ int pio_write_darray_multi_nc(file_desc_t *file, int nvars, const int *vid, int 
  * less than blocksize*numiotasks then some iotasks will have a NULL
  * iobuf.
  * @param frame the record dimension for each of the nvars variables
- * in iobuf.
+ * in iobuf.  NULL if this iodesc contains non-record vars.
  * @return 0 for success, error code otherwise.
  * @ingroup PIO_write_darray
  */
-int pio_write_darray_multi_nc_serial(file_desc_t *file, int nvars, const int *vid, int iodesc_ndims,
-                                     MPI_Datatype basetype, int maxregions, io_region *firstregion,
-                                     PIO_Offset llen, int num_aiotasks, void *iobuf,
-                                     const int *frame)
+int write_darray_multi_serial(file_desc_t *file, int nvars, const int *vid,
+                              io_desc_t *iodesc, int fill, const int *frame)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;     /* Contains info about the variable. */
-    int dsize;             /* Size in bytes of one element of basetype. */
     int fndims;            /* Number of dims in the var in the file. */
-    int tsize;             /* Size of the MPI type, in bytes. */
-    MPI_Status status;     /* Recv status for MPI. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     int ierr;              /* Return code. */
 
     /* Check inputs. */
-    pioassert(file && file->iosystem && vid && vid[0] >= 0 && vid[0] <= PIO_MAX_VARS,
-              "invalid input", __FILE__, __LINE__);
+    pioassert(file && file->iosystem && file->varlist && vid && vid[0] >= 0 &&
+              vid[0] <= PIO_MAX_VARS && iodesc, "invalid input", __FILE__, __LINE__);
 
-    LOG((1, "pio_write_darray_multi_nc_serial nvars = %d iodesc_ndims = %d basetype = %d "
-         "maxregions = %d llen = %d num_aiotasks = %d", nvars, iodesc_ndims,
-         basetype, maxregions, llen, num_aiotasks));
-
-#ifdef TIMING
-    /* Start timing this function. */
-    GPTLstart("PIO:write_darray_multi_nc_serial");
-#endif
+    LOG((1, "write_darray_multi_serial nvars = %d iodesc->ndims = %d iodesc->basetype = %d",
+         nvars, iodesc->ndims, iodesc->basetype));
 
     /* Get the iosystem info. */
     ios = file->iosystem;
 
     /* Get the var info. */
     vdesc = file->varlist + vid[0];
+    LOG((2, "vdesc record %d ndims %d nreqs %d ios->async = %d", vdesc->record,
+         vdesc->ndims, vdesc->nreqs, ios->async));
 
-    LOG((2, "vdesc record %d ndims %d nreqs %d ios->async_interface = %d", vdesc->record,
-         vdesc->ndims, vdesc->nreqs, ios->async_interface));
+    /* Set these differently for data and fill writing. */
+    int num_regions = fill ? iodesc->maxfillregions: iodesc->maxregions;
+    io_region *region = fill ? iodesc->fillregion : iodesc->firstregion;
+    PIO_Offset llen = fill ? iodesc->holegridsize : iodesc->llen;
+    void *iobuf = fill ? vdesc->fillbuf : vdesc->iobuf;
+
+#ifdef TIMING
+    /* Start timing this function. */
+    GPTLstart("PIO:write_darray_multi_nc_serial");
+#endif
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
+    if (ios->async)
     {
         if (!ios->ioproc)
         {
@@ -444,220 +742,36 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, int nvars, const int *vi
     if ((ierr = PIOc_inq_varndims(file->pio_ncid, vid[0], &fndims)))
         return pio_err(ios, file, ierr, __FILE__, __LINE__);
 
-    /* Get the size of the type. */
-    if ((mpierr = MPI_Type_size(basetype, &tsize)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
-    LOG((3, "fndims = %d tsize = %d", fndims, tsize));
-
     /* Only IO tasks participate in this code. */
     if (ios->ioproc)
     {
-        io_region *region;
-        void *bufptr;
-        size_t tmp_start[fndims * maxregions]; /* A start array for each region. */
-        size_t tmp_count[fndims * maxregions]; /* A count array for each region. */
+        size_t tmp_start[fndims * num_regions]; /* A start array for each region. */
+        size_t tmp_count[fndims * num_regions]; /* A count array for each region. */
 
-        LOG((3, "maxregions = %d", maxregions));
+        LOG((3, "num_regions = %d", num_regions));
 
         /* Fill the tmp_start and tmp_count arrays, which contain the
          * start and count arrays for all regions. */
-        region = firstregion;
-        for (int regioncnt = 0; regioncnt < maxregions; regioncnt++)
-        {
-            /* Initialize the start/count arrays for this region to 0. */
-            for (int i = 0; i < fndims; i++)
-            {
-                tmp_start[i + regioncnt * fndims] = 0;
-                tmp_count[i + regioncnt * fndims] = 0;
-            }
-
-            if (region)
-            {
-                if (vdesc->record >= 0)
-                {
-                    /* This is a record based multidimensional
-                     * array. Copy start/count for non-record
-                     * dimensions. */
-                    for (int i = fndims - iodesc_ndims; i < fndims; i++)
-                    {
-                        tmp_start[i + regioncnt * fndims] = region->start[i - (fndims - iodesc_ndims)];
-                        tmp_count[i + regioncnt * fndims] = region->count[i - (fndims - iodesc_ndims)];
-                        LOG((3, "tmp_start[%d] = %d tmp_count[%d] = %d", i + regioncnt * fndims,
-                             tmp_start[i + regioncnt * fndims], i + regioncnt * fndims,
-                             tmp_count[i + regioncnt * fndims]));
-                    }
-                }
-                else
-                {
-                    /* This is not a record based multidimensional array. */
-                    for (int i = 0; i < iodesc_ndims; i++)
-                    {
-                        tmp_start[i + regioncnt * fndims] = region->start[i];
-                        tmp_count[i + regioncnt * fndims] = region->count[i];
-                        LOG((3, "tmp_start[%d] = %d tmp_count[%d] = %d", i + regioncnt * fndims,
-                             tmp_start[i + regioncnt * fndims], i + regioncnt * fndims,
-                             tmp_count[i + regioncnt * fndims]));
-                    }
-                }
-
-                /* Move to next region. */
-                region = region->next;
-
-            } /* endif region */
-        } /* next regioncnt */
+        if ((ierr = find_all_start_count(region, num_regions, fndims, iodesc->ndims, vdesc,
+                                         tmp_start, tmp_count)))
+            return pio_err(ios, file, ierr, __FILE__, __LINE__);
 
         /* Tasks other than 0 will send their data to task 0. */
         if (ios->io_rank > 0)
         {
-            /* Do a handshake. */
-            if ((mpierr = MPI_Recv(&ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status)))
-                return check_mpi(file, mpierr, __FILE__, __LINE__);
-
-            /* Send local length of iobuffer for each field (all
-             * fields are the same length). */
-            if ((mpierr = MPI_Send((void *)&llen, 1, MPI_OFFSET, 0, ios->io_rank, ios->io_comm)))
-                return check_mpi(file, mpierr, __FILE__, __LINE__);
-            LOG((3, "sent llen = %d", llen));
-
-            /* Send the number of data regions, the start/count for
-             * all regions, and the data buffer with all the data. */
-            if (llen > 0)
-            {
-                if ((mpierr = MPI_Send((void *)&maxregions, 1, MPI_INT, 0, ios->io_rank + ios->num_iotasks, ios->io_comm)))
-                    return check_mpi(file, mpierr, __FILE__, __LINE__);
-                if ((mpierr = MPI_Send(tmp_start, maxregions * fndims, MPI_OFFSET, 0, ios->io_rank + 2 * ios->num_iotasks,
-                                       ios->io_comm)))
-                    return check_mpi(file, mpierr, __FILE__, __LINE__);
-                if ((mpierr = MPI_Send(tmp_count, maxregions * fndims, MPI_OFFSET, 0, ios->io_rank + 3 * ios->num_iotasks,
-                                       ios->io_comm)))
-                    return check_mpi(file, mpierr, __FILE__, __LINE__);
-                if ((mpierr = MPI_Send(iobuf, nvars * llen, basetype, 0, ios->io_rank + 4 * ios->num_iotasks, ios->io_comm)))
-                    return check_mpi(file, mpierr, __FILE__, __LINE__);
-                LOG((3, "sent data for maxregions = %d", maxregions));
-            }
+            /* Send the tmp_start and tmp_count arrays from this IO task
+             * to task 0. */
+            if ((ierr = send_all_start_count(ios, iodesc, llen, num_regions, nvars, fndims,
+                                             tmp_start, tmp_count, iobuf)))
+                return pio_err(ios, file, ierr, __FILE__, __LINE__);
         }
         else
         {
             /* Task 0 will receive data from all other IO tasks. */
-            size_t rlen;    /* Length of IO buffer on this task. */
-            int rregions;   /* Number of regions in buffer for this task. */
-            size_t start[fndims], count[fndims];
-            size_t loffset;
 
-            /* Get the size of the MPI data type. */
-            if ((mpierr = MPI_Type_size(basetype, &dsize)))
-                return check_mpi(file, mpierr, __FILE__, __LINE__);
-            LOG((3, "dsize = %d", dsize));
-
-            /* For each of the other tasks that are using this task
-             * for IO. */
-            for (int rtask = 0; rtask < ios->num_iotasks; rtask++)
-            {
-                /* From the remote tasks, we send information about
-                 * the data regions. and also the data. */
-                if (rtask)
-                {
-                    /* handshake - tell the sending task I'm ready */
-                    if ((mpierr = MPI_Send(&ierr, 1, MPI_INT, rtask, 0, ios->io_comm)))
-                        return check_mpi(file, mpierr, __FILE__, __LINE__);
-
-                    /* Get length of iobuffer for each field on this
-                     * task (all fields are the same length). */
-                    if ((mpierr = MPI_Recv(&rlen, 1, MPI_OFFSET, rtask, rtask, ios->io_comm, &status)))
-                        return check_mpi(file, mpierr, __FILE__, __LINE__);
-                    LOG((3, "received rlen = %d", rlen));
-
-                    /* Get the number of regions, the start/count
-                     * values for all regions, and the data buffer. */
-                    if (rlen > 0)
-                    {
-                        if ((mpierr = MPI_Recv(&rregions, 1, MPI_INT, rtask, rtask + ios->num_iotasks,
-                                               ios->io_comm, &status)))
-                            return check_mpi(file, mpierr, __FILE__, __LINE__);
-                        if ((mpierr = MPI_Recv(tmp_start, rregions * fndims, MPI_OFFSET, rtask, rtask + 2 * ios->num_iotasks,
-                                               ios->io_comm, &status)))
-                            return check_mpi(file, mpierr, __FILE__, __LINE__);
-                        if ((mpierr = MPI_Recv(tmp_count, rregions * fndims, MPI_OFFSET, rtask, rtask + 3 * ios->num_iotasks,
-                                               ios->io_comm, &status)))
-                            return check_mpi(file, mpierr, __FILE__, __LINE__);
-                        if ((mpierr = MPI_Recv(iobuf, nvars * rlen, basetype, rtask, rtask + 4 * ios->num_iotasks, ios->io_comm,
-                                               &status)))
-                            return check_mpi(file, mpierr, __FILE__, __LINE__);
-                        LOG((3, "received data rregions = %d fndims = %d", rregions, fndims));
-                    }
-                }
-                else /* task 0 */
-                {
-                    rlen = llen;
-                    rregions = maxregions;
-                }
-                LOG((3, "rtask = %d rlen = %d rregions = %d", rtask, rlen, rregions));
-
-                /* If there is data from this task, write it. */
-                if (rlen > 0)
-                {
-                    loffset = 0;
-                    for (int regioncnt = 0; regioncnt < rregions; regioncnt++)
-                    {
-                        LOG((3, "writing data for region with regioncnt = %d", regioncnt));
-
-                        /* Get the start/count arrays for this region. */
-                        for (int i = 0; i < fndims; i++)
-                        {
-                            start[i] = tmp_start[i + regioncnt * fndims];
-                            count[i] = tmp_count[i + regioncnt * fndims];
-                            LOG((3, "start[%d] = %d count[%d] = %d", i, start[i], i, count[i]));
-                        }
-
-                        /* Process each variable in the buffer. */
-                        for (int nv = 0; nv < nvars; nv++)
-                        {
-                            LOG((3, "writing buffer var %d", nv));
-
-                            /* Get a pointer to the correct part of the buffer. */
-                            bufptr = (void *)((char *)iobuf + tsize * (nv * rlen + loffset));
-
-                            /* If this var has an unlimited dim, set
-                             * the start on that dim to the frame
-                             * value for this variable. */
-                            if (vdesc->record >= 0)
-                            {
-                                if (fndims > 1 && iodesc_ndims < fndims && count[1] > 0)
-                                {
-                                    count[0] = 1;
-                                    start[0] = frame[nv];
-                                }
-                                else if (fndims == iodesc_ndims)
-                                {
-                                    start[0] += vdesc->record;
-                                }
-                            }
-
-                            /* Call the netCDF functions to write the data. */
-                            ierr = nc_put_vara(file->fh, vid[nv], start, count, bufptr);
-
-                            if (ierr)
-                            {
-                                for (int i = 0; i < fndims; i++)
-                                    fprintf(stderr, "vid %d dim %d start %ld count %ld \n", vid[nv], i,
-                                            start[i], count[i]);
-                                return check_netcdf(file, ierr, __FILE__, __LINE__);
-                            }
-                        } /* next var */
-
-                        /* Calculate the total size. */
-                        size_t tsize = 1;
-                        for (int i = 0; i < fndims; i++)
-                            tsize *= count[i];
-
-                        /* Keep track of where we are in the buffer. */
-                        loffset += tsize;
-
-                        LOG((3, " at bottom of loop regioncnt = %d tsize = %d loffset = %d", regioncnt,
-                             tsize, loffset));
-                    } /* next regioncnt */
-                } /* endif (rlen > 0) */
-            } /* next rtask */
+            if ((ierr = recv_and_write_data(file, vid, frame, iodesc, llen, num_regions, nvars, fndims,
+                                            tmp_start, tmp_count, iobuf)))
+                return pio_err(ios, file, ierr, __FILE__, __LINE__);
         }
     }
 
@@ -692,7 +806,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
     var_desc_t *vdesc;     /* Information about the variable. */
     int ndims;             /* Number of dims in decomposition. */
     int fndims;            /* Number of dims for this var in file. */
-    int mpierr;            /* Return code from MPI functions. */
     int ierr;              /* Return code from netCDF functions. */
 
     /* Check inputs. */
@@ -729,7 +842,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
         size_t count[fndims];
         size_t tmp_bufsize = 1;
         void *bufptr;
-        int tsize;
         int rrlen = 0;
         PIO_Offset *startlist[iodesc->maxregions];
         PIO_Offset *countlist[iodesc->maxregions];
@@ -738,10 +850,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
            the iodessc->basetype so we need to multiply by the size of
            the basetype. */
         region = iodesc->firstregion;
-
-        /* Get the size of the MPI type. */
-        if ((mpierr = MPI_Type_size(iodesc->basetype, &tsize)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
 
         /* ??? */
         if (fndims > ndims)
@@ -771,7 +879,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                 if (regioncnt == 0 || region == NULL)
                     bufptr = iobuf;
                 else
-                    bufptr=(void *)((char *)iobuf + tsize * region->loffset);
+                    bufptr=(void *)((char *)iobuf + iodesc->basetype_size * region->loffset);
 
                 LOG((2, "%d %d %d", iodesc->llen - region->loffset, iodesc->llen, region->loffset));
 
@@ -932,16 +1040,11 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
         size_t tmp_count[fndims * iodesc->maxregions];
         size_t tmp_bufsize;
         void *bufptr;
-        int tsize;
 
         /* buffer is incremented by byte and loffset is in terms of
            the iodessc->basetype so we need to multiply by the size of
            the basetype. */
         region = iodesc->firstregion;
-
-        /* Get the size of the MPI type. */
-        if ((mpierr = MPI_Type_size(iodesc->basetype, &tsize)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
 
         if (fndims > ndims)
         {
@@ -1074,7 +1177,7 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
                 for (int regioncnt = 0; regioncnt < maxregions; regioncnt++)
                 {
                     /* Get pointer where data should go. */
-                    bufptr = (void *)((char *)iobuf + tsize * loffset);
+                    bufptr = (void *)((char *)iobuf + iodesc->basetype_size * loffset);
                     regionsize = 1;
 
                     /* ??? */
@@ -1151,7 +1254,9 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 
     /* Find out the buffer usage. */
     if ((ierr = ncmpi_inq_buffer_usage(file->fh, &usage)))
-	return pio_err(NULL, file, PIO_EBADID, __FILE__, __LINE__);
+	/* allow the buffer to be undefined */
+	if (ierr != NC_ENULLABUF)
+	    return pio_err(NULL, file, PIO_EBADID, __FILE__, __LINE__);
 
     /* If we are not forcing a flush, spread the usage to all IO
      * tasks. */
@@ -1223,6 +1328,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
             vdesc = file->varlist + i;
             if (vdesc->iobuf)
             {
+		LOG((3,"freeing variable buffer in flush_output_buffer"));
                 brel(vdesc->iobuf);
                 vdesc->iobuf = NULL;
             }
@@ -1298,6 +1404,7 @@ void free_cn_buffer_pool(iosystem_desc_t *ios)
 {
 #if !PIO_USE_MALLOC
     LOG((2, "free_cn_buffer_pool CN_bpool = %d", CN_bpool));
+    /* Note: it is possible that CN_bpool has been freed and set to NULL by bpool_free() */
     if (CN_bpool)
     {
         cn_buffer_report(ios, false);
@@ -1312,9 +1419,9 @@ void free_cn_buffer_pool(iosystem_desc_t *ios)
 /**
  * Flush the buffer.
  *
- * @param ncid identifies the netCDF file
- * @param wmb May be NULL, in which case function returns.
- * @param flushtodisk
+ * @param ncid identifies the netCDF file.
+ * @param wmb pointer to the wmulti_buffer structure.
+ * @param flushtodisk if true, then flush data to disk.
  * @returns 0 for success, error code otherwise.
  * @ingroup PIO_write_darray
  */
@@ -1333,14 +1440,14 @@ int flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk)
     LOG((1, "flush_buffer ncid = %d flushtodisk = %d", ncid, flushtodisk));
 
     /* If there are any variables in this buffer... */
-    if (wmb->validvars > 0)
+    if (wmb->num_arrays > 0)
     {
         /* Write any data in the buffer. */
-        ret = PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars,
+        ret = PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->num_arrays,
                                       wmb->arraylen, wmb->data, wmb->frame,
                                       wmb->fillvalue, flushtodisk);
 
-        wmb->validvars = 0;
+        wmb->num_arrays = 0;
 
         /* Release the list of variable IDs. */
         brel(wmb->vid);
@@ -1368,11 +1475,11 @@ int flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk)
 }
 
 /**
- * Compute the maximum aggregate number of bytes.
+ * Compute the maximum aggregate number of bytes. This is called by
+ * subset_rearrange_create() and box_rearrange_create().
  *
- * @param ios the IO system structure
- * @param iodesc a pointer to the defined iodescriptor for the
- * buffer. If NULL, function returns immediately.
+ * @param ios pointer to the IO system structure.
+ * @param iodesc a pointer to decomposition description.
  * @returns 0 for success, error code otherwise.
  */
 int compute_maxaggregate_bytes(iosystem_desc_t *ios, io_desc_t *iodesc)
@@ -1388,19 +1495,27 @@ int compute_maxaggregate_bytes(iosystem_desc_t *ios, io_desc_t *iodesc)
     LOG((2, "compute_maxaggregate_bytes iodesc->maxiobuflen = %d iodesc->ndof = %d",
          iodesc->maxiobuflen, iodesc->ndof));
 
+    /* Determine the max bytes that can be held on IO task. */
     if (ios->ioproc && iodesc->maxiobuflen > 0)
         maxbytesoniotask = pio_buffer_size_limit / iodesc->maxiobuflen;
 
+    /* Determine the max bytes that can be held on computation task. */
     if (ios->comp_rank >= 0 && iodesc->ndof > 0)
         maxbytesoncomputetask = pio_cnbuffer_limit / iodesc->ndof;
 
+    /* Take the min of the max IO and max comp bytes. */
     maxbytes = min(maxbytesoniotask, maxbytesoncomputetask);
     LOG((2, "compute_maxaggregate_bytes maxbytesoniotask = %d maxbytesoncomputetask = %d",
          maxbytesoniotask, maxbytesoncomputetask));
 
+    /* Get the min value of this on all tasks. */
+    LOG((3, "before allreaduce maxbytes = %d", maxbytes));
     if ((mpierr = MPI_Allreduce(MPI_IN_PLACE, &maxbytes, 1, MPI_INT, MPI_MIN,
                                 ios->union_comm)))
         return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+    LOG((3, "after allreaduce maxbytes = %d", maxbytes));
+
+    /* Remember the result. */
     iodesc->maxbytes = maxbytes;
 
     return PIO_NOERR;

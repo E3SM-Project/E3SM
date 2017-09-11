@@ -977,6 +977,8 @@ add_default($nl, 'config_AM_waterMassCensus_minTemperature');
 add_default($nl, 'config_AM_waterMassCensus_maxTemperature');
 add_default($nl, 'config_AM_waterMassCensus_minSalinity');
 add_default($nl, 'config_AM_waterMassCensus_maxSalinity');
+add_default($nl, 'config_AM_waterMassCensus_compute_predefined_regions');
+add_default($nl, 'config_AM_waterMassCensus_region_group');
 
 #################################################
 # Namelist group: AM_layerVolumeWeightedAverage #

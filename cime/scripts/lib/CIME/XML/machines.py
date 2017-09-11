@@ -4,6 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
+from CIME.utils import convert_to_unknown_type
 
 import socket
 
@@ -190,6 +191,8 @@ class Machines(GenericXML):
                 value = self.get_resolved_value(value)
             elif name in os.environ:
                 value = os.environ[name]
+
+            value = convert_to_unknown_type(value)
 
         return value
 

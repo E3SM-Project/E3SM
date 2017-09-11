@@ -3,7 +3,7 @@ common utilities for buildlib
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import handle_standard_logging_options, setup_standard_logging_options
+from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
 from CIME.case  import Case
 import sys, os, argparse, doctest
 
@@ -30,9 +30,7 @@ def parse_input(argv):
     parser.add_argument("bldroot",
                         help="root for building library")
 
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
+    args = parse_args_and_handle_standard_logging_options(argv, parser)
 
     return args.caseroot, args.libroot, args.bldroot
 

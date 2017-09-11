@@ -40,16 +40,17 @@ module seq_rest_mod
         seq_comm_iamin, CPLID, GLOID, logunit, loglevel
 
    ! "infodata" gathers various control flags into one datatype
-   use seq_infodata_mod
+   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getData
 
    ! clock & alarm routines
-   use seq_timemgr_mod
+   use seq_timemgr_mod, only: seq_timemgr_type, seq_timemgr_EClockGetData
 
    ! diagnostic routines
    use seq_diag_mct, only: budg_datag
 
    ! lower level io routines
-   use seq_io_mod
+   use seq_io_mod, only: seq_io_read, seq_io_write, seq_io_enddef
+   use seq_io_mod, only: seq_io_wopen, seq_io_close
 
    ! prep modules - coupler communication between different components
    use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox
@@ -412,7 +413,6 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
          if (fk == 1) then
             whead = .true.
             wdata = .false.
-!!            call seq_io_redef(rest_file)
          elseif (fk == 2) then
             whead = .false.
             wdata = .true.

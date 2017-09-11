@@ -1,3 +1,6 @@
+#ifdef AIX
+@PROCESS ALIAS_SIZE(805306368)
+#endif
 module dwav_comp_mod
 
 ! !USES:
@@ -51,9 +54,8 @@ module dwav_comp_mod
   integer(IN),parameter :: master_task=0 ! task number of master task
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
-  character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance
-                                         ! (ie. "_0001" or "")
+  character(len=16) :: inst_name         ! fullname of current instance (ie. "wav_0001")
+  character(len=16) :: inst_suffix       ! char string associated with instance (ie. "_0001" or "")
 
   character(CL) :: wav_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
@@ -66,10 +68,8 @@ module dwav_comp_mod
   type(mct_rearr) :: rearr
 
   integer(IN),parameter :: ktrans = 3
-  character(12),parameter  :: avifld(1:ktrans) = &
-     (/"lamult      ","ustokes     ","vstokes     "/)
-  character(12),parameter  :: avofld(1:ktrans) = &
-     (/"Sw_lamult   ","Sw_ustokes  ","Sw_vstokes  "/)
+  character(12),parameter  :: avifld(1:ktrans) =  (/"lamult      ","ustokes     ","vstokes     "/)
+  character(12),parameter  :: avofld(1:ktrans) =  (/"Sw_lamult   ","Sw_ustokes  ","Sw_vstokes  "/)
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -128,21 +128,25 @@ CONTAINS
     integer(IN)   :: yearLast    ! last  year to use in data stream
     integer(IN)   :: yearAlign   ! data year that aligns with yearFirst
 
-    character(CL) :: wav_in      ! dshr wav namelist
-    character(CL) :: decomp      ! decomp strategy
-    character(CL) :: rest_file   ! restart filename
-    character(CL) :: rest_file_strm   ! restart filename for stream
-    character(CL) :: restfilm    ! restart filename for namelist
-    character(CL) :: restfils    ! restart filename for stream for namelist
+    character(CL) :: wav_in                ! dshr wav namelist
+    character(CL) :: decomp                ! decomp strategy
+    character(CL) :: rest_file             ! restart filename
+    character(CL) :: rest_file_strm        ! restart filename for stream
+    character(CL) :: restfilm              ! restart filename for namelist
+    character(CL) :: restfils              ! restart filename for stream for namelist
+    logical       :: force_prognostic_true ! if true set prognostic true
+
     logical       :: exists      ! file existance
     integer(IN)   :: nu          ! unit number
 
     !----- define namelist -----
     namelist / dwav_nml / &
-         decomp, restfilm, restfils
+        decomp, restfilm, restfils, &
+        force_prognostic_true
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
+    character(*), parameter :: F0L   = "('(docn_comp_init) ',a, l2)"
     character(*), parameter :: F01   = "('(dwav_comp_init) ',a,5i8)"
     character(*), parameter :: F02   = "('(dwav_comp_init) ',a,4es13.6)"
     character(*), parameter :: F03   = "('(dwav_comp_init) ',a,i8,a)"
@@ -151,8 +155,7 @@ CONTAINS
     character(*), parameter :: F90   = "('(dwav_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(dwav_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dwav_comp_init) "
-
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     call t_startf('DWAV_INIT')
 
@@ -202,7 +205,6 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_startf('dwav_readnml')
-    !write(logunit,F00)' dwav_readnml...'
 
     filename = "dwav_in"//trim(inst_suffix)
     decomp = "1d"
@@ -218,35 +220,37 @@ CONTAINS
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' wav_in = ',trim(wav_in)
        write(logunit,F00)' decomp = ',trim(decomp)
        write(logunit,F00)' restfilm = ',trim(restfilm)
        write(logunit,F00)' restfils = ',trim(restfils)
+       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
+    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
+    if (force_prognostic_true) then
+       wav_present    = .true.
+       wav_prognostic = .true.
+    endif
 
     !----------------------------------------------------------------------------
     ! Read dshr namelist
     !----------------------------------------------------------------------------
-    !write(logunit,F00)' read dshr nml...'
 
     call shr_strdata_readnml(SDWAV,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
     ! Validate mode
     !----------------------------------------------------------------------------
-    !write(logunit,F00)' validate mode...'
-
     wav_mode = trim(SDWAV%dataMode)
 
     ! check that we know how to handle the mode
 
-    if (trim(wav_mode) == 'null' .or. &
+    if (trim(wav_mode) == 'null'    .or. &
         trim(wav_mode) == 'copyall') then
       if (my_task == master_task) &
          write(logunit,F00) ' wav mode = ',trim(wav_mode)
@@ -262,7 +266,6 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call t_startf('dwav_strdata_init')
-    !write(logunit,F00)' dwav_strdata_init...'
 
     if (trim(wav_mode) /= 'null') then
        wav_present = .true.
@@ -271,8 +274,7 @@ CONTAINS
 
        call shr_strdata_pioinit(SDWAV, iosystem, shr_pio_getiotype(trim(inst_name)))
 
-       call shr_strdata_init(SDWAV,mpicom,compid,name='wav', &
-                      calendar=calendar)
+       call shr_strdata_init(SDWAV,mpicom,compid,name='wav', calendar=calendar)
     endif
 
     if (my_task == master_task) then
@@ -440,25 +442,20 @@ subroutine dwav_comp_run( EClock, cdata, x2w, w2x)
    type(mct_gsMap)        , pointer :: gsmap
    type(mct_gGrid)        , pointer :: ggrid
 
-   integer(IN)   :: CurrentYMD        ! model date
-   integer(IN)   :: CurrentTOD        ! model sec into model date
-   integer(IN)   :: yy,mm,dd          ! year month day
-   integer(IN)   :: n                 ! indices
-   integer(IN)   :: nf                ! fields loop index
-   integer(IN)   :: nl                ! ocn frac index
-   integer(IN)   :: lsize           ! size of attr vect
+   integer(IN)   :: CurrentYMD            ! model date
+   integer(IN)   :: CurrentTOD            ! model sec into model date
+   integer(IN)   :: yy,mm,dd              ! year month day
+   integer(IN)   :: n                     ! indices
+   integer(IN)   :: nf                    ! fields loop index
+   integer(IN)   :: lsize                 ! size of attr vect
    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-!   logical       :: glcrun_alarm      ! is glc going to run now
-   logical       :: newdata           ! has newdata been read
-   logical       :: mssrmlf           ! remove old data
-   integer(IN)   :: idt               ! integer timestep
-   real(R8)      :: dt                ! timestep
-!   real(R8)      :: hn                ! h field
-   logical       :: write_restart     ! restart now
-   character(CL) :: case_name         ! case name
-   character(CL) :: rest_file         ! restart_file
-   character(CL) :: rest_file_strm    ! restart_file for stream
-   integer(IN)   :: nu                ! unit number
+   integer(IN)   :: idt                   ! integer timestep
+   real(R8)      :: dt                    ! timestep
+   logical       :: write_restart         ! restart now
+   character(CL) :: case_name             ! case name
+   character(CL) :: rest_file             ! restart_file
+   character(CL) :: rest_file_strm        ! restart_file for stream
+   integer(IN)   :: nu                    ! unit number
    integer(IN)   :: nflds_x2w
    type(seq_infodata_type), pointer :: infodata
 
@@ -494,14 +491,14 @@ subroutine dwav_comp_run( EClock, cdata, x2w, w2x)
 
    call t_startf('dwav_unpack')
 
-!  lsize = mct_avect_lsize(x2o)
-!  nflds_x2o = mct_avect_nRattr(x2o)
+   !  lsize = mct_avect_lsize(x2o)
+   !  nflds_x2o = mct_avect_nRattr(x2o)
 
-!   do nf=1,nflds_x2o
-!   do n=1,lsize
-!     ?? = x2o%rAttr(nf,n)
-!   enddo
-!   enddo
+   !   do nf=1,nflds_x2o
+   !   do n=1,lsize
+   !     ?? = x2o%rAttr(nf,n)
+   !   enddo
+   !   enddo
 
    call t_stopf('dwav_unpack')
 

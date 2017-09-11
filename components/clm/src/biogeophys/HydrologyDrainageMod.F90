@@ -17,8 +17,9 @@ module HydrologyDrainageMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use SoilHydrologyMod  , only : WaterTable
-  use LandunitType      , only : lun                
-  use ColumnType        , only : col                
+  use LandunitType      , only : lun_pp                
+  use ColumnType        , only : col_pp                
+  use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -37,7 +38,7 @@ contains
        num_urbanc, filter_urbanc,         &
        num_do_smb_c, filter_do_smb_c,     &
        atm2lnd_vars, glc2lnd_vars, temperature_vars,    &
-       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars, ep_betr)
     !
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
@@ -50,9 +51,9 @@ contains
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
-    use TracerParamsMod  , only : pre_diagnose_soilcol_water_flux, diagnose_drainage_water_flux    
     use clm_varctl       , only : use_vsfm
     use domainMod        , only : ldomain
+    use BeTRSimulationALM, only : betr_simulation_alm_type
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -71,6 +72,7 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
+    class(betr_simulation_alm_type), intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,j,fc                 ! indices
@@ -78,8 +80,8 @@ contains
     !-----------------------------------------------------------------------
     
     associate(                                                                  &    
-         dz                     => col%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)                       
-         ctype                  => col%itype                                  , & ! Input:  [integer  (:)   ]  column type                                        
+         dz                     => col_pp%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)                       
+         ctype                  => col_pp%itype                                  , & ! Input:  [integer  (:)   ]  column type                                        
 
          qflx_floodg            => atm2lnd_vars%forc_flood_grc                , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM             
          forc_rain              => atm2lnd_vars%forc_rain_downscaled_col      , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                                  
@@ -128,8 +130,8 @@ contains
       endif
 
       if (use_betr) then
-         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 
       if (.not. use_vsfm) then
@@ -140,8 +142,10 @@ contains
       endif
 
       if (use_betr) then
-         call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
+          waterflux_vars=waterflux_vars)
+        call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
+        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
       endif
 
 !      call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
@@ -160,7 +164,7 @@ contains
 
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          if (ctype(c) == icol_roof .or. ctype(c) == icol_sunwall &
               .or. ctype(c) == icol_shadewall .or. ctype(c) == icol_road_imperv) then
@@ -209,11 +213,11 @@ contains
       end do
       do fc = 1,num_do_smb_c
          c = filter_do_smb_c(fc)
-         l = col%landunit(c)
-         g = col%gridcell(c)
+         l = col_pp%landunit(c)
+         g = col_pp%gridcell(c)
          ! In the following, we convert glc_snow_persistence_max_days to r8 to avoid overflow
          if ( (snow_persistence(c) >= (real(glc_snow_persistence_max_days, r8) * secspday)) &
-              .or. lun%itype(l) == istice_mec) then
+              .or. lun_pp%itype(l) == istice_mec) then
             qflx_glcice_frz(c) = qflx_snwcp_ice(c)  
             qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
             if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
@@ -225,11 +229,11 @@ contains
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
-         g = col%gridcell(c)
+         l = col_pp%landunit(c)
+         g = col_pp%gridcell(c)
 
-         if (lun%itype(l)==istwet .or. lun%itype(l)==istice      &
-                                  .or. lun%itype(l)==istice_mec) then
+         if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice      &
+                                  .or. lun_pp%itype(l)==istice_mec) then
 
             qflx_drain(c)         = 0._r8
             qflx_drain_perched(c) = 0._r8
@@ -246,7 +250,7 @@ contains
             ! snow is sent to CISM, where it is converted to ice. These corrections are
             ! done here: 
 
-            if (glc_dyn_runoff_routing(g) .and. lun%itype(l)==istice_mec) then
+            if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l)==istice_mec) then
                ! If glc_dyn_runoff_routing=T, add meltwater from istice_mec ice columns to the runoff.
                !    Note: The meltwater contribution is computed in PhaseChanges (part of Biogeophysics2)
                qflx_qrgwl(c) = qflx_qrgwl(c) + qflx_glcice_melt(c)
@@ -259,7 +263,7 @@ contains
                qflx_qrgwl(c) = qflx_qrgwl(c) - qflx_glcice_frz(c)
             endif
 
-         else if (lun%urbpoi(l) .and. ctype(c) /= icol_road_perv) then
+         else if (lun_pp%urbpoi(l) .and. ctype(c) /= icol_road_perv) then
 
             qflx_drain_perched(c) = 0._r8
             qflx_h2osfc_surf(c)   = 0._r8
@@ -269,17 +273,15 @@ contains
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
-         if ((lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) .and. col%active(c)) then
+         if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
            ! qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
            qflx_irr_demand(c) = -1.0_r8 * qflx_irrig(c) * ldomain%f_surf(g)
- 
          else
            qflx_irr_demand(c) = 0._r8
          end if
-
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
-         else if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+         else if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
             qflx_runoff_r(c) = qflx_runoff(c)
          end if
 

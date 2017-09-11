@@ -14,8 +14,8 @@ module TracerParamsMod
   use decompMod             , only : bounds_type
   use clm_varpar            , only : nlevsoi
   use clm_varcon            , only : spval
-  use PatchType             , only : pft
-  use ColumnType            , only : col
+  use VegetationType             , only : veg_pp
+  use ColumnType            , only : col_pp
   use tracer_varcon
   implicit none
   save
@@ -1158,7 +1158,7 @@ contains
 
    !compute weigthed conductances
    call calc_bulk_conductances(bounds, lbj, ubj, jtops, numf, filter, bulkdiffus, &
-      col%dz(bounds%begc:bounds%endc,lbj:ubj), betrtracer_vars,  &
+      col_pp%dz(bounds%begc:bounds%endc,lbj:ubj), betrtracer_vars,  &
       tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, lbj:ubj-1, :))
 
    end subroutine set_multi_phase_diffusion
@@ -1765,9 +1765,9 @@ contains
   SHR_ASSERT_ALL((ubound(rootfr) == (/bounds%endp, nlevsoi/)), errMsg(__FILE__, __LINE__))
 
   associate(                                                   & !
-    z              =>    col%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
-    dz             =>    col%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
-    wtcol          =>    pft%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
+    z              =>    col_pp%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
+    dz             =>    col_pp%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
+    wtcol          =>    veg_pp%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
     lbl_rsc_h2o    =>    canopystate_vars%lbl_rsc_h2o_patch  , & ! laminar layer resistance for h2o
     elai           =>    canopystate_vars%elai_patch         , &
     annsum_npp     =>    carbonflux_vars%annsum_npp_patch    , & ! Input:  [real(r8) (:) ]  annual sum NPP (gC/m2/yr)
@@ -1789,10 +1789,10 @@ contains
   do j=1,nlevsoi
     do fp = 1, num_soilp
       p = filter_soilp (fp)
-      c = pft%column(p)
-      g = col%gridcell(c)
+      c = veg_pp%column(p)
+      g = col_pp%gridcell(c)
       ! Calculate aerenchyma diffusion
-      if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pft%itype(p) /= noveg) then
+      if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. veg_pp%itype(p) /= noveg) then
         ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all
         ! the new components are in; if there is any tuning to be done to get a realistic global flux,
         ! this would probably be the place.  We will have to document clearly in the Tech Note
@@ -1825,8 +1825,8 @@ contains
         endif
         n_tiller = m_tiller / 0.22_r8
 
-        if (pft%itype(p) == nc3_arctic_grass .or. crop(pft%itype(p)) == 1 .or. &
-          pft%itype(p) == nc3_nonarctic_grass .or. pft%itype(p) == nc4_grass) then
+        if (veg_pp%itype(p) == nc3_arctic_grass .or. crop(veg_pp%itype(p)) == 1 .or. &
+          veg_pp%itype(p) == nc3_nonarctic_grass .or. veg_pp%itype(p) == nc4_grass) then
           poros_tiller = 0.3_r8  ! Colmer 2003
         else
           poros_tiller = 0.3_r8 * nongrassporosratio
@@ -1944,7 +1944,7 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
          if (annsum_counter(c) >= secsperyear) then
 
             annavg_agnpp(p) = tempavg_agnpp(p)

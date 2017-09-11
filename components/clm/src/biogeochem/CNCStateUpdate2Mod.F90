@@ -12,10 +12,11 @@ module CNCStateUpdate2Mod
   use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
-  use PatchType        , only : pft
+  use VegetationType        , only : veg_pp
   use pftvarcon        , only : npcropmin
   use clm_varctl       , only : use_pflotran, pf_cmode
-  use PatchType           , only : pft   
+  use VegetationType           , only : veg_pp   
+  use tracer_varcon    , only : is_active_betr_bgc
   !
   implicit none
   save
@@ -76,25 +77,6 @@ contains
                     cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
                cs%decomp_cpools_vr_col(c,j,i_cwd) = &
                     cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
-
-            end do
-         end do
-      else if (is_active_betr_bgc) then
-
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-               ! column gap mortality fluxes
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
             end do
          end do
@@ -159,7 +141,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                   & 
-         ivt => pft%itype      , & ! Input:  [integer (:)]  pft vegetation type
+         ivt => veg_pp%itype      , & ! Input:  [integer (:)]  pft vegetation type
          cf => carbonflux_vars , &
          cs => carbonstate_vars  &
          )
@@ -189,21 +171,6 @@ contains
             end do
          end do
 
-      else if (is_active_betr_bgc) then
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)          
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
-            end do
-         end do
       endif
 
       ! patch loop

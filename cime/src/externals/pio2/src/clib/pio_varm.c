@@ -29,7 +29,7 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -98,7 +98,7 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -167,7 +167,7 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -235,7 +235,7 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -306,7 +306,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -377,7 +377,7 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -447,7 +447,7 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -518,7 +518,7 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -588,7 +588,7 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -660,7 +660,7 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -731,7 +731,7 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -801,7 +801,7 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
 
@@ -872,7 +872,7 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
     ios = file->iosystem;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -941,7 +941,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -979,7 +979,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1010,7 +1010,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1048,7 +1048,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1079,7 +1079,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1117,7 +1117,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1148,7 +1148,7 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1186,7 +1186,7 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1217,7 +1217,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1255,7 +1255,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1286,7 +1286,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1324,7 +1324,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1350,7 +1350,7 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1388,7 +1388,7 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1419,7 +1419,7 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1457,7 +1457,7 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1488,7 +1488,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1526,7 +1526,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1557,7 +1557,7 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1595,7 +1595,7 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1626,7 +1626,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1664,7 +1664,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1695,7 +1695,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1733,7 +1733,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }
@@ -1764,7 +1764,7 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
     ierr = PIO_NOERR;
 
     /* Sorry, but varm functions are not supported by the async interface. */
-    if (ios->async_interface)
+    if (ios->async)
         return PIO_EINVAL;
 
     if (ios->ioproc){
@@ -1802,7 +1802,7 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-    if (ios->async_interface || bcast ||
+    if (ios->async || bcast ||
         (ios->num_iotasks < ios->num_comptasks)){
         MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
     }

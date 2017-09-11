@@ -33,7 +33,6 @@
       prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
       som           SOM         (Slab ocean model)
       null          NULL        (NULL mode)
-      copyall       COPYALL     (Copy fields only)
   -->
 
   <!-- ========================================================================================  -->
@@ -46,10 +45,20 @@
     <group>streams_file</group>
     <desc>List of streams used for the given docn_mode.</desc>
     <values>
-      <value docn_mode="prescribed" >prescribed</value>
-      <value docn_mode="som"        >som</value>
+      <value docn_mode="prescribed">prescribed</value>
+      <value docn_mode="sst_aquap1">''</value>
+      <value docn_mode="sst_aquap2">''</value>
+      <value docn_mode="sst_aquap3">''</value>
+      <value docn_mode="sst_aquap4">''</value>
+      <value docn_mode="sst_aquap5">''</value>
+      <value docn_mode="sst_aquap6">''</value>
+      <value docn_mode="sst_aquap7">''</value>
+      <value docn_mode="sst_aquap8">''</value>
+      <value docn_mode="sst_aquap9">''</value>
+      <value docn_mode="sst_aquap10">''</value>
+      <value docn_mode="som">som</value>
+      <value docn_mode="som_aquap">som</value>
       <value docn_mode="interannual">interannual</value>
-      <value docn_mode="copyall"    >copyall</value>
     </values>
   </entry>
 
@@ -59,7 +68,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="copyall">$SSTICE_GRID_FILENAME</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
@@ -70,7 +78,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="copyall">$SSTICE_DATA_FILENAME</value>
       <value stream="prescribed">$SSTICE_DATA_FILENAME</value>
     </values>
   </entry>
@@ -111,11 +118,6 @@
         yc      lat
         area    area
         mask    mask
-      </value>
-      <value stream="copyall" sstice_stream="WW3">
-        time    time
-        gridLon lon
-        gridLat lat
       </value>
       <value stream="interannual">
         time    time
@@ -172,9 +174,6 @@
       <value>
         sst    t
       </value>
-      <value stream="copyall" sstice_stream="WW3">
-        iceCon  s
-      </value>
       <value stream="som">
         T     t
         S     s
@@ -212,7 +211,6 @@
     <values>
       <value>-999</value>
       <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
-      <value stream="copyall">$SSTICE_YEAR_ALIGN</value>
       <value stream="som">1</value>
       <value stream="interannual">1</value>
     </values>
@@ -226,7 +224,6 @@
     <values>
       <value>-999</value>
       <value stream="prescribed">$SSTICE_YEAR_START</value>
-      <value stream="copyall">$SSTICE_YEAR_START</value>
       <value stream="som">1</value>
       <value stream="interannual">1850</value>
     </values>
@@ -239,10 +236,9 @@
     <desc>Last year of stream.</desc>
     <values>
       <value>-999</value>
-      <value   stream="prescribed">$SSTICE_YEAR_END</value>
-      <value   stream="copyall">$SSTICE_YEAR_END</value>
-      <value   stream="som">1</value>
-      <value   stream="interannual">2014</value>
+      <value stream="prescribed">$SSTICE_YEAR_END</value>
+      <value stream="som">1</value>
+      <value stream="interannual">2014</value>
     </values>
   </entry>
 
@@ -258,7 +254,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>SSTDATA,SOM,IAF,NULL,COPYALL</valid_values>
+    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
     <desc>
       General method that operates on the data. This is generally
       implemented in the data models but is set in the strdata method for
@@ -305,16 +301,28 @@
       If DOCN_MODE is prescribed, datamode will be set to SSTDATA
       If DOCN_MODE is interannual, datamode will be set to IAF
       If DOCN_MODE is som , datamode will be set to SOM
+      If DOCN_MODE is sst_aqup[n], datamode will be set to SST_AQUAP
+      If DOCN_MODE is som_aqup[n], datamode will be set to SOM_AQUAP
       If DOCN_MODE is null, datamode will be set to NULL
 
       default: SSTDATA (prescribed setting for DOCN_MODE)'
     </desc>
     <values>
-      <value docn_mode="null"       >NULL</value>
-      <value docn_mode="prescribed" >SSTDATA</value>
-      <value docn_mode="som"        >SOM</value>
+      <value docn_mode="null">NULL</value>
+      <value docn_mode="prescribed">SSTDATA</value>
+      <value docn_mode="sst_aquap1">SST_AQUAP1</value>
+      <value docn_mode="sst_aquap2">SST_AQUAP2</value>
+      <value docn_mode="sst_aquap3">SST_AQUAP3</value>
+      <value docn_mode="sst_aquap4">SST_AQUAP4</value>
+      <value docn_mode="sst_aquap5">SST_AQUAP5</value>
+      <value docn_mode="sst_aquap6">SST_AQUAP6</value>
+      <value docn_mode="sst_aquap7">SST_AQUAP7</value>
+      <value docn_mode="sst_aquap8">SST_AQUAP8</value>
+      <value docn_mode="sst_aquap9">SST_AQUAP9</value>
+      <value docn_mode="sst_aquap10">SST_AQUAP10</value>
+      <value docn_mode="som$">SOM</value>
+      <value docn_mode="som_aquap">SOM_AQUAP</value>
       <value docn_mode="interannual">IAF</value>
-      <value docn_mode="copyall"    >COPYALL</value>
     </values>
   </entry>
 

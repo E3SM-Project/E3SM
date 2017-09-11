@@ -5,7 +5,7 @@
 module namelist_mod
 
   use kinds,      only: real_kind, iulog
-  use params_mod, only: recursive, sfcurve
+  use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
   use physical_constants, only: rearth, rrearth, omega
 
@@ -13,6 +13,8 @@ module namelist_mod
     MAX_STRING_LEN,&
     MAX_FILE_LEN,  &
     partmethod,    &       ! Mesh partitioning method (METIS)
+    coord_transform_method,    &       !how to represent the coordinates.
+    z2_map_method,    &       !zoltan2 how to perform mapping (network-topology aware)
     topology,      &       ! Mesh topology
     test_case,     &       ! test case
     uselapi,       &
@@ -175,8 +177,10 @@ module namelist_mod
     ! Namelists
     ! ============================================
 
-    namelist /ctl_nl/ PARTMETHOD,       &         ! mesh partitioning method
-                      TOPOLOGY,         &         ! mesh topology
+    namelist /ctl_nl/ PARTMETHOD,                &         ! mesh partitioning method
+                      COORD_TRANSFORM_METHOD,    &         ! Zoltan2 coordinate transformation method.
+                      Z2_MAP_METHOD,             &         ! Zoltan2 processor mapping (network-topology aware) method.
+                      TOPOLOGY,                  &         ! mesh topology
 #ifdef CAM
       se_partmethod,     &
       se_topology,       &
@@ -192,6 +196,8 @@ module namelist_mod
       omega,                   &   ! scaled rotation rate
       rearth,                  &   ! scaled earth radius
 #endif
+      COORD_TRANSFORM_METHOD, &
+      Z2_MAP_METHOD,  &
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
       uselapi,       &
@@ -308,8 +314,10 @@ module namelist_mod
     ! ==========================
     ! Set the default partmethod
     ! ==========================
-
-    PARTMETHOD    = RECURSIVE
+    PARTMETHOD    = SFCURVE
+!    PARTMETHOD    = RECURSIVE
+    COORD_TRANSFORM_METHOD = SPHERE_COORDS
+    Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
     useframes     = 0
     multilevel    = 1
@@ -390,11 +398,8 @@ module namelist_mod
       read(*,nml=ctl_nl)
 #endif
 #ifndef _USEMETIS
-      !=================================
-      ! override the selected partition
-      ! method and set it to SFCURVE
-      !=================================
-      PARTMETHOD = SFCURVE
+      ! override METIS options to SFCURVE
+      if (partmethod>=0 .and. partmethod<=3) partmethod=SFCURVE
 #endif
        ! ========================
        ! if this is a restart run
@@ -573,6 +578,8 @@ module namelist_mod
 
     ! Broadcast namelist variables to all MPI processes
 
+    call MPI_bcast(Z2_MAP_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(COORD_TRANSFORM_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
@@ -852,6 +859,9 @@ module namelist_mod
 
        write(iulog,*)"readnl: ne,np         = ",NE,np
        write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
+       write(iulog,*)"readnl: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
+       write(iulog,*)"readnl: Z2_MAP_METHOD    = ",Z2_MAP_METHOD
+
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
        write(iulog,*)"readnl: vthreads      = ",vthreads
        write(iulog,*)'readnl: multilevel    = ',multilevel

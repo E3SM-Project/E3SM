@@ -52,9 +52,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--download", action="store_true",
                         help="Attempt to download missing input files")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
 
@@ -78,4 +76,3 @@ def _main_func(description):
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
-

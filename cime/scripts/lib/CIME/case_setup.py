@@ -59,7 +59,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, adjust_pio=True):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -127,17 +127,24 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
                 continue
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
+            # ESP models are currently limited to 1 instance
+            expect((comp != "ESP") or (ninst == 1),
+                   "ESP components may only have one instance")
             if ninst > ntasks:
                 if ntasks == 1:
                     case.set_value("NTASKS_%s" % comp, ninst)
                 else:
                     expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
-        # Set TOTAL_CORES
-        case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
-
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
+
+            case.initialize_derived_attributes()
+
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
+
+            # Set TOTAL_CORES
+            case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -150,32 +157,31 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
             logger.debug("at update TOTALPES = %s"%pestot)
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
-            build_threaded = case.get_build_threaded()
-            expect(not (build_threaded and compiler == "nag"),
-                   "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
+
+            # Make sure pio settings are consistent
+            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
+
+            case.initialize_derived_attributes()
+
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
             num_nodes = case.num_nodes
-            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
                     logger.info("Writing %s script" % job)
-                    testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-                    # Short term fix to be removed when csh tests are removed
-                    if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
-            # Make sure pio settings are consistant
-            if adjust_pio:
-                adjust_pio_layout(case, tasks_per_node)
+            # Set TOTAL_CORES
+            case.set_value("TOTAL_CORES", case.total_tasks * case.cores_per_task )
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -210,33 +216,16 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
         # Record env information
         env_module = case.get_env("mach_specific")
-        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
-        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
+        env_module.make_env_mach_specific_file("sh", case)
+        env_module.make_env_mach_specific_file("csh", case)
         env_module.save_all_env_info("software_environment.txt")
 
-def adjust_pio_layout(case, new_pio_stride):
-
-    models = case.get_values("COMP_CLASSES")
-    for comp in models:
-        pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
-        pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
-        ntasks = case.get_value("NTASKS_%s"%comp)
-        new_stride = min(ntasks, new_pio_stride)
-        new_numtasks = max(1, ntasks//new_stride)
-        if pio_stride != new_stride:
-            logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
-            case.set_value("PIO_STRIDE_%s"%comp, new_stride)
-        if pio_numtasks != new_numtasks:
-            logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
-            case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
-
-
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, adjust_pio=True):
+def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset, adjust_pio)
+    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset)
 
     if case.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")

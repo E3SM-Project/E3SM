@@ -29,6 +29,9 @@
 /* Number of NetCDF-4 types. */
 #define NUM_NETCDF4_TYPES 12
 
+/* Number of PIO rearrangers. */
+#define NUM_REARRANGERS 2
+
 /* Number of sample files constructed for these tests. */
 #define NUM_SAMPLES 3
 

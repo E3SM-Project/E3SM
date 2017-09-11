@@ -15,7 +15,7 @@ from CIME.XML.machines import Machines
 from jenkins_generic_job import jenkins_generic_job
 
 # Don't know if this belongs here longterm
-MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
+MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge", "chama")
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -91,9 +91,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--compiler",
                         help="Compiler to use to build cime.  Default will be the default defined for the machine.")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     expect(not (args.submit_to_cdash and args.generate_baselines),
            "Does not make sense to use --generate-baselines and --submit-to-cdash together")

@@ -45,7 +45,7 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     True
     """
 
-    chars = '<>/{}[\]~`@' # pylint: disable=anomalous-backslash-in-string
+    chars = '<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
     if fullpath:
@@ -259,7 +259,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
-        errput = output if errput == "" else errput
+        errput = output if not errput else errput
         expect(False, "Command: '%s' failed with error '%s'%s" %
                (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
 
@@ -618,6 +618,48 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
+def get_charge_account(machobj=None):
+    """
+    Hierarchy for choosing CHARGE_ACCOUNT:
+    1. Environment variable CHARGE_ACCOUNT
+    2. File $HOME/.cime/config
+    3. config_machines.xml (if machobj provided)
+    4. default to same value as PROJECT
+
+    >>> import CIME
+    >>> import CIME.XML.machines
+    >>> machobj = CIME.XML.machines.Machines(machine="theta")
+    >>> project = get_project(machobj)
+    >>> charge_account = get_charge_account(machobj)
+    >>> project == charge_account
+    True
+    >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
+    >>> get_charge_account(machobj)
+    'ChargeAccount'
+    >>> del os.environ["CHARGE_ACCOUNT"]
+    """
+    charge_account = os.environ.get("CHARGE_ACCOUNT")
+    if (charge_account is not None):
+        logger.info("Using charge_account from env CHARGE_ACCOUNT: " + charge_account)
+        return charge_account
+
+    cime_config = get_cime_config()
+    if (cime_config.has_option('main','CHARGE_ACCOUNT')):
+        charge_account = cime_config.get('main','CHARGE_ACCOUNT')
+        if (charge_account is not None):
+            logger.info("Using charge_account from .cime/config: " + charge_account)
+            return charge_account
+
+    if machobj is not None:
+        charge_account = machobj.get_value("CHARGE_ACCOUNT")
+        if charge_account is not None:
+            logger.info("Using charge_account from config_machines.xml: " + charge_account)
+            return charge_account
+
+    logger.info("No charge_account info available, using value from PROJECT")
+    return get_project(machobj)
+
+
 def setup_standard_logging_options(parser):
     helpfile = "%s.log"%sys.argv[0]
     helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
@@ -637,7 +679,7 @@ class _LessThanFilter(logging.Filter):
         #non-zero return means we log this message
         return 1 if record.levelno < self.max_level else 0
 
-def handle_standard_logging_options(args):
+def parse_args_and_handle_standard_logging_options(args, parser=None):
     """
     Guide to logging in CIME.
 
@@ -659,6 +701,11 @@ def handle_standard_logging_options(args):
     # Change warnings and above to go to stderr
     stderr_stream_handler = logging.StreamHandler(stream=sys.stderr)
     stderr_stream_handler.setLevel(logging.WARNING)
+
+    # scripts_regression_tests is the only thing that should pass a None argument in parser
+    if parser is not None:
+        _check_for_invalid_args(args[1:])
+        args = parser.parse_args(args[1:])
 
     # --verbose adds to the message format but does not impact the log level
     if args.verbose:
@@ -682,6 +729,8 @@ def handle_standard_logging_options(args):
         root_logger.setLevel(logging.WARN)
     else:
         root_logger.setLevel(logging.INFO)
+    return args
+
 
 def get_logging_options():
     """
@@ -714,9 +763,9 @@ def convert_to_type(value, type_str, vid=""):
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
-            expect(value in ["TRUE", "FALSE","true","false"],
+            expect(value.upper() in ["TRUE", "FALSE"],
                    "Entry %s was listed as type logical but had val '%s' instead of TRUE or FALSE" % (vid, value))
-            value = value == "TRUE" or value == "true"
+            value = value.upper() == "TRUE"
 
         elif type_str == "real":
             try:
@@ -726,6 +775,36 @@ def convert_to_type(value, type_str, vid=""):
 
         else:
             expect(False, "Unknown type '%s'" % type_str)
+
+    return value
+
+def convert_to_unknown_type(value):
+    """
+    Convert value to it's real type by probing conversions.
+    """
+    if value is not None:
+
+        # Attempt to convert to logical
+        if value.upper() in ["TRUE", "FALSE"]:
+            return value.upper() == "TRUE"
+
+        # Attempt to convert to integer
+        try:
+            value = int(eval(value))
+        except:
+            pass
+        else:
+            return value
+
+        # Attempt to convert to float
+        try:
+            value = float(value)
+        except:
+            pass
+        else:
+            return value
+
+        # Just treat as string
 
     return value
 
@@ -786,6 +865,25 @@ def convert_to_babylonian_time(seconds):
     seconds %= 60
 
     return "%02d:%02d:%02d" % (hours, minutes, seconds)
+
+def get_time_in_seconds(timeval, unit):
+    """
+    Convert a time from 'unit' to seconds
+    """
+    if 'nyear' in unit:
+        dmult = 365 * 24 * 3600
+    elif 'nmonth' in unit:
+        dmult = 30 * 24 * 3600
+    elif 'nday' in unit:
+        dmult = 24 * 3600
+    elif 'nhour' in unit:
+        dmult = 3600
+    elif 'nminute' in unit:
+        dmult = 60
+    else:
+        dmult = 1
+
+    return dmult * timeval
 
 def compute_total_time(job_cost_map, proc_pool):
     """
@@ -1172,13 +1270,24 @@ def run_and_log_case_status(func, phase, caseroot='.'):
     try:
         rv = func()
     except:
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
         append_case_status(phase, "error", msg=("\n%s" % e), caseroot=caseroot)
         raise
     else:
         append_case_status(phase, "success", caseroot=caseroot)
 
     return rv
+
+def _check_for_invalid_args(args):
+    for arg in args:
+        if arg.startswith("--"):
+            continue
+        if arg.startswith("-") and len(arg) > 2:
+#       Uncomment these lines when we want to enforce --mulitchararg syntax
+#            if arg == "-value" or arg == "-noecho":
+            logger.warn("This argument is depricated, please use -%s"%arg)
+#            else:
+#                expect(False, "Invalid argument %s\n  Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options"%arg)
 
 class SharedArea(object):
     """

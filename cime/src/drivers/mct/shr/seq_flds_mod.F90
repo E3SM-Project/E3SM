@@ -121,13 +121,14 @@ module seq_flds_mod
   ! variables CCSM_VOC, CCSM_BGC and GLC_NEC.
   !====================================================================
 
-   use shr_kind_mod,   only : CX => shr_kind_CX, CXX => shr_kind_CXX
-   use shr_sys_mod,    only : shr_sys_abort
-   use seq_drydep_mod, only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
-   use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
-   use shr_megan_mod,  only : shr_megan_readnl, shr_megan_mechcomps_n
-   use shr_fire_emis_mod,  only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
-   use shr_carma_mod,  only : shr_carma_readnl
+   use shr_kind_mod      , only : CX => shr_kind_CX, CXX => shr_kind_CXX
+   use shr_sys_mod       , only : shr_sys_abort
+   use seq_comm_mct      , only : seq_comm_iamroot, seq_comm_setptrs, logunit
+   use seq_drydep_mod    , only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
+   use shr_megan_mod     , only : shr_megan_readnl, shr_megan_mechcomps_n
+   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
+   use shr_carma_mod     , only : shr_carma_readnl
+   use shr_ndep_mod      , only : shr_ndep_readnl
 
    implicit none
    public
@@ -143,8 +144,10 @@ module seq_flds_mod
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
    character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
+   character(len=CX)  :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
    integer            :: ice_ncat            ! number of sea ice thickness categories
    logical            :: seq_flds_i2o_per_cat! .true. if select per ice thickness category fields are passed from ice to ocean
+   logical            :: add_ndep_fields     ! .true. => add ndep fields
 
    !----------------------------------------------------------------------------
    ! metadata
@@ -3134,7 +3137,6 @@ module seq_flds_mod
         units    = 'm'
 
         call metadata_set(shr_fire_emis_ztop_token, longname, stdname, units)
-
      endif
 
      !-----------------------------------------------------------------------------
@@ -3154,10 +3156,30 @@ module seq_flds_mod
         longname = 'dry deposition velocity'
         stdname  = 'drydep_vel'
         units    = 'cm/sec'
-        call metadata_set(seq_drydep_fields, longname, stdname, units)
 
+        call metadata_set(seq_drydep_fields, longname, stdname, units)
      endif
      call seq_drydep_init( )
+
+     !-----------------------------------------------------------------------------
+     ! Nitrogen Deposition fields
+     ! First read namelist and figure out the ndepdep field list to pass
+     ! Then check if file exists and if not, n_drydep will be zero
+     ! Then add nitrogen deposition fields to atm export, lnd import and ocn import
+     !-----------------------------------------------------------------------------
+
+     call shr_ndep_readnl(nlfilename="drv_flds_in", ID=ID, ndep_fields=ndep_fields, add_ndep_fields=add_ndep_fields)
+     if (add_ndep_fields) then
+        call seq_flds_add(a2x_fluxes, ndep_fields)
+        call seq_flds_add(x2l_fluxes, ndep_fields)
+        call seq_flds_add(x2o_fluxes, ndep_fields)
+
+        longname = 'nitrogen deposition flux'
+        stdname  = 'nitrogen_deposition'
+        units    = 'kg(N)/m2/sec' 
+
+        call metadata_set(ndep_fields, longname, stdname, units)
+     end if
 
      !----------------------------------------------------------------------------
      ! state + flux fields

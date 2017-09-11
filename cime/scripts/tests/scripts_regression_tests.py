@@ -178,17 +178,25 @@ class N_TestUnitTest(unittest.TestCase):
         cls._testroot = os.path.join(TEST_ROOT, 'TestUnitTests')
         cls._testdirs = []
 
+    def _has_unit_test_support(self):
+        default_compiler = MACHINE.get_default_compiler()
+        compiler = Compilers(MACHINE, compiler=default_compiler)
+        attrs = {'MPILIB': 'mpi-serial', 'compile_threaded': 'false'}
+        pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH",
+                                                          attributes=attrs)
+        if pfunit_path is None:
+            return False
+        else:
+            return True
+
     def test_a_unit_test(self):
         cls = self.__class__
-        machine           = MACHINE.get_machine_name()
-        compiler          = MACHINE.get_default_compiler()
-        if (machine != "yellowstone" or compiler != "intel"):
-            #TODO: get rid of this restriction
-            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        if not self._has_unit_test_support():
+            self.skipTest("Skipping TestUnitTest - PFUNIT_PATH not found for the default compiler on this machine")
         test_dir = os.path.join(cls._testroot,"unit_tester_test")
         cls._testdirs.append(test_dir)
         os.makedirs(test_dir)
-        unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"tools","unit_testing","run_tests.py"))
+        unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"scripts","fortran_unit_testing","run_tests.py"))
         test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
                             %(unit_test_tool,test_dir,test_spec_dir))
@@ -199,17 +207,14 @@ class N_TestUnitTest(unittest.TestCase):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        machine           = MACHINE.get_machine_name()
-        compiler          = MACHINE.get_default_compiler()
-        if (machine != "yellowstone" or compiler != "intel"):
-            #TODO: get rid of this restriction
-            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        if not self._has_unit_test_support():
+            self.skipTest("Skipping TestUnitTest - PFUNIT_PATH not found for the default compiler on this machine")
 
         test_dir = os.path.join(cls._testroot,"driver_f90_tests")
         cls._testdirs.append(test_dir)
         os.makedirs(test_dir)
         test_spec_dir = CIME.utils.get_cime_root()
-        unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
+        unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
 
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s"\
                             %(unit_test_tool,test_dir,test_spec_dir))
@@ -248,7 +253,10 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
 
         cls._testdirs.append(testdir)
-        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "%s/create_newcase --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        self.assertTrue(os.path.exists(testdir))
+        self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
+
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
@@ -1268,6 +1276,9 @@ class K_TestCimeCase(TestCreateTestCommon):
         run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
                               % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
 
+        self.assertEqual(type(MACHINE.get_value("MAX_TASKS_PER_NODE")), int)
+        self.assertTrue(type(MACHINE.get_value("PROJECT_REQUIRED")) in [type(None) , bool])
+
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
@@ -1375,6 +1386,108 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             expected_cores = 16 * case.cores_per_task
             self.assertEqual(case.get_value("TOTAL_CORES"), expected_cores)
+
+    ###########################################################################
+    def test_cime_case_xmlchange_append(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        run_cmd_assert_result(self, "./xmlchange --id PIO_CONFIG_OPTS --val='-opt1'", from_dir=casedir)
+        result = run_cmd_assert_result(self, "./xmlquery --value PIO_CONFIG_OPTS", from_dir=casedir)
+        self.assertEqual(result, "-opt1")
+
+        run_cmd_assert_result(self, "./xmlchange --id PIO_CONFIG_OPTS --val='-opt2' --append", from_dir=casedir)
+        result = run_cmd_assert_result(self, "./xmlquery --value PIO_CONFIG_OPTS", from_dir=casedir)
+        self.assertEqual(result, "-opt1 -opt2")
+
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_1(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping walltime test. Depends on ACME batch settings")
+
+        test_name = "ERS.f19_g16_rx1.A"
+        machine, compiler = "blues", "gnu"
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "0:10:00")
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "shared")
+
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_2(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping walltime test. Depends on ACME batch settings")
+
+        test_name = "ERS_P64.f19_g16_rx1.A"
+        machine, compiler = "blues", "gnu"
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "03:00:00")
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "batch")
+
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_3(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping walltime test. Depends on ACME batch settings")
+
+        test_name = "ERS_P64.f19_g16_rx1.A"
+        machine, compiler = "blues", "gnu"
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='0:10:00'" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "0:10:00")
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "batch") # Not smart enough to select faster queue
+
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_4(self):
+    ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping walltime test. Depends on ACME batch settings")
+
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        machine, compiler = "blues", "gnu"
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='2:00:00'" %
+                              (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "01:00:00")
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_QUEUE --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "shared")
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
@@ -2191,7 +2304,7 @@ def _main_func():
         else:
             setattr(args, log_param, False)
 
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, None)
 
     write_provenance_info()
 
@@ -2215,7 +2328,8 @@ def _main_func():
             print "All pass, removing directory:", TEST_ROOT
             if os.path.exists(TEST_ROOT):
                 shutil.rmtree(TEST_ROOT)
-            raise
+
+        raise
 
 if (__name__ == "__main__"):
     _main_func()

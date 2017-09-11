@@ -59,6 +59,17 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: precon_method  ! if semi_implicit, type of preconditioner:
                                                   ! choices block_jacobi or identity
 
+  integer              , public :: coord_transform_method   ! If zoltan2 is used, various ways of representing the coordinates methods
+                                                            ! Instead of using the sphere coordinates, it is better to use cube or projected 2D coordinates for quality.
+                                                            ! check params_mod for options.
+
+  integer              , public :: z2_map_method            ! If zoltan2 is used,
+                                                            ! Task mapping method to be used by zoltan2.
+                                                            ! Z2_NO_TASK_MAPPING        (1) - is no task mapping
+                                                            ! Z2_TASK_MAPPING           (2) - performs default task mapping of zoltan2.
+                                                            ! Z2_OPTIMIZED_TASK_MAPPING (3) - includes network aware optimizations.
+                                                            ! Use (3) if zoltan2 is enabled.
+
   integer              , public :: partmethod     ! partition methods
   character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
   character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  

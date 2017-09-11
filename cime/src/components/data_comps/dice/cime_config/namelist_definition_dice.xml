@@ -25,9 +25,9 @@
       'streamN.txt year_align year_first year_last '
 
       Currently the following datamode values are supported
-      SSMI_IAF
-      SSMI
       NULL
+      COPYALL
+      SSTDATA
 
       **********IMPORTANT NOTE: *************
       In the value matches below, regular expressions are used **** 
@@ -55,11 +55,10 @@
     <group>streams_file</group>
     <desc>List of streams used for the given dice_mode.</desc>
     <values>
-      <value dice_mode="null"      >NULL</value>
-      <value dice_mode="ssmi$"     >SSMI</value>
-      <value dice_mode="ssmi_iaf"  >SSMI_IAF</value>
+      <value dice_mode="null">NULL</value>
+      <value dice_mode="ssmi$">SSMI</value>
+      <value dice_mode="ssmi_iaf">SSMI_IAF</value>
       <value dice_mode="prescribed">prescribed</value>
-      <value dice_mode="copyall"   >copyall</value>
     </values>
   </entry>
 
@@ -69,7 +68,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="copyall">$SSTICE_GRID_FILENAME</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
@@ -80,7 +78,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="copyall">$SSTICE_GRID_FILENAME</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
@@ -121,11 +118,6 @@
         yc      lat
         area    area
         mask    mask
-      </value>
-      <value stream="copyall" sstice_stream="WW3">
-        time    time
-        gridLon lon
-        gridLat lat
       </value>
     </values>
   </entry>
@@ -226,9 +218,6 @@
       <value>
         ifrac  ifrac
       </value>
-      <value stream="copyall" sstice_stream="WW3">
-        iceCon  ifrac
-      </value>
     </values>
   </entry>
 
@@ -252,7 +241,6 @@
     <value stream="SSMI$">1 </value>
     <value stream="SSMI_IAF">1</value>
     <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
-    <value stream="copyall">$SSTICE_YEAR_ALIGN</value>
   </values>
   </entry>
 
@@ -266,7 +254,6 @@
       <value stream="SSMI$">1 </value>
       <value stream="SSMI_IAF">1948</value>
       <value stream="prescribed">$SSTICE_YEAR_START</value>
-      <value stream="copyall">$SSTICE_YEAR_START</value>
     </values>
   </entry>
 
@@ -280,7 +267,6 @@
       <value stream="SSMI$">1 </value>
       <value stream="SSMI_IAF">2009</value>
       <value stream="prescribed">$SSTICE_YEAR_END</value>
-      <value stream="copyall">$SSTICE_YEAR_END</value>
     </values>
   </entry>
 
@@ -326,11 +312,10 @@
       If DICE_MODE is set to null, datamodel will be set to NULL
     </desc>
     <values>
-      <value dice_mode="null"      >NULL</value>
-      <value dice_mode="ssmi_iaf"  >SSTDATA</value>
-      <value dice_mode="ssmi"      >SSTDATA</value>
+      <value dice_mode="null">NULL</value>
+      <value dice_mode="ssmi_iaf">SSTDATA</value>
+      <value dice_mode="ssmi">SSTDATA</value>
       <value dice_mode="prescribed">SSTDATA</value>
-      <value dice_mode="copyall"   >COPYALL</value>
     </values>
   </entry>
 
@@ -347,7 +332,7 @@
     <values>
       <value>$ICE_DOMAIN_PATH/$ICE_DOMAIN_FILE</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
-      <value stream="copyall">$SSTICE_GRID_FILENAME</value>
+      <value stream="ww3">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
 

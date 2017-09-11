@@ -219,9 +219,17 @@
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
+	<arg name="anum_tasks"> -np $TOTALPES</arg>
 	<arg name="labelstdout">-p "%g:"</arg>
-	<arg name="threadplacement"> omplace </arg>
+	<!-- the omplace argument needs to be last -->
+	<arg name="zthreadplacement"> omplace </arg>
       </arguments>
+    </mpirun>
+    <mpirun mpilib="default" unit_testing="true">
+      <!-- The only place we can build and run the unit tests is on cheyenne's
+           shared nodes. However, running mpi jobs on the shared nodes currently
+           requires some workarounds; these workarounds are implemented here -->
+      <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
@@ -242,6 +250,19 @@
       <modules compiler="intel">
 	<command name="load">intel/17.0.1</command>
 	<command name="load">mkl</command>
+	<command name="load">esmf_libs</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+	<command name="load">esmf-7.0.0-defio-mpi-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+	<command name="load">esmf-7.0.0-defio-mpi-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" debug="true">
+	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" debug="false">
+	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">gnu/6.3.0</command>
@@ -261,6 +282,12 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
+    </environment_variables>
+    <environment_variables unit_testing="true">
+      <!-- It's possible that we also need to set:
+           LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
+      -->
+      <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
   </machine>
 
@@ -432,7 +459,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.4</command>
+	<command name="switch">cce cce/8.5.7</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -491,6 +518,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
+	<arg name="binding"> -c 4 --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -535,7 +563,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.4</command>
+	<command name="switch">cce cce/8.5.7</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -544,7 +572,7 @@
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
-	<command name="load">papi/5.4.3.2</command>
+<!--	<command name="load">papi/5.4.3.2</command> -->
 	<command name="swap">craype craype/2.5.7</command>
       </modules>
       <modules compiler="!intel">
@@ -1679,16 +1707,16 @@
 	<command name="load">esmf</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" debug="true">
-	<command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
+	<command name="load">esmf-7.0.0-ncdfio-mpi-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" debug="false">
-	<command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
+	<command name="load">esmf-7.0.0-defio-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" debug="true">
-	<command name="load">esmf-6.3.0rp1-ncdfio-uni-g</command>
+	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" debug="false">
-	<command name="load"> esmf-6.3.0rp1-ncdfio-uni-O</command>
+	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/15.10</command>

@@ -41,8 +41,9 @@ module controlMod
   use clm_varcon              , only: h2osno_max
   use clm_varctl              , only: use_dynroot
   use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
-  use clm_varctl              , only: nu_com
+  use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
+  use clm_varctl              , only: forest_fert_exp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -108,8 +109,8 @@ contains
     use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
-    use clm_pflotran_interfaceMod , only : clm_pf_readnl
-    use betr_initializeMod        , only : betr_readNL
+    use clm_interface_pflotranMod , only : clm_pf_readnl
+    use ALMBeTRNLMod              , only : betr_readNL
     !
     implicit none
     !
@@ -129,7 +130,7 @@ contains
 
     ! Time step
     namelist / clm_inparm/ &
-    dtime
+         dtime
 
     ! CLM namelist settings
 
@@ -163,6 +164,8 @@ contains
          nu_com_phosphatase
     namelist /clm_inparm/  &
          nu_com_nfix
+    namelist /clm_inparm/ &
+         forest_fert_exp
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -214,8 +217,13 @@ contains
 
     namelist /clm_inparm / use_c13, use_c14
 
-    namelist /clm_inparm / use_ed, use_ed_spit_fire
-    
+    namelist /clm_inparm/ fates_paramfile, use_ed,      &
+          use_fates_spitfire, use_fates_logging,        &
+          use_fates_planthydro, use_fates_ed_st3,       &
+          use_fates_ed_prescribed_phys,                 &
+          use_fates_inventory_init,                     &
+          fates_inventory_ctrl_filename
+
     namelist /clm_inparm / use_betr
         
     namelist /clm_inparm / use_lai_streams
@@ -238,12 +246,21 @@ contains
          co2_file, aero_file
 
     ! bgc & pflotran interface
-    namelist /clm_inparm/ use_bgc_interface, use_clm_bgc, use_pflotran
+    namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
 
     namelist /clm_inparm/ use_dynroot
 
+    namelist /clm_inparm/ use_var_soil_thick
+
     namelist /clm_inparm / &
-         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
+         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
+         vsfm_lateral_model_type, vsfm_include_seepage_bc
+
+    namelist /clm_inparm/ &
+       lateral_connectivity, domain_decomp_type
+
+    namelist /clm_inparm/ &
+         use_petsc_thermal_model
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -393,20 +410,22 @@ contains
        end if
 
        ! ----------------------------------------------------------------------
-       !! bgc & pflotran interface
-       if(.not.use_bgc_interface) then
-            use_clm_bgc     = .true.
+       ! bgc & pflotran interface
+       if(.not.use_clm_interface) then
+            use_clm_bgc     = .false.
             use_pflotran    = .false.
-       end if
+       else
+       ! use_clm_interface
+            if (use_clm_bgc) then
+                use_pflotran = .false.
+            end if
 
-       if (use_clm_bgc) then
-            use_pflotran = .false.
-       end if
-
-       if (use_pflotran) then
-            use_clm_bgc = .false.
-            !! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools, NOT to implement 'nitrif_denitrif'
-            use_nitrif_denitrif = .true.
+            if (use_pflotran) then
+                use_clm_bgc = .false.
+                ! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
+                ! but NOT to implement 'nitrif_denitrif'
+                use_nitrif_denitrif = .true.
+            end if
        end if
 
     endif   ! end of if-masterproc if-block
@@ -432,7 +451,7 @@ contains
     end if
 
     if (use_betr) then
-       call betr_readNL( NLFilename )
+       call betr_readNL( NLFilename, use_c13, use_c14)
     endif    
 
     ! ----------------------------------------------------------------------
@@ -490,7 +509,7 @@ contains
        end if
     end if
 
-    ! Consistency settings for co2 type
+    ! Consistency settings for vsfm settings
     if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
@@ -500,6 +519,29 @@ contains
             'smooth_brooks_corey_bz3 or van_genuchten'//&
             errMsg(__FILE__, __LINE__))
     end if
+
+    if (vsfm_lateral_model_type /= 'none'        .and. &
+        vsfm_lateral_model_type /= 'source_sink' .and. &
+        vsfm_lateral_model_type /= 'three_dimensional' ) then
+       write(iulog,*)'vsfm_lateral_model_type = ',trim(vsfm_lateral_model_type), ' is not supported'
+       call endrun(msg=' ERROR:: choices are source_sink or three_dimensional ' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Lateral connectivity
+    if (.not.lateral_connectivity) then
+
+       if (vsfm_lateral_model_type /= 'none') then
+          call endrun(msg=' ERROR:: Lateral flow in VSFM requires lateral_connectivity to be true '// &
+               errMsg(__FILE__, __LINE__))
+       endif
+
+       if (trim(domain_decomp_type) == 'graph_partitioning') then
+          call endrun(msg=' ERROR: domain_decomp_type = graph_partitioning requires ' // &
+               'lateral_connectivity to be true.'                                     // &
+               errMsg(__FILE__, __LINE__))
+       endif
+    endif
 
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
@@ -595,13 +637,23 @@ contains
     call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_c14, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_ed, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_ed_spit_fire, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_spitfire, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
+          MPI_CHARACTER, 0, mpicom, ier)
+
 
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
@@ -698,8 +750,12 @@ contains
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
 
+    ! lateral connectivity
+    call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
+
     ! bgc & pflotran interface
-    call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_clm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
     
@@ -713,9 +769,15 @@ contains
 
     ! VSFM variable
 
-    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (vsfm_satfunc_type, len(vsfm_satfunc_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_vsfm                   , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (vsfm_use_dynamic_linesearch, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (vsfm_include_seepage_bc    , 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (vsfm_satfunc_type      , len(vsfm_satfunc_type)      , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (vsfm_lateral_model_type, len(vsfm_lateral_model_type), MPI_CHARACTER, 0, mpicom, ier)
+
+    ! PETSc-based thermal model
+    call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -750,6 +812,7 @@ contains
     write(iulog,*) '    use_lch4 = ', use_lch4
     write(iulog,*) '    use_nitrif_denitrif = ', use_nitrif_denitrif
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
+    write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
@@ -760,7 +823,7 @@ contains
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
-
+    write(iulog,*) '    use_betr = ', use_betr
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
@@ -924,12 +987,26 @@ contains
     write(iulog,*) 'Albedo over melting lakes will approach values (visible, NIR):', lake_melt_icealb, &
                    'as compared with 0.60, 0.40 for cold frozen lakes with no snow.'
 
+    ! FATES
+    write(iulog, *) '    use_ed = ', use_ed
+    if (use_ed) then
+       write(iulog, *) '    use_fates_spitfire = ', use_fates_spitfire
+       write(iulog, *) '    use_fates_logging = ', use_fates_logging
+       write(iulog, *) '    fates_paramfile = ', fates_paramfile
+       write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
+       write(iulog, *) '    use_fates_ed_st3 = ',use_fates_ed_st3
+       write(iulog, *) '    use_fates_ed_prescribed_phys = ',use_fates_ed_prescribed_phys
+       write(iulog, *) '    use_fates_inventory_init = ',use_fates_inventory_init
+       write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
+    end if
+
     ! VSFM
     if (use_vsfm) then
        write(iulog,*)
        write(iulog,*) 'VSFM Namelists:'
        write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
        write(iulog, *) '  vsfm_use_dynamic_linesearch                            : ', vsfm_use_dynamic_linesearch
+       write(iulog,*) '  vsfm_lateral_model_type                                 : ', vsfm_lateral_model_type
     endif
 
   end subroutine control_print

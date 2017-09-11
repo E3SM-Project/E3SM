@@ -11,7 +11,7 @@ from CIME.utils import expect
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def parse_command_line(description):
+def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
         description=description)
@@ -45,9 +45,7 @@ def parse_command_line(description):
     parser.add_argument("--xml-testlist",
                         help="Use this testlist to lookup tests, default specified in config_files.xml")
 
-    args = parser.parse_args()
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     expect(not(args.count and args.list_type),
            "Cannot specify both --count and --list arguments.")
@@ -149,7 +147,7 @@ def list_test_data(test_data, list_type):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    args = parse_command_line(description)
+    args = parse_command_line(sys.argv, description)
 
     test_data = get_tests_from_xml(
         xml_machine = args.xml_machine,

@@ -44,5 +44,7 @@
 <horiz_grid dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"   ncol="89147"   csne="0"    csnp="4"  />
 <horiz_grid dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"   ncol="71912"   csne="0"    csnp="4"  />
 <horiz_grid dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"   ncol="105707"   csne="0"    csnp="4"  />
+<horiz_grid dyn="se"    hgrid="ne0np4_enax4v1"          ncol="78788"    csne="0"    csnp="4"  />
+<horiz_grid dyn="se"    hgrid="ne0np4_twpx4v1" ncol="81434" csne="0" csnp="4"  />
 
 </config_horiz_grid>

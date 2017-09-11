@@ -192,8 +192,8 @@ module pftvarcon
   real(r8)              :: KM_NIT              ! KM for nitrifier NH4 uptake
   real(r8)              :: KM_DEN              ! KM for denitrifier NO3 uptake
   real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gC/m3
-  real(r8)              :: VMAX_NFIX           ! VMAX of symbiotic N2 fixation
-  real(r8)              :: KM_NFIX             ! KM of symbiotic N2 fixation
+  real(r8), allocatable :: VMAX_NFIX(:)        ! VMAX of symbiotic N2 fixation
+  real(r8), allocatable :: KM_NFIX(:)          ! KM of symbiotic N2 fixation
   real(r8), allocatable :: VMAX_PTASE_vr(:)    ! VMAX of biochemical P production
   real(r8)              :: KM_PTASE            ! KM of biochemical P production
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
@@ -237,13 +237,14 @@ module pftvarcon
   real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
   real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
   real(r8)              :: tc_stress           !Critial temperature for moisture stress
-  real(r8)              :: vcmax_np1           !vcmax~np relationship coefficient
-  real(r8)              :: vcmax_np2           !vcmax~np relationship coefficient
-  real(r8)              :: vcmax_np3           !vcmax~np relationship coefficient
-  real(r8)              :: vcmax_np4           !vcmax~np relationship coefficient
+  real(r8), allocatable :: vcmax_np1(:)        !vcmax~np relationship coefficient
+  real(r8), allocatable :: vcmax_np2(:)        !vcmax~np relationship coefficient
+  real(r8), allocatable :: vcmax_np3(:)        !vcmax~np relationship coefficient
+  real(r8), allocatable :: vcmax_np4(:)        !vcmax~np relationship coefficient
   real(r8)              :: jmax_np1            !jmax~np relationship coefficient
   real(r8)              :: jmax_np2            !jmax~np relationship coefficient
   real(r8)              :: jmax_np3            !jmax~np relationship coefficient
+  real(r8)              :: laimax
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -446,6 +447,8 @@ contains
     allocate( VMAX_PTASE_vr(1:nlevdecomp_full))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
+    allocate( VMAX_NFIX          (0:mxpft) )
+    allocate( KM_NFIX            (0:mxpft) )
     ! new stoichiometry
     allocate( leafcn_obs         (0:mxpft) )   
     allocate( frootcn_obs        (0:mxpft) )   
@@ -463,6 +466,10 @@ contains
     allocate( frootcp_obs_flex        (0:mxpft,1:2) )   
     allocate( livewdcp_obs_flex       (0:mxpft,1:2) )
     allocate( deadwdcp_obs_flex       (0:mxpft,1:2) ) 
+    allocate( vcmax_np1          (0:mxpft) )
+    allocate( vcmax_np2          (0:mxpft) )
+    allocate( vcmax_np3          (0:mxpft) )
+    allocate( vcmax_np4          (0:mxpft) )
     ! Photosynthesis
     allocate( fnr                (0:mxpft) )
     allocate( act25              (0:mxpft) )
@@ -484,9 +491,6 @@ contains
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
 
-    ! (FATES-INTERF) check .not.use_ed logic after converting to new fates parameter system
-    ! these logic checks should probably be removed
-  
     ! Set specific vegetation type values
 
     if (masterproc) then
@@ -820,6 +824,8 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
         call ncd_io('jmax_np3',jmax_np3, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('laimax',laimax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in laimax data'//errMsg(__FILE__, __LINE__))
     end if
     call ncd_io('fnr', fnr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
@@ -869,7 +875,7 @@ contains
 
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
-       ! on non-fates columns.  For now, they are incompatible (rgk 04-2017)
+       ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
        if(.not. use_ed)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
@@ -913,8 +919,6 @@ contains
        fcur(:) = fcurdv(:)
     end if
 
-    ! (FATES-INTERF) FATES will not change mxpft, it has its own pft list and maximums
-    ! so this logic should not be necessary. Leaving it for now.  (rgk 04-2017)
     if( .not. use_ed ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))

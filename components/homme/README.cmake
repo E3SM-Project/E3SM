@@ -32,6 +32,14 @@ $WDIR/tests     directory containing all the HOMME regression tests
 HOMME has a large regression test suite.  For instructions on running and adding
 new tests, see homme/test/reg_test/README
 
+HOMME's regression tests use "cprnc" to compute differences between NETCDF files. HOMME
+will attempt to build this on ACME-CIME supported systems.  For non-CIME supportes systems,
+you can compile this independently (source: cime/tools/cprnc)  and specify its location by setting
+CPRNC_DIR in the cmake/machineFiles/yourmachine.cmake
+To compile cprnc outside of CIME, edit the cprnc Makefile to comment out the Macros.cmake 
+and set NETCDF_PATH, FC, and LDFLAGS=-L$(LIB_NETCDF) -lnetcdff -lnetcdf
+
+
 DCMIP tests provide a standard means for testing and comparing the ACME HOMME dycore with other dycores
 both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory for now.
 To run a DCMIP tests, navigate to the appropriate directory and type make install to install test scripts and namelists.
@@ -40,8 +48,6 @@ The CMAKE code could use some cleanup.
 - user configured variables should not need to be prefixed by the exectuable name
   (i.e. -DNP=4, instead of -DPREQX_NP=4).  This will make the cmake code a lot simpler
   to maintain.
-- the test cases are created after all the test executables are created. In keeping
-  with cmake's tree-like directory approach, the tests should be associated with their
 
 
 ************************************************************************************************

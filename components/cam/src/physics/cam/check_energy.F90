@@ -34,7 +34,7 @@ module check_energy
   use time_manager,    only: is_first_step
   use cam_logfile,     only: iulog
   use cam_abortutils,  only: endrun 
-  use phys_control,    only: ieflx_opt !!l_ieflx_fix
+  use phys_control,    only: ieflx_opt
 
   implicit none
   private
@@ -78,7 +78,6 @@ module check_energy
 
 ! Physics buffer indices
   
-  integer  :: ieflx_idx  = 0       ! teout index in physics buffer 
   integer  :: teout_idx  = 0       ! teout index in physics buffer 
   integer  :: dtcore_idx = 0       ! dtcore index in physics buffer 
 
@@ -146,16 +145,8 @@ end subroutine check_energy_setopts
 
     if(is_subcol_on()) then
       call pbuf_register_subcol('TEOUT', 'phys_register', teout_idx)
-      call pbuf_register_subcol('IEFLX', 'phys_register', ieflx_idx)
       call pbuf_register_subcol('DTCORE', 'phys_register', dtcore_idx)
     end if
-
-    if(ieflx_opt>0) then 
-       call pbuf_add_field('IEFLX', 'global',dtype_r8 , (/pcols,dyn_time_lvls/),      ieflx_idx)
-       if(is_subcol_on()) then
-         call pbuf_register_subcol('IEFLX', 'phys_register', ieflx_idx)
-       end if
-    end if 
 
   end subroutine check_energy_register
 
@@ -237,8 +228,8 @@ end subroutine check_energy_get_integrals
 
     if(ieflx_opt>0) then 
        call addfld('IEFLX',    horiz_only, 'A', 'W/m2', 'Implied internal energy flux')
-       call addfld('SHFLXFIX', horiz_only, 'A', 'W/m2', 'SHFLX after adding IEFLX')
-       call add_default ('SHFLXFIX', 1, ' ') 
+       call addfld('SHFLXORI', horiz_only, 'A', 'W/m2', 'SHFLX before adding IEFLX')
+       call add_default ('IEFLX', 1, ' ') 
     end if 
 
   end subroutine check_energy_init
@@ -264,8 +255,6 @@ end subroutine check_energy_get_integrals
     real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
-
-    real(r8) :: ieflx(pcols)                     ! vertical integral of kinetic energy
 
     real(r8),allocatable :: cpairv_loc(:,:,:)
 
@@ -308,8 +297,6 @@ end subroutine check_energy_get_integrals
     wi = 0._r8
     wr = 0._r8
     ws = 0._r8
-
-    ieflx(1:ncol) = 0._r8
 
     do k = 1, pver
        do i = 1, ncol
@@ -362,9 +349,6 @@ end subroutine check_energy_get_integrals
 ! initialize physics buffer
     if (is_first_step()) then
        call pbuf_set_field(pbuf, teout_idx, state%te_ini, col_type=col_type)
-       if(ieflx_opt>0) then 
-          call pbuf_set_field(pbuf, ieflx_idx, ieflx,        col_type=col_type)
-       end if
     end if
 
     deallocate(cpairv_loc)
@@ -650,6 +634,8 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 !!...................................................................
 !! Calculate global mean of the implied internal energy flux 
 !! 
+!! This subroutien is called only when ieflx_opt > 0 
+!! 
 !! Author: Kai Zhang 
 !!...................................................................
 
@@ -657,8 +643,6 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
     use physics_buffer,   only: physics_buffer_desc, pbuf_get_field, pbuf_get_chunk, pbuf_set_field 
     use cam_history,      only: outfld
     use phys_control,     only: ieflx_opt
-
-    ! Compute global mean qflx
 
     integer , intent(in) :: nstep        ! current timestep number
     type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
@@ -673,7 +657,7 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8), pointer :: ieflx(:) 
+    real(r8) :: ieflx(pcols) 
 
     real(r8) :: qflx(pcols,begchunk:endchunk) !qflx [kg/m2/s]
     real(r8) :: rain(pcols,begchunk:endchunk) !rain [m/s] 
@@ -696,9 +680,18 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
        snow(:ncol,lchnk) = cam_out(lchnk)%precsc(:ncol) + cam_out(lchnk)%precsl(:ncol)
        rain(:ncol,lchnk) = cam_out(lchnk)%precc(:ncol)  + cam_out(lchnk)%precl(:ncol) - snow(:ncol,lchnk) 
 
-       !! the calculation below (rhow*) converts the unit of precipitation from m/s to kg/m2/s 
-
        select case (ieflx_opt) 
+
+       !!..................................................................................... 
+       !! Calculate the internal energy flux at surface (imitate what is considered in the ocean model)   
+       !! 
+       !! ieflx_opt = 1 : air temperature in the lowest model layer will be used 
+       !! ieflx_opt = 2 : skin temperature (from lnd/ocn/ice components) will be used  
+       !! 
+       !! ieflx_opt = 2 is recommended for now. 
+       !! 
+       !! (rhow*) converts the unit of precipitation from m/s to kg/m2/s 
+       !!..................................................................................... 
 
        case(1) 
           ienet(:ncol,lchnk) = cpsw * qflx(:ncol,lchnk) * cam_in(lchnk)%ts(:ncol) - & 
@@ -710,17 +703,19 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
           call endrun('*** incorrect ieflx_opt ***')
        end select 
 
-       !! put it to pbuf for more comprehensive treatment in the future 
-
-       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk),ieflx_idx, ieflx)
-
-       ieflx(:ncol) = ienet(:ncol,lchnk) 
-
-       call outfld('IEFLX', ieflx(:ncol), pcols, lchnk)
 
     end do
 
     call gmean(ienet, ieflx_glob)
+
+!DIR$ CONCURRENT
+    do lchnk = begchunk, endchunk
+
+       ieflx(:ncol) = ieflx_glob
+
+       call outfld('IEFLX', ieflx(:ncol), pcols, lchnk)
+
+    end do
 
 !!!    if (begchunk .le. endchunk) then
 !!!       if (masterproc) then
@@ -735,8 +730,10 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
   subroutine check_ieflx_fix(lchnk, ncol, nstep, shflx)
 
 !!
-!! Add implied internal energy flux to the sensible heat flux 
+!! Add the global mean internal energy flux to the sensible heat flux 
 !!
+!! This subroutien is called only when ieflx_opt > 0 
+!! 
 !! Called by typhsac 
 !! 
 
@@ -749,13 +746,13 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 
     integer :: i
 
+    call outfld('SHFLXORI', shflx, pcols, lchnk)
+
     if(nstep>1) then 
        do i = 1, ncol
           shflx(i) = shflx(i) + ieflx_glob 
        end do
     end if 
-
-    call outfld('SHFLXFIX', shflx, pcols, lchnk)
 
     return
   end subroutine check_ieflx_fix

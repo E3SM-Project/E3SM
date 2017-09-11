@@ -416,6 +416,7 @@ add_default($nl, 'config_sia_tangent_slope_calculation');
 add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
+add_default($nl, 'config_use_glp');
 
 #############################
 # Namelist group: advection #
@@ -545,6 +546,14 @@ add_default($nl, 'config_SGH_bed_roughness_max');
 add_default($nl, 'config_SGH_creep_coefficient');
 add_default($nl, 'config_SGH_englacial_porosity');
 add_default($nl, 'config_SGH_till_max');
+add_default($nl, 'config_SGH_chnl_active');
+add_default($nl, 'config_SGH_chnl_alpha');
+add_default($nl, 'config_SGH_chnl_beta');
+add_default($nl, 'config_SGH_chnl_conduc_coeff');
+add_default($nl, 'config_SGH_chnl_creep_coefficient');
+add_default($nl, 'config_SGH_incipient_channel_width');
+add_default($nl, 'config_SGH_include_pressure_melt');
+add_default($nl, 'config_SGH_shmip_forcing');
 
 ##################################
 # Namelist group: AM_globalStats #

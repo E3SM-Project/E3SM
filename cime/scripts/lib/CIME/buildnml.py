@@ -5,7 +5,7 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options
+from CIME.utils import expect, parse_args_and_handle_standard_logging_options, setup_standard_logging_options
 import sys, os, argparse, doctest
 
 logger = logging.getLogger(__name__)
@@ -25,9 +25,7 @@ def parse_input(argv):
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")
 
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
+    args = parse_args_and_handle_standard_logging_options(argv, parser)
 
     return args.caseroot
 

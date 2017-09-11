@@ -107,7 +107,7 @@ contains
     ! natural vegetation, which is synonomous with the soil column. 
     ! -------------------------------------------------------------------------
 
-    icohorts = icols * fates_maxElementsPerSite
+    icohorts = fates_maxElementsPerSite
 
     if (present(nveg )) nveg  = npfts_per_lunit
 

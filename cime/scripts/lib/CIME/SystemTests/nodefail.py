@@ -56,7 +56,15 @@ fi
         env_mach_specific.set_value("run_exe", fake_exe_file)
         self._case.flush(flushall=True)
 
+        # This flag is needed by mpt to run a script under mpiexec
+        mpilib = self._case.get_value("MPILIB")
+        if mpilib == "mpt":
+            os.environ["MPI_SHEPHERD"] = "true"
+
         self.run_indv(suffix=None)
+
+        if mpilib == "mpt":
+            del os.environ["MPI_SHEPHERD"]
 
         env_mach_specific = self._case.get_env("mach_specific")
         env_mach_specific.set_value("run_exe", prev_run_exe)

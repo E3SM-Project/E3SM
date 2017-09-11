@@ -4,8 +4,8 @@ module BGCReactionsMod
   ! template for doing bgc reaction in betr
   !
   ! !USES:
-  use LandunitType , only : lun
-  use ColumnType   , only : col
+  use LandunitType , only : lun_pp
+  use ColumnType   , only : col_pp
   implicit none
   save
   private
@@ -208,9 +208,9 @@ module BGCReactionsMod
        use BeTRTracerType           , only : BeTRTracer_Type
        use tracerstatetype          , only : tracerstate_type
        use WaterstateType           , only : waterstate_type
-       use LandunitType             , only : lun
-       use ColumnType               , only : col
-       use PatchType                , only : pft
+       use LandunitType             , only : lun_pp
+       use ColumnType               , only : col_pp
+       use VegetationType                , only : veg_pp
        use decompMod                , only : bounds_type
 
        ! !ARGUMENTS:
