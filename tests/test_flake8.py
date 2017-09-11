@@ -7,8 +7,8 @@ import shlex
 class TestFlake8(unittest.TestCase):
 
     def test_flake8(self):
-        # E402 is ignore b/c we do logic between import
-        # statements so numpy can run without X
+        # E402 is ignored b/c we do logic between import
+        # statements so matplotlib can run without X
         pth = os.path.dirname(__file__)
         pth = os.path.join(pth, '..')
         pth = os.path.abspath(pth)
