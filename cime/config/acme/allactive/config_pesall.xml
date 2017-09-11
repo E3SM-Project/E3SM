@@ -5968,7 +5968,7 @@
   </grid>
 <grid name="a%ne30np4">
     <mach name="edison">
-      <pes compset="CAM5.+CLM45.+CICE.+DOCN.+RTM.+SGLC.+SWAV" pesize="any">
+      <pes compset="CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV" pesize="any">
         <comment>"PMC - 114 node F-compset gets around 7.4 SYPD"</comment>
         <PES_PER_NODE>24</PES_PER_NODE>
         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
@@ -6486,7 +6486,7 @@
   </grid>
   <grid name="a%ne120np4_l%ne120np4_oi%ne120np4_r%r05.*">
     <mach name="mira">
-      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+RTM.+SGLC.+SWAV.*" pesize="S">
+      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="S">
         <comment>ne120 F-compset on 512 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>8</PES_PER_NODE>
@@ -6521,7 +6521,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+RTM.+SGLC.+SWAV.*" pesize="M">
+      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="M">
         <comment>ne120 F-compset on 1024 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>8</PES_PER_NODE>
@@ -6556,7 +6556,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+RTM.+SGLC.+SWAV.*" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="L">
         <comment>ne120 F-compset on 2048 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>8</PES_PER_NODE>
