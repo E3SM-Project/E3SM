@@ -1,0 +1,10 @@
+# Diverging blue-white-red colormap that matches the end colors in
+# 'cet_rainbow.rgb'
+#
+# number of colors in table
+#ncolors = 3
+#
+#  r   g   b
+   0  52 248  # blue
+ 255 255 255  # white
+ 255  42   0  # red

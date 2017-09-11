@@ -34,7 +34,7 @@ def get_ax_size(fig,ax):
 def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
-    fig = plt.figure(figsize=[8.5, 11.0])
+    fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     # proj = ccrs.PlateCarree(central_longitude=180)
     proj = None
     ax = fig.add_axes(panel[0])
@@ -43,6 +43,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     ax.plot(reference.getLatitude()[:],ma.squeeze( reference.asma()),'r',linewidth=2)
     ax1 = fig.add_axes(panel[1])
     ax1.plot(diff.getLatitude()[:],ma.squeeze( diff.asma() ),'k', linewidth=2) 
+    ax1.axhline(y=0, color='0.5')
     fig.text(panel[0][0],panel[0][2]+0.095,"Test: " + parameter.test_name,ha='left',fontdict=plotSideTitle,color = 'black')
     fig.text(panel[0][0],panel[0][2]+0.07,"Reference: " +parameter.reference_name,ha='left',fontdict=plotSideTitle,color='red')
     fig.text(panel[1][0],panel[0][2]-0.3,"Test-Reference",ha='left',fontdict=plotSideTitle)

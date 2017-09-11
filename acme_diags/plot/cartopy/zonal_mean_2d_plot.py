@@ -118,7 +118,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
-    fig = plt.figure(figsize=[8.5, 11.0])
+    fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     #proj = ccrs.PlateCarree(central_longitude=180)
     proj = None
 

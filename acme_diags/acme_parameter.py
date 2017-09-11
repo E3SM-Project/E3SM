@@ -30,6 +30,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.output_format = ['png']
         self.canvas_size_w = 1212
         self.canvas_size_h = 1628
+        self.figsize = [8.5, 11.0]
+        self.dpi = 150
         self.arrows = True
         self.logo = False
 
@@ -49,7 +51,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.diff_name = ''
         self.diff_title = 'Model - Observation'
         #self.diff_colormap = 'cet_diverging_bwr_55_98_c37'
-        self.diff_colormap = 'bwr'
+        self.diff_colormap = 'diverging_bwr.rgb'
         self.diff_levels = []
         self.diff_units = ''
 
