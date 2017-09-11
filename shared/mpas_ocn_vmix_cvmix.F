@@ -710,6 +710,7 @@ contains
       if (kpp_stage == 1 .and. config_cvmix_use_BLD_smoothing) then ! smooth boundary layer
          nCells = nCellsArray(2)
 
+         !$omp do schedule(runtime) private(nEdges, areaSum, edgeCount, iEdge, iNeighbor)
          do iCell=1,nCells
             nEdges = nEdgesOnCell(iCell)
             boundaryLayerDepthSmooth(iCell) = 0.0_RKIND
@@ -729,11 +730,13 @@ contains
                          boundaryLayerDepth(iCell) * edgeCount * areaCell(iCell)
             boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) / areaSum
          end do
+         !$omp end do
 
+         !$omp do schedule(runtime)
           do iCell=1, nCells
              boundaryLayerDepth(iCell) = boundaryLayerDepthSmooth(iCell)
           enddo
-
+         !$omp end do
      
        endif !stage 1 BLD smoothing
       end do ! kpp_stage
