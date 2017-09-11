@@ -121,7 +121,7 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne),stat=ier)
+             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &
              domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')

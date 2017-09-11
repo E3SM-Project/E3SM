@@ -311,7 +311,7 @@ contains
        ! Water balance check
 
        do c = bounds%begc, bounds%endc
-          g = col%gridcell(c)
+          g = col_pp%gridcell(c)
 
           ! add qflx_drain_perched and qflx_flood
           if (col_pp%active(c)) then
