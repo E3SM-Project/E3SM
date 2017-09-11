@@ -9,7 +9,7 @@ from CIME.simple_compare            import compare_files
 logger = logging.getLogger(__name__)
 
 
-def create_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
+def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
                  user_mods_dir=None):
     """
     Create a case clone
