@@ -24,7 +24,7 @@ module PStateUpdate1Mod
   use clm_varctl             , only : nu_com
   ! forest fertilization experiment
   use clm_time_manager       , only : get_curr_date
-  use CNStateType            , only : fert_type , fert_continue, fert_dose
+  use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl             , only : forest_fert_exp
   !
   implicit none
@@ -161,16 +161,16 @@ contains
       !------------------------------------------------------------------
      
       ! forest fertilization
-      if (forest_fert_exp) then
-         call get_curr_date(kyr, kmo, kda, mcsec)
-         if (kda == 1  .and. mcsec == 0 ) then
+      call get_curr_date(kyr, kmo, kda, mcsec)
+      if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
+         if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+               .and. fert_type(c) == 2 &
+               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
             do fc = 1,num_soilc
-              c = filter_soilc(fc)
-              if ( (((fert_continue(c) == 1) .and. (kyr > 1981)) .or. (kyr == 1981)) .and. fert_type(c) .eq. 2 ) then
-                  do j = 1, nlevdecomp
-                      ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
-                  end do
-              end if
+               c = filter_soilc(fc)
+               do j = 1, nlevdecomp
+                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+               end do
             end do
          end if
       end if
