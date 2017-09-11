@@ -860,10 +860,10 @@ endif
 ifdef CLM_PFLOTRAN_COUPLED
 $(PFLOTRANLIB):
 	cd $(PFLOTRAN_DIR); \
-	make PETSC_DIR=$(PETSC_PATH) th_characteristic_curves=TRUE smoothing2=TRUE libpflotran.a -f $(PFLOTRAN_DIR)/makefile
+	$(MAKE) PETSC_DIR=$(PETSC_PATH) th_characteristic_curves=TRUE smoothing2=TRUE libpflotran.a -f $(PFLOTRAN_DIR)/makefile -j1
 	mv $(PFLOTRAN_DIR)/*.mod $(PFLOTRAN_DIR)/*.o $(EXEROOT)/lnd/obj
 	mv $(PFLOTRAN_DIR)/libpflotran.a $(LIBROOT)
-$(LIBROOT)/libclm.a : $(PFLOTRANLIB)
+$(OBJS): $(PFLOTRANLIB)
 endif
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
