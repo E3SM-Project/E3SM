@@ -72,10 +72,9 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '160830';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30v3wLI' ) {
-        $grid_date .= '170328';
-        $grid_prefix .= 'oEC60to30v3wLI';
         $ic_date .= '170328';
         $ic_prefix .= 'oEC60to30v3wLI';
+        $decomp_date .= '170328';
         $decomp_prefix .= 'mpas-o.graph.info.';
         $restoring_file .= 'sss.monthlyClimatology.PHC2_salx.EC60to30v3wLI.170328.nc';
 } elsif ( $OCN_GRID eq 'oQU240' ) {
@@ -86,6 +85,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 } elsif ( $OCN_GRID eq 'oQU240wLI' ) {
         $ic_date .= '160929';
         $ic_prefix .= 'ocean.QU.240wLI';
+        $decomp_date .= '160929';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU120' ) {
 	$ic_date .= '160318';
