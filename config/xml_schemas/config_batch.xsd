@@ -19,7 +19,7 @@
   <xs:element name="batch_mail_type_flag" type="xs:string"/>
   <xs:element name="batch_mail_type" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
-  <xs:element name="task_count" type="xs:NMTOKEN"/>
+  <xs:element name="task_count" type="xs:integer"/>
   <xs:element name="dependency" type="xs:string"/>
   <xs:element name="prereq" type="xs:string"/>
 
@@ -144,6 +144,8 @@
           <xs:attribute name="strict" type="xs:boolean"/>
           <xs:attribute name="jobmax" type="xs:integer"/>
           <xs:attribute name="jobmin" type="xs:integer"/>
+          <xs:attribute name="nodemax" type="xs:integer"/>
+          <xs:attribute name="nodemin" type="xs:integer"/>
           <xs:attribute name="jobname" type="xs:NCName"/>
           <xs:attribute name="walltimemax"/>
           <xs:attribute name="walltimemin"/>
@@ -164,7 +166,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="template"/>
-        <xs:element ref="task_count"/>
+        <xs:element minOccurs="0" ref="task_count"/>
         <xs:element minOccurs="0" ref="dependency"/>
         <xs:element ref="prereq"/>
       </xs:sequence>
