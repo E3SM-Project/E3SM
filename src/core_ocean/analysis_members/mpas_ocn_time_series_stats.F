@@ -1022,7 +1022,7 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
 
   ! local variables
   integer :: v, b
-  logical :: emptyRestartStream
+  logical :: emptyRestartStream, restartStreamEnabled
   character (len=StrKIND), pointer :: output_stream_name, restart_stream_name
   character (len=StrKIND) :: fieldName
   character (len=StrKIND) :: field_name, config, op_name
@@ -1046,6 +1046,11 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   ! get restart stream name
   config = trim(namelist_prefix) // trim(RESTART_STREAM_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, restart_stream_name)
+  if ( trim(restart_stream_name) == 'none' ) then
+     restartStreamEnabled = .false.
+  else
+     restartStreamEnabled = .true.
+  endif
 
   op_name = operator_naming(series % operation)
 
@@ -1079,24 +1084,26 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   !
 
   ! ensure restart stream is empty
-  emptyRestartStream = .true.
-  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    streamID=restart_stream_name, ierr=err)
-  do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
-    emptyRestartStream = .false.
-  end do
-
-  if (.not. emptyRestartStream) then
-    call mpas_log_write( 'Stream named ''' &
-      // trim(restart_stream_name) // ''' is not empty, but is used in ' // &
-      'an restart instance of the time series stats analysis member. ' // &
-      'This restart stream will be built based on the contents of the ''' // &
-      trim(output_stream_name) // ''' stream. Please ensure it is empty ' // &
-      'in the streams input file.')
-    call mpas_log_write( &
-      'Misconfigured restart stream for time series stats ' // &
-      ' analysis member.', MPAS_LOG_CRIT)
+  if (restartStreamEnabled) then
+     emptyRestartStream = .true.
+     call mpas_stream_mgr_begin_iteration(domain % streamManager, &
+       streamID=restart_stream_name, ierr=err)
+     do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
+       streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
+       emptyRestartStream = .false.
+     end do
+   
+     if (.not. emptyRestartStream) then
+       call mpas_log_write( 'Stream named ''' &
+         // trim(restart_stream_name) // ''' is not empty, but is used in ' // &
+         'an restart instance of the time series stats analysis member. ' // &
+         'This restart stream will be built based on the contents of the ''' // &
+         trim(output_stream_name) // ''' stream. Please ensure it is empty ' // &
+         'in the streams input file.')
+       call mpas_log_write( &
+         'Misconfigured restart stream for time series stats ' // &
+         ' analysis member.', MPAS_LOG_CRIT)
+     end if
   end if
 
   ! create and put the counter, xtime_start, xtime_end in the streams
@@ -1115,8 +1122,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     ! put it in the output and restart
     call mpas_stream_mgr_add_field(domain % streamManager, &
       output_stream_name, field_name, ierr=err)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_stream_name, field_name, ierr=err)
+    if (restartStreamEnabled) then
+      call mpas_stream_mgr_add_field(domain % streamManager, &
+        restart_stream_name, field_name, ierr=err)
+    end if
 
     ! xtime start
     if (series % number_of_buffers > 1) then
@@ -1131,8 +1140,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     ! put it in the output and restart
     call mpas_stream_mgr_add_field(domain % streamManager, &
       output_stream_name, field_name, ierr=err)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_stream_name, field_name, ierr=err)
+    if (restartStreamEnabled) then
+      call mpas_stream_mgr_add_field(domain % streamManager, &
+       restart_stream_name, field_name, ierr=err)
+    end if
 
     ! xtime end
     if (series % number_of_buffers > 1) then
@@ -1147,8 +1158,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     ! put it in the output and restart
     call mpas_stream_mgr_add_field(domain % streamManager, &
       output_stream_name, field_name, ierr=err)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_stream_name, field_name, ierr=err)
+    if (restartStreamEnabled) then
+      call mpas_stream_mgr_add_field(domain % streamManager, &
+        restart_stream_name, field_name, ierr=err)
+    end if
   end do
 
   ! set up the variables
@@ -1185,8 +1198,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
         output_stream_name, series % variables(v) % output_names(b), ierr=err)
 
       ! put it in the restart stream
-      call mpas_stream_mgr_add_field(domain % streamManager, &
-        restart_stream_name, series % variables(v) % output_names(b), ierr=err)
+      if (restartStreamEnabled) then
+         call mpas_stream_mgr_add_field(domain % streamManager, &
+           restart_stream_name, series % variables(v) % output_names(b), ierr=err)
+      end if
     end do
   end do ! number_of_variables
 
