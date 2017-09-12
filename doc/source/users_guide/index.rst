@@ -23,7 +23,6 @@ CIME User's Guide Part 1: Beginner - Basic Usage
    cloning-a-case.rst
    troubleshooting.rst
 
-
 .. _users-guide2:
 
 #######################################################################################
@@ -42,7 +41,6 @@ CIME User's Guide Part 2: Intermediate - CIME Internals, Porting, Testing and Us
    multi-instance.rst
    adding-cases.rst
    use_cases/use-cases.rst
-   adding-components.rst
 
 
 Indices and tables

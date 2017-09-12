@@ -21,7 +21,6 @@ Table of contents
    data_models/index.rst
    driver_cpl/index.rst
    misc_tools/index.rst
-   glossary.rst
 
 Addendum
 ---------
@@ -34,12 +33,11 @@ Addendum
    CIME_api/modules.rst
    Tools_api/modules.rst
 
-Indices, Glossary and Search
-----------------------------
+Python Module Indices and Search
+---------------------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`glossary`
 * :ref:`search`
 
 
