@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno
+import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
 import stat as statlib
 import warnings
 from contextlib import contextmanager
@@ -1346,3 +1346,25 @@ class SharedArea(object):
 
     def __exit__(self, *_):
         os.umask(self._orig_umask)
+
+class Timeout(object):
+    """
+    A context manager that implements a timeout. By default, it
+    will raise exception, but a custon function call can be provided.
+    Provided None as seconds makes this class a no-op
+    """
+    def __init__(self, seconds, action=None):
+        self._seconds = seconds
+        self._action  = action if action is not None else self._handle_timeout
+
+    def _handle_timeout(self, *_):
+        raise RuntimeError("Timeout expired")
+
+    def __enter__(self):
+        if self._seconds is not None:
+            signal.signal(signal.SIGALRM, self._action)
+            signal.alarm(self._seconds)
+
+    def __exit__(self, *_):
+        if self._seconds is not None:
+            signal.alarm(0)

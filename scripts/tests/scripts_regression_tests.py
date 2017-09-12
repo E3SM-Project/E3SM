@@ -610,6 +610,12 @@ class M_TestWaitForTests(unittest.TestCase):
         self.simple_test(self._testdir_unfinished, expected_results, "-n")
 
     ###########################################################################
+    def test_wait_for_test_timeout(self):
+    ###########################################################################
+        expected_results = ["PEND" if item == 5 else "PASS" for item in range(10)]
+        self.simple_test(self._testdir_unfinished, expected_results, "--timeout=3")
+
+    ###########################################################################
     def test_wait_for_test_wait_for_pend(self):
     ###########################################################################
         run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished, ["PASS"] * 10))
