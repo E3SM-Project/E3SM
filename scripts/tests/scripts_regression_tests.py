@@ -926,7 +926,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         finally:
             logging.getLogger().setLevel(log_lvl)
 
-        self._wait_for_tests(test_id, CIME.utils.TESTS_FAILED_ERR_CODE)
+        self._wait_for_tests(test_id, expect_works=False)
 
         test_statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
@@ -991,7 +991,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         test_statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
 
-        self._wait_for_tests(test_id, CIME.utils.TESTS_FAILED_ERR_CODE)
+        self._wait_for_tests(test_id, expect_works=False)
 
         for test_status in test_statuses:
             casedir = os.path.dirname(test_status)
