@@ -1307,7 +1307,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        self._create_test(["--walltime=0:15:00"], test_id=self._baseline_name)
+        self._create_test(["--walltime=0:15:00", "cime_developer"], test_id=self._baseline_name)
 
         run_cmd_assert_result(self, "%s/cs.status.%s" % (self._testroot, self._baseline_name),
                               from_dir=self._testroot)
