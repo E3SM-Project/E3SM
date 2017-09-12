@@ -68,6 +68,7 @@ As a result, you will have two instances of CAM, CLM and CICE (prescribed), RTM,
 Now consider the multi driver model.
 To use this mode change
 ::
+
    > ./xmlchange MULTI_DRIVER=TRUE
 
 This configuration will run each component instance on the original 144 tasks but will generate two copies of the model (in the same executable) for a total of 288 tasks.

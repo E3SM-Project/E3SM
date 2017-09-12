@@ -57,13 +57,13 @@ the following XML files.
 
 CESM XML settings for all-active component set (compset) configurations.
 
-.. literalinclude:: ../../../cime_config/config_compsets.xml
+.. literalinclude:: ../../../../cime_config/config_compsets.xml
 
 CESM XML settings for all-active test configurations.
 
-.. literalinclude:: ../../../cime_config/testlist_allactive.xml
+.. literalinclude:: ../../../../cime_config/testlist_allactive.xml
 
 CESM XML settings for optimized processor elements (PEs) layout configurations.
 
-.. literalinclude:: ../../../cime_config/config_pes.xml
+.. literalinclude:: ../../../../cime_config/config_pes.xml
 

@@ -26,7 +26,7 @@ Tools_api:
 	@$(SPHINXAPI) --force -o $(SOURCEDIR)/$@ $(SCRIPTSDIR)/Tools
 
 Tools_user:
-	rm $(SOURCEDIR)/$@/*.rst
+	rm -f $(SOURCEDIR)/$@/*.rst
 	./tools_autodoc.py
 
 .PHONY: help Makefile CIME_api Tools_api Tools_user
