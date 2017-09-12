@@ -210,7 +210,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.13
+set script_ver = 3.0.14
 
 #===========================================
 # DEFINE ALIASES
@@ -827,7 +827,7 @@ endif
 if ( `lowercase $debug_queue` == true ) then
   if ( $machine == cab || $machine == sierra ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
-  else if ($machine != skybridge ) then
+  else if ($machine != skybridge && $machine != bebop && $machine != blues) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
   endif
 endif
@@ -1359,6 +1359,7 @@ acme_newline
 # 3.0.12   2017-07-24    Supports setting the queue priority for anvil. Also move making machine lowercase up to clean some things up (MD)
 # 3.0.13   2017-08-07    Verify that the number of periods between a restart evenly divides the number until the stop with the same units.
 #                        Update the machine check for cori to account for cori-knl (MD)
+# 3.0.14   2017-09-11    Add checks for blues and bebop when trying to use the debug queue. Mostly by Andy Salinger with assist from (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 

@@ -7053,7 +7053,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
-    <mach name="melvin">
+    <mach name="melvin|sandia-srn-sems">
       <pes compset="any"  pesize="any">
         <comment>none</comment>
         <ntasks>
