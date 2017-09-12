@@ -1291,7 +1291,7 @@
     </domain>
 
     <domain name="oEC60to30v3wLI">
-      <nx>236689</nx>  <ny>1</ny>
+      <nx>236358</nx>  <ny>1</ny>
       <file ice_mask="oEC60to30v3wLI">domain.ocn.oEC60to30v3wLI_nomask.170328.nc</file>
       <file ocn_mask="oEC60to30v3wLI">domain.ocn.oEC60to30v3wLI_nomask.170328.nc</file>
       <desc>oEC60to30v3wLI is a MPAS ocean grid generated with the eddy closure density function with 30 km gridcells at the equator, 60 km at mid-latitudes, and 35 km at high latitudes.  It is roughly comparable to the POP 1 degree resolution. Additionally, it has ocean under landice cavities:</desc>
@@ -1904,14 +1904,14 @@
     <gridmap atm_grid="T62" ocn_grid="oEC60to30wLI">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30wLI_aave.160830.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30wLI_nm_aave.160830.nc</ATM2OCN_SMAPNAME>
-      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30wLI_aave.160830.nc</ATM2OCN_VMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30wLI_blin.160830.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/oEC60to30wLI/map_oEC60to30wLI_TO_T62_aave.160830.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/oEC60to30wLI/map_oEC60to30wLI_TO_T62_aave.160830.nc</OCN2ATM_SMAPNAME>
     </gridmap>
     <gridmap atm_grid="T62" ocn_grid="oEC60to30v3wLI">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30v3wLI_mask_aave.170328.nc</ATM2OCN_FMAPNAME>
-      <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30v3wLI_nomask_aave.170328.nc</ATM2OCN_SMAPNAME>
-      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30v3wLI_mask_aave.170328.nc</ATM2OCN_VMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30v3wLI_nomask_blin.170328.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oEC60to30v3wLI_mask_patc.170328.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_mask_TO_T62_aave.170328.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_mask_TO_T62_aave.170328.nc</OCN2ATM_SMAPNAME>
     </gridmap>
@@ -1932,7 +1932,7 @@
     <gridmap atm_grid="T62" ocn_grid="oRRS30to10wLI">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10wLI_mask_aave.160930.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10wLI_nomask_aave.160930.nc</ATM2OCN_SMAPNAME>
-      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10wLI_mask_aave.160930.nc</ATM2OCN_VMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oRRS30to10wLI_mask_blin.160930.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/oRRS30to10wLI/map_oRRS30to10wLI_mask_TO_T62_aave.160930.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/oRRS30to10wLI/map_oRRS30to10wLI_mask_TO_T62_aave.160930.nc</OCN2ATM_SMAPNAME>
     </gridmap>
