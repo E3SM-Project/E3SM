@@ -12,7 +12,3 @@ PFLOTRAN_PREFIX=pflotran_clm
 if [ ! -f ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}/${PFLOTRAN_PREFIX}.in ]; then
         svn export --force https://acme-svn2.ornl.gov/acme-repo/${PFLOTRAN_INPUTDIR} ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}
 fi
-
-mkdir -p ${RUNDIR}
-cp ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}/${PFLOTRAN_PREFIX}.in ${RUNDIR}
-cp ${DIN_LOC_ROOT}/${PFLOTRAN_INPUTDIR}/CLM-CN_database.dat ${RUNDIR}
