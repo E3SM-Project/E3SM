@@ -170,6 +170,8 @@ add_default($nl, 'config_mom_del4_tensor');
 
 add_default($nl, 'config_Rayleigh_friction');
 add_default($nl, 'config_Rayleigh_damping_coeff');
+add_default($nl, 'config_Rayleigh_bottom_friction');
+add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 
 ########################
 # Namelist group: vmix #
@@ -226,6 +228,7 @@ add_default($nl, 'config_cvmix_convective_basedOnBVF');
 add_default($nl, 'config_cvmix_convective_triggerBVF');
 add_default($nl, 'config_use_cvmix_shear');
 add_default($nl, 'config_cvmix_num_ri_smooth_loops');
+add_default($nl, 'config_cvmix_use_BLD_smoothing');
 add_default($nl, 'config_cvmix_shear_mixing_scheme');
 add_default($nl, 'config_cvmix_shear_PP_nu_zero');
 add_default($nl, 'config_cvmix_shear_PP_alpha');
@@ -322,7 +325,10 @@ add_default($nl, 'config_monotonic');
 # Namelist group: bottom_drag #
 ###############################
 
-add_default($nl, 'config_bottom_drag_coeff');
+add_default($nl, 'config_use_implicit_bottom_drag');
+add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_use_explicit_bottom_drag');
+add_default($nl, 'config_explicit_bottom_drag_coeff');
 
 ###################################
 # Namelist group: ocean_constants #
@@ -403,6 +409,7 @@ add_default($nl, 'config_prescribe_velocity');
 add_default($nl, 'config_prescribe_thickness');
 add_default($nl, 'config_include_KE_vertex');
 add_default($nl, 'config_check_tracer_monotonicity');
+add_default($nl, 'config_compute_active_tracer_budgets');
 add_default($nl, 'config_disable_thick_all_tend');
 add_default($nl, 'config_disable_thick_hadv');
 add_default($nl, 'config_disable_thick_vadv');
@@ -412,6 +419,7 @@ add_default($nl, 'config_disable_vel_coriolis');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
 add_default($nl, 'config_disable_vel_surface_stress');
+add_default($nl, 'config_disable_vel_explicit_bottom_drag');
 add_default($nl, 'config_disable_vel_vmix');
 add_default($nl, 'config_disable_vel_vadv');
 add_default($nl, 'config_disable_tr_all_tend');
@@ -562,6 +570,8 @@ add_default($nl, 'config_global_ocean_land_ice_topo_thickness_varname');
 add_default($nl, 'config_global_ocean_land_ice_topo_draft_varname');
 add_default($nl, 'config_global_ocean_land_ice_topo_ice_frac_varname');
 add_default($nl, 'config_global_ocean_land_ice_topo_grounded_frac_varname');
+add_default($nl, 'config_global_ocean_use_constant_land_ice_cavity_temperature');
+add_default($nl, 'config_global_ocean_constant_land_ice_cavity_temperature');
 add_default($nl, 'config_global_ocean_cull_inland_seas');
 add_default($nl, 'config_global_ocean_windstress_file');
 add_default($nl, 'config_global_ocean_windstress_nlat_dimname');

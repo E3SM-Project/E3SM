@@ -668,7 +668,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Rayleigh_friction" type="logical"
 	category="Rayleigh_damping" group="Rayleigh_damping">
-If true, Rayleigh friction is included in the momentum equation.
+If true, Rayleigh friction is included in the momentum equation at every depth level.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -676,7 +676,23 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Rayleigh_damping_coeff" type="real"
 	category="Rayleigh_damping" group="Rayleigh_damping">
-Inverse-time coefficient for the Rayleigh damping term, $c_R$.
+Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_bottom_friction" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+If true, Rayleigh friction is only applied to the bottom
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_bottom_damping_coeff" type="real"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom.
 
 Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
@@ -942,6 +958,14 @@ Default: Defined in namelist_defaults.xml
 Number of smoothing passes over RiTopOfCell for LMD94 shear instability mixing
 
 Valid values: any integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_use_BLD_smoothing" type="logical"
+	category="cvmix" group="cvmix">
+If true KPP bld is smoothed with a laplacian filter
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1454,7 +1478,31 @@ Default: Defined in namelist_defaults.xml
 
 <!-- bottom_drag -->
 
-<entry id="config_bottom_drag_coeff" type="real"
+<entry id="config_use_implicit_bottom_drag" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, implicit bottom drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_implicit_bottom_drag_coeff" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless bottom drag coefficient, $c_{drag}$.
+
+Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_explicit_bottom_drag" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, explicit bottom drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_explicit_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless bottom drag coefficient, $c_{drag}$.
 
@@ -1843,6 +1891,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_compute_active_tracer_budgets" type="logical"
+	category="debug" group="debug">
+Enables the computation of tracer budget terms
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_disable_thick_all_tend" type="logical"
 	category="debug" group="debug">
 Disables all tendencies on the thickness field.
@@ -1910,6 +1966,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_disable_vel_surface_stress" type="logical"
 	category="debug" group="debug">
 Disables tendencies on the velocity field from horizontal surface stresses (e.g. wind stress and top drag).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_vel_explicit_bottom_drag" type="logical"
+	category="debug" group="debug">
+Disables tendencies on the velocity field from explicit bottom drag
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2890,6 +2954,22 @@ Default: Defined in namelist_defaults.xml
 Variable name for the grounded land ice fraction in the land ice topography file.
 
 Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_use_constant_land_ice_cavity_temperature" type="logical"
+	category="global_ocean" group="global_ocean">
+Logical flag that controls if ocean temperature in land-ice cavities is set to a constant temperature.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_global_ocean_constant_land_ice_cavity_temperature" type="real"
+	category="global_ocean" group="global_ocean">
+The constant temperature value to be used under land ice, typically something close to the freezing point.
+
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
