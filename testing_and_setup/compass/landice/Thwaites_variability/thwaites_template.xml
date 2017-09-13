@@ -21,7 +21,7 @@
                 <option name="config_adaptive_timestep_force_interval">'0001-00-00_00:00:00'</option>
 
                 <option name="config_run_duration">'none'</option>
-                <option name="config_stop_time">'0250-00-00_00:00:00'</option>
+                <option name="config_stop_time">'0250-01-01_00:00:00'</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_always_compute_fem_grid">.true.</option>
 
