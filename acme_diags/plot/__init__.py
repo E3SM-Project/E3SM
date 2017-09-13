@@ -6,6 +6,8 @@ import os
 import sys
 import importlib
 import numpy
+from matplotlib.colors import LinearSegmentedColormap
+from vcs.colors import matplotlib2vcs
 from acme_diags.driver.utils import get_set_name
 
 
@@ -64,25 +66,18 @@ def get_colormap(colormap, parameters):
         raise IOError(msg.format(colormap, pth))
 
     rgb_arr = numpy.loadtxt(colormap)
+    rgb_arr = rgb_arr / 255.0
 
     if parameters.backend in ['cartopy', 'mpl', 'matplotlib']:
-        from matplotlib.colors import LinearSegmentedColormap
-
-        rgb_arr = rgb_arr / 255.0
         cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr)
         return cmap
 
     elif parameters.backend in ['vcs']:
-        from vcs import createcolormap
-
-        rgb_arr = rgb_arr / 2.55
-
-        cmap = createcolormap()
-        cmap_range = range(len(rgb_arr))
-        for i in cmap_range:
-            r, g, b = rgb_arr[i]
-            cmap.setcolorcell(i, r, g, b, 100)
-        return cmap, cmap_range
+        n_levels = 240
+        cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr, N=n_levels)
+        vcs_cmap = matplotlib2vcs(cmap, vcs_name=colormap)
+        
+        return vcs_cmap, range(n_levels)
 
     else:
         raise RuntimeError('Invalid backend: {}'.format(parameters.backend))
