@@ -2041,112 +2041,112 @@ subroutine micro_mg_tend ( &
         ! calculate sedimentation for cloud water and ice
         !================================================================================
 
-        ! update in-cloud cloud mixing ratio and number concentration
-        ! with microphysical tendencies to calculate sedimentation, assign to dummy vars
-        ! note: these are in-cloud values***, hence we divide by cloud fraction
-
-        dumc(i,k) = (qc(i,k)+qctend(i,k)*deltat)/lcldm(i,k)
-        dumi(i,k) = (qi(i,k)+qitend(i,k)*deltat)/icldm(i,k)
-        dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k),0._r8)
-        dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat)/icldm(i,k),0._r8)
-
-        dumr(i,k) = (qr(i,k)+qrtend(i,k)*deltat)/precip_frac(i,k)
-        dumnr(i,k) = max((nr(i,k)+nrtend(i,k)*deltat)/precip_frac(i,k),0._r8)
-        dums(i,k) = (qs(i,k)+qstend(i,k)*deltat)/precip_frac(i,k)
-        dumns(i,k) = max((ns(i,k)+nstend(i,k)*deltat)/precip_frac(i,k),0._r8)
-
-
-        ! switch for specification of droplet and crystal number
-        if (nccons) then
-           dumnc(i,k)=ncnst/rho(i,k)
-        end if
-
-        ! switch for specification of cloud ice number
-        if (nicons) then
-           dumni(i,k)=ninst/rho(i,k)
-        end if
-
-        ! obtain new slope parameter to avoid possible singularity
-
-        call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
-             lami(i,k))
-
-        call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-             pgam(i,k), lamc(i,k))
-
-        ! calculate number and mass weighted fall velocity for droplets and cloud ice
-        !-------------------------------------------------------------------
-
-
-        if (dumc(i,k).ge.qsmall) then
-
-           vtrmc(i,k)=acn(i,k)*gamma(4._r8+bc+pgam(i,k))/ &
-                (lamc(i,k)**bc*gamma(pgam(i,k)+4._r8))
-
-           fc(k) = g*rho(i,k)*vtrmc(i,k)
-
-           fnc(k) = g*rho(i,k)* &
-                acn(i,k)*gamma(1._r8+bc+pgam(i,k))/ &
-                (lamc(i,k)**bc*gamma(pgam(i,k)+1._r8))
-        else
-           fc(k) = 0._r8
-           fnc(k)= 0._r8
-        end if
-
-        ! calculate number and mass weighted fall velocity for cloud ice
-
-        if (dumi(i,k).ge.qsmall) then
-
-           vtrmi(i,k)=min(ain(i,k)*gamma_bi_plus4/(6._r8*lami(i,k)**bi), &
-                1.2_r8*rhof(i,k))
-
-           fi(k) = g*rho(i,k)*vtrmi(i,k)
-           fni(k) = g*rho(i,k)* &
-                min(ain(i,k)*gamma_bi_plus1/lami(i,k)**bi,1.2_r8*rhof(i,k))
-        else
-           fi(k) = 0._r8
-           fni(k)= 0._r8
-        end if
-
-        ! fallspeed for rain
-
-        call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-             lamr(i,k))
-
-        if (lamr(i,k).ge.qsmall) then
-
-           ! 'final' values of number and mass weighted mean fallspeed for rain (m/s)
-
-           unr(i,k) = min(arn(i,k)*gamma_br_plus1/lamr(i,k)**br,9.1_r8*rhof(i,k))
-           umr(i,k) = min(arn(i,k)*gamma_br_plus4/(6._r8*lamr(i,k)**br),9.1_r8*rhof(i,k))
-
-           fr(k) = g*rho(i,k)*umr(i,k)
-           fnr(k) = g*rho(i,k)*unr(i,k)
-
-        else
-           fr(k)=0._r8
-           fnr(k)=0._r8
-        end if
-
-        ! fallspeed for snow
-
-        call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
-             lams(i,k))
-
-        if (lams(i,k).ge.qsmall) then
-
-           ! 'final' values of number and mass weighted mean fallspeed for snow (m/s)
-           ums(i,k) = min(asn(i,k)*gamma_bs_plus4/(6._r8*lams(i,k)**bs),1.2_r8*rhof(i,k))
-           uns(i,k) = min(asn(i,k)*gamma_bs_plus1/lams(i,k)**bs,1.2_r8*rhof(i,k))
-
-           fs(k) = g*rho(i,k)*ums(i,k)
-           fns(k) = g*rho(i,k)*uns(i,k)
-
-        else
-           fs(k)=0._r8
-           fns(k)=0._r8
-        end if
-
+!!$        ! update in-cloud cloud mixing ratio and number concentration
+!!$        ! with microphysical tendencies to calculate sedimentation, assign to dummy vars
+!!$        ! note: these are in-cloud values***, hence we divide by cloud fraction
+!!$
+!!$        dumc(i,k) = (qc(i,k)+qctend(i,k)*deltat)/lcldm(i,k)
+!!$        dumi(i,k) = (qi(i,k)+qitend(i,k)*deltat)/icldm(i,k)
+!!$        dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k),0._r8)
+!!$        dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat)/icldm(i,k),0._r8)
+!!$
+!!$        dumr(i,k) = (qr(i,k)+qrtend(i,k)*deltat)/precip_frac(i,k)
+!!$        dumnr(i,k) = max((nr(i,k)+nrtend(i,k)*deltat)/precip_frac(i,k),0._r8)
+!!$        dums(i,k) = (qs(i,k)+qstend(i,k)*deltat)/precip_frac(i,k)
+!!$        dumns(i,k) = max((ns(i,k)+nstend(i,k)*deltat)/precip_frac(i,k),0._r8)
+!!$
+!!$
+!!$        ! switch for specification of droplet and crystal number
+!!$        if (nccons) then
+!!$           dumnc(i,k)=ncnst/rho(i,k)
+!!$        end if
+!!$
+!!$        ! switch for specification of cloud ice number
+!!$        if (nicons) then
+!!$           dumni(i,k)=ninst/rho(i,k)
+!!$        end if
+!!$
+!!$        ! obtain new slope parameter to avoid possible singularity
+!!$
+!!$        call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
+!!$             lami(i,k))
+!!$
+!!$        call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+!!$             pgam(i,k), lamc(i,k))
+!!$
+!!$        ! calculate number and mass weighted fall velocity for droplets and cloud ice
+!!$        !-------------------------------------------------------------------
+!!$
+!!$
+!!$        if (dumc(i,k).ge.qsmall) then
+!!$
+!!$           vtrmc(i,k)=acn(i,k)*gamma(4._r8+bc+pgam(i,k))/ &
+!!$                (lamc(i,k)**bc*gamma(pgam(i,k)+4._r8))
+!!$
+!!$           fc(k) = g*rho(i,k)*vtrmc(i,k)
+!!$
+!!$           fnc(k) = g*rho(i,k)* &
+!!$                acn(i,k)*gamma(1._r8+bc+pgam(i,k))/ &
+!!$                (lamc(i,k)**bc*gamma(pgam(i,k)+1._r8))
+!!$        else
+!!$           fc(k) = 0._r8
+!!$           fnc(k)= 0._r8
+!!$        end if
+!!$
+!!$        ! calculate number and mass weighted fall velocity for cloud ice
+!!$
+!!$        if (dumi(i,k).ge.qsmall) then
+!!$
+!!$           vtrmi(i,k)=min(ain(i,k)*gamma_bi_plus4/(6._r8*lami(i,k)**bi), &
+!!$                1.2_r8*rhof(i,k))
+!!$
+!!$           fi(k) = g*rho(i,k)*vtrmi(i,k)
+!!$           fni(k) = g*rho(i,k)* &
+!!$                min(ain(i,k)*gamma_bi_plus1/lami(i,k)**bi,1.2_r8*rhof(i,k))
+!!$        else
+!!$           fi(k) = 0._r8
+!!$           fni(k)= 0._r8
+!!$        end if
+!!$
+!!$        ! fallspeed for rain
+!!$
+!!$        call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
+!!$             lamr(i,k))
+!!$
+!!$        if (lamr(i,k).ge.qsmall) then
+!!$
+!!$           ! 'final' values of number and mass weighted mean fallspeed for rain (m/s)
+!!$
+!!$           unr(i,k) = min(arn(i,k)*gamma_br_plus1/lamr(i,k)**br,9.1_r8*rhof(i,k))
+!!$           umr(i,k) = min(arn(i,k)*gamma_br_plus4/(6._r8*lamr(i,k)**br),9.1_r8*rhof(i,k))
+!!$
+!!$           fr(k) = g*rho(i,k)*umr(i,k)
+!!$           fnr(k) = g*rho(i,k)*unr(i,k)
+!!$
+!!$        else
+!!$           fr(k)=0._r8
+!!$           fnr(k)=0._r8
+!!$        end if
+!!$
+!!$        ! fallspeed for snow
+!!$
+!!$        call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
+!!$             lams(i,k))
+!!$
+!!$        if (lams(i,k).ge.qsmall) then
+!!$
+!!$           ! 'final' values of number and mass weighted mean fallspeed for snow (m/s)
+!!$           ums(i,k) = min(asn(i,k)*gamma_bs_plus4/(6._r8*lams(i,k)**bs),1.2_r8*rhof(i,k))
+!!$           uns(i,k) = min(asn(i,k)*gamma_bs_plus1/lams(i,k)**bs,1.2_r8*rhof(i,k))
+!!$
+!!$           fs(k) = g*rho(i,k)*ums(i,k)
+!!$           fns(k) = g*rho(i,k)*uns(i,k)
+!!$
+!!$        else
+!!$           fs(k)=0._r8
+!!$           fns(k)=0._r8
+!!$        end if
+!!$
         ! redefine dummy variables - sedimentation is calculated over grid-scale
         ! quantities to ensure conservation
 
@@ -2166,275 +2166,117 @@ subroutine micro_mg_tend ( &
 
      end do       !!! vertical loop
 
-     ! initialize nstep for sedimentation sub-steps
+!!$     ! initialize nstep for sedimentation sub-steps
+!!$
+!!$     ! calculate number of split time steps to ensure courant stability criteria
+!!$     ! for sedimentation calculations
+!!$     !-------------------------------------------------------------------
+!!$     nstep = 1 + int(max( &
+!!$          maxval( fi/pdel(i,:)), &
+!!$          maxval(fni/pdel(i,:))) &
+!!$          * deltat)
 
-     ! calculate number of split time steps to ensure courant stability criteria
-     ! for sedimentation calculations
-     !-------------------------------------------------------------------
-     nstep = 1 + int(max( &
-          maxval( fi/pdel(i,:)), &
-          maxval(fni/pdel(i,:))) &
-          * deltat)
 
-
-     ! loop over sedimentation sub-time step to ensure stability
+     ! loop over cloud ice sedimentation to ensure stability
      !==============================================================
-     do n = 1,nstep
-
-        if (do_cldice) then
-           falouti  = fi  * dumi(i,:)
-           faloutni = fni * dumni(i,:)
-        else
-           falouti  = 0._r8
-           faloutni = 0._r8
-        end if
-
-        ! top of model
-
-        k = 1
-
-        ! add fallout terms to microphysical tendencies
-        faltndi = falouti(k)/pdel(i,k)
-        faltndni = faloutni(k)/pdel(i,k)
-        qitend(i,k) = qitend(i,k)-faltndi/nstep
-        nitend(i,k) = nitend(i,k)-faltndni/nstep
-
-        ! sedimentation tendency for output
-        qisedten(i,k)=qisedten(i,k)-faltndi/nstep
-
-        dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep
-        dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep
-
-        do k = 2,nlev
-
-           ! for cloud liquid and ice, if cloud fraction increases with height
-           ! then add flux from above to both vapor and cloud water of current level
-           ! this means that flux entering clear portion of cell from above evaporates
-           ! instantly
-
-           ! note: this is not an issue with precip, since we assume max overlap
-           dum1=icldm(i,k)/icldm(i,k-1)
-           dum1=min(dum1,1._r8)
-
-           faltndqie=(falouti(k)-falouti(k-1))/pdel(i,k)
-           faltndi=(falouti(k)-dum1*falouti(k-1))/pdel(i,k)
-           faltndni=(faloutni(k)-dum1*faloutni(k-1))/pdel(i,k)
-
-           ! add fallout terms to eulerian tendencies
-
-           qitend(i,k) = qitend(i,k)-faltndi/nstep
-           nitend(i,k) = nitend(i,k)-faltndni/nstep
-
-           ! sedimentation tendency for output
-           qisedten(i,k)=qisedten(i,k)-faltndi/nstep
-
-           ! add terms to to evap/sub of cloud water
-
-           qvlat(i,k)=qvlat(i,k)-(faltndqie-faltndi)/nstep
-           ! for output
-           qisevap(i,k)=qisevap(i,k)-(faltndqie-faltndi)/nstep
-
-           tlat(i,k)=tlat(i,k)+(faltndqie-faltndi)*xxls/nstep
-
-           dumi(i,k) = dumi(i,k)-faltndi*deltat/nstep
-           dumni(i,k) = dumni(i,k)-faltndni*deltat/nstep
-
-        end do
-
-        ! Ice flux
-        do k = 1,nlev
-          iflx(i,k+1) = iflx(i,k+1) + falouti(k) / g / real(nstep)
-        end do
-
-        ! units below are m/s
-        ! sedimentation flux at surface is added to precip flux at surface
-        ! to get total precip (cloud + precip water) rate
-
-        prect(i) = prect(i)+falouti(nlev)/g/real(nstep)/1000._r8
-        preci(i) = preci(i)+falouti(nlev)/g/real(nstep)/1000._r8
-
-     end do
-
-     ! calculate number of split time steps to ensure courant stability criteria
-     ! for sedimentation calculations
-     !-------------------------------------------------------------------
-     nstep = 1 + int(max( &
-          maxval( fc/pdel(i,:)), &
-          maxval(fnc/pdel(i,:))) &
-          * deltat)
-
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep
-
-        faloutc  = fc  * dumc(i,:)
-        faloutnc = fnc * dumnc(i,:)
-
-        ! top of model
-        k = 1
-
-        ! add fallout terms to microphysical tendencies
-        faltndc = faloutc(k)/pdel(i,k)
-        faltndnc = faloutnc(k)/pdel(i,k)
-        qctend(i,k) = qctend(i,k)-faltndc/nstep
-        nctend(i,k) = nctend(i,k)-faltndnc/nstep
-
-        ! sedimentation tendency for output
-        qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep
-
-        dumc(i,k) = dumc(i,k)-faltndc*deltat/nstep
-        dumnc(i,k) = dumnc(i,k)-faltndnc*deltat/nstep
-
-        do k = 2,nlev
-
-           dum=lcldm(i,k)/lcldm(i,k-1)
-           dum=min(dum,1._r8)
-           faltndqce=(faloutc(k)-faloutc(k-1))/pdel(i,k)
-           faltndc=(faloutc(k)-dum*faloutc(k-1))/pdel(i,k)
-           faltndnc=(faloutnc(k)-dum*faloutnc(k-1))/pdel(i,k)
-
-           ! add fallout terms to eulerian tendencies
-           qctend(i,k) = qctend(i,k)-faltndc/nstep
-           nctend(i,k) = nctend(i,k)-faltndnc/nstep
-
-           ! sedimentation tendency for output
-           qcsedten(i,k)=qcsedten(i,k)-faltndc/nstep
-
-           ! add terms to to evap/sub of cloud water
-           qvlat(i,k)=qvlat(i,k)-(faltndqce-faltndc)/nstep
-           ! for output
-           qcsevap(i,k)=qcsevap(i,k)-(faltndqce-faltndc)/nstep
-
-           tlat(i,k)=tlat(i,k)+(faltndqce-faltndc)*xxlv/nstep
-
-           dumc(i,k) = dumc(i,k)-faltndc*deltat/nstep
-           dumnc(i,k) = dumnc(i,k)-faltndnc*deltat/nstep
-
-        end do
-
-        !Liquid condensate flux here
-        do k = 1,nlev
-           lflx(i,k+1) = lflx(i,k+1) + faloutc(k) / g / real(nstep)
-        end do
-
-        prect(i) = prect(i)+faloutc(nlev)/g/real(nstep)/1000._r8
-
-     end do
-
-     ! calculate number of split time steps to ensure courant stability criteria
-     ! for sedimentation calculations
-     !-------------------------------------------------------------------
-     nstep = 1 + int(max( &
-          maxval( fr/pdel(i,:)), &
-          maxval(fnr/pdel(i,:))) &
-          * deltat)
-
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep
-
-        faloutr  = fr  * dumr(i,:)
-        faloutnr = fnr * dumnr(i,:)
-
-        ! top of model
-        k = 1
-
-        ! add fallout terms to microphysical tendencies
-        faltndr = faloutr(k)/pdel(i,k)
-        faltndnr = faloutnr(k)/pdel(i,k)
-        qrtend(i,k) = qrtend(i,k)-faltndr/nstep
-        nrtend(i,k) = nrtend(i,k)-faltndnr/nstep
-
-        ! sedimentation tendency for output
-        qrsedten(i,k)=qrsedten(i,k)-faltndr/nstep
-
-        dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep)
-        dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep)
-
-        do k = 2,nlev
-
-           faltndr=(faloutr(k)-faloutr(k-1))/pdel(i,k)
-           faltndnr=(faloutnr(k)-faloutnr(k-1))/pdel(i,k)
-
-           ! add fallout terms to eulerian tendencies
-           qrtend(i,k) = qrtend(i,k)-faltndr/nstep
-           nrtend(i,k) = nrtend(i,k)-faltndnr/nstep
-
-           ! sedimentation tendency for output
-           qrsedten(i,k)=qrsedten(i,k)-faltndr/nstep
-
-           dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep)
-           dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep)
-
-        end do
-
-        ! Rain Flux
-        do k = 1,nlev
-           rflx(i,k+1) = rflx(i,k+1) + faloutr(k) / g / real(nstep)
-        end do
-
-        prect(i) = prect(i)+faloutr(nlev)/g/real(nstep)/1000._r8
-
-     end do
-
-     ! calculate number of split time steps to ensure courant stability criteria
-     ! for sedimentation calculations
-     !-------------------------------------------------------------------
-     nstep = 1 + int(max( &
-          maxval( fs/pdel(i,:)), &
-          maxval(fns/pdel(i,:))) &
-          * deltat)
-
-     ! loop over sedimentation sub-time step to ensure stability
-     !==============================================================
-     do n = 1,nstep
-
-        falouts  = fs  * dums(i,:)
-        faloutns = fns * dumns(i,:)
-
-        ! top of model
-        k = 1
-
-        ! add fallout terms to microphysical tendencies
-        faltnds = falouts(k)/pdel(i,k)
-        faltndns = faloutns(k)/pdel(i,k)
-        qstend(i,k) = qstend(i,k)-faltnds/nstep
-        nstend(i,k) = nstend(i,k)-faltndns/nstep
-
-        ! sedimentation tendency for output
-        qssedten(i,k)=qssedten(i,k)-faltnds/nstep
-
-           dums(i,k) = dums(i,k)-faltnds*deltat/real(nstep)
-           dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep)
-
-        do k = 2,nlev
-
-           faltnds=(falouts(k)-falouts(k-1))/pdel(i,k)
-           faltndns=(faloutns(k)-faloutns(k-1))/pdel(i,k)
-
-           ! add fallout terms to eulerian tendencies
-           qstend(i,k) = qstend(i,k)-faltnds/nstep
-           nstend(i,k) = nstend(i,k)-faltndns/nstep
-
-           ! sedimentation tendency for output
-           qssedten(i,k)=qssedten(i,k)-faltnds/nstep
-
-           dums(i,k) = dums(i,k)-faltnds*deltat/real(nstep)
-           dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep)
-
-        end do   !! k loop
-
-        ! Snow Flux
-        do k = 1,nlev
-           sflx(i,k+1) = sflx(i,k+1) + falouts(k) / g / real(nstep)
-        end do
-
-        prect(i) = prect(i)+falouts(nlev)/g/real(nstep)/1000._r8
-        preci(i) = preci(i)+falouts(nlev)/g/real(nstep)/1000._r8
-
-     end do   !! nstep loop
-     
+     if (do_cldice) then
+       deltat_sed = deltat
+       time_sed = deltat
+     else
+       time_sed = 0._r8
      end if
+     nstep = 0
+
+     ! subcycle
+     do while (time_sed > qsmall)
+       ! obtain CFL number
+       call sed_CalcCFL(dumi,dumni,icldm,rho,pdel,nlev,i,&
+             MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             ncons=nicons,nnst=ninst,&
+             gamma_b_plus1=gamma_bi_plus1,gamma_b_plus4=gamma_bi_plus4)
+
+       ! update deltat_sed for target CFL number
+       deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+       ! advance cloud ice sedimentation
+       time_sed = time_sed - deltat_sed
+       nstep = nstep+1
+       call sed_CalcFlux(dumi,dumni,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_ICE,fi,fni)
+       call sed_AdvanceOneStep(dumi,fi,dumni,fni,pdel,deltat,deltat_sed,nlev,i,MG_ICE,g, &
+            qitend,nitend,preci,qisedten,&
+            cloud_frac=icldm,qvlat=qvlat,tlat=tlat,xxl=xxls,preci=preci,qsevap=qisevap)
+     end do
+
+
+     ! loop over cloud liquid sedimentation to ensure stability
+     !==============================================================
+     deltat_sed = deltat
+     time_sed = deltat
+     nstep = 0
+
+     ! subcycle
+     do while (time_sed > qsmall)
+
+       ! obtain fall speeds
+        call sed_CalcCFL(dumc,dumnc,lcldm,rho,pdel,nlev,i,&
+             MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             ncons=nccons,nnst=ncnst)
+
+       ! update deltat_sed for target CFL number
+       deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+       ! advance cloud liquid sedimentation
+       time_sed = time_sed - deltat_sed
+       nstep = nstep + 1
+       call sed_CalcFlux(dumc,dumnc,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_LIQUID,fc,fnc)
+       call sed_AdvanceOneStep(dumc,fc,dumnc,fnc,pdel,deltat,deltat_sed,nlev,i,MG_LIQUID,g, &
+         qctend,nctend,prect,qcsedten,&
+         cloud_frac=lcldm,qvlat=qvlat,tlat=tlat,xxl=xxlv,qsevap=qcsevap)
+     end do
+
+     ! loop over rain sedimentation to ensure stability
+     !==============================================================
+     deltat_sed = deltat
+     time_sed = deltat
+     nstep = 0
+
+     ! subcycle
+     do while (time_sed > qsmall)
+        ! obtain fall speeds
+        call sed_CalcCFL(dumr,dumnr,precip_frac,rho,pdel,nlev,i,&
+             MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             gamma_b_plus1=gamma_br_plus1,gamma_b_plus4=gamma_br_plus4)
+
+       ! update deltat_sed for target CFL number
+       deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+       ! advance rain sedimentation
+       time_sed = time_sed - deltat_sed
+       nstep = nstep + 1
+       call sed_CalcFlux(dumr,dumnr,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_RAIN,fr,fnr)
+       call sed_AdvanceOneStep(dumr,fr,dumnr,fnr,pdel,deltat,deltat_sed,nlev,i,MG_RAIN,g, &
+            qrtend,nrtend,prect,qrsedten)
+     end do
+
+     ! loop over snow sedimentation to ensure stability
+     !==============================================================
+     deltat_sed = deltat
+     time_sed = deltat
+     nstep = 0
+
+     ! subcycle
+     do while (time_sed > qsmall)
+        ! obtain fall speeds
+        call sed_CalcCFL(dums,dumns,precip_frac,rho,pdel,nlev,i,&
+             MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             gamma_b_plus1=gamma_bs_plus1,gamma_b_plus4=gamma_bs_plus4)
+
+        ! update deltat_sed for target CFL number
+        deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+        ! advance snow sedimentation
+        time_sed = time_sed - deltat_sed
+        nstep = nstep + 1
+        call sed_CalcFlux(dums,dumns,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_SNOW,fs,fns)
+        call sed_AdvanceOneStep(dums,fs,dumns,fns,pdel,deltat,deltat_sed,nlev,i,MG_SNOW,g, &
+             qstend,nstend,prect,qssedten,preci=preci)
+     end do
 
      ! end sedimentation
      !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
