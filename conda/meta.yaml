@@ -1,6 +1,6 @@
 package:
     name: acme_diags
-    version: { environ['VERSION'] }}
+    version: {{ environ['VERSION'] }}
 
 source:
     git_url: git://github.com/ACME-Climate/acme_diags
