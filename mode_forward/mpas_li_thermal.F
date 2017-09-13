@@ -2925,6 +2925,7 @@ module li_thermal
       real (kind=RKIND) :: slopeSer  ! slope of relation between depth and melt rate
       real (kind=RKIND) :: interceptSer  ! depth at which melting goes to 0
       real (kind=RKIND) :: maxMeltSer  ! maximum allowable melt rate
+      real (kind=RKIND) :: sillDepth  ! depth below which melt rate no longer increases
       real (kind=RKIND), pointer :: config_basal_mass_bal_seroussi_amplitude
       real (kind=RKIND), pointer :: config_basal_mass_bal_seroussi_period
       real (kind=RKIND), pointer :: config_basal_mass_bal_seroussi_phase
@@ -3008,15 +3009,19 @@ module li_thermal
          ! Seroussi, H., Y. Nakayama, E. Larour, D. Menemenlis, M. Morlighem, E. Rignot, and A. Khazendar (2017), Continued retreat of Thwaites Glacier, West Antarctica, controlled by bed topography and ocean circulation, Geophys. Res. Lett., 1-9, doi:10.1002/2017GL072910.
          ! for Thwaites Glacier.
          ! Specifically, this is a linear fit of melt with shelf draft from the Supplemental Information, Figure S1.
-         ! The linear relation is modified by a depth above which there is no melt, and a maximum melt rate.
+         ! The linear relation is modified by a:
+         !   * depth above which there is no melt (Antarctic Surface Water saturation)
+         !   * a maximum melt rate (Circumpolar Deep Water saturation)
+         !   * a depth below which melt stops increasing (minimum sill height)
 
          call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_amplitude', config_basal_mass_bal_seroussi_amplitude)
          call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_period', config_basal_mass_bal_seroussi_period)
          call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_phase', config_basal_mass_bal_seroussi_phase)
 
-         slopeSer = 0.088_RKIND ! slope of relation between depth and melt rate
-         interceptSer = 100.0_RKIND  ! depth (m) at which melting goes to 0
-         maxMeltSer = 50.0_RKIND ! maximum allowable melt rate (m/yr)
+         slopeSer = 0.088_RKIND ! slope of relation between depth and melt rate (melt (m/yr) per depth (m))
+         interceptSer = -100.0_RKIND  ! depth (m) at which melting goes to 0 (negative meaning below sea level)
+         maxMeltSer = 50.0_RKIND ! maximum allowable melt rate (m/yr) (positive meaning melting)
+         sillDepth = -650.0_RKIND ! depth below which melt stops increasing (m) (negative meaning below sea level)
 
          if (config_basal_mass_bal_seroussi_period <= 0.0_RKIND) then
             call mpas_log_write("Value for config_basal_mass_bal_seroussi_period has to be a positive real value.", MPAS_LOG_ERR)
@@ -3037,8 +3042,8 @@ module li_thermal
                ! ice is present and floating
 
                zDraft = lowerSurface(iCell) - config_sea_level
-               ! Coefficients for m/yr melt rate (in units of Seroussi figure)
-               floatingBasalMassBal(iCell) = max(-1.0_RKIND * maxMeltSer, min(0.0_RKIND, slopeSer * (zDraft + interceptSer)))
+               ! Coefficients for m/yr melt rate (in units of Seroussi figure but without negative meaning melting)
+               floatingBasalMassBal(iCell) = max(-1.0_RKIND * maxMeltSer, min(0.0_RKIND, slopeSer * (max(zDraft, sillDepth) - interceptSer)))
 
             endif   ! ice is present
          enddo   ! iCell
