@@ -1531,7 +1531,11 @@ subroutine micro_mg_tend ( &
 
         berg(:,k)=berg(:,k)*micro_mg_berg_eff_factor
 
-        nsubi(:,k) = ice_sublim(:,k) / qi(:,k) * ni(:,k) / icldm(:,k)
+        where (qi(:,k) >= qsmall)
+           nsubi(:,k) = ice_sublim(:,k) / qi(:,k) * ni(:,k) / icldm(:,k)
+        elsewhere
+           nsubi(:,k) = 0._r8
+        end where
 
         ! bergeron process should not reduce nc unless
         ! all ql is removed (which is handled elsewhere)
