@@ -440,6 +440,16 @@ subroutine micro_mg_tend ( &
        evaporate_sublimate_precip, &
        bergeron_process_snow
 
+  use Sedimentation, only: &
+       sed_CalcCFL, &
+       sed_CalcFlux, &
+       sed_AdvanceOneStep, &
+       MG_LIQUID, &
+       MG_ICE, &
+       MG_RAIN,&
+       MG_SNOW, &
+       CFL
+
   !Authors: Hugh Morrison, Andrew Gettelman, NCAR, Peter Caldwell, LLNL
   ! e-mail: morrison@ucar.edu, andrew@ucar.edu
 
@@ -755,15 +765,22 @@ subroutine micro_mg_tend ( &
 !!== KZ_DCS 
 
   ! parameters for cloud water and cloud ice sedimentation calculations
-  real(r8) :: fc(nlev)
-  real(r8) :: fnc(nlev)
-  real(r8) :: fi(nlev)
-  real(r8) :: fni(nlev)
+  real(r8) :: fc(0:nlev,2), fnc(0:nlev,2)
+  real(r8) :: fi(0:nlev,2), fni(0:nlev,2)
+  real(r8) :: fr(0:nlev,2), fnr(0:nlev,2)
+  real(r8) :: fs(0:nlev,2), fns(0:nlev,2)
+  real(r8) :: alphaq(0:nlev), alphan(0:nlev)
+  real(r8) :: s1(nlev),s2(nlev), w1(2,nlev), w2(2,nlev)
 
-  real(r8) :: fr(nlev)
-  real(r8) :: fnr(nlev)
-  real(r8) :: fs(nlev)
-  real(r8) :: fns(nlev)
+!!$  real(r8) :: fc(nlev)
+!!$  real(r8) :: fnc(nlev)
+!!$  real(r8) :: fi(nlev)
+!!$  real(r8) :: fni(nlev)
+!!$
+!!$  real(r8) :: fr(nlev)
+!!$  real(r8) :: fnr(nlev)
+!!$  real(r8) :: fs(nlev)
+!!$  real(r8) :: fns(nlev)
 
   real(r8) :: faloutc(nlev)
   real(r8) :: faloutnc(nlev)
@@ -815,6 +832,9 @@ subroutine micro_mg_tend ( &
   ! "i" and "k" are column/level iterators for internal (MG) variables
   ! "n" is used for other looping (currently just sedimentation)
   integer i, k, n
+
+  ! sedimentation substep loop variables
+  real(r8) :: deltat_sed, time_sed
 
   ! number of sub-steps for loops over "n" (for sedimentation)
   integer nstep
