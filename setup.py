@@ -40,7 +40,7 @@ data_files = [
       ]),
     (sys.prefix + '/share/acme_diags',
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
-      'docs/ACME_Logo.png'
+      'misc/ACME_Logo.png'
       ]),
     (sys.prefix + '/share/acme_diags/colormaps',
      rgb_files
