@@ -358,6 +358,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="maxLevelCell"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeTop"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeBot"/>' . "\n";
+        print $stream_file '    <var name="columnIntegratedSpeed"/>' . "\n";
+        print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+        print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
+        print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
@@ -556,6 +560,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="vertGMvelocityAt250m"/>' . "\n";
         print $stream_file '    <var name="vertTransportVelocityAt250m"/>' . "\n";
         print $stream_file '    <var name="vertVelAt250m"/>' . "\n";
+        print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+        print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
+        print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="mixedLayerDepthsOutput"' . "\n";
@@ -683,6 +690,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
         print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
         print $stream_file '    <var name="potentialDensity"/>' . "\n";
+        print $stream_file '    <var name="columnIntegratedSpeed"/>' . "\n";
+        print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+        print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
+        print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
