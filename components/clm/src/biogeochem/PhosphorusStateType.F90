@@ -1249,7 +1249,7 @@ contains
                 do j = 1, nlevdecomp
                    ! solve equilibrium between loosely adsorbed and solution
                    ! phosphorus
-                   ! observed p pools are ususally for top 50 cm
+                   ! the P maps used in the initialization are generated for the top 50cm soils
                    ! assume soil below 50 cm has the same p pool concentration
                    ! divide 0.5m when convert p pools from g/m2 to g/m3
                    ! assume p pools evenly distributed at dif layers
