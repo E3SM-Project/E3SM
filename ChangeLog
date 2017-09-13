@@ -1,6 +1,128 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 9-13-2017
+Tag: cime5.3.0-alpha.34
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix T31_g37 grid match in config_grids.
+    - Add a timeout option to wait_for_tests.
+    - Minor update to sphinx documentation.
+    - Allow queue selection by node count instead of task count.
+    - Get chama working (able to run scripts_regression_tests).
+    - Case clone move fix.
+    - Move case clone to its own file.
+    - Error check compset name.
+    - Improve error check for non-python sub processes.
+    - Add new user-mods option to create_clone.
+    - Fix 2-to-3 conversion errors in cime_bisect.
+    - Implementation of multiple drivers.
+    - Make sure file exists.
+    - Get log file from logdir instead of rundir.
+    - Add more unit tests of system_tests_compare_two, fix multisubmit bug.
+    - Merge new erp test into new restart_tests abstract class.
+    
+User interface changes: 
+    - New --timeout flag for wait_for_tests
+    - New ways to select queue in config_batch.xml
+    - New argument to create_clone.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+7efc1f5 Merge pull request #1886 from ESMCI/fischer/T41_g37_fix
+6a6b5e8 Merge pull request #1884 from ESMCI/jgfouca/add_timeout_for_wait_for_tests
+c848b17 Merge pull request #1883 from bertinia/master
+766899e Merge pull request #1878 from ESMCI/jgfouca/queue_selection_based_on_nodes
+d89064b Merge pull request #1881 from ESMCI/jgfouca/get_chama_working
+b1ce54a Merge pull request #1880 from jedwards4b/case_clone
+947e533 Merge pull request #1879 from jedwards4b/case_clone
+2b1e151 Merge pull request #1873 from jedwards4b/error_check_compset_name
+a72e5a0 Merge pull request #1875 from jedwards4b/improve_nonpy_subproc_handling
+0b3dfca Merge pull request #1866 from ESMCI/mvertens/clone_with_usermods
+cbe26ae Merge pull request #1876 from ESMCI/jgfouca/fix_2_to_3_conversion_errors_in_cime_bisect
+c7efee1 Implementation of multiple drivers
+4d9a8d7 Merge pull request #1868 from jedwards4b/is_python_a_file
+7f34aa0 Merge pull request #1863 from jedwards4b/log_file_generate
+230f7dd Merge pull request #1858 from billsacks/comparetwo_multisubmit_fix
+14d138d Merge pull request #1857 from jedwards4b/erp_to_restart_tests
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_machines.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/env_batch.xsd
+M	doc/Makefile
+D	doc/source/glossary.rst
+M	doc/source/index.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/index.rst
+M	doc/source/users_guide/multi-instance.rst
+M	doc/source/xml_files/cesm.rst
+D	scripts/Tools/archive_metadata.sh
+M	scripts/Tools/check_case
+M	scripts/Tools/check_lockedfiles
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/wait_for_tests
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/lib/CIME/SystemTests/erp.py
+A	scripts/lib/CIME/SystemTests/mcc.py
+M	scripts/lib/CIME/SystemTests/pre.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/entry_id.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case.py
+A	scripts/lib/CIME/case_clone.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/check_lockedfiles.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/preview_namelists.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/test_user_mod_support.py
+M	scripts/lib/CIME/user_mod_support.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/scripts_regression_tests.py
+A	scripts/tests/user_mods_test3/shell_commands
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps/desp/cime_config/buildnml
+M	src/components/data_comps/desp/desp_comp_mod.F90
+M	src/components/xcpl_comps/xshare/dead_mod.F90
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_rest_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/unit_test/utils/mct_wrapper_mod.F90
+M	src/externals/mct/mct/m_MCTWorld.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-01-2017
 Tag: cime5.3.0-alpha.33
 Answer Changes: None
