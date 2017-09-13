@@ -1507,6 +1507,7 @@
     <PES_PER_NODE>64</PES_PER_NODE>
     <PROJECT>OceanClimate</PROJECT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <mpirun mpilib="default">
       <executable>aprun</executable>
