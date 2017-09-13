@@ -57,6 +57,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.multiprocessing = False
         self.distributed = False
+        self.num_workers = 4
 
     def check_values(self):
         if not hasattr(
