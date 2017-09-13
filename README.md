@@ -1,9 +1,16 @@
 # ACME Diagnostics Package
 
 ## Table of Contents
-1. [Overview](#overview)
-2. [Current State](#current-state)
-3. [Documentation](#doc)
+1. [Documentation](#doc)
+2. [Overview](#overview)
+3. [Current State](#current-state)
+
+## Documentation <a name="doc"></a>
+* [Documentation Website](https://acme-climate.github.io/acme_diags)
+* Examples:
+  * [Quick Start Guide for AIMS4/ACME1](https://acme-climate.github.io/acme_diags/docs/html/quick-guide-aims4.html)
+  * [Model vs Model Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-to-model/model-to-model.ipynb)
+  * [Temperature at 200mb and 800mb with different variable names in the model and obs](https://github.com/ACME-Climate/acme_diags/blob/master/examples/temp-at-diff-levels-model-vs-obs/temp-at-diff-levels-model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
 This diagnostics package is constructed for supporting the diagnostics task of DOE's [Accelerated Climate Modeling for Energy (ACME) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
@@ -33,13 +40,3 @@ The package features built-in user diagnostics, by specifying user desired diagn
 
 <img src="misc/example_fig5.png" alt="Figure5" style="width: 280px;"/>
 <h5 align="center">Figure 5: An example of 2d joint histogram plot using COSP simulator output</h5>
-
-## Documentation <a name="doc"></a>
-
-* [Quickstart guide for AIMS4/ACME1](https://acme-climate.github.io/acme_diags/docs/html/quick-guide-aims4.html)
-* [Installation, Basic Configuration, and Running](https://acme-climate.github.io/acme_diags/docs/html/install-config-run.html)
-* More Configuration
-  * [Defining Parameters and All Available Parameters](https://acme-climate.github.io/acme_diags/docs/html/available-parameters.html)
-  * [Adding User Diagnostics](https://acme-climate.github.io/acme_diags/docs/html/add-new-diagnostics.html)
-  * [List of Built-in Derived Variables](acme_diags/derivations/acme.py) - look for `derived_variables` around line 190
-* [CDP Viewer documentation](https://github.com/UV-CDAT/cdp/blob/master/jupyter/using-the-cdp-viewer.ipynb)
