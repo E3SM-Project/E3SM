@@ -1510,7 +1510,7 @@
       <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/tx1v1/map_tx1v1_TO_ww3a_blin.170523.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="48x96" wav_grid="ww3a">
+    <gridmap atm_grid="T31" wav_grid="ww3a">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T31/map_T31_TO_ww3a_bilin_131104.nc</map>
     </gridmap>
 
