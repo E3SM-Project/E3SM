@@ -107,6 +107,7 @@ subroutine ndrop_init
    character(len=128)  :: long_name
    character(len=8)    :: unit
    logical :: history_amwg         ! output the variables used by the AMWG diag package
+   logical :: history_verbose      ! produce verbose history output
 
    !-------------------------------------------------------------------------------
 
@@ -198,6 +199,7 @@ subroutine ndrop_init
    ! Add dropmixnuc tendencies for all modal aerosol species
 
    call phys_getopts(history_amwg_out = history_amwg, &
+                     history_verbose_out = history_verbose, &
                      history_aerosol_out = history_aerosol, &
                      prog_modal_aero_out=prog_modal_aero, & 
                      fix_g1_err_ndrop_out = fix_g1_err_ndrop, &
@@ -242,7 +244,7 @@ subroutine ndrop_init
             long_name = trim(tmpname_cw) // ' dropmixnuc mixnuc column tendency'
             call addfld(fieldname_cw(mm), horiz_only, 'A', unit, long_name)
 
-            if (history_aerosol) then
+            if (history_aerosol .and. history_verbose) then
                call add_default(fieldname(mm), 1, ' ')
                call add_default(fieldname_cw(mm), 1, ' ')
             end if

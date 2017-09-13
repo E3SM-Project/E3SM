@@ -822,7 +822,9 @@ end subroutine clubb_init_cnst
        call add_default('SL',               1, ' ')
        call add_default('QT',               1, ' ')
        call add_default('CONCLD',           1, ' ')
-
+    else 
+       call add_default('CLOUDFRAC_CLUBB',  1, ' ')
+       call add_default('CONCLD',           1, ' ')
     end if
 
     if (history_amwg) then

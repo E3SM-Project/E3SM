@@ -3838,6 +3838,12 @@ Produce output for the AMWG diagnostic package.
 Default: .true.
 </entry>
 
+<entry id="history_verbose" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Produce verbose history output by default
+Default: .false.
+</entry>
+
 <entry id="history_vdiag" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Produce output for the AMWG variability diagnostics.

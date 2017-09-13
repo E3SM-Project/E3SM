@@ -16,7 +16,7 @@
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc>.true.</use_hetfrz_classnuc>
 <use_preexisting_ice>.false.</use_preexisting_ice>
-<hist_hetfrz_classnuc>.true.</hist_hetfrz_classnuc>
+<hist_hetfrz_classnuc>.false.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep>.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme>1</microp_aero_wsub_scheme>
 

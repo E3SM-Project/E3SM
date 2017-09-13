@@ -40,6 +40,7 @@ contains
 
     integer :: l, m
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
+    logical :: history_verbose      ! produce verbose history output
 
     id_msa = get_spc_ndx( 'MSA' )
     id_h2so4 = get_spc_ndx( 'H2SO4' )
@@ -52,7 +53,8 @@ contains
                   //' -- should not invoke sox_cldaero_mod ')
     endif
 
-    call phys_getopts( history_aerosol_out        = history_aerosol   )
+    call phys_getopts( history_aerosol_out        = history_aerosol, &
+                       history_verbose_out        = history_verbose  )
     !
     !   add to history
     !
@@ -66,7 +68,7 @@ contains
           call addfld (&
                trim(cnst_name_cw(l))//'AQH2SO4',horiz_only,  'A','kg/m2/s', &
                trim(cnst_name_cw(l))//' aqueous phase chemistry')
-          if ( history_aerosol ) then 
+          if ( history_aerosol .and. history_verbose ) then 
              call add_default (trim(cnst_name_cw(l))//'AQSO4', 1, ' ')
              call add_default (trim(cnst_name_cw(l))//'AQH2SO4', 1, ' ')
           endif
@@ -79,7 +81,7 @@ contains
     call addfld ('AQSO4_O3',horiz_only,  'A','kg/m2/s', &
          'SO4 aqueous phase chemistry due to O3')
 
-    if ( history_aerosol ) then    
+    if ( history_aerosol .and. history_verbose) then    
        call add_default ('AQSO4_H2O2', 1, ' ')
        call add_default ('AQSO4_O3', 1, ' ')    
     endif
