@@ -152,6 +152,11 @@
   </compset>
 
   <compset>
+    <alias>IMCLM45CNNLDAS</alias>
+    <lname>2000_DATM%NLDAS_CLM45%CN_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>I1850CN</alias>
     <lname>1850_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>

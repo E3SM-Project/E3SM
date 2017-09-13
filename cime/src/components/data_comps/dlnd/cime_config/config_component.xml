@@ -15,11 +15,12 @@
 
   <entry id="DLND_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,GLC_CPLHIST,NULL</valid_values>
+    <valid_values>CPLHIST,CLMNLDAS,GLC_CPLHIST,NULL</valid_values>
     <default_value>NULL</default_value>
     <values>
       <value compset="DLND%NULL">NULL</value>
       <value compset="DLND%LCPL">CPLHIST</value>
+      <value compset="DLND%LCLMR">CLMNLDAS</value>
       <value compset="DLND%SCPL">GLC_CPLHIST</value>
     </values>
     <group>run_component_dlnd</group>
@@ -34,6 +35,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values>
+      <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">$DIN_LOC_ROOT/lnd/dlnd7/NLDAS</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG1850CN.f09_g16.002_c121001</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
@@ -49,6 +51,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values>
+      <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">NLDAS</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG1850CN.f09_g16.002</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
@@ -64,6 +67,7 @@
     <type>integer</type>
     <default_value>1</default_value>
     <values>
+      <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">1975</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
@@ -79,6 +83,7 @@
     <type>integer</type>
     <default_value>1</default_value>
     <values>
+      <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">1975</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1976</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">26</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">1850</value>
@@ -94,6 +99,7 @@
     <type>integer</type>
     <default_value>1</default_value>
     <values>
+      <value compset="2000.*_DLND%LCLMR" grid="l%NLDAS">1975</value>
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">100</value>
       <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
@@ -109,6 +115,7 @@
     <desc compset="_DLND%NULL">dlnd modes are DLND_MODE=NULL:</desc>
     <desc compset="_DLND%SCPL">dlnd modes are DLND_MODE=GLC_CPLHIST:</desc>
     <desc compset="_DLND%LCPL">dlnd modes are DLND_MODE=CPLHIST:</desc>
+    <desc compset="_DLND%LCLMR">dlnd modes are DLND_MODE=CLMNLDAS:</desc>
   </description>
 
   <help>

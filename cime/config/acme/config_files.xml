@@ -88,6 +88,7 @@
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_compsets.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_compsets.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_compsets.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/config_compsets.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_compsets.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_compsets.xml</value>
       <value component="mpaso"    >$SRCROOT/components/mpas-o/cime_config/config_compsets.xml</value>
@@ -109,6 +110,7 @@
       <value component="cam"      >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="cism"     >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="clm"      >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="mosart"   >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="cice"     >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="pop"     >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="mpaso"   >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
@@ -136,6 +138,7 @@
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_archive.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_archive.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_archive.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/config_archive.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_archive.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_archive.xml</value>
     </values>
@@ -150,6 +153,7 @@
     <values>
       <value component="any">$CIMEROOT/scripts/lib/CIME/SystemTests</value>
       <value component="clm">$SRCROOT/components/clm/cime_config/SystemTests</value>
+      <value component="mosart">$SRCROOT/components/mosart/cime_config/SystemTests</value>
       <value component="cam">$SRCROOT/components/cam/cime_config/SystemTests</value>
       <value component="pop">$SRCROOT/components/pop/cime_config/SystemTests</value>
       <value component="cice">$SRCROOT/components/cice/cime_config/SystemTests</value>
@@ -169,10 +173,10 @@
       <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testlist_cam.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testlist_cism.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testlist_clm.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testlist_mosart.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testlist_cice.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testlist_pop.xml</value>
       <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testlist_rtm.xml</value>
-      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testlist_mosart.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -188,9 +192,9 @@
       <value component="cam"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
       <value component="cism"     >$CIMEROOT/config/$MODEL/testmods_dirs</value>
       <value component="clm"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
+      <value component="mosart"   >$CIMEROOT/config/$MODEL/testmods_dirs</value>
       <value component="cice"     >$CIMEROOT/config/$MODEL/testmods_dirs</value>
       <value component="rtm"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
-      <value component="mosart"   >$CIMEROOT/config/$MODEL/testmods_dirs</value>
       <value component="pop"      >$CIMEROOT/config/$MODEL/testmods_dirs</value>
     </values>
     <group>case_last</group>
@@ -207,9 +211,9 @@
       <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/usermods_dirs</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/usermods_dirs</value>
       <value component="rtm"      >$SRCROOT/components/rtm/cime_config/usermods_dirs</value>
-      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/usermods_dirs</value>
     </values>
     <group>case_last</group>

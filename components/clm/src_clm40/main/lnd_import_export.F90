@@ -56,7 +56,7 @@ contains
     real(r8) :: b0,b1,b2,b3,b4,b5,b6 ! coefficients for esat over ice
     real(r8) :: tdc, t               ! Kelvins to Celcius function and its input
     integer  :: num                  ! counter
-    character(len=32), parameter :: sub = 'lnd_import_mct'
+    character(len=32), parameter :: sub = 'lnd_import'
 
     ! Constants to compute vapor pressure
     parameter (a0=6.107799961_r8    , a1=4.436518521e-01_r8, &
@@ -253,6 +253,7 @@ contains
     integer  :: nstep ! time step index
     integer  :: dtime ! time step   
     integer  :: num   ! counter
+    character(len=32), parameter :: sub = 'lnd_export'
     !---------------------------------------------------------------------------
 
     ! cesm sign convention is that fluxes are positive downward
