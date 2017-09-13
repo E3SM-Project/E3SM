@@ -13,14 +13,13 @@ module Sedimentation
 contains
 
   subroutine sed_CalcCFL(q,n,cloud_frac,rho,pdel,nlev,i, &
-    mg_type,deltat,g,an,rhof,alphaq,alphan,s1,s2,w1,w2,cfl,ncons,nnst,gamma_b_plus1,gamma_b_plus4)
+    mg_type,deltat,g,an,rhof,alphaq,alphan,s1,s2,cfl,ncons,nnst,gamma_b_plus1,gamma_b_plus4)
 
     use micro_mg_utils, only: size_dist_param_liq, &
          size_dist_param_basic, &
          mg_ice_props, mg_liq_props, &
          mg_snow_props, mg_rain_props, &
-         qsmall, bi, bc, br, bs, &
-         limiter_is_on
+         qsmall, bi, bc, br, bs
 
     implicit none
     real(r8), intent(in)            :: q(:,:), n(:,:)
@@ -30,7 +29,7 @@ contains
     real(r8), intent(in), optional  :: nnst, gamma_b_plus1, gamma_b_plus4
     logical, intent(in), optional   :: ncons
     real(r8), intent(out)           :: cfl, alphaq(:), alphan(:)
-    real(r8), intent(out)           :: s1(:), s2(:), w1(:,:), w2(:,:)
+    real(r8), intent(out)           :: s1(:), s2(:)
 
     real(r8) :: qic(nlev), nic(nlev)
     real(r8) :: lambda_bounds(2)
@@ -61,9 +60,8 @@ contains
         if (qic(k) > qsmall) then
           ! add upper limit to in-cloud number concentration to prevent
           ! numerical error
-          if (limiter_is_on(mg_rain_props%min_mean_mass)) then
-            nic(k) = min(nic(k), qic(k) / mg_rain_props%min_mean_mass)
-          end if
+           nic(k) = min(nic(k), qic(k) / mg_rain_props%min_mean_mass)
+
           ! lambda^b = (c nic/qic)^(b/d)
           lambr(k) = (mg_rain_props%shape_coef * nic(k)/qic(k))**(br/mg_rain_props%eff_dim)
           ! check for slope
@@ -152,10 +150,10 @@ contains
 
   end subroutine sed_CalcCFL
 
-  subroutine sed_CalcFlux(q,n,alphaq,alphan,s1,s2,w1,w2,nlev,i,mg_type,fq,fn)
+  subroutine sed_CalcFlux(q,n,alphaq,alphan,s1,s2,nlev,i,mg_type,fq,fn)
     implicit none
     real(r8), intent(in)            :: q(:,:), n(:,:), alphaq(:), alphan(:)
-    real(r8), intent(in)            :: s1(:), s2(:), w1(:,:), w2(:,:)
+    real(r8), intent(in)            :: s1(:), s2(:)
     integer,  intent(in)            :: nlev, i, mg_type
     real(r8), intent(out)           :: fq(:,:), fn(:,:)
 

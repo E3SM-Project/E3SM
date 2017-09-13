@@ -770,7 +770,7 @@ subroutine micro_mg_tend ( &
   real(r8) :: fr(0:nlev,2), fnr(0:nlev,2)
   real(r8) :: fs(0:nlev,2), fns(0:nlev,2)
   real(r8) :: alphaq(0:nlev), alphan(0:nlev)
-  real(r8) :: s1(nlev),s2(nlev), w1(2,nlev), w2(2,nlev)
+  real(r8) :: s1(nlev),s2(nlev)
 
 !!$  real(r8) :: fc(nlev)
 !!$  real(r8) :: fnc(nlev)
@@ -2211,7 +2211,7 @@ subroutine micro_mg_tend ( &
      do while (time_sed > qsmall)
        ! obtain CFL number
        call sed_CalcCFL(dumi,dumni,icldm,rho,pdel,nlev,i,&
-             MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,s1,s2,dum,&
              ncons=nicons,nnst=ninst,&
              gamma_b_plus1=gamma_bi_plus1,gamma_b_plus4=gamma_bi_plus4)
 
@@ -2220,7 +2220,7 @@ subroutine micro_mg_tend ( &
        ! advance cloud ice sedimentation
        time_sed = time_sed - deltat_sed
        nstep = nstep+1
-       call sed_CalcFlux(dumi,dumni,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_ICE,fi,fni)
+       call sed_CalcFlux(dumi,dumni,alphaq,alphan,s1,s2,nlev,i,MG_ICE,fi,fni)
        call sed_AdvanceOneStep(dumi,fi,dumni,fni,pdel,deltat,deltat_sed,nlev,i,MG_ICE,g, &
             qitend,nitend,preci,qisedten,&
             cloud_frac=icldm,qvlat=qvlat,tlat=tlat,xxl=xxls,preci=preci,qsevap=qisevap)
@@ -2238,7 +2238,7 @@ subroutine micro_mg_tend ( &
 
        ! obtain fall speeds
         call sed_CalcCFL(dumc,dumnc,lcldm,rho,pdel,nlev,i,&
-             MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,s1,s2,dum,&
              ncons=nccons,nnst=ncnst)
 
        ! update deltat_sed for target CFL number
@@ -2246,7 +2246,7 @@ subroutine micro_mg_tend ( &
        ! advance cloud liquid sedimentation
        time_sed = time_sed - deltat_sed
        nstep = nstep + 1
-       call sed_CalcFlux(dumc,dumnc,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_LIQUID,fc,fnc)
+       call sed_CalcFlux(dumc,dumnc,alphaq,alphan,s1,s2,nlev,i,MG_LIQUID,fc,fnc)
        call sed_AdvanceOneStep(dumc,fc,dumnc,fnc,pdel,deltat,deltat_sed,nlev,i,MG_LIQUID,g, &
          qctend,nctend,prect,qcsedten,&
          cloud_frac=lcldm,qvlat=qvlat,tlat=tlat,xxl=xxlv,qsevap=qcsevap)
@@ -2262,7 +2262,7 @@ subroutine micro_mg_tend ( &
      do while (time_sed > qsmall)
         ! obtain fall speeds
         call sed_CalcCFL(dumr,dumnr,precip_frac,rho,pdel,nlev,i,&
-             MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,s1,s2,dum,&
              gamma_b_plus1=gamma_br_plus1,gamma_b_plus4=gamma_br_plus4)
 
        ! update deltat_sed for target CFL number
@@ -2270,7 +2270,7 @@ subroutine micro_mg_tend ( &
        ! advance rain sedimentation
        time_sed = time_sed - deltat_sed
        nstep = nstep + 1
-       call sed_CalcFlux(dumr,dumnr,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_RAIN,fr,fnr)
+       call sed_CalcFlux(dumr,dumnr,alphaq,alphan,s1,s2,nlev,i,MG_RAIN,fr,fnr)
        call sed_AdvanceOneStep(dumr,fr,dumnr,fnr,pdel,deltat,deltat_sed,nlev,i,MG_RAIN,g, &
             qrtend,nrtend,prect,qrsedten)
      end do
@@ -2285,7 +2285,7 @@ subroutine micro_mg_tend ( &
      do while (time_sed > qsmall)
         ! obtain fall speeds
         call sed_CalcCFL(dums,dumns,precip_frac,rho,pdel,nlev,i,&
-             MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,s1,s2,w1,w2,dum,&
+             MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,s1,s2,dum,&
              gamma_b_plus1=gamma_bs_plus1,gamma_b_plus4=gamma_bs_plus4)
 
         ! update deltat_sed for target CFL number
@@ -2293,7 +2293,7 @@ subroutine micro_mg_tend ( &
         ! advance snow sedimentation
         time_sed = time_sed - deltat_sed
         nstep = nstep + 1
-        call sed_CalcFlux(dums,dumns,alphaq,alphan,s1,s2,w1,w2,nlev,i,MG_SNOW,fs,fns)
+        call sed_CalcFlux(dums,dumns,alphaq,alphan,s1,s2,nlev,i,MG_SNOW,fs,fns)
         call sed_AdvanceOneStep(dums,fs,dumns,fns,pdel,deltat,deltat_sed,nlev,i,MG_SNOW,g, &
              qstend,nstend,prect,qssedten,preci=preci)
      end do
