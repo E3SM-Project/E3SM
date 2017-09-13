@@ -76,7 +76,7 @@ def get_colormap(colormap, parameters):
         n_levels = 240
         cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr, N=n_levels)
         vcs_cmap = matplotlib2vcs(cmap, vcs_name=colormap)
-        
+
         return vcs_cmap, range(n_levels)
 
     else:
