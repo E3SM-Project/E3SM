@@ -949,7 +949,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+    <desc>pes or cores used relative to MAX_MPITASKS_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -2032,7 +2032,7 @@
     <desc>maximum number of tasks/ threads allowed per node </desc>
   </entry>
 
-  <entry id="PES_PER_NODE">
+  <entry id="MAX_MPITASKS_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
