@@ -40,6 +40,7 @@
            <value compset="_MPASO%OIECOOIDMS">eco_and_dms</value>
            <value compset="_MPASO%OIECOOIDOC">eco_and_macromolecules</value>
            <value compset="_MPASO%OIECOOIDMSOIDOC">eco_and_dms_and_macromolecules</value>
+           <value compset="_MPASO%TOIECO">eco_only</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -54,6 +55,7 @@
            <value compset="MPASO_">none</value>
            <value compset="_MPASO%OECO">constant</value>
            <value compset="_MPASO%OIECO">constant</value>
+           <value compset="_MPASO%TOIECO">diagnostic</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>

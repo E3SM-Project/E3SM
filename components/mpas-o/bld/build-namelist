@@ -1365,6 +1365,10 @@ if ($ocn_co2_type eq 'constant' ) {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"constant");
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"constant");
         add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
+} else {
+        add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"diagnostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
+        add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
 }
 add_default($nl, 'config_use_ecosysTracers_surface_bulk_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_restoring');
@@ -1373,6 +1377,11 @@ add_default($nl, 'config_use_ecosysTracers_exponential_decay');
 add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
+add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1');
+add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');
+add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3');
+add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4');
+add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5');
 if ($ice_bgc eq 'ice_bgc' ) {
         add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".true.");
 } else {

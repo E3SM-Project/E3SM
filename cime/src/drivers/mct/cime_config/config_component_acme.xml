@@ -211,8 +211,10 @@
       <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
       <value compset="20TR.*_DATM%(QIA|CRU)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
-      <value compset="_DATM%IAF*_MPASO%OECO" >CO2C</value>
-      <value compset="_DATM%IAF*_MPASO%OIECO" >CO2C</value>
+      <value compset="_DATM%IAF*_MPASO%OECO" >CO2A</value>
+      <value compset="_DATM%IAF*_MPASO%OIECO" >CO2A</value>
+      <value compset="_DATM%IAF*_MPASO%TOIECO_" >CO2A</value>
+      <value compset="_DATM%IAF_SLND_MPASCICE%BGC_MPASO%TOIECO_" >CO2A</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

@@ -103,4 +103,9 @@
     <lname>2000_DATM%IAF_SLND_MPASCICE%BGC_MPASO%OIECOOIDMSOIDOC_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>GMPAS-TOIECO-IAF</alias>
+    <lname>20TR_DATM%IAF_SLND_MPASCICE%BGC_MPASO%TOIECO_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
 </compsets>
