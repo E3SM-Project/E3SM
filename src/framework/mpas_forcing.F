@@ -2502,7 +2502,9 @@ contains
        if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
 
           call mpas_new_unit(restartTimestampUnit)
-          open(restartTimestampUnit,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
+!maltrud bug
+!         open(restartTimestampUnit,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
+          open(restartTimestampUnit,file=trim(forcingTimeRestartFilename), form='formatted', status='old', position='append')
           exit
 
        endif

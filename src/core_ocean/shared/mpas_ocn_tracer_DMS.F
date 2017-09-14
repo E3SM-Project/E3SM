@@ -23,6 +23,7 @@ module ocn_tracer_DMS
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_timekeeping
    use ocn_constants
 
    use DMS_mod
@@ -58,6 +59,10 @@ module ocn_tracer_DMS
    ! Private module variables
    !
    !--------------------------------------------------------------------
+
+   ! need dt for surface flux limiting--it is accessible in init routine
+
+   real (kind=RKIND) :: dt
 
 !-----------------------------------------------------------------------
 !  name the necessary DMS derived types
@@ -232,7 +237,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_DMS_surface_flux_compute(activeTracers, DMSTracers, forcingPool,  &
-      nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, DMSSurfaceFlux, err)!{{{
+      nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, DMSSurfaceFlux, DMSSurfaceFluxRemoved, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -244,7 +249,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          zMid
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         DMSSurfaceFlux
+         DMSSurfaceFlux,  &
+         DMSSurfaceFluxRemoved
 
       ! three dimensional arrays
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
@@ -308,6 +314,12 @@ contains
 !        PascalsToAtmospheres = 0.0_RKIND,  &
 !        mSquared_to_cmSquared = 1.0_RKIND
 
+      real (kind=RKIND) :: &
+         maxAllowedFractionalLoss = 0.5_RKIND
+
+      real (kind=RKIND) :: &
+         testVal, fractionalLoss, limitedFlux, topLayerThickness
+
       err = 0
 
       call mpas_timer_start("DMS surface flux")
@@ -364,6 +376,20 @@ contains
          DMSSurfaceFlux(dmsIndices%dmsp_ind,iCell) = DMS_forcing%netFlux(column,DMS_indices%dmsp_ind)*renormFluxes +  &
             iceFluxDMSP(iCell)
 
+         ! flux limitation for DMS (only if flux is out of ocean)
+         ! use abs(2*zMid) is top layer thickness;  remember zMid is negative
+         if (DMSSurfaceFlux(dmsIndices%dms_ind,iCell) < 0.0_RKIND) then
+            topLayerThickness = abs(zMid(iLevelSurface,iCell))*2.0_RKIND
+            testVal = dt/(topLayerThickness*DMSTracers(dmsIndices%dms_ind,1,iCell) + 1.e-20_RKIND)
+            fractionalLoss = abs(testVal*DMSSurfaceFlux(dmsIndices%dms_ind,iCell))
+            if (fractionalLoss > maxAllowedFractionalLoss) then
+               limitedFlux = -maxAllowedFractionalLoss/testVal
+               DMSSurfaceFluxRemoved(dmsIndices%dms_ind,iCell) = DMSSurfaceFluxRemoved(dmsIndices%dms_ind,iCell)  &
+                  + (DMSSurfaceFlux(dmsIndices%dms_ind,iCell) - limitedFlux)
+               DMSSurfaceFlux(dmsIndices%dms_ind,iCell) = limitedFlux
+            endif
+         endif
+
          dms_flux_diag_ifrac(iCell)     = DMS_flux_diagnostic_fields%diag_DMS_IFRAC(column)
          dms_flux_diag_xkw(iCell)       = DMS_flux_diagnostic_fields%diag_DMS_XKW(column)
          dms_flux_diag_atm_press(iCell) = DMS_flux_diagnostic_fields%diag_DMS_ATM_PRESS(column)
@@ -414,6 +440,8 @@ contains
       ! scalar pointers
       integer, pointer :: nVertLevels, index_dummy
 
+      type (MPAS_timeInterval_type) :: timeStep
+
       !
       ! get tracers pools
       !
@@ -445,6 +473,13 @@ contains
       !
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
+
+      !
+      !  get the timestep value for use in surface DMS flux limiting
+      !
+
+      timeStep = mpas_get_clock_timestep(domain % clock, ierr=err)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
 !-----------------------------------------------------------------------
 !  initialize DMS parameters
