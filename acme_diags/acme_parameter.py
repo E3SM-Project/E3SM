@@ -24,7 +24,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         # Plotting related
         self.main_title = ''
-        self.backend = 'vcs'
+        # self.backend = 'vcs'  # No default backend for now, user needs to specify which one
         self.save_netcdf = False
         self.output_file = 'output'
         self.output_format = ['png']
@@ -70,4 +70,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         if hasattr(self, 'multiprocessing') and hasattr(
                 self, 'distributed') and self.multiprocessing and self.distributed:
             print("Why are you trying to run the diags multiprocessed and distributedly? You can't do this, only choose one or none.")
+            sys.exit()
+        if not hasattr(self, 'backend'):
+            print("You need to define the 'backend' parameter to 'vcs' or 'mpl'/'matplotlib'/'cartopy'.")
             sys.exit()
