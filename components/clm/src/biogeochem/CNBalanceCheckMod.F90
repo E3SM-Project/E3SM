@@ -327,6 +327,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+      call get_curr_date(kyr, kmo, kda, mcsec)
 
       err_found = .false.
       ! column loop
@@ -342,11 +343,10 @@ contains
               fert_to_sminn(c) + soyfixn_to_sminn(c)
          
          ! forest fertilization
-         call get_curr_date(kyr, kmo, kda, mcsec)
-         if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
+         if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
                .and. fert_type(c) == 1 &
-               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
+               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
              end if
          end if
@@ -424,7 +424,6 @@ contains
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
-
          call endrun(msg=errMsg(__FILE__, __LINE__))
 
 
@@ -499,6 +498,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+      call get_curr_date(kyr, kmo, kda, mcsec)
 
       err_found = .false.
 
@@ -563,11 +563,10 @@ contains
 !         if (crop_prog) col_pinputs(c) = col_pinputs(c) + fert_p_to_sminp(c) 
 
          ! forest fertilization
-         call get_curr_date(kyr, kmo, kda, mcsec)
-         if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
+         if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
                .and. fert_type(c) == 2 &
-               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
+               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                col_pinputs(c) = col_pinputs(c) + fert_dose(c,kmo)/dt
              end if
          end if

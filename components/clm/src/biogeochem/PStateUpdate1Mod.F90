@@ -162,17 +162,17 @@ contains
      
       ! forest fertilization
       call get_curr_date(kyr, kmo, kda, mcsec)
-      if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
-         if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+      if (forest_fert_exp) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
                .and. fert_type(c) == 2 &
-               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                do j = 1, nlevdecomp
                   ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
                end do
-            end do
-         end if
+            end if
+         end do
       end if
 
 
