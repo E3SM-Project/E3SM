@@ -48,14 +48,12 @@ def run_diag(parameters):
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
-        # try:
-        module = importlib.import_module(mod_str)
-        '''
+        try:
+            module = importlib.import_module(mod_str)
         except ImportError as e:
             print('Import error in {}: {}'.format(mod_str, e))
             print('Set {} is not supported yet. Please give us time.'.format(set_name))
             continue
-        '''
 
         print('Starting to run ACME Diagnostics.')
         single_result = module.run_diag(parameters)
@@ -72,7 +70,7 @@ if __name__ == '__main__':
 
         if not hasattr(original_parameter, 'sets'):
             original_parameter.sets = [
-                'zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
+                'lat_lon', 'polar', 'zonal_mean_xy', 'zonal_mean_2d', 'cosp_histogram']
 
         # load the default jsons
         default_jsons_paths = []
