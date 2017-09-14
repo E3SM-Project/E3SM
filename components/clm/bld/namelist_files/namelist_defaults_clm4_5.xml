@@ -1205,7 +1205,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/360x720/map_360x720_cruncep_to_360x720_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="360x720cru"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/360x720/map_1km-merge-10min_HYDRO1K-merge-nomask_to_360x720_nomask_aave_da_c130403.nc</map>
-
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="360x720cru"   to_lmask="nomask" 
+ >lnd/clm2/mappingdata/maps/360x720/map_0.5x0.5_GSDTG2000_to_360x720_nomask_aave_da_c170913.nc</map>
 
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="512x1024"   to_lmask="nomask" 
 >lnd/clm2/mappingdata/maps/512x1024/map_0.5x0.5_MODIS_to_512x1024_nomask_aave_da_c110920.nc</map>
