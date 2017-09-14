@@ -10,7 +10,8 @@
 * Examples:
   * [Quick Start Guide for AIMS4/ACME1](https://acme-climate.github.io/acme_diags/docs/html/quick-guide-aims4.html)
   * [Model vs Model Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-to-model/model-to-model.ipynb)
-  * [Temperature at 200mb and 800mb with different variable names in the model and obs](https://github.com/ACME-Climate/acme_diags/blob/master/examples/temp-at-diff-levels-model-vs-obs/temp-at-diff-levels-model-vs-obs.ipynb)
+  * [Observation vs Observation Comparison](https://github.com/ACME-Climate/acme_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
+  * [Model vs Observation: comparing temperature at 200mb and 800mb with different variable names in the model and obs](https://github.com/ACME-Climate/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
 This diagnostics package is constructed for supporting the diagnostics task of DOE's [Accelerated Climate Modeling for Energy (ACME) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
