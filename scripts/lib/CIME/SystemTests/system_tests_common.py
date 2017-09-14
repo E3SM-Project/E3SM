@@ -388,7 +388,8 @@ class SystemTestsCommon(object):
 
             # compare memory usage to baseline
             newestcpllogfiles = self._get_latest_cpl_logs()
-            memlist = self._get_mem_usage(newestcpllogfiles[0])
+            if len(newestcpllogfiles) > 0:
+                memlist = self._get_mem_usage(newestcpllogfiles[0])
             for cpllog in newestcpllogfiles:
                 m = re.search(r"/(cpl.*.log).*.gz",cpllog)
                 if m is not None:
