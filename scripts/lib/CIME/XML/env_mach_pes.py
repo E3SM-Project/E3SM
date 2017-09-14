@@ -19,7 +19,7 @@ class EnvMachPes(EnvBase):
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, MAX_MPITASKS_PER_NODE=None): # pylint: disable=arguments-differ
         # Special variable NINST_MAX is used to determine the number of
         # drivers in multi-driver mode.
         if vid == "NINST_MAX":
@@ -31,10 +31,10 @@ class EnvMachPes(EnvBase):
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
 
         if "NTASKS" in vid or "ROOTPE" in vid:
-            if pes_per_node is None:
-                pes_per_node = self.get_value("PES_PER_NODE")
+            if MAX_MPITASKS_PER_NODE is None:
+                MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
-                value = -1*value*pes_per_node
+                value = -1*value*MAX_MPITASKS_PER_NODE
 
         return value
 
@@ -71,7 +71,7 @@ class EnvMachPes(EnvBase):
         figure out the value of COST_PES which is the pe value used to estimate model cost
         """
         expect(totaltasks > 0,"totaltasks > 0 expected totaltasks = {}".format(totaltasks))
-        pespn = self.get_value("PES_PER_NODE")
+        pespn = self.get_value("MAX_MPITASKS_PER_NODE")
         num_nodes, spare_nodes = self.get_total_nodes(totaltasks, max_thread_count)
         num_nodes += spare_nodes
         # This is hardcoded because on yellowstone by default we
@@ -98,7 +98,7 @@ class EnvMachPes(EnvBase):
     def get_tasks_per_node(self, total_tasks, max_thread_count):
         expect(total_tasks > 0,"totaltasks > 0 expected totaltasks = {}".format(total_tasks))
         tasks_per_node = min(self.get_value("MAX_TASKS_PER_NODE")/ max_thread_count,
-                             self.get_value("PES_PER_NODE"), total_tasks)
+                             self.get_value("MAX_MPITASKS_PER_NODE"), total_tasks)
         return tasks_per_node if tasks_per_node > 0 else 1
 
     def get_total_nodes(self, total_tasks, max_thread_count):

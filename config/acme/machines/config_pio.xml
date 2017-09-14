@@ -20,7 +20,7 @@
 
   <entry id="PIO_STRIDE">
     <values>
-      <value>$PES_PER_NODE</value>
+      <value>$MAX_MPITASKS_PER_NODE</value>
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
       <value mach="mira|cetus">128</value>
       <value mach="cori-knl">64</value>

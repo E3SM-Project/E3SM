@@ -8,7 +8,7 @@
 
 <!-- simple elements -->
 <xs:element name="comment" type="xs:string"/>
-<xs:element name="PES_PER_NODE" type="xs:integer"/>
+<xs:element name="MAX_MPITASKS_PER_NODE" type="xs:integer"/>
 <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
 <xs:element name="ntasks_atm" type="xs:integer"/>
 <xs:element name="ntasks_lnd" type="xs:integer"/>
@@ -76,7 +76,7 @@
   <xs:element name="pes">
     <xs:complexType>
       <xs:choice maxOccurs="unbounded">
-        <xs:element minOccurs="0" ref="PES_PER_NODE"/>
+        <xs:element minOccurs="0" ref="MAX_MPITASKS_PER_NODE"/>
         <xs:element minOccurs="0" ref="MAX_TASKS_PER_NODE"/>
         <xs:element minOccurs="0" ref="comment"/>
         <xs:element minOccurs="0" ref="ntasks"/>

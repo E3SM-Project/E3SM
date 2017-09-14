@@ -75,12 +75,12 @@
 
     <!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
 	 shared memory node on this machine,
-	 should always be >= PES_PER_NODE -->
+	 should always be >= MAX_MPITASKS_PER_NODE -->
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 
-    <!-- PES_PER_NODE: number of physical PES per shared node on
+    <!-- MAX_MPITASKS_PER_NODE: number of physical PES per shared node on
 	 this machine, in practice the MPI tasks per node will not exceed this value -->
-    <PES_PER_NODE>36</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
 
     <!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
 	 the batch system?  See PROJECT above -->

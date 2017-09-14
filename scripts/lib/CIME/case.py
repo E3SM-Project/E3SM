@@ -129,7 +129,7 @@ class Case(object):
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
-        pes_per_node  = self.get_value("PES_PER_NODE")
+        MAX_MPITASKS_PER_NODE  = self.get_value("MAX_MPITASKS_PER_NODE")
 
         self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
@@ -137,10 +137,10 @@ class Case(object):
         logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
 
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
-        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / MAX_MPITASKS_PER_NODE))
 
         threads_per_node = self.tasks_per_node * self.thread_count
-        threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
+        threads_per_core = 1 if (threads_per_node <= MAX_MPITASKS_PER_NODE) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
         mpi_attribs = {
@@ -719,10 +719,10 @@ class Case(object):
             mach_pes_obj.set_value(rootpe_str, rootpe)
 
         pesize = 1
-        pes_per_node = self.get_value("PES_PER_NODE")
+        MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
         for val in totaltasks:
             if val < 0:
-                val = -1*val*pes_per_node
+                val = -1*val*MAX_MPITASKS_PER_NODE
             if val > pesize:
                 pesize = val
         if multi_driver:

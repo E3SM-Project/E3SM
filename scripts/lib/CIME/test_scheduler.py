@@ -199,7 +199,7 @@ class TestScheduler(object):
 
         # Oversubscribe by 1/4
         if proc_pool is None:
-            pes = int(self._machobj.get_value("PES_PER_NODE"))
+            pes = int(self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
             self._proc_pool = int(pes * 1.25)
         else:
             self._proc_pool = int(proc_pool)
