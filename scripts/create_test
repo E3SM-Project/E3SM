@@ -195,7 +195,7 @@ OR
 
     parser.add_argument("--proc-pool", type=int, default=None,
                         help="The size of the processor pool that create_test can use. Default "
-                        "is PES_PER_NODE + 25 percent.")
+                        "is MAX_MPITASKS_PER_NODE + 25 percent.")
 
     parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
                         help="Set the wallclock limit for all tests in the suite. "
@@ -429,7 +429,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
         submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
         submit_args = env_batch.get_submit_args(case, "case.run")
 
-    tasks_per_node = mach.get_value("PES_PER_NODE")
+    tasks_per_node = mach.get_value("MAX_MPITASKS_PER_NODE")
     num_nodes = int(math.ceil(float(proc_pool) / tasks_per_node))
     if wall_time is None:
         wall_time = compute_total_time(job_cost_map, proc_pool)

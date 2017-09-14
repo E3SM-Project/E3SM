@@ -298,13 +298,13 @@ class Machines(GenericXML):
             os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            pes_per_node = machine.find("PES_PER_NODE")
+            MAX_MPITASKS_PER_NODE = machine.find("MAX_MPITASKS_PER_NODE")
 
             print( "  {} : {} ".format(name , desc.text))
             print( "      os             ", os_.text)
             print( "      compilers      ",compilers.text)
-            if pes_per_node is not None:
-                print( "      pes/node       ",pes_per_node.text)
+            if MAX_MPITASKS_PER_NODE is not None:
+                print( "      pes/node       ",MAX_MPITASKS_PER_NODE.text)
             if max_tasks_per_node is not None:
                 print( "      max_tasks/node ",max_tasks_per_node.text)
 
@@ -318,10 +318,10 @@ class Machines(GenericXML):
             os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            pes_per_node = machine.find("PES_PER_NODE")
+            MAX_MPITASKS_PER_NODE = machine.find("MAX_MPITASKS_PER_NODE")
             ppn = ''
-            if pes_per_node is not None:
-                ppn = pes_per_node.text
+            if MAX_MPITASKS_PER_NODE is not None:
+                ppn = MAX_MPITASKS_PER_NODE.text
 
             max_tasks_pn = ''
             if max_tasks_per_node is not None:
