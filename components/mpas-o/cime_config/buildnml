@@ -18,6 +18,10 @@ my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT	-value`;
 my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
 my $OCN_MASK		= `./xmlquery  MASK_GRID	-value`;
 my $OCN_FORCING		= `./xmlquery  MPASO_FORCING	-value`;
+my $OCN_BGC		= `./xmlquery  MPASO_BGC	-value`;
+my $OCN_CO2_TYPE	= `./xmlquery  OCN_CO2_TYPE	-value`;
+my $ATM_CO2_CONST_VAL	= `./xmlquery  CCSM_CO2_PPMV	-value`;
+my $ICE_BGC		= `./xmlquery  MPASI_BGC	-value`;
 my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN	-value`;
 my $OCN_PIO_TYPENAME	= `./xmlquery  OCN_PIO_TYPENAME	-value`;
 #my $NINST_OCN		= `./xmlquery  NINST_OCN	-value`;
@@ -60,7 +64,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $ic_prefix .= 'oEC60to30v3_60layer';
 	$decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
-        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
+        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx.FIXED.2004_08_03.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
         $ic_date .= '170905';
         $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0824';
@@ -211,6 +215,10 @@ while ($inst_counter <= $NINST_OCN) {
 	$sysmod .= " -date_stamp '$decomp_date'";
 	$sysmod .= " -ocn_grid '$OCN_MASK'";
 	$sysmod .= " -ocn_forcing '$OCN_FORCING'";
+	$sysmod .= " -ocn_bgc '$OCN_BGC'";
+	$sysmod .= " -ocn_co2_type '$OCN_CO2_TYPE'";
+	$sysmod .= " -atm_co2_const_val '$ATM_CO2_CONST_VAL'";
+	$sysmod .= " -ice_bgc '$ICE_BGC'";
     # pass in OCN_MASK for now as a short-cut for the grid
     # at some point, we may want to pass both -- but for now this is simpler
 
@@ -262,9 +270,15 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file '                  io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         }
 	print $stream_file '                  input_interval="initial_only"' . "\n";
-	print $stream_file "                  filename_template=" . '"'
-					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc"
-					. '"' . "\n";
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+        print $stream_file "                  filename_template=" . '"'
+                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/oEC60to30v3.161222+BGC_IC.nc"
+                                        . '"' . "\n";
+        } else {
+        print $stream_file "                  filename_template=" . '"'
+                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc"
+                                        . '"' . "\n";
+        }
 	print $stream_file '/>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
@@ -351,6 +365,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="maxLevelCell"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeTop"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeBot"/>' . "\n";
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+                print $stream_file '    <var_struct name="ecosysDiagFieldsLevel1"/>' . "\n";
+                print $stream_file '    <var_struct name="ecosysAuxiliary"/>' . "\n";
+        }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
@@ -612,7 +630,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '' . "\n";
 	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
 	print $stream_file '    <var name="ssh"/>' . "\n";
-	print $stream_file '    <var_array name="activeTracers"/>' . "\n";
+	print $stream_file '	<var_struct name="tracers"/>' . "\n";
 	print $stream_file '    <var name="velocityMeridional"/>' . "\n";
 	print $stream_file '    <var name="velocityZonal"/>' . "\n";
 	print $stream_file '    <var name="layerThickness"/>' . "\n";
@@ -676,6 +694,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
         print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
         print $stream_file '    <var name="potentialDensity"/>' . "\n";
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+                print $stream_file '    <var_struct name="ecosysDiagFieldsLevel1"/>' . "\n";
+                print $stream_file '    <var_struct name="ecosysAuxiliary"/>' . "\n";
+        }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
@@ -750,6 +772,31 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+        if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
+                print $stream_file '<stream name="ecosys_monthly_flux"' . "\n";
+                print $stream_file '        type="input"' . "\n";
+                print $stream_file "        filename_template=" . '"'
+                                        . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/oEC60to30v3.monthlySurfaceForcingBGC.170301.nc"
+                                        . '"' . "\n";
+                print $stream_file '        input_interval="none"' . "\n";
+                print $stream_file '        packages="ecosysTracersPKG">' . "\n";
+                print $stream_file '    <var name="xtime"/>' . "\n";
+                print $stream_file '    <var name="depositionFluzNO3"/>' . "\n";
+                print $stream_file '    <var name="depositionFluzNH4"/>' . "\n";
+                print $stream_file '    <var name="IRON_FLUZ_IN"/>' . "\n";
+                print $stream_file '    <var name="dust_FLUZ_IN"/>' . "\n";
+                print $stream_file '    <var name="riverFluzNO3"/>' . "\n";
+                print $stream_file '    <var name="riverFluzPO4"/>' . "\n";
+                print $stream_file '    <var name="riverFluzDON"/>' . "\n";
+                print $stream_file '    <var name="riverFluzDOP"/>' . "\n";
+                print $stream_file '    <var name="riverFluzSiO3"/>' . "\n";
+                print $stream_file '    <var name="riverFluzFe"/>' . "\n";
+                print $stream_file '    <var name="riverFluzDIC"/>' . "\n";
+                print $stream_file '    <var name="riverFluzALK"/>' . "\n";
+                print $stream_file '    <var name="riverFluzDOC"/>' . "\n";
+                print $stream_file '</stream>' . "\n";
+                print $stream_file '' . "\n";
+        }
 	print $stream_file '<!--' . "\n";
 	print $stream_file 'All streams below this line are auxiliary streams. They are provided as' . "\n";
 	print $stream_file 'groupings of fields that one might be interested in. You can either enable the' . "\n";
