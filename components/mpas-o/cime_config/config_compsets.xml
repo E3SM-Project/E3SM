@@ -63,4 +63,44 @@
     <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%COREFORCED_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>GMPAS-OECO-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%OECO_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OECO-ODMS-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%OECOODMS_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OECO-ODOC-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%OECOODOC_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OECO-ODMS-ODOC-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%OECOODMSODOC_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%BGC_MPASO%OIECO_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-OIDMS-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%BGC_MPASO%OIECOOIDMS_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-OIDOC-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%BGC_MPASO%OIECOOIDOC_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-OIECO-OIDMS-OIDOC-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%BGC_MPASO%OIECOOIDMSOIDOC_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
 </compsets>

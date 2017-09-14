@@ -5236,6 +5236,27 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_ecosys_atm_co2_option" type="char*1024"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+
+Valid values: none, constant, prognostic, diagnostic
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosys_atm_alt_co2_option" type="char*1024"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+
+Valid values: none, constant, prognostic, diagnostic
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosys_atm_co2_constant_value" type="real"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+
+Valid values: positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_ecosysTracers_surface_bulk_forcing" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'ecosysGRP' category
@@ -5295,6 +5316,46 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, couple ecosys fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, make variables in ecosysDiagFieldsLevel1 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosysTracers_diagnostic_fields_level2" type="logical"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, make variables in ecosysDiagFieldsLevel2 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosysTracers_diagnostic_fields_level3" type="logical"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, make variables in ecosysDiagFieldsLevel3 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosysTracers_diagnostic_fields_level4" type="logical"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, make variables in ecosysDiagFieldsLevel4 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ecosysTracers_diagnostic_fields_level5" type="logical"
+        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, make variables in ecosysDiagFieldsLevel5 available for output
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

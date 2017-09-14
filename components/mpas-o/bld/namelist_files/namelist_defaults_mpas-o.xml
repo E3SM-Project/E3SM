@@ -803,6 +803,9 @@
 
 <!-- tracer_forcing_ecosysTracers -->
 <config_use_ecosysTracers>.false.</config_use_ecosysTracers>
+<config_ecosys_atm_co2_option>none</config_ecosys_atm_co2_option>
+<config_ecosys_atm_alt_co2_option>none</config_ecosys_atm_alt_co2_option>
+<config_ecosys_atm_co2_constant_value>379.000</config_ecosys_atm_co2_constant_value>
 <config_use_ecosysTracers_surface_bulk_forcing>.false.</config_use_ecosysTracers_surface_bulk_forcing>
 <config_use_ecosysTracers_surface_restoring>.false.</config_use_ecosysTracers_surface_restoring>
 <config_use_ecosysTracers_interior_restoring>.false.</config_use_ecosysTracers_interior_restoring>
@@ -811,6 +814,11 @@
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
 <config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
+<config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
+<config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
+<config_ecosysTracers_diagnostic_fields_level3>.false.</config_ecosysTracers_diagnostic_fields_level3>
+<config_ecosysTracers_diagnostic_fields_level4>.false.</config_ecosysTracers_diagnostic_fields_level4>
+<config_ecosysTracers_diagnostic_fields_level5>.false.</config_ecosysTracers_diagnostic_fields_level5>
 
 <!-- tracer_forcing_DMSTracers -->
 <config_use_DMSTracers>.false.</config_use_DMSTracers>

@@ -53,6 +53,10 @@ OPTIONS
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
+     -ocn_bgc              ocean BGC configuration
+     -ocn_co2_type         how atm co2 is set within MPASO
+     -atm_co2_const_val    value of atm co2 if ocn_co2_type = constant
+     -ice_bgc              check for coupling with sea ice BGC
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -95,6 +99,10 @@ my %opts = ( help        => 0,
              ocn_grid    => undef,
              ocn_forcing => undef,
              date_stamp  => undef,
+             ocn_bgc     => undef,
+             ocn_co2_type      => undef,
+             atm_co2_const_val => undef,
+             ice_bgc     => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -110,6 +118,10 @@ GetOptions(
     "ocn_grid=s"    => \$opts{'ocn_grid'},
     "ocn_forcing=s" => \$opts{'ocn_forcing'},
     "date_stamp=s"  => \$opts{'date_stamp'},
+    "ocn_bgc=s"     => \$opts{'ocn_bgc'},
+    "ocn_co2_type=s"      => \$opts{'ocn_co2_type'},
+    "atm_co2_const_val=s" => \$opts{'atm_co2_const_val'},
+    "ice_bgc=s"     => \$opts{'ice_bgc'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
 )  or usage();
@@ -142,6 +154,10 @@ my $inst_string = $opts{'inst_string'};
 my $OCN_GRID    = $opts{'ocn_grid'};
 my $OCN_FORCING = $opts{'ocn_forcing'};
 my $date_stamp  = $opts{'date_stamp'};
+my $ocn_bgc     = $opts{'ocn_bgc'};
+my $ocn_co2_type      = $opts{'ocn_co2_type'};
+my $atm_co2_const_val = $opts{'atm_co2_const_val'};
+my $ice_bgc     = $opts{'ice_bgc'};
 $cfgdir         = $opts{'cfg_dir'};
 
 my $CIMEROOT;
@@ -1340,7 +1356,16 @@ add_default($nl, 'config_use_debugTracers_ttd_forcing');
 # Namelist group: tracer_forcing_ecosysTracers #
 ################################################
 
-add_default($nl, 'config_use_ecosysTracers');
+if ($ocn_bgc eq 'eco_only' || $ocn_bgc eq 'eco_and_dms' || $ocn_bgc eq 'eco_and_macromolecules' || $ocn_bgc eq 'eco_and_dms_and_macromolecules' ) {
+        add_default($nl, 'config_use_ecosysTracers', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_ecosysTracers', 'val'=>".false.");
+}
+if ($ocn_co2_type eq 'constant' ) {
+        add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"constant");
+        add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"constant");
+        add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
+}
 add_default($nl, 'config_use_ecosysTracers_surface_bulk_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_restoring');
 add_default($nl, 'config_use_ecosysTracers_interior_restoring');
@@ -1348,13 +1373,21 @@ add_default($nl, 'config_use_ecosysTracers_exponential_decay');
 add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
-add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
+if ($ice_bgc eq 'ice_bgc' ) {
+        add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".false.");
+}
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
 #############################################
 
-add_default($nl, 'config_use_DMSTracers');
+if ($ocn_bgc eq 'eco_and_dms' || $ocn_bgc eq 'eco_and_dms_and_macromolecules' ) {
+        add_default($nl, 'config_use_DMSTracers', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_DMSTracers', 'val'=>".false.");
+}
 add_default($nl, 'config_use_DMSTracers_surface_bulk_forcing');
 add_default($nl, 'config_use_DMSTracers_surface_restoring');
 add_default($nl, 'config_use_DMSTracers_interior_restoring');
@@ -1368,7 +1401,11 @@ add_default($nl, 'config_use_DMSTracers_sea_ice_coupling');
 # Namelist group: tracer_forcing_MacroMoleculesTracers #
 ########################################################
 
-add_default($nl, 'config_use_MacroMoleculesTracers');
+if ($ocn_bgc eq 'eco_and_macromolecules' || $ocn_bgc eq 'eco_and_dms_and_macromolecules' ) {
+        add_default($nl, 'config_use_MacroMoleculesTracers', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_MacroMoleculesTracers', 'val'=>".false.");
+}
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_bulk_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_restoring');
 add_default($nl, 'config_use_MacroMoleculesTracers_interior_restoring');
