@@ -1,4 +1,4 @@
-module Sedimentation
+module micro_mg2_sedimentation
   use micro_mg_utils, only: r8
   implicit none
   private
@@ -266,4 +266,4 @@ contains
 
   end subroutine
 
-end module Sedimentation
+end module micro_mg2_sedimentation
