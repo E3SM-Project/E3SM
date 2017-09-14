@@ -560,6 +560,105 @@
     <lname>2000_DATM%CRU_CLM50%BGC_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>
 
+   <compset>
+     <alias>I1850CRUCNPECACNTBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNPECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+    <alias>IM1850CRUCNPECACTCBC</alias>
+    <lname>1850_DATM%CRU_CLM45%CNPECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM1850CRUCNPECACTCBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNPECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I1850CRUCNECACTCBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+    <alias>IM1850CRUCNECACTCBC</alias>
+    <lname>1850_DATM%CRU_CLM45%CNECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM1850CRUCNECACTCBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+    <alias>I1850CRUCNPECACTCBC</alias>
+    <lname>1850_DATM%CRU_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I1850CRUCNPECACTCBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM1850CRUCNPECACNTBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+    <alias>I1850CRUCECACTCBC</alias>
+    <lname>1850_DATM%CRU_CLM45%CECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM1850CRUCNECACNTBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I1850CRUCNECACNTBC</alias>
+     <lname>1850_DATM%CRU_CLM45%CNECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM20TRCRUCNECACTCBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I20TRCRUCNPECACTCBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM20TRCRUCNPECACTCBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNPECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I20TRCRUCNPECACNTBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNPECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I20TRCRUCNECACNTBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>I20TRCRUCNECACTCBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM20TRCRUCNPECACNTBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+ 
+   <compset>
+     <alias>IM20TRCRUCNECACNTBC</alias>
+     <lname>20TR_DATM%CRU_CLM45%CNECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
 
   <!---I compset system tests -->
 
