@@ -283,28 +283,25 @@ contains
 
       ! forest fertilization
       call get_curr_date(kyr, kmo, kda, mcsec)
-      if (forest_fert_exp .and. kyr > 1957) then ! earliest fertilization exp occured in 1958
-         if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+      if (forest_fert_exp) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
                .and. fert_type(c) == 1 &
-               .and. kda == 1  .and. mcsec == 0) then ! fertilization assumed to occur at the begnining of each month
-            if (.not. use_nitrif_denitrif) then
-               do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   do j = 1, nlevdecomp
-                      ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
-                   end do
-               end do
-            else
-               do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   do j = 1, nlevdecomp
-                      ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
-                      ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2*ndep_prof(c,j)
-                      ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
-                   end do
-               end do
-             end if
-          end if
+               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
+               if (.not. use_nitrif_denitrif) then
+                  do j = 1, nlevdecomp
+                     ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+                  end do
+               else
+                  do j = 1, nlevdecomp
+                     ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+                     ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+                     ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
+                  end do
+               end if
+            end if
+         end do
       end if
 
       ! patch loop
