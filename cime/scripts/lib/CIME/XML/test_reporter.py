@@ -25,7 +25,7 @@ class TestReporter(GenericXML):
 
     def setup_header(self, tagname,machine,compiler,mpilib,testroot,testtype,baseline):
         #
-        # Create the XML header that the testdb is expecting to recieve 
+        # Create the XML header that the testdb is expecting to recieve
         #
         tlelem    = ET.Element("testrecord")
         elem      = ET.Element('tag_name')
@@ -49,44 +49,44 @@ class TestReporter(GenericXML):
         elem   = ET.Element('baselinetag')
         elem.text   = baseline
         tlelem.append(elem)
-    
+
         self.root=tlelem
 
-        
+
     def add_result(self,test_name,test_status):
         #
         # Add a test result to the XML structure.
         #
         tlelem      = ET.Element('tests',attrib={"testname":test_name})
         elem=ET.Element('category',attrib={"name":"casestatus"})
-        tlelem.append(elem) 
+        tlelem.append(elem)
         elem=ET.Element('category',attrib={"name":"comment"})
         elem.text= test_status['COMMENT']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         elem=ET.Element('category',attrib={"name":"compare"})
         elem.text= test_status['BASELINE']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         elem=ET.Element('category',attrib={"name":"memcomp"})
         elem.text= test_status['MEMCOMP']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         elem=ET.Element('category',attrib={"name":"memleak"})
         elem.text= test_status['MEMLEAK']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         elem=ET.Element('category',attrib={"name":"nlcomp"})
         elem.text= test_status['NLCOMP']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         elem=ET.Element('category',attrib={"name":"status"})
         elem.text= test_status['STATUS']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         elem=ET.Element('category',attrib={"name":"tputcomp"})
         elem.text= test_status['TPUTCOMP']
-        tlelem.append(elem) 
+        tlelem.append(elem)
 
         self.root.append(tlelem)
 
@@ -108,6 +108,6 @@ class TestReporter(GenericXML):
         #
         # Print any messages from the post command
         #
-        print f.read()
-        print f.code
+        print(f.read())
+        print(f.code)
 

@@ -14,7 +14,7 @@ if len(sys.argv) != 2:
   sys.stderr.write("Usage: NeosClient <xmlfilename | queue> ")
   sys.exit(1)
 
-neos=xmlrpclib.Server("http://%s:%d" % (NEOS_HOST, NEOS_PORT))
+neos=xmlrpclib.Server("http://{}:{:d}".format(NEOS_HOST, NEOS_PORT))
 
 if sys.argv[1] == "queue":
   #Print NEOS job queue
@@ -32,7 +32,7 @@ else:
   xmlfile.close()
 
   (jobNumber,password) = neos.submitJob(xml)
-  sys.stdout.write("JobNumber = %d " % jobNumber)
+  sys.stdout.write("JobNumber = {:d} ".format(jobNumber))
 
   offset=0
 

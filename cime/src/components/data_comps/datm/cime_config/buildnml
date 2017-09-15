@@ -17,7 +17,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
-from CIME.utils import expect
+from CIME.utils import expect, get_model
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
 
@@ -84,6 +84,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     config['datm_mode'] = datm_mode
     config['datm_co2_tseries'] = datm_co2_tseries
     config['datm_presaero'] = datm_presaero
+    config['cime_model'] = get_model()
 
     #----------------------------------------------------
     # Initialize namelist defaults

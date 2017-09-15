@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -12,7 +12,7 @@ import shutil, time, sys, os, glob
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def pre_run_check(case, lid):
+def pre_run_check(case, lid, skip_pnl=False):
 ###############################################################################
 
     # Pre run initialization code..
@@ -25,16 +25,16 @@ def pre_run_check(case, lid):
 
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
-        shutil.copy(env_mach_pes,"%s.%s"%(env_mach_pes,lid))
+        shutil.copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
-    check_lockedfiles(case.get_value("CASEROOT"))
+    check_lockedfiles(case)
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
     expect(build_complete,
            "BUILD_COMPLETE is not true\nPlease rebuild the model interactively")
-    logger.debug("build complete is %s " %build_complete)
+    logger.debug("build complete is {} ".format(build_complete))
 
     # load the module environment...
     case.load_env()
@@ -67,19 +67,20 @@ def pre_run_check(case, lid):
     # This needs to be done everytime the LID changes in order for log files to be set up correctly
     # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
     # variable while the job is in the queue
-    create_namelists(case)
+    if not skip_pnl:
+        create_namelists(case)
 
     logger.info("-------------------------------------------------------------------------")
-    logger.info(" - Prestage required restarts into %s" %(rundir))
-    logger.info(" - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
+    logger.info(" - Prestage required restarts into {}".format(rundir))
+    logger.info(" - Case input data directory (DIN_LOC_ROOT) is {} ".format(din_loc_root))
     logger.info(" - Checking for required input datasets in DIN_LOC_ROOT")
     logger.info("-------------------------------------------------------------------------")
 
 ###############################################################################
-def _run_model_impl(case, lid):
+def _run_model_impl(case, lid, skip_pnl=False):
 ###############################################################################
 
-    pre_run_check(case, lid)
+    pre_run_check(case, lid, skip_pnl=skip_pnl)
 
     model = case.get_value("MODEL")
 
@@ -90,11 +91,11 @@ def _run_model_impl(case, lid):
     os.environ["OMP_NUM_THREADS"] = str(thread_count)
 
     # Run the model
-    logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    logger.info("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     cmd = case.get_mpirun_cmd(job="case.run")
     cmd = case.get_resolved_value(cmd)
-    logger.info("run command is %s " %cmd)
+    logger.info("run command is {} ".format(cmd))
 
     rundir = case.get_value("RUNDIR")
     loop = True
@@ -131,18 +132,18 @@ def _run_model_impl(case, lid):
 
             if not loop:
                 # We failed and we're not restarting
-                expect(False, "RUN FAIL: Command '%s' failed\nSee log file for details: %s" % (cmd, model_logfile))
+                expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
-    logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     post_run_check(case, lid)
 
     return lid
 
 ###############################################################################
-def run_model(case, lid):
+def run_model(case, lid, skip_pnl=False):
 ###############################################################################
-    functor = lambda: _run_model_impl(case, lid)
+    functor = lambda: _run_model_impl(case, lid, skip_pnl=skip_pnl)
     return run_and_log_case_status(functor, "case.run", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
@@ -151,21 +152,34 @@ def post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
+    cpl_ninst = 1
+    if case.get_value("MULTI_DRIVER"):
+        cpl_ninst = case.get_value("NINST_MAX")
+    cpl_logs = []
+    if cpl_ninst > 1:
+        for inst in range(cpl_ninst):
+            cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
+    else:
+        cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
+    cpl_logfile = cpl_logs[0]
 
     # find the last model.log and cpl.log
     model_logfile = os.path.join(rundir, model + ".log." + lid)
-    cpl_logfile = os.path.join(rundir, "cpl" + ".log." + lid)
 
     if not os.path.isfile(model_logfile):
-        expect(False, "Model did not complete, no %s log file " % model_logfile)
-    elif not os.path.isfile(cpl_logfile):
-        expect(False, "Model did not complete, no cpl log file '%s'" % cpl_logfile)
+        expect(False, "Model did not complete, no {} log file ".format(model_logfile))
     elif os.stat(model_logfile).st_size == 0:
         expect(False, "Run FAILED")
     else:
-        with open(cpl_logfile, 'r') as fd:
-            if 'SUCCESSFUL TERMINATION' not in fd.read():
-                expect(False, "Model did not complete - see %s \n "  % cpl_logfile)
+        count_ok = 0
+        for cpl_logfile in cpl_logs:
+            if not os.path.isfile(cpl_logfile):
+                break
+            with open(cpl_logfile, 'r') as fd:
+                if 'SUCCESSFUL TERMINATION' in fd.read():
+                    count_ok += 1
+        if count_ok != cpl_ninst:
+            expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
 
 ###############################################################################
 def save_logs(case, lid):
@@ -177,7 +191,7 @@ def save_logs(case, lid):
 
         caseroot = case.get_value("CASEROOT")
         rundir = case.get_value("RUNDIR")
-        logfiles = glob.glob(os.path.join(rundir, "*.log.%s"%(lid)))
+        logfiles = glob.glob(os.path.join(rundir, "*.log.{}".format(lid)))
         for logfile in logfiles:
             if os.path.isfile(logfile):
                 logfile_gz = gzip_existing_file(logfile)
@@ -192,12 +206,12 @@ def resubmit_check(case):
     # Note that Mira requires special logic
 
     dout_s = case.get_value("DOUT_S")
-    logger.warn("dout_s %s "%(dout_s))
+    logger.warn("dout_s {} ".format(dout_s))
     mach = case.get_value("MACH")
-    logger.warn("mach %s "%(mach))
+    logger.warn("mach {} ".format(mach))
     testcase = case.get_value("TESTCASE")
     resubmit_num = case.get_value("RESUBMIT")
-    logger.warn("resubmit_num %s"%(resubmit_num))
+    logger.warn("resubmit_num {}".format(resubmit_num))
     # If dout_s is True than short-term archiving handles the resubmit
     # If dout_s is True and machine is mira submit the st_archive script
     resubmit = False
@@ -206,7 +220,7 @@ def resubmit_check(case):
     elif dout_s and mach == 'mira':
         caseroot = case.get_value("CASEROOT")
         cimeroot = case.get_value("CIMEROOT")
-        cmd = "ssh cooleylogin1 'cd %s; CIMEROOT=%s ./case.submit %s --job case.st_archive'"%(caseroot, cimeroot, caseroot)
+        cmd = "ssh cooleylogin1 'cd {}; CIMEROOT={} ./case.submit {} --job case.st_archive'".format(caseroot, cimeroot, caseroot)
         run_cmd(cmd, verbose=True)
 
     if resubmit:
@@ -219,23 +233,23 @@ def resubmit_check(case):
 ###############################################################################
 def do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
-    filename = "%s.external.log.%s" %(prefix, lid)
+    filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
-    cmd = script_name + " 1> %s %s 2>&1" %(outfile, caseroot)
-    logger.info("running %s" %script_name)
+    cmd = script_name + " 1> {} {} 2>&1".format(outfile, caseroot)
+    logger.info("running {}".format(script_name))
     run_cmd_no_fail(cmd)
 
 ###############################################################################
 def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 ###############################################################################
-    filename = "da.log.%s" %(lid)
+    filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    cmd = da_script + " 1> %s %s %d 2>&1" %(outfile, caseroot, cycle)
-    logger.info("running %s" %da_script)
+    cmd = da_script + " 1> {} {} {:d} 2>&1".format(outfile, caseroot, cycle)
+    logger.info("running {}".format(da_script))
     run_cmd_no_fail(cmd)
 
 ###############################################################################
-def case_run(case):
+def case_run(case, skip_pnl=False):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
     run_with_submit = case.get_value("RUN_WITH_SUBMIT")
@@ -243,7 +257,7 @@ def case_run(case):
            "You are not calling the run script via the submit script. "
            "As a result, short-term archiving will not be called automatically."
            "Please submit your run using the submit script like so:"
-           " ./case.submit")
+           " ./case.submit Time: {}".format(get_timestamp()))
 
     # Forces user to use case.submit if they re-submit
     if case.get_value("TESTCASE") is None:
@@ -268,21 +282,27 @@ def case_run(case):
             lid = new_lid()
 
         if prerun_script:
+            case.flush()
             do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
                         lid, prefix="prerun")
+            case.read_xml()
 
-        lid = run_model(case, lid)
+        lid = run_model(case, lid, skip_pnl)
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
+            case.flush()
             do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid,
                                  case.get_value("RUNDIR"))
+            case.read_xml()
 
         if postrun_script:
+            case.flush()
             do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
                         lid, prefix="postrun")
+            case.read_xml()
 
         save_postrun_provenance(case)
 

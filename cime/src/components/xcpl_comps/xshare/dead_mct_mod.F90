@@ -18,6 +18,7 @@ module dead_mct_mod
   use shr_const_mod		, only : shr_const_pi
   use seq_timemgr_mod		, only : seq_timemgr_EClockGetData
   use shr_mpi_mod		, only : shr_mpi_bcast
+
   implicit none
   private
   save
@@ -448,7 +449,7 @@ contains
     nflds_d2x = mct_avect_nRattr(d2x)
     nflds_x2d = mct_avect_nRattr(x2d)
 
-    ! PACK
+    ! UNPACK
 
 !    do nf=1,nflds_x2d
 !       do n=1,lsize
@@ -456,7 +457,7 @@ contains
 !       enddo
 !    enddo
 
-    ! UNPACK
+    ! PACK
     selectcase(model)
     case('atm')
        gbuf => gbuf_atm
@@ -516,6 +517,13 @@ contains
     case('ice')
        ki = mct_aVect_indexRA(d2x,"Si_ifrac",perrWith=subname)
        d2x%rAttr(ki,:) = min(1.0_R8,max(0.0_R8,d2x%rAttr(ki,:)))
+    case('glc')
+       ki = mct_aVect_indexRA(d2x,"Sg_icemask",perrWith=subname)
+       d2x%rAttr(ki,:) = 1.0_R8
+       ki = mct_aVect_indexRA(d2x,"Sg_icemask_coupled_fluxes",perrWith=subname)
+       d2x%rAttr(ki,:) = 1.0_R8
+       ki = mct_aVect_indexRA(d2x,"Sg_ice_covered",perrWith=subname)
+       d2x%rAttr(ki,:) = 1.0_R8
     case('atm')
        ! Set time of next radiadtion computation
        call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday)

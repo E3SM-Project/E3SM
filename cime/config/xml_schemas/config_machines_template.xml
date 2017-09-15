@@ -62,11 +62,6 @@
       keeps it on disk-->
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
 
-    <!-- DOUT_L_MSROOT: root directory on mass store system of
-	 long term archive files, long term archiving moves data to tape or
-	 some other form of off-line storage  -->
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-
     <!-- BASELINE_ROOT:  Root directory for system test baseline files -->
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
 
@@ -117,6 +112,7 @@
     <!-- module system: allowed module_system type values are:
 	 module  http://www.tacc.utexas.edu/tacc-projects/mclay/lmod
 	 soft http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html
+         none
       -->
     <module_system type="module">
       <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/perl</init_path>
@@ -156,5 +152,9 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
+    <!-- resource settings as defined in https://docs.python.org/2/library/resource.html -->
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 </config_machines>

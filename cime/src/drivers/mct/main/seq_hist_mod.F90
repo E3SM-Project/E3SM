@@ -103,7 +103,6 @@ module seq_hist_mod
    logical     :: histavg_wav            ! .true.  => write wav fields to average history file
    logical     :: histavg_xao            ! .true.  => write flux xao fields to average history file
 
-   logical     :: cdf64                  ! true => use 64 bit addressing in netCDF files
 
    !--- domain equivalent 2d grid size ---
    integer(IN) :: atm_nx, atm_ny         ! nx,ny of 2d grid, if known
@@ -131,7 +130,7 @@ contains
 subroutine seq_hist_write(infodata, EClock_d, &
      atm, lnd, ice, ocn, rof, glc, wav, &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, fractions_rx,  &
-     fractions_gx, fractions_wx)
+     fractions_gx, fractions_wx, cpl_inst_tag)
 
    implicit none
    !
@@ -152,6 +151,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    type(mct_aVect)         , intent(inout) :: fractions_rx(:) ! Fractions on rof grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_gx(:) ! Fractions on glc grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_wx(:) ! Fractions on wav grid/decomp
+   character(len=*)        ,  intent(in) :: cpl_inst_tag
    !
    ! Local Variables
    integer(IN)   :: curr_ymd     ! Current date YYYYMMDD
@@ -207,7 +207,6 @@ subroutine seq_hist_write(infodata, EClock_d, &
         glc_nx=glc_nx, glc_ny=glc_ny,        &
         wav_nx=wav_nx, wav_ny=wav_ny,        &
         ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
-        cpl_cdf64=cdf64,                     &
         case_name=case_name)
 
    !--- Get current date from clock needed to label the history pointer file ---
@@ -217,7 +216,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
         calendar=calendar)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
    write(hist_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-      trim(case_name), '.cpl.hi.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+      trim(case_name), '.cpl'//cpl_inst_tag//'.hi.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
 
    time_units = 'days since ' &
         // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
@@ -225,7 +224,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    if (iamin_CPLID) then
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-      call seq_io_wopen(hist_file,clobber=.true.,cdf64=cdf64)
+      call seq_io_wopen(hist_file,clobber=.true.)
 
       ! loop twice, first time write header, second time write data for perf
 
@@ -391,7 +390,7 @@ end subroutine seq_hist_write
 !===============================================================================
 
 subroutine seq_hist_writeavg(infodata, EClock_d, &
-     atm, lnd, ice, ocn, rof, glc, wav, write_now)
+     atm, lnd, ice, ocn, rof, glc, wav, write_now, cpl_inst_tag)
 
    implicit none
 
@@ -405,6 +404,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
    type (component_type)   ,  intent(in) :: glc(:)
    type (component_type)   ,  intent(in) :: wav(:)
    logical                 ,  intent(in) :: write_now  ! write or accumulate
+   character(len=*)        ,  intent(in) :: cpl_inst_tag
 
    integer(IN)           :: curr_ymd     ! Current date YYYYMMDD
    integer(IN)           :: curr_tod     ! Current time-of-day (s)
@@ -494,8 +494,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
         histavg_rof=histavg_rof,             &
         histavg_glc=histavg_glc,             &
         histavg_wav=histavg_wav,             &
-        histavg_xao=histavg_xao,             &
-        cpl_cdf64=cdf64 )
+        histavg_xao=histavg_xao)
 
    ! Get current date from clock needed to label the histavg pointer file
 
@@ -767,19 +766,19 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
       if (seq_timemgr_histavg_type == seq_timemgr_type_nyear) then
          call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '.nc'
+            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '.nc'
       elseif (seq_timemgr_histavg_type == seq_timemgr_type_nmonth) then
          call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a, i2.2, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '-', mm, '.nc'
+            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '-', mm, '.nc'
       elseif (seq_timemgr_histavg_type == seq_timemgr_type_nday) then
          call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a, i2.2, a, i2.2, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '-', mm, '-', dd, '.nc'
+            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '-', mm, '-', dd, '.nc'
       else
          call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
          write(hist_file, "(2a, i4.4, a, i2.2, a, i2.2, a, i5.5, a)") &
-            trim(case_name),  '.cpl.ha.',  yy, '-', mm, '-', dd, '-', curr_tod, '.nc'
+            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '-', mm, '-', dd, '-', curr_tod, '.nc'
       endif
 
       time_units = 'days since ' &
@@ -788,7 +787,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
       if (iamin_CPLID) then
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-         call seq_io_wopen(hist_file, clobber=.true., cdf64=cdf64)
+         call seq_io_wopen(hist_file, clobber=.true.)
 
          ! loop twice,  first time write header,  second time write data for perf
 
@@ -1061,8 +1060,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
         ice_present=ice_present,       &
         ocn_present=ocn_present,       &
         glc_present=glc_present,       &
-        wav_present=wav_present,       &
-        cpl_cdf64=cdf64 )
+        wav_present=wav_present)
 
    lwrite_now = .true.
    useavg = .false.
@@ -1160,7 +1158,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (fk1 == 1) then
-            call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64, file_ind=found)
+            call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found)
          endif
 
          ! loop twice,  first time write header,  second time write data for perf
@@ -1320,8 +1318,7 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
         ice_present=ice_present,       &
         ocn_present=ocn_present,       &
         glc_present=glc_present,       &
-        wav_present=wav_present,       &
-        cpl_cdf64=cdf64 )
+        wav_present=wav_present)
 
    lwrite_now = .true.
    useavg = .false.
@@ -1390,9 +1387,9 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (fk1 == 1) then
-         call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64)
+         call seq_io_wopen(hist_file(found), clobber=.true.)
       else
-         call seq_io_wopen(hist_file(found), clobber=.false., cdf64=cdf64)
+         call seq_io_wopen(hist_file(found), clobber=.false.)
       endif
 
       ! loop twice,  first time write header,  second time write data for perf

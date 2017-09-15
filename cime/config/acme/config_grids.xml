@@ -765,6 +765,7 @@
       <lname>a%ne30np4_l%ne30np4_oi%oRRS30to10wLI_r%r05_m%oRRS30to10wLI_g%null_w%null</lname>
       <alias>ne30_oRRS30wLI</alias>
     </grid>
+
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne0np4_twpx4v1_ne0np4_twpx4v1</sname>
       <lname>a%ne0np4_twpx4v1_l%ne0np4_twpx4v1_oi%ne0np4_twpx4v1_r%null_m%oRRS18to6v3_g%null_w%null</lname>
