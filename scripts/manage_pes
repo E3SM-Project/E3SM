@@ -337,7 +337,7 @@ class ManagePes(object):
                         gridname, machname, compsetname, pesizename)
             drv_config_file = Files().get_value("CONFIG_CPL_FILE")
             drv_comps = [x.lower() for x in
-                        Component(drv_config_file).get_valid_model_components()]
+                        Component(drv_config_file, "CPL").get_valid_model_components()]
 
             logger.info("                   " +
                         (len(drv_comps)*' {:10}').format(*drv_comps))

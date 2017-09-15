@@ -18,10 +18,10 @@ LOG = []
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n{0} [--verbose]
 OR
-%s --help
-""" % ((os.path.basename(args[0]), ) * 2),
+{0} --help
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -51,9 +51,9 @@ def check_csh():  # Can't believe I'm actually checking for csh. -JNJ
 ###############################################################################
 def check_perl_module(module_name):
 ###############################################################################
-    stat = run_cmd('perl -e "require %s;"' % module_name)[0]
+    stat = run_cmd('perl -e "require {};"'.format(module_name)[0])
     if stat != 0:
-        LOG.append('* ACME requires the Perl module %s, but it is not available.'%module_name)
+        LOG.append('* ACME requires the Perl module {}, but it is not available.'.format(module_name))
         LOG.append('  Please make sure that it exists in your @INC.')
 
 ###############################################################################
@@ -72,7 +72,7 @@ def check_perl():
     output = output[1:] # get rid of leading 'v' character
     major_version, minor_version, _ = [int(item) for item in output.split('.')]
     if major_version != acme_perl_major_version or minor_version < acme_perl_minor_version:
-        LOG.append('* ACME requires Perl version %d.%d+. You appear to be using %d.%d.'%(acme_perl_major_version, acme_perl_minor_version, major_version, minor_version))
+        LOG.append('* ACME requires Perl version {:d}.{:d}+. You appear to be using {:d}.{:d}.'.format(acme_perl_major_version, acme_perl_minor_version, major_version, minor_version))
         LOG.append('  Please check to see whether an appropriate version exists on this machine,')
         LOG.append('  possibly via a loadable module.')
 
@@ -101,11 +101,11 @@ def check_git():
     elif num_dots == 2:
         major_version, minor_version, _ = [int(s) for s in version.split('.')]
     else:
-        LOG.append('* Unparseable git version string: "%s"' % output)
+        LOG.append('* Unparseable git version string: "{}"'.format(output))
         return
 
     if major_version != acme_git_major_version or minor_version < acme_git_minor_version:
-        LOG.append('* ACME requires Git version %d.%d+. You appear to be using version %d.%d.'%(acme_git_major_version, acme_git_minor_version, major_version, minor_version))
+        LOG.append('* ACME requires Git version {:d}.{:d}+. You appear to be using version {:d}.{:d}.'.format(acme_git_major_version, acme_git_minor_version, major_version, minor_version))
 
 ###############################################################################
 def check_svn():
@@ -122,7 +122,7 @@ def check_svn():
 
     major_version, minor_version, patch_version = [int(s) for s in output.split('.')]
     if major_version < acme_svn_major_version or minor_version < acme_svn_minor_version or patch_version < acme_svn_patch_version:
-        LOG.append('* ACME requires Subversion version %d.%d.%d+. You appear to be using version %d.%d.%d.'%(acme_svn_major_version, acme_svn_minor_version, acme_svn_patch_version, major_version, minor_version, patch_version))
+        LOG.append('* ACME requires Subversion version {:d}.{:d}.{:d}+. You appear to be using version {:d}.{:d}.{:d}.'.format(acme_svn_major_version, acme_svn_minor_version, acme_svn_patch_version, major_version, minor_version, patch_version))
 
 ###############################################################################
 def _main_func(description):
