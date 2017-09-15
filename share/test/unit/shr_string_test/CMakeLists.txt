@@ -10,6 +10,7 @@ set(sources_needed
   shr_log_mod.F90
   shr_strconvert_mod.F90
   shr_sys_mod.nompi_abortthrows.F90
+  shr_abort_mod.abortthrows.F90
   shr_timer_mod.F90)
 
 extract_sources("${sources_needed}" "${share_sources}" test_sources)
