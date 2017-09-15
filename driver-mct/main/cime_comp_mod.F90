@@ -1,8 +1,8 @@
-module cesm_comp_mod
+module cime_comp_mod
 
 !-------------------------------------------------------------------------------
 !
-! Purpose: Main program for NCAR CESM4/cpl7. Can have different
+! Purpose: Main program for CIME cpl7. Can have different
 !          land, sea-ice, and ocean models plugged in at compile-time.
 !          These models can be either: stub, dead, data, or active
 !          components or some combination of the above.
@@ -26,10 +26,11 @@ module cesm_comp_mod
    use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
    use shr_const_mod,     only: shr_const_cday
    use shr_file_mod,      only: shr_file_setLogLevel, shr_file_setLogUnit
-   use shr_file_mod,      only: shr_file_setIO, shr_file_getUnit
+   use shr_file_mod,      only: shr_file_setIO, shr_file_getUnit, shr_file_freeUnit
    use shr_scam_mod,      only: shr_scam_checkSurface
    use shr_map_mod,       only: shr_map_setDopole
    use shr_mpi_mod,       only: shr_mpi_min, shr_mpi_max
+   use shr_mpi_mod,       only: shr_mpi_bcast, shr_mpi_commrank, shr_mpi_commsize
    use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
    use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
    use shr_orb_mod,       only: shr_orb_params
@@ -71,7 +72,7 @@ module cesm_comp_mod
     use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
     use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
     use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
-    use seq_comm_mct, only: seq_comm_petlist
+    use seq_comm_mct, only: cpl_inst_tag
 
    ! clock & alarm routines and variables
    use seq_timemgr_mod, only: seq_timemgr_type
@@ -177,7 +178,7 @@ module cesm_comp_mod
 
    private
 
-   public cesm_pre_init1, cesm_pre_init2, cesm_init, cesm_run, cesm_final
+   public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
    public timing_dir, mpicom_GLOID
 
 #include <mpif.h>
@@ -442,10 +443,6 @@ module cesm_comp_mod
    integer :: budget_ltann            ! long term budget flag for end of year writing
    integer :: budget_ltend            ! long term budget flag for end of run writing
 
-!  character(CL) :: hist_r2x_flds     = 'all'
-!  character(CL) :: hist_l2x_flds     = 'all'
-!  character(CL) :: hist_a2x24hr_flds = 'all'
-
    character(CL) :: hist_a2x_flds     = &
         'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 
@@ -475,7 +472,6 @@ module cesm_comp_mod
    logical  :: exists                 ! true if file exists
    integer  :: ierr                   ! MPI error return
    integer  :: rc                     ! return code
-   logical  :: cdf64                  ! true => use 64 bit addressing in netCDF files
 
    character(*), parameter :: NLFileName = "drv_in"  ! input namelist filename
 
@@ -508,8 +504,7 @@ module cesm_comp_mod
    !----------------------------------------------------------------------------
    ! communicator groups and related
    !----------------------------------------------------------------------------
-   integer  :: Global_Comm
-
+   integer  :: global_comm
    integer  :: mpicom_GLOID          ! MPI global communicator
    integer  :: mpicom_CPLID          ! MPI cpl communicator
    integer  :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
@@ -534,6 +529,7 @@ module cesm_comp_mod
    logical  :: iamin_CPLALLGLCID     ! pe associated with CPLALLGLCID
    logical  :: iamin_CPLALLROFID     ! pe associated with CPLALLROFID
    logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
+
 
    !----------------------------------------------------------------------------
    ! complist: list of comps on this pe
@@ -573,10 +569,10 @@ module cesm_comp_mod
    character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
    character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
    character(*), parameter :: F0R = "('"//subname//" : ', A, 2g23.15 )"
-   character(*), parameter :: FormatA = '(A,": =============== ", A41,          " ===============")'
-   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,5x,   " ===============")'
-   character(*), parameter :: FormatR = '(A,": =============== ", A31,F9.3,1x,  " ===============")'
-   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,1x," ===============")'
+   character(*), parameter :: FormatA = '(A,": =============== ", A44,          " ===============")'
+   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,8x,   " ===============")'
+   character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
+   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,4x," ===============")'
 !===============================================================================
 contains
 !===============================================================================
@@ -585,9 +581,9 @@ contains
 !*******************************************************************************
 !===============================================================================
 
-subroutine cesm_pre_init1()
+subroutine cime_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
-
+   use seq_comm_mct, only: num_inst_driver
    !----------------------------------------------------------
    !| Initialize MCT and MPI communicators and IO
    !----------------------------------------------------------
@@ -596,22 +592,34 @@ subroutine cesm_pre_init1()
    logical :: comp_iamin(num_inst_total)
    character(len=seq_comm_namelen) :: comp_name(num_inst_total)
    integer :: i, it
+   integer :: driver_id
+   integer :: driver_comm
 
    call mpi_init(ierr)
    call shr_mpi_chkerr(ierr,subname//' mpi_init')
+   call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
+   call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
-   Global_Comm=MPI_COMM_WORLD
    comp_comm = MPI_COMM_NULL
    time_brun = mpi_wtime()
 
-   call shr_pio_init1(num_inst_total,NLFileName, Global_Comm)
+   !--- Initialize multiple driver instances, if requested ---
+   call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
+
+   call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
    !
-   ! If pio_async_interface is true Global_Comm is MPI_COMM_NULL on the servernodes
+   ! If pio_async_interface is true Global_comm is MPI_COMM_NULL on the servernodes
    ! and server nodes do not return from shr_pio_init2
    !
-   !   if (Global_Comm /= MPI_COMM_NULL) then
+   !   if (Global_comm /= MPI_COMM_NULL) then
 
-   call seq_comm_init(Global_Comm, NLFileName)
+   if (num_inst_driver > 1) then
+      call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
+      write(cpl_inst_tag,'("_",i4.4)') driver_id
+   else
+      call seq_comm_init(global_comm, driver_comm, NLFileName)
+      cpl_inst_tag = ''
+   end if
 
    !--- set task based threading counts ---
    call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID)
@@ -758,10 +766,10 @@ subroutine cesm_pre_init1()
    !----------------------------------------------------------
 
    if (iamroot_CPLID) then
-      inquire(file='cpl_modelio.nml',exist=exists)
+      inquire(file='cpl_modelio.nml'//trim(cpl_inst_tag),exist=exists)
       if (exists) then
          logunit = shr_file_getUnit()
-         call shr_file_setIO('cpl_modelio.nml',logunit)
+         call shr_file_setIO('cpl_modelio.nml'//trim(cpl_inst_tag),logunit)
          call shr_file_setLogUnit(logunit)
          loglevel = 1
          call shr_file_setLogLevel(loglevel)
@@ -782,6 +790,8 @@ subroutine cesm_pre_init1()
       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
 #endif
       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
+      if (num_inst_driver > 1) &
+         write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
    endif
 
    !
@@ -790,13 +800,13 @@ subroutine cesm_pre_init1()
    !
    call shr_pio_init2(comp_id,comp_name,comp_iamin,comp_comm,comp_comm_iam)
 
-end subroutine cesm_pre_init1
+end subroutine cime_pre_init1
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
-subroutine cesm_pre_init2()
+subroutine cime_pre_init2()
    use pio, only : file_desc_t, pio_closefile, pio_file_is_open
    use shr_const_mod, only: shr_const_tkfrz, shr_const_tktrip, &
         shr_const_mwwv, shr_const_mwdair
@@ -817,12 +827,6 @@ subroutine cesm_pre_init2()
    real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
    !----------------------------------------------------------
-   ! Print Model heading and copyright message
-   !----------------------------------------------------------
-
-   if (iamroot_CPLID) call seq_cesm_printlogheader()
-
-   !----------------------------------------------------------
    !| Timer initialization (has to be after mpi init)
    !----------------------------------------------------------
    maxthreads = max(nthreads_GLOID,nthreads_CPLID,nthreads_ATMID, &
@@ -839,7 +843,7 @@ subroutine cesm_pre_init2()
    call t_startf('CPL:INIT')
    call t_adj_detailf(+1)
 
-   call t_startf('CPL:cesm_pre_init2')
+   call t_startf('CPL:cime_pre_init2')
    !----------------------------------------------------------
    !| Memory test
    !----------------------------------------------------------
@@ -851,7 +855,18 @@ subroutine cesm_pre_init2()
    !| Initialize infodata
    !----------------------------------------------------------
 
-   call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
+   if (len_trim(cpl_inst_tag) > 0) then
+      call seq_infodata_init(infodata,nlfilename, GLOID, pioid, &
+                             cpl_tag=cpl_inst_tag)
+   else
+      call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
+   end if
+
+   !----------------------------------------------------------
+   ! Print Model heading and copyright message
+   !----------------------------------------------------------
+
+   if (iamroot_CPLID) call seq_cime_printlogheader()
 
    !----------------------------------------------------------
    !| Initialize coupled fields (depends on infodata)
@@ -1115,18 +1130,18 @@ subroutine cesm_pre_init2()
       call pio_closefile(pioid)
    endif
 
-   call t_stopf('CPL:cesm_pre_init2')
+   call t_stopf('CPL:cime_pre_init2')
 
    call t_adj_detailf(-1)
    call t_stopf('CPL:INIT')
 
-end subroutine cesm_pre_init2
+end subroutine cime_pre_init2
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
-subroutine cesm_init()
+subroutine cime_init()
 
  101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
  102  format( A, 2i8, A, 8L3 )
@@ -1138,7 +1153,7 @@ subroutine cesm_init()
    !-----------------------------------------------------------------------------
    !| Component Initialization
    !  Note that within each component initialization, the relevant x_present flag
-   !  part of CESMInit can be modified
+   !  part of CIMEInit can be modified
    !  By default, all these flags are set to true
    !  The atm can reset the lnd_present, ice_present and ocn_present flags based
    !  on aqua_planet, ideal_phys and adiabatic modes
@@ -1146,7 +1161,7 @@ subroutine cesm_init()
    !  components will set them to true for the purposes of symmetry
    !-----------------------------------------------------------------------------
 
-   call t_startf('cesm_init')
+   call t_startf('cime_init')
    call t_adj_detailf(+1)
 
    call t_startf('CPL:init_comps')
@@ -1340,7 +1355,6 @@ subroutine cesm_init()
         glc_nx=glc_nx, glc_ny=glc_ny,          &
         ocn_nx=ocn_nx, ocn_ny=ocn_ny,          &
         wav_nx=wav_nx, wav_ny=wav_ny,          &
-        cpl_cdf64=cdf64,                       &
         atm_aero=atm_aero )
 
    ! derive samegrid flags
@@ -1522,7 +1536,6 @@ subroutine cesm_init()
       write(logunit,F0L)'samegrid_ow           = ',samegrid_ow
       write(logunit,F0L)'skip init ocean run   = ',skip_ocean_run
       write(logunit,F00)'cpl sequence option   = ',trim(cpl_seq_option)
-      write(logunit,F0L)'cpl_cdf64             = ',cdf64
       write(logunit,F0L)'do_histavg            = ',do_histavg
       write(logunit,F0L)'atm_aero              = ',atm_aero
       write(logunit,*  )' '
@@ -2042,7 +2055,7 @@ subroutine cesm_init()
          call seq_hist_write(infodata, EClock_d, &
               atm, lnd, ice, ocn, rof, glc, wav, &
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-              fractions_rx, fractions_gx, fractions_wx)
+              fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
          call t_adj_detailf(-2)
@@ -2058,15 +2071,15 @@ subroutine cesm_init()
    endif
 
    call t_adj_detailf(-1)
-   call t_stopf('cesm_init')
+   call t_stopf('cime_init')
 
-end subroutine cesm_init
+end subroutine cime_init
 
  !===============================================================================
  !*******************************************************************************
  !===============================================================================
 
- subroutine cesm_run()
+ subroutine cime_run()
    use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
         rof_layout, ocn_layout, wav_layout, esp_layout
    use shr_string_mod, only: shr_string_listGetIndexF
@@ -2135,8 +2148,8 @@ end subroutine cesm_init
       !----------------------------------------------------------
       ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
       ! of averaged fields - it does NOT control when glc is called currently -
-      ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant 
-      ! info if the time averaging period to accumulate information passed to glc is greater 
+      ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant
+      ! info if the time averaging period to accumulate information passed to glc is greater
       ! than the glcrun interval
 
       call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
@@ -2173,7 +2186,7 @@ end subroutine cesm_init
          call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
       end if
 
-      
+
       ! this probably belongs in seq_timemgr somewhere using proper clocks
       t1hr_alarm = .false.
       t2hr_alarm = .false.
@@ -2246,7 +2259,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2263,7 +2276,7 @@ end subroutine cesm_init
       if ((trim(cpl_seq_option) == 'RASM_OPTION1') .and. &
            iamin_CPLID .and. ocn_present) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN1_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN1_BARRIER')
          call t_drvstartf ('CPL:ATMOCN1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(4))
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2347,7 +2360,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (do_budgets) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
@@ -2393,7 +2406,7 @@ end subroutine cesm_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ocn_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
             call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2434,7 +2447,7 @@ end subroutine cesm_init
          !----------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPREP_BARRIER')
             call t_drvstartf ('CPL:LNDPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2481,7 +2494,7 @@ end subroutine cesm_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ice_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
 
             call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2525,7 +2538,6 @@ end subroutine cesm_init
       !----------------------------------------------------------
       !| WAV SETUP-SEND
       !----------------------------------------------------------
-
       if (wav_present .and. wavrun_alarm) then
 
          !----------------------------------------------------------
@@ -2533,7 +2545,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID .and. wav_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
 
             call t_drvstartf ('CPL:WAVPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2584,7 +2596,7 @@ end subroutine cesm_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. rof_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
 
             call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2710,7 +2722,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
             call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2726,14 +2738,13 @@ end subroutine cesm_init
       !----------------------------------------------------------
       !| ATM/OCN SETUP (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
       !----------------------------------------------------------
-
       if ((trim(cpl_seq_option) == 'CESM1_ORIG'       .or. &
            trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
            trim(cpl_seq_option) == 'CESM1_MOD'        .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' ) .and. &
            iamin_CPLID .and. ocn_present) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
          call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2847,7 +2858,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (do_budgets) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
@@ -2881,7 +2892,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
             call t_drvstartf  ('CPL:LNDPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2912,7 +2923,7 @@ end subroutine cesm_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. glc_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -2985,7 +2996,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
             call t_drvstartf  ('CPL:ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3010,13 +3021,13 @@ end subroutine cesm_init
 
       if (rof_present) then
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
             call t_drvstartf  ('DRIVER_ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
             if (do_hist_r2x) then
                call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
                do eri = 1,num_inst_rof
-                  suffix =  component_get_suffix(rof(eri)) 
+                  suffix =  component_get_suffix(rof(eri))
                   call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
                        aname='r2x'//trim(suffix), dname='domrb', &
                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
@@ -3039,7 +3050,7 @@ end subroutine cesm_init
       ! consistent with the ocean coupling
 
       if (iamin_CPLID .and. do_budgets) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
          call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (lnd_present) then
             call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, &
@@ -3079,7 +3090,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
             call t_drvstartf  ('CPL:ICEPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3096,7 +3107,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (iamin_CPLID) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
          call t_drvstartf ('CPL:FRACSET',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          call t_drvstartf ('CPL:fracset_fracset',barrier=mpicom_CPLID)
@@ -3120,7 +3131,7 @@ end subroutine cesm_init
       if ((trim(cpl_seq_option) == 'RASM_OPTION2') .and. &
            iamin_CPLID .and. ocn_present) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN2_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN2_BARRIER')
          call t_drvstartf ('CPL:ATMOCN2',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3204,7 +3215,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (do_budgets) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
             call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
@@ -3246,7 +3257,7 @@ end subroutine cesm_init
          !----------------------------------------------------
 
          if (iamin_CPLID .and. ocn_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
             call t_drvstartf ('CPL:OCNPRE2',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3287,7 +3298,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID .and. atm_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
             call t_drvstartf ('CPL:ATMPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3400,7 +3411,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
             call t_drvstartf  ('CPL:WAVPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3434,7 +3445,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
             call t_drvstartf  ('CPL:GLCPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3480,7 +3491,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
             call t_drvstartf ('CPL:ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3497,7 +3508,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
 
       if (iamin_CPLID .and. do_budgets) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
 
          call t_drvstartf ('CPL:BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
          if (atm_present) then
@@ -3549,7 +3560,7 @@ end subroutine cesm_init
          !----------------------------------------------------------
 
          if (iamin_CPLID) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOST_BARRIER')
+            call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOST_BARRIER')
             call t_drvstartf  ('CPL:OCNPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
@@ -3564,9 +3575,8 @@ end subroutine cesm_init
       !----------------------------------------------------------
       !| Write driver restart file
       !----------------------------------------------------------
-
       if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
          if (iamroot_CPLID) then
@@ -3577,7 +3587,7 @@ end subroutine cesm_init
          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
               atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-              fractions_rx, fractions_gx, fractions_wx)
+              fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
@@ -3589,7 +3599,7 @@ end subroutine cesm_init
 
       if (iamin_CPLID) then
 
-         call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
+         call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
          call t_drvstartf ('CPL:HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
          if ( history_alarm) then
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -3601,14 +3611,15 @@ end subroutine cesm_init
             call seq_hist_write(infodata, EClock_d, &
                  atm, lnd, ice, ocn, rof, glc, wav, &
                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-                 fractions_rx, fractions_gx, fractions_wx)
+                 fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          endif
 
          if (do_histavg) then
             call seq_hist_writeavg(infodata, EClock_d, &
-                 atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm)
+                 atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm, &
+                 trim(cpl_inst_tag))
          endif
 
          if (do_hist_a2x) then
@@ -3723,11 +3734,13 @@ end subroutine cesm_init
          call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
 
       endif
-
       !----------------------------------------------------------
       !| RUN ESP MODEL
       !----------------------------------------------------------
       if (esp_present .and. esprun_alarm) then
+         ! Make sure that all couplers are here in multicoupler mode before running ESP component
+         call mpi_barrier(global_comm, ierr)
+
          call component_run(Eclock_e, esp, esp_run, infodata, &
               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
               timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
@@ -3856,7 +3869,8 @@ end subroutine cesm_init
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync1_tprof")
 
-         write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/model_timing_",ymd,"_",tod
+         write(timing_file,'(a,i8.8,a1,i5.5)') &
+           trim(tchkpt_dir)//"/cesm_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
          if (output_perf) then
             call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
                        num_outpe=0, output_thispe=output_perf)
@@ -3891,13 +3905,13 @@ end subroutine cesm_init
 
    Time_end = mpi_wtime()
 
- end subroutine cesm_run
+ end subroutine cime_run
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
- subroutine cesm_final()
+ subroutine cime_final()
 
    use shr_pio_mod, only : shr_pio_finalize
    use shr_wv_sat_mod, only: shr_wv_sat_final
@@ -3910,7 +3924,7 @@ end subroutine cesm_init
    call t_startf ('CPL:FINAL')
    call t_adj_detailf(+1)
 
-   call t_startf('cesm_final')
+   call t_startf('cime_final')
    call t_adj_detailf(+1)
 
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
@@ -3958,7 +3972,7 @@ end subroutine cesm_init
    endif
 
    call t_adj_detailf(-1)
-   call t_stopf('cesm_final')
+   call t_stopf('cime_final')
 
    call t_startf("final:sync1_tprof")
    call mpi_barrier(mpicom_GLOID,ierr)
@@ -3969,22 +3983,23 @@ end subroutine cesm_init
 
    call t_set_prefixf("final:")
    if (output_perf) then
-      call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID, &
-                 output_thispe=output_perf)
+      call t_prf(trim(timing_dir)//'/model_timing'//trim(cpl_inst_tag), &
+                 mpicom=mpicom_GLOID, output_thispe=output_perf)
    else
-      call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID)
+      call t_prf(trim(timing_dir)//'/model_timing'//trim(cpl_inst_tag), &
+                 mpicom=mpicom_GLOID)
    endif
    call t_unset_prefixf()
 
    call t_finalizef()
 
-end subroutine cesm_final
+end subroutine cime_final
 
 !===============================================================================
 !*******************************************************************************
 !===============================================================================
 
-subroutine seq_cesm_printlogheader()
+subroutine seq_cime_printlogheader()
 
   !-----------------------------------------------------------------------
   !
@@ -4000,10 +4015,12 @@ subroutine seq_cesm_printlogheader()
   character(len=8) :: ctime          ! System time
   integer          :: values(8)
   character        :: date*8, time*10, zone*5
+  character(len=cs)        :: cime_model
 
 !-------------------------------------------------------------------------------
 
   call date_and_time (date, time, zone, values)
+  call seq_infodata_GetData(infodata, cime_model=cime_model)
   cdate(1:2) = date(5:6)
   cdate(3:3) = '/'
   cdate(4:5) = date(7:8)
@@ -4015,22 +4032,24 @@ subroutine seq_cesm_printlogheader()
   ctime(6:6) = ':'
   ctime(7:8) = time(5:6)
   write(logunit,F00) '------------------------------------------------------------'
-  write(logunit,F00) '        NCAR CPL7 Community Earth System Model (CESM)  '
+  write(logunit,F00) '  Common Infrastructure for Modeling the Earth (CIME) CPL7  '
   write(logunit,F00) '------------------------------------------------------------'
-  write(logunit,F00) '     (Online documentation is available on the CESM         '
-  write(logunit,F00) '      Models page: http://www.cesm.ucar.edu/models/         '
-  write(logunit,F00) '      License information is available as a link from above '
+  write(logunit,F00) '     (Online documentation is available on the CIME         '
+  write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
+  write(logunit,F00) '     License information is available as a link from above  '
+  write(logunit,F00) '------------------------------------------------------------'
+  write(logunit,F00) '                     MODEL ',cime_model
   write(logunit,F00) '------------------------------------------------------------'
   write(logunit,F00) '                DATE ',cdate, ' TIME ', ctime
   write(logunit,F00) '------------------------------------------------------------'
   write(logunit,*)' '
   write(logunit,*)' '
 
-end subroutine seq_cesm_printlogheader
+end subroutine seq_cime_printlogheader
 
 !===============================================================================
 
-subroutine cesm_comp_barriers(mpicom, timer)
+subroutine cime_comp_barriers(mpicom, timer)
   integer         , intent(in) :: mpicom
   character(len=*), intent(in) :: timer
   integer :: ierr
@@ -4040,6 +4059,71 @@ subroutine cesm_comp_barriers(mpicom, timer)
      call mpi_barrier(mpicom,ierr)
      call t_drvstopf (trim(timer))
   endif
-end subroutine cesm_comp_barriers
+end subroutine cime_comp_barriers
 
-end module cesm_comp_mod
+subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
+  !-----------------------------------------------------------------------
+  !
+  ! Initialize multiple coupler instances, if requested
+  !
+  !-----------------------------------------------------------------------
+
+  implicit none
+
+  integer , intent(in) :: comm_in
+  integer , intent(out) :: comm_out
+  integer , intent(out)   :: num_inst_driver
+  integer , intent(out)   :: id      ! instance ID, starts from 1
+  !
+  ! Local variables
+  !
+  integer :: ierr, inst_comm, mype, nu, numpes !, pes
+  integer :: ninst_driver, drvpes
+  character(len=*),    parameter :: subname = '(cime_cpl_init) '
+
+  namelist /cime_driver_inst/ ninst_driver
+
+  call shr_mpi_commrank(comm_in, mype  , ' cime_cpl_init')
+  call shr_mpi_commsize(comm_in, numpes, ' cime_cpl_init')
+
+  num_inst_driver = 1
+  id    = 0
+
+  if (mype == 0) then
+    ! Read coupler namelist if it exists
+    ninst_driver = 1
+    nu = shr_file_getUnit()
+    open(unit = nu, file = NLFileName, status = 'old', iostat = ierr)
+    rewind(unit = nu)
+    ierr = 1
+    do while ( ierr /= 0 )
+       read(unit = nu, nml = cime_driver_inst, iostat = ierr)
+       if (ierr < 0) then
+          call shr_sys_abort( subname//':: namelist read returns an'// &
+               ' end of file or end of record condition' )
+       endif
+    enddo
+    close(unit = nu)
+    call shr_file_freeUnit(nu)
+    num_inst_driver = max(ninst_driver, 1)
+  end if
+
+  call shr_mpi_bcast(num_inst_driver, comm_in, 'ninst_driver')
+
+  if (mod(numpes, num_inst_driver) /= 0) then
+    call shr_sys_abort(subname // &
+      ' : Total PE number must be a multiple of coupler instance number')
+  end if
+
+  if (num_inst_driver == 1) then
+     call mpi_comm_dup(comm_in, comm_out, ierr)
+     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
+  else
+    id = mype * num_inst_driver / numpes + 1
+    call mpi_comm_split(comm_in, id, 0, comm_out, ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
+  end if
+  call shr_mpi_commsize(comm_out, drvpes, ' cime_cpl_init')
+end subroutine cime_cpl_init
+
+end module cime_comp_mod

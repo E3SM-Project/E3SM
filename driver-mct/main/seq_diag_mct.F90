@@ -78,6 +78,13 @@ module seq_diag_mct
    &  - (shr_const_ocn_ref_sal-shr_const_ice_ref_sal) / &
    &    (shr_const_ocn_ref_sal*shr_const_latice)
 
+   real(r8),parameter :: SFLXtoWFLX = & ! water flux implied by salt flux
+                                        ! WFLX (kg/m^2s) = -SFLX (kg/m^2s)
+                                        !                  / ocn_ref_sal (psu) (34.7g/kg)
+					!		   / 1.e-3 kg/g
+        -1._r8/(shr_const_ocn_ref_sal*1.e-3_r8)
+
+
    !--- C for component ---
    !--- "r" is recieve in the coupler, "s" is send from the coupler
 
@@ -123,7 +130,7 @@ module seq_diag_mct
    integer(in),parameter :: f_hlwdn     = 5     ! heat : longwave down
    integer(in),parameter :: f_hlwup     = 6     ! heat : longwave up
    integer(in),parameter :: f_hlatv     = 7     ! heat : latent, vaporization
-   integer(in),parameter :: f_hlatf     = 8     ! heat : latent, fusion, snow       
+   integer(in),parameter :: f_hlatf     = 8     ! heat : latent, fusion, snow
    integer(in),parameter :: f_hioff     = 9     ! heat : latent, fusion, frozen runoff
    integer(in),parameter :: f_hsen      =10     ! heat : sensible
    integer(in),parameter :: f_wfrz      =11     ! water: freezing
@@ -131,29 +138,30 @@ module seq_diag_mct
    integer(in),parameter :: f_wrain     =13     ! water: precip, liquid
    integer(in),parameter :: f_wsnow     =14     ! water: precip, frozen
    integer(in),parameter :: f_wevap     =15     ! water: evaporation
-   integer(in),parameter :: f_wroff     =16     ! water: runoff/flood
-   integer(in),parameter :: f_wioff     =17     ! water: frozen runoff
-   integer(in),parameter :: f_wfrz_16O  =18     ! water: freezing
-   integer(in),parameter :: f_wmelt_16O =19     ! water: melting
-   integer(in),parameter :: f_wrain_16O =20     ! water: precip, liquid
-   integer(in),parameter :: f_wsnow_16O =21     ! water: precip, frozen
-   integer(in),parameter :: f_wevap_16O =22     ! water: evaporation
-   integer(in),parameter :: f_wroff_16O =23     ! water: runoff/flood
-   integer(in),parameter :: f_wioff_16O =24     ! water: frozen runoff
-   integer(in),parameter :: f_wfrz_18O  =25     ! water: freezing
-   integer(in),parameter :: f_wmelt_18O =26     ! water: melting
-   integer(in),parameter :: f_wrain_18O =27     ! water: precip, liquid
-   integer(in),parameter :: f_wsnow_18O =28     ! water: precip, frozen
-   integer(in),parameter :: f_wevap_18O =29     ! water: evaporation
-   integer(in),parameter :: f_wroff_18O =30     ! water: runoff/flood
-   integer(in),parameter :: f_wioff_18O =31     ! water: frozen runoff
-   integer(in),parameter :: f_wfrz_HDO  =32     ! water: freezing
-   integer(in),parameter :: f_wmelt_HDO =33     ! water: melting
-   integer(in),parameter :: f_wrain_HDO =34     ! water: precip, liquid
-   integer(in),parameter :: f_wsnow_HDO =35     ! water: precip, frozen
-   integer(in),parameter :: f_wevap_HDO =36     ! water: evaporation
-   integer(in),parameter :: f_wroff_HDO =37     ! water: runoff/flood
-   integer(in),parameter :: f_wioff_HDO =38     ! water: frozen runoff
+   integer(in),parameter :: f_wsalt     =16     ! water: water equivalent of salt flux
+   integer(in),parameter :: f_wroff     =17     ! water: runoff/flood
+   integer(in),parameter :: f_wioff     =18     ! water: frozen runoff
+   integer(in),parameter :: f_wfrz_16O  =19     ! water: freezing
+   integer(in),parameter :: f_wmelt_16O =20     ! water: melting
+   integer(in),parameter :: f_wrain_16O =21     ! water: precip, liquid
+   integer(in),parameter :: f_wsnow_16O =22     ! water: precip, frozen
+   integer(in),parameter :: f_wevap_16O =23     ! water: evaporation
+   integer(in),parameter :: f_wroff_16O =24     ! water: runoff/flood
+   integer(in),parameter :: f_wioff_16O =25     ! water: frozen runoff
+   integer(in),parameter :: f_wfrz_18O  =26     ! water: freezing
+   integer(in),parameter :: f_wmelt_18O =27     ! water: melting
+   integer(in),parameter :: f_wrain_18O =28     ! water: precip, liquid
+   integer(in),parameter :: f_wsnow_18O =29     ! water: precip, frozen
+   integer(in),parameter :: f_wevap_18O =30     ! water: evaporation
+   integer(in),parameter :: f_wroff_18O =31     ! water: runoff/flood
+   integer(in),parameter :: f_wioff_18O =32     ! water: frozen runoff
+   integer(in),parameter :: f_wfrz_HDO  =33     ! water: freezing
+   integer(in),parameter :: f_wmelt_HDO =34     ! water: melting
+   integer(in),parameter :: f_wrain_HDO =35     ! water: precip, liquid
+   integer(in),parameter :: f_wsnow_HDO =36     ! water: precip, frozen
+   integer(in),parameter :: f_wevap_HDO =37     ! water: evaporation
+   integer(in),parameter :: f_wroff_HDO =38     ! water: runoff/flood
+   integer(in),parameter :: f_wioff_HDO =39     ! water: frozen runoff
 
    integer(in),parameter :: f_size     = f_wioff_HDO   ! Total array size of all elements
    integer(in),parameter :: f_a        = f_area        ! 1st index for area
@@ -173,13 +181,13 @@ module seq_diag_mct
 
       (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
         '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-        '     wfreeze','       wmelt','       wrain','       wsnow', &
-        '       wevap','     wrunoff','     wfrzrof', &
-        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O', &
-        '   wevap_16O',' wrunoff_16O',' wfrzrof_16O', &
-        ' wfreeze_18O','   wmelt_18O','   wrain_18O','   wsnow_18O', &
-        '   wevap_18O',' wrunoff_18O',' wfrzrof_18O', &
-        ' wfreeze_HDO','   wmelt_HDO','   wrain_HDO','   wsnow_HDO', &
+        '     wfreeze','       wmelt','       wrain','       wsnow',                &
+        '       wevap','    weqsaltf','     wrunoff','     wfrzrof',                &
+        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
+        '   wevap_16O',' wrunoff_16O',' wfrzrof_16O',                               &
+        ' wfreeze_18O','   wmelt_18O','   wrain_18O','   wsnow_18O',                &
+        '   wevap_18O',' wrunoff_18O',' wfrzrof_18O',                               &
+        ' wfreeze_HDO','   wmelt_HDO','   wrain_HDO','   wsnow_HDO',                &
         '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO'/)
 
    !--- P for period ---
@@ -281,9 +289,11 @@ module seq_diag_mct
    integer :: index_x2o_Faxa_snow
    integer :: index_x2o_Fioi_melth
    integer :: index_x2o_Fioi_meltw
+   integer :: index_x2o_Fioi_salt
 
    integer :: index_i2x_Fioi_melth
    integer :: index_i2x_Fioi_meltw
+   integer :: index_i2x_Fioi_salt
    integer :: index_i2x_Faii_swnet
    integer :: index_i2x_Fioi_swpen
    integer :: index_i2x_Faii_lwup
@@ -1103,7 +1113,7 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
          if = f_wroff_HDO;
          budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
                                      dr*x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,n)
-   
+
          if = f_wioff_16O;
          budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
                                      dr*x2r_r%rAttr(index_x2r_Flrl_rofi_16O,n)
@@ -1325,9 +1335,9 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
    if (present(do_o2x)) then
       if (first_time) then
          if (trim(cime_model) == 'acme') then
-            index_o2x_Fioo_frazil = mct_aVect_indexRA(o2x_o,'Fioo_frazil') 
+            index_o2x_Fioo_frazil = mct_aVect_indexRA(o2x_o,'Fioo_frazil')
          else if (trim(cime_model) == 'cesm') then
-            index_o2x_Fioo_q = mct_aVect_indexRA(o2x_o,'Fioo_q')      
+            index_o2x_Fioo_q = mct_aVect_indexRA(o2x_o,'Fioo_q')
          end if
       end if
 
@@ -1352,10 +1362,10 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
 
    if (present(do_xao)) then
       if (first_time) then
-         index_xao_Faox_lwup   = mct_aVect_indexRA(xao_o,'Faox_lwup') 
-         index_xao_Faox_lat    = mct_aVect_indexRA(xao_o,'Faox_lat')  
-         index_xao_Faox_sen    = mct_aVect_indexRA(xao_o,'Faox_sen') 
-         index_xao_Faox_evap   = mct_aVect_indexRA(xao_o,'Faox_evap')  
+         index_xao_Faox_lwup   = mct_aVect_indexRA(xao_o,'Faox_lwup')
+         index_xao_Faox_lat    = mct_aVect_indexRA(xao_o,'Faox_lat')
+         index_xao_Faox_sen    = mct_aVect_indexRA(xao_o,'Faox_sen')
+         index_xao_Faox_evap   = mct_aVect_indexRA(xao_o,'Faox_evap')
 
          index_xao_Faox_evap_16O = mct_aVect_indexRA(xao_o,'Faox_evap_16O',perrWith='quiet')
          if ( index_xao_Faox_evap_16O /= 0 ) flds_wiso_ocn = .true.
@@ -1394,6 +1404,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
       if (first_time) then
          index_x2o_Fioi_melth  = mct_aVect_indexRA(x2o_o,'Fioi_melth')
          index_x2o_Fioi_meltw  = mct_aVect_indexRA(x2o_o,'Fioi_meltw')
+         index_x2o_Fioi_salt   = mct_aVect_indexRA(x2o_o,'Fioi_salt')
          index_x2o_Foxx_swnet  = mct_aVect_indexRA(x2o_o,'Foxx_swnet')
          index_x2o_Faxa_lwdn   = mct_aVect_indexRA(x2o_o,'Faxa_lwdn')
          index_x2o_Faxa_rain   = mct_aVect_indexRA(x2o_o,'Faxa_rain')
@@ -1448,6 +1459,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
          if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
          if = f_wmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
          if = f_hmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
+         if = f_wsalt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_salt,n) * SFLXtoWFLX
          if = f_hswnet; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_swnet,n)
          if = f_hlwdn ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_lwdn,n)
          if = f_wrain ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain,n)
@@ -1485,17 +1497,17 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
             if = f_wsnow_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow_HDO,n)
-            if = f_wroff_16O ; 
+            if = f_wroff_16O ;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_16O,n)
-            if = f_wioff_16O ; 
+            if = f_wioff_16O ;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_16O,n)
-            if = f_wroff_18O ; 
+            if = f_wroff_18O ;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_18O,n)
-            if = f_wioff_18O ; 
+            if = f_wioff_18O ;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_18O,n)
-            if = f_wroff_HDO ; 
+            if = f_wroff_HDO ;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_HDO,n)
-            if = f_wioff_HDO ; 
+            if = f_wioff_HDO ;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_HDO,n)
          end if
       end do
@@ -1580,6 +1592,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
       index_i2x_Faii_lat    = mct_aVect_indexRA(i2x_i,'Faii_lat')
       index_i2x_Faii_sen    = mct_aVect_indexRA(i2x_i,'Faii_sen')
       index_i2x_Faii_evap   = mct_aVect_indexRA(i2x_i,'Faii_evap')
+      index_i2x_Fioi_salt   = mct_aVect_indexRA(i2x_i,'Fioi_salt')
 
       index_i2x_Fioi_meltw_16O   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_16O',perrWith='quiet')
       if ( index_i2x_Fioi_meltw_16O /= 0 ) flds_wiso_ice = .true.
@@ -1604,6 +1617,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di
          if = f_hmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_melth,n)
          if = f_wmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_meltw,n)
+         if = f_wsalt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_salt,n) * SFLXtoWFLX
          if = f_hswnet; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_swnet,n) &
                                                                     - di*i2x_i%rAttr(index_i2x_Fioi_swpen,n)
          if = f_hlwup ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_lwup,n)
@@ -1641,9 +1655,9 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')
          index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
          if (trim(cime_model) == 'acme') then
-            index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil') 
+            index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')
          else if (trim(cime_model) == 'cesm') then
-            index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')      
+            index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')
          end if
          index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
 
@@ -1875,12 +1889,12 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
          write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
                    dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
                                       dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip) 
+                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
       enddo
       write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_h:f_h_end,ica,ip)),sum(dataGpr(f_h:f_h_end,icl,ip)), &
          sum(dataGpr(f_h:f_h_end,icn,ip)),sum(dataGpr(f_h:f_h_end,ics,ip)),sum(dataGpr(f_h:f_h_end,ico,ip)), &
                                           sum(dataGpr(f_h:f_h_end,ica,ip))+sum(dataGpr(f_h:f_h_end,icl,ip))+ &
-         sum(dataGpr(f_h:f_h_end,icn,ip))+sum(dataGpr(f_h:f_h_end,ics,ip))+sum(dataGpr(f_h:f_h_end,ico,ip)) 
+         sum(dataGpr(f_h:f_h_end,icn,ip))+sum(dataGpr(f_h:f_h_end,ics,ip))+sum(dataGpr(f_h:f_h_end,ico,ip))
 
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
@@ -1894,7 +1908,7 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_w:f_w_end,ica,ip)),sum(dataGpr(f_w:f_w_end,icl,ip)), &
          sum(dataGpr(f_w:f_w_end,icn,ip)),sum(dataGpr(f_w:f_w_end,ics,ip)),sum(dataGpr(f_w:f_w_end,ico,ip)), &
                                           sum(dataGpr(f_w:f_w_end,ica,ip))+sum(dataGpr(f_w:f_w_end,icl,ip))+ &
-         sum(dataGpr(f_w:f_w_end,icn,ip))+sum(dataGpr(f_w:f_w_end,ics,ip))+sum(dataGpr(f_w:f_w_end,ico,ip)) 
+         sum(dataGpr(f_w:f_w_end,icn,ip))+sum(dataGpr(f_w:f_w_end,ics,ip))+sum(dataGpr(f_w:f_w_end,ico,ip))
 
       if ( flds_wiso )then
          do is = 1, nisotopes
@@ -1968,19 +1982,6 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
                                        -sum(dataGpr(f_h:f_h_end,icar,ip))+sum(dataGpr(f_h:f_h_end,icxs,ip))+ &
                                        sum(dataGpr(f_h:f_h_end,icxr,ip))-sum(dataGpr(f_h:f_h_end,icas,ip))
 
-      write(logunit,*) ' '
-      write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
-      write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
-      do if = f_w, f_w_end
-         write(logunit,FA1)    fname(if),-dataGpr(if,icar,ip),dataGpr(if,icxs,ip), &
-                                         dataGpr(if,icxr,ip),-dataGpr(if,icas,ip), &
-                                         -dataGpr(if,icar,ip)+dataGpr(if,icxs,ip)+ &
-                                         dataGpr(if,icxr,ip)-dataGpr(if,icas,ip)
-      enddo
-      write(logunit,FA1)    '   *SUM*',-sum(dataGpr(f_w:f_w_end,icar,ip)),sum(dataGpr(f_w:f_w_end,icxs,ip)), &
-                                       sum(dataGpr(f_w:f_w_end,icxr,ip)),-sum(dataGpr(f_w:f_w_end,icas,ip)), &
-                                       -sum(dataGpr(f_w:f_w_end,icar,ip))+sum(dataGpr(f_w:f_w_end,icxs,ip))+ &
-                                       sum(dataGpr(f_w:f_w_end,icxr,ip))-sum(dataGpr(f_w:f_w_end,icas,ip))
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
@@ -2119,7 +2120,7 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
                                     sum(dataGpr(f_w:f_w_end,c_inh_ir,ip))+sum(dataGpr(f_w:f_w_end,c_inh_is,ip))+ &
                                     sum(dataGpr(f_w:f_w_end,c_ish_ir,ip))+sum(dataGpr(f_w:f_w_end,c_ish_is,ip))+ &
                                     sum(dataGpr(f_w:f_w_end,c_glc_gr,ip))+sum(dataGpr(f_w:f_w_end,c_glc_gs,ip))
- 
+
       if ( flds_wiso ) then
 
          do is = 1, nisotopes
