@@ -285,7 +285,7 @@ end subroutine seq_rest_read
 subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
      atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-     fractions_rx, fractions_gx, fractions_wx)
+     fractions_rx, fractions_gx, fractions_wx, tag)
 
    implicit none
 
@@ -307,6 +307,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
+   character(len=*)       , intent(in) :: tag
 
    integer(IN)   :: n,n1,n2,n3,fk
    integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -317,7 +318,6 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    integer(IN)   :: ivar             ! integer variable
    real(r8)      :: rvar             ! real variable
    logical       :: whead,wdata      ! flags header/data writing
-   logical       :: cdf64            ! true => create netCDF with 64 bit addressing
    logical       :: cplroot          ! root pe on cpl id
    integer(IN)   :: iun              ! unit number
    character(CL) :: rest_file        ! Local path to restart filename
@@ -362,7 +362,6 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
         glc_prognostic=glc_prognostic,      &
         wav_prognostic=wav_prognostic,      &
         esp_prognostic=esp_prognostic,      &
-        cpl_cdf64=cdf64,            &
         case_name=case_name)
 
    ! Write out infodata and time manager data to restart file
@@ -370,7 +369,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
    write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-      trim(case_name), '.cpl.r.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+        trim(case_name), '.cpl'//trim(tag)//'.r.',yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
 
    ! Write driver data to restart file
 
@@ -406,7 +405,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
       endif
 
       call shr_mpi_bcast(rest_file,mpicom_CPLID)
-      call seq_io_wopen(rest_file,clobber=.true.,cdf64=cdf64)
+      call seq_io_wopen(rest_file,clobber=.true.)
 
       ! loop twice (for perf), first time write header, second time write data
       do fk = 1,2

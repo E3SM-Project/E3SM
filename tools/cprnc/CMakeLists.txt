@@ -2,7 +2,7 @@ PROJECT(CPRNC C Fortran)
 
  	
 execute_process(COMMAND ../configure --macros-format=CMake WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/src/externals/CMake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/src/CMake")
 
 INCLUDE(Macros.cmake)
 

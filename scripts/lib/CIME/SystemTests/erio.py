@@ -21,7 +21,7 @@ class ERIO(SystemTestsCommon):
 
     def _full_run(self, pio_type):
         stop_option = self._case.get_value("STOP_OPTION")
-        expect(self._stop_n > 0, "Bad STOP_N: %d" % self._stop_n)
+        expect(self._stop_n > 0, "Bad STOP_N: {:d}".format(self._stop_n))
 
         # Move to config_tests.xml once that's ready
         rest_n = self._stop_n/2 + 1
@@ -32,9 +32,8 @@ class ERIO(SystemTestsCommon):
         self._case.set_value("CONTINUE_RUN", False)
         self._case.flush()
 
-        expect(self._stop_n > 2, "ERROR: stop_n value %d too short"%self._stop_n)
-        logger.info("doing an %s %s initial test with restart file at %s %s with pio type %s"
-                    %(str(self._stop_n), stop_option, str(rest_n), stop_option, pio_type))
+        expect(self._stop_n > 2, "ERROR: stop_n value {:d} too short".format(self._stop_n))
+        logger.info("doing an {} {} initial test with restart file at {} {} with pio type {}".format(str(self._stop_n), stop_option, str(rest_n), stop_option, pio_type))
         self.run_indv(suffix=pio_type)
 
     def _restart_run(self, pio_type, other_pio_type):
@@ -42,16 +41,15 @@ class ERIO(SystemTestsCommon):
 
         rest_n = self._stop_n/2 + 1
         stop_new = self._stop_n - rest_n
-        expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,self._stop_n,rest_n))
+        expect(stop_new > 0, "ERROR: stop_n value {:d} too short {:d} {:d}".format(stop_new,self._stop_n,rest_n))
 
         self._case.set_value("STOP_N", stop_new)
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
-        logger.info("doing an %s %s restart test with %s against %s"
-                    %(str(stop_new), stop_option, pio_type, other_pio_type))
+        logger.info("doing an {} {} restart test with {} against {}".format(str(stop_new), stop_option, pio_type, other_pio_type))
 
-        suffix = "%s.%s" % (other_pio_type, pio_type)
+        suffix = "{}.{}".format(other_pio_type, pio_type)
         self.run_indv(suffix=suffix)
 
         # Compare restart file

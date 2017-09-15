@@ -15,20 +15,20 @@ import sys, argparse, os, doctest
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s <thing-to-list> [<test category> <test category> ...] [--verbose]
+usage="""\n{0} <thing-to-list> [<test category> <test category> ...] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# List all tested compsets \033[0m
-    > %s compsets
+    > {0} compsets
     \033[1;32m# List all compsets tested by acme_developer \033[0m
-    > %s compsets acme_developer
+    > {0} compsets acme_developer
     \033[1;32m# List all grids tested by acme_developer \033[0m
-    > %s grid acme_developer
-""" % ((os.path.basename(args[0]), ) * 6),
+    > {0} grid acme_developer
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -41,7 +41,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="The thing you want to list")
 
     parser.add_argument("categories", nargs="*",
-                        help="The test categories to list. Default will list all. Test categories: %s" % (", ".join(update_acme_tests.get_test_suites())))
+                        help="The test categories to list. Default will list all. Test categories: {}".format(", ".join(update_acme_tests.get_test_suites())))
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -67,11 +67,11 @@ def list_tests(thing_to_list, categories):
             elif (thing_to_list == "tests"):
                 things.add(test)
             else:
-                expect(False, "Unrecognized thing to list '%s'" % thing_to_list)
+                expect(False, "Unrecognized thing to list '{}'".format(thing_to_list))
 
-    print "Tested %s for test categories: %s" % (thing_to_list, ", ".join(categories))
+    print("Tested {} for test categories: {}".format(thing_to_list, ", ".join(categories)))
     for item in sorted(things):
-        print " ", item
+        print(" ", item)
 
 ###############################################################################
 def _main_func(description):

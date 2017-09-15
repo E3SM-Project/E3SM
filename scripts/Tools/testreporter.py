@@ -2,7 +2,7 @@
 
 """
 
-Simple script to populate CESM test database with test results. 
+Simple script to populate CESM test database with test results.
 
 """
 
@@ -30,17 +30,17 @@ def parse_command_line(args):
     # Parse command line options
 
 #    parser = argparse.ArgumentParser(description='Arguements for testreporter')
-    parser.add_argument("--tagname", 
+    parser.add_argument("--tagname",
                         help="Name of the tag being tested.")
-    parser.add_argument("--testid", 
+    parser.add_argument("--testid",
                         help="Test id, ie c2_0_a6g_ing,c2_0_b6g_gnu.")
-    parser.add_argument("--testroot", 
+    parser.add_argument("--testroot",
                         help="Root directory for tests to populate the database.")
-    parser.add_argument("--testtype", 
+    parser.add_argument("--testtype",
                         help="Type of test, prealpha or prebeta.")
-    parser.add_argument("--dryrun",action="store_true", 
+    parser.add_argument("--dryrun",action="store_true",
                         help="Do a dry run, database will not be populated.")
-    parser.add_argument("--dumpxml",action="store_true", 
+    parser.add_argument("--dumpxml",action="store_true",
                         help="Dump XML test results to sceen.")
     args = parser.parse_args()
     CIME.utils.parse_args_and_handle_standard_logging_options(args)
@@ -57,7 +57,7 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
     # Retrieve compiler name and mpi library
     #
     xml_file=glob.glob("*"+testid+"/env_build.xml")
-    expect(len(xml_file) > 0, "Tests not found.  It's possible your testid, %s is wrong." %testid )
+    expect(len(xml_file) > 0, "Tests not found.  It's possible your testid, {} is wrong.".format(testid))
     envxml=(EnvBuild(".",infile=xml_file[0]))
     compiler=envxml.get_value("COMPILER")
     mpilib=envxml.get_value("MPILIB")
@@ -70,7 +70,7 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
     machine=envxml.get_value("MACH")
 
     #
-    # Retrieve baseline tag to compare to 
+    # Retrieve baseline tag to compare to
     #
     xml_file=glob.glob("*"+testid+"/env_test.xml")
     envxml=(EnvTest(".",infile=xml_file[0]))
@@ -91,7 +91,7 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
     # Loop over all tests and parse the test results
     #
     test_status={}
-    for test_name in test_names:  
+    for test_name in test_names:
         if not os.path.isfile(test_name+"/TestStatus"):
             continue
         test_status['COMMENT']=""
@@ -181,13 +181,31 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
                 if line[0:4] == "FAIL":
                     test_status['COMMENT']+="Hybrid fail! "
                     break
+            if "COMPARE_base_multiinst" in line:
+                test_status['STATUS']=line[0:4]
+                if line[0:4] == "FAIL":
+                    test_status['COMMENT']+="Multi instance fail! "
+                    break
+            if "COMPARE_base_test" in line:
+                test_status['STATUS']=line[0:4]
+                if line[0:4] == "FAIL":
+                    test_status['COMMENT']+="Base test fail! "
+                    break
+            if "COMPARE_base_single_thread" in line:
+                test_status['STATUS']=line[0:4]
+                if line[0:4] == "FAIL":
+                    test_status['COMMENT']+="Thread test fail! "
+                    break
 
             #
             #  Do not include time comments.  Just a preference to have cleaner comments in the test database
             #
             try:
-                if 'time=' not in line:
-                    test_status['COMMENT']+=line.split(' ',3)[3]+' '
+                if 'time=' not in line and 'GENERATE' not in line:
+                    if 'BASELINE' not in line:
+                        test_status['COMMENT']+=line.split(' ',3)[3]+' '
+                    else:
+                        test_status['COMMENT']+=line.split(' ',4)[4]+' '
             except:
                 pass
 
@@ -195,8 +213,8 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
         # Fill in the xml with the test results
         #
         testxml.add_result(test_name,test_status)
-  
-    return testxml       
+
+    return testxml
 
 
 ##############################################################################

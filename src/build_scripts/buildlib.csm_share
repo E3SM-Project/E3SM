@@ -13,40 +13,51 @@ my ($sharedlibroot, $installroot, $CASEROOT) = @ARGV;
 
 chdir "${CASEROOT}" or die "Could not cd to \"$CASEROOT\"";
 
-my $CIMEROOT		= `./xmlquery CIMEROOT		-value`;
-my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	-value`;
-my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	-value`;
-my $GMAKE_J		= `./xmlquery GMAKE_J		-value`;
-my $GMAKE		= `./xmlquery GMAKE		-value`;
-my $CASETOOLS		= `./xmlquery CASETOOLS		-value`;
-my $NINST_ATM		= `./xmlquery NINST_ATM		-value`;
-my $NINST_ICE		= `./xmlquery NINST_ICE		-value`;
-my $NINST_GLC		= `./xmlquery NINST_GLC		-value`;
-my $NINST_LND		= `./xmlquery NINST_LND		-value`;
-my $NINST_OCN		= `./xmlquery NINST_OCN		-value`;
-my $NINST_ROF		= `./xmlquery NINST_ROF		-value`;
-my $NINST_WAV		= `./xmlquery NINST_WAV		-value`;
-my $NINST_ESP		= `./xmlquery NINST_ESP		-value`;
-my $NINST_VALUE		= `./xmlquery NINST_VALUE	-value`;
-$ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	-value`;
+my $CIMEROOT		= `./xmlquery CIMEROOT		--value`;
+my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	--value`;
+my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	--value`;
+my $GMAKE_J		= `./xmlquery GMAKE_J		--value`;
+my $GMAKE		= `./xmlquery GMAKE		--value`;
+my $CASETOOLS		= `./xmlquery CASETOOLS		--value`;
+my $multi_driver  	= `./xmlquery MULTI_DRIVER       --value`;
+
+my $NINST_ATM		= 1;
+my $NINST_ICE		= 1;
+my $NINST_GLC		= 1;
+my $NINST_LND		= 1;
+my $NINST_OCN		= 1;
+my $NINST_ROF		= 1;
+my $NINST_WAV		= 1;
+my $NINST_ESP		= 1;
+
+if ($multi_driver eq "FALSE") {
+    $NINST_ATM		= `./xmlquery NINST_ATM		--value`;
+    $NINST_ICE	        = `./xmlquery NINST_ICE		--value`;
+    $NINST_GLC		= `./xmlquery NINST_GLC		--value`;
+    $NINST_LND		= `./xmlquery NINST_LND		--value`;
+    $NINST_OCN		= `./xmlquery NINST_OCN		--value`;
+    $NINST_ROF		= `./xmlquery NINST_ROF		--value`;
+    $NINST_WAV		= `./xmlquery NINST_WAV		--value`;
+    $NINST_ESP		= `./xmlquery NINST_ESP		--value`;
+}
+my $NINST_VALUE		= `./xmlquery NINST_VALUE	--value`;
+$ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	--value`;
 #--------------------------------------------------------------------
 # Filepath: list of source code directories (in order of importance).
 #--------------------------------------------------------------------
 
-my $comp="mct";
-$comp = "esmf" if ($COMP_INTERFACE eq "ESMF");
-
 my $useesmf = "noesmf";
 $useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
 
-my $libdir = "$sharedlibroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}/csm_share";
-my $installdir = "$installroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}";
+my $libdir = "$sharedlibroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}/csm_share";
+my $installdir = "$installroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}";
 mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 my @filepath = ( "$CASEROOT/SourceMods/src.share",
 		 "$CIMEROOT/src/drivers/mct/shr",
 		 "$CIMEROOT/src/components/xcpl_models/xshare",
+		 "$CIMEROOT/src/components/data_comps/dshare",
 		 "$CIMEROOT/src/share/util",
 		 "$CIMEROOT/src/share/RandNum/src",
 		 "$CIMEROOT/src/share/RandNum/src/dsfmt_f03",
@@ -75,6 +86,7 @@ if($#fp != $#filepath){
     close(F);
 }
 my $multiinst_cppdefs = "";
+
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ATM=$NINST_ATM";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_LND=$NINST_LND";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_OCN=$NINST_OCN";
@@ -106,5 +118,3 @@ if ( ! -d "$installdir/lib"){
 }
 system("cp -p -f libcsm_share.a $installdir/lib/");
 system("cp -p -f *.mod $installdir/include/");
-
-

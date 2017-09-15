@@ -4,8 +4,8 @@
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer.cpl</rpointer_file>
-      <rpointer_content >$CASE.cpl.r.$DATENAME.nc</rpointer_content>
+      <rpointer_file>rpointer$NINST_STRING.drv</rpointer_file>
+      <rpointer_content >$CASE.cpl$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 

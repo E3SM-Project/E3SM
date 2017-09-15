@@ -2,7 +2,23 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have rof desc entries.
+  -->
+
+  <description modifier_mode="1">
+    <desc rof="DROF[%NULL][%NYF][%IAF][%CPLHIST]">Data runoff model</desc>
+    <desc option="NULL">NULL mode</desc>
+    <desc option="NYF" >COREv2 normal year forcing:</desc>
+    <desc option="IAF" >COREv2 interannual year forcing:</desc>
+    <desc option="CPLHIST">CPLHIST mode:</desc>
+  </description>
 
   <entry id="COMP_ROF">
     <type>char</type>
@@ -17,7 +33,7 @@
     <type>char</type>
     <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
-    <values>
+    <values match="last">
       <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
       <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
@@ -80,13 +96,6 @@
     <file>env_run.xml</file>
     <desc>ending year to loop data over (only used for CPLHIST mode)</desc>
   </entry>
-
-  <description>
-    <desc compset="_DROF%NULL">NULL drof mode:</desc>
-    <desc compset="_DROF%NYF" >COREv2 drof normal year forcing:</desc>
-    <desc compset="_DROF%IAF" >COREv2 drof interannual year forcing:</desc>
-    <desc compset="_DROF%CPLHIST">CPLHIST mode:</desc>
-  </description>
 
   <help>
     =========================================
