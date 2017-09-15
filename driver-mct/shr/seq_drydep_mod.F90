@@ -566,10 +566,10 @@ CONTAINS
                    call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
                 endif
              end do
-             close( unitn )
           else
              write(s_logunit,*) 'seq_drydep_read:  no drydep_inparm namelist found in ',NLFilename
           endif
+          close( unitn )
           call shr_file_freeUnit( unitn )
        end if
     end if

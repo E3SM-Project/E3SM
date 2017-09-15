@@ -398,5 +398,3 @@ contains
   end subroutine make_aVect_frac_times_icemask
 
 end module map_glc2lnd_mod
-
-
