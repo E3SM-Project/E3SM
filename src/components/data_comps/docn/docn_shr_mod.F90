@@ -178,9 +178,6 @@ CONTAINS
     if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
        ocn_prognostic = .true.
     endif
-    write(6,*)'DEBUG: ocn_present is ',ocn_present
-    write(6,*)'DEBUG: ocn_prognostic is ',ocn_prognostic
-
 
   end subroutine docn_shr_read_namelists
 
