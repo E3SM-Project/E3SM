@@ -523,7 +523,7 @@ class TestScheduler(object):
                     logger.debug (" STOP_OPTION set to %s" %stop_option[opt])
                     logger.debug (" STOP_N      set to %s" %opti)
 
-		elif opt.startswith('R'):
+                elif opt.startswith('R'):
                     # R option is for testing in PTS_MODE or Single Column Model
                     #  (SCM) mode
                     envtest.set_test_parameter("PTS_MODE", "TRUE")
