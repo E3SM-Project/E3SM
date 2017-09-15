@@ -1693,7 +1693,7 @@
       <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
 	<arg name="anum_tasks"> -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> -tpn $PES_PER_NODE </arg>
+        <arg name="tasks_per_node"> -tpn $MAX_MPITASKS_PER_NODE </arg>
 	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/launch </arg>
       </arguments>
     </mpirun>
@@ -1701,7 +1701,7 @@
       <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
 	<arg name="anum_tasks"> -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> -tpn $PES_PER_NODE </arg>
+        <arg name="tasks_per_node"> -tpn $MAX_MPITASKS_PER_NODE </arg>
 	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/hybrid_launch </arg>
       </arguments>
     </mpirun>
@@ -1709,7 +1709,7 @@
       <executable> $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
 	<arg name="anum_tasks"> -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> -tpn $PES_PER_NODE </arg>
+        <arg name="tasks_per_node"> -tpn $MAX_MPITASKS_PER_NODE </arg>
       </arguments>
     </mpirun>
     <module_system type="module">
