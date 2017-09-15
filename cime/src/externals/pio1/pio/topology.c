@@ -46,7 +46,6 @@
 #include <kernel/process.h>
 #include <kernel/location.h>
 #include <firmware/include/personality.h>
-#include <mpix.h>
 
 #define   get_personality                Kernel_GetPersonality
 #define   get_processor_id               Kernel_PhysicalProcessorID
@@ -79,11 +78,6 @@ void identity(MPI_Fint *comm, int *iotask)
    MPI_Comm_rank(comm2,&rank);
    MPI_Comm_size(comm2,&np);
    MPI_Get_processor_name(my_name, &my_name_len);
-
-#ifdef BGQ
-    MPIX_Hardware_t hw;
-    MPIX_Hardware(&hw);
-#endif
 
    /*  Get the personality  */
    Personality pers;
@@ -188,11 +182,6 @@ void determineiotasks(const MPI_Comm comm, const int stride, const int rearr,
    int coreId;
    int iam;
    int task_count;
-
-#ifdef BGQ
-   MPIX_Hardware_t hw;
-   MPIX_Hardware(&hw);
-#endif
 
    MPI_Comm_rank(comm, &rank);
 
