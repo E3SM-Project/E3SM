@@ -85,13 +85,12 @@ class EnvMachSpecific(EnvBase):
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
 
+        self._get_resources_for_case(case)
 
-        self._get_resources_for_case(compiler, debug, mpilib)
-
-    def _get_resources_for_case(self, compiler, debug, mpilib):
+    def _get_resources_for_case(self, case):
         resource_nodes = self.get_nodes("resource_limits")
         if resource_nodes is not None:
-            nodes = self._compute_resource_actions(resource_nodes, compiler, debug, mpilib)
+            nodes = self._compute_resource_actions(resource_nodes, case)
             for name, val in nodes:
                 attr = getattr(resource, name)
                 limits = resource.getrlimit(attr)
