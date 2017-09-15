@@ -1000,9 +1000,10 @@ contains
        call pflotranModelInitMapping(pflotran_m, clm_bot_cell_ids_nindex, &
                                      clm_bot_npts, PF_2DBOT_TO_CLM_2DBOT)
     endif
-
-    ! Allocate vectors for data transfer between CLM and PFLOTRAN.
-    call CLMPFLOTRANIDataCreateVec(MPI_COMM_WORLD)
+    !
+    deallocate(clm_all_cell_ids_nindex)
+    deallocate(clm_top_cell_ids_nindex)
+    deallocate(clm_bot_cell_ids_nindex)
 
 #ifdef COLUMN_MODE
     ! if 'column-wised' mapping, vertical-flow/transport only mode IS ON by default
@@ -1019,8 +1020,15 @@ contains
        write(*, '(/A/)') pflotran_m%option%io_buffer
        call printErrMsg(pflotran_m%option)
     endif
-
 #endif
+
+
+    ! Allocate vectors for data transfer between CLM and PFLOTRAN.
+    ! call CLMPFLOTRANIDataCreateVec(MPI_COMM_WORLD)
+    !  (a NOTE here - f.m.yuan-2017/09/14:
+    ! '       MPI_COMM_WORLD' used above is OK with mpich, but causing MPI_FINALIZE error with openmpi.
+    !         Don't know why and what impacts on simulation)
+    call CLMPFLOTRANIDataCreateVec(mpicom)
 
     ! if BGC is on
     if(pflotran_m%option%ntrandof > 0) then
@@ -1032,12 +1040,7 @@ contains
       call pflotranModelGetRTspecies(pflotran_m)
     endif
 
-    deallocate(clm_all_cell_ids_nindex)
-    deallocate(clm_top_cell_ids_nindex)
-    deallocate(clm_bot_cell_ids_nindex)
-
-!-------------------------------------------------------------------------------------
-    ! coupled module controls betweeen PFLOTRAN and CLM45 (F.-M. Yuan, Aug. 2013)
+    ! coupled module controls betweeen PFLOTRAN and CLM45
     if(pflotran_m%option%iflowmode==RICHARDS_MODE) then
       pf_hmode = .true.
       pf_tmode = .false.
