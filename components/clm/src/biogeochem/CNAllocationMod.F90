@@ -3765,24 +3765,20 @@ contains
 
         if( cnallocate_carbonnitrogen_only() )then
 
-          temp_sminp_to_plant = sminp_to_plant
-
           call p2c(bounds,num_soilc,filter_soilc, &
-                sminp_to_ppool(bounds%begp:bounds%endp), &
-                sminp_to_plant(bounds%begc:bounds%endc))
+                  sminp_to_ppool(bounds%begp:bounds%endp), &
+                  sminp_to_plant(bounds%begc:bounds%endc))
 
-          
+          call calc_puptake_prof(bounds, num_soilc, filter_soilc, &
+                  cnstate_vars, phosphorusstate_vars, puptake_prof)
+
           do j = 1, nlevdecomp
-               do fc=1,num_soilc
-                  c = filter_soilc(fc)
-
-                  if ( temp_sminp_to_plant(c) > 0._r8) then 
-                     sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
-                  else
-                     sminp_to_plant_vr(c,j) = 0._r8
-                  endif 
-               end do
-          end do             
+             do fc=1,num_soilc
+                c = filter_soilc(fc)
+                sminp_to_plant_vr(c,j) = sminp_to_plant(c) * puptake_prof(c,j)
+             end do
+          end do
+        
         end if  ! carbonnitrogen 
 
 

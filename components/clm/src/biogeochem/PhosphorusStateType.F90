@@ -1017,19 +1017,6 @@ contains
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
 
-       
-       if(flag == 'read')then
-
-        do c = bounds%begc, bounds%endc
-         smax_c = smax(isoilorder(c))
-         ks_sorption_c = ks_sorption(isoilorder(c))
-
-         this%solutionp_vr_col(c,:) = (this%labilep_vr_col(c,:)*ks_sorption_c)/&
-                                (smax_c-this%labilep_vr_col(c,:))
-        enddo
-       endif
-
-
     else
 
        ptr1d => this%solutionp_vr_col(:,1)
