@@ -510,22 +510,6 @@
     If TRUE, short term archiving will be turned on.</desc>
   </entry>
 
-  <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Logical to archive all interim restart files, not just those at eor
-    If TRUE, perform short term archiving on all interim restart files,
-    not just those at the end of the run. By default, this value is TRUE.
-    The restart files are saved under the specific component directory
-    ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
-    Interim restart files are created using the REST_N and REST_OPTION variables.
-    This is for expert users ONLY and requires expert knowledge.
-    We will not document this further in this guide.</desc>
-  </entry>
-
   <entry id="DOUT_L_MS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
