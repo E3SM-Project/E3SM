@@ -49,18 +49,6 @@
     </values>
   </entry>
 
-  <entry id="info_debug">
-    <type>integer</type>
-    <category>desp</category>
-    <group>desp_nml</group>
-    <desc>
-      Level of debug output, 0=minimum, 1=normal, 2=more, 3=too much (default: 0)
-    </desc>
-    <values>
-      <value>0</value>
-    </values>
-  </entry>
-
   <entry id="restfilm">
     <type>char</type>
     <category>desp</category>

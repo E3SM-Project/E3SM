@@ -40,7 +40,7 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     >>> rootpes = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     >>> pstrids = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, pes_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
-    ('aprun -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4)
+    (' -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4)
     """
     max_tasks_per_node = 1 if max_tasks_per_node < 1 else max_tasks_per_node
 
@@ -82,11 +82,11 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
             task_per_numa = int(math.ceil(tasks_per_node / 2.0))
             # Option for Titan
             if machine == "titan" and tasks_per_node > 1:
-                aprun_args += " -S %d" % task_per_numa
+                aprun_args += " -S {:d}".format(task_per_numa)
                 if compiler == "intel":
                     aprun_args += " -cc numa_node"
 
-            aprun_args += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, run_exe)
+            aprun_args += " -n {:d} -N {:d} -d {:d} {} :".format(task_count, tasks_per_node, thread_count, run_exe)
 
             node_count = int(math.ceil(float(task_count) / tasks_per_node))
             total_node_count += node_count
@@ -111,11 +111,11 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     # Special option for Titan with intel compiler
     if machine == "titan" and tasks_per_node > 1:
-        aprun_args += " -S %d" % task_per_numa
+        aprun_args += " -S {:d}".format(task_per_numa)
         if compiler == "intel":
             aprun_args += " -cc numa_node"
 
-    aprun_args += " -n %d -N %d -d %d %s " % (task_count, tasks_per_node, thread_count, run_exe)
+    aprun_args += " -n {:d} -N {:d} -d {:d} {} ".format(task_count, tasks_per_node, thread_count, run_exe)
 
     return aprun_args, total_node_count
 

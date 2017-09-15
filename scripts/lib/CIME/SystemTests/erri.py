@@ -18,17 +18,12 @@ class ERRI(ERR):
         """
         ERR.__init__(self, case)
 
-    def run_phase(self):
-        first_phase = self._case.get_value("RESUBMIT") == 1
-
-        ERR.run_phase(self)
-
-        if not first_phase:
-            rundir = self._case.get_value("RUNDIR")
-            for logname_gz in glob.glob(os.path.join(rundir, '*.log*.gz')):
-                # gzipped logfile names are of the form $LOGNAME.gz
-                # Removing the last three characters restores the original name
-                logname = logname_gz[:-3]
-                with gzip.open(logname_gz, 'rb') as f_in, open(logname, 'w') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-                os.remove(logname_gz)
+    def _case_two_custom_postrun_action(self):
+        rundir = self._case.get_value("RUNDIR")
+        for logname_gz in glob.glob(os.path.join(rundir, '*.log*.gz')):
+            # gzipped logfile names are of the form $LOGNAME.gz
+            # Removing the last three characters restores the original name
+            logname = logname_gz[:-3]
+            with gzip.open(logname_gz, 'rb') as f_in, open(logname, 'w') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            os.remove(logname_gz)

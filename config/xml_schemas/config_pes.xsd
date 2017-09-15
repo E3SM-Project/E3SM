@@ -58,7 +58,7 @@
   <xs:element name="grid">
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="mach"/>
+        <xs:element maxOccurs="unbounded" ref="mach"/>
       </xs:sequence>
       <xs:attribute ref="name" use="required"/>
     </xs:complexType>

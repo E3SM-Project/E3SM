@@ -4,6 +4,10 @@ cprnc README
 cprnc is a generic tool for analyzing a netcdf file or comparing
 two netcdf files.
 
+If you are trying to debug an installed cprnc tool make sure that you
+are looking at the correct one by comparing the path to the one in
+your case directory.
+
 
 Quick Start Guide:
 ------------------
@@ -11,7 +15,7 @@ Quick Start Guide:
 On cime supported systems you can generate a Macros file using the following
 (assuming you are running the command from the directory cime/tools/cprnc):
 
-CIMEROOT=../.. ../configure --macros-format=Makefile
+CIMEROOT=../.. ../configure --macros-format=Makefile --mpilib=mpi-serial
 
 To change the compiler or MPI library used, or to enable debugging options,
 set the COMPILER, MPILIB, or DEBUG environment variables prior to running
@@ -27,7 +31,7 @@ config_machines.xml.
 You can also build cprnc using cmake:
 export CIMEROOT=../..
 MPILIB=mpi-serial source ./.env_mach_specific.sh
-../configure --macros-format=CMake
+../configure --macros-format=CMake --mpilib=mpi-serial
 
 Next run cmake . to build the Makefile and then
 make to build cprnc.

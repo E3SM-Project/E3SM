@@ -15,16 +15,16 @@ import argparse, sys, os
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s <Path to gold namelist file> <Path to non-namelist file> [-c <CASEBASEID>] [--verbose]
+usage="""\n{0} <Path to gold namelist file> <Path to non-namelist file> [-c <CASEBASEID>] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Compare files\033[0m
-    > %s baseline_dir/test/file mytestarea/file -c <CASE>
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0} baseline_dir/test/file mytestarea/file -c <CASE>
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -52,7 +52,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        CIME.utils.run_cmd_no_fail("python -m doctest %s/simple_compare.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd_no_fail("python -m doctest {}/simple_compare.py -v".format(CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None))
         return
 
     gold_file, compare_file, case = \
@@ -61,13 +61,13 @@ def _main_func(description):
     if (case is None):
         logging.warning("No case id data available, will not be able to normalize values as effectively")
     else:
-        logging.info("Using case: '%s'" % case)
+        logging.info("Using case: '{}'".format(case))
 
     success, comments = CIME.simple_compare.compare_files(gold_file, compare_file, case)
     expect(success,
-           "Diff between files %s and %s:\n%s" % (gold_file, compare_file, comments))
+           "Diff between files {} and {}:\n{}".format(gold_file, compare_file, comments))
 
-    print "Files %s and %s MATCH" % (gold_file, compare_file)
+    print("Files {} and {} MATCH".format(gold_file, compare_file))
 
 ###############################################################################
 

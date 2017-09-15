@@ -1,8 +1,4 @@
 !===============================================================================
-! SVN $Id: shr_string_mod.F90 62094 2014-07-23 15:43:17Z muszala $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116/shr/shr_string_mod.F90 $
-!===============================================================================
-!===============================================================================
 !BOP ===========================================================================
 !
 ! !MODULE: shr_string_mod -- string and list methods
@@ -45,7 +41,8 @@ module shr_string_mod
    public :: shr_string_getParentDir    ! For a pathname get the parent directory name
    public :: shr_string_lastIndex       ! Index of last substr in str
    public :: shr_string_endIndex        ! Index of end of substr in str
-   public :: shr_string_leftAlign       ! remove leading white space
+   public :: shr_string_leftalign_and_convert_tabs ! remove leading white space and convert all tabs to spaces
+   public :: shr_string_convert_tabs    ! Convert all tabs to spaces
    public :: shr_string_alphanum        ! remove all non alpha-numeric characters
    public :: shr_string_betweenTags     ! get the substring between the two tags
    public :: shr_string_parseCFtunit    ! parse CF time units
@@ -64,6 +61,8 @@ module shr_string_mod
    public :: shr_string_listPrepend     ! prepend list in front of another
    public :: shr_string_listSetDel      ! Set field delimiter in lists
    public :: shr_string_listGetDel      ! Get field delimiter in lists
+   public :: shr_string_listFromSuffixes! return colon delimited field list
+                                        ! given array of suffixes and a base string
    public :: shr_string_listCreateField ! return colon delimited field list
                                         ! given number of fields N and a base string
    public :: shr_string_listAddSuffix   ! add a suffix to every field in a field list
@@ -413,19 +412,21 @@ end function shr_string_endIndex
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: shr_string_leftAlign -- remove leading white space
+! !IROUTINE: shr_string_leftalign_and_convert_tabs -- remove leading white space and
+! convert tabs to spaces
 !
 ! !DESCRIPTION:
-!    Remove leading white space
+!    Remove leading white space (spaces and tabs) and convert tabs to spaces
+!    This even converts tabs in the middle or at the end of the string to spaces
 !     \newline
-!     call shr\_string\_leftAlign(string)
+!     call shr\_string\_leftalign_and_convert_tabs(string)
 !
 ! !REVISION HISTORY:
 !     2005-Apr-28 - B. Kauffman - First version
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine shr_string_leftAlign(str,rc)
+subroutine shr_string_leftalign_and_convert_tabs(str,rc)
 
    implicit none
 
@@ -437,37 +438,80 @@ subroutine shr_string_leftAlign(str,rc)
 !EOP
 
    !----- local ----
+   integer(SHR_KIND_IN) :: index_first_non_blank
    integer(SHR_KIND_IN) :: rCode ! return code
    integer(SHR_KIND_IN) :: t01 = 0 ! timer
+   character, parameter :: tab_char = char(9)
 
    !----- formats -----
-   character(*),parameter :: subName =   "(shr_string_leftAlign) "
-   character(*),parameter :: F00     = "('(shr_string_leftAlign) ',4a)"
+   character(*),parameter :: subName =   "(shr_string_leftalign_and_convert_tabs) "
+   character(*),parameter :: F00     = "('(shr_string_leftalign_and_convert_tabs) ',4a)"
 
 !-------------------------------------------------------------------------------
-! note:
-! * ?? this routine isn't needed, use the intrisic adjustL instead ??
+!
 !-------------------------------------------------------------------------------
 
    if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
    if (debug>1) call shr_timer_start(t01)
 
-!  -------------------------------------------------------------------
-!  --- I used this until I discovered the intrinsic function below - BK
-!  do while (len_trim(str) > 0 )
-!     if (str(1:1) /= ' ') exit
-!     str = str(2:len_trim(str))
-!  end do
-!  rCode = 0
-!  !! (len_trim(str) == 0 ) rCode = 1  ! ?? appropriate ??
-!  -------------------------------------------------------------------
+   ! First convert tabs to white space in the string
+   str = shr_string_convert_tabs(str, rc)
 
+   ! Now remove the leading white space
    str = adjustL(str)
+
    if (present(rc)) rc = 0
 
    if (debug>1) call shr_timer_stop (t01)
 
-end subroutine shr_string_leftAlign
+end subroutine shr_string_leftalign_and_convert_tabs
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: shr_string_convert_tabs -- convert all tabs to spaces
+!
+! !DESCRIPTION:
+!    Convert all tabs to spaces in the given string
+!
+! !REVISION HISTORY:
+!     2017-May- - M. Vertenstein
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+function shr_string_convert_tabs(str_input,rc) result(str_output)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   character(len=*)    ,intent(in)             :: str_input
+   integer(SHR_KIND_IN),intent(out)  ,optional :: rc   ! return code
+   character(len=len(str_input))               :: str_output
+!EOP
+
+   !----- local ----
+   integer(SHR_KIND_IN) :: rCode              ! return code
+   integer(SHR_KIND_IN) :: index, inlength, i ! temporaries
+
+   !----- formats -----
+   character(*),parameter :: subName =   "(shr_string_remove_tabs) "
+   character(*),parameter :: F00     = "('(shr_string_remove_tabs) ',4a)"
+
+   ! note that tab is achar(9)
+   inlength = len(str_input)
+   str_output = ''
+   do i = 1, inlength
+      if (str_input(i:i) == achar(9)) then
+         str_output(i:i) = ' '
+      else
+         str_output(i:i) = str_input(i:i)
+      end if
+   end do
+   
+   if (present(rc)) rc = 0
+
+ end function shr_string_convert_tabs
 
 !===============================================================================
 !BOP ===========================================================================
@@ -701,7 +745,7 @@ subroutine shr_string_parseCFtunit(string,unit,bdate,bsec,rc)
      call shr_string_abort(subName//' no since in attr name')
    endif
    tbase = trim(string(i+6:))
-   call shr_string_leftAlign(tbase)
+   call shr_string_leftalign_and_convert_tabs(tbase)
 
    if (debug > 0 .and. s_logunit > 0) then
      write(s_logunit,*) trim(subName)//' '//'unit '//trim(unit)
@@ -717,35 +761,35 @@ subroutine shr_string_parseCFtunit(string,unit,bdate,bsec,rc)
 
    read(lstr,*,ERR=200,END=200) yr
    tbase = tbase(i2+2:)
-   call shr_string_leftAlign(tbase)
+   call shr_string_leftalign_and_convert_tabs(tbase)
 
    i2 = index(tbase,'-') - 1
    if(i2<0) goto 200
    lstr = tbase(i1:i2)
    read(lstr,*,ERR=200,END=200) mo
    tbase = tbase(i2+2:)
-   call shr_string_leftAlign(tbase)
+   call shr_string_leftalign_and_convert_tabs(tbase)
 
    i2 = index(tbase,' ') - 1
    if(i2<0) i2= len_trim(tbase)
    lstr = tbase(i1:i2)
    read(lstr,*,ERR=200,END=200) da
    tbase = tbase(i2+2:)
-   call shr_string_leftAlign(tbase)
+   call shr_string_leftalign_and_convert_tabs(tbase)
 
    i2 = index(tbase,':') - 1
    if(i2<0) i2=len_trim(tbase)
    lstr = tbase(i1:i2)
    read(lstr,*,ERR=200,END=100) hr
    tbase = tbase(i2+2:)
-   call shr_string_leftAlign(tbase)
+   call shr_string_leftalign_and_convert_tabs(tbase)
 
    i2 = index(tbase,':') - 1
    if(i2<0) i2=len_trim(tbase)
    lstr = tbase(i1:i2)
    read(lstr,*,ERR=200,END=100) min
    tbase = tbase(i2+2:)
-   call shr_string_leftAlign(tbase)
+   call shr_string_leftalign_and_convert_tabs(tbase)
 
    i2 = index(tbase,' ') - 1
    if(i2<0) i2=len_trim(tbase)
@@ -1228,8 +1272,8 @@ subroutine shr_string_listMerge(list1,list2,listout,rc)
    call shr_string_clean(listout)
    l1 = trim(list1)
    l2 = trim(list2)
-   call shr_string_leftAlign(l1,rCode)
-   call shr_string_leftAlign(l2,rCode)
+   call shr_string_leftalign_and_convert_tabs(l1,rCode)
+   call shr_string_leftalign_and_convert_tabs(l2,rCode)
    if (len_trim(l1)+len_trim(l2)+1 > len(listout)) &
       call shr_string_abort(subName//'ERROR: output list string not large enough')
    if (len_trim(l1) == 0) then
@@ -1295,7 +1339,7 @@ subroutine shr_string_listAppend(list,listadd,rc)
 
    call shr_string_clean(l1)
    l1 = trim(listadd)
-   call shr_string_leftAlign(l1,rCode)
+   call shr_string_leftalign_and_convert_tabs(l1,rCode)
    if (len_trim(list)+len_trim(l1)+1 > len(list)) &
       call shr_string_abort(subName//'ERROR: output list string not large enough')
    if (len_trim(list) == 0) then
@@ -1363,8 +1407,8 @@ subroutine shr_string_listPrepend(listadd,list,rc)
 
    call shr_string_clean(l1)
    l1 = trim(listadd)
-   call shr_string_leftAlign(l1,rCode)
-   call shr_string_leftAlign(list,rCode)
+   call shr_string_leftalign_and_convert_tabs(l1,rCode)
+   call shr_string_leftalign_and_convert_tabs(list,rCode)
    if (len_trim(list)+len_trim(l1)+1 > len(list)) &
       call shr_string_abort(subName//'ERROR: output list string not large enough')
    if (len_trim(l1) == 0) then
@@ -1686,6 +1730,43 @@ subroutine shr_string_listGetDel(del)
    if (debug>1) call shr_timer_stop (t01)
 
 end subroutine shr_string_listGetDel
+
+!===============================================================================
+!
+! shr_string_listFromSuffixes
+!
+!   Returns a string of colon delimited fields given an array of suffixes and a base string
+!
+!        given suffixes = ['_s1', '_s2', '_s3'] and strBase = 'foo', returns:
+!            'foo_s1:foo_s2:foo_s3'
+!
+!===============================================================================
+function shr_string_listFromSuffixes( suffixes, strBase ) result ( retString )
+
+  character(len=*), intent(in)  :: suffixes(:)
+  character(len=*), intent(in)  :: strBase
+  character(len=:), allocatable :: retString
+
+  integer :: nfields
+  integer :: i
+  integer(SHR_KIND_IN) :: t01 = 0     ! timer
+
+  character(len=*), parameter :: subName = "(shr_string_listFromSuffixes) "
+
+!-------------------------------------------------------------------------------
+
+  if ( debug > 1 .and. t01 < 1 ) call shr_timer_get( t01,subName )
+  if ( debug > 1 ) call shr_timer_start( t01 )
+
+  nfields = size(suffixes)
+  retString = trim(strBase) // suffixes(1)
+  do i = 2, nfields
+     retString = trim(retString) // ':' // trim(strBase) // suffixes(i)
+  end do
+
+  if ( debug > 1 ) call shr_timer_stop ( t01 )
+
+end function shr_string_listFromSuffixes
 
 !===============================================================================
 !

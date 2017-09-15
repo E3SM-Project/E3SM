@@ -7,13 +7,13 @@
   <xs:attribute name="component" type="xs:string"/>
   <xs:attribute name="grid"  type="xs:string"/>
   <xs:attribute name="modifier" type="xs:NCName"/>
+  <xs:attribute name="match" type="xs:NCName"/>
   <xs:attribute name="version" type="xs:decimal"/>
 
   <!-- simple elements -->
   <xs:element name="help" type="xs:string"/>
   <xs:element name="default_value" type="xs:string"/>
   <xs:element name="valid_values" type="xs:string"/>
-  <xs:element name="schema" type="xs:string"/>
   <xs:element name="category" type="xs:string"/>
   <xs:element name="header" type="xs:string"/>
 
@@ -34,6 +34,12 @@
     </xs:complexType>
   </xs:element>
 
+  <xs:element name="schema">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="version"/>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="description">
     <xs:complexType>
       <xs:sequence>
@@ -48,6 +54,7 @@
         <xs:element ref="value" maxOccurs="unbounded"/>
       </xs:sequence>
       <xs:attribute ref="modifier"/>
+      <xs:attribute ref="match"/>
     </xs:complexType>
   </xs:element>
 

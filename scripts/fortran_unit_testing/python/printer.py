@@ -126,9 +126,9 @@ class ScriptPrinter(Printer):
         self.indent_size = indent_size
         self.indent_level = 0
 
-    def comment(self, item):
+    def comment(self, string):
         """Write a comment (prepends "#")."""
-        self.print("# "+item)
+        self.print("# "+string)
 
     def print_header(self, string):
         """Write a header in a comment.
