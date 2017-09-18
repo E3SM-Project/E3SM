@@ -20,6 +20,7 @@
         <add_link source_path="script_configuration_dir" source="thwaites_minimal.geojson" dest="."/>
         <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
         <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
+        <add_link source_path="script_configuration_dir" source="finalize_thwaites_initial_conditions.sh" dest="."/>
 
 
         <namelist name="namelist.landice" mode="forward">
@@ -98,6 +99,11 @@
                 <!-- mark edges of domain as dirichlet -->
                 <step executable="./mark_domain_boundaries_dirichlet.py">
                         <argument flag="-f">thwaites_uniform_resolution.nc</argument>
+                </step>
+
+                <!-- Set up SMB and beta modifications -->
+                <step executable="./finalize_thwaites_initial_conditions.sh">
+                        <argument flag="">thwaites_uniform_resolution.nc</argument>
                 </step>
 
                 <!-- Set up a graph file 
