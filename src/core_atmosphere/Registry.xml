@@ -535,6 +535,8 @@
 			<var name="meshDensity"/>
 			<var name="meshScalingDel2"/>
 			<var name="meshScalingDel4"/>
+			<var name="meshScalingRegionalCell"/>
+			<var name="meshScalingRegionalEdge"/>
 			<var name="bdyMaskCell"/>
 			<var name="bdyMaskEdge"/>
 			<var name="bdyMaskVertex"/>
@@ -1214,6 +1216,12 @@
 
                 <var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
                      description="Scaling coefficient for $\nabla^4$ eddy hyper-viscosity"/>
+
+                <var name="meshScalingRegionalCell" type="real" dimensions="nCells" units="unitless"
+                     description="Cell-centered Scaling coefficient for relaxation zone"/>
+
+                <var name="meshScalingRegionalEdge" type="real" dimensions="nEdges" units="unitless"
+                     description="Edge-centered Scaling coefficient for relaxation zone"/>
 
                 <var name="edgesOnVertex_sign" type="real" dimensions="vertexDegree nVertices" units="-"
                      description="Sign for edges incident with a vertex: positive for positive inward tengential velocity"/>
