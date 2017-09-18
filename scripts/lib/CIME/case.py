@@ -116,9 +116,9 @@ class Case(object):
         comp = None
         iscompvar = False
         for env_file in self._env_entryid_files:
-            vid, comp, iscompvar = env_file.check_if_comp_var(vid)
+            new_vid, new_comp, iscompvar = env_file.check_if_comp_var(vid)
             if iscompvar:
-                return vid, comp, iscompvar
+                return new_vid, new_comp, iscompvar
         return vid, comp, iscompvar
 
     def initialize_derived_attributes(self):
