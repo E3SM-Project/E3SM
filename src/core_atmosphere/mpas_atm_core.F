@@ -273,6 +273,7 @@ module atm_core
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: meshScalingRegionalCell, meshScalingRegionalEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, invDvEdge
       real (kind=RKIND), dimension(:), pointer :: dcEdge, invDcEdge
@@ -959,18 +960,22 @@ module atm_core
       type (mpas_pool_type), intent(inout) :: mesh
       type (mpas_pool_type), intent(in) :: configs
 
-      integer :: iEdge, cell1, cell2
-      integer, pointer :: nEdges
+      integer :: iCell,iEdge, cell1, cell2
+      integer, pointer :: nEdges, nCells
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: meshScalingRegionalCell, meshScalingRegionalEdge
       logical, pointer :: config_h_ScaleWithMesh
 
       call mpas_pool_get_array(mesh, 'meshDensity', meshDensity)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingRegionalCell)
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingRegionalEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
 
       call mpas_pool_get_config(configs, 'config_h_ScaleWithMesh', config_h_ScaleWithMesh)
 
@@ -985,6 +990,23 @@ module atm_core
             cell2 = cellsOnEdge(2,iEdge)
             meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.25
             meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.75
+         end do
+      end if
+
+      !
+      ! Compute the scaling factors to be used in relaxation zone of regional configuration
+      !
+      meshScalingRegionalCell(:) = 1.0
+      meshScalingRegionalEdge(:) = 1.0
+      if (config_h_ScaleWithMesh) then
+         do iEdge=1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            meshScalingRegionalEdge(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.25
+         end do
+
+         do iCell=1,nCells
+            meshScalingRegionalCell(iCell) = 1.0 / (meshDensity(iCell))**0.25
          end do
       end if
 
