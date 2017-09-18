@@ -178,8 +178,12 @@
     <env name="OMP_STACKSIZE">64M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-    <env name="FORT_BUFFERED" compiler="intel">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel18">yes</env>
+  </environment_variables>
+  <environment_variables compiler="intel">
+    <env name="FORT_BUFFERED">yes</env>
+  </environment_variables>
+  <environment_variables compiler="intel18">
+    <env name="FORT_BUFFERED">yes</env>
   </environment_variables>
 
 </machine>
@@ -319,8 +323,12 @@
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-    <env name="FORT_BUFFERED" compiler="intel18">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel">yes</env>
+  </environment_variables>
+  <environment_variables compiler="intel">
+    <env name="FORT_BUFFERED">yes</env>
+  </environment_variables>
+  <environment_variables compiler="intel18">
+    <env name="FORT_BUFFERED">yes</env>
   </environment_variables>
 </machine>
 
@@ -469,18 +477,21 @@
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
 
-    <env name="I_MPI_FABRICS" mpilib="impi">ofi</env>
-    <env name="I_MPI_OFI_PROVIDER" mpilib="impi">gni</env>
-    <env name="I_MPI_PRINT_VERSION" mpilib="impi">yes</env>
-    <env name="I_MPI_OFI_LIBRARY" mpilib="impi">/global/common/cori/software/libfabric/1.4.2/gnu/lib/libfabric.so</env>
-    <env name="I_MPI_PMI_LIBRARY" mpilib="impi">/usr/lib64/slurmpmi/libpmi.so</env>
-
-    <env name="MPICH_MEMORY_REPORT" compiler="intel18">1</env>
-
-    <env name="FORT_BUFFERED" compiler="intel">yes</env>
-    <env name="FORT_BUFFERED" compiler="intel18">yes</env>
-
-    </environment_variables>
+  </environment_variables>
+  <environment_variables mpilib="impi">
+    <env name="I_MPI_FABRICS">ofi</env>
+    <env name="I_MPI_OFI_PROVIDER">gni</env>
+    <env name="I_MPI_PRINT_VERSION">yes</env>
+    <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.4.2/gnu/lib/libfabric.so</env>
+    <env name="I_MPI_PMI_LIBRARY">/usr/lib64/slurmpmi/libpmi.so</env>
+  </environment_variables>
+  <environment_variables compiler="intel">
+    <env name="FORT_BUFFERED">yes</env>
+  </environment_variables>
+  <environment_variables compiler="intel18">
+    <env name="MPICH_MEMORY_REPORT">1</env>
+    <env name="FORT_BUFFERED">yes</env>
+  </environment_variables>
 </machine>
 
 
@@ -940,17 +951,21 @@
       <command name="load">sems-cmake</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">sems-intel/16.0.2</command>
-      <command name="load" mpilib="!mpi-serial">sems-openmpi/1.10.5</command>
       <command name="load">mkl/16.0</command>
       <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+    </modules>
+    <modules mpilib="!mpi-serial">
+      <command name="load">sems-openmpi/1.10.5</command>
     </modules>
   </module_system>
   <environment_variables>
     <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
-    <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
     <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
     <env name="OMP_STACKSIZE">64M</env>
+  </environment_variables>
+  <environment_variables mpilib="!mpi-serial">
+    <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
   </environment_variables>
 </machine>
 
@@ -1144,7 +1159,9 @@
     </module_system>
     <environment_variables>
       <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
-      <env name="PNETCDF_PATH" mpilib="!mpi-serial">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">256M</env>
@@ -1154,10 +1171,10 @@
       <env name="KMP_HOT_TEAMS_MODE">1</env>
       <env name="KMP_HOT_TEAMS_MAX_LEVEL">1</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="FALSE">
-      <env mpilib="mvapich" name="MV2_ENABLE_AFFINITY">1</env>
-      <env mpilib="mvapich" name="MV2_USE_SHARED_MEM">1</env>
-      <env mpilib="mvapich" name="MV2_SMP_USE_CMA">1</env>
+    <environment_variables mpilib="mvapich" SMP_PRESENT="FALSE">
+      <env name="MV2_ENABLE_AFFINITY">1</env>
+      <env name="MV2_USE_SHARED_MEM">1</env>
+      <env name="MV2_SMP_USE_CMA">1</env>
     </environment_variables>
 </machine>
 
@@ -1221,22 +1238,26 @@
         <command name="load">cmake</command>
 	<command name="load">netcdf/4.4.1.1-prsuusl</command>
         <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
-        <command name="load" mpilib="!mpi-serial">parallel-netcdf/1.6.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">parallel-netcdf/1.6.1</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{which nc-config | xargs dirname | xargs dirname}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
-      <env name="PNETCDF_PATH" mpilib="!mpi-serial">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
       <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+    </environment_variables>
+    <environment_variables  mpilib="!mpi-serial">
+      <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables>
-      <env mpilib="impi" name="I_MPI_FABRICS">shm:tmi</env>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_FABRICS">shm:tmi</env>
     </environment_variables>
 </machine>
 
@@ -1340,11 +1361,15 @@
 	 </module_system>
 	 <environment_variables compiler="pgi">
 	   <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
+	 </environment_variables>
+	 <environment_variables compiler="pgi" mpilib="!mpi-serial">
+	   <env name="PNETCDF_PATH">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
 	 </environment_variables>
 	 <environment_variables compiler="intel">
 	   <env name="NETCDF">/usr/local/tools/netcdf-intel-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
+	 </environment_variables>
+	 <environment_variables compiler="intel" mpilib="!mpi-serial">
+	   <env name="PNETCDF_PATH">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
 	 </environment_variables>
 </machine>
 
@@ -1392,11 +1417,15 @@
 	 </module_system>
 	 <environment_variables compiler="pgi">
 	   <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
+	 </environment_variables>
+	 <environment_variables compiler="pgi" mpilib="!mpi-serial">
+	   <env name="PNETCDF_PATH">/usr/local/tools/parallel-netcdf-pgi-1.6.1/</env>
 	 </environment_variables>
 	 <environment_variables compiler="intel">
 	   <env name="NETCDF">/usr/local/tools/netcdf-intel-4.1.3/</env>
-	   <env name="PNETCDF_PATH" mpilib="!mpi-serial">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
+	 </environment_variables>
+	 <environment_variables compiler="intel" mpilib="!mpi-serial">
+	   <env name="PNETCDF_PATH">/usr/local/tools/parallel-netcdf-intel-1.6.1/</env>
 	 </environment_variables>
 </machine>
 
@@ -1453,7 +1482,9 @@
 	 </module_system>
 	 <environment_variables compiler="intel">
 	   <env name="NETCDFROOT">/usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/netcdf-fortran-4.4.4-4naprkre2m7kriadyxwboauil7nc3jtc/</env>
-           <env name="PNETCDFROOT" mpilib="!mpi-serial">/usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/parallel-netcdf-1.8.0-gy2hic6n3hkygcczpumkcqmzw5sam7hn/</env>
+	 </environment_variables>
+	 <environment_variables compiler="intel" mpilib="!mpi-serial">
+           <env name="PNETCDFROOT">/usr/workspace/wsa/climdat/spack/opt/spack/linux-rhel7-x86_64/intel-17.0.0/parallel-netcdf-1.8.0-gy2hic6n3hkygcczpumkcqmzw5sam7hn/</env>
 	 </environment_variables>
 </machine>
 
@@ -1995,8 +2026,10 @@
       </module_system>
 
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
+      <environment_variables compiler="gnu" mpilib="openmpi">
+        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
+      </environment_variables>
       <environment_variables>
-        <env name="PETSC_PATH" compiler="gnu" mpilib="openmpi">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
        <!-- hack for PFLOTRAN coupling (this is a temporary solution, and user must manually edit it after case.setup)-->
        <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
        <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
@@ -2147,15 +2180,31 @@
         <env name="MPICH_VERSION_DISPLAY">1</env>
         <env name="MPICH_CPUMASK_DISPLAY">1</env>
         <env name="MPSTKZ">128M</env>
-	<env name="NETCDFROOT" compiler="pgi">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
-	<env name="PNETCDFROOT" compiler="pgi" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
-	<env name="NETCDFROOT" compiler="pgiacc">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
-	<env name="PNETCDFROOT" compiler="pgiacc" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
-	<env name="NETCDFROOT" compiler="intel">/opt/cray/netcdf-hdf5parallel/4.4.1.1/INTEL/15.0/</env>
-	<env name="PNETCDFROOT" compiler="intel" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/INTEL/15.0</env>
-	<env name="NETCDFROOT" compiler="cray">/opt/cray/netcdf-hdf5parallel/4.4.1.1/CRAY/8.3/</env>
-	<env name="PNETCDFROOT" compiler="cray" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/CRAY/8.3</env>
         <env name="OMP_STACKSIZE">128M</env>
+      </environment_variables>
+      <environment_variables compiler="pgi">
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+      </environment_variables>
+      <environment_variables compiler="pgi" mpilib="!mpi-serial">
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+      </environment_variables>
+      <environment_variables compiler="pgiacc">
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+      </environment_variables>
+      <environment_variables compiler="pgiacc" mpilib="!mpi-serial">
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+      </environment_variables>
+      <environment_variables compiler="intel">
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/INTEL/15.0/</env>
+      </environment_variables>
+      <environment_variables compiler="intel" mpilib="!mpi-serial">
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/INTEL/15.0</env>
+      </environment_variables>
+      <environment_variables compiler="cray">
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/CRAY/8.3/</env>
+      </environment_variables>
+      <environment_variables compiler="cray" mpilib="!mpi-serial">
+	<env name="PNETCDFROOT">/opt/cray/parallel-netcdf/1.7.0/CRAY/8.3</env>
       </environment_variables>
 
       <!-- Set if compiler and mpilib  -->
@@ -2865,9 +2914,11 @@
 		  <env name="OMP_STACKSIZE">128M</env>
 		  <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
 		  <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-		  <env name="PNETCDF_PATH" mpilib="!mpi-serial">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
 		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
 		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
+      </environment_variables>
+      <environment_variables mpilib="!mpi-serial">
+        <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       </environment_variables>
     </module_system>
 </machine>
