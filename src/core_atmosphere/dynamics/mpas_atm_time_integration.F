@@ -6457,12 +6457,17 @@ module atm_time_integration
       integer :: iCell, iEdge, i, k, cell1, cell2, iEdge_vort, iEdge_div
       integer :: vertex1, vertex2, iVertex
 
+      real (kind=RKIND), dimension(:), pointer :: meshScalingRegionalCell, meshScalingRegionalEdge
+
       call mpas_pool_get_array(tend, 'u', tend_ru)
       call mpas_pool_get_array(tend, 'rho_zz', tend_rho)
       call mpas_pool_get_array(tend, 'theta_m', tend_rt)
       call mpas_pool_get_array(tend, 'w', tend_rw)
       call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
       call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)
+
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalCell', meshScalingRegionalCell)
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalEdge', meshScalingRegionalEdge)
 
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
@@ -6487,7 +6492,7 @@ module atm_time_integration
 
       do iCell = cellSolveStart, cellSolveEnd
          if( (bdyMaskCell(iCell) > 1) .and. (bdyMaskCell(iCell) <= nRelaxZone) ) then
-            rayleigh_damping_coef = (real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(50.*dt)
+            rayleigh_damping_coef = (real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(50.*dt*meshScalingRegionalCell(iCell))
             do k=1, nVertLevels
                tend_rho(k,iCell) = tend_rho(k,iCell) - rayleigh_damping_coef * (rho_driving_values(k,iCell) - rho_zz(k,iCell))
                tend_rt(k,iCell)  = tend_rt(k,iCell)  - rayleigh_damping_coef * (rt_driving_values(k,iCell) - rho_zz(k,iCell)*theta_m(k,iCell))
@@ -6497,7 +6502,7 @@ module atm_time_integration
 
       do iEdge = edgeSolveStart, edgeSolveEnd
          if( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then
-            rayleigh_damping_coef = (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(50.*dt)
+            rayleigh_damping_coef = (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(50.*dt*meshScalingRegionalEdge(iEdge))
             do k=1, nVertLevels
 !  wcs error_1
 !               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iCell) - ru(k,iCell))
@@ -6512,7 +6517,7 @@ module atm_time_integration
 
          if ( (bdyMaskCell(iCell) > 1) .and. (bdyMaskCell(iCell) <= nRelaxZone) ) then ! relaxation zone
 
-            laplacian_filter_coef = (real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(10.*dt)
+            laplacian_filter_coef = (real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(10.*dt*meshScalingRegionalCell(iCell))
             !
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
@@ -6540,7 +6545,8 @@ module atm_time_integration
 
          if ( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then ! relaxation zone
 
-            laplacian_filter_coef = dcEdge(iEdge)**2 * (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(10.*dt)
+            laplacian_filter_coef = dcEdge(iEdge)**2 * (real(bdyMaskEdge(iEdge)) - 1.)/   &
+                                                real(nRelaxZone)/(10.*dt*meshScalingRegionalEdge(iEdge))
 
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -6808,7 +6814,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars_new
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
-      real (kind=RKIND), dimension(:), pointer :: invDcEdge, dvEdge
+      real (kind=RKIND), dimension(:), pointer :: invDcEdge, dvEdge, meshScalingRegionalCell
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge
       integer, pointer :: nCells, nEdges, maxEdges, num_scalars
@@ -6822,6 +6828,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalCell', meshScalingRegionalCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -6833,6 +6840,7 @@ module atm_time_integration
       call atm_bdy_adjust_scalars_work( scalars_new, scalars_driving, dt, dt_rk, &
                                         nVertLevels, nCells, nEdges, num_scalars, &
                                         nEdgesOnCell, edgesOnCell, EdgesOnCell_sign, cellsOnEdge, dvEdge, invDcEdge, bdyMaskCell, &
+                                        meshScalingRegionalCell,  &
                                         cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                         cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd )
 
@@ -6843,6 +6851,7 @@ module atm_time_integration
    subroutine atm_bdy_adjust_scalars_work( scalars_new, scalars_driving, dt, dt_rk, &
                                            nVertLevels, nCells, nEdges, num_scalars, &
                                            nEdgesOnCell, edgesOnCell, EdgesOnCell_sign, cellsOnEdge, dvEdge, invDcEdge, bdyMaskCell, &
+                                           meshScalingRegionalCell,  &
                                            cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                            cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd )
 
@@ -6856,7 +6865,7 @@ module atm_time_integration
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
       integer, dimension(:), intent(in) :: nEdgesOnCell, bdyMaskCell
       integer, dimension(:,:), intent(in) :: edgesOnCell, cellsOnEdge
-      real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invDcEdge
+      real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invDcEdge, meshScalingRegionalCell
       real (kind=RKIND), intent(in) :: dt, dt_rk
 
       ! local variables
@@ -6871,7 +6880,7 @@ module atm_time_integration
 
          if ( (bdyMaskCell(iCell) > 1) .and. (bdyMaskCell(iCell) <= nRelaxZone) ) then ! relaxation zone
 
-            laplacian_filter_coef = dt_rk*(real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(10.*dt)
+            laplacian_filter_coef = dt_rk*(real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(10.*dt*meshScalingRegionalCell(iCell))
             rayleigh_damping_coef = laplacian_filter_coef/5.0
             scalars_tmp(1:num_scalars,1:nVertLevels,iCell) = scalars_new(1:num_scalars,1:nVertLevels,iCell)
 
