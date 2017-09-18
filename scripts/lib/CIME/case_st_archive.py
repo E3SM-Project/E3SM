@@ -121,27 +121,36 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                 temp_rpointer_content = rpointer_content
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
-                if rpointer_content is not 'unset':
+                # KDR 'is not' queries whether they are the same object.
+                #     We want to compare the strings/contents of the objects
+                # if rpointer_content is not 'unset':
+                if rpointer_content != 'unset':
+                    # KDR debugging why rpointer.unset are being created.
+                    logger.info("rpointer_content not unset? {}".format(rpointer_content))
                     if not ninst_strings:
                         ninst_strings = ["empty"]
-                for ninst_string in ninst_strings:
-                    rpointer_file = temp_rpointer_file
-                    rpointer_content = temp_rpointer_content
-                    if ninst_string == 'empty':
-                        ninst_string = ""
-                    for key, value in [('$CASE', casename),
-                                       ('$DATENAME', datename),
-                                       ('$NINST_STRING', ninst_string)]:
-                        rpointer_file = rpointer_file.replace(key, value)
-                        rpointer_content = rpointer_content.replace(key, value)
-
-                    # write out the respect files with the correct contents
-                    rpointer_file = os.path.join(archive_restdir, rpointer_file)
-                    logger.info("writing rpointer_file {}".format(rpointer_file))
-                    f = open(rpointer_file, 'w')
-                    for output in rpointer_content.split(','):
-                        f.write("{} \n".format(output))
-                    f.close()
+                    # KDR indenting all the rest 4 spaces to put under control of 'if ... unset'
+                    for ninst_string in ninst_strings:
+                        rpointer_file = temp_rpointer_file
+                        rpointer_content = temp_rpointer_content
+                        if ninst_string == 'empty':
+                            ninst_string = ""
+                        for key, value in [('$CASE', casename),
+                                           ('$DATENAME', datename),
+                                           ('$NINST_STRING', ninst_string)]:
+                            rpointer_file = rpointer_file.replace(key, value)
+                            rpointer_content = rpointer_content.replace(key, value)
+    
+                        # write out the respect files with the correct contents
+                        rpointer_file = os.path.join(archive_restdir, rpointer_file)
+                        logger.info("writing rpointer_file {}".format(rpointer_file))
+                        f = open(rpointer_file, 'w')
+                        for output in rpointer_content.split(','):
+                            f.write("{} \n".format(output))
+                        f.close()
+                else:
+                    # KDR debugging why rpointer.unset are being created.
+                    logger.info("rpointer_content unset {}".format(rpointer_content))
 
 
 ###############################################################################
