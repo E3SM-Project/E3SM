@@ -1,6 +1,65 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 9-19-2017
+Tag: cime5.3.0-alpha.35
+Answer Changes: None
+Tests: scripts_regression_tests.py, PEM_Ln9.f19_g16_rx1.A.yellowstone_intel
+Dependencies:
+
+Brief Summary:
+    - Test fixes.
+    - Can test single-submit on chama in addition to skybridge.
+    - Fix single submit option to create_test.
+    - Rename PES_PER_NODE to MAX_MPITASKS_PER_NODE.
+    - New git pelayout doc.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+e1e5e79 Merge pull request #1895 from jedwards4b/test_fixes
+a3349ed Merge pull request #1899 from ESMCI/jgfouca/fix_single_submit
+40e4b7b Merge pull request #1898 from ESMCI/jgfouca/fix_single_submit
+5ba192b Merge pull request #1891 from jedwards4b/rename_pes_per_node
+eb59169 Merge pull request #1888 from ESMCI/mvertens/new_pelayout_doc
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+M	config/acme/machines/userdefined_laptop_template/config_machines.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M	config/config_headers.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	config/xml_schemas/config_pes.xsd
+M	doc/source/users_guide/customizing-a-case.rst
+M	doc/source/users_guide/porting-cime.rst
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/docn/docn_shr_mod.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-13-2017
 Tag: cime5.3.0-alpha.34
 Answer Changes: None
