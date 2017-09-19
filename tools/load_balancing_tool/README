@@ -18,7 +18,8 @@ steps:
 2. load_balancing_solve.py
    Using the data provided in the previous program, solve a mixed integer 
    linear program to optimize the model throughput. Requires installation
-   of PuLP and uses the COIN-CBC solver.
+   of PuLP and uses the included COIN-CBC solver. 
+   (https://pythonhosted.org/PuLP)
 
 Also in this documentation is
 
