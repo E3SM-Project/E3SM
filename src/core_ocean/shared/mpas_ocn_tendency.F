@@ -360,8 +360,8 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, & !{{{
-                              timeLevelIn)
+   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, & !{{{
+                              dt, activeTracersOnlyIn, timeLevelIn )
       implicit none
 
       !
@@ -375,6 +375,7 @@ contains
       type (mpas_pool_type), intent(in)    :: swForcingPool   !< Input: sw data input info
       type (mpas_pool_type), intent(in)    :: scratchPool     !< Input: Scratch information
       real (kind=RKIND), intent(in) :: dt                     !< Input: Time step
+      logical, intent(in), optional :: activeTracersOnlyIn    !< Input: if true, only compute for active tracers
       integer, intent(in), optional :: timeLevelIn            !< Input/Optional: Time Level Indes
 
       !
@@ -451,6 +452,7 @@ contains
       ! local integers/reals/logicals
       !
       integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
+      logical :: activeTracersOnly    ! if true, only compute for active tracers
 
       !
       ! set time level of optional argument is present
@@ -459,6 +461,12 @@ contains
          timeLevel = timeLevelIn
       else
          timeLevel = 1
+      end if
+
+      if (present(activeTracersOnlyIn)) then
+         activeTracersOnly = activeTracersOnlyIn
+      else
+         activeTracersOnly = .false.
       end if
 
       !
@@ -545,7 +553,8 @@ contains
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-
+           ! Only compute tendencies for active tracers if activeTracersOnly flag is true.
+           if ( .not.activeTracersOnly .or. trim(groupItr % memberName)=='activeTracers') then
             ! load configure setting for this category
             !
             modifiedConfigName = 'config_use_' // trim(groupItr % memberName)
@@ -583,11 +592,9 @@ contains
                call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
 
                ! Get surface flux due to river runoff array
-!maltrud only active tracers have runoff flux for now
-               if (trim(groupItr % memberName) == 'activeTracers') then
+!maltrud only active tracers have runoff flux for now, but we still need to associate for ALL tracers
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
-               endif
 
                ! Get surface flux removed array to keep track of how much flux is ignored
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRemoved"
@@ -603,19 +610,17 @@ contains
                end do
                !$omp end do
 
-               if (trim(groupItr % memberName) == 'activeTracers') then
+               !
+               ! fill components of surface tracer flux
+               !
+               if (config_use_tracerGroup_surface_bulk_forcing) then
                   !$omp do schedule(runtime)
                   do iCell = 1, nCells
                     tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
                     tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
                   end do
                   !$omp end do
-               endif
 
-               !
-               ! fill components of surface tracer flux
-               !
-               if (config_use_tracerGroup_surface_bulk_forcing) then
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, &
                                                         tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, &
                                                         tracerGroupSurfaceFluxRemoved, dt, layerThickness, err)
@@ -647,7 +652,8 @@ contains
                      nVertLevels, layerThickness, indexTemperature, indexSalinity, tracerGroupTend, err)
 
                   call ocn_tracer_DMS_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux,  &
+                     tracerGroupSurfaceFluxRemoved, err)
                endif
 
                !
@@ -867,6 +873,7 @@ contains
                !
                call ocn_frazil_forcing_tracers(meshPool, tracersPool, groupItr%memberName, forcingPool, tracerGroupTend, err)
             end if
+           end if ! active only
          end if
       end do
 

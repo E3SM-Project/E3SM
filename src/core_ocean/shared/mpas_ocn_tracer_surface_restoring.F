@@ -296,6 +296,7 @@ contains
                                                           salinity_restoring_max_difference)
         call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
                                                           salinity_restoring_constant_piston_velocity)
+        call MPAS_pool_get_config(domain%configs, 'config_do_restart', config_do_restart)
 
         call mpas_set_timeInterval(timeStepSurfaceSalinity,timeString=config_dt)
         call mpas_get_timeInterval(timeStepSurfaceSalinity,dt=dt)
@@ -305,8 +306,14 @@ contains
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                  surfaceSalinityMonthlyClimatologyValue)
 
+!maltrud debug
+        if (firstTimeStep .and. config_do_restart) then
+        call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
+             'surfaceSalinityMonthlyClimatology', streamManager, 0.0_RKIND)
+        else
         call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
              'surfaceSalinityMonthlyClimatology', streamManager, dt)
+        endif
 
       sumAreaDeltaS = 0.0_RKIND
       sumArea = 0.0_RKIND

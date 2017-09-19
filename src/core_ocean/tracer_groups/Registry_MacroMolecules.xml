@@ -85,14 +85,38 @@
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="MacroMoleculesTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
 				<!-- Add constituents of tracer group -->
-				<var name="PROTSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="PROTSurfaceFlux" array_group="MacroMoleculesSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
 			description="Proteins Surface Flux"
 				/>
-				<var name="POLYSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="POLYSurfaceFlux" array_group="MacroMoleculesSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
 			description="Polysaccharides Surface Flux"
 				/>
-				<var name="LIPSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="LIPSurfaceFlux" array_group="MacroMoleculesSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
 			description="Lipids Surface Flux"
+				/>
+			</var_array>
+			<var_array name="MacroMoleculesTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="PROTSurfaceFluxRunoff" array_group="MacroMoleculesSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Proteins Surface Flux Due to Runoff"
+				/>
+				<var name="POLYSurfaceFluxRunoff" array_group="MacroMoleculesSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Polysaccharides Surface Flux Due to Runoff"
+				/>
+				<var name="LIPSurfaceFluxRunoff" array_group="MacroMoleculesSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Lipids Surface Flux Due to Runoff"
+				/>
+			</var_array>
+			<var_array name="MacroMoleculesTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="PROTSurfaceFluxRemoved" array_group="MacroMoleculesSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Proteins Surface Flux that is ignored"
+				/>
+				<var name="POLYSurfaceFluxRemoved" array_group="MacroMoleculesSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Polysaccharides Surface Flux that is ignored"
+				/>
+				<var name="LIPSurfaceFluxRemoved" array_group="MacroMoleculesSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Lipids Surface Flux that is ignored"
 				/>
 			</var_array>
 		</var_struct>

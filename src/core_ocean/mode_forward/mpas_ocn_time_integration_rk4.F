@@ -901,7 +901,7 @@ module ocn_time_integration_rk4
       call mpas_threading_barrier()
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
-                           scratchPool, dt, 1)
+                           scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
       call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_compute_tracer_tends!}}}
@@ -990,7 +990,7 @@ module ocn_time_integration_rk4
       call mpas_threading_barrier()
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
-                           scratchPool, dt, 1)
+                           scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
       call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
