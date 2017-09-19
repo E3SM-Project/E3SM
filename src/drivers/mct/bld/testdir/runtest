@@ -1,0 +1,1 @@
+../build-namelist -caseroot . -cimeroot ../../.. -v -infile user_nl_cpl
