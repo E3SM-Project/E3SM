@@ -42,17 +42,22 @@ class EnvBase(EntryID):
             if attribute is not None:
                 if "component" in attribute:
                     comp = attribute["component"]
+
             return vid, comp, True
 
+        new_vid = None
         for comp in self._components:
             if "_"+comp in vid:
-                vid = string.replace(vid, '_'+comp, '', 1)
-                break
+                new_vid = string.replace(vid, '_'+comp, '', 1)
             elif comp+"_" in vid:
-                vid = string.replace(vid, comp+'_', '', 1)
+                new_vid = string.replace(vid, comp+'_', '', 1)
+
+            if new_vid is not None:
                 break
-        if vid in self._component_value_list:
-            return vid, comp, True
+
+        if new_vid is not None and new_vid in self._component_value_list:
+            return new_vid, comp, True
+
         return vid, None, False
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
