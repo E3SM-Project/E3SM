@@ -32,7 +32,6 @@ class EnvMachPes(EnvBase):
            ninst = self.get_value(vid.replace("NTASKS_PER_INST", "NINST"),
                                   attribute=attribute, resolved=resolved, subgroup=subgroup,
                                   max_mpitasks_per_node=max_mpitasks_per_node)
-           logger.info("NINST = {}".format(ninst))
            if multi_driver or ninst==1:
                value = self.get_value(vid.replace("NTASKS_PER_INST", "NTASKS"),
                                   attribute=attribute, resolved=resolved, subgroup=subgroup,
