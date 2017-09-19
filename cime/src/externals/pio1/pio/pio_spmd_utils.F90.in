@@ -40,13 +40,17 @@ module pio_spmd_utils
   include 'mpif.h'  ! _EXTERNAL
 #endif
 
-  public :: pio_swapm
+  public :: pio_swapm, pio_N2M
 
   interface pio_swapm
      ! TYPE int,real,double,long
      module procedure pio_swapm_{TYPE}
   end interface
 
+  interface pio_N2M
+     ! TYPE int,real,double,long
+     module procedure pio_N2M_{TYPE}
+  end interface
 
   character(len=*), parameter :: modName='pio_spmd_utils'
 
@@ -610,6 +614,253 @@ contains
 
    end subroutine pio_swapm_{TYPE}
 
+!
+!========================================================================
+!
+! TYPE int,real,double,long
+   subroutine pio_N2M_{TYPE} ( &
+      num_nprocs, my_ntask, num_mprocs, mprocs,    &
+      sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
+      rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
+      comm )
+
+!-----------------------------------------------------------------------
+!
+!> Purpose:
+!!   Specialized N-to-M gather communication operator that also
+!!   includes the communication pattern used in corresponding
+!!   M-to-N scatter communication operator.
+!!   Motivated by high MPI overhead incurred on some systems the
+!!   first time that two processes communicate. This implementation
+!!   has demonstrated less overhead than implementations that are more
+!!   efficient without the MPI startup overhead.
+!!
+!! Author: P. Worley, September 2017
+!<
+!-----------------------------------------------------------------------
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf   ! _EXTERNAL
+#endif
+!-----------------------------------------------------------------------
+   implicit none
+!---------------------------Input arguments--------------------------
+!
+   integer, intent(in) :: num_nprocs             ! size of communicator
+   integer, intent(in) :: my_ntask               ! MPI task id with communicator
+   integer, intent(in) :: num_mprocs             ! number of 'M' tasks
+   integer, intent(in) :: mprocs(0:num_mprocs-1) ! MPI task ids for 'M' tasks
+   integer, intent(in) :: sbuf_siz               ! size of send buffer
+   integer, intent(in) :: rbuf_siz               ! size of receive buffer
+
+   integer, intent(in) :: sndlths(0:num_nprocs-1)! length of outgoing message
+   integer, intent(in) :: sdispls(0:num_nprocs-1)! offset from beginning of send
+                                                 !  buffer where outgoing messages
+                                                 !  should be sent from
+   integer, intent(in) :: stypes(0:num_nprocs-1) ! MPI data types
+   integer, intent(in) :: rcvlths(0:num_nprocs-1)! length of incoming messages
+   integer, intent(in) :: rdispls(0:num_nprocs-1)! offset from beginning of receive
+                                                 !  buffer where incoming messages
+                                                 !  should be placed
+   integer, intent(in) :: rtypes(0:num_nprocs-1) ! MPI data types
+   {VTYPE}, intent(in) :: sndbuf(sbuf_siz)       ! outgoing message buffer
+
+   integer, intent(in) :: comm                   ! MPI communicator
+
+!---------------------------Output arguments--------------------------
+!
+   {VTYPE}, intent(out)  :: rcvbuf(rbuf_siz)     ! incoming message buffer
+
+#ifndef _MPISERIAL
+!
+!---------------------------Local workspace-------------------------------------------
+!
+   character(len=*), parameter :: subName=modName//'::pio_N2M_{TYPE}'
+
+   logical :: IsMTask(0:num_nprocs-1)            ! Is an 'N' task and 'M' task?
+
+   integer :: steps                              ! number of swaps to initiate
+   integer :: swapids(num_mprocs)                ! MPI task id of swap partners
+   integer :: my_mtask                           ! index into mprocs if an 'M' task
+   integer :: mp, np                             ! task indices
+   integer :: istep                              ! loop index
+   integer :: tag                                ! MPI message tag
+   integer :: offset_t                           ! MPI message tag offset, for addressing
+                                                 !  message conflict bug (if necessary)
+   integer :: offset_s                           ! index of message beginning in
+                                                 !  send buffer
+   integer :: offset_r                           ! index of message beginning in
+                                                 !  receive buffer
+   integer :: stride                             ! number of 'N' tasks to communicate with
+                                                 !  each 'M' task during 'N-to-M' phase
+   integer :: mp_start, np_start, np_stop        ! start/stop indices for processing
+                                                 !  subsets of 'N' tasks
+   integer :: subset_start, subset_stop          ! indices for processing subsets of
+                                                 !  'N' tasks
+
+   integer :: rcvid                              ! receive request ids
+   integer :: ier                                ! return error status
+   integer :: status(MPI_STATUS_SIZE)            ! MPI status
+!
+!-------------------------------------------------------------------------------------
+!
+#ifdef _NO_PIO_SWAPM_TAG_OFFSET
+   offset_t = 0
+#else
+   offset_t = num_nprocs
+#endif
+!
+   ! if necessary, send to self
+   if (sndlths(my_ntask) > 0) then
+      tag = my_ntask + offset_t
+
+      offset_r = rdispls(my_ntask)+1
+      call mpi_irecv( rcvbuf(offset_r), rcvlths(my_ntask), rtypes(my_ntask), &
+                      my_ntask, tag, comm, rcvid, ier )
+      call CheckMPIReturn(subName,ier)
+
+      offset_s = sdispls(my_ntask)+1
+      call mpi_send( sndbuf(offset_s), sndlths(my_ntask), stypes(my_ntask), &
+                     my_ntask, tag, comm, ier )
+      call CheckMPIReturn(subName,ier)
+
+      call mpi_wait( rcvid, status, ier )
+      call CheckMPIReturn(subName,ier)
+   endif
+
+   ! Calculate IsMTask array (Is an 'N' task an 'M' task?)
+   ! Also determine whether my_ntask is an 'M' task and, 
+   ! if so, which one it is.
+   IsMTask(:) = .false.
+   my_mtask = -1
+   do mp=0,num_mprocs-1
+      if (my_ntask .eq. mprocs(mp)) then
+         my_mtask = mp
+      endif
+      IsMTask(mprocs(mp)) = .true.
+   enddo
+
+   ! M-to-M exchange between 'M' tasks
+   if (my_mtask > -1) then
+
+      ! calculate swap partners and communication ordering
+      steps = 0
+      do istep=1,ceil2(num_mprocs)-1
+         mp = pair(num_mprocs,istep,my_mtask)
+         if (mp >= 0) then
+            np = mprocs(mp)
+            if (sndlths(np) > 0 .or. rcvlths(np) > 0) then
+               steps = steps + 1
+               swapids(steps) = np
+            end if
+         end if
+      end do
+
+      ! all-to-all between 'M' tasks using point-to-point commands
+      do istep=1,steps
+         np = swapids(istep)
+         call mpi_sendrecv (sndbuf(sdispls(np)+1), sndlths(np), &
+                            stypes(np), np, my_ntask + offset_t,&
+                            rcvbuf(rdispls(np)+1), rcvlths(np), &
+                            rtypes(np), np, np + offset_t,      &
+                            comm, status, ier)
+         call CheckMPIReturn(subName,ier)
+      end do
+
+   endif
+
+!
+!gather/scatter between 'M' tasks and 'N' tasks, in groups of N/M
+! processes
+!
+   stride = num_nprocs/num_mprocs
+   if (my_mtask > -1) then
+
+      np_start = my_mtask*stride
+      np_stop  = (num_mprocs-1)*stride
+
+      do subset_start=np_start,0,-stride
+
+         if (subset_start < np_stop) then
+            subset_stop = subset_start+stride-1
+         else
+            subset_stop = num_nprocs-1
+         endif
+
+         do np=subset_start,subset_stop,1
+            if (.not. IsMTask(np)) then
+               if (sndlths(np) > 0 .or. rcvlths(np) > 0) then
+                  call mpi_send (sndbuf(sdispls(np)+1), sndlths(np),  &
+                                 stypes(np), np, my_ntask + offset_t, &
+                                 comm, status, ier                    )
+                  call mpi_recv (rcvbuf(rdispls(np)+1), rcvlths(np),  &
+                                 rtypes(np), np, np + offset_t,       &
+                                 comm, status, ier                    )
+               endif
+            endif
+         enddo
+
+      enddo
+
+      do subset_start=np_stop,np_start+1,-stride
+
+         if (subset_start < np_stop) then
+            subset_stop = subset_start+stride-1
+         else
+            subset_stop = num_nprocs-1
+         endif
+
+         do np=subset_start,subset_stop,1
+            if (.not. IsMTask(np)) then
+               if (sndlths(np) > 0 .or. rcvlths(np) > 0) then
+                  call mpi_send (sndbuf(sdispls(np)+1), sndlths(np),  &
+                                 stypes(np), np, my_ntask + offset_t, &
+                                 comm, status, ier                    )
+                  call mpi_recv (rcvbuf(rdispls(np)+1), rcvlths(np),  &
+                                 rtypes(np), np, np + offset_t,       &
+                                 comm, status, ier                    )
+               endif
+            endif
+         enddo
+
+      enddo
+
+   else
+
+      mp_start = my_ntask/stride
+
+      do mp=mp_start, num_mprocs-1
+         np = mprocs(mp)
+         if (sndlths(np) > 0 .or. rcvlths(np) > 0) then
+            call mpi_recv (rcvbuf(rdispls(np)+1), rcvlths(np),  &
+                           rtypes(np), np, np + offset_t,       &
+                           comm, status, ier                    )
+
+            call mpi_send (sndbuf(sdispls(np)+1), sndlths(np),  &
+                           stypes(np), np, my_ntask + offset_t, &
+                           comm, status, ier                    )
+         endif
+      enddo
+
+      do mp=0, mp_start-1
+         np = mprocs(mp)
+         if (sndlths(np) > 0 .or. rcvlths(np) > 0) then
+            call mpi_recv (rcvbuf(rdispls(np)+1), rcvlths(np),  &
+                           rtypes(np), np, np + offset_t,       &
+                           comm, status, ier                    )
+
+            call mpi_send (sndbuf(sdispls(np)+1), sndlths(np),  &
+                           stypes(np), np, my_ntask + offset_t, &
+                           comm, status, ier                    )
+         endif
+      enddo
+
+   endif
+
+#endif
+
+   return
+
+   end subroutine pio_N2M_{TYPE}
 !
 !========================================================================
 !

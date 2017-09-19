@@ -54,7 +54,7 @@ module box_rearrange
   use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
 #endif
   use alloc_mod,      only : alloc_check, dealloc_check
-  use pio_spmd_utils, only : pio_swapm
+  use pio_spmd_utils, only : pio_swapm, pio_N2M
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
@@ -1133,10 +1133,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer(kind=pio_offset),pointer :: rindex(:)  ! rindex(niodof) is blocks of dest indices
     integer,pointer :: rtype(:)   ! MPI type used in comp receives (cached)
 
-    ! swapm alltoall communication variables
+    ! swapm alltoall and N2M gather communication variables
     integer,pointer :: sr_types(:)
     integer,pointer :: send_counts(:)
     integer,pointer :: send_displs(:)
+    integer,pointer :: iotasks(:)
     integer :: rbuf_size
     integer,pointer :: recv_buf(:)
     integer,pointer :: recv_counts(:)
@@ -1210,9 +1211,14 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call alloc_check(send_displs, num_tasks, 'send_displs temp')
     send_displs = 0
 
+    call alloc_check(iotasks, num_iotasks, 'iotasks temp')
+    iotasks = num_tasks ! setting this to an illegal value
+
     do i=1,num_iotasks
+       iotasks(i) = find_io_comprank(IOsystem,i) 
+
        ! go from 1-based io rank to 0-based rank in union_comm
-       io_comprank = find_io_comprank(IOsystem,i) + 1  ! arrays are 1-based
+       io_comprank = iotasks(i) + 1  ! arrays are 1-based
        send_counts(io_comprank) = 1
        send_displs(io_comprank) = i-1
     end do
@@ -1264,10 +1270,19 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     endif
 
-    call pio_swapm( num_tasks, myrank,                           &
+    call t_startf("PIO:compute_counts_N2M")
+    call pio_N2M( num_tasks, myrank, num_iotasks, iotasks,       &
       scount,   num_iotasks, send_counts, send_displs, sr_types, &
       recv_buf, rbuf_size,   recv_counts, recv_displs, sr_types, &
-      IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq          )
+      IOsystem%union_comm                                        )
+    call dealloc_check(iotasks, 'iotasks temp')
+    call t_stopf("PIO:compute_counts_N2M")
+
+!pw (original) pio_swapm equivalent to above pio_N2M call
+!pw    call pio_swapm( num_tasks, myrank,                           &
+!pw      scount,   num_iotasks, send_counts, send_displs, sr_types, &
+!pw      recv_buf, rbuf_size,   recv_counts, recv_displs, sr_types, &
+!pw      IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq          )
 
     ! determine nrecvs, rcount, and rfrom
     nrecvs = 0
