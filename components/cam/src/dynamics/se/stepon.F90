@@ -94,7 +94,7 @@ subroutine stepon_init(dyn_in, dyn_out )
 !BOC
 
   ! This is not done in dyn_init due to a circular dependency issue.
-  if(iam < par%nprocs) then
+  if(par%dynproc) then
      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev, numthreads_in=1)
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
@@ -179,7 +179,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
       dtime_out=phys_tscale  ! set by user in namelist
    endif
 
-   if(iam < par%nprocs) then
+   if(par%dynproc) then
       if(tstep <= 0)  call endrun( 'bad tstep')
       if(dtime_out <= 0)  call endrun( 'bad dtime')
    end if
@@ -225,7 +225,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    call p_d_coupling(phys_state, phys_tend,  dyn_in)
    call t_stopf('p_d_coupling')
 
-   if(iam >= par%nprocs) return
+   if(.not.par%dynproc) return
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange

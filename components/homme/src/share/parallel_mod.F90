@@ -47,7 +47,8 @@ module parallel_mod
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
     integer :: intercomm(0:ncomponents-1) ! inter communicator list
-    logical :: masterproc                 
+    logical :: masterproc                
+    logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
 
 #ifdef CAM
@@ -104,11 +105,12 @@ contains
 !  environment, returns a parallel_t structure..
 ! ================================================
      
-  function initmp(npes_in) result(par)
+  function initmp(npes_in,npes_stride) result(par)
 #ifdef CAM
     use spmd_utils, only : mpicom
 #endif      
     integer, intent(in), optional ::  npes_in
+    integer, intent(in), optional ::  npes_stride
     type (parallel_t) par
 
 #ifdef _MPI
@@ -128,9 +130,11 @@ contains
     integer(kind=int_kind),allocatable                  :: tarray(:)
     integer(kind=int_kind)                              :: namelen,i
 #ifdef CAM
-    integer :: color
+    integer :: color = 1
     integer :: iam_cam, npes_cam
     integer :: npes_homme
+    integer :: npes_cam_stride = 1
+    integer :: max_stride
 #endif
     !================================================
     !     Basic MPI initialization
@@ -153,8 +157,14 @@ contains
        npes_homme=npes_cam
     end if
     call MPI_comm_rank(mpicom,iam_cam,ierr)
-    color = iam_cam/npes_homme
+    if (present(npes_stride)) npes_cam_stride = npes_stride
+    ! Determine maximum stride and make sure user defined stride is not too big.
+    max_stride = npes_cam/npes_homme
+    if ( npes_cam_stride == 0 .or. npes_cam_stride .gt. max_stride ) npes_cam_stride = max_stride
+    if (mod(iam_cam,npes_cam_stride).eq.0.and.iam_cam.lt.npes_homme*npes_cam_stride) color = 0
     call mpi_comm_split(mpicom, color, iam_cam, par%comm, ierr)
+    par%dynproc = .FALSE.
+    if (color == 0) par%dynproc = .TRUE.
 #else
     par%comm     = MPI_COMM_WORLD
 #endif
@@ -164,6 +174,7 @@ contains
     par%masterproc = .FALSE.
     if(par%rank .eq. par%root) par%masterproc = .TRUE.
     if (par%masterproc) write(iulog,*)'number of MPI processes: ',par%nprocs
+    if (par%masterproc) write(iulog,*)'MPI processors stride: ',npes_cam_stride
            
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION

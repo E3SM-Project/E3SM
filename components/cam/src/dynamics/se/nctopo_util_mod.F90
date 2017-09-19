@@ -55,7 +55,7 @@ contains
 
     if (smooth_phis_numcycle==0) return
 
-    if(iam > par%nprocs) then
+    if(.not.par%dynproc) then
        ! The special case of npes_se < npes_cam is not worth dealing with here
        call endrun('PHIS topo generation code code requires npes_se==npes_cam')
     end if
