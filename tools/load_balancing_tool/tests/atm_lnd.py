@@ -10,15 +10,17 @@ class AtmLnd(optimize_model.OptimizeModel):
     def optimize(self):
         """
         Run the optimization.
-        Must set self.status using LpStatus object
-           1  "Optimal"       LpStatusOptimal
-           0  "Not Solved"    LpStatusNotSolved
-          -1  "Infeasible"    LpStatusInfeasible
-          -2  "Unbounded"     LpStatusUnbounded
-          -3  "Undefined"     LpStatusUndefined
+        Must set self.state using LpStatus object:
+              LpStatusOptimal    -> STATE_SOLVED_OK
+              LpStatusNotSolved  -> STATE_UNSOLVED
+              LpStatusInfeasible -> STATE_SOLVED_BAD
+              LpStatusUnbounded  -> STATE_SOLVED_BAD
+              LpStatusUndefined  -> STATE_UNDEFINED
+              -- use self.set_state(lpstatus) --
+        Returns state
         """
-        assert(self.status == pulp.constants.LpStatusUndefined,
-               "set_data() must be called before optimize()!")
+        assert self.state != self.STATE_UNDEFINED,\
+            "set_data() must be called before optimize()!"
         self.atm = self.models['ATM']
         self.lnd = self.models['LND']
         self.ice = self.models['ICE']
@@ -88,8 +90,8 @@ class AtmLnd(optimize_model.OptimizeModel):
         # Write the program to file and solve (using glpk)
         self.prob.writeLP("IceLndAtmOcn_model.lp")
         self.prob.solve()
-        self.status = self.prob.status
-        return pulp.LpStatus[self.prob.status]
+        self.set_state(self.prob.status)
+        return self.state
     
 
     def write_pe_file(self, pefilename):

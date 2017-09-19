@@ -84,7 +84,7 @@ def parse_command_line(args, description):
         if args.json_output:
             have_pulp = False
             logger.warning("WARNING: pulp library not found. Will write "
-                           "%s and exit." % args.json_output)
+                           "%s and exit.", args.json_output)
             logger.warning("WARNING: To solve, either install pulp python "
                            "library locally")
             logger.warning("WARNING: or transfer .json file to another system "
@@ -138,7 +138,7 @@ def _locate_timing_files(script_dir, timing_dir, casename_prefix):
         for casename in timing_cases:
             casedir = os.path.join(script_dir, casename)
             timing_dirs.append(os.path.join(casedir, 'timing'))
-            logger.info('found directory ' + os.path.join(casedir, 'timing'))
+            logger.info('found directory %s', os.path.join(casedir, 'timing'))
 
     # Now add all non-.gz files in the directories to be read in
     for td in timing_dirs:
@@ -148,7 +148,7 @@ def _locate_timing_files(script_dir, timing_dir, casename_prefix):
             if full_fn.find('.gz') < 0:
                 timing_files.append(full_fn)
         if full_fn is None:
-            logger.warning("WARNING: no timing files found in directory %s" % (td))
+            logger.warning("WARNING: no timing files found in directory %s", (td))
     return timing_files
 
 def _parse_timing_files(timing_files):
@@ -171,12 +171,12 @@ def _parse_timing_files(timing_files):
 
             if timing[key]['ntasks'] in data[key]['ntasks']:
                 logger.warning('WARNING: duplicate timing run data in %s '
-                               'for %s ntasks=%d.' % (timing_file, key,
-                                                      timing[key]['ntasks']))
+                               'for %s ntasks=%d.', timing_file, key,
+                               timing[key]['ntasks'])
                 index = data[key]['ntasks'].index(timing[key]['ntasks'])
                 logger.warning('Existing value: cost=%s. Ignoring new value: '
-                               'cost=%s' % (data[key]['cost'][index],
-                                            timing[key]['cost']))
+                               'cost=%s', data[key]['cost'][index],
+                               timing[key]['cost'])
             else:
                 data[key]['cost'].append(timing[key]['cost'])
                 data[key]['ntasks'].append(timing[key]['ntasks'])
@@ -207,13 +207,13 @@ def _read_timing_file(filename):
     }
     """
 
-    logger.info('Reading timing file %s' % filename)
+    logger.info('Reading timing file %s', filename)
     try:
         timing_file = open(filename, "r")
         timing_lines = timing_file.readlines()
         timing_file.close()
     except Exception, e:
-        logger.critical("Unable to open file %s" % filename)
+        logger.critical("Unable to open file %s", filename)
         raise e
     models = {}
     for line in timing_lines:
@@ -257,7 +257,7 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
             try:
                 data = json.load(jsonfile)
             except ValueError, e:
-                logger.critical("Unable to parse json file %s" % jsonfile)
+                logger.critical("Unable to parse json file %s", jsonfile)
                 raise e
         # layout, totaltasks, blocksizes may already be set by json file
         # but can be overriden by options
@@ -273,11 +273,11 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
                                             casename_prefix)
         if len(timing_files) == 0:
             if timing_dir is None:
-                logger.critical("ERROR: no timing data found in directory %s"
-                                % (script_dir))
+                logger.critical("ERROR: no timing data found in directory %s",
+                                script_dir)
             else:
-                logger.critical("ERROR: no timing data found in directory %s"
-                                % (timing_dir))
+                logger.critical("ERROR: no timing data found in directory %s",
+                                timing_dir)
             sys.exit(1)
 
         data = _parse_timing_files(timing_files)
@@ -292,15 +292,15 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
 
     # Allow dumping to json file before trying to load optimization
     if json_output is not None:
-        logger.info("Writing MILP data to %s" % json_output)
+        logger.info("Writing MILP data to %s", json_output)
         with open(json_output, "w") as outfile:
             json.dump(data, outfile, indent=4)
 
     if not have_pulp:
         logger.info("Exiting without solving. Rerun with --json_input %s "
-                    "after installing pulp or" % json_output)
-        logger.info("transfer %s to another system and run:" % (json_output))
-        logger.info("load_balancing_solve.py --json_input %s" % (json_output))
+                    "after installing pulp or", json_output)
+        logger.info("transfer %s to another system and run:", json_output)
+        logger.info("load_balancing_solve.py --json_input %s", json_output)
         sys.exit(0)
 
     import optimize_model
@@ -319,13 +319,13 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
                 "COIN-CBC")
 
     status = opt.optimize()
-    logger.info("PuLP solver status: " + status)
+    logger.info("PuLP solver status: " + opt.get_state_string(status))
     solution = opt.get_solution()
     for k in sorted(solution):
         if k[0] == 'N':
-            logger.info("%s = %d" % (k, solution[k]))
+            logger.info("%s = %d", k, solution[k])
         else:
-            logger.info("%s = %f" % (k, solution[k]))
+            logger.info("%s = %f", k, solution[k])
 
     if pe_output:
         opt.write_pe_file(pe_output)

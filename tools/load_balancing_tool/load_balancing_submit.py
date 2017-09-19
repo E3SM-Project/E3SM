@@ -284,7 +284,6 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
                                 extra_options_file)
                 raise SystemExit(1)
 
-        # There should be a better way to do this
         pes_ntasks, pes_nthrds, pes_rootpe, ignore = \
             pesobj.find_pes_layout('any', 'any', 'any', pesize_opts=pesize)
 

@@ -222,6 +222,19 @@ class LoadBalanceTests(unittest.TestCase):
         self._check_solution(output, "NTASKS_OCN", 4)
         self._check_solution(output, "NBLOCKS_OCN", 2)
 
+    def test_graph_models(self):
+        try:
+            import matplotlib
+        except ImportError, e:
+            self.SkipTest("matplotlib not found")
+
+        with tempfile.NamedTemporaryFile('w+') as jsonfile:
+            json.dump(JSON_DICT, jsonfile)
+            jsonfile.flush()
+            cmd = "./load_balancing_solve.py --json_input %s --graph_models" % (jsonfile.name)
+            output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
+            self._check_solution(output, "NTASKS_ATM", 992)
+        
     def test_xcase_submit(self):
         with tempfile.NamedTemporaryFile('w+') as tfile, tempfile.NamedTemporaryFile('w+') as xfile:
             tfile.write(PES_XML)

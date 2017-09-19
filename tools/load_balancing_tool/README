@@ -37,11 +37,24 @@ set PYTHONPATH to include
 
 create PE XML <PESFILE> file to describe the PE layouts for the timing runs
 
-$ load_balancing_submit.py --res <RESOLUTION> --compset <COMPSET> --pesfile <PESFILE>
+$ ./load_balancing_submit.py --res <RESOLUTION> --compset <COMPSET> --pesfile <PESFILE>
 
 ...wait for jobs to run...
 
-$ load_balancing_solve.py --total_tasks <N> --blocksize 8
+$ ./load_balancing_solve.py --total_tasks <N> --blocksize 8
+
+
+***********
+* Testing *
+***********
+set PYTHONPATH to include 
+    $CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
+
+# Run an example:
+$ ./load_balancing_solve.py --print_models --json_input tests/example.json --blocksize 4
+
+# Run the test suite:
+$ ./tests/load_balancing_test.py
 
 
 ******************************************************************
@@ -49,12 +62,13 @@ $ load_balancing_solve.py --total_tasks <N> --blocksize 8
 ******************************************************************
 
 Simulations can be run on a given system by executing the load_balancing_tool.py
-script, located in cime/tools/load_balancing_tool/load_balancing_tool_submit.py. This creates output that can be
+script, located in cime/tools/load_balancing_tool/load_balancing_tool_submit.py.
+This creates timing files in the case directory which will be used to solve
+a mixed integer linear program optimizing the layout.
 
-As with the create_newcase and create_test scripts, these command line options
+As with the create_newcase and create_test scripts, command line options
 are used to tailor the simulations for a given model. These values will be 
 directly forwarded to the passed
-
      --compiler
      --project
      --compset (required)
@@ -211,7 +225,7 @@ components involved may be different).
 There are options available in load_balancing_submit.py to inspect these 
 piecewise linear models: 
 	  --graph_models (requires matplotlib)
-	  -d             (debugging modes writes the models to the log)
+	  --print_models (debugging modes writes the models to the log)
 
 Now that these constraints are defined, the mixed integer linear program (MILP)
 follows from the layout:
@@ -265,7 +279,7 @@ contains a base class OptimizeModel as well as an implementation class
 IceLndAtmOcn. Any layout solver will look similar to IceLndAtmOcn 
 except for the components involved and the layout-specific constraints.
 
-Example class and inherited methods that must be overridden:
+Example class and inherited methods that should be overridden:
 
 file my_new_layout.py:
 #*************************************************
@@ -273,22 +287,55 @@ import optimize_model
 
 class MyNewLayout(optimize_model.OptimizeModel)
    def get_required_components(self):
-      #return list of components used in this layout
-      return ['ATM', 'LND', 'ICE', ... ]
+       """
+       Should be overridden by derived class. Return a list of required
+       components (capitalized) used in the layout.
+       Example: return ['ATM', 'LND', 'ICE']
+       """
+
 
    def optimize(self):
-       #this will rely on the layout. see the IceLndAtmOcn class for example
+        """
+        Run the optimization.
+        Must set self.state using LpStatus object:
+              LpStatusOptimal    -> STATE_SOLVED_OK
+              LpStatusNotSolved  -> STATE_UNSOLVED
+              LpStatusInfeasible -> STATE_SOLVED_BAD
+              LpStatusUnbounded  -> STATE_SOLVED_BAD
+              LpStatusUndefined  -> STATE_UNDEFINED
+              -- use self.set_state(lpstatus) --
+        Returns state
 
+        If solved, then solution will be stored in self.X dictionary, indexed
+        by variable name. Suggested convention:
+        'Tice', 'Tlnd', ... for cost per component
+        'Nice', 'Nlnd', ... for ntasks per component
+        'NBice', 'NBlnd', ... for number of blocks per component
+
+        The default implementation of get_solution() returns a dictionary
+        of these variable keys and their values.
+        """
+
+   def get_solution(self):
+       """
+       Return a dictionary of the solution variables, can be overridden.
+       Default implementation returns values in self.X
+       """
 #*************************************************
-
 
 To use this new layout:
    1. save the class MyNewLayout in file my_new_layout.py
    2. make sure that my_new_layout.py is in PYTHONPATH
    3. Use those names in your execution command line argument to --layout
-      $> load_balancing_solve.py ... --layout my_new_layout.MyNewLayout
+      $ ./load_balancing_solve.py ... --layout my_new_layout.MyNewLayout
 
+   -- to permanently add to CIME --
 
+   1. add MyNewLayout class to layouts.py	
+   2. run using '--layout MyNewLayout'
+   3. add test in tests/load_balance_test.py that uses that name in command 
+      line argument (see test for atm_lnd)
+   4. make pull request
 
 
 
