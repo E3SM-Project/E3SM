@@ -20,7 +20,7 @@ steps::
   2. load_balancing_solve.py
      Using the data provided in the previous program, solve a mixed integer 
      linear program to optimize the model throughput. Requires installation
-     of PuLP and uses the COIN-CBC solver.
+     of PuLP and uses the included COIN-CBC solver. (https://pythonhosted.org/PuLP)
 
 Also in this documentation is::
 
@@ -218,14 +218,13 @@ If N < N1 (which means that N1 cannot be 1), then assume that there is
 perfect scalability from N to N1. Thus the cost is on the line
 defined by the points (1, C1*N1) - (N1, C1).
 
-
 If N is between N_i and N_{i+1}, then the cost is on the line defined by the
 points (N_i, C_i) and (N_{i+1}, C_{i+1}.
 
 If N > Nn, then we want to extrapolate the cost at N=total_tasks 
   (we define N{n+1} = total_tasks, C{n+1} = estimated cost using all nodes)
   Assuming perfect scalability is problematic at this level, so we instead
-  assume that the parallel effeciency drops at the same factor as it does 
+  assume that the parallel efficiency drops at the same factor as it does 
   from N=N{n-1} to N = Nn 
 
   First solve for efficiency E:
@@ -235,6 +234,10 @@ If N > Nn, then we want to extrapolate the cost at N=total_tasks
   Cn - Ct = E * (Cn * Nn / Nt)
   
   Now cost is on the line defined by (Nn,Cn) - (Nt,Ct)
+
+Assuming that this piecewise linear function describes a convex function, we do
+not have to explicitly construct this piecewise function and can instead use
+each of the cost functions on the entire domain.
 
 These piecewise linear models give us the following linear constraints, where
 the model time cost C as a function of N (ntasks) for each component

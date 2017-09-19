@@ -204,7 +204,7 @@ Before solving the mixed-integer linear program, a model of the cost vs ntasks
 function is constructed for each component.
 
 Given a component data set of costs (C1,C2,..,Cn) and nblocks (N1,N2,..,Nn),
-then an piecewise set of n+1 linear constraints are created using the idea:
+then a set of n+1 linear constraints are created using the idea:
 
 If N < N1 (which means that N1 cannot be 1), then assume that there is
 perfect scalability from N to N1. Thus the cost is on the line
@@ -212,12 +212,12 @@ defined by the points (1, C1*N1) - (N1, C1).
 
 
 If N is between N_i and N_{i+1}, then the cost is on the line defined by the
-points (N_i, C_i) and (N_{i+1}, C_{i+1}.
+points (N_i, C_i) and (N_{i+1}, C_{i+1}).
 
 If N > Nn, then we want to extrapolate the cost at N=total_tasks 
   (we define N{n+1} = total_tasks, C{n+1} = estimated cost using all nodes)
   Assuming perfect scalability is problematic at this level, so we instead
-  assume that the parallel effeciency drops at the same factor as it does 
+  assume that the parallel efficiency drops at the same factor as it does 
   from N=N{n-1} to N = Nn 
 
   First solve for efficiency E:
@@ -228,12 +228,17 @@ If N > Nn, then we want to extrapolate the cost at N=total_tasks
   
   Now cost is on the line defined by (Nn,Cn) - (Nt,Ct)
 
+Assuming that this piecewise linear function describes a convex function, we do
+not have to explicitly construct this piecewise function and can instead use
+each of the cost functions on the entire domain.
+
 These piecewise linear models give us the following linear constraints, where
 the model time cost C as a function of N (ntasks) for each component
 is constrained by:
 
 (1)    C >= Ci  - Ni * (C{i+1}-Ci) / (N{i+1}-Ni)
              + N *  (C{i+1}-Ci) / (N{i+1}-Ni)    for i=0..n
+
 
 These constraints should be in effect for any extensions of the solver (the
 components involved may be different).
