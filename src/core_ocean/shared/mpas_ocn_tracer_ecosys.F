@@ -515,7 +515,7 @@ contains
             BGC_output%PH_PREV_3D(iLevel,column) = PH_PREV_3D(iLevel,iCell)
             BGC_output%PH_PREV_ALT_CO2_3D(iLevel,column) = PH_PREV_ALT_CO2_3D(iLevel,iCell)
 
-            BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)
+            BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthScale
             BGC_forcing%NUTR_RESTORE_RTAU(iLevel,column) = 0.0_RKIND
             BGC_forcing%NO3_CLIM(iLevel,column) = 0.0_RKIND
             BGC_forcing%PO4_CLIM(iLevel,column) = 0.0_RKIND
