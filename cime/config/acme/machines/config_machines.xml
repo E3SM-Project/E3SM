@@ -1305,7 +1305,7 @@
 	     <command name="-q">netcdf-pgi-4.1.3</command>
 	   </modules> 
 	   <modules compiler="intel">
-	     <command name="-q">ic-14.0.211</command>
+	     <command name="-q">ic-17.0.174</command>
 	     <command name="-q">mvapich2-intel-2.1</command>
 	     <command name="-q">netcdf-intel-4.1.3</command>
 	   </modules>
@@ -1357,7 +1357,7 @@
 	     <command name="-q">netcdf-pgi-4.1.3</command>
 	   </modules> 
 	   <modules compiler="intel">
-	     <command name="-q">ic-14.0.211</command>
+	     <command name="-q">ic-17.0.174</command>
 	     <command name="-q">mvapich2-intel-2.1</command>
 	     <command name="-q">netcdf-intel-4.1.3</command>
 	   </modules>
