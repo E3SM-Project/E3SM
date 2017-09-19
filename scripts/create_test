@@ -438,7 +438,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
         wall_time_bab = wall_time
 
     queue = env_batch.select_best_queue(proc_pool, num_nodes, wall_time_bab)
-    wall_time_max_bab = env_batch._get_queue_specs(queue)[5]
+    wall_time_max_bab = env_batch.get_queue_specs(queue)[5]
     if wall_time_max_bab is not None:
         wall_time_max = convert_to_seconds(wall_time_max_bab)
         if wall_time_max < wall_time:

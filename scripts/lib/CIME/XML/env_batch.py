@@ -213,7 +213,7 @@ class EnvBatch(EnvBase):
                     queue = self.select_best_queue(task_count, node_count, walltime=None, job=job)
                     if queue is not None:
                         # It was, override the walltime if a test, otherwise just warn the user
-                        new_walltime = self._get_queue_specs(queue)[5]
+                        new_walltime = self.get_queue_specs(queue)[5]
                         expect(new_walltime is not None, "Should never make it here")
                         logger.warning("WARNING: Requested walltime '{}' could not be matched by any queue".format(walltime))
                         if allow_walltime_override:
@@ -226,11 +226,11 @@ class EnvBatch(EnvBase):
                     logger.warning("WARNING: No queue on this system met the requirements for this job. Falling back to defaults")
                     default_queue_node = self.get_default_queue()
                     queue = default_queue_node.text
-                    walltime = self._get_queue_specs(queue)[5]
+                    walltime = self.get_queue_specs(queue)[5]
 
             if walltime is None:
                 # Figure out walltime
-                specs = self._get_queue_specs(queue)
+                specs = self.get_queue_specs(queue)
                 if specs is None:
                     # Queue is unknown, use specs from default queue
                     walltime = self.get_default_queue().get("walltimemax")
@@ -489,7 +489,7 @@ class EnvBatch(EnvBase):
         return jobid
 
     def queue_meets_spec(self, queue, num_pes, num_nodes, walltime=None, job=None):
-        specs = self._get_queue_specs(queue)
+        specs = self.get_queue_specs(queue)
         if specs is None:
             logger.warning("WARNING: queue '{}' is unknown to this system".format(queue))
             return True
@@ -526,7 +526,7 @@ class EnvBatch(EnvBase):
 
         return None
 
-    def _get_queue_specs(self, queue):
+    def get_queue_specs(self, queue):
         """
         Get queue specifications by name.
 
