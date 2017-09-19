@@ -970,8 +970,8 @@ module atm_core
       call mpas_pool_get_array(mesh, 'meshDensity', meshDensity)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
-      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingRegionalCell)
-      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingRegionalEdge)
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalCell', meshScalingRegionalCell)
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalEdge', meshScalingRegionalEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
