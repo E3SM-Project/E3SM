@@ -291,37 +291,37 @@
       <support>Non-standard grid, for testing high resolution RTM grid</support>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>0.23x0.31_0.23x0.31</sname>
       <alias>f02_f02</alias>
       <lname>a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>0.9x1.25_0.9x1.25</sname>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null</lname>
       <alias>f09_f09</alias>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>1.9x2.5_1.9x2.5</sname>
       <alias>f19_f19</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>2.5x3.33_2.5x3.33</sname>
       <alias>f25_f25</alias>
       <lname>a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>4x5_4x5</sname>
       <alias>f45_f45</alias>
       <lname>a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>10x15_10x15</sname>
       <alias>f10_f10</alias>
       <lname>a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null</lname>
@@ -434,59 +434,59 @@
       <lname>a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne4np4_ne4np4</sname>
       <lname>a%ne4np4_l%ne4np4_oi%ne4np4_r%r05_m%oQU240_g%null_w%null</lname>
       <alias>ne4_ne4</alias>
     </grid>
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne11np4_ne11np4</sname>
       <lname>a%ne11np4_l%ne11np4_oi%ne11np4_r%r05_m%oQU240_g%null_w%null</lname>
       <alias>ne11_ne11</alias>
     </grid>
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_arm_x8v3_lowcon_ne0np4_arm_x8v3_lowcon</sname>
       <lname>    a%ne0np4_arm_x8v3_lowcon_l%ne0np4_arm_x8v3_lowcon_oi%ne0np4_arm_x8v3_lowcon_r%null_m%gx1v6_g%null_w%null</lname>
       <alias>armx8v3_armx8v3</alias>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_conus_x4v1_lowcon_ne0np4_conus_x4v1_lowcon</sname>
       <lname>    a%ne0np4_conus_x4v1_lowcon_l%ne0np4_conus_x4v1_lowcon_oi%ne0np4_conus_x4v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
       <alias>conusx4v1_conusx4v1</alias>
     </grid>
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_svalbard_x8v1_lowcon_ne0np4_svalbard_x8v1_lowcon</sname>
       <lname>    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
       <alias>svalbardx8v1_svalbardx8v1</alias>
     </grid>
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_sooberingoa_x4x8v1_lowcon_ne0np4_sooberingoa_x4x8v1_lowcon</sname>
       <lname>    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
       <alias>sooberingoax4x8v1_sooberingoax4x8v1</alias>
     </grid>
 
     <!-- ENA RRM grid (all components) -->
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_enax4v1_ne0np4_enax4v1</sname>
       <lname>a%ne0np4_enax4v1_l%ne0np4_enax4v1_oi%ne0np4_enax4v1_r%null_m%oRRS18to6_g%null_w%null</lname>
       <alias>enax4v1_enax4v1</alias>
     </grid>
 
     <!-- ENA RRM grid (land on ne30) -->
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_enax4v1_ne30np4_ne0np4_enax4v1</sname>
       <lname>a%ne0np4_enax4v1_l%ne30np4_oi%ne0np4_enax4v1_r%null_m%oRRS18to6_g%null_w%null</lname>
       <alias>enax4v1_ne30_enax4v1</alias>
     </grid>
 
-   <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+   <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne16np4_ne16np4</sname>
       <alias>ne16_ne16</alias>
       <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne30np4_ne30np4</sname>
       <alias>ne30_ne30</alias>
       <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</lname>
@@ -510,19 +510,19 @@
       <alias>ne120_oRRS18v3_ICG</alias>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne60np4_ne60np4</sname>
       <alias>ne60_ne60</alias>
       <lname>a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne120np4_ne120np4</sname>
       <alias>ne120_ne120</alias>
       <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne240np4_ne240np4</sname>
       <alias>ne240_ne240</alias>
       <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</lname>
@@ -766,7 +766,7 @@
       <alias>ne30_oRRS30wLI</alias>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_twpx4v1_ne0np4_twpx4v1</sname>
       <lname>a%ne0np4_twpx4v1_l%ne0np4_twpx4v1_oi%ne0np4_twpx4v1_r%null_m%oRRS18to6v3_g%null_w%null</lname>
       <alias>twpx4v1_twpx4v1</alias>
