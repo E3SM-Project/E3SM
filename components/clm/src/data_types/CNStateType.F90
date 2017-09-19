@@ -741,7 +741,6 @@ contains
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
        this%isoilorder(c) = soilorder_rdin(g)
-!       this%isoilorder(c) = 12
     end do
     deallocate(soilorder_rdin)
 
