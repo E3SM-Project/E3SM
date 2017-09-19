@@ -227,7 +227,7 @@ class LoadBalanceTests(unittest.TestCase):
         try:
             import matplotlib
         except ImportError, e:
-            self.SkipTest("matplotlib not found")
+            self.skipTest("matplotlib not found")
 
         with tempfile.NamedTemporaryFile('w+') as jsonfile:
             json.dump(JSON_DICT, jsonfile)
