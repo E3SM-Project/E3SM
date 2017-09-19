@@ -179,8 +179,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     def build_phase(self, sharedlib_only=False, model_only=False):
         if self._separate_builds:
             self._activate_case1()
+            sharedlibroot = self._case1.get_value("SHAREDLIBROOT")
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             self._activate_case2()
+            self._case.set_value("SHAREDLIBROOT", sharedlibroot)
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
