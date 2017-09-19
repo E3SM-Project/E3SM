@@ -15,11 +15,11 @@ class EnvMachPes(EnvBase):
         """
         self._components = components
         self._component_value_list = ["NTASKS", "NTHRDS", "NINST",
-                                      "ROOTPE", "PSTRID", "NINST_LAYOUT"]
+                                      "ROOTPE", "PSTRID", "NINST_LAYOUT", "NTASKS_PER_INST"]
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, max_mpitasks_per_node=None): # pylint: disable=arguments-differ
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, MAX_MPITASKS_PER_NODE=None): # pylint: disable=arguments-differ
         # Special variable NINST_MAX is used to determine the number of
         # drivers in multi-driver mode.
         if vid == "NINST_MAX":
@@ -27,31 +27,14 @@ class EnvMachPes(EnvBase):
             for comp in self._components:
                 value = max(value, self.get_value("NINST_{}".format(comp)))
             return value
-        if vid.startswith("NTASKS_PER_INST_"):
-           multi_driver = self.get_value("MULTI_DRIVER")
-           ninst = self.get_value(vid.replace("NTASKS_PER_INST", "NINST"),
-                                  attribute=attribute, resolved=resolved, subgroup=subgroup,
-                                  max_mpitasks_per_node=max_mpitasks_per_node)
-           if multi_driver or ninst==1:
-               value = self.get_value(vid.replace("NTASKS_PER_INST", "NTASKS"),
-                                  attribute=attribute, resolved=resolved, subgroup=subgroup,
-                                  max_mpitasks_per_node=max_mpitasks_per_node)
-           else:
-               value = self.get_value(vid.replace("NTASKS_PER_INST", "NTASKS"),
-                                  attribute=attribute, resolved=resolved, subgroup=subgroup,
-                                  max_mpitasks_per_node=max_mpitasks_per_node) / ninst
-
-           return value
-
-
 
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
 
         if "NTASKS" in vid or "ROOTPE" in vid:
-            if max_mpitasks_per_node is None:
-                max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
+            if MAX_MPITASKS_PER_NODE is None:
+                MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
-                value = -1*value*max_mpitasks_per_node
+                value = -1*value*MAX_MPITASKS_PER_NODE
 
         return value
 

@@ -129,19 +129,24 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         multi_driver = case.get_value("MULTI_DRIVER")
         for comp in models:
+            ntasks = case.get_value("NTASKS_{}".format(comp))
             if comp == "CPL":
+                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks )
                 continue
             ninst  = case.get_value("NINST_{}".format(comp))
-            ntasks = case.get_value("NTASKS_{}".format(comp))
             # But the NINST_LAYOUT may only be concurrent in multi_driver mode
             if multi_driver:
                 expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
                        "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
-            elif ninst > ntasks:
-                if ntasks == 1:
-                    case.set_value("NTASKS_{}".format(comp), ninst)
-                else:
-                    expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)
+            else:
+                if ninst > ntasks:
+                    if ntasks == 1:
+                        case.set_value("NTASKS_{}".format(comp), ninst)
+                        ntasks = ninst
+                    else:
+                        expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks / ninst)
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
