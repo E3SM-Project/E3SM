@@ -191,7 +191,7 @@ class LoadBalanceTests(unittest.TestCase):
             cmd = "./load_balancing_solve.py --json_input %s --json_output %s" % (jsonfile1.name, jsonfile2.name)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self._check_solution(output, "NTASKS_ATM", 992)
-            cmd = "./load_balancing_solve.py --json_input %s" % jsonfile1.name
+            cmd = "./load_balancing_solve.py --json_input %s" % jsonfile2.name
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self._check_solution(output, "NTASKS_ATM", 992)
 
@@ -207,8 +207,9 @@ class LoadBalanceTests(unittest.TestCase):
             jsonfile1.flush()
             cmd = "./load_balancing_solve.py --json_input %s --pe_output %s" % (jsonfile1.name, pes_file.name)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
-        assertTrue(os.access(pesfile, os.R_OK), "pesfile not written")
-        pesobj = CIME.XML.pes.Pes(pesfile)
+            
+            self.assertTrue(os.access(pes_file.name, os.R_OK), "pesfile %s not written" % pes_file.name)
+            pesobj = CIME.XML.pes.Pes(pes_file.name)
         for node in pesobj.get_nodes('pes'):
             pesize = node.get('pesize')
             pes_ntasks, pes_nthrds, pes_rootpe, ignore = \
