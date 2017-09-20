@@ -131,7 +131,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         for comp in models:
             ntasks = case.get_value("NTASKS_{}".format(comp))
             if comp == "CPL":
-                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks )
                 continue
             ninst  = case.get_value("NINST_{}".format(comp))
             # But the NINST_LAYOUT may only be concurrent in multi_driver mode
