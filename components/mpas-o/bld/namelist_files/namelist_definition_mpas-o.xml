@@ -1185,7 +1185,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ssh_grad_relax_timescale" type="real"
 	category="coupling" group="coupling">
-Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 removes any relaxation and gives instantaneous response.
+Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -5237,23 +5237,26 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosys_atm_co2_option" type="char*1024"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+sets how atm co2 is set
 
-Valid values: none, constant, prognostic, diagnostic
+Valid values: none,constant,prognostic,diagnostic
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosys_atm_alt_co2_option" type="char*1024"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+sets how alt atm co2 is set
 
-Valid values: none, constant, prognostic, diagnostic
+Valid values: none,constant,prognostic,diagnostic
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosys_atm_co2_constant_value" type="real"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+value of atm co2 when config_ecosys_atm_co2_option = constant
 
-Valid values: positive real value
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5322,7 +5325,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel1 available for output
 
 Valid values: .true. or .false.
@@ -5330,7 +5333,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosysTracers_diagnostic_fields_level2" type="logical"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel2 available for output
 
 Valid values: .true. or .false.
@@ -5338,7 +5341,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosysTracers_diagnostic_fields_level3" type="logical"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel3 available for output
 
 Valid values: .true. or .false.
@@ -5346,7 +5349,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosysTracers_diagnostic_fields_level4" type="logical"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel4 available for output
 
 Valid values: .true. or .false.
@@ -5354,7 +5357,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosysTracers_diagnostic_fields_level5" type="logical"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel5 available for output
 
 Valid values: .true. or .false.
