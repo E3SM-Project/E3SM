@@ -282,7 +282,7 @@ def _archive_history_files(case, archive, archive_entry,
             if histfiles:
                 for histfile in histfiles:
                     file_date = _get_file_date(os.path.basename(histfile))
-                    if file_date <= last_date:
+                    if last_date is None or file_date <= last_date:
                         srcfile = join(rundir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history file %s does not exist " %srcfile)
@@ -381,7 +381,7 @@ def _archive_restarts(case, archive, archive_entry,
                 restfile = os.path.basename(restfile)
 
                 file_date = _get_file_date(restfile)
-                if file_date > last_date:
+                if last_date is not None and file_date > last_date:
                     # Skip this file
                     continue
 
