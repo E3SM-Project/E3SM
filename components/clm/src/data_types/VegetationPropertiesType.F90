@@ -107,7 +107,7 @@ module VegetationPropertiesType
      real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gc/m3
      real(r8), allocatable :: vmax_nfix(:)             ! vmax of symbiotic n2 fixation
      real(r8), allocatable :: km_nfix(:)               ! km of symbiotic n2 fixation
-     real(r8), allocatable :: vmax_ptase_vr(:)         ! vmax of biochemical p production
+     real(r8), allocatable :: vmax_ptase(:)            ! vmax of biochemical p production
      real(r8)              :: km_ptase                 ! km of biochemical p production
      real(r8)              :: lamda_ptase              ! critical value that incur biochemical production
      real(r8), allocatable :: i_vc(:)                  ! intercept of photosynthesis vcmax ~ leaf n content regression model
@@ -163,7 +163,7 @@ contains
     use pftvarcon , only : km_decomp_nh4, km_decomp_no3, km_decomp_p, km_nit, km_den
     use pftvarcon , only : decompmicc_patch_vr
     use pftvarcon , only : vmax_nfix, km_nfix
-    use pftvarcon , only : vmax_ptase_vr, km_ptase, lamda_ptase
+    use pftvarcon , only : vmax_ptase, km_ptase, lamda_ptase
     use pftvarcon , only : i_vc, s_vc
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
@@ -247,7 +247,7 @@ contains
     allocate( this%km_plant_p(0:numpft))                         ; this%km_plant_p(:)            =nan
     allocate( this%km_minsurf_p_vr(0:nsoilorder,1:nlevdecomp))   ; this%km_minsurf_p_vr(:,:)     =nan
     allocate( this%decompmicc_patch_vr(0:numpft,1:nlevdecomp))   ; this%decompmicc_patch_vr(:,:) =nan
-    allocate( this%vmax_ptase_vr(1:nlevdecomp))                  ; this%vmax_ptase_vr(:)         =nan
+    allocate( this%vmax_ptase(0:numpft))                         ; this%vmax_ptase(:)            =nan
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
     allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
@@ -368,6 +368,7 @@ contains
         this%s_vc(m)           = s_vc(m)
         this%vmax_nfix(m)      = vmax_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
+        this%vmax_ptase(m)     = vmax_ptase(m)
 
         do j = 1 , nlevdecomp
            this%decompmicc_patch_vr(m,j) = decompmicc_patch_vr(j,m)
@@ -401,9 +402,6 @@ contains
     this%lamda_ptase   = lamda_ptase
 
     this%tc_stress     = tc_stress
-    do j = 1 , nlevdecomp
-       this%vmax_ptase_vr(j) = vmax_ptase_vr(j)
-    end do
      
   end subroutine veg_vp_init
 
