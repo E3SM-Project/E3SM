@@ -618,19 +618,19 @@ contains
     integer  :: dt
     !-----------------------------------------------------------------------
 
-    associate(                                                                          &
-         froot_prof                 => cnstate_vars%froot_prof_patch                  , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
-         biochem_pmin_vr            => phosphorusflux_vars%biochem_pmin_vr_col        , &
-         biochem_pmin_ppools_vr_col => phosphorusflux_vars%biochem_pmin_ppools_vr_col , &
-         npimbalance                => nitrogenstate_vars%npimbalance_patch           , &
-         vmax_ptase_vr              => veg_vp%vmax_ptase_vr                           , &
-         vmax_ptase_vr_grid         => veg_vp%vmax_ptase_vr_grid                      , &
-         vmax_ptase_vr_grid_present => veg_vp%vmax_ptase_vr_grid_present              , &
-         km_ptase                   => veg_vp%km_ptase                                , &
-         decomp_ppools_vr_col       => phosphorusstate_vars%decomp_ppools_vr_col      , &
-         lamda_ptase                => veg_vp%lamda_ptase                             , & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
-         cn_scalar                  => cnstate_vars%cn_scalar                         , &
-         cp_scalar                  => cnstate_vars%cp_scalar                           &
+    associate(                                                              &
+         froot_prof           => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+         biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
+         biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
+         npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
+         vmax_ptase           => veg_vp%vmax_ptase                    , &
+         vmax_ptase_grid         => veg_vp%vmax_ptase_grid                      , &
+         vmax_ptase_grid_present => veg_vp%vmax_ptase_grid_present              , &
+         km_ptase             => veg_vp%km_ptase                      , &
+         decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
+         lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         cn_scalar             => cnstate_vars%cn_scalar               , &
+         cp_scalar             => cnstate_vars%cp_scalar                 &
          )
 
     dt = real( get_step_size(), r8 )
@@ -647,15 +647,15 @@ contains
                     !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                    if (.not.vmax_ptase_vr_grid_present) then
+                    if (.not.vmax_ptase_grid_present) then
                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                            vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                            (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * veg_pp%wtcol(p)
+                            vmax_ptase(p) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                            (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
                     else
                        g = col_pp%gridcell(c)
                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                            vmax_ptase_vr_grid(g,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                            (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * veg_pp%wtcol(p)
+                            vmax_ptase_grid(g,p) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                            (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
                     endif
                 end if
             enddo

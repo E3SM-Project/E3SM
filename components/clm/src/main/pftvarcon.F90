@@ -195,7 +195,7 @@ module pftvarcon
   real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gC/m3
   real(r8), allocatable :: VMAX_NFIX(:)        ! VMAX of symbiotic N2 fixation
   real(r8), allocatable :: KM_NFIX(:)          ! KM of symbiotic N2 fixation
-  real(r8), allocatable :: VMAX_PTASE_vr(:)    ! VMAX of biochemical P production
+  real(r8), allocatable :: VMAX_PTASE(:)       ! VMAX of biochemical P production
   real(r8)              :: KM_PTASE            ! KM of biochemical P production
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
   real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
@@ -254,7 +254,7 @@ module pftvarcon
   real(r8), pointer     :: vmax_plant_p_grid(:,:)      ! VMAX for plant P uptake
   real(r8), pointer     :: vmax_plant_nh4_grid(:,:)    ! VMAX for plant NH4 uptake
   real(r8), pointer     :: vmax_nfix_grid(:,:)         ! VMAX of symbiotic N2 fixation
-  real(r8), pointer     :: vmax_ptase_vr_grid(:,:)     ! VMAX of biochemical P production
+  real(r8), pointer     :: vmax_ptase_grid(:,:)        ! VMAX of biochemical P production
   real(r8), pointer     :: km_plant_p_grid(:,:)        ! KM for plant P uptake
 
   logical               :: vcmax_np1_grid_present      ! flag for vcmax_np1_grid
@@ -263,7 +263,7 @@ module pftvarcon
   logical               :: vmax_plant_p_grid_present   ! flag for vcmax_plant_p_grid
   logical               :: vmax_plant_nh4_grid_present ! flag for vmax_plant_nh4_grid
   logical               :: vmax_nfix_grid_present      ! flag for vmax_nfix_grid
-  logical               :: vmax_ptase_vr_grid_present  ! flag for vmax_ptase_vr_grid
+  logical               :: vmax_ptase_grid_present     ! flag for vmax_ptase_grid
   logical               :: km_plant_p_grid_present     ! flag for km_plant_p_grid
 
   !
@@ -472,7 +472,7 @@ contains
     allocate( KM_PLANT_P(0:mxpft) )
     allocate( KM_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
     allocate( decompmicc_patch_vr (1:nlevdecomp_full,0:mxpft))
-    allocate( VMAX_PTASE_vr(1:nlevdecomp_full))
+    allocate( VMAX_PTASE(0:mxpft))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
     allocate( VMAX_NFIX          (0:mxpft) )
@@ -794,8 +794,8 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NFIX'//errMsg(__FILE__, __LINE__))
-        call ncd_io('VMAX_PTASE_vr',VMAX_PTASE_vr, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PTASE',VMAX_PTASE, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_PTASE',KM_PTASE, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_PTASE'//errMsg(__FILE__, __LINE__))
         call ncd_io('lamda_ptase',lamda_ptase, 'read', ncid, readvar=readv)  
@@ -1001,20 +1001,20 @@ contains
        vmax_nfix_grid_present = .false.
     endif
 
-    ! 7) VMAX_PTASE_vr
-    call ncd_inqvid(ncid,'VMAX_PTASE_vr', varid, var_desc, readv)
+    ! 7) VMAX_PTASE
+    call ncd_inqvid(ncid,'VMAX_PTASE', varid, var_desc, readv)
     if (readv) then
-       allocate(vmax_ptase_vr_grid(begg:endg, nlevgrnd))
+       allocate(vmax_ptase_grid(begg:endg, 0:numveg))
 
-       call ncd_io(ncid=ncid, varname='VMAX_PTASE_vr', flag='read', data=vmax_ptase_vr_grid, dim1name=grlnd, readvar=readv)
+       call ncd_io(ncid=ncid, varname='VMAX_PTASE', flag='read', data=vmax_ptase_grid, dim1name=grlnd, readvar=readv)
        if (.not. readv) then
-          call endrun(msg=' ERROR while reading VMAX_PTASE_vr from surfdata file'//errMsg(__FILE__, __LINE__))
+          call endrun(msg=' ERROR while reading VMAX_PTASE from surfdata file'//errMsg(__FILE__, __LINE__))
        end if
-       vmax_ptase_vr_grid_present = .true.
+       vmax_ptase_grid_present = .true.
 
     else
-       nullify(vmax_ptase_vr_grid)
-       vmax_ptase_vr_grid_present = .false.
+       nullify(vmax_ptase_grid)
+       vmax_ptase_grid_present = .false.
     endif
 
     ! 8) KM_PLANT_P
@@ -1124,7 +1124,7 @@ contains
        write(iulog,*) ' vmax_plant_p_grid_present   = ',vmax_plant_p_grid_present
        write(iulog,*) ' vmax_plant_nh4_grid_present = ',vmax_plant_nh4_grid_present
        write(iulog,*) ' vmax_nfix_grid_present      = ',vmax_nfix_grid_present
-       write(iulog,*) ' vmax_ptase_vr_grid_present  = ',vmax_ptase_vr_grid_present
+       write(iulog,*) ' vmax_ptase_grid_present     = ',vmax_ptase_grid_present
        write(iulog,*) ' km_plant_p_grid_present     = ',km_plant_p_grid_present
        write(iulog,*) 'Successfully read PFT physiological data'
        write(iulog,*)
