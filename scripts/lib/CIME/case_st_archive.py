@@ -13,52 +13,6 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
-##### TODO: Replace these with something simpler and more general #####
-def _parse_date_1(date_str):
-    """
-    Parses dates of the format "yyyy-mm-dd_hh.MM.ss"
-    """
-    year_month_day, hour_min_sec = date_str.split('_')
-    year, month, day = [int(unit) for unit in year_month_day.split('-')]
-    hour, minute, second = [int(unit) for unit in hour_min_sec.split('.')]
-    return datetime.datetime(year, month, day, hour = hour, minute = minute, second = second)
-
-def _parse_date_2(date_str):
-    """
-    Parses dates of the format "yyyy-mm-dd_sssss"
-    """
-    year_month_day, second = date_str.split('_')
-    year, month, day = [int(unit) for unit in year_month_day.split('-')]
-    return datetime.datetime(year, month, day) + datetime.timedelta(int(second))
-
-def _parse_date_3(date_str):
-    """
-    Parses dates of the format "yyyy-mm-dd-sssss"
-    """
-    year, month, day, second = [int(unit) for unit in date_str.split('-')]
-    return datetime.datetime(year, month, day) + datetime.timedelta(second)
-
-def _parse_date_4(date_str):
-    """
-    Parses dates of the format "yyyy-mm-dd"
-    """
-    year, month, day = [int(unit) for unit in date_str.split('-')]
-    return datetime.datetime(year, month, day)
-
-def _parse_date_5(date_str):
-    """
-    Parses dates of the format "yyyy-mm"
-    """
-    year, month = [int(unit) for unit in date_str.split('-')]
-    return datetime.datetime(year, month, 1)
-
-def _parse_date_6(date_str):
-    """
-    Parses dates of the format "yyyy.mm"
-    """
-    year, month = [int(unit) for unit in date_str.split('.')]
-    return datetime.datetime(year, month, 1)
-
 ###############################################################################
 def _get_file_date(filename):
 ###############################################################################
@@ -88,20 +42,35 @@ def _get_file_date(filename):
     """
     #
     # TODO: Add these to config_archive.xml, instead of here
-    re_formats = [("[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}\.[0-9]{2}\.[0-9]{2}", _parse_date_1), # yyyy-mm-dd_hh.MM.ss
-                  ("[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{5}", _parse_date_2),                     # yyyy-mm-dd_sssss
-                  ("[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{5}", _parse_date_3),                     # yyyy-mm-dd-sssss
-                  ("[0-9]{4}-[0-9]{2}-[0-9]{2}", _parse_date_4),                              # yyyy-mm-dd
-                  ("[0-9]{4}-[0-9]{2}", _parse_date_5),                                       # yyyy-mm
-                  ("[0-9]{4}\.[0-9]{2}", _parse_date_6)                                       # yyyy.mm
+    re_formats = ["[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}\.[0-9]{2}\.[0-9]{2}", # yyyy-mm-dd_hh.MM.ss
+                  "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{5}",                     # yyyy-mm-dd_sssss
+                  "[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{5}",                     # yyyy-mm-dd-sssss
+                  "[0-9]{4}-[0-9]{2}-[0-9]{2}",                              # yyyy-mm-dd
+                  "[0-9]{4}-[0-9]{2}",                                       # yyyy-mm
+                  "[0-9]{4}\.[0-9]{2}"                                       # yyyy.mm
     ]
 
-    for re_str, parser in re_formats:
+    for re_str in re_formats:
         match = re.search(re_str, filename)
         if match is None:
             continue
         date_str = match.group()
-        return parser(date_str)
+        date_tuple = [int(unit) for unit in re.split("-|_|\.", date_str)]
+        year = date_tuple[0]
+        month = date_tuple[1]
+        day = 1
+        second = 1
+        if len(date_tuple) > 2:
+            day = date_tuple[2]
+            if len(date_tuple) == 4:
+                second = date_tuple[3]
+            elif len(date_tuple) == 6:
+                hour = date_tuple[3]
+                minute = date_tuple[4]
+                SECONDS_PER_MINUTE = 60
+                SECONDS_PER_HOUR = 3600
+                second = date_tuple[5] + minute * SECONDS_PER_MINUTE + hour * SECONDS_PER_HOUR
+        return datetime.datetime(year, month, day) + datetime.timedelta(second)
 
     # Not a valid file format name
     raise ValueError("{} is a filename without a date!".format(filename))
