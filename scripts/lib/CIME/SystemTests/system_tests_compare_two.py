@@ -179,8 +179,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     def build_phase(self, sharedlib_only=False, model_only=False):
         if self._separate_builds:
             self._activate_case1()
+            sharedlibroot = self._case1.get_value("SHAREDLIBROOT")
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             self._activate_case2()
+            self._case.set_value("SHAREDLIBROOT", sharedlibroot)
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
@@ -232,8 +234,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # Case1 is the "main" case, and we need to do the comparisons from there
             self._activate_case1()
             self._link_to_case2_output()
-
             self._component_compare_test(self._run_one_suffix, self._run_two_suffix, success_change=success_change)
+            # Go to case2 for the generate and compare baselines
+            self._activate_case2()
 
     def copy_case1_restarts_to_case2(self):
         """
