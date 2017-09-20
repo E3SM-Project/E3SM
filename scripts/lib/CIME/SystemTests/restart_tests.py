@@ -38,9 +38,3 @@ class RestartTest(SystemTestsCompareTwo):
         self._case.set_value("STOP_N", stop_new)
         self._case.set_value("CONTINUE_RUN",True)
         self._case.set_value("REST_OPTION", "never")
-
-    def _case_one_custom_prerun_action(self):
-        # only case 2 should generate and compare baselines
-        self._case.set_value("GENERATE_BASELINE", False)
-        self._case.set_value("COMPARE_BASELINE", False)
-
