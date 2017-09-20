@@ -198,27 +198,30 @@ def write_seq_maps_file(case, nmlgen, confdir):
     gridvalue = {}
     ignore_component = {}
     exclude_list = ["CPL","ESP"]
-    for item in case.get_values("COMP_CLASSES"):
-        if item not in exclude_list:
-            gridvalue[item.lower()] = case.get_value(item + "_GRID" )
-            component = case.get_value("COMP_" + item)
-            if case.get_value(item + "_GRID" ) == 'null':
-                ignore_component[item.lower()] = True
+    for comp_class in case.get_values("COMP_CLASSES"):
+        if comp_class not in exclude_list:
+            gridvalue[comp_class.lower()] = case.get_value(comp_class + "_GRID" )
+            component = case.get_value("COMP_" + comp_class)
+            if case.get_value(comp_class + "_GRID" ) == 'null':
+                ignore_component[comp_class.lower()] = True
             else:
-                ignore_component[item.lower()] = False
+                ignore_component[comp_class.lower()] = False
+
+    # Currently, hard-wire values of mapping file names to ignore
+    # TODO: for rof2ocn_fmapname -needs to be resolved since this is currently
+    # used in prep_ocn_mod.F90 if flood_present is True - this is in issue #1908.
+    ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname"]
 
     group_variables = nmlgen.get_group_variables("seq_maps")
     for name in group_variables:
         value = group_variables[name]
-        if "type" not in name:
+        if "mapname" in name:
             value = re.sub('\"', '', value)
             if 'idmap' == value:
                 component1 = name[0:3]
                 component2 = name[4:7]
                 if not ignore_component[component1]  and not ignore_component[component2]:
-                    if name == "rof2ocn_fmapname" or name == "glc2ice_rmapname":
-                        # TODO: for rof2ocn_fmapname -needs to be resolved since this is
-                        # currently used in prep_ocn_mod.F90 if flood_present is True
+                    if name in ignore_idmaps:
                         logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
                     else:
                         if "rof2ocn_" in name:
@@ -296,7 +299,7 @@ def _create_component_modelio_namelists(case, files):
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
-    models = case.get_values("COMP_CLASSES")
+
     #if we are in multi-coupler mode the number of instances of cpl will be the max
     # of any NINST_* value
     maxinst = 1
