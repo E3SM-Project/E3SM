@@ -3892,7 +3892,8 @@ module mpas_stream_manager
         character(len=StrKIND) :: when_string
         type (MPAS_Time_type) :: filetime
         type (MPAS_TimeInterval_type) :: intv, rem, zeroIntv
-        integer :: nrecs, nfiles, irec, direction
+        integer (kind=I8KIND) :: nrecs
+        integer :: nfiles, irec, direction
         logical :: in_future
 
         STREAM_DEBUG_WRITE(' ** Building Filename')
