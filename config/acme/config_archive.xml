@@ -5,6 +5,8 @@
     <rest_file_extension>\.r[sh]\.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
+    <file_time_format>"%Y-%m-%d-%05s"</file_time_format>
+    <file_time_format>"%Y-%m"</file_time_format>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>
       <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
@@ -25,6 +27,8 @@
     <rest_file_extension>\.rh.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
+    <file_time_format>"%Y-%m-%d-%05s"</file_time_format>
+    <file_time_format>"%Y-%m"</file_time_format>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.lnd</rpointer_file>
       <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
@@ -54,6 +58,8 @@
     <rest_file_extension>\.r.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
+    <file_time_format>"%Y-%m-%d-%05s"</file_time_format>
+    <file_time_format>"%Y-%m"</file_time_format>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
       <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
@@ -83,8 +89,12 @@
     <rest_file_extension>\.rst.*</rest_file_extension>
     <hist_file_extension>\.hist.*\.*\.*\.nc</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
+    <file_time_format>"%Y-%m-%d_%05s"</file_time_format>
+    <file_time_format>"%Y-%m-%d"</file_time_format>
+    <file_time_format>"%Y.%m"</file_time_format>
     <rpointer>
       <rpointer_file>rpointer.ice</rpointer_file>
+      <rpointer_content>./mpascice$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
@@ -115,8 +125,13 @@
     <rest_file_extension>\.rst.*</rest_file_extension>
     <hist_file_extension>\.hist.*\.*\.*\.nc</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
+    <file_time_format>"%Y-%m-%d_%05s"</file_time_format>
+    <file_time_format>"%Y-%m-%d"</file_time_format>
+    <file_time_format>"%Y.%m"</file_time_format>
+    <file_time_format>"%Y-%m-%d_%h.%M.%s"</file_time_format>
     <rpointer>
       <rpointer_file>rpointer.ocn</rpointer_file>
+      <rpointer_content>./mpascice$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
@@ -146,6 +161,7 @@
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc</rpointer_file>
+      <rpointer_content>./mpasli$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
