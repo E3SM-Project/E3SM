@@ -15,7 +15,7 @@ class EnvMachPes(EnvBase):
         """
         self._components = components
         self._component_value_list = ["NTASKS", "NTHRDS", "NINST",
-                                      "ROOTPE", "PSTRID", "NINST_LAYOUT"]
+                                      "ROOTPE", "PSTRID", "NINST_LAYOUT", "NTASKS_PER_INST"]
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 

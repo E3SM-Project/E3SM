@@ -1913,6 +1913,24 @@
     <desc>number of tasks for each component</desc>
   </entry>
 
+  <entry id="NTASKS_PER_INST">
+    <type>integer</type>
+    <values>
+      <value component="ATM"> 0</value>
+      <value component="CPL"> 0</value>
+      <value component="OCN"> 0</value>
+      <value component="WAV"> 0</value>
+      <value component="GLC"> 0</value>
+      <value component="ICE"> 0</value>
+      <value component="ROF"> 0</value>
+      <value component="LND"> 0</value>
+      <value component="ESP"> 0</value>
+    </values>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Number of tasks per instance for each component. DO NOT EDIT: Set automatically by case.setup based on NTASKS, NINST and MULTI_DRIVER</desc>
+  </entry>
+
   <entry id="NTHRDS">
     <type>integer</type>
     <values>

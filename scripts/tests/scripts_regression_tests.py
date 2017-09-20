@@ -321,7 +321,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         prevtestdir = cls._testdirs[0]
-        cls._testdirs.append(testdir)
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test3")
 
         cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" \
