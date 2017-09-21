@@ -29,3 +29,6 @@ class ERR(RestartTest):
         expect(len(restart_list) >= 1, "No restart files found in {}".format(rest_root))
         restore_from_archive(self._case, rest_dir=
             os.path.join(rest_root, restart_list[0]))
+
+    def _case_two_custom_postrun_action(self):
+        restore_from_archive(self._case1)
