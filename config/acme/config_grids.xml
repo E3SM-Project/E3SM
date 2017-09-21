@@ -43,7 +43,7 @@
       <lname>a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid compset="DATM.+CLM">
+    <grid compset="(DATM|SATM).+CLM">
       <sname>1x1_smallvilleIA</sname>
       <lname>a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null</lname>
     </grid>
@@ -79,12 +79,12 @@
       <lname>a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid compset="DATM.+CLM">
+    <grid compset="(DATM|SATM).+CLM">
       <sname>hcru_hcru</sname>
       <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</lname>
     </grid>
 
-    <grid compset="DATM.+CLM">
+    <grid compset="(DATM_SATM).+CLM">
       <sname>NLDAS_NLDAS</sname>
       <lname>a%NLDAS_l%NLDAS_oi%NLDAS_r%NLDAS_m%NLDAS_g%null_w%null</lname>
     </grid>
