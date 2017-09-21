@@ -42,6 +42,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_get_next_stream, &
               MPAS_stream_mgr_get_next_field, &
               MPAS_stream_mgr_stream_exists, &
+              MPAS_stream_mgr_get_stream_interval, &
               MPAS_get_stream_filename, &
               MPAS_build_stream_filename
 
@@ -1504,6 +1505,90 @@ module mpas_stream_manager
         end if
 
     end function MPAS_stream_mgr_ringing_alarms !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_stream_interval
+    !
+    !> \brief Returns the minimum input/output interval for a stream
+    !> \author Dom Heinzeller
+    !> \date   28 August 2017
+    !> \details
+    !>  Returns the minimum input or output interval for a given stream attached
+    !>  to a stream manager. The mandatory input argument direction can take
+    !>  values of MPAS_STREAM_INPUT (return minimum input interval) or
+    !>  MPAS_STREAM_OUTPUT (return minimum output interval). If an error occurs,
+    !>  a time interval of length zero and an error flag != MPAS_STREAM_MGR_NOERR
+    !>  are returned.
+    !>  Note: This function doesn't support streamID regular expressions
+    !
+    !-----------------------------------------------------------------------
+    function MPAS_stream_mgr_get_stream_interval(manager, streamID, direction, ierr) result(interval)
+
+       implicit none
+
+       type (MPAS_TimeInterval_type) :: interval
+
+       type (MPAS_streamManager_type), intent(in) :: manager
+       character(len=*), intent(in) :: streamID
+       integer, intent(in) :: direction
+       integer, intent(out) :: ierr
+
+       type (mpas_stream_list_type), pointer :: streamCursor, alarmCursor
+
+       ierr = MPAS_STREAM_MGR_NOERR
+       nullify(streamCursor)
+       call mpas_set_timeInterval(interval, dt = 0.0)
+
+       if ( mpas_stream_list_query(manager % streams, streamID, streamCursor) ) then
+
+          if (direction == MPAS_STREAM_INPUT) then
+
+             if (streamCursor % direction == MPAS_STREAM_INPUT .or. streamCursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                alarmCursor => streamCursor % alarmList_in % head
+                call mpas_minimum_alarm_interval(manager % streamClock, alarmCursor, interval)
+             else if (streamCursor % direction == MPAS_STREAM_OUTPUT) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an input interval for output-only stream '// trim(streamID))
+             else if (streamCursor % direction == MPAS_STREAM_NONE) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an input interval for inactive stream '// trim(streamID))
+             else
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an input interval for stream '// trim(streamID) // ' with unknown direction')
+             end if
+
+          else if (direction == MPAS_STREAM_OUTPUT) then
+
+             if (streamCursor % direction == MPAS_STREAM_OUTPUT .or. streamCursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                alarmCursor => streamCursor % alarmList_out % head
+                call mpas_minimum_alarm_interval(manager % streamClock, alarmCursor, interval)
+             else if (streamCursor % direction == MPAS_STREAM_INPUT) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an output interval for input-only stream '// trim(streamID))
+             else if (streamCursor % direction == MPAS_STREAM_NONE) then
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an output interval for inactive stream '// trim(streamID))
+             else
+                ierr = MPAS_STREAM_MGR_ERROR
+                call MPAS_stream_mesg(manager % errorLevel, 'Requested an output interval for stream '// trim(streamID) // ' with unknown direction')
+             end if
+
+          else
+
+             ierr = MPAS_STREAM_MGR_ERROR
+             call MPAS_stream_mesg(manager % errorLevel, 'Invalid direction encountered in MPAS_stream_mgr_get_stream_interval')
+
+          end if
+
+       else
+
+          ierr = MPAS_STREAM_MGR_ERROR
+          call MPAS_stream_mesg(manager % errorLevel, 'Stream ''' // trim(streamID) // ''' does not exist. Cannot retrieve stream input/output intervals')
+
+       end if
+
+    end function MPAS_stream_mgr_get_stream_interval
 
 
     !-----------------------------------------------------------------------

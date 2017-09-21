@@ -665,6 +665,53 @@ module mpas_timekeeping
 
 
    !-----------------------------------------------------------------------
+   !  routine mpas_minimum_alarm_interval
+   !
+   !> \brief This function returns the shortest alarm interval in an alarm list
+   !> \author Dom Heinzeller
+   !> \date   08/23/2017
+   !> \details This function returns the shortest alarm interval in an alarm list.
+   !>   If the alarm list is empty or contains contains only one-off events (e.g.
+   !>   initial_only, final_only), the resulting interval is set to zero. This
+   !>   routine modifies the alarmListPtr and potentially leaves it in an
+   !>   undefined status upon exit.
+   !-----------------------------------------------------------------------
+   subroutine mpas_minimum_alarm_interval(clock, alarmListPtr, interval)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      type (MPAS_stream_list_type), pointer :: alarmListPtr
+      type (MPAS_TimeInterval_type), intent(out) :: interval
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+      type (MPAS_TimeInterval_type) :: zero_interval
+
+      call mpas_set_timeInterval(zero_interval, dt = 0.0)
+      call mpas_set_timeInterval(interval, dt = 0.0)
+
+      do while(associated(alarmListPtr))
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+            if (trim(alarmPtr % alarmID) == trim(alarmListPtr % name)) then
+               if (alarmPtr % isRecurring) then
+                  if (interval .eq. zero_interval) then
+                     interval = alarmPtr % ringTimeInterval
+                  else if (alarmPtr % ringTimeInterval .lt. interval) then
+                     interval = alarmPtr % ringTimeInterval
+                  end if
+               end if
+               exit
+            end if
+            alarmPtr => alarmPtr % next
+         end do
+         alarmListPtr => alarmListPtr % next
+      end do
+
+   end subroutine mpas_minimum_alarm_interval
+
+
+   !-----------------------------------------------------------------------
    !  routine mpas_alarm_get_next_ring_time
    !
    !> \brief This function returns the next ring time of an alarm.
@@ -746,7 +793,6 @@ module mpas_timekeeping
       !$omp barrier
 
    end subroutine mpas_print_alarm
-
 
 
    logical function mpas_is_alarm_ringing(clock, alarmID, interval, ierr)
