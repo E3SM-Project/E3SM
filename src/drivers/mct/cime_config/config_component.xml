@@ -1917,7 +1917,6 @@
     <type>integer</type>
     <values>
       <value component="ATM"> 0</value>
-      <value component="CPL"> 0</value>
       <value component="OCN"> 0</value>
       <value component="WAV"> 0</value>
       <value component="GLC"> 0</value>
