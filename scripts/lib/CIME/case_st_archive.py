@@ -67,14 +67,12 @@ def _get_file_date(filename):
             if len(date_tuple) == 4:
                 second = date_tuple[3]
             elif len(date_tuple) == 6:
-                logger.info("Attempting to get the current second from {}, source string: {}".format(date_tuple, filename))
                 # Create a datetime object with arbitrary year, month, day, but the correct time of day
                 # Then use _get_day_second to get the time of day in seconds
                 second = _get_day_second(datetime.datetime(1, 1, 1,
                                                            hour = date_tuple[3],
                                                            minute = date_tuple[4],
                                                            second = date_tuple[5]))
-        logger.info("input filename: {}, match: {}, date_tuple: {}, Year: {}".format(filename, date_str, date_tuple, year))
         return datetime.datetime(year, month, day) + datetime.timedelta(seconds = second)
 
     # Not a valid filename date format
