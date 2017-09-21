@@ -307,7 +307,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <REST_OPTION>$STOP_OPTION</REST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
-    <DOUT_S>TRUE</DOUT_S>
     <RESUBMIT>1</RESUBMIT>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>

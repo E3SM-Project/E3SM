@@ -235,8 +235,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._activate_case1()
             self._link_to_case2_output()
             self._component_compare_test(self._run_one_suffix, self._run_two_suffix, success_change=success_change)
-            # Go to case2 for the generate and compare baselines
-            self._activate_case2()
 
     def copy_case1_restarts_to_case2(self):
         """
