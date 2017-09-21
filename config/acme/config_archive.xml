@@ -118,7 +118,7 @@
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn</rpointer_file>
-      <rpointer_content>./mpascice$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
+      <rpointer_content>./mpaso$NINST_STRING.rst.$MPAS_DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
