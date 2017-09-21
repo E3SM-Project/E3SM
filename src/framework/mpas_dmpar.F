@@ -7963,7 +7963,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (mpas_exchange_field_list), pointer :: exchFieldListPtr
       type (mpas_communication_list), pointer :: commListPtr
 
-      !logical :: allReceived
       integer :: mpi_ierr, iErr_tmp
       integer :: threadNum
 
@@ -7971,6 +7970,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          iErr = MPAS_DMPAR_NOERR
       end if
 
+      exchangeGroup % allReceived = .false.
       threadNum = mpas_threading_get_thread_num()
 
       if (threadNum == 0) then
@@ -7981,10 +7981,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
            commListPtr % unpacked = .false.
            commListPtr => commListPtr % next
         end do
-        exchangeGroup % allReceived = .false.
       endif
-
-      call mpas_threading_barrier()
 
       ! asarje: changing the loop structures to reduce omp barrier calls to just one
       !         adding 'unpacked' boolean to the comm list
@@ -7996,9 +7993,9 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
         call mpas_threading_barrier()   !! to make sure 'allReceived' is not updated by thread 0 \
                                         !! before all threads check its value
         ! first let master thread check what has been received before unpacking
-        commListPtr => exchangeGroup % recvList
         if(threadNum == 0) then
           exchangeGroup % allReceived = .true.
+          commListPtr => exchangeGroup % recvList
           do while ( associated(commListPtr) )
             ! Poll receive list messages, and unpack as they are received.
             if ( .not. commListPtr % received ) then
@@ -8008,6 +8005,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             commListPtr => commListPtr % next 
           end do
         end if
+        !$omp flush
 
         call mpas_threading_barrier()   !! to make sure thread 0 has tested the list before \
                                         !! any thread attempts to read its status
