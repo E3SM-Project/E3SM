@@ -2,6 +2,7 @@
 CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
+import glob, os
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.restart_tests import RestartTest
 from CIME.case_st_archive import restore_from_archive
@@ -31,4 +32,10 @@ class ERR(RestartTest):
             os.path.join(rest_root, restart_list[0]))
 
     def _case_two_custom_postrun_action(self):
-        restore_from_archive(self._case1)
+        # Link back to original case1 name
+        for case_file in glob.iglob(os.path.join(self._case1.get_value("RUNDIR"),
+                                                 "*.nc.{}".format(self._run_one_suffix))):
+            orig_file = case_file[:-(1+len(self._run_one_suffix))]
+            if not os.path.isfile(orig_file):
+                os.symlink(case_file, orig_file)
+
