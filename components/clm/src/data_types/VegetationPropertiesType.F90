@@ -61,6 +61,7 @@ module VegetationPropertiesType
      real(r8), allocatable :: fr_fcel       (:)   ! fine root litter cellulose fraction
      real(r8), allocatable :: fr_flig       (:)   ! fine root litter lignin fraction
      real(r8), allocatable :: leaf_long     (:)   ! leaf longevity (yrs)
+     real(r8), allocatable :: froot_long    (:)   ! fine root longevity (yrs)
      real(r8), allocatable :: evergreen     (:)   ! binary flag for evergreen leaf habit (0 or 1)
      real(r8), allocatable :: stress_decid  (:)   ! binary flag for stress-deciduous leaf habit (0 or 1)
      real(r8), allocatable :: season_decid  (:)   ! binary flag for seasonal-deciduous leaf habit (0 or 1)
@@ -132,6 +133,7 @@ module VegetationPropertiesType
      real(r8), allocatable :: bbbopt(:)           !Ball-Berry stomatal conductance intercept
      real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
      real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
+     real(r8), allocatable :: br_xr(:)            !Base rate for excess respiration
      real(r8)              :: tc_stress           !Critial temperature for moisture stress
 
 
@@ -154,7 +156,7 @@ contains
     use pftvarcon , only : c3psn, slatop, dsladlai, leafcn, flnr, woody
     use pftvarcon , only : lflitcn, frootcn, livewdcn, deadwdcn, froot_leaf, stem_leaf, croot_stem
     use pftvarcon , only : flivewd, fcur, lf_flab, lf_fcel, lf_flig, fr_flab, fr_fcel, fr_flig
-    use pftvarcon , only : leaf_long, evergreen, stress_decid, season_decid
+    use pftvarcon , only : leaf_long, froot_long, evergreen, stress_decid, season_decid
     use pftvarcon , only : fertnitro, graincn, fleafcn, ffrootcn, fstemcn, dwood
     use pftvarcon , only : presharv, convfact, fyield
     use pftvarcon , only : leafcp,lflitcp, frootcp, livewdcp, deadwdcp,graincp
@@ -169,7 +171,7 @@ contains
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
     use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
-    use pftvarcon , only : bbbopt, mbbopt, nstor, tc_stress, lmrhd 
+    use pftvarcon , only : bbbopt, mbbopt, nstor, br_xr, tc_stress, lmrhd 
     !
     
     class (vegetation_properties_type) :: this
@@ -217,6 +219,7 @@ contains
     allocate(this%fr_fcel       (0:numpft))        ; this%fr_fcel      (:)   =nan
     allocate(this%fr_flig       (0:numpft))        ; this%fr_flig      (:)   =nan
     allocate(this%leaf_long     (0:numpft))        ; this%leaf_long    (:)   =nan
+    allocate(this%froot_long    (0:numpft))        ; this%froot_long   (:)   =nan
     allocate(this%evergreen     (0:numpft))        ; this%evergreen    (:)   =nan
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =nan
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =nan
@@ -271,6 +274,7 @@ contains
     allocate( this%bbbopt(0:numpft))                             ; this%bbbopt(:)                =nan
     allocate( this%mbbopt(0:numpft))                             ; this%mbbopt(:)                =nan
     allocate( this%nstor(0:numpft))                              ; this%nstor(:)                 =nan
+    allocate( this%br_xr(0:numpft))                              ; this%br_xr(:)                 =nan
 
     do m = 0,numpft
 
@@ -317,6 +321,7 @@ contains
        this%fr_fcel(m)      = fr_fcel(m)
        this%fr_flig(m)      = fr_flig(m)
        this%leaf_long(m)    = leaf_long(m)
+       this%froot_long(m)   = froot_long(m)
        this%evergreen(m)    = evergreen(m)
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)
@@ -354,7 +359,8 @@ contains
        this%bbbopt(m)       = bbbopt(m)
        this%mbbopt(m)       = mbbopt(m)
        this%nstor(m)        = nstor(m)
-
+       this%br_xr(m)        = br_xr(m)
+ 
     end do
     
     do m = 0,numpft

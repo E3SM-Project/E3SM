@@ -90,6 +90,7 @@ contains
          c = filter_soilc(fc)
          ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_leaf_col(c) * dt
          ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_deadstem_col(c) * dt
+         ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_npool_col(c) * dt
       end do
 
       if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode)) then

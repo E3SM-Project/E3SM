@@ -33,7 +33,7 @@ module  PhotosynthesisMod
   use clm_varctl          , only : cnallocate_carbonphosphorus_only
   use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
-    
+  use CNSharedParamsMod   , only : CNParamsShareInst      
   !
   implicit none
   save
@@ -559,7 +559,7 @@ contains
             !
             ! Then scale this value at the top of the canopy for canopy depth
 
-            lmr25top = 2.525e-6_r8 * (1.5_r8 ** ((25._r8 - 20._r8)/10._r8))
+            lmr25top = 2.525e-6_r8 * (CNParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
             lmr25top = lmr25top * lnc(p) / 12.e-06_r8
 
          else

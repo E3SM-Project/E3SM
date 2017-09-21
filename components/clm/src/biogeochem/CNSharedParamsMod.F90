@@ -12,7 +12,8 @@ module CNSharedParamsMod
   ! overrides the protected functionality with PGI
 
   type, public  :: CNParamsShareType
-      real(r8) :: Q10         ! temperature dependence
+      real(r8) :: Q10_mr      ! temperature dependence for maintenance respiraton
+      real(r8) :: Q10_hr      ! temperature dependence for heterotrophic respiration
       real(r8) :: minpsi      ! minimum soil water potential for heterotrophic resp	  
       real(r8) :: cwd_fcel    ! cellulose fraction of coarse woody debris
       real(r8) :: cwd_flig    ! lignin fraction of coarse woody debris
@@ -53,7 +54,13 @@ contains
     tString='q10_mr'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNParamsShareInst%Q10=tempr
+    CNParamsShareInst%Q10_mr=tempr
+
+    tString='q10_hr'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    CNParamsShareInst%Q10_hr=tempr
+
 
     tString='minpsi_hr'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)

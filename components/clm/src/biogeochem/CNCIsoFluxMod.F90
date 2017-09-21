@@ -145,6 +145,11 @@ contains
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
       call CIsoFluxCalc(&
+           isotopeflux_vars%xr_patch                            , carbonflux_vars%xr_patch, &
+           isotopestate_vars%cpool_patch                        , carbonstate_vars%cpool_patch, &
+           num_soilp                                            , filter_soilp, 1._r8, 0, isotope)  
+
+      call CIsoFluxCalc(&
            isotopeflux_vars%leaf_xsmr_patch                     , carbonflux_vars%leaf_xsmr_patch, &
            isotopestate_vars%totvegc_patch                      , carbonstate_vars%totvegc_patch, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
@@ -533,6 +538,11 @@ contains
          isotopestate_vars%gresp_xfer_patch                          , carbonstate_vars%gresp_xfer_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
+    call CIsoFluxCalc(&
+         isotopeflux_vars%m_cpool_to_litter_patch               , carbonflux_vars%m_cpool_to_litter_patch, &
+         isotopestate_vars%cpool_patch                          , carbonstate_vars%cpool_patch, &
+         num_soilp                                              , filter_soilp, 1._r8, 0, isotope)            
+
     ! call routine to shift patch-level gap mortality fluxes to column , for isotopes
     ! the non-isotope version of this routine is in CNGapMortalityMod.F90.
 
@@ -673,6 +683,11 @@ contains
          isotopestate_vars%totvegc_patch                             , carbonstate_vars%totvegc_patch, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
+    call CIsoFluxCalc(&
+         isotopeflux_vars%hrv_cpool_to_litter_patch                  , carbonflux_vars%hrv_cpool_to_litter_patch, &
+         isotopestate_vars%cpool_patch                               , carbonstate_vars%cpool_patch, &
+         num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
+
     ! call routine to shift patch-level gap mortality fluxes to column, for isotopes
     ! the non-isotope version of this routine is in CNGapMortalityMod.F90.
 
@@ -707,7 +722,8 @@ contains
 
     associate(                                           &
          croot_prof =>   cnstate_vars%croot_prof_patch , & !  [real(r8) (:,:) ]  (1/m) profile of coarse roots                          
-         stem_prof  =>   cnstate_vars%stem_prof_patch    & !  [real(r8) (:,:) ]  (1/m) profile of stems                                 
+         stem_prof  =>   cnstate_vars%stem_prof_patch,   & !  [real(r8) (:,:) ]  (1/m) profile of stems                                 
+         leaf_prof  =>   cnstate_vars%leaf_prof_patch    & !  [real(r8) (:,:) ]  (1/m) profile of leaves      
          )
 
       ! patch-level fire mortality fluxes
@@ -822,6 +838,17 @@ contains
            isotopestate_vars%gresp_xfer_patch                  , carbonstate_vars%gresp_xfer_patch, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
+     call CIsoFluxCalc(&
+           isotopeflux_vars%m_cpool_to_fire_patch              , carbonflux_vars%m_cpool_to_fire_patch, &
+           isotopestate_vars%cpool_patch                       , carbonstate_vars%cpool_patch, &
+           num_soilp                                           , filter_soilp, 1._r8, 0, isotope)   
+
+     call CIsoFluxCalc(&
+           isotopeflux_vars%m_cpool_to_litter_fire_patch       , carbonflux_vars%m_cpool_to_litter_fire_patch, &
+           isotopestate_vars%cpool_patch                       , carbonstate_vars%cpool_patch, &
+           num_soilp                                           , filter_soilp, 1._r8, 0, isotope) 
+
+
       if (.not. is_active_betr_bgc) then
 
          ! calculate the column-level flux of deadstem and deadcrootc to cwdc as the result of fire mortality.
@@ -839,6 +866,10 @@ contains
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
                              isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
+                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
+                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
+                             isotopeflux_vars%m_cpool_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
+
                      end do
                   end if
                end if
@@ -991,7 +1022,7 @@ contains
           m_livecrootc_xfer_to_litter    =>    carbonflux_vars%m_livecrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
           m_deadcrootc_xfer_to_litter    =>    carbonflux_vars%m_deadcrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
           m_gresp_xfer_to_litter         =>    carbonflux_vars%m_gresp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          
+          m_cpool_to_litter              =>    carbonflux_vars%m_cpool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]  
           gap_mortality_c_to_litr_met_c  =>    carbonflux_vars%gap_mortality_c_to_litr_met_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
           gap_mortality_c_to_litr_cel_c  =>    carbonflux_vars%gap_mortality_c_to_litr_cel_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
           gap_mortality_c_to_litr_lig_c  =>    carbonflux_vars%gap_mortality_c_to_litr_lig_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
@@ -1049,6 +1080,9 @@ contains
                            m_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
                       gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
                            m_gresp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                      gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
+                           m_cpool_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+
 
                       ! transfer gap mortality carbon fluxes
                       gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
@@ -1134,7 +1168,8 @@ contains
           hrv_livecrootc_xfer_to_litter    =>    carbonflux_vars%hrv_livecrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
           hrv_deadcrootc_xfer_to_litter    =>    carbonflux_vars%hrv_deadcrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
           hrv_gresp_xfer_to_litter         =>    carbonflux_vars%hrv_gresp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          
+          hrv_cpool_to_litter              =>    carbonflux_vars%hrv_cpool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]      
+
           chrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col           , & ! InOut:  [real(r8) (:)   ]                                                    
           chrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col          , & ! InOut:  [real(r8) (:)   ]                                                    
           harvest_c_to_litr_met_c          =>    carbonflux_vars%harvest_c_to_litr_met_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
@@ -1192,6 +1227,9 @@ contains
                            hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
                            hrv_gresp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                      harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                           hrv_cpool_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+
 
                       ! transfer harvest mortality carbon fluxes
                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &

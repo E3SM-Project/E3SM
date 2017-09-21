@@ -5,13 +5,14 @@ module CNC14DecayMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use clm_time_manager       , only : get_step_size, get_days_per_year
+  use clm_time_manager       , only : get_curr_date, get_step_size, get_days_per_year
   use clm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
   use clm_varcon             , only : secspday
   use clm_varctl             , only : spinup_state
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
+  use clm_varctl             , only : nu_com
   !
   implicit none
   save
@@ -35,7 +36,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine C14Decay( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       c14_carbonstate_vars)
+       cnstate_vars, c14_carbonstate_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the radioactive decay of C14
@@ -47,8 +48,10 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(carbonstate_type) , intent(inout) :: c14_carbonstate_vars
+    type(cnstate_type)     , intent(in)    :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
+    integer  :: yr, mon, day, tod, offset
     integer  :: fp,j,l,p,fc,c,i
     real(r8) :: dt            ! radiation time step (seconds)
     real(r8) :: half_life
@@ -88,6 +91,7 @@ contains
          )
 
       ! set time steps
+      call get_curr_date(yr, mon, day, tod, offset)
       dt = real( get_step_size(), r8 )
       days_per_year = get_days_per_year()
 
@@ -112,7 +116,12 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
+                  if (spinup_term .eq. 1 .and. yr .ge. 40 .and. nu_com .eq. 'RD') then
+                      decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * &
+                          (spinup_term / cnstate_vars%scalaravg_col(c,j)) * dt)
+                  else
+                      decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
+                  end if
                end do
             end do
          end do ! end of columns loop

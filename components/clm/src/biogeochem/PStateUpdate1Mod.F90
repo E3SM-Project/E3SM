@@ -91,6 +91,7 @@ contains
          c = filter_soilc(fc)
          ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_leaf_col(c) * dt
          ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_deadstem_col(c) * dt
+         ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_ppool_col(c) * dt
       end do
 
       !------------------------------------------------------------------
