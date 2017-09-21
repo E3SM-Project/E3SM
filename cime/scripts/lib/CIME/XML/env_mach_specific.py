@@ -112,8 +112,7 @@ class EnvMachSpecific(EnvBase):
             source_cmd = ""
 
         if (module_system in ["module", "module_lmod"]):
-          # return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
-            return ""
+            return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
