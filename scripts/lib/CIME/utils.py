@@ -1093,13 +1093,21 @@ def transform_vars(text, case=None, subgroup=None, overrides=None, default=None)
             repl = overrides[variable.lower()]
             logger.debug("from overrides: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
             text = text.replace(whole_match, str(repl))
+
+        elif case is not None and hasattr(case, variable.lower()) and getattr(case, variable.lower()) is not None:
+            repl = getattr(case, variable.lower())
+            logger.debug("from case members: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
+            text = text.replace(whole_match, str(repl))
+
         elif case is not None and case.get_value(variable.upper(), subgroup=subgroup) is not None:
             repl = case.get_value(variable.upper(), subgroup=subgroup)
             logger.debug("from case: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
             text = text.replace(whole_match, str(repl))
+
         elif default is not None:
             logger.debug("from default: in {}, replacing {} with {}".format(text, whole_match, str(default)))
             text = text.replace(whole_match, default)
+
         else:
             # If no queue exists, then the directive '-q' by itself will cause an error
             if "-q {{ queue }}" in text:
