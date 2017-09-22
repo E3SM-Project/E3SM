@@ -20,7 +20,12 @@ class CaseFake(object):
             os.makedirs(case_root)
         self.set_value('CASEROOT', case_root)
         casename = os.path.basename(case_root)
-        self.set_value('CIME_OUTPUT_ROOT','/tmp')
+        # Typically, CIME_OUTPUT_ROOT is independent of the case. Here,
+        # we nest it under CASEROOT so that (1) tests don't interfere
+        # with each other; (2) a cleanup that removes CASEROOT will also
+        # remove CIME_OUTPUT_ROOT.
+        self.set_value('CIME_OUTPUT_ROOT',
+                       os.path.join(case_root, 'CIME_OUTPUT_ROOT'))
         self.set_value('CASE', casename)
         self.set_value('CASEBASEID', casename)
         self.set_value('RUN_TYPE', 'startup')
