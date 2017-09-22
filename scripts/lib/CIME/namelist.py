@@ -1109,6 +1109,14 @@ class Namelist(object):
                 self.set_variable_value(group_name, variable_name, merged_val,
                                         var_size=len(merged_val))
 
+    def get_group_variables(self, group_name):
+        group_variables = {}
+        group = self._groups[group_name]
+        for name in sorted(group.keys()):
+            value = group[name][0]
+            group_variables[name] = value
+        return group_variables
+
     def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
         """Write a Fortran namelist to a file.
 

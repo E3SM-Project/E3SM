@@ -179,7 +179,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #--------------------------------
     # (3) Construct and write out drv_flds_in
     #--------------------------------
-    write_drv_flds_in_file(case, nmlgen, confdir, files)
+    write_drv_flds_in_file(case, nmlgen, files)
 
 ###############################################################################
 def write_drv_in_file(case, nmlgen, confdir):
@@ -201,7 +201,6 @@ def write_seq_maps_file(case, nmlgen, confdir):
     for comp_class in case.get_values("COMP_CLASSES"):
         if comp_class not in exclude_list:
             gridvalue[comp_class.lower()] = case.get_value(comp_class + "_GRID" )
-            component = case.get_value("COMP_" + comp_class)
             if case.get_value(comp_class + "_GRID" ) == 'null':
                 ignore_component[comp_class.lower()] = True
             else:
@@ -236,14 +235,12 @@ def write_seq_maps_file(case, nmlgen, confdir):
     nmlgen.write_seq_maps(seq_maps_file)
 
 ###############################################################################
-def write_drv_flds_in_file(case, nmlgen, confdir, files):
+def write_drv_flds_in_file(case, nmlgen, files):
 ###############################################################################
     # In thte following, all values come simply from the infiles - no default values need to be added
     # FIXME - do want to add the possibility that will use a user definition file for drv_flds_in
 
     caseroot = case.get_value('CASEROOT')
-
-    namelist_file = os.path.join(confdir, "drv_flds_in")
 
     nmlgen.add_default('drv_flds_in_files')
     drvflds_files = nmlgen.get_default('drv_flds_in_files')
