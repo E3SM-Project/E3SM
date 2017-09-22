@@ -134,7 +134,7 @@ _TEST_SUITES = {
                          "ERS.f09_g16_g.MPASLISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI"
-                        ,"PEM_Ld1_P48x2.ne4_oQU240.A_WCYCL1850"
+                        ,"PEM_Ld1_P24x2.ne4_oQU240.A_WCYCL1850"
                         )),
 
     "acme_integration" : (("acme_developer", "acme_atm_integration"),"03:00:00",
