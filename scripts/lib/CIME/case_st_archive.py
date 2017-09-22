@@ -67,8 +67,10 @@ def _get_ninst_info(case, compclass):
     for i in range(1,ninst+1):
         if ninst > 1:
             ninst_strings.append('_' + '{:04d}'.format(i))
-        else:
-            ninst_strings.append('')
+# KDR This doesn't do what's intended.  The result is ninst_strings is not empty.
+#     It has "''" in it.  
+##        else:
+##            ninst_strings.append('')
 
     logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
@@ -77,7 +79,7 @@ def _get_ninst_info(case, compclass):
 def _get_component_archive_entries(case, archive):
 ###############################################################################
     """
-    Each time this is generator function is called, it yields a tuple
+    Each time this generator function is called, it yields a tuple
     (archive_entry, compname, compclass) for one component in this
     case's compset components.
     """
@@ -89,6 +91,10 @@ def _get_component_archive_entries(case, archive):
         archive_entry = archive.get_entry(compname)
         if archive_entry is not None:
             yield(archive_entry, compname, archive_entry.get("compclass"))
+
+    if compname not in compset_comps:
+        # KDR Say if something is being skipped
+        logger.info('Skipping compname %s' %(compname))
 
 ###############################################################################
 def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
@@ -129,7 +135,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                     logger.info("rpointer_content not unset? {}".format(rpointer_content))
                     if not ninst_strings:
                         ninst_strings = ["empty"]
-                    # KDR indenting all the rest 4 spaces to put under control of 'if ... unset'
+                    # KDR indented 4 spaces, up to 'else:' to put under control of 'if ... unset'
                     for ninst_string in ninst_strings:
                         rpointer_file = temp_rpointer_file
                         rpointer_content = temp_rpointer_content
@@ -201,10 +207,13 @@ def _archive_history_files(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
-            if compname == 'dart':
-                newsuffix = casename + suffix
-            elif compname.find('mpas') == 0:
-                newsuffix = compname + '.*' + suffix
+            if compname.find('mpas') == 0:
+               newsuffix = compname + '.*' + suffix
+# KDR I've chosen to use compname 'cam' for DART output from CAM assims,
+#     inside compclass 'esp', to distinguish it from other components in multi-component assims.
+#     All CAM+DART output conforms to CESM naming conventions (2017-9-1).
+            elif ninst_string:
+               newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
             else:
                 if ninst_string:
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
@@ -336,6 +345,11 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 pattern = compname + suffix + '_'.join(datename.rsplit('-', 1))
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+# KDR CAM+DART doesn't need special treatment as of 2017-9-1, so this is commented out.
+#             if compclass == 'esp' and 'cam' in pattern:
+#                 pattern = suffix + datename
+#                 pfile = re.compile(pattern)
+#                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
                 pattern = r"{}\.{}\d*.*".format(casename, compname)
                 if "dart" not in pattern:
@@ -373,21 +387,21 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
                     last_restart_file_fn(srcfile, destfile)
-                    logger.info("{} \n{} to \n{}".format(
-                        last_restart_file_fn_msg, srcfile, destfile))
+                    logger.info("{} {} \n{} to \n{}".format(
+                        "datename_is_last", last_restart_file_fn_msg, srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         shutil.copy(srcfile, destfile)
-                        logger.info("copying \n{} to \n{}".format(srcfile, destfile))
+                        logger.info("datename_is_last + histfiles_for_restart copying \n{} to \n{}".format(srcfile, destfile))
                 else:
                     # Only archive intermediate restarts if requested - otherwise remove them
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
                         srcfile = os.path.join(rundir, restfile)
                         destfile = os.path.join(archive_restdir, restfile)
-                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
+# KDR redundant?                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         archive_file_fn(srcfile, destfile)
