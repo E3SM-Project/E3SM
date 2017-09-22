@@ -898,9 +898,12 @@
      config_machines.xml file in your personal .cime directory and
      then changing the machine name (MACH="homebrew") to
      your machine name and the NODENAME_REGEX to something matching
-     your machine's hostname.  In this case, you should not need the
+     your machine's hostname.  With (2), you should not need the
      `--machine` argument, because the machine should be determined
-     automatically.
+     automatically.  However, with (2), you will also need to copy the
+     homebrew-specific settings in config_compilers.xml into a
+     config_compilers.xml file in your personal .cime directory, again
+     changing the machine name (MACH="homebrew") to your machine name.
 
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
