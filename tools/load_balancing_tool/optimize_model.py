@@ -75,7 +75,7 @@ class ModelData:
         self.cost = list(tup[0])
         self.ntasks = list(tup[1])
         for j in self.ntasks:
-            if j % self.blocksize:
+            if j > 1 and j % self.blocksize:
                 logger.warning("WARNING: %s pe %d not divisible by "
                                "blocksize %d. Results may be invalid\n",
                                name, j, self.blocksize)
@@ -126,7 +126,8 @@ class OptimizeModel(object):
 
             # add in data for maxtasks if not available
             # assume same scaling factor as previous interval
-            if m.ntasks[-1] < self.maxtasks:
+
+            if len(m.ntasks) > 1 and m.ntasks[-1] < self.maxtasks:
                 if m.cost[-2] <= 0.0:
                     factor = 1.0
                 elif len(m.ntasks) > 1:
