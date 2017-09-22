@@ -80,7 +80,7 @@ class A_RunUnitTests(unittest.TestCase):
         #
         # This is analogous to running:
         #     python -m unittest discover -s CIME/tests -t .
-        # from cime/utils/python
+        # from cime/scripts/lib
         #
         # Yes, that means we have a bunch of unit tests run from this one unit
         # test.
