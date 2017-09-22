@@ -178,8 +178,8 @@ class EnvBatch(EnvBase):
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def set_job_defaults(self, batch_jobs, case):
-        walltime    = case.get_value("USER_REQUESTED_WALLTIME")
-        force_queue = case.get_value("USER_REQUESTED_QUEUE")
+        walltime    = case.get_value("USER_REQUESTED_WALLTIME") if case.get_value("USER_REQUESTED_WALLTIME") else None
+        force_queue = case.get_value("USER_REQUESTED_QUEUE") if case.get_value("USER_REQUESTED_QUEUE") else None
 
         if self._batchtype is None:
             self._batchtype = self.get_batch_system_type()
