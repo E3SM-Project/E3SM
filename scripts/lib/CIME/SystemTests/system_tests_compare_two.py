@@ -179,10 +179,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
     def build_phase(self, sharedlib_only=False, model_only=False):
         if self._separate_builds:
             self._activate_case1()
-            sharedlibroot = self._case1.get_value("SHAREDLIBROOT")
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
             self._activate_case2()
-            self._case.set_value("SHAREDLIBROOT", sharedlibroot)
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
@@ -258,8 +256,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         Determines and returns caseroot for case2
 
-        Assumes that self._case1 is already set to point to the case1 object,
-        and that self._run_two_suffix is already set.
+        Assumes that self._case1 is already set to point to the case1 object
         """
         casename2 = self._case1.get_value("CASE")
         caseroot1 = self._case1.get_value("CASEROOT")
@@ -268,6 +265,17 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         caseroot2 = os.path.join(caseroot1, "case2", casename2)
 
         return caseroot2
+
+    def _get_output_root2(self):
+        """
+        Determines and returns cime_output_root for case2
+
+        Assumes that self._case1 is already set to point to the case1 object
+        """
+        # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
+        output_root2 = os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
+                                    self._case1.get_value("CASE"), "case2")
+        return output_root2
 
     def _setup_cases_if_not_yet_done(self):
         """
@@ -298,13 +306,10 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             self._case2 = self._case_from_existing_caseroot(self._caseroot2)
         else:
             try:
-                # Since case 2 has the same name as case1 its CIME_OUTPUT_ROOT must also be different
-                case2_output_root = os.path.join(self._case1.get_value("CIME_OUTPUT_ROOT"),
-                                                  self._case1.get_value("CASE"), "case2")
                 self._case2 = self._case1.create_clone(
                     self._caseroot2,
                     keepexe = not self._separate_builds,
-                    cime_output_root = case2_output_root)
+                    cime_output_root = self._get_output_root2())
                 self._setup_cases()
             except:
                 # If a problem occurred in setting up the test cases, it's
@@ -373,6 +378,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         # Set up case 2
         self._activate_case2()
+        self._set_case2_paths()
         self._common_setup()
         self._case_two_setup()
         # Flush the case so that, if errors occur later, then at least case2 is
@@ -381,6 +387,33 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
+
+    def _set_case2_paths(self):
+        """
+        Sets some paths in case2 to non-default values
+        """
+        if self._separate_builds:
+            # Share the sharedlibroot area with case1
+            self._case2.set_value("SHAREDLIBROOT",
+                                  self._case1.get_value("SHAREDLIBROOT"))
+
+            # Put the case2 bld directory directly under the case2
+            # CIME_OUTPUT_ROOT, rather than following the typical
+            # practice of putting it under CIME_OUTPUT_ROOT/CASENAME,
+            # because the latter leads to too-long paths that make some
+            # compilers fail.
+            #
+            # This only works because case2's CIME_OUTPUT_ROOT is unique
+            # to this case. (If case2's CIME_OUTPUT_ROOT were in some
+            # more generic location, then this would result in its bld
+            # directory being inadvertently shared with other tests.)
+            case2_exeroot = os.path.join(self._get_output_root2(), "bld")
+            self._case2.set_value("EXEROOT", case2_exeroot)
+
+        # Put the case2 run directory alongside its bld directory for
+        # consistency. (See above notes about EXEROOT.)
+        case2_rundir = os.path.join(self._get_output_root2(), "run")
+        self._case2.set_value("RUNDIR", case2_rundir)
 
     def _force_case2_settings(self):
         """
