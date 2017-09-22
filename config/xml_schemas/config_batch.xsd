@@ -79,7 +79,7 @@
         <xs:element minOccurs="0" ref="directives"/>
 
   <!-- queues: The list of queue options for this machine, not all system queues need be listed
-       attributes of this field include walltimemin, walltimemax, jobmin and jobmax and strict
+       attributes of this field include walltimemin, walltimemax, nodemin and nodemax and strict
     default wallclock time for a job is the walltimemax in this field -->
         <xs:element minOccurs="0" ref="queues"/>
       </xs:sequence>
@@ -142,8 +142,6 @@
         <xs:extension base="xs:NCName">
           <xs:attribute name="default" type="xs:boolean"/>
           <xs:attribute name="strict" type="xs:boolean"/>
-          <xs:attribute name="jobmax" type="xs:integer"/>
-          <xs:attribute name="jobmin" type="xs:integer"/>
           <xs:attribute name="nodemax" type="xs:integer"/>
           <xs:attribute name="nodemin" type="xs:integer"/>
           <xs:attribute name="jobname" type="xs:NCName"/>
