@@ -9,10 +9,15 @@ from CIME.simple_compare            import compare_files
 logger = logging.getLogger(__name__)
 
 
-def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
-                 user_mods_dir=None):
+def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
+                      cime_output_root=None, exeroot=None, rundir=None,
+                      user_mods_dir=None):
     """
     Create a case clone
+
+    If exeroot or rundir are provided (not None), sets these directories
+    to the given paths; if not provided, uses default values for these
+    directories. It is an error to provide exeroot if keepexe is True.
     """
     if cime_output_root is None:
         cime_output_root = case.get_value("CIME_OUTPUT_ROOT")
@@ -46,7 +51,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     # try to make the new output directory and raise an exception
     # on any error other than directory already exists.
     if os.path.isdir(cime_output_root):
-        expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable"
+        expect(os.access(cime_output_root, os.W_OK), "Directory {} is not writable "
                "by this user.  Use the --cime-output-root flag to provide a writable "
                "scratch directory".format(cime_output_root))
     else:
@@ -71,6 +76,14 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     # set machdir
     if mach_dir is not None:
         newcase.set_value("MACHDIR", mach_dir)
+
+    # set exeroot and rundir if requested
+    if exeroot is not None:
+        expect(not keepexe, "create_case_clone: if keepexe is True, "
+               "then exeroot cannot be set")
+        newcase.set_value("EXEROOT", exeroot)
+    if rundir is not None:
+        newcase.set_value("RUNDIR", rundir)
 
     # Set project id
     # Note: we do not just copy this from the clone because it seems likely that

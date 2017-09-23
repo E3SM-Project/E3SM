@@ -1395,9 +1395,11 @@ class Case(object):
                     logger.warn("Leaving broken case dir {}".format(self._caseroot))
 
             raise
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
-                 user_mods_dir=None):
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
+                     cime_output_root=None, exeroot=None, rundir=None,
+                     user_mods_dir=None):
         """ moved to case_clone """
         return create_case_clone(self, newcase, keepexe=keepexe, mach_dir=mach_dir,
-                          project=project, cime_output_root=cime_output_root,
-                          user_mods_dir=user_mods_dir)
+                                 project=project, cime_output_root=cime_output_root,
+                                 exeroot=exeroot, rundir=rundir,
+                                 user_mods_dir=user_mods_dir)
