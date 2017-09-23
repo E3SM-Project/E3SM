@@ -982,10 +982,15 @@ contains
           call t_startf('betr drainage')
           call ep_betr%StepWithDrainage(bounds_clump, col_pp)
           call t_stopf('betr drainage')
-
-          call t_startf('betr balchk')
-          call ep_betr%MassBalanceCheck(bounds_clump)
-          call t_stopf('betr balchk')
+          if (nstep < 2 )then
+            if (masterproc) then
+              write(iulog,*) '--WARNING-- skipping BeTR balance check for first timestep'
+            end if
+          else
+            call t_startf('betr balchk')
+            call ep_betr%MassBalanceCheck(bounds_clump)
+            call t_stopf('betr balchk')
+          endif
           call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
 
           if(is_active_betr_bgc)then
