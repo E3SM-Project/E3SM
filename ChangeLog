@@ -1,6 +1,87 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 9-25-2017
+Tag: cime5.3.0-alpha.36
+Answer Changes: None
+Tests:  scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Big refactor to queue selection.
+    - Shorter paths for case2 using system_tests_compare_two.
+    - Update atm coupling frequency for high-resolution grids.
+    - Add '-framework Accelerate' to LDFLAGS on a mac.
+    - Fix E3SM idmap check.
+    - Fix pylint issues.
+    - ERR test rework.
+    - New error trap if invalid "idmap" file is present in seq_maps.rc.
+    - Yellowstone tasps per node correction.
+    - Added new CAM-SE FVM grids and removed incorrect aliases.
+    - Fix generate and compare baseline functions.
+    - Add a derived variable NTASKS_PER_INST_COMP where COMP is the component
+      name (ATM, LND, etc)
+    - Don't check_if_comp_var to return a new vid if it's not a comp var.
+
+User interface changes: 
+    - jobmin and jobmax gone from config_batch.xml
+    - All CAM-SE grid aliases for data ocean models require a mask.
+
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6049c79 Merge pull request #1918 from ESMCI/jgfouca/queue_selection_refactor_2
+56d71c5 Merge pull request #1919 from billsacks/compare_two_shorter_path
+e1b549d Merge pull request #1921 from gold2718/atm_ncpl_mods
+f5ac341 Merge pull request #1906 from billsacks/mac_lapack
+c15c0ad Merge pull request #1917 from ESMCI/mvertens/fix_acme_idmapcheck
+f722595 fix pylint issues
+19922e1 Merge pull request #1912 from jedwards4b/err_test_rework
+b1d1b9b Merge pull request #1893 from ESMCI/mvertens/trip_invalid_idmap
+c330b46 Merge pull request #1911 from jedwards4b/yellowstone_tpn_correction
+0136051 Merge pull request #1896 from gold2718/fix_camse_grids
+e036093 Merge pull request #1904 from jedwards4b/fix_gen_and_comp
+f0522a6 Merge pull request #1900 from jedwards4b/NTASKS_PER_INST_XXX
+f5aafff Merge pull request #1901 from ESMCI/jgfouca/xmlquery_minor_fix
+2daf8aa Minor pylint fix, make get_queue_specs public
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/config_batch.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_headers.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/env_batch.xsd
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_clone.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-19-2017
 Tag: cime5.3.0-alpha.35
 Answer Changes: None
