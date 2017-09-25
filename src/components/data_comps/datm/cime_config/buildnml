@@ -38,8 +38,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
-    atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
     datm_mode = case.get_value("DATM_MODE")
     datm_topo = case.get_value("DATM_TOPO")
     datm_presaero = case.get_value("DATM_PRESAERO")
@@ -146,14 +144,18 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # set variables that are not per-stream
-    if datm_mode == 'CPLHISTForcingForOcnIce':
-        if atm_domain_file != "UNSET":
-            if case.get_value('ATM_DOMAIN_FILE') != 'UNSET':
-                nmlgen.add_default("domainfile", value=atm_domain_file, ignore_abs_path=True)
+    if datm_mode == 'CPLHISTForcing':
+        datm_cplhist_domain_file = case.get_value("DATM_CPLHIST_DOMAIN_FILE")
+        if datm_cplhist_domain_file == 'null':
+            logger.info("   ....  Obtaining DATM model domain info from first stream file: {}".format(streams[0]))
         else:
-            nmlgen.add_default("domainfile", value='null')
+            logger.info("   ....  Obtaining DATM model domain info from file {}".format(streams[0]))
+            logger.info("   ....    lonname must be xc in {}".format(streams[0]))
+            logger.info("   ....    latname must be yc in {}".format(streams[0]))
+        nmlgen.add_default("domainfile", value=datm_cplhist_domain_file)
     else:
+        atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
+        atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
         full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
 

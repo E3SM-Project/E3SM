@@ -82,12 +82,13 @@
 
   <entry id="DATM_TOPO">
     <type>char</type>
-    <valid_values>none,observed</valid_values>
+    <valid_values>none,observed,cplhist</valid_values>
     <default_value>observed</default_value>
     <values match="last">
       <!-- Only needed for compsets with active land; for other compsets, turn it off -->
       <value compset="_SLND">none</value>
       <value compset="_DLND">none</value>
+      <value compset="_DATM%CPLHIST">cplhist</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -117,7 +118,7 @@
     <default_value>UNSET</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>directory for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+    <desc>directory for coupler history data mode (only used for when DATM_MODE is CPLHISTForcing)</desc>
   </entry>
 
   <entry id="DATM_CPLHIST_CASE">
@@ -125,11 +126,25 @@
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <values match="last">
-      <value compset="1850_DATM%CPLHIST">b40.1850.track1.1deg.006a</value>
+      <value compset="1850_DATM%CPLHIST">UNSET</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>case name for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+    <desc>case name used to determine stream filenames when DATM_MODE is CPLHistForcing</desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Domain file for datm when DATM model is CPLHIST, NOTE: if this is set to 'null', then
+      domain information is read in from the first coupler history file in the target stream and it is
+      assumed that the first coupler stream file that is pointed to contains the domain information
+      for that stream.
+    </desc>
   </entry>
 
   <entry id="DATM_CPLHIST_YR_ALIGN">
@@ -137,7 +152,7 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <values match="last">
-      <value compset="1850_DATM%CPLHIST">1</value>
+      <value compset="1850_DATM%CPLHIST">-999</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -149,7 +164,7 @@
     <valid_values></valid_values>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850_DATM%CPLHIST">960</value>
+      <value compset="1850_DATM%CPLHIST">-999</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -161,7 +176,7 @@
     <valid_values></valid_values>
     <default_value>-999</default_value>
     <values match="last">
-      <value compset="1850_DATM%CPLHIST">1030</value>
+      <value compset="1850_DATM%CPLHIST">-999</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

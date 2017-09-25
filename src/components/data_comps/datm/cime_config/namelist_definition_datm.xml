@@ -39,7 +39,7 @@
     CLM1PT		= Run with supplied single point data (force CLM)
     CORE2_NYF		= CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF		= CORE2 intra-annual year forcing (for forcing POP and CICE)
-    CPLHISTForcing	= Streams for lnd or ocn/ice forcing used for spinup 
+    CPLHISTForcing	= Streams for lnd or ocn/ice forcing used for spinup
     presaero		= Prescribed aerosol forcing
     topo		= Surface topography
     co2tseries		= Time series of prescribed CO2 forcing
@@ -108,7 +108,7 @@
 
     Note for CORE2_IAF:
     The most current versions of forcing files(those recommended for use) are duplicated
-    below and stored at /ccsm/ocn/iaf/): 
+    below and stored at /ccsm/ocn/iaf/):
     gcgcs.prec.T62.current, giss.lwdn.T62.current, giss.swdn.T62.current, giss.swup.T62.current,
     ncep.dn10.T62.current, ncep.q_10.T62.current ncep.slp_.T62.current,
     ncep.t_10.T62.current, ncep.u_10.T62.current, ncep.v_10.T62.current
@@ -135,13 +135,14 @@
     presaero.cplhist
 
     topo.observed
+    topo.cplhist
 
       **********IMPORTANT NOTE: *************
-      In the value matches below, regular expressions are used **** 
+      In the value matches below, regular expressions are used ****
       If two matches are equivalent, the FIRST one will be used, so need to make sure
       that matches are not equivalent if possible
 
-	 As an example, say datm_mode=CLMCRUNCEPv7, 
+	 As an example, say datm_mode=CLMCRUNCEPv7,
 
          the following order would result in an INCORRECT setting of streams for this datm_mode
              <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
@@ -222,6 +223,7 @@
       <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="presaero.rcp">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
+      <value stream="topo.cplhist">null</value>
     </values>
   </entry>
 
@@ -294,6 +296,7 @@
       <value stream="presaero.rcp6.0">aerosoldep_rcp6.0_monthly_1849-2104_1.9x2.5_c100830.nc</value>
       <value stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="topo.cplhist">null</value>
     </values>
   </entry>
 
@@ -310,7 +313,7 @@
         area    area
         mask    mask
       </value>
-      <value stream="CPLHISTForcing|presaero.cplhist">
+      <value stream="CPLHISTForcing|presaero.cplhist|topo.cplhist">
         time         time
         doma_lon     lon
         doma_lat     lat
@@ -386,6 +389,7 @@
       <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
+      <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
     </values>
   </entry>
 
@@ -422,6 +426,7 @@
       <value  stream="CPLHISTForcing.State3hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CPLHISTForcing.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x1h.%ym.nc</value>
       <value  stream="presaero.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x1d.%ym.nc</value>
+      <value  stream="topo.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
       <value  stream="CLM_QIAN.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
       <value  stream="CLM_QIAN.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
@@ -1196,7 +1201,7 @@
       <value stream="CPLHISTForcing.State3hr">
         a2x3h_Sa_z       z
         a2x3h_Sa_tbot    tbot
-        a2x3h_Sa_ptem    ptem  
+        a2x3h_Sa_ptem    ptem
         a2x3h_Sa_shum    shum
         a2x3h_Sa_pbot    pbot
         a2x3h_Sa_dens    dens
@@ -1428,6 +1433,9 @@
         DSTX04WD   dstwet4
         DSTX04DD   dstdry4
       </value>
+      <value stream="topo.cplhist">
+	a2x3h_Sa_topo  topo
+      </value>
       <value stream="topo.observed">
         TOPO topo
       </value>
@@ -1460,6 +1468,7 @@
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
+      <value stream="topo.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
     </values>
   </entry>
 
@@ -1511,6 +1520,7 @@
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
+      <value stream="topo.cplhist">$DATM_CPLHIST_YR_START</value>
     </values									>
   </entry>
 
@@ -1563,6 +1573,7 @@
       <value stream="presaero.trans_1850-2000">2006</value>
       <value stream="presaero.rcp">2104</value>
       <value stream="topo.observed">1</value>
+      <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
     </values>
   </entry>
 
@@ -1578,6 +1589,7 @@
       <value stream="CPLHISTForcing.State3hr">900</value>
       <value stream="CPLHISTForcing.State1hr">900</value>
       <value stream="presaero.cplhist">0</value>
+      <value stream="topo.cplhist">0</value>
     </values>
   </entry>
 
@@ -1818,6 +1830,7 @@
       <value stream="CPLHISTForcing.State3hr">linear</value>
       <value stream="CPLHISTForcing.State1hr">linear</value>
       <value stream="presaero.cplhist">nearest</value>
+      <value stream="topo.cplhist">nearest</value>
       <value stream="CLM_QIAN.Solar">coszen</value>
       <value stream="CLM_QIAN.Precip">nearest</value>
       <value stream="CLM_QIAN_WISO.Solar">coszen</value>
@@ -1913,6 +1926,7 @@
       <value stream="CPLHISTForcing.State3hr">3.0</value>
       <value stream="CPLHISTForcing.State1hr">3.0</value>
       <value stream="presaero.cplhist">3.0</value>
+      <value stream="topo.cplhist">3.0</value>
     </values>
   </entry>
 
