@@ -214,7 +214,6 @@ def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restar
                         f.write("%s \n" %output)
                     f.close()
 
-
 ###############################################################################
 def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn):
 ###############################################################################
@@ -239,7 +238,6 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
         destfile = join(archive_logdir, os.path.basename(logfile))
         archive_file_fn(srcfile, destfile)
         logger.info("moving %s to %s" %(srcfile, destfile))
-
 
 ###############################################################################
 def _archive_history_files(case, archive, archive_entry,
@@ -279,7 +277,6 @@ def _archive_history_files(case, archive, archive_entry,
                     newsuffix = casename + '.' + compname + ".*" + suffix
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-            logger.info("regex suffix: {},  histfiles: {}".format(newsuffix, histfiles))
             if histfiles:
                 for histfile in histfiles:
                     file_date = _get_file_date(os.path.basename(histfile))
@@ -304,7 +301,8 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
     Not doc-testable due to filesystem dependence
     """
 
-    histfiles = []
+    # Make certain histfiles is a set so we don't repeat
+    histfiles = set()
     rest_hist_varname = archive.get_entry_value('rest_history_varname', archive_entry)
     if rest_hist_varname != 'unset':
         cmd = "ncdump -v %s %s " %(rest_hist_varname, os.path.join(rundir, restfile))
@@ -324,8 +322,10 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
                     histfile = matchobj.group(1).strip()
                     histfile = os.path.basename(histfile)
                     # append histfile to the list ONLY if it exists in rundir before the archiving
+                    if histfile in histfiles:
+                        logger.info("WARNING, tried to add a duplicate file to histfiles")
                     if os.path.isfile(os.path.join(rundir,histfile)):
-                        histfiles.append(histfile)
+                        histfiles.add(histfile)
     return histfiles
 
 ###############################################################################
@@ -417,11 +417,12 @@ def _archive_restarts(case, archive, archive_entry,
                     destfile = os.path.join(archive_restdir, restfile)
                     shutil.copy(srcfile, destfile)
                     logger.info("copying \n%s to \n%s" %(srcfile, destfile))
+
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
-                               "restart file %s does not exist " % srcfile)
+                               "history restart file for last date %s does not exist " % srcfile)
                         shutil.copy(srcfile, destfile)
                         logger.info("copying \n%s to \n%s" %(srcfile, destfile))
                 else:
