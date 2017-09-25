@@ -2,6 +2,26 @@
 
 Originator: Chris Fischer 
 Date: 9-25-2017
+Tag: cime5.4.0-alpha.01
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Update version to cime5.3.0-alpha.01
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+
+Modified files: git diff --name-status [previous_tag]
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-25-2017
 Tag: cime5.3.0-alpha.36
 Answer Changes: None
 Tests:  scripts_regression_tests
