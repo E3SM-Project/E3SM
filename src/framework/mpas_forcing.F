@@ -2401,58 +2401,54 @@ contains
        
        FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data pool: '//trim(poolnameInput)//" field: "//trim(fieldnameInput))
        
-       ! loop over blocks
+       ! No need to loop over blocks since mpas_shift_time_levs does this
        block => domain % blocklist
-       do while (associated(block))
 
-          call MPAS_pool_get_subpool(block % structs, trim(poolnameInput), forcingPoolInput)
+       call MPAS_pool_get_subpool(block % structs, trim(poolnameInput), forcingPoolInput)
 
-          forcingFieldInput => pool_get_member(forcingPoolInput, trim(fieldnameInput), MPAS_POOL_FIELD)
+       forcingFieldInput => pool_get_member(forcingPoolInput, trim(fieldnameInput), MPAS_POOL_FIELD)
 
-          if (forcingFieldInput % contentsTimeLevs < 2) then
-             FORCING_ERROR_WRITE('-- Forcing: forcing_shift_data: too few timelevels Pool: '//trim(poolnameInput)//' Field: '//trim(fieldnameInput))
-             call mpas_log_write('Forcing: forcing_shift_data: too few timelevels in Pool: '//trim(poolnameInput)// &
-                   ' Field: '//trim(fieldnameInput), MPAS_LOG_CRIT)
+       if (forcingFieldInput % contentsTimeLevs < 2) then
+          FORCING_ERROR_WRITE('-- Forcing: forcing_shift_data: too few timelevels Pool: '//trim(poolnameInput)//' Field: '//trim(fieldnameInput))
+          call mpas_log_write('Forcing: forcing_shift_data: too few timelevels in Pool: '//trim(poolnameInput)// &
+               ' Field: '//trim(fieldnameInput), MPAS_LOG_CRIT)
+       endif
+
+       if (forcingFieldInput % contentsType == MPAS_POOL_REAL) then
+
+          select case (forcingFieldInput % contentsDims)
+          case (0)
+             FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v1: ' COMMA forcingFieldInput % r0a(1) % scalar)
+             FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v2: ' COMMA forcingFieldInput % r0a(2) % scalar)
+             call mpas_shift_time_levs(forcingFieldInput % r0a)
+             FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v1: ' COMMA forcingFieldInput % r0a(1) % scalar)
+             FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v2: ' COMMA forcingFieldInput % r0a(2) % scalar)
+          case (1)
+             call mpas_shift_time_levs(forcingFieldInput % r1a)
+          case (2)
+             call mpas_shift_time_levs(forcingFieldInput % r2a)
+          case (3)
+             call mpas_shift_time_levs(forcingFieldInput % r3a)
+          case (4)
+             call mpas_shift_time_levs(forcingFieldInput % r4a)
+          case (5)
+             call mpas_shift_time_levs(forcingFieldInput % r5a)
+          end select
+
+       else if (forcingFieldInput % contentsType == MPAS_POOL_INTEGER) then
+
+          select case (forcingFieldInput % contentsDims)
+          case (0)
+             call mpas_shift_time_levs(forcingFieldInput % i0a)
+          case (1)
+             call mpas_shift_time_levs(forcingFieldInput % i1a)
+          case (2)
+             call mpas_shift_time_levs(forcingFieldInput % i2a)
+          case (3)
+             call mpas_shift_time_levs(forcingFieldInput % i3a)
+          end select
+
           endif
-
-          if (forcingFieldInput % contentsType == MPAS_POOL_REAL) then
-
-             select case (forcingFieldInput % contentsDims)
-             case (0)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v1: ' COMMA forcingFieldInput % r0a(1) % scalar)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v2: ' COMMA forcingFieldInput % r0a(2) % scalar)
-                call mpas_shift_time_levs(forcingFieldInput % r0a)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v1: ' COMMA forcingFieldInput % r0a(1) % scalar)
-                FORCING_DEBUG_WRITE('-- Forcing: forcing_shift_data: v2: ' COMMA forcingFieldInput % r0a(2) % scalar)
-             case (1)
-                call mpas_shift_time_levs(forcingFieldInput % r1a)
-             case (2)
-                call mpas_shift_time_levs(forcingFieldInput % r2a)
-             case (3)
-                call mpas_shift_time_levs(forcingFieldInput % r3a)
-             case (4)
-                call mpas_shift_time_levs(forcingFieldInput % r4a)
-             case (5)
-                call mpas_shift_time_levs(forcingFieldInput % r5a)
-             end select
-
-          else if (forcingFieldInput % contentsType == MPAS_POOL_INTEGER) then
-
-             select case (forcingFieldInput % contentsDims)
-             case (0)
-                call mpas_shift_time_levs(forcingFieldInput % i0a)
-             case (1)
-                call mpas_shift_time_levs(forcingFieldInput % i1a)
-             case (2)
-                call mpas_shift_time_levs(forcingFieldInput % i2a)
-             case (3)
-                call mpas_shift_time_levs(forcingFieldInput % i3a)
-             end select
-
-          endif
-
-          block => block % next
-       end do
 
        forcingField => forcingField % next
     end do
