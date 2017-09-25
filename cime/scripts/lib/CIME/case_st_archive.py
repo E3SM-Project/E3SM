@@ -287,7 +287,7 @@ def _archive_history_files(case, archive, archive_entry,
                         destfile = join(archive_histdir, histfile)
                         if histfile in histfiles_savein_rundir:
                             logger.info("copying \n%s to \n%s " %(srcfile, destfile))
-                            archive_file_fn(srcfile, destfile)
+                            shutil.copy(srcfile, destfile)
                         else:
                             logger.info("moving \n%s to \n%s " %(srcfile, destfile))
                             archive_file_fn(srcfile, destfile)
@@ -409,7 +409,7 @@ def _archive_restarts(case, archive, archive_entry,
                     for histfile in histfiles_for_restart:
                         if histfile not in histfiles_savein_rundir:
                             histfiles_savein_rundir.append(histfile)
-                logger.info("histfiles_savein_rundir: {}".format(histfiles_savein_rundir))
+
                 # archive restart files and all history files that are needed for restart
                 # Note that the latest file should be copied and not moved
                 if datename_is_last:
@@ -443,7 +443,7 @@ def _archive_restarts(case, archive, archive_entry,
                             destfile = os.path.join(archive_restdir, histfile)
                             expect(os.path.isfile(srcfile),
                                    "hist file %s does not exist " %srcfile)
-                            archive_file_fn(srcfile, destfile)
+                            shutil.copy(srcfile, destfile)
                             logger.info("copying \n%s to \n%s" %(srcfile, destfile))
                     else:
                         srcfile = os.path.join(rundir, restfile)
