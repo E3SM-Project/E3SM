@@ -768,7 +768,7 @@ module li_core
       ! ===
       call mpas_timer_start("write output")
 
-      if (config_write_output_on_startup) then
+      if (config_write_output_on_startup .and. (.not. config_do_restart)) then
          call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
       endif
 
