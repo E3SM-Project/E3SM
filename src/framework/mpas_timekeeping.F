@@ -969,6 +969,75 @@ module mpas_timekeeping
    end subroutine mpas_reset_clock_alarm
 
 
+   ! Adjust the previous ring time of a recurring alarm to be away from a provided reference time
+   ! by an integer multiple of the alarm's interval.
+   ! This is useful if the alarm's default prevRingTime, which is the current time when the alarm
+   ! is created, is not desired.
+   subroutine mpas_adjust_alarm_to_reference_time(clock, alarmID, referenceTime, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: clock
+      character (len=*), intent(in) :: alarmID
+      type (MPAS_Time_type) :: referenceTime
+      type (MPAS_Time_type) :: now
+      integer, intent(out) :: ierr
+
+      ! Local variables
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+      type (MPAS_TimeInterval_type) :: searchInterval, searchRemainder
+      integer :: nDivs
+      integer :: threadNum
+      integer :: ierr_tmp
+
+      ierr = 0
+      ierr_tmp = 0
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+
+               if (alarmPtr % isRecurring) then
+                  !call mpas_print_alarm(clock, alarmID, ierr_tmp)
+                  now = mpas_get_clock_time(clock, MPAS_NOW, ierr_tmp)
+                  ierr = ior(ierr, ierr_tmp)
+                  if(clock % direction == MPAS_FORWARD) then
+                     if (now > referenceTime) then
+                        searchInterval = now - referenceTime
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - searchRemainder
+                     else
+                        searchInterval = referenceTime - now
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - (alarmPtr % ringTimeInterval - searchRemainder)
+                     endif
+                  else ! MPAS_REVERSE
+                     if (now < referenceTime) then
+                        searchInterval = now - referenceTime
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - searchRemainder
+                     else
+                        searchInterval = referenceTime - now
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - (alarmPtr % ringTimeInterval - searchRemainder)
+                     endif
+                  end if  ! forward direction
+                  !call mpas_print_alarm(clock, alarmID, ierr_tmp)
+               end if  ! isRecurring
+            exit ! exit after we found the alarm we were looking for
+            end if ! if this alarm we were looking for
+            alarmPtr => alarmPtr % next
+         end do
+      end if ! thread check
+
+      !$omp barrier
+   end subroutine mpas_adjust_alarm_to_reference_time
+
+
 
    ! specify a valid previousRingTime for each alarm
    subroutine mpas_calibrate_alarms(clock, ierr)
