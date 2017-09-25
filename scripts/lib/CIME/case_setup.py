@@ -166,23 +166,23 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
-            # Make sure pio settings are consistent
-            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
-
             case.initialize_derived_attributes()
 
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
-            num_nodes = case.num_nodes
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
                     logger.info("Writing {} script".format(job))
-                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+                    env_batch.make_batch_script(input_batch_script, job, case)
                 elif job != "case.test":
                     logger.info("Writing {} script from input template {}".format(job, input_batch_script))
-                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+                    env_batch.make_batch_script(input_batch_script, job, case)
+
+            # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
+            env_batch.set_job_defaults([(("case.test" if case.get_value("TEST") else "case.run"), {})], case)
+            case.schedule_rewrite(env_batch)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked

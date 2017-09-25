@@ -340,7 +340,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, check_members=None, job="case.run", exe_only=False):
+    def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -402,7 +402,6 @@ class EnvMachSpecific(EnvBase):
                     arg_value = transform_vars(arg_node.text,
                                                case=case,
                                                subgroup=job,
-                                               check_members=check_members,
                                                default=arg_node.get("default"))
                     args.append(arg_value)
 

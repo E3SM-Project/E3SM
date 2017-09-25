@@ -1070,7 +1070,7 @@ def does_file_have_string(filepath, text):
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
 
-def transform_vars(text, case=None, subgroup=None, check_members=None, default=None):
+def transform_vars(text, case=None, subgroup=None, overrides=None, default=None):
     """
     Do the variable substitution for any variables that need transforms
     recursively.
@@ -1079,29 +1079,35 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
     'cesm.stdout'
     >>> member_store = lambda : None
     >>> member_store.foo = "hi"
-    >>> transform_vars("I say {{ foo }}", check_members=member_store)
+    >>> transform_vars("I say {{ foo }}", overrides={"foo":"hi"})
     'I say hi'
     """
     directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
     # loop through directive text, replacing each string enclosed with
     # template characters with the necessary values.
-    if check_members is None and case is not None:
-        check_members = case
     while directive_re.search(text):
         m = directive_re.search(text)
         variable = m.groups()[0]
         whole_match = m.group()
-        if check_members is not None and hasattr(check_members, variable.lower()) and getattr(check_members, variable.lower()) is not None:
-            repl = getattr(check_members, variable.lower())
-            logger.debug("from check_members: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
+        if overrides is not None and variable.lower() in overrides and overrides[variable.lower()] is not None:
+            repl = overrides[variable.lower()]
+            logger.debug("from overrides: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
             text = text.replace(whole_match, str(repl))
+
+        elif case is not None and hasattr(case, variable.lower()) and getattr(case, variable.lower()) is not None:
+            repl = getattr(case, variable.lower())
+            logger.debug("from case members: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
+            text = text.replace(whole_match, str(repl))
+
         elif case is not None and case.get_value(variable.upper(), subgroup=subgroup) is not None:
             repl = case.get_value(variable.upper(), subgroup=subgroup)
             logger.debug("from case: in {}, replacing {} with {}".format(text, whole_match, str(repl)))
             text = text.replace(whole_match, str(repl))
+
         elif default is not None:
             logger.debug("from default: in {}, replacing {} with {}".format(text, whole_match, str(default)))
             text = text.replace(whole_match, default)
+
         else:
             # If no queue exists, then the directive '-q' by itself will cause an error
             if "-q {{ queue }}" in text:

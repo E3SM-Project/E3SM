@@ -633,10 +633,7 @@ class Case(object):
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-
-
         self.clean_up_lookups()
-
 
     def _setup_mach_pes(self, pecount, multi_driver, ninst, machine_name, mpilib):
         #--------------------------------------------
@@ -744,7 +741,6 @@ class Case(object):
 
         return pesize
 
-
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   pesfile=None,user_grid=False, gridfile=None,
@@ -839,7 +835,7 @@ class Case(object):
         env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
-        pesize = self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
+        self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
 
         if multi_driver and ninst>1:
             logger.info(" Driver/Coupler has %s instances" % ninst)
@@ -919,6 +915,11 @@ class Case(object):
         #--------------------------------------------
         # batch system (must come after initialize_derived_attributes)
         #--------------------------------------------
+        if walltime:
+            self.set_value("USER_REQUESTED_WALLTIME", walltime)
+        if queue:
+            self.set_value("USER_REQUESTED_QUEUE", queue)
+
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
@@ -927,7 +928,7 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=pesize, num_nodes=self.num_nodes, tasks_per_node=self.tasks_per_node, walltime=walltime, force_queue=queue, allow_walltime_override=test)
+        env_batch.set_job_defaults(bjobs, self)
         self.schedule_rewrite(env_batch)
 
         # Make sure that parallel IO is not specified if total_tasks==1
