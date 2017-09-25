@@ -347,7 +347,7 @@ def _archive_restarts(case, archive, archive_entry,
     casename = case.get_value("CASE")
     datename_str = _datetime_str(datename)
 
-    archive_restdir = join(dout_s_root, 'rest', )
+    archive_restdir = join(dout_s_root, 'rest', datename_str)
     if not os.path.exists(archive_restdir):
         os.makedirs(archive_restdir)
 
@@ -397,9 +397,8 @@ def _archive_restarts(case, archive, archive_entry,
                     # Skip this file
                     continue
 
-                archive_rest_date_dir = os.path.join(archive_restdir, _datetime_str(file_date))
-                if not os.path.exists(archive_rest_date_dir):
-                    os.makedirs(archive_rest_date_dir)
+                if not os.path.exists(archive_restdir):
+                    os.makedirs(archive_restdir)
 
                 # obtain array of history files for restarts
                 # need to do this before archiving restart files
@@ -415,12 +414,12 @@ def _archive_restarts(case, archive, archive_entry,
                 # Note that the latest file should be copied and not moved
                 if datename_is_last:
                     srcfile = os.path.join(rundir, restfile)
-                    destfile = os.path.join(archive_rest_date_dir, restfile)
+                    destfile = os.path.join(archive_restdir, restfile)
                     shutil.copy(srcfile, destfile)
                     logger.info("copying \n%s to \n%s" %(srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
-                        destfile = os.path.join(archive_rest_date_dir, histfile)
+                        destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "restart file %s does not exist " % srcfile)
                         shutil.copy(srcfile, destfile)
@@ -429,7 +428,7 @@ def _archive_restarts(case, archive, archive_entry,
                     # Only archive intermediate restarts if requested - otherwise remove them
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
                         srcfile = os.path.join(rundir, restfile)
-                        destfile = os.path.join(archive_rest_date_dir, restfile)
+                        destfile = os.path.join(archive_restdir, restfile)
                         logger.info("moving \n%s to \n%s" %(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file %s does not exist " %srcfile)
@@ -440,7 +439,7 @@ def _archive_restarts(case, archive, archive_entry,
                         # have not archived all of the history files yet
                         for histfile in histfiles_for_restart:
                             srcfile = os.path.join(rundir, histfile)
-                            destfile = os.path.join(archive_rest_date_dir, histfile)
+                            destfile = os.path.join(archive_restdir, histfile)
                             expect(os.path.isfile(srcfile),
                                    "hist file %s does not exist " %srcfile)
                             archive_file_fn(srcfile, destfile)
