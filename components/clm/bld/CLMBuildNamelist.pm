@@ -1003,9 +1003,6 @@ sub setup_cmdl_bgc {
        if ($var eq "use_vertsoilc") {
           $nl_flags->{$var} = ".true.";
        }
-       if ($var eq "use_lch4") {
-          $nl_flags->{$var} = ".true.";
-       }
        $val = $nl_flags->{$var};
        my $group = $definition->get_group_name($var);
        $nl->set_variable_value($group, $var, $val);
