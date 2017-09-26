@@ -196,7 +196,7 @@ example_pes.xml:
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return (args.compset, args.res, args.pesfile, args.mpilib
+    return (args.compset, args.res, args.pesfile, args.mpilib,
             args.compiler, args.project, args.machine, args.extra_options_file,
             args.test_id, args.force_purge, args.test_root)
 
@@ -254,7 +254,7 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
                        " --test-id options".format(casedir))
 
     tests = TestScheduler(test_names, no_setup = True,
-                          compiler=compiler, machine_name=machine, mpilib=mpilib
+                          compiler=compiler, machine_name=machine, mpilib=mpilib,
                           test_root=test_root, test_id=test_id, project=project)
     success = tests.run_tests(wait=True)
     expect(success, "Error in creating cases")
@@ -304,7 +304,7 @@ def _main_func(description):
     compset, res, pesfile, mpilib, compiler, project, machine, extra_options_file, casename_prefix,  \
         force_purge, test_root = parse_command_line(sys.argv, description)
 
-    sys.exit(load_balancing_submit(compset, res, pesfile, mpilib
+    sys.exit(load_balancing_submit(compset, res, pesfile, mpilib,
                                    compiler, project, machine,
                                    extra_options_file, casename_prefix,
                                    force_purge, test_root))
