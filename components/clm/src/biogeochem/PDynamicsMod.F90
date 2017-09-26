@@ -649,12 +649,12 @@ contains
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     if (.not.vmax_ptase_grid_present) then
                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                            vmax_ptase(p) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                            vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
                             (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
                     else
                        g = col_pp%gridcell(c)
                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                            vmax_ptase_grid(g,p) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                            vmax_ptase_grid(g,veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
                             (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
                     endif
                 end if
