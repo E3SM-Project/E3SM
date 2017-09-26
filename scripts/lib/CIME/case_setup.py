@@ -133,7 +133,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_{}".format(comp))
-            # But the NINST_LAYOUT may only be concurrent in multi_driver mode
             if multi_driver:
                 expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
                        "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))

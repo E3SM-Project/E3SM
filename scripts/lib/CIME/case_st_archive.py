@@ -93,8 +93,7 @@ def _get_component_archive_entries(case, archive):
             yield(archive_entry, compname, archive_entry.get("compclass"))
 
     if compname not in compset_comps:
-        # KDR Say if something is being skipped
-        logger.info('Skipping compname %s' %(compname))
+        logger.debug('Skipping compname %s; it is not in compset_comps' %(compname))
 
 ###############################################################################
 def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
@@ -207,18 +206,18 @@ def _archive_history_files(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
-            if compname.find('mpas') == 0:
-               newsuffix = compname + '.*' + suffix
-# KDR I've chosen to use compname 'cam' for DART output from CAM assims,
-#     inside compclass 'esp', to distinguish it from other components in multi-component assims.
-#     All CAM+DART output conforms to CESM naming conventions (2017-9-1).
-            elif ninst_string:
-               newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+            if ninst_string:
+               if compname.find('mpas') == 0:
+                  # Not correct, but MPAS' multi-instance name format is unknown.
+                  newsuffix = compname + '.*' + suffix
+               else:
+                  newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
             else:
-                if ninst_string:
-                    newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
-                else:
-                    newsuffix = casename + '.' + compname + ".*" + suffix
+               if compname.find('mpas') == 0:
+                  newsuffix = compname + '.*' + suffix
+               else
+                  newsuffix = casename + '.' + compname + ".*" + suffix
+
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
