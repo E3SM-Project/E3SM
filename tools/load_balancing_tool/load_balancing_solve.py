@@ -13,7 +13,6 @@ model day assuming the layout:
 
 It is possible to extend this tool to solve for other layouts.
 """
-import argparse
 import re
 import json
 
@@ -24,16 +23,12 @@ except ImportError, e:
     print "May need to add cime/scripts to PYTHONPATH\n"
     raise ImportError(e)
 
-from CIME.utils import run_cmd_no_fail, run_cmd
-from CIME.XML.machines import Machines
-from CIME.XML.component import Component
-from CIME.XML.files import Files
-from CIME.case import Case
+from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
 
 # These values can be overridden on the command line
-DEFAULT_CASENAME_PREFIX = "lbt_timing_run_"
+DEFAULT_TESTID = "lbt"
 DEFAULT_BLOCKSIZE = 1
 DEFAULT_LAYOUT = "IceLndAtmOcn"
 COMPONENT_LIST = ['ATM', 'ICE', 'CPL', 'LND', 'WAV', 'ROF', 'OCN', 'GLC', 'ESP']
@@ -50,57 +45,52 @@ def parse_command_line(args, description):
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
-    parser.add_argument('--casename_prefix', default=DEFAULT_CASENAME_PREFIX,
-                        help='casename prefix to use for all timing runs')
-    parser.add_argument('--timing_dir', help='alternative to using casename '
+
+    parser.add_argument('--test-id', default=DEFAULT_TESTID,
+                        help='test-id to use for all timing runs')
+
+    parser.add_argument("-r", "--test-root",
+                        help="Where test cases were created."
+                        " Will default to output root as defined in the config_machines file")
+
+    parser.add_argument('--timing-dir', help='alternative to using casename '
                         'to find timing data, instead read all files in'
                         ' this directory')
+
     parser.add_argument('--blocksize',
                         help='default minimum size of blocks to assign to all '
                         'components. Components can be assigned different '
                         'blocksizes using --blocksize_XXX. Default 1', type=int)
+
     for c in COMPONENT_LIST:
-        parser.add_argument('--blocksize_%s' % c.lower(),
+        parser.add_argument('--blocksize-%s' % c.lower(),
                             help='minimum blocksize for component %s, if '
                             'different from --blocksize', type=int)
-    parser.add_argument('--total_tasks', type=int,
+
+    parser.add_argument('--total-tasks', type=int,
                         help='Number of pes available for assignment')
+
     parser.add_argument("--layout",
                         help="name of layout to solve (currently only "
                         "IceLndAtmOcn available", default=DEFAULT_LAYOUT)
-    parser.add_argument("--graph_models", action="store_true",
+
+    parser.add_argument("--graph-models", action="store_true",
                         help="plot cost v. ntasks models. requires matplotlib")
-    parser.add_argument("--print_models", action="store_true",
+
+    parser.add_argument("--print-models", action="store_true",
                         help="print all costs and ntasks")
-    parser.add_argument("--pe_output", help="write pe layout to file")
-    parser.add_argument('--json_output', help="write MILP data to .json file")
-    parser.add_argument('--json_input', help="solve using data from .json file")
+
+    parser.add_argument("--pe-output", help="write pe layout to file")
+
+    parser.add_argument('--json-output', help="write MILP data to .json file")
+
+    parser.add_argument('--json-input', help="solve using data from .json file")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args,
                                                                      parser)
-    try:
-        import pulp
-        have_pulp = True
-    except ImportError, e:
-        if args.json_output:
-            have_pulp = False
-            logger.warning("WARNING: pulp library not found. Will write "
-                           "%s and exit.", args.json_output)
-            logger.warning("WARNING: To solve, either install pulp python "
-                           "library locally")
-            logger.warning("WARNING: or transfer .json file to another system "
-                           "and solve")
-        else:
-            logger.critical("ERROR: pulp library not found. Either install "
-                            "pulp python")
-            logger.critical("ERROR: library locally, or use --json_output "
-                            "option to write")
-            logger.critical("ERROR: a .json file and transfer to another "
-                            "system to solve.")
-            sys.exit(1)
-
     if args.total_tasks is None and args.json_input is None:
-        logger.critical("ERROR: --total_tasks option must be set")
-        sys.exit(1)
+        expect(args.total_tasks is not None or args.json_input is not None,
+               "--total-tasks or --json-input option must be set")
 
     blocksizes = {}
     for c in COMPONENT_LIST:
@@ -110,13 +100,13 @@ def parse_command_line(args, description):
         elif args.blocksize is not None:
             blocksizes[c] = args.blocksize
 
-    return (args.casename_prefix, args.timing_dir, blocksizes,
+    return (args.test_id, args.test_root, args.timing_dir, blocksizes,
             args.total_tasks, args.layout, args.graph_models,
             args.print_models, args.pe_output, args.json_output,
-            args.json_input, have_pulp)
+            args.json_input)
 
 
-def _locate_timing_files(script_dir, timing_dir, casename_prefix):
+def _locate_timing_files(test_root, test_id, timing_dir):
     """
     Find all possible directories for timing files
     """
@@ -130,15 +120,13 @@ def _locate_timing_files(script_dir, timing_dir, casename_prefix):
         timing_dirs.append(timing_dir)
     else:
         # Add script_dir/casename_prefix_*/timing
-        for fn in os.listdir(script_dir):
-            if fn.startswith(casename_prefix):
-                timing_cases_tmp.append(fn)
-        timing_cases = sorted(timing_cases_tmp)
-
-        for casename in timing_cases:
-            casedir = os.path.join(script_dir, casename)
-            timing_dirs.append(os.path.join(casedir, 'timing'))
-            logger.info('found directory %s', os.path.join(casedir, 'timing'))
+        for fn in os.listdir(test_root):
+            if fn.endswith(test_id):
+                fn = os.path.join(test_root, fn, "timing")
+                if os.path.isdir(fn):
+                    print "found {}".format(fn)
+                    timing_cases_tmp.append(fn)
+        timing_dirs = sorted(timing_cases_tmp)
 
     # Now add all non-.gz files in the directories to be read in
     for td in timing_dirs:
@@ -167,7 +155,6 @@ def _parse_timing_files(timing_files):
         for key in timing:
             if key not in data:
                 data[key] = {'cost':[], 'ntasks':[], 'nthrds':[]}
-
 
             if timing[key]['ntasks'] in data[key]['ntasks']:
                 logger.warning('WARNING: duplicate timing run data in %s '
@@ -248,9 +235,8 @@ def _read_timing_file(filename):
     return models
 
 ################################################################################
-def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, layout, graph_models, print_models, pe_output, json_output, json_input, have_pulp):
+def load_balancing_solve(test_id, test_root, timing_dir, blocksizes, total_tasks, layout, graph_models, print_models, pe_output, json_output, json_input):
 ################################################################################
-    script_dir = CIME.utils.get_scripts_root()
     if json_input is not None:
         # All data is read from given json file
         with open(json_input, "r") as jsonfile:
@@ -268,20 +254,14 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
 
     else:
         # find and parse timing files
-        timing_files = _locate_timing_files(script_dir,
-                                            timing_dir,
-                                            casename_prefix)
-        if len(timing_files) == 0:
-            if timing_dir is None:
-                logger.critical("ERROR: no timing data found in directory %s",
-                                script_dir)
-            else:
-                logger.critical("ERROR: no timing data found in directory %s",
-                                timing_dir)
-            sys.exit(1)
+        timing_files = _locate_timing_files(test_root,
+                                            test_id,
+                                            timing_dir)
+
+        expect(len(timing_files) > 0, "No timing data found")
 
         data = _parse_timing_files(timing_files)
-        
+
         data['totaltasks'] = total_tasks
         if layout is None:
             data['layout'] = DEFAULT_LAYOUT
@@ -295,13 +275,6 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
         logger.info("Writing MILP data to %s", json_output)
         with open(json_output, "w") as outfile:
             json.dump(data, outfile, indent=4)
-
-    if not have_pulp:
-        logger.info("Exiting without solving. Rerun with --json_input %s "
-                    "after installing pulp or", json_output)
-        logger.info("transfer %s to another system and run:", json_output)
-        logger.info("load_balancing_solve.py --json_input %s", json_output)
-        sys.exit(0)
 
     import optimize_model
 
@@ -335,9 +308,9 @@ def load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, l
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    casename_prefix, timing_dir, blocksizes, total_tasks, layout, graph_models, print_models, pe_output, json_output, json_input, have_pulp = parse_command_line(sys.argv, description)
+    test_id, test_root, timing_dir, blocksizes, total_tasks, layout, graph_models, print_models, pe_output, json_output, json_input = parse_command_line(sys.argv, description)
 
-    sys.exit(load_balancing_solve(casename_prefix, timing_dir, blocksizes, total_tasks, layout, graph_models, print_models, pe_output, json_output, json_input, have_pulp))
+    sys.exit(load_balancing_solve(test_id, test_root, timing_dir, blocksizes, total_tasks, layout, graph_models, print_models, pe_output, json_output, json_input))
 
 ###############################################################################
 
