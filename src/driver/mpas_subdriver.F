@@ -44,7 +44,7 @@ module mpas_subdriver
 
    subroutine mpas_init()
 
-      use mpas_stream_manager, only : MPAS_stream_mgr_init, MPAS_build_stream_filename
+      use mpas_stream_manager, only : MPAS_stream_mgr_init, MPAS_build_stream_filename, MPAS_stream_mgr_validate_streams
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
@@ -309,6 +309,15 @@ module mpas_subdriver
       call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
       if (c_ierr /= 0) then
          call mpas_dmpar_abort(domain_ptr % dminfo)
+      end if
+
+      !
+      ! Validate streams after set-up
+      !
+      call mpas_log_write(' ** Validating streams')
+      call MPAS_stream_mgr_validate_streams(domain_ptr % streamManager, ierr = ierr)
+      if ( ierr /= MPAS_STREAM_MGR_NOERR ) then
+         call mpas_dmpar_global_abort('ERROR: Validation of streams failed for core ' // trim(domain_ptr % core % coreName))
       end if
 
       !
