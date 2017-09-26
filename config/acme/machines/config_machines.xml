@@ -1058,11 +1058,14 @@
            <arguments>
              <arg name="num_tasks"> -n $TOTALPES </arg>
              <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
+             <!--arg name="label" DEBUG="TRUE">-tag-output</arg>
+             <arg name="bindings" DEBUG="TRUE">-report-bindings</arg-->
            </arguments>
          </mpirun>
          <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
            <arguments>
+             <arg name="label"> -l</arg>
              <arg name="num_tasks"> -n $TOTALPES </arg>
            </arguments>
          </mpirun>
@@ -1120,17 +1123,22 @@
       <env name="PNETCDF_PATH" mpilib="!mpi-serial">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="OMP_STACKSIZE">256M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-      <env name="OMP_MAX_ACTIVE_LEVELS">1</env>
+      <env name="OMP_STACKSIZE">64M</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
-      <env name="KMP_HOT_TEAMS_MAX_LEVEL">1</env>
+      <env name="OMP_DISPLAY_ENV" DEBUG="TRUE">verbose</env>
+      <env name="KMP_AFFINITY" DEBUG="TRUE">verbose,scatter</env>
+      <env name="KMP_AFFINITY" DEBUG="FALSE">scatter</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="FALSE">
-      <env mpilib="mvapich" name="MV2_ENABLE_AFFINITY">1</env>
-      <env mpilib="mvapich" name="MV2_USE_SHARED_MEM">1</env>
-      <env mpilib="mvapich" name="MV2_SMP_USE_CMA">1</env>
+    <environment_variables mpilib="mvapich">
+      <env name="MV2_ENABLE_AFFINITY">1</env>
+      <env name="MV2_USE_SHARED_MEM">1</env>
+      <env name="MV2_SMP_USE_CMA">1</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" mpilib="mvapich">
+      <env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env>
+    </environment_variables>
+    <environment_variables DEBUG="TRUE" mpilib="mvapich">
+      <env name="MV2_SHOW_CPU_BINDING">1</env>
     </environment_variables>
 </machine>
 
