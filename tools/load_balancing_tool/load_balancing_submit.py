@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # Default CIME variables, these can be overridden using the
-# --extra_options_file option
+# --extra-options-file option
 CIME_DEFAULTS = {
     'STOP_OPTION':'ndays',
     'STOP_N':'10',
@@ -188,7 +188,7 @@ example_pes.xml:
                         help="Where test cases will be created."
                         " Will default to output root as defined in the config_machines file")
 
-    parser.add_argument('--extra_options_file',
+    parser.add_argument('--extra-options-file',
                         help='file listing options to be run using xmlchange')
     parser.add_argument('--test-id', default=DEFAULT_TESTID,
                         help='test-id to use for all timing runs')
@@ -233,15 +233,17 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
         test_root = machobj.get_value("CIME_OUTPUT_ROOT")
     if machine is None:
         machine = machobj.get_machine_name()
+        print "machine is {}".format(machine)
     if compiler is None:
         compiler = machobj.get_default_compiler()
+        print "compiler is {}".format(compiler)
     if mpilib is None:
         mpilib = machobj.get_default_MPIlib()
 
 
     test_names = []
     for i in xrange(len(pesize_list)):
-        test_names.append("PFS_I{}.{}.{}".format(i, res, compset))
+        test_names.append("PFS_I{}.{}.{}.{}_{}".format(i, res, compset, machine, compiler))
         casedir = os.path.join(test_root, test_names[-1] + "." + test_id)
         print "casedir is {}".format(casedir)
         if os.path.isdir(casedir):
@@ -289,7 +291,7 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
                     expect(False, "ERROR: Could not read file {}".format(extra_options_file))
 
 
-    tests = TestScheduler(test_names, use_existing=True, test_id='lbt')
+    tests = TestScheduler(test_names, use_existing=True, test_root=test_root, test_id=test_id)
     success = tests.run_tests(wait=False)
     expect(success, "Error in running cases")
 
