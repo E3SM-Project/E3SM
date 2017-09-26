@@ -2430,22 +2430,22 @@ contains
                      livestemp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
                         
                   else
-                     leafn_to_litter(p)   = (t1 * leafn(p) + npool_to_leafn(p))*0.38_r8
-                     leafn_to_retransn(p) = (t1 * leafn(p) + npool_to_leafn(p))*0.62_r8
-                     frootn_to_litter(p)  = t1 * frootn(p) + npool_to_frootn(p)
+                     leafn_to_litter(p)   = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.38_r8
+                     leafn_to_retransn(p) = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.62_r8
+                     frootn_to_litter(p)  = max(t1 * frootn(p),0._r8) + npool_to_frootn(p)
                      
-                     leafp_to_litter(p)   = (t1 * leafp(p) + ppool_to_leafp(p))*0.35_r8
-                     leafp_to_retransp(p) = (t1 * leafp(p) + ppool_to_leafp(p))*0.65_r8
-                     frootp_to_litter(p)  = t1 * frootp(p) + ppool_to_frootp(p)
+                     leafp_to_litter(p)   = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.35_r8
+                     leafp_to_retransp(p) = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.65_r8
+                     frootp_to_litter(p)  = max(t1 * frootp(p),0._r8) + ppool_to_frootp(p)
                   end if
                else
-                  leafn_to_litter(p)   = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.38_r8
-                  leafn_to_retransn(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.62_r8
-                  frootn_to_litter(p)  = frootc_to_litter(p)/ max(frootc(p), 1.e-20_r8) * frootn(p)
+                  leafn_to_litter(p)   = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8)* 0.38_r8
+                  leafn_to_retransn(p) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8) * 0.62_r8
+                  frootn_to_litter(p)  = max(min(frootc_to_litter(p)/max(frootc(p), 1.e-20_r8) * frootn(p),t1 * frootn(p)),0._r8)
                     
-                  leafp_to_litter(p)   = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.35_r8
-                  leafp_to_retransp(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.65_r8
-                  frootp_to_litter(p)  = frootc_to_litter(p)/ max(frootc(p), 1.e-20_r8) * frootp(p)
+                  leafp_to_litter(p)   = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.35_r8
+                  leafp_to_retransp(p) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.65_r8
+                  frootp_to_litter(p)  = max(min(frootc_to_litter(p)/max(frootc(p), 1.e-20_r8) * frootp(p), t1 * frootp(p)),0._r8)
                end if
             end if
  
