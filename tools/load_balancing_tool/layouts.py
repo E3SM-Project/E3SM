@@ -154,8 +154,6 @@ class IceLndAtmOcn(optimize_model.OptimizeModel):
             else:
                 nthrds[c] = 1
         self.write_pe_template(pefilename, ntasks, nthrds, roots)
-import optimize_model
-import pulp
 
 class IceLndWavAtmOcn(optimize_model.OptimizeModel):
     """

@@ -313,9 +313,6 @@ class OptimizeModel(object):
     def get_state_string(self, state):
         return self.states[state]
 
-#    def get_all_variables(self):
-#        return self.prob.X
-
     def write_pe_file(self, pefilename):
         raise NotImplementedError
 
