@@ -1032,7 +1032,7 @@
 <machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
-         <TESTS>acme_integration</TESTS>
+         <TESTS>acme_developer</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
