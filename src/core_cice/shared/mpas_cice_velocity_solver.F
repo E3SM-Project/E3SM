@@ -2825,6 +2825,7 @@ contains
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellU", oceanStressCellU)
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellV", oceanStressCellV)
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
 
           ! interpolate ocean stress to cells
           call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellU, oceanStressU)

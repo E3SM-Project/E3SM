@@ -73,6 +73,12 @@ def print_colour(message, messageType):
 
 #-------------------------------------------------------------------------
 
+def run_failed(testname):
+
+    print_colour("Test %s run incomplete" %(testname), "fail")
+
+#-------------------------------------------------------------------------
+
 def test_summary(nErrorsNonArray, nErrorsArray, logfile, testname):
 
     if (nErrorsNonArray == 0):

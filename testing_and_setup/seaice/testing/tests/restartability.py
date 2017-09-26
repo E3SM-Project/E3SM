@@ -6,9 +6,15 @@ from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check):
+def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, options, check):
 
-    testDir = "restartability.%s.%s" %(configuration,domain)
+    # find available directory name
+    iTest = 1
+    dirExists = True
+    while (dirExists):
+        testDir = "restartability_%i.%s.%s" %(iTest,configuration,domain)
+        iTest = iTest + 1
+        dirExists = os.path.isdir(testDir)
 
     # make a test directory
     create_test_directory(testDir)
@@ -31,6 +37,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check)
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("base", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        run_failed("restartability")
         os.chdir("..")
         return 1
 
@@ -45,6 +52,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check)
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("restart", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        run_failed("restartability")
         os.chdir("..")
         return 1
 
@@ -59,6 +67,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, check)
     streamChanges = []
 
     if (restart_model("restart", nmlChanges, streamChanges, nProcs, logfile) != 0):
+        run_failed("restartability")
         os.chdir("..")
         return 1
 

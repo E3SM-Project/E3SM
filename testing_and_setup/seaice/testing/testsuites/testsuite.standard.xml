@@ -4,6 +4,9 @@
 		<domain name="domain_QU120km">
 			<test name="regression"/>
 			<test name="parallelism"/>
+			<test name="parallelism">
+				<options name="multipleBlocks" value="True"/>
+			</test>
 			<test name="restartability"/>
 		</domain>
 	</configuration>

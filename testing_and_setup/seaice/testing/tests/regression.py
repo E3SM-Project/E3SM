@@ -6,9 +6,15 @@ from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuration, check):
+def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuration, options, check):
 
-    testDir = "regression.%s.%s" %(configuration,domain)
+    # find available directory name
+    iTest = 1
+    dirExists = True
+    while (dirExists):
+        testDir = "regression_%i.%s.%s" %(iTest,configuration,domain)
+        iTest = iTest + 1
+        dirExists = os.path.isdir(testDir)
 
     # make a test directory
     create_test_directory(testDir)
@@ -31,6 +37,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("development", mpasDevelopmentDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        run_failed("regression")
         os.chdir("..")
         return 1
 
@@ -45,6 +52,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
                      {"streamName":"output" , "attributeName":"output_interval", "newValue":"none"}]
 
     if (run_model("base", mpasBaseDir, domainsDir, domain, configuration, nmlChanges, streamChanges, nProcs, logfile) != 0):
+        run_failed("regression")
         os.chdir("..")
         return 1
 

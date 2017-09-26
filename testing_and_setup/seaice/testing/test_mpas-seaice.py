@@ -114,13 +114,18 @@ for configuration in testsuite:
 
                     foundTest = True
 
+                    # gather test options
+                    options = {}
+                    for option in test:
+                        options[option.get('name')] = option.get('value')
+
                     # run test
                     module = imp.load_source(testAvail["name"], os.path.dirname(os.path.abspath(__file__)) + "/tests/" + testAvail["name"]+".py")
                     test_function = getattr(module, testAvail["name"])
                     if (testAvail["needsBase"]):
-                        failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), args.check)
+                        failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), options, args.check)
                     else:
-                        failed = test_function(mpasDevelopmentDir,              domainsDir, domain.get('name'), configuration.get('name'), args.check)
+                        failed = test_function(mpasDevelopmentDir,              domainsDir, domain.get('name'), configuration.get('name'), options, args.check)
 
                     nTests = nTests + 1
                     nFails = nFails + failed
