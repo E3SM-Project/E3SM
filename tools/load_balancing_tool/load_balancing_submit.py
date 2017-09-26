@@ -177,8 +177,13 @@ example_pes.xml:
 
     # Optional pass-through arguments to create_newcase
     parser.add_argument('--compiler', help='Choose compiler to build with')
+
     parser.add_argument('--project', help='Specify project id')
+
     parser.add_argument('--machine', help='machine name')
+
+    parser.add_argument('--mpilib', help='mpi library name')
+
     parser.add_argument("-r", "--test-root",
                         help="Where test cases will be created."
                         " Will default to output root as defined in the config_machines file")
@@ -191,12 +196,12 @@ example_pes.xml:
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return (args.compset, args.res, args.pesfile,
+    return (args.compset, args.res, args.pesfile, args.mpilib
             args.compiler, args.project, args.machine, args.extra_options_file,
             args.test_id, args.force_purge, args.test_root)
 
 ################################################################################
-def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
+def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, machine,
                           extra_options_file, test_id, force_purge, test_root):
 ################################################################################
     # Read in list of pes from given file
@@ -223,9 +228,16 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
         logger.critical('ERROR: No grid entries found in pes file %s', pesfile)
         raise SystemExit(1)
 
+    machobj = Machines(machine=machine)
     if test_root is None:
-        machobj = Machines(machine=machine)
         test_root = machobj.get_value("CIME_OUTPUT_ROOT")
+    if machine is None:
+        machine = machobj.get_machine_name()
+    if compiler is None:
+        compiler = machobj.get_default_compiler()
+    if mpilib is None:
+        mpilib = machobj.get_default_MPIlib()
+
 
     test_names = []
     for i in xrange(len(pesize_list)):
@@ -242,7 +254,7 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
                        " --test-id options".format(casedir))
 
     tests = TestScheduler(test_names, no_setup = True,
-                          compiler=compiler, machine_name=machine,
+                          compiler=compiler, machine_name=machine, mpilib=mpilib
                           test_root=test_root, test_id=test_id, project=project)
     success = tests.run_tests(wait=True)
     expect(success, "Error in creating cases")
@@ -289,10 +301,10 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    compset, res, pesfile, compiler, project, machine, extra_options_file, casename_prefix,  \
+    compset, res, pesfile, mpilib, compiler, project, machine, extra_options_file, casename_prefix,  \
         force_purge, test_root = parse_command_line(sys.argv, description)
 
-    sys.exit(load_balancing_submit(compset, res, pesfile,
+    sys.exit(load_balancing_submit(compset, res, pesfile, mpilib
                                    compiler, project, machine,
                                    extra_options_file, casename_prefix,
                                    force_purge, test_root))
