@@ -61,17 +61,19 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     # the Jenkins jobs with timeouts to avoid this.
     #
 
+    mach_comp = "{}_{}".format(machine.get_machine_name(), compiler)
+
     # Remove the old CTest XML
     if (os.path.isdir("Testing")):
         shutil.rmtree("Testing")
 
     # Remove the old build/run dirs
     test_id_root = "jenkins_%s" % baseline_name
-    for old_dir in glob.glob("%s/*%s*" % (scratch_root, test_id_root)):
+    for old_dir in glob.glob("%s/*%s*%s*" % (scratch_root, mach_comp, test_id_root)):
         shutil.rmtree(old_dir)
 
     # Remove the old cases
-    for old_file in glob.glob("%s/*%s*" % (test_root, test_id_root)):
+    for old_file in glob.glob("%s/*%s*%s*" % (test_root, mach_comp, test_id_root)):
         if (os.path.isdir(old_file)):
             shutil.rmtree(old_file)
         else:
