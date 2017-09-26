@@ -646,7 +646,7 @@ contains
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                        vmax_ptase(p) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                        vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
                 end if
             enddo
