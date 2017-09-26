@@ -1,31 +1,32 @@
-#######################################################################
-##
-## CIME Load Balancing Tool
-##
-## Originally Developed by Sheri Mickelson mickelso@ucar.edu
-##              Yuri Alekseev (ALCF/Argonne National Laboratory
-##
-## Updated 2017 Jason Sarich sarich@mcs.anl.gov (Argonne National Laboratory)
-########################################################################
+.. _load_balancing_tool:
+
+
+*************************
+ CIME Load Balancing Tool
+*************************
+ Originally Developed by Sheri Mickelson mickelso@ucar.edu
+              Yuri Alekseev (ALCF/Argonne National Laboratory
+
+ Updated 2017 Jason Sarich sarich@mcs.anl.gov (Argonne National Laboratory)
+
 
 This Load Balancing tool performs several operations intended to find
 a reasonable PE layout for CIME simulations. These operations involve two
-steps:
+steps::
 
-1. load_balancing_submit.py	
-   Run a series of simulations in order to obtain timing data
+  1. load_balancing_submit.py	
+     Run a series of simulations in order to obtain timing data
 
-2. load_balancing_solve.py
-   Using the data provided in the previous program, solve a mixed integer 
-   linear program to optimize the model throughput. Requires installation
-   of PuLP and uses the included COIN-CBC solver. 
-   (https://pythonhosted.org/PuLP)
+  2. load_balancing_solve.py
+     Using the data provided in the previous program, solve a mixed integer 
+     linear program to optimize the model throughput. Requires installation
+     of PuLP and uses the included COIN-CBC solver. (https://pythonhosted.org/PuLP)
 
-Also in this documentation is
+Also in this documentation is::
 
-3. More about the algorithm used
+  3. More about the algorithm used
 
-4. Extending the solver for other models
+  4. Extending the solver for other models
 
 
 
@@ -37,17 +38,21 @@ set PYTHONPATH to include
     $CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
 
 create PE XML <PESFILE> file to describe the PE layouts for the timing runs
+.. code-block:: sh
 
 $ ./load_balancing_submit.py --res <RESOLUTION> --compset <COMPSET> --pesfile <PESFILE>
 
-...wait for jobs to run...
+#  wait for jobs to run
 
 $ ./load_balancing_solve.py --total_tasks <N> --blocksize 8
 
 
-***********
-* Testing *
-***********
+
+*******
+Testing 
+*******
+.. code-block:: bash
+
 set PYTHONPATH to include 
     $CIME_DIR/scripts:$CIME_DIR/tools/load_balancing_tool
 
@@ -69,6 +74,7 @@ NTASKS_ICE = 872
 NTASKS_LND = 120
 NTASKS_OCN = 32
 NTASKS_TOTAL = 1024
+
 # Run the test suite:
 $ ./tests/load_balancing_test.py
 
@@ -84,14 +90,16 @@ a mixed integer linear program optimizing the layout.
 
 As with the create_newcase and create_test scripts, command line options
 are used to tailor the simulations for a given model. These values will be 
-directly forwarded to the passed
+directly forwarded to the passed::
+
      --compiler
      --project
      --compset (required)
      --res     (required)
      --machine
 
-Other options include:
+Other options include::
+
      --pesfile <filename>    (required)
           This file is used to designated the pes layout that
 	  are used to create the timing data. The format is the same used
@@ -138,7 +146,8 @@ Other options include:
 Reads timing data created with load_balancing_submit.py (or otherwise,
 see --timing_files option) and solves an mixed integer optimization problem
 using these timings. The default layout (IceLndAtmOcn) minimizes the cost per
-model day assuming the layout:
+model day assuming the layout::
+
               ____________________
              | ICE  |  LND  |     |
              |______|_______|     |
@@ -146,14 +155,13 @@ model day assuming the layout:
              |    ATM       |     |
              |______________|_____|
 
+
 It is possible to extend this tool to solve for other layouts (See Section 4
 Extending the Load Balancing Tool)
 
-Note: threading is not considered part of this optimization, it is assumed that
-all timing data have the same threading structure (i.e. all ATM runs use two threads per PE)
+Note -- threading is not considered part of this optimization, it is assumed that
+all timing data have the same threading structure (i.e. all ATM runs use two threads per PE)::
 
-
-Options:
   --layout <class_name>
       Name of the class used to solve the layout problem. The only built-in
       class at this time is the default IceLndAtmOcn, but this can be extended.
@@ -204,15 +212,14 @@ Before solving the mixed-integer linear program, a model of the cost vs ntasks
 function is constructed for each component.
 
 Given a component data set of costs (C1,C2,..,Cn) and nblocks (N1,N2,..,Nn),
-then a set of n+1 linear constraints are created using the idea:
+then an piecewise set of n+1 linear constraints are created using the idea:
 
 If N < N1 (which means that N1 cannot be 1), then assume that there is
 perfect scalability from N to N1. Thus the cost is on the line
 defined by the points (1, C1*N1) - (N1, C1).
 
-
 If N is between N_i and N_{i+1}, then the cost is on the line defined by the
-points (N_i, C_i) and (N_{i+1}, C_{i+1}).
+points (N_i, C_i) and (N_{i+1}, C_{i+1}.
 
 If N > Nn, then we want to extrapolate the cost at N=total_tasks 
   (we define N{n+1} = total_tasks, C{n+1} = estimated cost using all nodes)
@@ -234,22 +241,25 @@ each of the cost functions on the entire domain.
 
 These piecewise linear models give us the following linear constraints, where
 the model time cost C as a function of N (ntasks) for each component
-is constrained by:
+is constrained by::
 
-(1)    C >= Ci  - Ni * (C{i+1}-Ci) / (N{i+1}-Ni)
-             + N *  (C{i+1}-Ci) / (N{i+1}-Ni)    for i=0..n
+  C >= Ci  - Ni * (C{i+1}-Ci) / (N{i+1}-Ni) +
+             N *  (C{i+1}-Ci) / (N{i+1}-Ni)    for i=0..n
 
 
 These constraints should be in effect for any extensions of the solver (the
 components involved may be different).
 
 There are options available in load_balancing_submit.py to inspect these 
-piecewise linear models: 
+piecewise linear models::
+
 	  --graph_models (requires matplotlib)
 	  --print_models (debugging modes writes the models to the log)
 
+
 Now that these constraints are defined, the mixed integer linear program (MILP)
-follows from the layout:
+follows from the layout::
+
      NOTES: variable N[c] is number of tasks assigned for component c
             variable NB[c] is the number of blocks assigned to component c
             constant C[c]_i is the cost contributed by component c from 
@@ -257,8 +267,6 @@ follows from the layout:
             constant N[c]_i is the ntasks assigned to component c from 
 	                  timing data set i
 		     
-
-
               ____________________
              | ICE  |  LND  |     |
        T1    |______|_______|     |
@@ -303,7 +311,8 @@ except for the components involved and the layout-specific constraints.
 Example class and inherited methods that should be overridden:
 
 file my_new_layout.py:
-#*************************************************
+..code-block:: python
+
 import optimize_model
 
 class MyNewLayout(optimize_model.OptimizeModel)
@@ -314,17 +323,16 @@ class MyNewLayout(optimize_model.OptimizeModel)
        Example: return ['ATM', 'LND', 'ICE']
        """
 
-
    def optimize(self):
         """
         Run the optimization.
-        Must set self.state using LpStatus object:
-              LpStatusOptimal    -> STATE_SOLVED_OK
-              LpStatusNotSolved  -> STATE_UNSOLVED
-              LpStatusInfeasible -> STATE_SOLVED_BAD
-              LpStatusUnbounded  -> STATE_SOLVED_BAD
-              LpStatusUndefined  -> STATE_UNDEFINED
-              -- use self.set_state(lpstatus) --
+        Must set self.state using LpStatus object
+        LpStatusOptimal    -> STATE_SOLVED_OK
+        LpStatusNotSolved  -> STATE_UNSOLVED
+        LpStatusInfeasible -> STATE_SOLVED_BAD
+        LpStatusUnbounded  -> STATE_SOLVED_BAD
+        LpStatusUndefined  -> STATE_UNDEFINED
+        -- use self.set_state(lpstatus) --
         Returns state
 
         If solved, then solution will be stored in self.X dictionary, indexed
@@ -342,7 +350,7 @@ class MyNewLayout(optimize_model.OptimizeModel)
        Return a dictionary of the solution variables, can be overridden.
        Default implementation returns values in self.X
        """
-#*************************************************
+
 
 To use this new layout:
    1. save the class MyNewLayout in file my_new_layout.py
@@ -357,14 +365,4 @@ To use this new layout:
    3. add test in tests/load_balance_test.py that uses that name in command 
       line argument (see test for atm_lnd)
    4. make pull request
-
-
-
-
-
-
-
-
-
-
 
