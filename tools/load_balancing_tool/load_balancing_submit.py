@@ -14,9 +14,9 @@ except ImportError, e:
     print 'May need to add cime/scripts to PYTHONPATH\n'
     raise ImportError(e)
 
-from CIME.utils import run_cmd_no_fail, expect
+from CIME.utils import expect
 from CIME.case import Case
-from CIME.XML import pes
+from CIME.XML.pes import Pes
 from CIME.XML.machines import Machines
 from CIME.test_scheduler import TestScheduler
 
@@ -205,7 +205,7 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
         raise SystemExit(1)
     logger.info('Reading XML file %s. Searching for pesize entries:', pesfile)
     try:
-        pesobj = CIME.XML.pes.Pes(pesfile)
+        pesobj = Pes(pesfile)
     except ParseError:
         logger.critical('ERROR: File %s not parseable', pesfile)
         raise SystemExit(1)
@@ -243,11 +243,12 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
 
     tests = TestScheduler(test_names, no_setup = True,
                           compiler=compiler, machine_name=machine,
-                          test_root=test_root, test_id=test_id)
+                          test_root=test_root, test_id=test_id, project=project)
     success = tests.run_tests(wait=True)
+    expect(success, "Error in creating cases")
     testnames = []
     for test in tests.get_testnames():
-        testname =  os.path.join(tests._test_root, test + "." + test_id)
+        testname =  os.path.join(test_root, test + "." + test_id)
         testnames.append( testname)
         logger.info("test is {}".format(testname))
         with Case(testname) as case:
@@ -272,12 +273,13 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
                             logger.debug('ignoring line in {}: {}'.format(
                                 extra_options_file, line))
                     extras.close()
-                except IOError, e:
+                except IOError:
                     expect(False, "ERROR: Could not read file {}".format(extra_options_file))
 
 
     tests = TestScheduler(test_names, use_existing=True, test_id='lbt')
     success = tests.run_tests(wait=False)
+    expect(success, "Error in running cases")
 
     # need to fix
     logger.info('Timing jobs submitted. After jobs completed, run to optimize '
