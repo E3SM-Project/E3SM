@@ -297,8 +297,8 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
 
     # need to fix
     logger.info('Timing jobs submitted. After jobs completed, run to optimize '
-                'pe layout:\n  load_balancing_solve --casename_prefix %s',
-                (testnames))
+                'pe layout:\n  load_balancing_solve --test-id {} --test-root {}'.
+                format(test_id, test_root))
 
 ###############################################################################
 def _main_func(description):
