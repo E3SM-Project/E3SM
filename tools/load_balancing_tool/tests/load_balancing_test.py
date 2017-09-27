@@ -237,33 +237,34 @@ class LoadBalanceTests(unittest.TestCase):
             self._check_solution(output, "NTASKS_ATM", 992)
 
     def test_xcase_submit(self):
-        with tempfile.NamedTemporaryFile('w+') as tfile, tempfile.NamedTemporaryFile('w+') as xfile:
-            tfile.write(PES_XML)
-            tfile.flush()
-            xfile.write(X_OPTIONS)
-            xfile.flush()
-            test_root = MACHINE.get_value("CIME_OUTPUT_ROOT")
-            cmd = "./load_balancing_submit.py --pesfile {} --res f19_g16 --compset X --test-id test_lbt  --extra-options-file {} --test-root {}".format(tfile.name, xfile.name, test_root)
-            if MACHINE.has_batch_system():
-                sys.stdout.write("Jobs will be submitted to queue. Rerun "
-                                 "load_balancing_test.py after jobs have "
-                                 "finished.")
-            else:
-                cmd += " --force-purge"
-            output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
-            self.assertTrue(output.find("Timing jobs submitted") >= 0,
-                            "Expected 'Timing jobs submitted' in output")
+        test_root = MACHINE.get_value("CIME_OUTPUT_ROOT")
+        machine = MACHINE.get_machine_name()
+        compiler = MACHINE.get_default_compiler()
 
-            machine = MACHINE.get_machine_name()
-            compiler = MACHINE.get_default_compiler()
+        expected_dir = os.path.join(test_root,
+                                    "PFS_I0.f19_g16.X.{}_{}.test_lbt".format(machine,compiler),
+                                    "timing")
+        if not os.path.isdir(expected_dir):
+            with tempfile.NamedTemporaryFile('w+') as tfile, tempfile.NamedTemporaryFile('w+') as xfile:
+                tfile.write(PES_XML)
+                tfile.flush()
+                xfile.write(X_OPTIONS)
+                xfile.flush()
+                cmd = "./load_balancing_submit.py --pesfile {} --res f19_g16 --compset X --test-id test_lbt  --extra-options-file {} --test-root {}".format(tfile.name, xfile.name, test_root)
+                if MACHINE.has_batch_system():
+                    sys.stdout.write("Jobs will be submitted to queue. Rerun "
+                                     "load_balancing_test.py after jobs have "
+                    "finished.")
+                else:
+                    cmd += " --force-purge"
+                output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
 
-            expected_dir = os.path.join(test_root,
-                                        "PFS_I0.f19_g16.X.{}_{}.test_lbt".format(machine,compiler),
-                                        "timing")
+                self.assertTrue(output.find("Timing jobs submitted") >= 0,
+                                "Expected 'Timing jobs submitted' in output")
 
-            self.assertTrue(os.path.exists(expected_dir),
-                            "Directory %s not created" % expected_dir)
-            cmd = "./load_balancing_solve.py --total-tasks 32 --blocksize 1 --test-id test_lbt --print-models"
+        if os.path.isdir(expected_dir):
+
+            cmd = "./load_balancing_solve.py --total-tasks 32 --blocksize 1 --test-id test_lbt --print-models --test-root {} ".format(test_root)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self.assertTrue(output.find("***ATM***") > 0,
                             "--print-models failed to print ATM data")
