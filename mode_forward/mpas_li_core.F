@@ -283,11 +283,12 @@ module li_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
+      use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
+      use mpas_io_units
       use li_diagnostic_vars
       use li_setup
       use li_statistics
       use li_time_integration
-      use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
 
       implicit none
 
@@ -325,6 +326,7 @@ module li_core
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       logical :: isRinging
+      integer :: restartTimestampUnit
 
       integer :: err, err_tmp, err_tmp2, globalErr
 
@@ -453,20 +455,21 @@ module li_core
                   err = ior(err, err_tmp2)
 
                   ! write the timestamp to file
-                  ! TODO: replace 22 with a unit number that will be safe in MPAS and ACME.
-                  open(22, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=err_tmp2)
+                  call mpas_new_unit(restartTimestampUnit)
+                  open(restartTimestampUnit, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=err_tmp2)
                   if (err_tmp2 > 0) then
                      call mpas_log_write('Error opening file to write restart timestamp:' // &
                               trim(config_restart_timestamp_name), MPAS_LOG_ERR)
                   endif
                   err = ior(err, err_tmp2)
-                  write(22, *, iostat=err_tmp2) timeStamp
+                  write(restartTimestampUnit, *, iostat=err_tmp2) timeStamp
                   if (err_tmp2 > 0) then
                      call mpas_log_write('Error writing restart timestamp to file ' // &
                               trim(config_restart_timestamp_name), MPAS_LOG_ERR)
                   endif
                   err = ior(err, err_tmp2)
-                  close(22)
+                  close(restartTimestampUnit)
+                  call mpas_release_unit(restartTimestampUnit)
                end if ! isRinging
             end if ! err_tmp==0
          end if ! master task
