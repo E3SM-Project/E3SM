@@ -53,15 +53,30 @@ module clm_interface_pflotranMod
   ! ALM types/variables are replaced by clm_interface_data
   use clm_interface_dataType, only : clm_interface_data_type
 
-
 #ifdef CLM_PFLOTRAN
   use clm_pflotran_interface_data
   use pflotran_clm_main_module
   use pflotran_clm_setmapping_module
+
+#include "petsc/finclude/petscsys.h"
+
+#if PETSC_VERSION_GE(3,8,0)
+#include "petsc/finclude/petscvec.h"
+  use petscsys
+  use petscvec
+
+  implicit none
 #endif
 
-  ! !PUBLIC TYPES:
-  implicit none
+! note: the following appears NOT good if putting before 'implicit none'
+! for PETSC 3.7.x and earlier
+#if (PETSC_VERSION_GE(3,7,0) && PETSC_VERSION_MINOR<8)
+#include "petsc/finclude/petscvec.h"
+#include "petsc/finclude/petscvec.h90"
+#endif
+
+#endif
+
 
   save
 
@@ -409,10 +424,6 @@ contains
 
     implicit none
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
     !
     ! !REVISION HISTORY:
     ! Created by Gautam Bisht
@@ -478,7 +489,7 @@ contains
     ! mark the inactive column (non-natveg/crop landunits)
     ! will be used to skip inactive column index in 'bounds%begc:endc'
     allocate(mapped_gcount_skip(1:bounds%endc-bounds%begc+1))
-    mapped_gcount_skip(:) = .true.
+    mapped_gcount_skip(1:bounds%endc-bounds%begc+1) = .true.
 
     do c = bounds%begc, bounds%endc
          l = clandunit(c)
@@ -545,7 +556,7 @@ contains
     !  (2) if soil column within a grid, assumes that only 1 natural/cropped soil-column allowed per grid cell NOW
 
     ! count active soil columns for a gridcell to do checking below
-    gcolumns(:) = 0
+    gcolumns(1:bounds%endg-bounds%begg+1) = 0
     ! a note: grc%ncolumns NOT assigned values at all, so cannot be used here.
     do c = bounds%begc, bounds%endc
       l = clandunit(c)
@@ -595,7 +606,7 @@ contains
     ! mark the inactive grid (non-natveg/crop landunits)
     ! will be used to skip inactive grids in 'bounds%begg:endg'
     allocate(mapped_gcount_skip(1:bounds%endg-bounds%begg+1))
-    mapped_gcount_skip(:) = .true.
+    mapped_gcount_skip(1:bounds%endg-bounds%begg+1) = .true.
     ! ideally it's better to loop with grc%numcol, but which seems not assigned a value
     do c=bounds%begc, bounds%endc
       l = clandunit(c)
@@ -723,11 +734,13 @@ contains
     if(.not.associated(clm_pf_idata%clm_lz)) &
     allocate(clm_pf_idata%clm_lz(1:clm_pf_idata%npz))
 
-    clm_pf_idata%clm_lx(:) = (nx-mod(nx,clm_pf_idata%npx))/clm_pf_idata%npx
+    clm_pf_idata%clm_lx(1:clm_pf_idata%npx) = &
+       (nx-mod(nx,clm_pf_idata%npx))/clm_pf_idata%npx
     do i=1, mod(nx,clm_pf_idata%npx)
        clm_pf_idata%clm_lx(i) = clm_pf_idata%clm_lx(i)+1
     end do
-    clm_pf_idata%clm_ly(:) = (ny-mod(ny,clm_pf_idata%npy))/clm_pf_idata%npy
+    clm_pf_idata%clm_ly(1:clm_pf_idata%npy) = &
+       (ny-mod(ny,clm_pf_idata%npy))/clm_pf_idata%npy
     do j=1, mod(ny,clm_pf_idata%npy)
        clm_pf_idata%clm_ly(j) = clm_pf_idata%clm_ly(j)+1
     end do
@@ -1336,10 +1349,6 @@ contains
 
     implicit none
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
     type(bounds_type)                   , intent(in) :: bounds
     type(clm_interface_data_type)   , intent(in) :: clm_interface_data
     !
@@ -1410,12 +1419,12 @@ contains
 
 
 #ifdef COLUMN_MODE
-    wtgcell_sum(:) = 1._r8   ! this is a fake value for column because cannot use the real 'cwtgcell', which may be ZERO (but will skip when do data passing)
+    wtgcell_sum(1:bounds%endc-bounds%begc+1) = 1._r8   ! this is a fake value for column because cannot use the real 'cwtgcell', which may be ZERO (but will skip when do data passing)
 
 #else
     ! active column weight summation for 1 grid
-    wtgcell_sum(:) = 0._r8
-    xwtgcell_c(:) = 0
+    wtgcell_sum(1:bounds%endg-bounds%begg+1) = 0._r8
+    xwtgcell_c(1:bounds%endg-bounds%begg+1) = 0
 
     do c = bounds%begc, bounds%endc
        gcount = cgridcell(c) - bounds%begc + 1
@@ -1677,11 +1686,6 @@ contains
     ! !ARGUMENTS:
 
     implicit none
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-#include "petsc/finclude/petscviewer.h"
 
     !
     ! !REVISION HISTORY:
@@ -1992,9 +1996,6 @@ contains
   ! !ARGUMENTS:
     implicit none
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
     logical           , intent(in) :: initpftmode, initpfhmode
     type(bounds_type) , intent(in) :: bounds         ! bounds of current process
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
@@ -2009,7 +2010,6 @@ contains
     PetscScalar, pointer :: soilpsi_clmp_loc(:)
     PetscScalar, pointer :: soillsat_clmp_loc(:)
     PetscScalar, pointer :: soilisat_clmp_loc(:)
-    PetscScalar, pointer :: soilvwc_clmp_loc(:)  !
     PetscScalar, pointer :: soilt_clmp_loc(:)  !
     PetscScalar, pointer :: t_scalar_clmp_loc(:)  !
     PetscScalar, pointer :: w_scalar_clmp_loc(:)  !
@@ -2055,8 +2055,6 @@ contains
     call VecGetArrayF90(clm_pf_idata%soilisat_clmp, soilisat_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecGetArrayF90(clm_pf_idata%soilt_clmp, soilt_clmp_loc, ierr)
-    call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(clm_pf_idata%h2osoi_vol_clmp, soilvwc_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecGetArrayF90(clm_pf_idata%t_scalar_clmp, t_scalar_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -2130,8 +2128,6 @@ contains
              w_scalar_clmp_loc(cellcount)  = w_scalar(c,j)
              o_scalar_clmp_loc(cellcount)  = o_scalar(c,j)
 
-             soilvwc_clmp_loc(cellcount)   = h2osoi_vol(c,j)
-
           endif !if (initpfhmode) then
 
           if (initpftmode) then
@@ -2157,8 +2153,6 @@ contains
     call VecRestoreArrayF90(clm_pf_idata%soilisat_clmp, soilisat_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayF90(clm_pf_idata%soilt_clmp, soilt_clmp_loc, ierr)
-    call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(clm_pf_idata%h2osoi_vol_clmp, soilvwc_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayF90(clm_pf_idata%t_scalar_clmp, t_scalar_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -2193,10 +2187,6 @@ contains
 
   ! !ARGUMENTS:
     implicit none
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
     type(bounds_type)         , intent(in) :: bounds         ! bounds
     type(clumpfilter)         , intent(in) :: filters(:)     ! filters on current process
@@ -2305,10 +2295,6 @@ contains
 
   ! !ARGUMENTS:
     implicit none
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
     type(bounds_type), intent(in) :: bounds         ! bounds of current process
     type(clumpfilter), intent(inout) :: filters(:)     ! filters on current process
@@ -2689,10 +2675,6 @@ contains
   ! !ARGUMENTS:
     implicit none
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
     type(bounds_type), intent(in) :: bounds         ! bounds of current process
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
@@ -2893,10 +2875,6 @@ contains
 
     character(len=256) :: subname = "get_clm_bgc_concentration"
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
     ! Local variables
     integer  :: fc, c, g, j, k        ! do loop indices
     integer  :: gcount, cellcount
@@ -3054,10 +3032,6 @@ contains
     type(clm_interface_data_type), intent(in) :: clm_interface_data
 
     character(len=256) :: subname = "get_clm_bgc_rate"
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
  ! !LOCAL VARIABLES:
     integer  :: fc, c, g, j, k                         ! do loop indices
@@ -3276,10 +3250,6 @@ contains
   ! !ARGUMENTS:
     implicit none
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
     type(bounds_type), intent(in) :: bounds         ! bounds of current process
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
@@ -3415,10 +3385,6 @@ contains
 
     type(clm_interface_data_type), intent(in) :: clm_interface_data
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
     type(bounds_type), intent(in) :: bounds         ! bounds of current process
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
@@ -3536,9 +3502,6 @@ contains
     type(clm_interface_data_type), intent(inout) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
     integer  :: fc, c, g, gcount           ! indices
     real(r8) :: area                       ! top face area
@@ -3668,10 +3631,6 @@ contains
     type(clm_interface_data_type), intent(inout) :: clm_interface_data
 
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
     integer  :: fc,c,g,j,k,l
     integer  :: gcount, cellcount
@@ -3976,10 +3935,6 @@ contains
      type(clm_interface_data_type), intent(inout) :: clm_interface_data
 
      character(len=256) :: subname = "get_pf_bgc_gaslosses"
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
      integer  :: fc, c, g, j, k
      integer  :: gcount, cellcount
@@ -4333,10 +4288,6 @@ contains
 
      character(len=256) :: subname = "get_pf_bgc_bcfluxes"
 
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
-
      integer  :: fc, c, g, j
      integer  :: gcount, cellcount
      real(r8) :: dtime            ! land model time step (sec)
@@ -4439,10 +4390,6 @@ contains
     use spmdMod       , only : iam
 
     implicit none
-
-#include "petsc/finclude/petscsys.h"
-#include "petsc/finclude/petscvec.h"
-#include "petsc/finclude/petscvec.h90"
 
   ! !ARGUMENTS:
     character(len=*), intent(IN) :: subname  ! subroutine name called this
