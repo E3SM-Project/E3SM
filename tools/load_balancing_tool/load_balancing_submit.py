@@ -14,7 +14,7 @@ except ImportError, e:
     print 'May need to add cime/scripts to PYTHONPATH\n'
     raise ImportError(e)
 
-from CIME.utils import expect
+from CIME.utils import expect, get_full_test_name
 from CIME.case import Case
 from CIME.XML.pes import Pes
 from CIME.XML.machines import Machines
@@ -241,9 +241,12 @@ def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, mach
         mpilib = machobj.get_default_MPIlib()
 
 
+
+
     test_names = []
     for i in xrange(len(pesize_list)):
-        test_names.append("PFS_I{}.{}.{}.{}_{}".format(i, res, compset, machine, compiler))
+        test_names.append(get_full_test_name("PFS_I{}".format(i),grid=res, compset=compset,
+                                             machine=machine, compiler=compiler))
         casedir = os.path.join(test_root, test_names[-1] + "." + test_id)
         print "casedir is {}".format(casedir)
         if os.path.isdir(casedir):

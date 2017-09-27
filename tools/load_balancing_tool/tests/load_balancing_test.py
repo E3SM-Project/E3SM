@@ -27,7 +27,7 @@ except ImportError, e:
 
 
 
-from CIME.utils import run_cmd_no_fail, run_cmd
+from CIME.utils import run_cmd_no_fail, get_full_test_name
 from CIME.XML.machines import Machines
 from CIME.XML import pes
 import unittest, json, tempfile, sys, re, copy
@@ -241,8 +241,10 @@ class LoadBalanceTests(unittest.TestCase):
         machine = MACHINE.get_machine_name()
         compiler = MACHINE.get_default_compiler()
 
+        test_name = get_full_test_name("PFS_I0",grid="f19_g16", compset="X",
+                                             machine=machine, compiler=compiler)
         expected_dir = os.path.join(test_root,
-                                    "PFS_I0.f19_g16.X.{}_{}.test_lbt".format(machine,compiler),
+                                    "{}.test_lbt".format(test_name),
                                     "timing")
         if not os.path.isdir(expected_dir):
             with tempfile.NamedTemporaryFile('w+') as tfile, tempfile.NamedTemporaryFile('w+') as xfile:
