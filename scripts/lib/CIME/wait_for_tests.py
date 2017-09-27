@@ -56,7 +56,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     site_elem = xmlet.Element("Site")
 
     if ("JENKINS_START_TIME" in os.environ):
-        time_info_str = "Total testing time: {:d} seconds".format(current_time - int(os.environ["JENKINS_START_TIME"]))
+        time_info_str = "Total testing time: {:d} seconds".format(int(current_time) - int(os.environ["JENKINS_START_TIME"]))
     else:
         time_info_str = ""
 
