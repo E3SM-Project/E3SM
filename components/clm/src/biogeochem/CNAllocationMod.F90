@@ -3734,8 +3734,8 @@ contains
 
         if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
 
-          temp_sminn_to_plant = sminn_to_plant
-          temp_sminp_to_plant = sminp_to_plant
+          temp_sminn_to_plant(bounds%begc:bounds%endc) = sminn_to_plant(bounds%begc:bounds%endc)
+          temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
           call p2c(bounds,num_soilc,filter_soilc, &
                 sminn_to_npool(bounds%begp:bounds%endp), &
