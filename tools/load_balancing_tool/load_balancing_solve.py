@@ -24,7 +24,7 @@ except ImportError, e:
     raise ImportError(e)
 
 from CIME.utils import expect
-
+from CIME.XML.machines import Machines
 logger = logging.getLogger(__name__)
 
 # These values can be overridden on the command line
@@ -99,8 +99,12 @@ def parse_command_line(args, description):
             blocksizes[c] = getattr(args, attrib)
         elif args.blocksize is not None:
             blocksizes[c] = args.blocksize
+    test_root = args.test_root
+    if test_root is None:
+        machobj = Machines()
+        test_root = machobj.get_value("CIME_OUTPUT_ROOT")
 
-    return (args.test_id, args.test_root, args.timing_dir, blocksizes,
+    return (args.test_id, test_root, args.timing_dir, blocksizes,
             args.total_tasks, args.layout, args.graph_models,
             args.print_models, args.pe_output, args.json_output,
             args.json_input)
