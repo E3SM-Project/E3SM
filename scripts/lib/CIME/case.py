@@ -1155,19 +1155,40 @@ class Case(object):
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)
 
-    def report_job_status(self):
+    def get_job_info(self):
+        """
+        Get information on batch jobs associated with this case
+        """
         xml_job_ids = self.get_value("JOB_IDS")
         if not xml_job_ids:
-            logger.info("No job ids associated with this case. Either case.submit was not run or was run with no-batch")
+            return {}
         else:
+            result = {}
             job_infos = xml_job_ids.split(", ") # pylint: disable=no-member
             for job_info in job_infos:
                 jobname, jobid = job_info.split(":")
+                result[jobname] = jobid
+
+            return result
+
+    def report_job_status(self):
+        jobmap = self.get_job_info()
+        if not jobmap:
+            logger.info("No job ids associated with this case. Either case.submit was not run or was run with no-batch")
+        else:
+            for jobname, jobid in jobmap.iteritems():
                 status = self.get_env("batch").get_status(jobid)
                 if status:
                     logger.info("{}: {}".format(jobname, status))
                 else:
                     logger.info("{}: Unable to get status. Job may be complete already.".format(jobname))
+
+    def cancel_batch_jobs(self, jobids):
+        env_batch = self.get_env('batch')
+        for jobid in jobids:
+            success = env_batch.cancel_job(jobid)
+            if not success:
+                logger.warning("Failed to kill {}".format(jobid))
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
@@ -1396,6 +1417,7 @@ class Case(object):
                     logger.warn("Leaving broken case dir {}".format(self._caseroot))
 
             raise
+
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
                      cime_output_root=None, exeroot=None, rundir=None,
                      user_mods_dir=None):
