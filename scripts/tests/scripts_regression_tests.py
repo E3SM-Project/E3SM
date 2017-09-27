@@ -2279,8 +2279,8 @@ class S_TestManageAndQuery(unittest.TestCase):
         files = Files()
         testlist_drv = files.get_value("TESTS_SPEC_FILE", {"component":"drv"})
 
-        run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s %s"%
-                              (SCRIPT_DIR, testlist_drv, extra_args))
+        run_cmd_assert_result(self, "{}/query_testlists --xml-testlist {} {}".format(
+            SCRIPT_DIR, testlist_drv, extra_args))
 
     def test_query_testlists_runs(self):
         """Make sure that query_testlists runs successfully
@@ -2290,6 +2290,10 @@ class S_TestManageAndQuery(unittest.TestCase):
         break query_testlists.
         """
         self._run_and_assert_query_testlist(extra_args="--show-options")
+
+    def test_query_testlists_define_testtypes_runs(self):
+        """Make sure that query_testlists runs successfully with the --define-testtypes argument"""
+        self._run_and_assert_query_testlist(extra_args="--define-testtypes")
 
     def test_query_testlists_count_runs(self):
         """Make sure that query_testlists runs successfully with the --count argument"""
