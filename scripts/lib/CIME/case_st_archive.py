@@ -67,10 +67,6 @@ def _get_ninst_info(case, compclass):
     for i in range(1,ninst+1):
         if ninst > 1:
             ninst_strings.append('_' + '{:04d}'.format(i))
-# KDR This doesn't do what's intended.  The result is ninst_strings is not empty.
-#     It has "''" in it.  
-##        else:
-##            ninst_strings.append('')
 
     logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
@@ -126,15 +122,9 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                 temp_rpointer_content = rpointer_content
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
-                # KDR 'is not' queries whether they are the same object.
-                #     We want to compare the strings/contents of the objects
-                # if rpointer_content is not 'unset':
                 if rpointer_content != 'unset':
-                    # KDR debugging why rpointer.unset are being created.
-                    logger.info("rpointer_content not unset? {}".format(rpointer_content))
                     if not ninst_strings:
                         ninst_strings = ["empty"]
-                    # KDR indented 4 spaces, up to 'else:' to put under control of 'if ... unset'
                     for ninst_string in ninst_strings:
                         rpointer_file = temp_rpointer_file
                         rpointer_content = temp_rpointer_content
@@ -145,18 +135,14 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                                            ('$NINST_STRING', ninst_string)]:
                             rpointer_file = rpointer_file.replace(key, value)
                             rpointer_content = rpointer_content.replace(key, value)
-    
-                        # write out the respect files with the correct contents
+       
+                        # write out the respective files with the correct contents
                         rpointer_file = os.path.join(archive_restdir, rpointer_file)
-                        logger.info("writing rpointer_file {}".format(rpointer_file))
+                        logger.debug("writing rpointer_file {}".format(rpointer_file))
                         f = open(rpointer_file, 'w')
                         for output in rpointer_content.split(','):
                             f.write("{} \n".format(output))
                         f.close()
-                else:
-                    # KDR debugging why rpointer.unset are being created.
-                    logger.info("rpointer_content unset {}".format(rpointer_content))
-
 
 ###############################################################################
 def _archive_log_files(case, archive_incomplete, archive_file_fn):
@@ -215,7 +201,7 @@ def _archive_history_files(case, archive, archive_entry,
             else:
                if compname.find('mpas') == 0:
                   newsuffix = compname + '.*' + suffix
-               else
+               else:
                   newsuffix = casename + '.' + compname + ".*" + suffix
 
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
@@ -344,28 +330,18 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 pattern = compname + suffix + '_'.join(datename.rsplit('-', 1))
                 pfile = re.compile(pattern)
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-# KDR CAM+DART doesn't need special treatment as of 2017-9-1, so this is commented out.
-#             if compclass == 'esp' and 'cam' in pattern:
-#                 pattern = suffix + datename
-#                 pfile = re.compile(pattern)
-#                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
                 pattern = r"{}\.{}\d*.*".format(casename, compname)
-                if "dart" not in pattern:
+                pfile = re.compile(pattern)
+                files = [f for f in os.listdir(rundir) if pfile.search(f)]
+                if ninst_strings:
+                    pattern = ninst_strings[i] + suffix + datename
                     pfile = re.compile(pattern)
-                    files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                    if ninst_strings:
-                        pattern = ninst_strings[i] + suffix + datename
-                        pfile = re.compile(pattern)
-                        restfiles = [f for f in files if pfile.search(f)]
-                    else:
-                        pattern = suffix + datename
-                        pfile = re.compile(pattern)
-                        restfiles = [f for f in files if pfile.search(f)]
+                    restfiles = [f for f in files if pfile.search(f)]
                 else:
-                    pattern = suffix
+                    pattern = suffix + datename
                     pfile = re.compile(pattern)
-                    restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+                    restfiles = [f for f in files if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
@@ -400,7 +376,6 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
                         srcfile = os.path.join(rundir, restfile)
                         destfile = os.path.join(archive_restdir, restfile)
-# KDR redundant?                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         archive_file_fn(srcfile, destfile)
