@@ -557,7 +557,7 @@ class EnvBatch(EnvBase):
 
     def get_status(self, jobid):
         batch_query = self.get_optional_node("batch_query")
-        if not batch_query:
+        if batch_query is None:
             logger.warning("Batch queries not supported on this platform")
         else:
             cmd = batch_query.text + " "
@@ -574,7 +574,7 @@ class EnvBatch(EnvBase):
 
     def cancel_job(self, jobid):
         batch_cancel = self.get_optional_node("batch_cancel")
-        if not batch_cancel:
+        if batch_cancel is None:
             logger.warning("Batch cancellation not supported on this platform")
             return False
         else:
