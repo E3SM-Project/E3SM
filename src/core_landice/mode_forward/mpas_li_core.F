@@ -420,17 +420,17 @@ module li_core
          ! === Write Output and/or Restart, if needed
          ! ===
 
-         ! Process restart stream first - most critical
-         call mpas_timer_start("write restart stream")
-         call mpas_stream_mgr_write(domain % streamManager, streamID='restart', ierr=err_tmp)
+         call mpas_timer_start("write streams")
+         call mpas_stream_mgr_write(domain % streamManager, ierr=err_tmp)
          if (err_tmp > 0) then
-            call mpas_log_write('Error writing restart stream.', MPAS_LOG_ERR)
+            call mpas_log_write('Error writing output or restart streams.', MPAS_LOG_ERR)
          endif
          err = ior(err, err_tmp)
          ! Update the restart_timestamp file with the new time, if needed.
          if ( domain % dminfo % my_proc_id == 0 ) then  ! Only have 1 task write this file.
-            ! Do this only after writing to restart file has completed successfully.
+            ! Do this only after writing has completed successfully.
             ! (Otherwise we would be setting the restart_timestamp to an invalid time level.)
+            ! (This ignores the situation where restart wrote successfully but one or more other output streams did not.)
             if (err_tmp == 0) then
                isRinging = mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', &
                               direction=MPAS_STREAM_OUTPUT, ierr=err_tmp2)
@@ -470,43 +470,13 @@ module li_core
                end if ! isRinging
             end if ! err_tmp==0
          end if ! master task
-         ! Now that we are done here, reset restart alarm (can be called whether or not it was ringing)
-         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
-         if (err_tmp > 0) then
-            call mpas_log_write('Error resetting restart stream alarm.', MPAS_LOG_ERR)
-         endif
-         err = ior(err, err_tmp)
-         call mpas_timer_stop("write restart stream")
-
-         ! Process 'output' stream separately from other MPAS_STREAM_OUTPUT streams
-         call mpas_timer_start("write output stream")
-         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=err_tmp)
-         if (err_tmp > 0) then
-            call mpas_log_write('Error writing output stream.', MPAS_LOG_ERR)
-         endif
-         err = ior(err, err_tmp)
-         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=err_tmp)
-         if (err_tmp > 0) then
-            call mpas_log_write('Error resetting output stream alarm.', MPAS_LOG_ERR)
-         endif
-         err = ior(err, err_tmp)
-         call mpas_timer_stop("write output stream")
-
-         ! Process all other streams that need to be written
-         call mpas_timer_start("write other output streams")
-         call mpas_stream_mgr_write(domain % streamManager, ierr=err_tmp)
-         ! (Without streamID, all output streams processed by previous line.
-         !  'output' and 'restart' ignored because their timers have been reset.)
-         if (err_tmp > 0) then
-            call mpas_log_write('Error writing other output streams.', MPAS_LOG_ERR)
-         endif
-         err = ior(err, err_tmp)
+         ! Now that we are done here, reset output alarms (can be called whether or not it was ringing)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
          if (err_tmp > 0) then
-            call mpas_log_write('Error resetting other output stream alarms.', MPAS_LOG_ERR)
+            call mpas_log_write('Error resetting output-direction stream alarms.', MPAS_LOG_ERR)
          endif
          err = ior(err, err_tmp)
-         call mpas_timer_stop("write other output streams")
+         call mpas_timer_stop("write streams")
 
          ! === (end of output section) ===
 
