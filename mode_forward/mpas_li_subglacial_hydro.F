@@ -1335,14 +1335,11 @@ module li_subglacial_hydro
          effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
 
-      ! This is the hydropotential without the water thickness piece
-      where ( (li_mask_is_floating_ice(cellMask)) .or. &
-              ( (.not. li_mask_is_ice(cellMask)) .and. (bedTopography < config_sea_level) ) )
-         hydropotentialBase = rhoo * gravity * config_sea_level  ! set to sea level under floating ice and open ocean
-         effectivePressure = 0.0_RKIND  ! redundant with line above, but to be safe
-      elsewhere
-         hydropotentialBase = rho_water * gravity * bedTopography + waterPressure  ! normal calculation under grounded ice and ice-free land
-      end where
+      hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
+      ! This is still correct under ice shelves/open ocean because waterPressure has been set appropriately there already.
+      ! Note this leads to a nonuniform hydropotential at sea level that is a function of the ocean depth.
+      ! That is what we want because we use this as a boundary condition on the subglacial system,
+      ! and we want the subglacial system to feel the pressure of the ocean column at its edge.
 
       ! hydropotential with water thickness
       hydropotential = hydropotentialBase + rho_water * gravity * waterThickness
@@ -1477,7 +1474,7 @@ module li_subglacial_hydro
       end where
 
       ! Note: an edge with only one grounded cell neighbor is called floating, so this logic retains channel vars on those edges to allow channel discharge across GL
-      where ((li_mask_is_grounded_ice(edgeMask)) .or. (li_mask_is_grounding_line(edgeMask)))
+      where (.not. ( (li_mask_is_grounded_ice(edgeMask)) .or. (li_mask_is_grounding_line(edgeMask)) ) )
          channelArea = 0.0_RKIND
          channelDischarge = 0.0_RKIND
       end where
