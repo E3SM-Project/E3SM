@@ -56,6 +56,8 @@ class Pes(GenericXML):
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
         logger.info("Pes setting: tasks       is %s " %pes_ntasks)
+        logger.info("Pes setting: threads     is %s " %pes_nthrds)
+        logger.info("Pes setting: rootpe      is %s " %pes_rootpe)
 
         logger.info("Pes other settings: %s"%other_settings)
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
