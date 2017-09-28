@@ -52,6 +52,21 @@
     default is DIATREN_ANN_RX1.</desc>
   </entry>
 
+  <entry id="DROF_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for drof when DROF mode is CPLHIST.
+      NOTE: if this is set to 'null', then domain information is read in from the first
+      coupler history file in the target stream and it is assumed that the first coupler
+      stream file that is pointed to contains the domain information for that stream.
+      This is the default mode that should be used when DROF_MODE is CPLHIST.
+    </desc>
+  </entry>
+
   <entry id="DROF_CPLHIST_DIR">
     <type>char</type>
     <valid_values></valid_values>

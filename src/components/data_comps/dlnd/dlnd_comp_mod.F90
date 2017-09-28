@@ -22,7 +22,7 @@ module dlnd_comp_mod
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
   use glc_elevclass_mod , only: glc_get_num_elevation_classes, glc_elevclass_as_string
 
-  use dlnd_shr_mod   , only: lnd_mode       ! namelist input
+  use dlnd_shr_mod   , only: datamode       ! namelist input
   use dlnd_shr_mod   , only: decomp         ! namelist input
   use dlnd_shr_mod   , only: rest_file      ! namelist input
   use dlnd_shr_mod   , only: rest_file_strm ! namelist input
@@ -384,6 +384,19 @@ CONTAINS
     call t_stopf('dlnd_scatter')
 
     call t_stopf('dlnd')
+
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('dlnd_datamode')
+    select case (trim(datamode))
+
+    case('COPYALL')
+       ! do nothing extra
+
+    end select
+    call t_stopf('dlnd_datamode')
 
     !--------------------
     ! Write restart

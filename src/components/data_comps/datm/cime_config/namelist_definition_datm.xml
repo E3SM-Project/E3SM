@@ -39,7 +39,7 @@
     CLM1PT		= Run with supplied single point data (force CLM)
     CORE2_NYF		= CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF		= CORE2 intra-annual year forcing (for forcing POP and CICE)
-    CPLHISTForcing	= Streams for lnd or ocn/ice forcing used for spinup
+    CPLHIST     	= Streams for lnd or ocn/ice forcing used for spinup
     presaero		= Prescribed aerosol forcing
     topo		= Surface topography
     co2tseries		= Time series of prescribed CO2 forcing
@@ -172,7 +172,7 @@
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
-      <value datm_mode="CPLHISTForcing">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
+      <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
     </values>
   </entry>
 
@@ -1628,8 +1628,6 @@
       scientific modes supported by the model, they are listed below.  The
       mode is selected by a character string set in the strdata namelist
       variable dataMode.
-      datamode = "CPLHIST"
-      The same as COPYALL mode.
       datamode = "CORE2_NYF"
       Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing.
       datamode = "CORE2_IAF"
@@ -1656,7 +1654,7 @@
       <value datm_mode="CLM">CLMNCEP</value>
       <value datm_mode="CORE2_NYF">CORE2_NYF</value>
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
-      <value datm_mode="CPLHISTForcing">CPLHIST</value>
+      <value datm_mode="CPLHIST">COPYALL</value>
     </values>
   </entry>
 

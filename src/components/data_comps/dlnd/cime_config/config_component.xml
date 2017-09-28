@@ -44,6 +44,28 @@
     set to zero and not utilized. The default is NULL.</desc>
   </entry>
 
+  <entry id="DLND_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <values match="last">
+      <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
+      <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
+      <value compset="HIST.*_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
+      <value compset="RCP8.*_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
+      <value compset="20TR.*_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for dlnd when DLND mode is CPLHIST or GLC_CPLHIST.
+      NOTE: if this is set to 'null', then domain information is read in from the first
+      coupler history file in the target stream and it is assumed that the first coupler
+      stream file that is pointed to contains the domain information for that stream.
+      This is the default mode that should be used when DLND_MODE is CPLHIST or GLC_CPLHIST.
+    </desc>
+  </entry>
+
   <entry id="DLND_CPLHIST_DIR">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -76,7 +98,7 @@
 
   <entry id="DLND_CPLHIST_YR_ALIGN">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
@@ -91,7 +113,7 @@
 
   <entry id="DLND_CPLHIST_YR_START">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1976</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">26</value>
@@ -106,7 +128,7 @@
 
   <entry id="DLND_CPLHIST_YR_END">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">100</value>
