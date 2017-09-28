@@ -103,8 +103,8 @@
 		            possible_values="'none', 'C1'-'C4', 'D1'-'D5'"
 		/>
         <nml_option name="config_SGH_basal_melt" type="character" default_value="file" units="none"
-                            description="input for the basal melt"
-		            possible_values="'file', 'thermal'"
+                            description="source for the basalMeltInput term.  'file' takes whatever field was input and performs no calculation.  'thermal' uses the groundedBasalMassBal field calculated by the thermal model.  'basal_heat' calculates a melt rate assuming the entirety of the basal heat flux (basalFrictionFlux+basalHeatFlux) goes to melting ice at the bed.  This is calculated in the SGH module and is independent of any calculations in the thermal model."
+		            possible_values="'file', 'thermal', 'basal_heat'"
 		/>
 
 	</nml_record>

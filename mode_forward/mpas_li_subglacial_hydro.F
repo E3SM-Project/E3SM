@@ -239,6 +239,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: basalMeltInput
       real (kind=RKIND), dimension(:), pointer :: groundedBasalMassBal
+      real (kind=RKIND), dimension(:), pointer :: basalHeatFlux
+      real (kind=RKIND), dimension(:), pointer :: basalFrictionFlux
       real (kind=RKIND), dimension(:), pointer :: externalWaterInput
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: waterFlux
@@ -325,7 +327,7 @@ module li_subglacial_hydro
       do while (associated(block))
 
          ! Decide where the basal melt input comes from
-         ! Either prescribed or from the temperature model
+         ! Either prescribed, from the temperature model, or calculated here
          if (trim(config_SGH_basal_melt) == 'file') then
              ! do nothing
          elseif (trim(config_SGH_basal_melt) == 'thermal') then
@@ -334,6 +336,16 @@ module li_subglacial_hydro
              call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
              call mpas_pool_get_array(geometryPool,'groundedBasalMassBal',groundedBasalMassBal)
              basalMeltInput = -1.0 * groundedBasalMassBal ! TODO: Ensure positive flux?
+         elseif (trim(config_SGH_basal_melt) == 'basal_heat') then
+             call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+             call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+             call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
+             call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
+             call mpas_pool_get_array(thermalPool, 'basalFrictionFlux', basalFrictionFlux)
+             basalMeltInput = (basalHeatFlux + basalFrictionFlux) / latent_heat_ice
+         else
+            call mpas_log_write("Unknown value provided for config_SGH_basal_melt: " // trim(config_SGH_basal_melt), MPAS_LOG_ERR)
+            err = ior(err, 1)
          endif
 
          ! SHMIP forcing will override basalMeltInput.
@@ -344,7 +356,7 @@ module li_subglacial_hydro
       end do
 
       ! Perform halo update, if needed
-      if (trim(config_SGH_basal_melt) == 'thermal') then
+      if ((trim(config_SGH_basal_melt) == 'thermal') .or. (trim(config_SGH_basal_melt) == 'basal_heat')) then
          call mpas_timer_start("halo updates")
          ! (groundedBasalMassBal will not have had a halo update,
          !  because a halo update for it is unneeded except for the SGH model.)
