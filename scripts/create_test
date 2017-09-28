@@ -191,7 +191,7 @@ OR
                         "If test-id is specified, it is the user's responsibility to ensure "
                         "that each run of create_test uses a unique test-id. "
                         "(All sorts of problems can occur if you use the same test-id twice "
-                        "on the same file system.)")
+                        "on the same file system, even if the test lists are completely different.)")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
