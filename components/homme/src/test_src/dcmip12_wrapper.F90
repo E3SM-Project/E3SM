@@ -292,7 +292,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
         !let's get an analytical \phi
         he(i,j,k) = (T0 - T)/gamma
         call set_state(u,v,w,T,ps,phis,p,dp,he(i,j,k),g, i,j,k,elem(ie),1,nt)
-        call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
+        call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo; 
      call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
@@ -344,7 +344,7 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
         !    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
         ! This test obtains analytical height and returns it, so, we use it for \phi ...
         call set_state(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
-        call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
+        call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
         ! ... or we can use discrete hydro state to init \phi. 
         
      enddo; enddo; enddo; 
@@ -502,7 +502,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
         call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
         dp = pressure_thickness(ps,k,hvcoord)
         call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
-        call set_tracers(q,1, dp,i,j,k,lat,lon,elem(ie))
+        call set_tracers(q,qsize, dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo; 
      call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
