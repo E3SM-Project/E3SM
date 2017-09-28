@@ -845,6 +845,7 @@ module li_core
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_adaptive_timestep_include_DCFL
+      logical, pointer :: config_SGH
       integer :: err_tmp
 
       err = 0
@@ -857,6 +858,7 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', &
          config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_SGH', config_SGH)
 
       ! Copy data from first time level into all other time levels
       call mpas_pool_initialize_time_levels(geometryPool)
@@ -893,7 +895,8 @@ module li_core
            (trim(config_velocity_solver) == 'simple') .or.    &
            (trim(config_velocity_solver) == 'none') .or.    &
            config_do_velocity_reconstruction_for_external_dycore .or.   &
-           config_adaptive_timestep_include_DCFL) then
+           config_adaptive_timestep_include_DCFL .or. &
+           config_SGH) then
          call mpas_rbf_interp_initialize(meshPool)
          call mpas_init_reconstruct(meshPool)
       endif

@@ -85,6 +85,10 @@
 		            description="If true, then apply Albany's grounding line parameterization"
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_beta_use_effective_pressure" type="logical" default_value=".false." units="unitless"
+		            description="If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
@@ -510,7 +514,8 @@
                         <var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
                         <!-- fields only needed by SGH -->
                         <!-- SGH forcing: -->
-			<var name="basalMeltInput" packages="hydro"/>
+                        <var name="groundedBasalMassBal" packages="hydro"/>  <!-- This is only needed if config_SGH_basal_melt='thermal', but adding it always-->
+			<var name="basalMeltInput" packages="hydro"/>  <!-- This is NOT needed if config_SGH_basal_melt='thermal', but adding it always-->
                         <var name="externalWaterInput" packages="hydro"/>
                         <!-- SGH state variables: -->
 			<var name="waterThickness" packages="hydro"/>

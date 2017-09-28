@@ -108,21 +108,8 @@ module li_time_integration_fe
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
 
-      ! During integration, time level 1 stores the model state at the beginning of the
-      !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      ! (time level 1 should not be modified.)
-
-!!!      procVertexMaskChanged = 0
-
-! === Update subglacial hydrology  ===========
-! It's not clear where the best place to call this should be, so putting it first for now
-      call mpas_timer_start("subglacial hydro")
-      call li_SGH_solve(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("subglacial hydro")
-
 ! === Prepare for advection (including CFL checks) ===========
-
+! This has to come first currently, because it sets the time step!
       call mpas_timer_start("advection prep")
       call prepare_advection(domain, err_tmp)
       err = ior(err, err_tmp)
@@ -145,6 +132,16 @@ module li_time_integration_fe
       call advection_solver(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("advect thickness and tracers")
+
+! === Update subglacial hydrology  ===========
+! It's not clear where the best place to call this should be.
+! Seems sensible to put it after thermal evolution is complete to get updated basal melting source term.
+! Also seems (might be?) better to put it after geometry evolution.
+! We want it before the velocity solve since the hydro model can control  the velo basal b.c.
+      call mpas_timer_start("subglacial hydro")
+      call li_SGH_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("subglacial hydro")
 
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")

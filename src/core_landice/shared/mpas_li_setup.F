@@ -36,9 +36,9 @@ module li_setup
    !
    !--------------------------------------------------------------------
 
-   type (mpas_pool_type), pointer :: liConfigs  !< Public parameter: pool of config options
+   type (mpas_pool_type), public, pointer :: liConfigs  !< Public parameter: pool of config options
+   type (mpas_pool_type), public, pointer :: liPackages
 
-   public :: liConfigs
 
    !--------------------------------------------------------------------
    !
@@ -106,6 +106,7 @@ contains
 
       ! Make config pool publicly available in this module
       liConfigs => domain % configs
+      liPackages => domain % packages
 
 
       ! Print this run's configs to the err log file

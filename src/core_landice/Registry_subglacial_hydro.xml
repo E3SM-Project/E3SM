@@ -8,10 +8,6 @@
 		            description="activate subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_SGH_adaptive_timestep" type="logical" default_value=".false." units="unitless"
-		            description="Use adaptive timestepping for subglacial hydrology model"
-		            possible_values=".true. or .false."
-		/>
 		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
 		            description="fraction of limiting timestep to use"
 		            possible_values="positive real number"
@@ -105,6 +101,10 @@
 		<nml_option name="config_SGH_shmip_forcing" type="character" default_value="none" units="none"
                             description="calculate time-varying forcing specified by SHMIP experiments C or D"
 		            possible_values="'none', 'C1'-'C4', 'D1'-'D5'"
+		/>
+        <nml_option name="config_SGH_basal_melt" type="character" default_value="file" units="none"
+                            description="source for the basalMeltInput term.  'file' takes whatever field was input and performs no calculation.  'thermal' uses the groundedBasalMassBal field calculated by the thermal model.  'basal_heat' calculates a melt rate assuming the entirety of the basal heat flux (basalFrictionFlux+basalHeatFlux) goes to melting ice at the bed.  This is calculated in the SGH module and is independent of any calculations in the thermal model."
+		            possible_values="'file', 'thermal', 'basal_heat'"
 		/>
 
 	</nml_record>
