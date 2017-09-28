@@ -3038,7 +3038,8 @@ module li_thermal
 
          do iCell = 1, nCellsSolve
 
-            if ( floatingMask(iCell) == 1 ) then
+            ! Shut off melt at an arbitrary shallow depth to discourage ice from disappearing.
+            if ( (floatingMask(iCell) == 1) .and. (lowerSurface(iCell) < -10.0_RKIND) ) then
                ! ice is present and floating
 
                zDraft = lowerSurface(iCell) - config_sea_level
