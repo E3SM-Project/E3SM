@@ -67,8 +67,6 @@ def _get_ninst_info(case, compclass):
     for i in range(1,ninst+1):
         if ninst > 1:
             ninst_strings.append('_' + '{:04d}'.format(i))
-        else:
-            ninst_strings.append('')
 
     logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
@@ -77,7 +75,7 @@ def _get_ninst_info(case, compclass):
 def _get_component_archive_entries(case, archive):
 ###############################################################################
     """
-    Each time this is generator function is called, it yields a tuple
+    Each time this generator function is called, it yields a tuple
     (archive_entry, compname, compclass) for one component in this
     case's compset components.
     """
@@ -121,28 +119,27 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                 temp_rpointer_content = rpointer_content
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
-                if rpointer_content is not 'unset':
+                if rpointer_content != 'unset':
                     if not ninst_strings:
                         ninst_strings = ["empty"]
-                for ninst_string in ninst_strings:
-                    rpointer_file = temp_rpointer_file
-                    rpointer_content = temp_rpointer_content
-                    if ninst_string == 'empty':
-                        ninst_string = ""
-                    for key, value in [('$CASE', casename),
-                                       ('$DATENAME', datename),
-                                       ('$NINST_STRING', ninst_string)]:
-                        rpointer_file = rpointer_file.replace(key, value)
-                        rpointer_content = rpointer_content.replace(key, value)
-
-                    # write out the respect files with the correct contents
-                    rpointer_file = os.path.join(archive_restdir, rpointer_file)
-                    logger.info("writing rpointer_file {}".format(rpointer_file))
-                    f = open(rpointer_file, 'w')
-                    for output in rpointer_content.split(','):
-                        f.write("{} \n".format(output))
-                    f.close()
-
+                    for ninst_string in ninst_strings:
+                        rpointer_file = temp_rpointer_file
+                        rpointer_content = temp_rpointer_content
+                        if ninst_string == 'empty':
+                            ninst_string = ""
+                        for key, value in [('$CASE', casename),
+                                           ('$DATENAME', datename),
+                                           ('$NINST_STRING', ninst_string)]:
+                            rpointer_file = rpointer_file.replace(key, value)
+                            rpointer_content = rpointer_content.replace(key, value)
+       
+                        # write out the respective files with the correct contents
+                        rpointer_file = os.path.join(archive_restdir, rpointer_file)
+                        logger.debug("writing rpointer_file {}".format(rpointer_file))
+                        f = open(rpointer_file, 'w')
+                        for output in rpointer_content.split(','):
+                            f.write("{} \n".format(output))
+                        f.close()
 
 ###############################################################################
 def _archive_log_files(case, archive_incomplete, archive_file_fn):
@@ -192,15 +189,18 @@ def _archive_history_files(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
-            if compname == 'dart':
-                newsuffix = casename + suffix
-            elif compname.find('mpas') == 0:
-                newsuffix = compname + '.*' + suffix
+            if ninst_string:
+               if compname.find('mpas') == 0:
+                  # Not correct, but MPAS' multi-instance name format is unknown.
+                  newsuffix = compname + '.*' + suffix
+               else:
+                  newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
             else:
-                if ninst_string:
-                    newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
-                else:
-                    newsuffix = casename + '.' + compname + ".*" + suffix
+               if compname.find('mpas') == 0:
+                  newsuffix = compname + '.*' + suffix
+               else:
+                  newsuffix = casename + '.' + compname + ".*" + suffix
+
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
@@ -329,21 +329,14 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
                 pattern = r"{}\.{}\d*.*".format(casename, compname)
-                if "dart" not in pattern:
-                    pfile = re.compile(pattern)
-                    files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                    if ninst_strings:
-                        pattern = ninst_strings[i] + suffix + datename
-                        pfile = re.compile(pattern)
-                        restfiles = [f for f in files if pfile.search(f)]
-                    else:
-                        pattern = suffix + datename
-                        pfile = re.compile(pattern)
-                        restfiles = [f for f in files if pfile.search(f)]
+                pfile = re.compile(pattern)
+                files = [f for f in os.listdir(rundir) if pfile.search(f)]
+                if ninst_strings:
+                    pattern = ninst_strings[i] + suffix + datename
                 else:
-                    pattern = suffix
-                    pfile = re.compile(pattern)
-                    restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+                    pattern = suffix + datename
+                pfile = re.compile(pattern)
+                restfiles = [f for f in files if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
@@ -364,21 +357,20 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
                     last_restart_file_fn(srcfile, destfile)
-                    logger.info("{} \n{} to \n{}".format(
-                        last_restart_file_fn_msg, srcfile, destfile))
+                    logger.info("{} {} \n{} to \n{}".format(
+                        "datename_is_last", last_restart_file_fn_msg, srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         shutil.copy(srcfile, destfile)
-                        logger.info("copying \n{} to \n{}".format(srcfile, destfile))
+                        logger.info("datename_is_last + histfiles_for_restart copying \n{} to \n{}".format(srcfile, destfile))
                 else:
                     # Only archive intermediate restarts if requested - otherwise remove them
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
                         srcfile = os.path.join(rundir, restfile)
                         destfile = os.path.join(archive_restdir, restfile)
-                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         archive_file_fn(srcfile, destfile)
