@@ -88,9 +88,6 @@ def _get_component_archive_entries(case, archive):
         if archive_entry is not None:
             yield(archive_entry, compname, archive_entry.get("compclass"))
 
-    if compname not in compset_comps:
-        logger.debug('Skipping compname %s; it is not in compset_comps' %(compname))
-
 ###############################################################################
 def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                             datename, datename_is_last):
@@ -336,12 +333,10 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:
                     pattern = ninst_strings[i] + suffix + datename
-                    pfile = re.compile(pattern)
-                    restfiles = [f for f in files if pfile.search(f)]
                 else:
                     pattern = suffix + datename
-                    pfile = re.compile(pattern)
-                    restfiles = [f for f in files if pfile.search(f)]
+                pfile = re.compile(pattern)
+                restfiles = [f for f in files if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
