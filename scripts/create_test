@@ -184,10 +184,14 @@ OR
                         "The default is user-specified environment variable PROJECT")
 
     parser.add_argument("-t", "--test-id",
-                        help="Specify an 'id' for the test. This is simply a"
-                        "string that is appended to the end of a test name."
-                        "If no testid is specified, then a time stamp plus random number"
-                        "will be used.")
+                        help="Specify an 'id' for the test. This is simply a "
+                        "string that is appended to the end of a test name. "
+                        "If no test-id is specified, then a time stamp plus random "
+                        "string will be used (ensuring a high probability of uniqueness). "
+                        "If test-id is specified, it is the user's responsibility to ensure "
+                        "that each run of create_test uses a unique test-id. "
+                        "(All sorts of problems can occur if you use the same test-id twice "
+                        "on the same file system, even if the test lists are completely different.)")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
