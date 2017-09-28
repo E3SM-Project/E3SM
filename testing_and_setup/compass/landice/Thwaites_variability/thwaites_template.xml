@@ -15,7 +15,7 @@
                 <option name="config_calving">'none'</option>
                 <option name="config_ice_density">910.0</option>
                 <option name="config_ocean_density">1028.0</option>
-                <option name="config_dynamic_thickness">10.0</option>
+                <option name="config_dynamic_thickness">0.001</option>
                 <option name="config_adaptive_timestep">.true.</option>
                 <option name="config_adaptive_timestep_CFL_fraction">0.4</option>
                 <option name="config_adaptive_timestep_force_interval">'0001-00-00_00:00:00'</option>
