@@ -871,11 +871,17 @@ contains
     integer            :: restart_file_spinup_state 
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    real(r8)           :: smax_c, ks_sorption_c
+
     !------------------------------------------------------------------------
 
     !--------------------------------
     ! patch phosphorus state variables
     !--------------------------------
+    associate(&
+         isoilorder     => cnstate_vars%isoilorder &
+         )
+
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -1010,6 +1016,7 @@ contains
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
     else
 
        ptr1d => this%solutionp_vr_col(:,1)
@@ -1292,6 +1299,7 @@ contains
        end if
        
     end if
+    end associate
 
   end subroutine Restart
 

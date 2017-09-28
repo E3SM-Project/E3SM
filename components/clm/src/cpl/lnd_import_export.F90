@@ -735,16 +735,15 @@ contains
         wt2(1) = 1._r8 - wt1(1)
 
         !DMR note - ndep will NOT be correct if more than 1850 years of model spinup (model year > 1850)
-        nindex(1) = yr-1848
-        nindex(2) = nindex(1)+1
+        nindex(1) = min(max(yr-1848,2), 158)
+        nindex(2) = min(nindex(1)+1, 158)
 
         if (yr .lt. 1850) nindex(1:2) = 2
         if (yr .gt. 1848+thistimelen) nindex(1:2) = thistimelen   !assume 1849 is start year
             
         atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep_input(g,1,nindex(1))*wt1(1) + &
                                             atm2lnd_vars%ndep_input(g,1,nindex(2))*wt2(1)) / (365._r8 * 86400._r8)
-        !print*, xtoget, ytoget, ldomain%lonc(g), smap2_lon(thisx), atm2lnd_vars%forc_ndep_grc(g),  (atm2lnd_vars%ndep_input(g,1,nindex(1))*wt1(1))
-
+        !print*, 'NINDEX', nindex(1), nindex(2), atm2lnd_vars%forc_ndep_grc(g) 
    !------------------------------------Aerosol forcing--------------------------------------------------
        if (nstep .eq. 0) then 
           aerovars(1) = 'BCDEPWET'

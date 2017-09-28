@@ -339,6 +339,8 @@ contains
             c = filter_soilc(fc)
             immob(c,j) = 0._r8
             immob_p(c,j) = 0._r8
+            gross_nmin_vr(c,j) = 0._r8
+            gross_pmin_vr(c,j) = 0._r8
          end do
       end do
       do k = 1, ndecomp_cascade_transitions
