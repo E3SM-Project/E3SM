@@ -1379,6 +1379,13 @@ contains
 
                 ! sunlit fraction of canopy
                 fsun_z(p,1) = (1._r8 - s2) / t1
+!Modified by Ming 11/05/2016
+                extkn = 0.30_r8
+                extkb = twostext(p)
+                if (elai(p) > 0._r8) then
+                   fsun_z(p,1) = (1._r8 -exp(-extkb*elai(p)))*(1-exp(-extkb*esai(p)))/(extkb*extkb*esai(p)*elai(p))
+                end if
+!End of change
 
                 ! absorbed PAR (per unit sun/shade lai+sai)
                 laisum = elai(p)+esai(p)
@@ -1388,10 +1395,17 @@ contains
                 fabi_sha_z(p,1) = fabi_sha(p,ib) / ((1._r8 - fsun_z(p,1))*laisum)
 
                 ! leaf to canopy scaling coefficients
-                extkn = 0.30_r8
-                extkb = twostext(p)
-                vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
-                vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn - vcmaxcintsun(p)
+!Changed by Ming 11/12/2016
+                !extkn = 0.30_r8 !moved up before calculating fsun
+                !extkb = twostext(p)   !moved up before calculating fsun
+                !vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
+                 vcmaxcintsun(p) = ((1._r8 - exp(-extkb*esai(p))) / extkb )* &
+                                   ((1._r8 - exp(-(extkn+extkb)*elai(p)))/(extkn+extkb))/esai(p)
+
+                !vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn - vcmaxcintsun(p)
+                 vcmaxcintsha(p) = (esai(p)*(1._r8 - exp(-extkn*elai(p)))/extkn)/esai(p) - vcmaxcintsun(p)
+!End of change
+
                 if (elai(p)  >  0._r8) then
                   vcmaxcintsun(p) = vcmaxcintsun(p) / (fsun_z(p,1)*elai(p))
                   vcmaxcintsha(p) = vcmaxcintsha(p) / ((1._r8 - fsun_z(p,1))*elai(p))
