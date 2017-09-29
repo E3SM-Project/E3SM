@@ -1496,16 +1496,6 @@ module atm_time_integration
                   call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
                   call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
 
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
-
-                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
-                  call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
-                  call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
-                  call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
-
                   if(debug_regional) write(0,*) ' getting driving values, ignore error messages '
                   scalars_driving(index_qv,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qv', rk_timestep(rk_step) )
                   scalars_driving(index_qc,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qc', rk_timestep(rk_step) )
@@ -1521,11 +1511,7 @@ module atm_time_integration
                   do thread=1,nThreads
                      call atm_bdy_adjust_scalars( state, diag, mesh, block % configs, scalars_driving, nVertLevels, dt, rk_timestep(rk_step), &
                                                   cellThreadStart(thread), cellThreadEnd(thread), &
-                                                  vertexThreadStart(thread), vertexThreadEnd(thread), &
-                                                  edgeThreadStart(thread), edgeThreadEnd(thread), &
-                                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
-                                                  vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
-                                                  edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread) )
+                                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread) )
                   end do
 !$OMP END PARALLEL DO
 
@@ -6780,8 +6766,8 @@ module atm_time_integration
 
 !-------------------------------------------------------------------------
    subroutine atm_bdy_adjust_scalars( state, diag, mesh, config, scalars_driving, nVertLevels, dt, dt_rk, &
-                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd,    &
-                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+                                       cellStart, cellEnd, &
+                                       cellSolveStart, cellSolveEnd )
 
       implicit none
 
@@ -6796,8 +6782,8 @@ module atm_time_integration
       type (mpas_pool_type), intent(in) :: mesh
       type (mpas_pool_type), intent(in) :: config
       integer, intent(in) :: nVertLevels
-      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
-      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+      integer, intent(in) :: cellStart, cellEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd
 
       real (kind=RKIND), intent(in) :: dt, dt_rk
       real (kind=RKIND), dimension(:,:,:), intent(in) :: scalars_driving
@@ -6807,7 +6793,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: invDcEdge, dvEdge, meshScalingRegionalCell
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge
-      integer, pointer :: nCells, nEdges, maxEdges, num_scalars
+      integer, pointer :: nCells, maxEdges, num_scalars
       integer, dimension(:), pointer :: bdyMaskCell
 
       call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
@@ -6822,37 +6808,36 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
       call mpas_pool_get_dimension(mesh, 'maxEdges', maxEdges)
 
       call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
       call atm_bdy_adjust_scalars_work( scalars_new, scalars_driving, dt, dt_rk, &
-                                        nVertLevels, nCells, nEdges, num_scalars, &
+                                        nVertLevels, nCells, num_scalars, &
                                         nEdgesOnCell, edgesOnCell, EdgesOnCell_sign, cellsOnEdge, dvEdge, invDcEdge, bdyMaskCell, &
                                         meshScalingRegionalCell,  &
-                                        cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-                                        cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd )
+                                        cellStart, cellEnd, &
+                                        cellSolveStart, cellSolveEnd )
 
    end subroutine atm_bdy_adjust_scalars
 
 !-------------------------------------------------------------------------
 
    subroutine atm_bdy_adjust_scalars_work( scalars_new, scalars_driving, dt, dt_rk, &
-                                           nVertLevels, nCells, nEdges, num_scalars, &
+                                           nVertLevels, nCells, num_scalars, &
                                            nEdgesOnCell, edgesOnCell, EdgesOnCell_sign, cellsOnEdge, dvEdge, invDcEdge, bdyMaskCell, &
                                            meshScalingRegionalCell,  &
-                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd )
+                                           cellStart, cellEnd, &
+                                           cellSolveStart, cellSolveEnd )
 
       implicit none
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: scalars_driving
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: scalars_new
       real (kind=RKIND), dimension(:,:), intent(in) :: edgesOnCell_sign
-      integer, intent(in) :: nVertLevels, nCells, nEdges, num_scalars
-      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
-      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+      integer, intent(in) :: nVertLevels, nCells, num_scalars
+      integer, intent(in) :: cellStart, cellEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd
       integer, dimension(:), intent(in) :: nEdgesOnCell, bdyMaskCell
       integer, dimension(:,:), intent(in) :: edgesOnCell, cellsOnEdge
       real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invDcEdge, meshScalingRegionalCell
