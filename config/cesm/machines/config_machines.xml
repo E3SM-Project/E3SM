@@ -191,7 +191,7 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="centos7_linux">
+  <machine MACH="centos7-linux">
     <DESC>
 	Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
         using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules         
