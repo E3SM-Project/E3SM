@@ -132,7 +132,7 @@ def _archive_rpointer_files(case, archive, archive_entry, archive_restdir,
                                            ('$NINST_STRING', ninst_string)]:
                             rpointer_file = rpointer_file.replace(key, value)
                             rpointer_content = rpointer_content.replace(key, value)
-       
+
                         # write out the respective files with the correct contents
                         rpointer_file = os.path.join(archive_restdir, rpointer_file)
                         logger.debug("writing rpointer_file {}".format(rpointer_file))
@@ -190,16 +190,16 @@ def _archive_history_files(case, archive, archive_entry,
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
             if ninst_string:
-               if compname.find('mpas') == 0:
-                  # Not correct, but MPAS' multi-instance name format is unknown.
-                  newsuffix = compname + '.*' + suffix
-               else:
-                  newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+                if compname.find('mpas') == 0:
+                    # Not correct, but MPAS' multi-instance name format is unknown.
+                    newsuffix = compname + '.*' + suffix
+                else:
+                    newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
             else:
-               if compname.find('mpas') == 0:
-                  newsuffix = compname + '.*' + suffix
-               else:
-                  newsuffix = casename + '.' + compname + ".*" + suffix
+                if compname.find('mpas') == 0:
+                    newsuffix = compname + '.*' + suffix
+                else:
+                    newsuffix = casename + '.' + compname + ".*" + suffix
 
             logger.debug("short term archiving suffix is {} ".format(newsuffix))
             pfile = re.compile(newsuffix)
