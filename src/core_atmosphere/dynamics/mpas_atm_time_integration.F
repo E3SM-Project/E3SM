@@ -673,14 +673,11 @@ module atm_time_integration
                block => domain % blocklist
                do while (associated(block))
 
-                  call mpas_pool_get_subpool(block % structs, 'state', state)
-                  call mpas_pool_get_subpool(block % structs, 'diag', diag)
                   call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
                   call mpas_pool_get_subpool(block % structs, 'tend', tend)
    
                   call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                   call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-                  call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                   call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
 
@@ -705,8 +702,8 @@ module atm_time_integration
 !$OMP PARALLEL DO
                   do thread=1,nThreads
                      if(debug_regional) write(0,*) ' calling spec zone tend adjust '
-                     call atm_bdy_adjust_dynamics_speczone_tend( tend, state, diag, mesh, block % configs, nVertLevels,                    &
-                                                                 ru_driving_tend, rt_driving_tend, rho_driving_tend,                       &
+                     call atm_bdy_adjust_dynamics_speczone_tend( tend, mesh, block % configs, nVertLevels,                 &
+                                                                 ru_driving_tend, rt_driving_tend, rho_driving_tend,       &
                                                                  cellThreadStart(thread), cellThreadEnd(thread),           &
                                                                  edgeThreadStart(thread), edgeThreadEnd(thread),           &
                                                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
@@ -733,7 +730,6 @@ module atm_time_integration
    
                   call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                   call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-                  call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                   call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
 
@@ -746,11 +742,6 @@ module atm_time_integration
                   call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
                   call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
                   call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
-
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
-                  call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
 
                   allocate(ru_driving_values(nVertLevels,nEdges+1))
                   allocate(rt_driving_values(nVertLevels,nCells+1))
@@ -766,13 +757,11 @@ module atm_time_integration
 !$OMP PARALLEL DO
                   do thread=1,nThreads
                      if(debug_regional) write(0,*) ' calling relax zone tend adjust '
-                     call atm_bdy_adjust_dynamics_relaxzone_tend( tend, state, diag, mesh, block % configs, nVertLevels, dt,                    &
-                                                                  ru_driving_values, rt_driving_values, rho_driving_values,                     &
-                                                                  cellThreadStart(thread), cellThreadEnd(thread),               &
-                                                                  vertexThreadStart(thread), vertexThreadEnd(thread),           &
-                                                                  edgeThreadStart(thread), edgeThreadEnd(thread),               &
-                                                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread),     &
-                                                                  vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                     call atm_bdy_adjust_dynamics_relaxzone_tend( tend, state, diag, mesh, nVertLevels, dt,                   &
+                                                                  ru_driving_values, rt_driving_values, rho_driving_values,   &
+                                                                  cellThreadStart(thread), cellThreadEnd(thread),             &
+                                                                  edgeThreadStart(thread), edgeThreadEnd(thread),             &
+                                                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread),   &
                                                                   edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread) )
                      if(debug_regional) write(0,*) ' returned from relax zone tend adjust '
                   end do
@@ -6316,7 +6305,7 @@ module atm_time_integration
 
 !-------------------------------------------------------------------------
 
-   subroutine atm_bdy_adjust_dynamics_speczone_tend( tend, state, diag, mesh, config, nVertLevels,               &
+   subroutine atm_bdy_adjust_dynamics_speczone_tend( tend, mesh, config, nVertLevels,               &
                                                      ru_driving_tend, rt_driving_tend, rho_driving_tend,         &
                                                      cellStart, cellEnd, edgeStart, edgeEnd,                     &
                                                      cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd )
@@ -6329,9 +6318,7 @@ module atm_time_integration
       !
       !  WCS Fall 2016
 
-      type (mpas_pool_type), intent(in) :: state
       type (mpas_pool_type), intent(inout) :: tend
-      type (mpas_pool_type), intent(in) :: diag
       type (mpas_pool_type), intent(in) :: mesh
       type (mpas_pool_type), intent(in) :: config
       integer, intent(in) :: nVertLevels
@@ -6366,8 +6353,6 @@ module atm_time_integration
       do iEdge = edgeSolveStart, edgeSolveEnd
          if(bdyMaskEdge(iEdge) > nRelaxZone) then
             do k=1, nVertLevels
-!  wcs error_1
-!               tend_ru(k,iEdge) = ru_driving_tend(k,iCell)
                tend_ru(k,iEdge) = ru_driving_tend(k,iEdge)
             end do
          end if
@@ -6377,10 +6362,10 @@ module atm_time_integration
 
 !-------------------------------------------------------------------------
 
-   subroutine atm_bdy_adjust_dynamics_relaxzone_tend( tend, state, diag, mesh, config, nVertLevels, dt,                                             &
+   subroutine atm_bdy_adjust_dynamics_relaxzone_tend( tend, state, diag, mesh, nVertLevels, dt,                                             &
                                                       ru_driving_values, rt_driving_values, rho_driving_values,                                     &
-                                                      cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd,                               &
-                                                      cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd )
+                                                      cellStart, cellEnd, edgeStart, edgeEnd,                               &
+                                                      cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd )
 
       implicit none
 
@@ -6394,10 +6379,9 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: tend
       type (mpas_pool_type), intent(in) :: diag
       type (mpas_pool_type), intent(in) :: mesh
-      type (mpas_pool_type), intent(in) :: config
       integer, intent(in) :: nVertLevels
-      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
-      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+      integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
       real (kind=RKIND), intent(in) :: dt
 
@@ -6463,8 +6447,6 @@ module atm_time_integration
          if( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then
             rayleigh_damping_coef = (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(50.*dt*meshScalingRegionalEdge(iEdge))
             do k=1, nVertLevels
-!  wcs error_1
-!               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iCell) - ru(k,iCell))
                tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iEdge) - ru(k,iEdge))
             end do
          end if
