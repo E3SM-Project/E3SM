@@ -790,14 +790,14 @@ module atm_time_integration
 !$OMP PARALLEL DO
                   do thread=1,nThreads
                      if(debug_regional) write(0,*) ' calling check for spec zone values, rk_step = ',rk_step
-                     call atm_bdy_check_values                  ( tend, state, diag, mesh, block % configs, nVertLevels, dt,    &
-                                                                  ru_driving_values, rt_driving_values, rho_driving_values,     &
-                                                                  cellThreadStart(thread), cellThreadEnd(thread),               &
-                                                                  vertexThreadStart(thread), vertexThreadEnd(thread),           &
-                                                                  edgeThreadStart(thread), edgeThreadEnd(thread),               &
-                                                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread),     &
-                                                                  vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
-                                                                  edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread) )
+                     call atm_bdy_check_values( tend, state, diag, mesh, block % configs, nVertLevels, dt,    &
+                                                ru_driving_values, rt_driving_values, rho_driving_values,     &
+                                                cellThreadStart(thread), cellThreadEnd(thread),               &
+                                                vertexThreadStart(thread), vertexThreadEnd(thread),           &
+                                                edgeThreadStart(thread), edgeThreadEnd(thread),               &
+                                                cellSolveThreadStart(thread), cellSolveThreadEnd(thread),     &
+                                                vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                                edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread) )
                      if(debug_regional) write(0,*) ' returned from check '
                   end do
 !$OMP END PARALLEL DO
@@ -6373,7 +6373,7 @@ module atm_time_integration
          end if
       end do
       
-      end subroutine atm_bdy_adjust_dynamics_speczone_tend
+    end subroutine atm_bdy_adjust_dynamics_speczone_tend
 
 !-------------------------------------------------------------------------
 
@@ -6567,7 +6567,7 @@ module atm_time_integration
 
        end do  !  end of loop over edges
        
-    end subroutine atm_bdy_adjust_dynamics_relaxzone_tend
+   end subroutine atm_bdy_adjust_dynamics_relaxzone_tend
       
 !-------------------------------------------------------------------------
 
@@ -6698,7 +6698,7 @@ module atm_time_integration
       
 !      write(0,*) ' ru ncheck, nerr, max error = ',ncheck, nerr, errormax
 
-    end subroutine atm_bdy_check_values
+   end subroutine atm_bdy_check_values
       
 !-------------------------------------------------------------------------
 
