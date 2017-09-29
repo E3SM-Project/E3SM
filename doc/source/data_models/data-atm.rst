@@ -45,15 +45,13 @@ These variables will appear in ``env_run.xml`` and the resulting values are comp
 
 .. note:: If ``DATM_MODE`` is set to ``CPLHIST``, it is normally assumed that the model domain will be identical to **all** of the stream domains. To ensure this, the xml variables ``ATM_DOMAIN_PATH`` and ``ATM_DOMAIN_FILE`` are ignored and a valid setting **must be given** for ``DATM_CPLHIST_DOMAIN_FILE``. If ``DATM_CPLHIST_DOMAIN_FILE`` is set to ``null``, then the datm component domain information is read in from the first coupler history file in the target stream and  it is assumed that the first coupler stream file that is pointed to contains the domain  information for that stream. This is the default mode that should be used for this mode. Alternatively, ``DATM_CPLHIST_DOMAIN_FILE`` can be set to ``$ATM_DOMAIN_PATH/$ATM_DOMAIN_FILE`` in a non-default configuration.
 
-.. note::
-
 .. _datm-datamodes:
 
 --------------------
 datamode values
 --------------------
 
-The xml variable ``DATM_MODE`` sets the streams that are associated with DATM and also sets the namelist variable ``datamode`` that specifies what additional operations need to be done by DATM on the streams before returning to the driver.
+The xml variable ``DATM_MODE`` is used to set the streams that are associated with DATM and also to set the namelist variable ``datamode`` that specifies what additional operations need to be done by DATM on the streams before returning to the driver.
 One of the variables in ``shr_strdata_nml`` is ``datamode``, whose value is a character string.  Each data model has a unique set of ``datamode`` values that it supports.
 The valid values for ``datamode`` are set in the file ``namelist_definition_datm.xml`` using the xml variable ``DATM_MODE`` in the ``config_component.xml`` file for DATM.
 CIME will generate a value ``datamode`` that is compset dependent.
@@ -109,9 +107,9 @@ The following tabe describes the valid values of ``DATM_MODE``, and how it relat
    "CLM1PT", "single point tower site atm input data"
    "","streams: CLM1PT.$ATM_GRID"
    "","datamode: CLMNCEP"
-   "CPLHIST","user generated forcing data to spinup for I and G compsets"
-   "","streams: CPLHISTForcingForOcnIce.Solar,CPLHISTForcingForOcnIce.nonSolarFlux,"
-   "","CPLHISTForcingForOcnIce.State3hr,CPLHISTForcingForOcnIce.State1hr"
+   "CPLHIST","user generated forcing data from using coupler history files used to spinup relevant prognostic components (for CESM this is CLM, POP and CISM)"
+   "","streams: CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,"
+   "","CPLHISTForcing.State3hr,CPLHISTForcing.State1hr"
    "","datamode: CPLHIST"
    "WW3","WW3 wave watch data from a short period of hi WW3 wave watch data from a short period of hi temporal frequency COREv2 data"
    "","streams: WW3"
