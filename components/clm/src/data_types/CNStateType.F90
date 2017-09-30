@@ -17,6 +17,9 @@ module CNStateType
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
   use clm_varctl     , only: forest_fert_exp
+  use clm_varctl          , only : nu_com
+  use clm_varctl   , only:  use_ed,use_crop
+
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -733,17 +736,24 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    allocate(soilorder_rdin(bounds%begg:bounds%endg))
-    call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       this%isoilorder(c) = soilorder_rdin(g)
-    end do
-    deallocate(soilorder_rdin)
+    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. .not. use_ed .and. .not. use_crop )    
+       allocate(soilorder_rdin(bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%isoilorder(c) = soilorder_rdin(g)
+       end do
+       deallocate(soilorder_rdin)
 
+    else
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          this%isoilorder(c) = 12
+       end do 
+    end if
 
     ! --------------------------------------------------------------------
     ! forest fertilization experiments info, Q. Z. 2017
