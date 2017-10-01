@@ -389,9 +389,9 @@ derived_variables = {
     'SST': OrderedDict([
         # lambda sst: convert_units(rename(sst),target_units="degC")),
         (('sst'), rename),
-        (('SST'), lambda sst: convert_units(sst, target_units="degC")),
         (('TS', 'OCNFRAC'), lambda ts, ocnfrac: mask_by(
-            convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9))
+            convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9)),
+        (('SST'), lambda sst: convert_units(sst, target_units="degC"))
     ]),
     'PREH2O': OrderedDict([
         (('TMQ'), rename),
