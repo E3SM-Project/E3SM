@@ -121,13 +121,14 @@ module seq_flds_mod
   ! variables CCSM_VOC, CCSM_BGC and GLC_NEC.
   !====================================================================
 
-   use shr_kind_mod,   only : CX => shr_kind_CX, CXX => shr_kind_CXX
-   use shr_sys_mod,    only : shr_sys_abort
-   use seq_drydep_mod, only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
-   use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
-   use shr_megan_mod,  only : shr_megan_readnl, shr_megan_mechcomps_n
-   use shr_fire_emis_mod,  only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
-   use shr_carma_mod,  only : shr_carma_readnl
+   use shr_kind_mod      , only : CX => shr_kind_CX, CXX => shr_kind_CXX
+   use shr_sys_mod       , only : shr_sys_abort
+   use seq_comm_mct      , only : seq_comm_iamroot, seq_comm_setptrs, logunit
+   use seq_drydep_mod    , only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
+   use shr_megan_mod     , only : shr_megan_readnl, shr_megan_mechcomps_n
+   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
+   use shr_carma_mod     , only : shr_carma_readnl
+   use shr_ndep_mod      , only : shr_ndep_readnl
 
    implicit none
    public
@@ -143,8 +144,10 @@ module seq_flds_mod
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
    character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
+   character(len=CX)  :: ndep_fields         ! List of nitrogen deposition fields from atm->lnd/ocn
    integer            :: ice_ncat            ! number of sea ice thickness categories
    logical            :: seq_flds_i2o_per_cat! .true. if select per ice thickness category fields are passed from ice to ocean
+   logical            :: add_ndep_fields     ! .true. => add ndep fields
 
    !----------------------------------------------------------------------------
    ! metadata
@@ -211,6 +214,8 @@ module seq_flds_mod
    character(CXX) :: seq_flds_r2x_fluxes
    character(CXX) :: seq_flds_x2r_states
    character(CXX) :: seq_flds_x2r_fluxes
+   character(CXX) :: seq_flds_r2o_liq_fluxes
+   character(CXX) :: seq_flds_r2o_ice_fluxes
 
    !----------------------------------------------------------------------------
    ! combined state/flux fields
@@ -321,6 +326,8 @@ module seq_flds_mod
      character(CXX) :: w2x_fluxes = ''
      character(CXX) :: x2w_states = ''
      character(CXX) :: x2w_fluxes = ''
+     character(CXX) :: r2o_liq_fluxes = ''
+     character(CXX) :: r2o_ice_fluxes = ''
 
      character(CXX) :: stringtmp  = ''
 
@@ -633,7 +640,7 @@ module seq_flds_mod
      call seq_flds_add(a2x_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
-     if (cime_model == 'acme') then
+     if (trim(cime_model) == 'acme') then
         call seq_flds_add(x2o_states,"Sa_pbot")
      end if
      longname = 'Pressure at the lowest model level'
@@ -1099,7 +1106,6 @@ module seq_flds_mod
      units    = 'm'
      attname  = 'Sl_snowh'
      call metadata_set(attname, longname, stdname, units)
-
 
      ! Surface snow depth (ice/atm only)
      call seq_flds_add(i2x_states,"Si_snowh")
@@ -1957,12 +1963,33 @@ module seq_flds_mod
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
 
+     ! Currently only the CESM land and runoff models treat irrigation as a separate
+     ! field: in ACME, this field is folded in to the other runoff fields. Eventually,
+     ! ACME may want to update its land and runoff models to map irrigation specially, as
+     ! CESM does.
+     !
+     ! (Once ACME is using this irrigation field, all that needs to be done is to remove
+     ! this conditional: Code in other places in the coupler is written to trigger off of
+     ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
+     ! conditional is removed.)
+     if (trim(cime_model) == 'cesm') then
+        ! Irrigation flux (land/rof only)
+        call seq_flds_add(l2x_fluxes,"Flrl_irrig")
+        call seq_flds_add(x2r_fluxes,"Flrl_irrig")
+        longname = 'Irrigation flux (withdrawal from rivers)'
+        stdname  = 'irrigation'
+        units    = 'kg m-2 s-1'
+        attname  = 'Flrl_irrig'
+        call metadata_set(attname, longname, stdname, units)
+     end if
+
      !-----------------------------
      ! rof->ocn (runoff) and rof->lnd (flooding)
      !-----------------------------
 
      call seq_flds_add(r2x_fluxes,'Forr_rofl')
      call seq_flds_add(x2o_fluxes,'Foxx_rofl')
+     call seq_flds_add(r2o_liq_fluxes,'Forr_rofl')
      longname = 'Water flux due to runoff (liquid)'
      stdname  = 'water_flux_into_sea_water'
      units    = 'kg m-2 s-1'
@@ -1973,6 +2000,7 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Forr_rofi')
      call seq_flds_add(x2o_fluxes,'Foxx_rofi')
+     call seq_flds_add(r2o_ice_fluxes,'Forr_rofi')
      longname = 'Water flux due to runoff (frozen)'
      stdname  = 'frozen_water_flux_into_sea_water'
      units    = 'kg m-2 s-1'
@@ -2344,6 +2372,7 @@ module seq_flds_mod
 
         call seq_flds_add(a2x_states, "Sa_co2prog")
         call seq_flds_add(x2l_states, "Sa_co2prog")
+        call seq_flds_add(x2o_states, "Sa_co2prog")
         longname = 'Prognostic CO2 at the lowest model level'
         stdname  = ''
         units    = '1e-6 mol/mol'
@@ -2352,6 +2381,7 @@ module seq_flds_mod
 
         call seq_flds_add(a2x_states, "Sa_co2diag")
         call seq_flds_add(x2l_states, "Sa_co2diag")
+        call seq_flds_add(x2o_states, "Sa_co2diag")
         longname = 'Diagnostic CO2 at the lowest model level'
         stdname  = ''
         units    = '1e-6 mol/mol'
@@ -2838,7 +2868,8 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
 
        !Iso-Runoff
-       ! l2x, x2r
+       ! r2o, l2x, x2r
+
        units    = 'kg m-2 s-1'
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_16O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofi_16O')
@@ -2881,6 +2912,7 @@ module seq_flds_mod
        ! r2x, x2o
        call seq_flds_add(r2x_fluxes,'Forr_rofl_16O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_16O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_16O')
        longname = 'H2_16O Water flux due to liq runoff '
        stdname  = 'H2_16O_water_flux_into_sea_water'
        attname  = 'Forr_rofl_16O'
@@ -2889,6 +2921,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofl_18O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_18O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_18O')
        longname = 'H2_18O Water flux due to liq runoff '
        stdname  = 'H2_18O_water_flux_into_sea_water'
        attname  = 'Forr_rofl_18O'
@@ -2897,6 +2930,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofl_HDO')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_HDO')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_HDO')
        longname = 'HDO Water flux due to liq runoff '
        stdname  = 'HDO_water_flux_into_sea_water'
        attname  = 'Forr_rofl_HDO'
@@ -2906,6 +2940,7 @@ module seq_flds_mod
 
        call seq_flds_add(r2x_fluxes,'Forr_rofi_16O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_16O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_16O')
        longname = 'H2_16O Water flux due to ice runoff '
        stdname  = 'H2_16O_water_flux_into_sea_water'
        attname  = 'Forr_rofi_16O'
@@ -2914,6 +2949,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofi_18O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_18O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_18O')
        longname = 'H2_18O Water flux due to ice runoff '
        stdname  = 'H2_18O_water_flux_into_sea_water'
        attname  = 'Forr_rofi_18O'
@@ -2922,6 +2958,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofi_HDO')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_HDO')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_HDO')
        longname = 'HDO Water flux due to ice runoff '
        stdname  = 'HDO_water_flux_into_sea_water'
        attname  = 'Forr_rofi_HDO'
@@ -3092,7 +3129,6 @@ module seq_flds_mod
         units    = 'm'
 
         call metadata_set(shr_fire_emis_ztop_token, longname, stdname, units)
-
      endif
 
      !-----------------------------------------------------------------------------
@@ -3112,10 +3148,30 @@ module seq_flds_mod
         longname = 'dry deposition velocity'
         stdname  = 'drydep_vel'
         units    = 'cm/sec'
-        call metadata_set(seq_drydep_fields, longname, stdname, units)
 
+        call metadata_set(seq_drydep_fields, longname, stdname, units)
      endif
      call seq_drydep_init( )
+
+     !-----------------------------------------------------------------------------
+     ! Nitrogen Deposition fields
+     ! First read namelist and figure out the ndepdep field list to pass
+     ! Then check if file exists and if not, n_drydep will be zero
+     ! Then add nitrogen deposition fields to atm export, lnd import and ocn import
+     !-----------------------------------------------------------------------------
+
+     call shr_ndep_readnl(nlfilename="drv_flds_in", ID=ID, ndep_fields=ndep_fields, add_ndep_fields=add_ndep_fields)
+     if (add_ndep_fields) then
+        call seq_flds_add(a2x_fluxes, ndep_fields)
+        call seq_flds_add(x2l_fluxes, ndep_fields)
+        call seq_flds_add(x2o_fluxes, ndep_fields)
+
+        longname = 'nitrogen deposition flux'
+        stdname  = 'nitrogen_deposition'
+        units    = 'kg(N)/m2/sec' 
+
+        call metadata_set(ndep_fields, longname, stdname, units)
+     end if
 
      !----------------------------------------------------------------------------
      ! state + flux fields
@@ -3162,6 +3218,8 @@ module seq_flds_mod
      seq_flds_x2r_fluxes = trim(x2r_fluxes)
      seq_flds_w2x_fluxes = trim(w2x_fluxes)
      seq_flds_x2w_fluxes = trim(x2w_fluxes)
+     seq_flds_r2o_liq_fluxes = trim(r2o_liq_fluxes)
+     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
 
      if (seq_comm_iamroot(ID)) then
         write(logunit,"(A)") subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)

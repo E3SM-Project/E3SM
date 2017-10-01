@@ -264,7 +264,8 @@ contains
     ! Entire domain must have reasonable values before calling xxx2xxx init
 
     do eci = 1,size(comp)
-       if (comp(eci)%iamin_compid .and. comp(eci)%present) then
+       if (comp(eci)%iamin_compid .and. comp(eci)%present .and.               &
+            (comp(1)%oneletterid /= 'e')) then
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           k1 = mct_aVect_indexRa(comp(eci)%cdata_cc%dom%data, "area"  ,perrWith='aa area ')
           k2 = mct_aVect_indexRa(comp(eci)%cdata_cc%dom%data, "aream" ,perrWith='aa aream')
@@ -467,9 +468,13 @@ contains
           gsmap_s => component_get_gsmap_cx(rof(1)) ! gsmap_rx
           dom_s   => component_get_dom_cx(rof(1))   ! dom_rx
 
-          call seq_map_readdata('seq_maps.rc', 'rof2ocn_rmapname:',mpicom_CPLID, CPLID, &
+          call seq_map_readdata('seq_maps.rc', 'rof2ocn_liq_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
-               string='rof2ocn aream initialization')
+               string='rof2ocn liq aream initialization')
+
+          call seq_map_readdata('seq_maps.rc', 'rof2ocn_ice_rmapname:',mpicom_CPLID, CPLID, &
+               gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
+               string='rof2ocn ice aream initialization')
        endif
     end if
 
@@ -888,5 +893,3 @@ contains
   end subroutine component_diag
 
 end module component_mod
-
-

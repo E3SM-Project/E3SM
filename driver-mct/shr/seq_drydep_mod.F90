@@ -301,7 +301,7 @@ module seq_drydep_mod
              ,0.1_r8    &
              ,0.1_r8    &
              ,0.1_r8    &
-            /) 
+            /)
 
   ! PRIVATE DATA:
 
@@ -496,7 +496,7 @@ module seq_drydep_mod
           250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
           250._r8,       170.3_r8,      170.3_r8,      170.3_r8,       170.3_r8,     &
           170.3_r8,      170.3_r8  /)
- 
+
 
 !===============================================================================
 CONTAINS
@@ -518,7 +518,7 @@ CONTAINS
     use shr_log_mod, only : s_logunit => shr_log_Unit
     use seq_comm_mct,only : seq_comm_iamroot, seq_comm_setptrs
     use shr_mpi_mod, only : shr_mpi_bcast
-
+    use shr_nl_mod, only : shr_nl_find_group_name
     implicit none
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
@@ -557,14 +557,19 @@ CONTAINS
           open( unitn, file=trim(NLFilename), status='old' )
           if ( s_loglev > 0 ) write(s_logunit,F00) &
                'Read in drydep_inparm namelist from: ', trim(NLFilename)
-          ierr = 1
-          do while ( ierr /= 0 )
-             read(unitn, drydep_inparm, iostat=ierr)
-             if (ierr < 0) then
-                call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
-             endif
-          end do
-          close( unitn )
+          call shr_nl_find_group_name(unitn, 'drydep_inparm', ierr)
+          if (ierr == 0) then
+             ierr = 1
+             do while ( ierr /= 0 )
+                read(unitn, drydep_inparm, iostat=ierr)
+                if (ierr < 0) then
+                   call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
+                endif
+             end do
+             close( unitn )
+          else
+             write(s_logunit,*) 'seq_drydep_read:  no drydep_inparm namelist found in ',NLFilename
+          endif
           call shr_file_freeUnit( unitn )
        end if
     end if

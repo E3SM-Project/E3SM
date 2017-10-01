@@ -91,6 +91,7 @@ module cesm_comp_mod
    use seq_timemgr_mod, only: seq_timemgr_alarm_ocnrun
    use seq_timemgr_mod, only: seq_timemgr_alarm_icerun
    use seq_timemgr_mod, only: seq_timemgr_alarm_glcrun
+   use seq_timemgr_mod, only: seq_timemgr_alarm_glcrun_avg
    use seq_timemgr_mod, only: seq_timemgr_alarm_ocnnext
    use seq_timemgr_mod, only: seq_timemgr_alarm_tprof
    use seq_timemgr_mod, only: seq_timemgr_alarm_histavg
@@ -98,12 +99,16 @@ module cesm_comp_mod
    use seq_timemgr_mod, only: seq_timemgr_alarm_wavrun
    use seq_timemgr_mod, only: seq_timemgr_alarm_esprun
    use seq_timemgr_mod, only: seq_timemgr_alarm_barrier
+   use seq_timemgr_mod, only: seq_timemgr_alarm_pause
+   use seq_timemgr_mod, only: seq_timemgr_pause_active
+   use seq_timemgr_mod, only: seq_timemgr_pause_component_active
+   use seq_timemgr_mod, only: seq_timemgr_pause_component_index
 
    ! "infodata" gathers various control flags into one datatype
    use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
    use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
    use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
-   use seq_infodata_mod, only: seq_infodata_print
+   use seq_infodata_mod, only: seq_infodata_print, seq_infodata_init2
 
    ! domain related routines
    use seq_domain_mct, only : seq_domain_check
@@ -231,14 +236,14 @@ module cesm_comp_mod
 
    type (seq_timemgr_type), SAVE :: seq_SyncClock ! array of all clocks & alarm
    type (ESMF_Clock), target :: EClock_d      ! driver clock
-   type (ESMF_Clock), target :: EClock_a
-   type (ESMF_Clock), target :: EClock_l
-   type (ESMF_Clock), target :: EClock_o
-   type (ESMF_Clock), target :: EClock_i
-   type (ESMF_Clock), target :: EClock_g
-   type (ESMF_Clock), target :: EClock_r
-   type (ESMF_Clock), target :: EClock_w
-   type (ESMF_Clock), target :: EClock_e
+   type (ESMF_Clock), target :: EClock_a      ! atmosphere clock
+   type (ESMF_Clock), target :: EClock_l      ! land clock
+   type (ESMF_Clock), target :: EClock_o      ! ocean clock
+   type (ESMF_Clock), target :: EClock_i      ! ice clock
+   type (ESMF_Clock), target :: EClock_g      ! glc clock
+   type (ESMF_Clock), target :: EClock_r      ! rof clock
+   type (ESMF_Clock), target :: EClock_w      ! wav clock
+   type (ESMF_Clock), target :: EClock_e      ! esp clock
 
    logical  :: restart_alarm          ! restart alarm
    logical  :: history_alarm          ! history alarm
@@ -250,6 +255,7 @@ module cesm_comp_mod
    logical  :: ocnrun_alarm           ! ocn run alarm
    logical  :: ocnnext_alarm          ! ocn run alarm on next timestep
    logical  :: glcrun_alarm           ! glc run alarm
+   logical  :: glcrun_avg_alarm       ! glc run averaging alarm
    logical  :: rofrun_alarm           ! rof run alarm
    logical  :: wavrun_alarm           ! wav run alarm
    logical  :: esprun_alarm           ! esp run alarm
@@ -262,6 +268,8 @@ module cesm_comp_mod
    logical  :: t12hr_alarm            ! alarm every twelve hours
    logical  :: t24hr_alarm            ! alarm every twentyfour hours
    logical  :: t1yr_alarm             ! alarm every year, at start of year
+   logical  :: pause_alarm            ! pause alarm
+   integer  :: drv_index              ! seq_timemgr index for driver
 
    real(r8) :: days_per_year = 365.0  ! days per year
 
@@ -425,6 +433,8 @@ module cesm_comp_mod
    logical :: do_hist_a2x             ! create aux files: a2x
    logical :: do_hist_a2x3hrp         ! create aux files: a2x 3hr precip
    logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
+   logical :: do_hist_a2x1hri         ! create aux files: a2x 1hr instantaneous
+   logical :: do_hist_a2x1hr          ! create aux files: a2x 1hr
    integer :: budget_inst             ! instantaneous budget flag
    integer :: budget_daily            ! daily budget flag
    integer :: budget_month            ! monthly budget flag
@@ -434,13 +444,30 @@ module cesm_comp_mod
 
 !  character(CL) :: hist_r2x_flds     = 'all'
 !  character(CL) :: hist_l2x_flds     = 'all'
-   character(CL) :: hist_a2x_flds     = 'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 !  character(CL) :: hist_a2x24hr_flds = 'all'
-   character(CL) :: hist_a2x3hrp_flds = 'Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl'
+
+   character(CL) :: hist_a2x_flds     = &
+        'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
+
+   character(CL) :: hist_a2x3hrp_flds = &
+        'Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl'
+
+   character(CL) :: hist_a2x24hr_flds = &
+        'Faxa_bcphiwet:Faxa_bcphodry:Faxa_bcphidry:Faxa_ocphiwet:Faxa_ocphidry:&
+        &Faxa_ocphodry:Faxa_dstwet1:Faxa_dstdry1:Faxa_dstwet2:Faxa_dstdry2:Faxa_dstwet3:&
+        &Faxa_dstdry3:Faxa_dstwet4:Faxa_dstdry4:Sa_co2prog:Sa_co2diag'
+
+   character(CL) :: hist_a2x1hri_flds = &
+        'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
+
+   character(CL) :: hist_a2x1hr_flds  = &
+        'Sa_u:Sa_v'
+
    character(CL) :: hist_a2x3hr_flds  = &
         'Sa_z:Sa_topo:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
         &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
-        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
+        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf:&
+        &Sa_co2diag:Sa_co2prog'
 
    ! --- other ---
    integer  :: ka,km,k1,k2,k3         ! aVect field indices
@@ -560,7 +587,6 @@ contains
 
 subroutine cesm_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
-   implicit none
 
    !----------------------------------------------------------
    !| Initialize MCT and MPI communicators and IO
@@ -777,7 +803,6 @@ subroutine cesm_pre_init2()
    use shr_wv_sat_mod, only: shr_wv_sat_set_default, shr_wv_sat_init, &
         ShrWVSatTableSpec, shr_wv_sat_make_tables
 
-   implicit none
    type(file_desc_t) :: pioid
    integer :: maxthreads
 
@@ -875,6 +900,8 @@ subroutine cesm_pre_init2()
         budget_ltann=budget_ltann                 , &
         budget_ltend=budget_ltend                 , &
         histaux_a2x=do_hist_a2x                   , &
+        histaux_a2x1hri=do_hist_a2x1hri           , &
+        histaux_a2x1hr=do_hist_a2x1hr             , &
         histaux_a2x3hr =do_hist_a2x3hr            , &
         histaux_a2x3hrp=do_hist_a2x3hrp           , &
         histaux_a2x24hr=do_hist_a2x24hr           , &
@@ -979,6 +1006,11 @@ subroutine cesm_pre_init2()
    if (iamroot_CPLID) then
       call seq_timemgr_clockPrint(seq_SyncClock)
    endif
+
+   !----------------------------------------------------------
+   !| Initialize infodata items which need the clocks
+   !----------------------------------------------------------
+   call seq_infodata_init2(infodata, GLOID)
 
    call seq_infodata_getData(infodata,   &
         orb_iyear=orb_iyear,             &
@@ -1096,8 +1128,6 @@ end subroutine cesm_pre_init2
 
 subroutine cesm_init()
 
-  implicit none
-
  101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
  102  format( A, 2i8, A, 8L3 )
  103  format( 5A )
@@ -1177,10 +1207,14 @@ subroutine cesm_init()
    call t_startf('comp_init_cc_wav')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
-   call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
-
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_wav')
+
+   call t_startf('comp_init_cc_esp')
+   call t_adj_detailf(+2)
+   call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_esp')
 
    call t_startf('comp_init_cx_all')
    call t_adj_detailf(+2)
@@ -1191,7 +1225,6 @@ subroutine cesm_init()
    call component_init_cx(ice, infodata)
    call component_init_cx(glc, infodata)
    call component_init_cx(wav, infodata)
-   call component_init_cx(esp, infodata)
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cx_all')
 
@@ -1944,6 +1977,11 @@ subroutine cesm_init()
    endif   ! atm present
 
    !----------------------------------------------------------
+   !| Get time manager's index for driver
+   !----------------------------------------------------------
+   drv_index = seq_timemgr_pause_component_index('drv')
+
+   !----------------------------------------------------------
    !| Read driver restart file, overwrite anything previously sent or computed
    !----------------------------------------------------------
 
@@ -1951,7 +1989,7 @@ subroutine cesm_init()
    call t_adj_detailf(+2)
 
    call seq_diag_zero_mct(mode='all')
-   if (read_restart) then
+   if (read_restart .and. iamin_CPLID) then
       call seq_rest_read(rest_file, infodata, &
            atm, lnd, ice, ocn, rof, glc, wav, esp, &
            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
@@ -2029,13 +2067,17 @@ end subroutine cesm_init
  !===============================================================================
 
  subroutine cesm_run()
-   use seq_comm_mct, only : atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
-         ocn_layout, wav_layout, esp_layout
+   use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
+        rof_layout, ocn_layout, wav_layout, esp_layout
+   use shr_string_mod, only: shr_string_listGetIndexF
 
-   implicit none
    ! gptl timer lookup variables
    integer, parameter :: hashcnt=7
-   integer :: hashint(hashcnt)
+   integer            :: hashint(hashcnt)
+   ! Driver pause/resume
+   logical            :: drv_pause  ! Driver writes pause restart file
+   character(len=CL)  :: drv_resume ! Driver resets state from restart file
+   integer            :: iamroot_ESPID
 
 101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, 2i8, A, 8L3 )
@@ -2091,6 +2133,11 @@ end subroutine cesm_init
       !  (this is time that models should have before they return
       !  to the driver).  Write timestamp and run alarm status
       !----------------------------------------------------------
+      ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
+      ! of averaged fields - it does NOT control when glc is called currently -
+      ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant 
+      ! info if the time averaging period to accumulate information passed to glc is greater 
+      ! than the glcrun interval
 
       call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
@@ -2101,6 +2148,7 @@ end subroutine cesm_init
       rofrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_rofrun)
       icerun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_icerun)
       glcrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun)
+      glcrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun_avg)
       wavrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_wavrun)
       esprun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_esprun)
       ocnrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_ocnrun)
@@ -2110,7 +2158,22 @@ end subroutine cesm_init
       histavg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_histavg)
       tprof_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_tprof)
       barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
+      pause_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_pause)
 
+      ! Does the driver need to pause?
+      drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
+
+      ! Check alarm consistency
+      if (glcrun_avg_alarm .and. .not. glcrun_alarm) then
+         write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
+         write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
+         write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
+         write(logunit,*) '(It is allowable for glc coupling to be more frequent than glc averaging,'
+         write(logunit,*) 'but not for glc averaging to be more frequent than glc coupling.)'
+         call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
+      end if
+
+      
       ! this probably belongs in seq_timemgr somewhere using proper clocks
       t1hr_alarm = .false.
       t2hr_alarm = .false.
@@ -2126,8 +2189,6 @@ end subroutine cesm_init
       if (mod(tod,43200) == 0) t12hr_alarm = .true.
       if (tod            == 0) t24hr_alarm = .true.
       if (month==1 .and. day==1 .and. tod==0) t1yr_alarm = .true.
-
-      call seq_infodata_putData(infodata, glcrun_alarm=glcrun_alarm)
 
       if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
          if (iamroot_CPLID) then
@@ -2280,6 +2341,19 @@ end subroutine cesm_init
             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
          enddo
          call t_drvstopf  ('CPL:atmocnp_ocnalb',hashint=hashint(5))
+
+         !----------------------------------------------------------
+         !| ocn budget (rasm_option1)
+         !----------------------------------------------------------
+
+         if (do_budgets) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+            xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
+            call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+         endif
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('CPL:ATMOCN1',cplrun=.true.,hashint=hashint(4))
@@ -2768,6 +2842,19 @@ end subroutine cesm_init
          enddo
          call t_drvstopf  ('CPL:atmocnp_ocnalb')
 
+         !----------------------------------------------------------
+         !| ocn budget (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
+         !----------------------------------------------------------
+
+         if (do_budgets) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+            xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
+            call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+         endif
+
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('CPL:ATMOCNP',cplrun=.true.,hashint=hashint(7))
       endif
@@ -2830,20 +2917,36 @@ end subroutine cesm_init
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
             if (lnd_c2_glc) then
-               call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+               ! NOTE - only create appropriate input to glc if the avg_alarm is on
+               if (glcrun_avg_alarm) then
+                  call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
-               ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-               call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+                  ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+                  call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+                  call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
 
-               call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                    info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
-            endif
+                  call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                       info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
+
+               else
+                  call prep_glc_zero_fields()
+               end if  ! glcrun_avg_alarm
+            end if  ! lnd_c2_glc
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
-         endif
+
+         end if  ! iamin_CPLID .and. glc_prognostic
+
+         ! Set the infodata field on all tasks (not just those with iamin_CPLID).
+         if (glc_prognostic) then
+            if (glcrun_avg_alarm) then
+               call seq_infodata_PutData(infodata, glc_valid_input=.true.)
+            else
+               call seq_infodata_PutData(infodata, glc_valid_input=.false.)
+            end if
+         end if
 
          !----------------------------------------------------
          !| cpl -> glc
@@ -2889,17 +2992,6 @@ end subroutine cesm_init
             call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
                  info_debug=info_debug, timer_diag='CPL:rofpost_diagav')
 
-            if (do_hist_r2x) then
-               call t_drvstartf ('CPL:rofpost_histaux', barrier=mpicom_CPLID)
-               do eri = 1,num_inst_rof
-                  suffix =  component_get_suffix(rof(eri))
-                  call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
-                       aname='r2x'//trim(suffix), dname='domrb', &
-                       nx=rof_nx, ny=rof_ny, nt=1)
-               enddo
-               call t_drvstopf ('CPL:rofpost_histaux')
-            endif
-
             if (rof_c2_lnd) then
                call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd')
             endif
@@ -2913,6 +3005,25 @@ end subroutine cesm_init
             endif
 
             call t_drvstopf  ('CPL:ROFPOST', cplrun=.true.)
+         endif
+      endif
+
+      if (rof_present) then
+         if (iamin_CPLID) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
+            call t_drvstartf  ('DRIVER_ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
+            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+            if (do_hist_r2x) then
+               call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
+               do eri = 1,num_inst_rof
+                  suffix =  component_get_suffix(rof(eri)) 
+                  call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
+                       aname='r2x'//trim(suffix), dname='domrb', &
+                       nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
+               enddo
+               call t_drvstopf ('driver_rofpost_histaux')
+            endif
+            call t_drvstopf  ('DRIVER_ROFPOST', cplrun=.true.)
          endif
       endif
 
@@ -2936,16 +3047,6 @@ end subroutine cesm_init
          endif
          if (rof_present) then
             call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
-         endif
-         if (ocn_present .and. &
-            (trim(cpl_seq_option) == 'CESM1_ORIG'       .or. &
-             trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
-             trim(cpl_seq_option) == 'CESM1_MOD'        .or. &
-             trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'  .or. &
-             trim(cpl_seq_option) == 'RASM_OPTION1' )) then
-            xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
          endif
          if (ice_present) then
             call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, &
@@ -3097,6 +3198,19 @@ end subroutine cesm_init
             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
          enddo
          call t_drvstopf  ('CPL:atmocnp_ocnalb')
+
+         !----------------------------------------------------------
+         !| ocn budget (rasm_option2)
+         !----------------------------------------------------------
+
+         if (do_budgets) then
+            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+            call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+            xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
+            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
+            call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+         endif
 
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
          call t_drvstopf  ('CPL:ATMOCN2',cplrun=.true.)
@@ -3265,16 +3379,6 @@ end subroutine cesm_init
       endif
 
       !----------------------------------------------------------
-      !| RUN ESP MODEL
-      !----------------------------------------------------------
-      if (esp_present .and. esprun_alarm) then
-         call component_run(Eclock_e, esp, esp_run, infodata, &
-              comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
-              timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
-              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
-      endif
-
-      !----------------------------------------------------------
       !| WAV RECV-POST
       !----------------------------------------------------------
 
@@ -3396,12 +3500,6 @@ end subroutine cesm_init
          call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
 
          call t_drvstartf ('CPL:BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
-         if (ocn_present .and. &
-            (trim(cpl_seq_option) == 'RASM_OPTION2' )) then
-            xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-            call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                 do_o2x=.true., do_x2o=.true., do_xao=.true.)
-         endif
          if (atm_present) then
             call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, &
                  do_a2x=.true., do_x2a=.true.)
@@ -3467,7 +3565,7 @@ end subroutine cesm_init
       !| Write driver restart file
       !----------------------------------------------------------
 
-      if ( restart_alarm .and. iamin_CPLID) then
+      if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
          call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -3528,6 +3626,36 @@ end subroutine cesm_init
             enddo
          endif
 
+         if (do_hist_a2x1hri .and. t1hr_alarm) then
+            do eai = 1,num_inst_atm
+               suffix =  component_get_suffix(atm(eai))
+               if (trim(hist_a2x1hri_flds) == 'all') then
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1hi'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24)
+               else
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1hi'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24, flds=hist_a2x1hri_flds)
+               endif
+            enddo
+         endif
+
+         if (do_hist_a2x1hr) then
+            do eai = 1,num_inst_atm
+               suffix =  component_get_suffix(atm(eai))
+               if (trim(hist_a2x1hr_flds) == 'all') then
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1h'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm)
+               else
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1h'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm, flds=hist_a2x1hr_flds)
+               endif
+            enddo
+         endif
+
          if (do_hist_a2x3hr) then
             do eai = 1,num_inst_atm
                suffix =  component_get_suffix(atm(eai))
@@ -3561,9 +3689,15 @@ end subroutine cesm_init
          if (do_hist_a2x24hr) then
             do eai = 1,num_inst_atm
                suffix = component_get_suffix(atm(eai))
-               call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                    aname='a2x1d'//trim(suffix), dname='doma', &
-                    nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
+               if (trim(hist_a2x24hr_flds) == 'all') then
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1d'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
+               else
+                  call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                       aname='a2x1d'//trim(suffix), dname='doma', &
+                       nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm, flds=hist_a2x24hr_flds)
+               endif
             enddo
          endif
 
@@ -3589,6 +3723,40 @@ end subroutine cesm_init
          call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
 
       endif
+
+      !----------------------------------------------------------
+      !| RUN ESP MODEL
+      !----------------------------------------------------------
+      if (esp_present .and. esprun_alarm) then
+         call component_run(Eclock_e, esp, esp_run, infodata, &
+              comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
+              timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
+         !---------------------------------------------------------------------
+         !| ESP computes resume options for other components -- update everyone
+         !---------------------------------------------------------------------
+         call seq_infodata_exchange(infodata, CPLALLESPID, 'esp2cpl_run')
+      endif
+
+      !----------------------------------------------------------
+      !| RESUME (read restart) if signaled
+      !----------------------------------------------------------
+      call seq_infodata_GetData(infodata, cpl_resume=drv_resume)
+      if (len_trim(drv_resume) > 0) then
+         if (iamroot_CPLID) then
+            write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
+            call shr_sys_flush(logunit)
+         end if
+         if (iamin_CPLID) then
+            call seq_rest_read(drv_resume, infodata,                          &
+                 atm, lnd, ice, ocn, rof, glc, wav, esp,                      &
+                 fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
+                 fractions_rx, fractions_gx, fractions_wx)
+         end if
+         ! Clear the resume file so we don't try to read it again
+         drv_resume = ' '
+         call seq_infodata_PutData(infodata, cpl_resume=drv_resume)
+      end if
 
       !----------------------------------------------------------
       !| Timing and memory diagnostics
@@ -3660,10 +3828,10 @@ end subroutine cesm_init
               ice(ens1)%iamroot_compid .or. &
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
-            call shr_mem_getusage(msize,mrss)
+            call shr_mem_getusage(msize,mrss,.true.)
 
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
-                 ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
+                 ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
          endif
       endif
@@ -3733,7 +3901,6 @@ end subroutine cesm_init
 
    use shr_pio_mod, only : shr_pio_finalize
    use shr_wv_sat_mod, only: shr_wv_sat_final
-   implicit none
 
    !------------------------------------------------------------------------
    ! Finalization of all models
@@ -3782,10 +3949,10 @@ end subroutine cesm_init
          SYPD = shr_const_cday*simDays/(days_per_year*(Time_end-Time_begin))
          write(logunit,FormatR) subname, '# simulated years / cmp-day = ', SYPD
       endif
-      write(logunit,FormatR) subname,' pes min memory highwater  (MB)  = ',mrss0
-      write(logunit,FormatR) subname,' pes max memory highwater  (MB)  = ',mrss1
-      write(logunit,FormatR) subname,' pes min memory last usage (MB)  = ',msize0
-      write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',msize1
+      write(logunit,FormatR) subname,' pes min memory highwater  (MB)  = ',msize0
+      write(logunit,FormatR) subname,' pes max memory highwater  (MB)  = ',msize1
+      write(logunit,FormatR) subname,' pes min memory last usage (MB)  = ',mrss0
+      write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',mrss1
       write(logunit,'(//)')
       close(logunit)
    endif
@@ -3828,7 +3995,6 @@ subroutine seq_cesm_printlogheader()
   !
   ! Local variables
   !
-  implicit none
 
   character(len=8) :: cdate          ! System date
   character(len=8) :: ctime          ! System time
@@ -3865,7 +4031,6 @@ end subroutine seq_cesm_printlogheader
 !===============================================================================
 
 subroutine cesm_comp_barriers(mpicom, timer)
-  implicit none
   integer         , intent(in) :: mpicom
   character(len=*), intent(in) :: timer
   integer :: ierr

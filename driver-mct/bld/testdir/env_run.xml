@@ -279,7 +279,7 @@
       <valid_values/>
       <desc>Where to auto archive timing data</desc>
     </entry>
-    <entry id="TIMER_LEVEL" value="12">
+    <entry id="TIMER_LEVEL" value="20">
       <type>integer</type>
       <desc>timer output depth</desc>
     </entry>
@@ -532,14 +532,23 @@
       <valid_values>X,Y</valid_values>
       <desc>rof2ocn flux mapping file decomp type</desc>
     </entry>
-    <entry id="ROF2OCN_RMAPNAME" value="idmap">
+    <entry id="ROF2OCN_LIQ_RMAPNAME" value="idmap">
       <type>char</type>
-      <desc>rof2ocn runoff mapping file</desc>
+      <desc>rof2ocn runoff liquid mapping file</desc>
     </entry>
-    <entry id="ROF2OCN_RMAPTYPE" value="Y">
+    <entry id="ROF2OCN_ICE_RMAPNAME" value="idmap">
+      <type>char</type>
+      <desc>rof2ocn runoff ice mapping file</desc>
+    </entry>
+    <entry id="ROF2OCN_LIQ_RMAPTYPE" value="Y">
       <type>char</type>
       <valid_values>X,Y</valid_values>
-      <desc>rof2ocn runoff mapping file decomp type</desc>
+      <desc>rof2ocn runoff liq mapping file decomp type</desc>
+    </entry>
+    <entry id="ROF2OCN_ICE_RMAPTYPE" value="Y">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>rof2ocn runoff ice mapping file decomp type</desc>
     </entry>
     <entry id="GLC2LND_FMAPNAME" value="idmap">
       <type>char</type>
@@ -1009,9 +1018,9 @@
     </entry>
   </group>
   <group id="run_component_cpl">
-    <entry id="CPL_ALBAV" value="false">
+    <entry id="CPL_ALBAV" value="FALSE">
       <type>logical</type>
-      <valid_values>true,false</valid_values>
+      <valid_values>TRUE,FALSE</valid_values>
       <desc>
       Only used for compsets with DATM and POP (currently C, G and J):
       If true, compute albedos to work with daily avg SW down
@@ -1206,7 +1215,7 @@
     <entry id="CLM_CO2_TYPE" value="diagnostic">
       <type>char</type>
       <valid_values>constant,diagnostic,prognostic</valid_values>
-      <list>1</list>
+      <!--list>1</list-->
       <desc>Determines how CLM will determine where CO2 is set.
       If value is constant, it will be set to CCSM_CO2_PPMV,
       if value is either diagnostic or prognostic, the atmosphere model

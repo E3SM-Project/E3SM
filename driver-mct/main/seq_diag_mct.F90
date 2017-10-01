@@ -240,6 +240,7 @@ module seq_diag_mct
    integer :: index_l2x_Flrl_rofsub
    integer :: index_l2x_Flrl_rofdto
    integer :: index_l2x_Flrl_rofi
+   integer :: index_l2x_Flrl_irrig
 
    integer :: index_x2l_Faxa_lwdn
    integer :: index_x2l_Faxa_rainc
@@ -258,6 +259,7 @@ module seq_diag_mct
    integer :: index_x2r_Flrl_rofsub
    integer :: index_x2r_Flrl_rofdto
    integer :: index_x2r_Flrl_rofi
+   integer :: index_x2r_Flrl_irrig
 
    integer :: index_o2x_Fioo_frazil ! currently used by acme
    integer :: index_o2x_Fioo_q      ! currently used by cesm
@@ -850,6 +852,7 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
          index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_l,'Flrl_rofsub')
          index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
          index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
+         index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
 
          index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
          if ( index_l2x_Fall_evap_16O /= 0 ) flds_wiso_lnd = .true.
@@ -880,6 +883,9 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
                                                                     - dl*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
+         if (index_l2x_Flrl_irrig /= 0) then
+            if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
+         end if
          if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
 
          if ( flds_wiso_lnd )then
@@ -1056,6 +1062,7 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
       index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl')
       index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub')
       index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto')
+      index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig', perrWith='quiet')
       index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi')
 
       index_x2r_Flrl_rofl_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_16O', perrWith='quiet')
@@ -1080,6 +1087,10 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
                                                                 + dr*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
                                                                 + dr*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
                                                                 + dr*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
+      if (index_x2r_Flrl_irrig /= 0) then
+         if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_irrig,n)
+      end if
+
       if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofi,n)
 
       if ( flds_wiso_rof )then
@@ -1327,13 +1338,13 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
          if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
          if (trim(cime_model) == 'acme') then
-            if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
+            if = f_wfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
          else if (trim(cime_model) == 'cesm') then
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
          end if
       end do
       if (trim(cime_model) == 'acme') then
-         budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX * shr_const_rhoice * shr_const_latice
+         budg_dataL(f_hfrz,ic,ip) = -budg_dataL(f_wfrz,ic,ip) * shr_const_latice
       else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
       end if
@@ -1664,7 +1675,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
          if (trim(cime_model) == 'acme') then
-            if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
+            if = f_wfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
          else if (trim(cime_model) == 'cesm') then
             if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
          end if
@@ -1694,7 +1705,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       if (trim(cime_model) == 'acme') then
-         budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
+         budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
       else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
@@ -1703,7 +1714,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       if (trim(cime_model) == 'acme') then
-         budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
+         budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
       else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
