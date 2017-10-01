@@ -19,7 +19,7 @@ endif
 
 
 ifeq ($(strip $(MACFILE)),)
-   MACFILE  := Macros
+   MACFILE  := Macros.make
 endif
 
 # Machine specific macros file
