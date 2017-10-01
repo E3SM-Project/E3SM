@@ -16,12 +16,10 @@ if sys.hexversion < 0x02070000:
     print(70 * "*")
     sys.exit(1)
 import xml.etree.ElementTree as etree
-import xml.dom
 import argparse
 import os, glob, re
 import urllib
 import urllib2
-import json
 import pprint
 import getpass
 
@@ -37,6 +35,8 @@ class CimeTestStatus():
         self._status_buffer = None
         self._test_status = {}
         self._current_section = None
+        self._raw_status = None
+        self.fullname = None
     def __repr__(self):
         return pprint.pformat(self._test_status)
 
@@ -79,7 +79,7 @@ class CimeTestStatus():
         line. Note, the total run time is output on a seperate line....
         """
         line_type = None
-        seperator_re = re.compile("^[\s]*---")
+        seperator_re = re.compile(r"^[\s]*---")
         if seperator_re.match(line):
             if "seconds" in line:
                 line_type = self.LINE_TYPE_TIME
@@ -114,7 +114,7 @@ class CimeTestStatus():
         """parse a section seperator to extract the current section name.
         """
         #section_re = re.compile("\s*---([\w\s\W*]+)---")
-        section_re = re.compile("\s*---([\w\s]+)\W*---")
+        section_re = re.compile(r"\s*---([\w\s]+)\W*---")
         match = section_re.search(line)
         if match:
             self._current_section = match.group(1).strip()
@@ -135,7 +135,7 @@ class CimeTestStatus():
         """Extract the test time and units
         """
         test_time = {}
-        time_re = re.compile("Test time is ([\d]+) ([\w]+)")
+        time_re = re.compile(r"Test time is ([\d]+) ([\w]+)")
         match = time_re.search(line)
         if match:
             test_time['time'] = match.group(1)
@@ -319,9 +319,9 @@ def findSpecs(args):
     else:
         testspecfiles = glob.glob("testspec*xml")
 
-    for file in testspecfiles:
-        if not os.path.isfile(file):
-            print("could not find test spec file " + file + ", aborting")
+    for file_ in testspecfiles:
+        if not os.path.isfile(file_):
+            print("could not find test spec file " + file_ + ", aborting")
             sys.exit(1)
 
 
@@ -503,7 +503,7 @@ def sendTestReport(args, suiteinfo, cimetests, auth):
 
     # add the suite info, test type, and tag name to the
     # xml data.
-    testrecord = etree.Element('testrecord');
+    testrecord = etree.Element('testrecord')
     mach = etree.SubElement(testrecord, 'mach')
     mach.text = suiteinfo['machine']
     compiler = etree.SubElement(testrecord, 'compiler')
@@ -572,9 +572,10 @@ def main():
     testspecfiles = findSpecs(args)
     suiteinfolist = []
 
-    """ For each test spec file, get the suite info, then either send the test report,
-        print the summary, or print the status output
-    """
+    # For each test spec file, get the suite info,
+    # then either send the test report,
+    # print the summary, or print the status output
+
     for specfile in testspecfiles:
         suiteinfolist.append(getSuiteInfo(specfile))
     auth = {}

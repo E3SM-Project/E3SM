@@ -17,7 +17,7 @@ DESCRIPTION
     confirmed by running:
 
     xmllint -noout -schema \
-        \$CIME_ROOT/cime_config/xml_schemas/config_build.xsd OUTPUT_FILE
+        \$CIME_ROOT/config/xml_schemas/config_build.xsd OUTPUT_FILE
 EOF
 }
 
@@ -357,7 +357,7 @@ my %non_flag_element = map {$_, 1} ("ALBANY_PATH", "CONFIG_SHELL", "CPRE",
                          "MPI_PATH", "MPICC", "MPICXX", "MPIFC", "NETCDF_PATH",
                          "PAPI_INC", "PAPI_LIB", "PETSC_PATH", "PFUNIT_PATH",
                          "PIO_FILESYSTEM_HINTS", "PNETCDF_PATH", "SCC", "SCXX",
-                         "SFC", "SUPPORTS_CXX", "TRILINOS_PATH");
+                         "SFC", "SUPPORTS_CXX", "TRILINOS_PATH", "MOAB_PATH");
 
 # Function to merge a compiler element from the old format into the new one.
 sub merge_element {

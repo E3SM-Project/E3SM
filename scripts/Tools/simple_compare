@@ -40,9 +40,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-c", "--case", action="store", dest="case", default=None,
                         help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     # Normalize case
     if (args.case is not None):
@@ -65,8 +63,9 @@ def _main_func(description):
     else:
         logging.info("Using case: '%s'" % case)
 
-    expect(CIME.simple_compare.compare_files(gold_file, compare_file, case),
-           "Diff between files %s and %s" % (gold_file, compare_file))
+    success, comments = CIME.simple_compare.compare_files(gold_file, compare_file, case)
+    expect(success,
+           "Diff between files %s and %s:\n%s" % (gold_file, compare_file, comments))
 
     print "Files %s and %s MATCH" % (gold_file, compare_file)
 

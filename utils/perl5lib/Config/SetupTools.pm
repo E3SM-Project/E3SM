@@ -210,8 +210,8 @@ sub getxmlvars
     }
 # These represent a workaround for a problem in resolving variables in perl
 
-    if (defined ($xmlvars->{CESMSCRATCHROOT})){
-	$xmlvars->{CESMSCRATCHROOT}=expand_xml_var($xmlvars->{CESMSCRATCHROOT}, $xmlvars);
+    if (defined ($xmlvars->{CIME_OUTPUT_ROOT})){
+	$xmlvars->{CIME_OUTPUT_ROOT}=expand_xml_var($xmlvars->{CIME_OUTPUT_ROOT}, $xmlvars);
     }
     if (defined ($xmlvars->{DIN_LOC_ROOT})){
 	$xmlvars->{DIN_LOC_ROOT}=expand_xml_var($xmlvars->{DIN_LOC_ROOT}, $xmlvars);

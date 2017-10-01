@@ -6,9 +6,9 @@ directory trees.
 """
 
 from standard_script_setup import *
-from CIME.utils import expect, run_cmd
+from CIME.utils import run_cmd
 
-import argparse, sys, os, doctest, glob
+import argparse, sys, os, doctest
 
 IGNORE = [".git", "bin", "bakefiles", "SNTools.project"]
 
@@ -42,14 +42,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-b", "--show-binary", action="store_true",
                         help="Show binary diffs")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.case1, args.case2, args.show_binary, args.skip_list
 
 ###############################################################################
-def recursive_diff(dir1, dir2, show_binary=False, skip_list=[]):
+def recursive_diff(dir1, dir2, show_binary=False, skip_list=()):
 ###############################################################################
     """
     Starting at dir1, dir2 respectively, compare their contents

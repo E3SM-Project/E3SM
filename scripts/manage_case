@@ -2,7 +2,7 @@
 
 from Tools.standard_script_setup import *
 
-from CIME.utils         import expect, get_model
+from CIME.utils         import expect
 from CIME.XML.files     import Files
 from CIME.XML.component import Component
 from CIME.XML.compsets  import Compsets
@@ -76,7 +76,7 @@ def query_component(name):
     # Determine the valid component classes (e.g. atm) for the driver/cpl
     # These are then stored in comps_array
     files = Files()
-    infile = files.get_value("CONFIG_DRV_FILE")
+    infile = files.get_value("CONFIG_CPL_FILE")
     config_drv = Component(infile)
     components = config_drv.get_valid_model_components()
 
@@ -131,9 +131,6 @@ def parse_command_line(args):
     parser.add_argument("--query-grids", action="store_true",
                         help="Query supported model grids for %s model" %cime_model)
 
-    parser.add_argument("--grids-shortname",
-                        help="Query model grids for input grid short name for %s model - not implemented yet" %cime_model)
-
     parser.add_argument("--grids-alias",
                         help="Query model grids for input grid  alias for %s model - not implemented yet" %cime_model)
 
@@ -143,9 +140,7 @@ def parse_command_line(args):
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
 
-    args = parser.parse_args()
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args
 

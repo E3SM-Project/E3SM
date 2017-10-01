@@ -15,11 +15,18 @@
 ###       The executable should run on the yellowstone login node         ######
 ################################################################################
 
-ifneq ($(origin ESMFMKFILE), environment)
-$(error Environment variable ESMFMKFILE was not set.)
+# Don't require ESMF to be loaded to run "make clean":
+USE_ESMF=TRUE
+ifeq ($(MAKECMDGOALS),clean)
+  USE_ESMF=FALSE
 endif
 
-include $(ESMFMKFILE)
+ifeq ($(USE_ESMF),TRUE)
+  ifneq ($(origin ESMFMKFILE), environment)
+    $(error Environment variable ESMFMKFILE was not set.)
+  endif
+  include $(ESMFMKFILE)
+endif
 TARGET = ESMF_RegridWeightGenCheck
 
 # To compile with verbose output, run

@@ -10,7 +10,7 @@ into the XML file.
 
 from standard_script_setup import *
 from CIME.utils import expect
-import update_acme_tests
+from update_acme_tests import get_test_suites, update_acme_tests
 
 import sys, argparse, os
 
@@ -26,11 +26,11 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Update all acme test suites for all platforms \033[0m
-    > %s ../cime_config/acme/allactive/testlist_allactive.xml
+    > %s ../config/acme/allactive/testlist_allactive.xml
     \033[1;32m# Update acme_developer tests for all platforms \033[0m
-    > %s ../cime_config/acme/allactive/testlist_allactive.xml acme_developer
+    > %s ../config/acme/allactive/testlist_allactive.xml acme_developer
     \033[1;32m# Add acme_developer tests for a new platform \033[0m
-    > %s ../cime_config/acme/allactive/testlist_allactive.xml acme_developer -p machine,compiler
+    > %s ../config/acme/allactive/testlist_allactive.xml acme_developer -p machine,compiler
 """ % ((os.path.basename(args[0]), ) * 6),
 
 description=description,
@@ -43,14 +43,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("test_list_path", help="The path to test lists XML file")
 
     parser.add_argument("categories", nargs="*",
-                        help="The test categories to update. Default will update all. Test categories: %s" % (", ".join(update_acme_tests.get_test_suites())))
+                        help="The test categories to update. Default will update all. Test categories: %s" % (", ".join(get_test_suites())))
 
     parser.add_argument("-p", "--platform",
                         help="Only add tests for a specific platform, format=machine,compiler. Useful for adding new platforms.")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     expect(os.path.isfile(args.test_list_path),
            "'%s' is not a valid file" % args.test_list_path)
@@ -59,7 +57,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
            "-p value must be in format: 'machine,compiler'")
 
     if (not args.categories):
-        args.categories = update_acme_tests.get_test_suites()
+        args.categories = get_test_suites()
 
     return args.categories, args.test_list_path, args.platform
 
@@ -72,7 +70,7 @@ def _main_func(description):
 
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
 
-    update_acme_tests.update_acme_tests(test_list_path, categories, platform)
+    update_acme_tests(test_list_path, categories, platform)
 
 if __name__ == "__main__":
     _main_func(__doc__)

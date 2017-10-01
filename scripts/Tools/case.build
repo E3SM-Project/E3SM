@@ -7,8 +7,8 @@ Script to build a case.
 from standard_script_setup import *
 
 import CIME.build as build
-from CIME.case import Case
-from CIME.utils           import expect, append_status, find_system_test
+from CIME.case            import Case
+from CIME.utils           import find_system_test
 from CIME.XML.files       import Files
 from CIME.XML.component   import Component
 from CIME.test_status     import *
@@ -17,7 +17,7 @@ from CIME.test_status     import *
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n%s [--verbose] [--clean [atm lnd pio ...]] [--clean-all]
 OR
 %s --help
 OR
@@ -43,29 +43,24 @@ OR
                         help="Assume shared libs already built")
 
     files = Files()
-    config_file = files.get_value("CONFIG_DRV_FILE")
+    config_file = files.get_value("CONFIG_CPL_FILE")
     component = Component(config_file)
     comps = [x.lower() for x in component.get_valid_model_components()]
-    comps = [x.replace('drv', 'cpl') for x in comps]
     libs  = ["csmshare", "mct", "pio", "gptl"]
     allobjs = comps + libs
 
     parser.add_argument("--clean", nargs="*", choices=allobjs,
                         help="objects to clean"
-                        "if no arguments then clean all objects other than csmshare, mct, pio, and gptl")
+                        "if no arguments then clean all objects other than sharedlib objects")
 
     parser.add_argument("--clean-all", action="store_true",
-                        help="clean all objects ")
+                        help="clean all objects including sharedlibobjects that may be used by other builds")
 
-    args = parser.parse_args(args[1:])
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    cleanlist = allobjs if args.clean_all else []
-    if args.clean is not None:
-        cleanlist = args.clean if args.clean else comps
+    cleanlist = args.clean if args.clean is None or len(args.clean) else comps
 
-    CIME.utils.handle_standard_logging_options(args)
-
-    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all
 
 ###############################################################################
 def _main_func(description):
@@ -74,15 +69,14 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, sharedlib_only, model_only, cleanlist = parse_command_line(sys.argv, description)
-    logging.info("calling build.case_build with caseroot=%s" %caseroot)
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all = parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot, read_only=False) as case:
         testname = case.get_value('TESTCASE')
 
-        if cleanlist:
-            build.clean(case, cleanlist)
+        if cleanlist is not None or clean_all:
+            build.clean(case, cleanlist, clean_all)
         elif(testname is not None):
             logging.warn("Building test for %s in directory %s" %
                          (testname, caseroot))
@@ -98,20 +92,10 @@ def _main_func(description):
                     ts.set_status(phase_to_fail, TEST_FAIL_STATUS, comments="failed to initialize")
                 raise
 
-            append_status("case.testbuild starting ",
-                          caseroot=caseroot,sfile="CaseStatus")
             success = test.build(sharedlib_only=sharedlib_only, model_only=model_only)
-            if success:
-                append_status("case.testbuild complete",
-                              caseroot=caseroot,sfile="CaseStatus")
         else:
-            append_status("case.build starting",
-                          caseroot=caseroot,sfile="CaseStatus")
             success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
-                             model_only=model_only)
-            if success:
-                append_status("case.build complete",
-                              caseroot=caseroot,sfile="CaseStatus")
+                                       model_only=model_only)
 
     sys.exit(0 if success else 1)
 

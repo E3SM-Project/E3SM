@@ -2,20 +2,14 @@
 
 from Tools.standard_script_setup import *
 
-from CIME.utils import expect, get_model
+from CIME.utils import expect
 from CIME.case  import Case
-
-import stat
-import glob
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args):
 ###############################################################################
-
-    cime_model = CIME.utils.get_model()
-
     parser = argparse.ArgumentParser()
 
     CIME.utils.setup_standard_logging_options(parser)
@@ -31,7 +25,7 @@ def parse_command_line(args):
                         "is assumed to be under then current working directory ")
 
     parser.add_argument("--keepexe", "-keepexe", action="store_true",
-                        help="Sets EXEROOT to point to original build")
+                        help="Sets EXEROOT to point to original build, it is highly recommended that the original case be built before cloning if using the --keepexe flag")
 
     parser.add_argument("--mach-dir", "-mach_dir",
                         help="Specify the locations of the Machines directory, other than the default"
@@ -42,9 +36,11 @@ def parse_command_line(args):
 			"default: user-specified environment variable PROJECT or ACCOUNT"
 			"or read from ~/.cesm_proj or ~/.ccsm_proj")
 
-    args = parser.parse_args()
+    parser.add_argument("--cime-output-root",
+                        help="Specify the root output directory"
+			"default: setting in case, create_clone will fail if this directory is not writable")
 
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.case is None:
         expect(False,
@@ -54,20 +50,21 @@ def parse_command_line(args):
         expect(False,
                "Must specify -clone as an input argument")
 
-    return args.case, args.clone, args.keepexe, args.mach_dir, args.project
+    return args.case, args.clone, args.keepexe, args.mach_dir, args.project, \
+        args.cime_output_root
 
 ##############################################################################
 def _main_func():
 ###############################################################################
 
-    case, clone, keepexe, mach_dir, project = parse_command_line(sys.argv)
+    case, clone, keepexe, mach_dir, project, cime_output_root = parse_command_line(sys.argv)
 
     cloneroot = os.path.abspath(clone)
     expect(os.path.isdir(cloneroot),
            "Missing cloneroot directory %s " % cloneroot)
 
     with Case(cloneroot, read_only=False) as clone:
-        clone.create_clone(case, keepexe, mach_dir, project)
+        clone.create_clone(case, keepexe, mach_dir, project, cime_output_root)
 
 ###############################################################################
 

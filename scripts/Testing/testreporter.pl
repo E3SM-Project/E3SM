@@ -253,7 +253,7 @@ sub getTestStatus
 	$testbaseid =~ s/\.C\.//g;
 	$testbaseid =~ s/\.GC\.//g;
 	&Debug("testbaseid $testbaseid");
-	if( ! -e $testroot . "/" . $testcase . "/" . "env_case.xml")
+	if( ! -e $testroot . "/" . $testcase . "/" . "TestStatus")
         {
             next;
         }
@@ -268,10 +268,6 @@ sub getTestStatus
 	}
 	&Debug( "Status file: $statusfile\n");
 	open (my $teststatusfile, "<", $statusfile) or die "cannot open TestStatus file for $testcase, $!";
-	my $teststatus = <$teststatusfile>;
-	chomp $teststatus;
-	my $statusline = $teststatus;
-	$teststatus = (split(/\s+/, $teststatus))[0];
 
 	&Debug("Testcase:   $testcase\n");
 	&Debug("Teststatus: $teststatus\n");
@@ -305,7 +301,7 @@ sub getTestStatus
         $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";
 
         #Compare to baseline
-        my @testsummarylines = grep { /COMPARE_baseline/} @statuslines;
+        my @testsummarylines = grep { /BASELINE/} @statuslines;
         my @testsummary_arr = (split(/\s+/, $testsummarylines[0]));
         $teststatushash{$testcase}{'compare'} = ($#testsummarylines > -1) ? @testsummary_arr[0] : "----";
         $teststatushash{$testcase}{'comment'} .= " @testsummary_arr[3..$#testsummary_arr]";

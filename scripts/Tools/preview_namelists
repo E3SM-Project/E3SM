@@ -8,57 +8,41 @@ copies those files to the CaseDocs subdirectory for inspection
 
 from standard_script_setup import *
 
-from CIME.preview_namelists import preview_namelists
+from CIME.preview_namelists import create_namelists
 from CIME.case              import Case
+from CIME.utils             import expect
 
 import argparse, doctest
 
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-    parser = argparse.ArgumentParser(
-        usage="""\n%s [--debug]
-OR
-%s --verbose
-OR
-%s --help
-OR
-%s --test
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Run \033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 5),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
-
+    parser = argparse.ArgumentParser(description=description)
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
+    parser.add_argument('--component',
+                        help="Specify component's namelist to build.")
+    parser.add_argument('--test', action='store_true',
+                        help="Run preview_namelist in test mode.")
 
-    parser.add_argument("--dryrun", action="store_true",
-                        help="Do not attempt to load modules or create directories")
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
-
-    return args.caseroot, args.dryrun
+    return args
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
+    args = parse_command_line(sys.argv, description)
+    if args.test:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, dryrun = parse_command_line(sys.argv, description)
-    with Case(caseroot, read_only=False) as case:
-        preview_namelists(case, dryrun=False)
+    expect(os.path.isfile(os.path.join(args.caseroot, "CaseStatus")),
+           "case.setup must be run prior to running preview_namelists")
+    with Case(args.caseroot, read_only=False) as case:
+        create_namelists(case, component=args.component)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
