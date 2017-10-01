@@ -22,12 +22,11 @@ type, public :: hvcoord_t
   real(r8) hyam(plev)   ! ps0 component of hybrid coordinate - midpoints
   real(r8) hybi(plevp)  ! ps  component of hybrid coordinate - interfaces
   real(r8) hybm(plev)   ! ps  component of hybrid coordinate - midpoints
-  real(r8) hybd(plev)   ! difference in b (hybi) across layers
-  real(r8) prsfac       ! log pressure extrapolation factor (time, space independent)
   real(r8) etam(plev)   ! eta-levels at midpoints
   real(r8) etai(plevp)  ! eta-levels at interfaces
-  integer  nprlev       ! number of pure pressure levels at top  
-  integer  pad
+  real(r8) d_etam(plev)   ! Delta eta at midpoints
+  real(r8) d_etai(plevp)  ! Delta eta at interfaces
+  real(r8) dp0(plev)      ! average layer thickness
 end type
 
 public :: hvcoord_init, set_layer_locations
@@ -176,21 +175,22 @@ end function
   forall(k=1:plev)  hvcoord%etam(k)=hvcoord%hyam(k)+hvcoord%hybm(k)
   forall(k=1:plevp) hvcoord%etai(k)=hvcoord%hyai(k)+hvcoord%hybi(k)
 
-  ! Set nprlev to the lowest pure pressure interface
-  hvcoord%nprlev = 0
-  do k=1,plev; if(hvcoord%nprlev==0 .and. hvcoord%hybi(k).ne.0.0) hvcoord%nprlev = k - 1; enddo
-
-  ! Set nprlev if all interfaces are pure pressure
-  if (hvcoord%nprlev==0) hvcoord%nprlev = plev + 2
-
-  ! Set delta-sigma part of layer thickness pressures
-  forall(k=1:plev) hvcoord%hybd(k) = hvcoord%hybi(k+1)-hvcoord%hybi(k)
-
-  ! Calculate the log pressure extrapolation factor
-#if (PLEV>1)
-  hvcoord%prsfac = log( hvcoord%hyam(plev) + hvcoord%hybm(plev)) / &
-                   log((hvcoord%hyam(plev) + hvcoord%hybm(plev)) / (hvcoord%hyam(plev-1) + hvcoord%hybm(plev-1)))
-#endif
+  ! get eta level deltas:
+  do k=1,plev
+     hvcoord%d_etam(k)=hvcoord%etai(k+1)-hvcoord%etai(k)
+     ! compute this way so it is BFB with older code:
+     hvcoord%dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+     !hvcoord%dp0(k) = hvcoord%d_etam(k)*hvcoord%ps0
+  enddo
+  do k=2,plev
+     ! same as (d_etam(k)+d_etam(k-1)/2
+     hvcoord%d_etai(k)=hvcoord%etam(k)-hvcoord%etam(k-1)
+  enddo
+  ! dont include the 1/2, to make for easier weigthed averaging of interface
+  ! quantities to midpoints
+  hvcoord%d_etai(1)=hvcoord%d_etam(1)         ! /2
+  hvcoord%d_etai(plev+1)=hvcoord%d_etam(plev) ! /2
 
   ! ======================================================================
   ! Test that midpoint A,B is mean of interface A,B

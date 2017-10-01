@@ -231,12 +231,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! do boundary exchange
    do ie=1,nelemd
       kptr=0
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,ie)
+      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
       kptr=kptr+2*nlev
 
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,ie)
+      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
       kptr=kptr+nlev
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,ie)
+      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
    end do
 
    call bndry_exchangeV(par, edgebuf)
@@ -252,13 +252,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    do ie=1,nelemd
       kptr=0
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,ie)
+      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
       kptr=kptr+2*nlev
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,ie)
+      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
       kptr=kptr+nlev
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,ie)
+      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -283,14 +283,14 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
                   do ic=1,pcnst
                      ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
+                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
                           dyn_in%elem(ie)%state%Q(i,j,k,ic))
                      
                      ! apply forcing to Qdp
 !                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
 !                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
                      dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) 
+                          dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic)
 
 ! BEWARE critical region if using OpenMP over k (AAM)
                      if (ic==1) then
@@ -338,7 +338,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
                   do ic=1,pcnst
                      ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
+                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
                           dyn_in%elem(ie)%state%Q(i,j,k,ic))
                      
                      ! apply forcing to Qdp
@@ -356,11 +356,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                   ! force V, T, both timelevels
                   dyn_in%elem(ie)%state%v(i,j,:,k,tl_f)= &
                        dyn_in%elem(ie)%state%v(i,j,:,k,tl_f) +  &
-                       dtime*dyn_in%elem(ie)%derived%FM(i,j,:,k,1)
+                       dtime*dyn_in%elem(ie)%derived%FM(i,j,:,k)
                   
                   dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
                        dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
-                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k,1)
+                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k)
                   
                end do
             end do
@@ -402,8 +402,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                      dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
                           ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
                      
-                     dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1)=&
-                          (  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
+                     dyn_in%elem(ie)%derived%FQ(i,j,k,ic)=&
+                          (  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
                           dyn_in%elem(ie)%state%Q(i,j,k,ic))*rec2dt*dp_tmp
                   end do
                end do
@@ -481,8 +481,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          do k=1,nlev
             do j=1,np
                do i=1,np
-                  ftmp(i+(j-1)*np,k,1) = dyn_in%elem(ie)%derived%FM(i,j,1,k,1)
-                  ftmp(i+(j-1)*np,k,2) = dyn_in%elem(ie)%derived%FM(i,j,2,k,1)
+                  ftmp(i+(j-1)*np,k,1) = dyn_in%elem(ie)%derived%FM(i,j,1,k)
+                  ftmp(i+(j-1)*np,k,2) = dyn_in%elem(ie)%derived%FM(i,j,2,k)
                end do
             end do
          end do

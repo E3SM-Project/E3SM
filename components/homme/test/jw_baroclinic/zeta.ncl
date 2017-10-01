@@ -17,7 +17,7 @@ begin
 ; for HOMME dycore.  
   if (isatt(f,"ne")) then
     NE=f@ne
-    NPTS = f@nv
+    NPTS = f@np
     deg=360.0 / (4*NE*(NPTS-1))
     hdeg=sprintf("%4.2f", deg)
     print("NE="+NE+" NPTS="+NPTS+" degree="+hdeg)
@@ -103,7 +103,7 @@ begin
       ps=ps*100
       ps@units="Pa"
     end if
-    
+    print ("ps min/max = "+min(ps(:,:))+", "+max(ps(:,:)))
     hyam = f->hyam
     hybm = f->hybm
     pnew = (/ 850 /)
