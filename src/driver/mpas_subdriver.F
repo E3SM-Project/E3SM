@@ -206,36 +206,36 @@ module mpas_subdriver
 
       ierr = domain_ptr % core % setup_namelist(domain_ptr % configs, domain_ptr % namelist_filename, domain_ptr % dminfo)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Namelist setup failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Namelist setup failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_framework_init_phase2(domain_ptr)
 
       ierr = domain_ptr % core % define_packages(domain_ptr % packages)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Package definition failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages, domain_ptr % iocontext)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Package setup failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       ierr = domain_ptr % core % setup_decompositions(domain_ptr % decompositions)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Decomposition setup failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Decomposition setup failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       ierr = domain_ptr % core % setup_clock(domain_ptr % clock, domain_ptr % configs)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Clock setup failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_log_write('Reading streams configuration from file '//trim(domain_ptr % streams_filename))
       inquire(file=trim(domain_ptr % streams_filename), exist=streamsExists)
 
       if ( .not. streamsExists ) then
-         call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain_ptr % streams_filename)//' does not exist.')
+         call mpas_log_write('Streams file '//trim(domain_ptr % streams_filename)//' does not exist.', messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_timer_start('total time')
@@ -247,7 +247,7 @@ module mpas_subdriver
       !
       ierr = domain_ptr % core % get_mesh_stream(domain_ptr % configs, mesh_stream)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Failed to find mesh stream for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Failed to find mesh stream for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_f_to_c_string(domain_ptr % streams_filename, c_filename)
@@ -257,7 +257,7 @@ module mpas_subdriver
                                      c_mesh_filename_temp, c_ref_time_temp, &
                                      c_filename_interval_temp, c_iotype, c_ierr)
       if (c_ierr /= 0) then
-         call mpas_dmpar_abort(domain_ptr % dminfo)
+         call mpas_log_write('stream xml get attribute failed: '//trim(domain_ptr % streams_filename), messageType=MPAS_LOG_CRIT)
       end if
       call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
       call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
@@ -302,13 +302,13 @@ module mpas_subdriver
 
       ierr = domain_ptr % core % setup_immutable_streams(domain_ptr % streamManager)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Immutable streams setup failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Immutable streams setup failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       mgr_p = c_loc(domain_ptr % streamManager)
       call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
       if (c_ierr /= 0) then
-         call mpas_dmpar_abort(domain_ptr % dminfo)
+         call mpas_log_write('xml stream parser failed: '//trim(domain_ptr % streams_filename), messageType=MPAS_LOG_CRIT)
       end if
 
       !
@@ -330,7 +330,7 @@ module mpas_subdriver
       !
       iErr = domain_ptr % core % core_init(domain_ptr, timeStamp)
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Core init failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Core init failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_timer_stop('initialize')
@@ -346,7 +346,7 @@ module mpas_subdriver
 
       iErr = domain_ptr % core % core_run(domain_ptr)
       if ( iErr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Core run failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Core run failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
    end subroutine mpas_run
@@ -367,7 +367,7 @@ module mpas_subdriver
       !
       iErr = domain_ptr % core % core_finalize(domain_ptr)
       if ( iErr /= 0 ) then
-         call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain_ptr % core % coreName))
+         call mpas_log_write('Core finalize failed for core '//trim(domain_ptr % core % coreName), messageType=MPAS_LOG_CRIT)
       end if
 
       call mpas_timer_stop('total time')
