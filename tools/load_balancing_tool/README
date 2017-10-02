@@ -8,7 +8,6 @@
 ## Updated 2017 Jason Sarich sarich@mcs.anl.gov (Argonne National Laboratory)
 ########################################################################
 
-This Load Balancing tool performs several operations intended to find
-a reasonable PE layout for CIME simulations.
+This Load Balancing tool finds reasonable PE layouts for CIME-driven models. It will find these from timing files you provide or from runs done by the tool.
 
-Complete documentation of this tool is available in the CIME Miscellaneous Tools section.
+For more information, see the help message or complete documentation in the Miscellaneous Tools section of the CIME user's guide.

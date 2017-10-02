@@ -527,7 +527,7 @@ class Case(object):
         Assumes that self._primary_component has already been set.
         """
 
-        component = self._primary_component
+        component = self.get_primary_component()
 
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
@@ -784,7 +784,7 @@ class Case(object):
 
         # This needs to be called after self.set_comp_classes, which is called
         # from self._get_component_config_data
-        self._primary_component = self._find_primary_component()
+        self._primary_component = self.get_primary_component()
 
         self._set_info_from_primary_component(files, pesfile=pesfile)
 
