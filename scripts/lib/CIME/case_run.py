@@ -12,10 +12,14 @@ import shutil, time, sys, os, glob
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def pre_run_check(case, lid, skip_pnl=False):
+def pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 ###############################################################################
 
     # Pre run initialization code..
+    if da_cycle > 0:
+        create_namelists(case, component='cpl')
+        return
+
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     batchsubmit = case.get_value("BATCHSUBMIT")
@@ -77,10 +81,10 @@ def pre_run_check(case, lid, skip_pnl=False):
     logger.info("-------------------------------------------------------------------------")
 
 ###############################################################################
-def _run_model_impl(case, lid, skip_pnl=False):
+def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
 ###############################################################################
 
-    pre_run_check(case, lid, skip_pnl=skip_pnl)
+    pre_run_check(case, lid, skip_pnl=skip_pnl, da_cycle=da_cycle)
 
     model = case.get_value("MODEL")
 
@@ -141,9 +145,9 @@ def _run_model_impl(case, lid, skip_pnl=False):
     return lid
 
 ###############################################################################
-def run_model(case, lid, skip_pnl=False):
+def run_model(case, lid, skip_pnl=False, da_cycle=0):
 ###############################################################################
-    functor = lambda: _run_model_impl(case, lid, skip_pnl=skip_pnl)
+    functor = lambda: _run_model_impl(case, lid, skip_pnl=skip_pnl, da_cycle=da_cycle)
     return run_and_log_case_status(functor, "case.run", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
@@ -280,7 +284,6 @@ def case_run(case, skip_pnl=False):
         if cycle > 0:
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
-            skip_pnl = True
 
         if prerun_script:
             case.flush()
@@ -288,7 +291,7 @@ def case_run(case, skip_pnl=False):
                         lid, prefix="prerun")
             case.read_xml()
 
-        lid = run_model(case, lid, skip_pnl)
+        lid = run_model(case, lid, skip_pnl, da_cycle=cycle)
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
