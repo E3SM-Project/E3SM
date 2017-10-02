@@ -462,6 +462,11 @@ class Case(object):
 
         return None, science_support
 
+    def get_primary_component(self):
+        if self._primary_component is None:
+            self._primary_component = self._find_primary_component()
+        return self._primary_component
+
     def _find_primary_component(self):
         """
         try to glean the primary component based on compset name
