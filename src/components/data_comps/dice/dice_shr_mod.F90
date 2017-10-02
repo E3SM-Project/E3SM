@@ -139,10 +139,10 @@ CONTAINS
 
     ! Validate mode
 
-    ice_mode = trim(SDICE%dataMode)
-    if (trim(ice_mode) == 'NULL' .or. &
-        trim(ice_mode) == 'SSTDATA' .or. &
-        trim(ice_mode) == 'COPYALL') then
+    datamode = trim(SDICE%dataMode)
+    if (trim(datamode) == 'NULL' .or. &
+        trim(datamode) == 'SSTDATA' .or. &
+        trim(datamode) == 'COPYALL') then
        if (my_task == master_task) then
           write(logunit,F00) ' dice datamode = ',trim(datamode)
        end if

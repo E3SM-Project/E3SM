@@ -665,7 +665,9 @@ CONTAINS
     call t_startf('datm_strdata_advance')
     call shr_strdata_advance(SDATM,currentYMD,currentTOD,mpicom,'datm')
     call t_stopf('datm_strdata_advance')
+
     call t_barrierf('datm_scatter_BARRIER',mpicom)
+
     call t_startf('datm_scatter')
     if (trim(datamode) /= 'COPYALL') then
        lsize = mct_avect_lsize(a2x)
@@ -979,7 +981,7 @@ CONTAINS
 
     end select
 
-    call t_stopf('datamode')
+    call t_stopf('datm_datamode')
 
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( start block )
