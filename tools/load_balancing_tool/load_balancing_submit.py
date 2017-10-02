@@ -5,7 +5,6 @@ time vs nprocessors model. This data will be used to generate
 a processor layout that achieves high efficiency
 """
 from xml.etree.ElementTree import ParseError
-import argparse
 import shutil
 
 try:
@@ -15,15 +14,17 @@ except ImportError, e:
     print 'May need to add cime/scripts to PYTHONPATH\n'
     raise ImportError(e)
 
-from CIME.utils import run_cmd_no_fail
-from CIME.XML import pes
+from CIME.utils import expect, get_full_test_name
+from CIME.case import Case
+from CIME.XML.pes import Pes
+from CIME.XML.machines import Machines
+from CIME.test_scheduler import TestScheduler
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CASENAME_PREFIX = 'lbt_timing_run_'
 
 # Default CIME variables, these can be overridden using the
-# --extra_options_file option
+# --extra-options-file option
 CIME_DEFAULTS = {
     'STOP_OPTION':'ndays',
     'STOP_N':'10',
@@ -32,6 +33,8 @@ CIME_DEFAULTS = {
     'COMP_RUN_BARRIERS':'TRUE',
     'TIMER_LEVEL':'9'
 }
+
+DEFAULT_TESTID = 'lbt'
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -47,7 +50,7 @@ example_pes.xml:
 <config_pes>
   <grid name="any">
     <mach name="any">
-      <pes compset="any" pesize="1">
+      <pes compset="any" pesize="0">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>8</ntasks_atm>
@@ -85,7 +88,7 @@ example_pes.xml:
 
   <grid name="any">
     <mach name="any">
-      <pes compset="any" pesize="2">
+      <pes compset="any" pesize="1">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>32</ntasks_atm>
@@ -123,7 +126,7 @@ example_pes.xml:
 
   <grid name="any">
     <mach name="any">
-      <pes compset="any" pesize="3">
+      <pes compset="any" pesize="2">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>128</ntasks_atm>
@@ -174,49 +177,40 @@ example_pes.xml:
 
     # Optional pass-through arguments to create_newcase
     parser.add_argument('--compiler', help='Choose compiler to build with')
+
     parser.add_argument('--project', help='Specify project id')
+
     parser.add_argument('--machine', help='machine name')
 
-    parser.add_argument('--extra_options_file',
+    parser.add_argument('--mpilib', help='mpi library name')
+
+    parser.add_argument("-r", "--test-root",
+                        help="Where test cases will be created."
+                        " Will default to output root as defined in the config_machines file")
+
+    parser.add_argument('--extra-options-file',
                         help='file listing options to be run using xmlchange')
-    parser.add_argument('--casename_prefix', default=DEFAULT_CASENAME_PREFIX,
-                        help='casename prefix to use for all timing runs')
-    parser.add_argument('--force_purge', action='store_true')
+    parser.add_argument('--test-id', default=DEFAULT_TESTID,
+                        help='test-id to use for all timing runs')
+    parser.add_argument('--force-purge', action='store_true')
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return (args.compset, args.res, args.pesfile,
+    return (args.compset, args.res, args.pesfile, args.mpilib,
             args.compiler, args.project, args.machine, args.extra_options_file,
-            args.casename_prefix, args.force_purge)
-
-def _set_xml_val(option, value, casedir):
-    """
-    Call xmlchange from command line to set option=value
-    """
-    cmd = './xmlchange %s=%s' % (option, value)
-    logger.info(cmd)
-    return run_cmd_no_fail(cmd, from_dir=casedir)
+            args.test_id, args.force_purge, args.test_root)
 
 ################################################################################
-def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
-                          extra_options_file, casename_prefix, force_purge):
+def load_balancing_submit(compset, res, pesfile, mpilib, compiler, project, machine,
+                          extra_options_file, test_id, force_purge, test_root):
 ################################################################################
-    create_newcase_flags = ' --compset %s --res %s --handle-preexisting-dirs r ' % (compset, res)
-    if machine is not None:
-        create_newcase_flags += ' --machine ' + machine
-    if project is not None:
-        create_newcase_flags += ' --project ' + project
-    if compiler is not None:
-        create_newcase_flags += ' --compiler ' + compiler
-
     # Read in list of pes from given file
     if not os.access(pesfile, os.R_OK):
         logger.critical('ERROR: File %s not found', pesfile)
         raise SystemExit(1)
     logger.info('Reading XML file %s. Searching for pesize entries:', pesfile)
     try:
-        pesobj = CIME.XML.pes.Pes(pesfile)
-        logger.info(str(pesobj))
+        pesobj = Pes(pesfile)
     except ParseError:
         logger.critical('ERROR: File %s not parseable', pesfile)
         raise SystemExit(1)
@@ -228,97 +222,97 @@ def load_balancing_submit(compset, res, pesfile, compiler, project, machine,
             logger.critical('No pesize for pes node in file %s', pesfile)
         if pesize in pesize_list:
             logger.critical('pesize %s duplicated in file %s', pesize, pesfile)
-        logger.info('  ' + pesize)
         pesize_list.append(pesize)
 
     if not pesize_list:
         logger.critical('ERROR: No grid entries found in pes file %s', pesfile)
         raise SystemExit(1)
 
-    # Submit job for each entry in pesfile
-    script_dir = CIME.utils.get_scripts_root()
-    for pesize in pesize_list:
-        casename = casename_prefix + pesize
-        casedir = os.path.join(script_dir, casename)
-        logger.info('Case %s...', casename)
-        if os.path.exists(casedir):
+    machobj = Machines(machine=machine)
+    if test_root is None:
+        test_root = machobj.get_value("CIME_OUTPUT_ROOT")
+    if machine is None:
+        machine = machobj.get_machine_name()
+        print "machine is {}".format(machine)
+    if compiler is None:
+        compiler = machobj.get_default_compiler()
+        print "compiler is {}".format(compiler)
+    if mpilib is None:
+        mpilib = machobj.get_default_MPIlib()
+
+
+
+
+    test_names = []
+    for i in xrange(len(pesize_list)):
+        test_names.append(get_full_test_name("PFS_I{}".format(i),grid=res, compset=compset,
+                                             machine=machine, compiler=compiler))
+        casedir = os.path.join(test_root, test_names[-1] + "." + test_id)
+        print "casedir is {}".format(casedir)
+        if os.path.isdir(casedir):
             if force_purge:
                 logger.info('Removing directory %s', casedir)
                 shutil.rmtree(casedir)
-            elif os.path.exists(os.path.join(casedir, 'timing')):
-                logger.info('Skipping timing run for %s, because case '
-                            'already exists.\n   To force rerun of all tests, '
-                            'use --force_purge option.\n   To force rerun of '
-                            'this test only, remove directory \n      %s',
-                            casename, casedir)
-                continue
             else:
-                logger.critical("ERROR: directory %s exists,\n  but no timing "
-                                "information available. Either run with "
-                                "--force_purge\n  (remove all timing runs) or "
-                                "remove this directory and try again", casedir)
-                sys.exit(1)
+                expect(False,
+                       "casedir {} already exists, use the --force-purge option, --test-root or"
+                       " --test-id options".format(casedir))
 
-        cmd = '%s/create_newcase --case %s --output-root %s ' % \
-              (script_dir, casename, casedir)
-        cmd += create_newcase_flags
-        logger.info(cmd)
-        run_cmd_no_fail(cmd, from_dir=script_dir)
-        for var in CIME_DEFAULTS:
-            _set_xml_val(var, CIME_DEFAULTS[var], casedir)
+    tests = TestScheduler(test_names, no_setup = True,
+                          compiler=compiler, machine_name=machine, mpilib=mpilib,
+                          test_root=test_root, test_id=test_id, project=project)
+    success = tests.run_tests(wait=True)
+    expect(success, "Error in creating cases")
+    testnames = []
+    for test in tests.get_testnames():
+        testname =  os.path.join(test_root, test + "." + test_id)
+        testnames.append( testname)
+        logger.info("test is {}".format(testname))
+        with Case(testname) as case:
+            pes_ntasks, pes_nthrds, pes_rootpe, _ = \
+                                                    pesobj.find_pes_layout('any', 'any', 'any', pesize_opts=pesize_list.pop(0))
+            for key in pes_ntasks:
+                case.set_value(key, pes_ntasks[key])
+            for key in pes_nthrds:
+                case.set_value(key, pes_nthrds[key])
+            for key in pes_rootpe:
+                case.set_value(key, pes_rootpe[key])
 
-        if extra_options_file is not None:
-            try:
-                extras = open(extra_options_file, 'r')
-                for line in extras.readlines():
-                    split = line.split('=')
-                    if len(split) == 2:
-                        logger.info('setting %s=%s', split[0], split[1])
-                        _set_xml_val(split[0], split[1], casedir)
-                    else:
-                        logger.debug('ignoring line in %s: %s',
-                                     extra_options_file, line)
-                extras.close()
-            except IOError, e:
-                logger.critical("ERROR: Could not read file %s",
-                                extra_options_file)
-                raise SystemExit(1)
+            if extra_options_file is not None:
+                try:
+                    extras = open(extra_options_file, 'r')
+                    for line in extras.readlines():
+                        split = line.split('=')
+                        if len(split) == 2:
+                            logger.info('setting %s=%s', split[0], split[1])
+                            case.set_value(split[0], split[1])
+                        else:
+                            logger.debug('ignoring line in {}: {}'.format(
+                                extra_options_file, line))
+                    extras.close()
+                except IOError:
+                    expect(False, "ERROR: Could not read file {}".format(extra_options_file))
 
-        pes_ntasks, pes_nthrds, pes_rootpe, ignore = \
-            pesobj.find_pes_layout('any', 'any', 'any', pesize_opts=pesize)
 
-        for key in pes_ntasks:
-            _set_xml_val(key, pes_ntasks[key], casedir)
-        for key in pes_nthrds:
-            _set_xml_val(key, pes_nthrds[key], casedir)
-        for key in pes_rootpe:
-            _set_xml_val(key, pes_rootpe[key], casedir)
+    tests = TestScheduler(test_names, use_existing=True, test_root=test_root, test_id=test_id)
+    success = tests.run_tests(wait=False)
+    expect(success, "Error in running cases")
 
-        cmd = './case.setup'
-        logger.info(cmd)
-        run_cmd_no_fail(cmd, from_dir=casedir)
-
-        cmd = './case.build'
-        logger.info(cmd)
-        run_cmd_no_fail(cmd, from_dir=casedir)
-
-        cmd = './case.submit'
-        logger.info(cmd)
-        run_cmd_no_fail(cmd, from_dir=casedir)
-
+    # need to fix
     logger.info('Timing jobs submitted. After jobs completed, run to optimize '
-                'pe layout:\n  load_balancing_solve --casename_prefix %s',
-                (casename_prefix))
+                'pe layout:\n  load_balancing_solve --test-id {} --test-root {}'.
+                format(test_id, test_root))
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    compset, res, pesfile, compiler, project, machine, extra_options_file, casename_prefix, force_purge = parse_command_line(sys.argv, description)
+    compset, res, pesfile, mpilib, compiler, project, machine, extra_options_file, casename_prefix,  \
+        force_purge, test_root = parse_command_line(sys.argv, description)
 
-    sys.exit(load_balancing_submit(compset, res, pesfile,
+    sys.exit(load_balancing_submit(compset, res, pesfile, mpilib,
                                    compiler, project, machine,
                                    extra_options_file, casename_prefix,
-                                   force_purge))
+                                   force_purge, test_root))
 
 ###############################################################################
 

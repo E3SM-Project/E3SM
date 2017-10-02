@@ -8,6 +8,7 @@ import copy
 import logging
 import operator
 import importlib
+from CIME.utils import expect
 try:
     import pulp
 except ImportError, e:
@@ -21,14 +22,7 @@ def solver_factory(data):
     """
     load data either from a json file or dictionary
     """
-    if data.has_key('description'):
-        description = data['description']
-
-    if data.has_key('totaltasks'):
-        maxtasks = data['totaltasks']
-    else:
-        logger.critical("ERROR: totaltasks not found in data")
-        raise KeyError("totaltasks not found in data")
+    expect(data.has_key('totaltasks'),"totaltasks not found in data")
 
     layout = data['layout']
     sp = layout.rsplit('.', 1)
@@ -39,16 +33,14 @@ def solver_factory(data):
         else:
             import layouts
             layout_module = layouts
-    except ImportError, e:
-        logger.critical("ERROR: cannot import %s\n", sp[0])
-        raise e
+    except ImportError:
+        expect(False,"cannot import %s\n")
 
     try:
         solverclass = getattr(layout_module, layout)
-    except KeyError, e:
-        logger.critical("ERROR: layout class %s not found in %s\n",
-                        layout, layout_module)
-        raise e
+    except KeyError:
+        expect(False, "layout class %s not found in %s\n",
+               layout, layout_module)
 
     solver = solverclass()
 
@@ -75,7 +67,7 @@ class ModelData:
         self.cost = list(tup[0])
         self.ntasks = list(tup[1])
         for j in self.ntasks:
-            if j % self.blocksize:
+            if j > 1 and j % self.blocksize:
                 logger.warning("WARNING: %s pe %d not divisible by "
                                "blocksize %d. Results may be invalid\n",
                                name, j, self.blocksize)
@@ -90,6 +82,9 @@ class OptimizeModel(object):
     def __init__(self):
         self.models = {}
         self.state = self.STATE_UNDEFINED
+        self.X = {}
+        self.constraints = []
+        self.maxtasks = 0
 
     def set_data(self, data_dict):
         """
@@ -126,7 +121,8 @@ class OptimizeModel(object):
 
             # add in data for maxtasks if not available
             # assume same scaling factor as previous interval
-            if m.ntasks[-1] < self.maxtasks:
+
+            if len(m.ntasks) > 1 and m.ntasks[-1] < self.maxtasks:
                 if m.cost[-2] <= 0.0:
                     factor = 1.0
                 elif len(m.ntasks) > 1:
@@ -226,7 +222,7 @@ class OptimizeModel(object):
                "set_data() must be called before graph_costs()"
         try:
             import matplotlib.pyplot as pyplot
-        except ImportError, e:
+        except ImportError:
             logger.info("matplotlib not found, skipping graphs")
             return
 
@@ -316,9 +312,6 @@ class OptimizeModel(object):
 
     def get_state_string(self, state):
         return self.states[state]
-
-    def get_all_variables(self):
-        return self.prob.X
 
     def write_pe_file(self, pefilename):
         raise NotImplementedError

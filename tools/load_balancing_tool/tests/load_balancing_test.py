@@ -27,7 +27,7 @@ except ImportError, e:
 
 
 
-from CIME.utils import run_cmd_no_fail, run_cmd
+from CIME.utils import run_cmd_no_fail, get_full_test_name
 from CIME.XML.machines import Machines
 from CIME.XML import pes
 import unittest, json, tempfile, sys, re, copy
@@ -40,16 +40,16 @@ TEST_DIR = os.path.join(SCRIPT_DIR, "..", "tools", "load_balancing_tool",
 X_OPTIONS = """
 STOP_N=1
 """
-JSON_DICT = { 
+JSON_DICT = {
   "description" : "Optimize using data available from original load balancing tool. The original tool solved the problem using a different model, so we do not expect exact replication: (Original solution: NTASKS_ATM: 1006 NTASKS_ICE:  889 NTASKS_LND:  117 NTASKS_OCN:   18 TOTAL_COST:  28.749 s/mday)",
   "layout" : "IceLndAtmOcn",
   "totaltasks" : 1024,
   "ATM" : {
-      "ntasks" : [32,64,128,256,512], 
+      "ntasks" : [32,64,128,256,512],
       "blocksize" : 8,
       "nthrds" : [1],
       "cost" : [427.471, 223.332, 119.580, 66.182, 37.769]
-  },        
+  },
   "OCN" : {
       "ntasks" : [32,64,128,256,512],
       "blocksize" : 8,
@@ -74,7 +74,7 @@ PES_XML = """
 <config_pes>
   <grid name="any">
     <mach name="any">
-      <pes compset="any" pesize="1">
+      <pes compset="any" pesize="0">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>2</ntasks_atm>
@@ -112,7 +112,7 @@ PES_XML = """
 
   <grid name="any">
     <mach name="any">
-      <pes compset="any" pesize="2">
+      <pes compset="any" pesize="1">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>4</ntasks_atm>
@@ -153,7 +153,7 @@ PES_XML = """
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    
+
     unittest.main(verbosity=2, catchbreak=True)
 
 ###############################################################################
@@ -170,7 +170,7 @@ class LoadBalanceTests(unittest.TestCase):
             self.fail("pattern '%s' not found in output" % (pattern))
         check = int(m.groups()[0])
         self.assertTrue(check == val, "%s = %d, expected %d" % (var, check, val))
-        
+
 
     def test_pulp(self):
         try:
@@ -188,16 +188,16 @@ class LoadBalanceTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile('w+') as jsonfile1, tempfile.NamedTemporaryFile('w+') as jsonfile2:
             json.dump(JSON_DICT, jsonfile1)
             jsonfile1.flush()
-            cmd = "./load_balancing_solve.py --json_input %s --json_output %s" % (jsonfile1.name, jsonfile2.name)
+            cmd = "./load_balancing_solve.py --json-input %s --json-output %s" % (jsonfile1.name, jsonfile2.name)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self._check_solution(output, "NTASKS_ATM", 992)
-            cmd = "./load_balancing_solve.py --json_input %s" % jsonfile2.name
+            cmd = "./load_balancing_solve.py --json-input %s" % jsonfile2.name
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self._check_solution(output, "NTASKS_ATM", 992)
 
 
     def test_solve_from_timing_dir(self):
-        cmd = "./load_balancing_solve.py --timing_dir %s --total_tasks 64 --blocksize 2" % os.path.join(TEST_DIR, "timing")
+        cmd = "./load_balancing_solve.py --timing-dir %s --total-tasks 64 --blocksize 2" % os.path.join(TEST_DIR, "timing")
         output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
         self._check_solution(output, "NTASKS_ATM", 62)
 
@@ -205,18 +205,18 @@ class LoadBalanceTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile('w+') as jsonfile1, tempfile.NamedTemporaryFile('w+') as pes_file:
             json.dump(JSON_DICT, jsonfile1)
             jsonfile1.flush()
-            cmd = "./load_balancing_solve.py --json_input %s --pe_output %s" % (jsonfile1.name, pes_file.name)
+            cmd = "./load_balancing_solve.py --json-input %s --pe-output %s" % (jsonfile1.name, pes_file.name)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
-            
+
             self.assertTrue(os.access(pes_file.name, os.R_OK), "pesfile %s not written" % pes_file.name)
             pesobj = CIME.XML.pes.Pes(pes_file.name)
         for node in pesobj.get_nodes('pes'):
             pesize = node.get('pesize')
-            pes_ntasks, pes_nthrds, pes_rootpe, ignore = \
+            pes_ntasks, pes_nthrds, pes_rootpe, _ = \
                pesobj.find_pes_layout('any', 'any', 'any', pesize_opts=pesize)
 
     def test_set_blocksize_atm(self):
-        cmd = "./load_balancing_solve.py --timing_dir %s --total_tasks 64 --blocksize 2 --blocksize_atm 4" % os.path.join(TEST_DIR, "timing")
+        cmd = "./load_balancing_solve.py --timing-dir %s --total-tasks 64 --blocksize 2 --blocksize-atm 4" % os.path.join(TEST_DIR, "timing")
         output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
         self._check_solution(output, "NTASKS_ATM", 60)
         self._check_solution(output, "NBLOCKS_ATM", 15)
@@ -232,35 +232,44 @@ class LoadBalanceTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile('w+') as jsonfile:
             json.dump(JSON_DICT, jsonfile)
             jsonfile.flush()
-            cmd = "./load_balancing_solve.py --json_input %s --graph_models" % (jsonfile.name)
+            cmd = "./load_balancing_solve.py --json-input %s --graph-models" % (jsonfile.name)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self._check_solution(output, "NTASKS_ATM", 992)
-        
-    def test_xcase_submit(self):
-        with tempfile.NamedTemporaryFile('w+') as tfile, tempfile.NamedTemporaryFile('w+') as xfile:
-            tfile.write(PES_XML)
-            tfile.flush()
-            xfile.write(X_OPTIONS)
-            xfile.flush()
-            cmd = "./load_balancing_submit.py --pesfile %s --res ne30_g16 --compset X --casename_prefix test_lbt_  --extra_options_file %s" % (tfile.name, xfile.name)
-            if MACHINE.has_batch_system():
-                sys.stdout.write("Jobs will be submitted to queue. Rerun "
-                                 "load_balancing_test.py after jobs have "
-                                 "finished.")
-            else:
-                cmd += " --force_purge"
-            output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
-            self.assertTrue(output.find("Timing jobs submitted") >= 0,
-                            "Expected 'Timing jobs submitted' in output")
-            
-            expected_dir = os.path.join(SCRIPT_DIR, "test_lbt_1", "timing")
 
-            self.assertTrue(os.path.exists(expected_dir),
-                            "Directory %s not created" % expected_dir)
-            cmd = "./load_balancing_solve.py --total_tasks 32 --blocksize 1 --casename_prefix test_lbt_ --print_models"
+    def test_xcase_submit(self):
+        test_root = MACHINE.get_value("CIME_OUTPUT_ROOT")
+        machine = MACHINE.get_machine_name()
+        compiler = MACHINE.get_default_compiler()
+
+        test_name = get_full_test_name("PFS_I0",grid="f19_g16", compset="X",
+                                             machine=machine, compiler=compiler)
+        expected_dir = os.path.join(test_root,
+                                    "{}.test_lbt".format(test_name),
+                                    "timing")
+        if not os.path.isdir(expected_dir):
+            with tempfile.NamedTemporaryFile('w+') as tfile, tempfile.NamedTemporaryFile('w+') as xfile:
+                tfile.write(PES_XML)
+                tfile.flush()
+                xfile.write(X_OPTIONS)
+                xfile.flush()
+                cmd = "./load_balancing_submit.py --pesfile {} --res f19_g16 --compset X --test-id test_lbt  --extra-options-file {} --test-root {}".format(tfile.name, xfile.name, test_root)
+                if MACHINE.has_batch_system():
+                    sys.stdout.write("Jobs will be submitted to queue. Rerun "
+                                     "load_balancing_test.py after jobs have "
+                    "finished.")
+                else:
+                    cmd += " --force-purge"
+                output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
+
+                self.assertTrue(output.find("Timing jobs submitted") >= 0,
+                                "Expected 'Timing jobs submitted' in output")
+
+        if os.path.isdir(expected_dir):
+
+            cmd = "./load_balancing_solve.py --total-tasks 32 --blocksize 1 --test-id test_lbt --print-models --test-root {} ".format(test_root)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self.assertTrue(output.find("***ATM***") > 0,
-                            "--print_models failed to print ATM data")
+                            "--print-models failed to print ATM data")
             self._check_solution(output, "NTASKS_ATM", 31)
 
     def test_use_atm_lnd(self):
@@ -278,11 +287,10 @@ class LoadBalanceTests(unittest.TestCase):
                                   "cost" : [8.0, 4.0, 2.0, 1.0]}
             json.dump(atmlnd_dict, jsonfile1)
             jsonfile1.flush()
-            cmd = "./load_balancing_solve.py --json_input %s --print_models --layout tests.atm_lnd.AtmLnd" % (jsonfile1.name)
+            cmd = "./load_balancing_solve.py --json-input %s --print-models --layout tests.atm_lnd.AtmLnd" % (jsonfile1.name)
             output = run_cmd_no_fail(cmd, from_dir=CODE_DIR)
             self._check_solution(output, "Natm", 976)
             self._check_solution(output, "NBatm", 976/8)
-        
+
 if __name__ == '__main__':
     _main_func(__doc__)
-
