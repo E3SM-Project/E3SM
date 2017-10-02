@@ -1118,14 +1118,6 @@ def transform_vars(text, case=None, subgroup=None, overrides=None, default=None)
 
     return text
 
-def get_my_queued_jobs():
-    # TODO
-    return []
-
-def delete_jobs(_):
-    # TODO
-    return True
-
 def wait_for_unlocked(filepath):
     locked = True
     file_object = None

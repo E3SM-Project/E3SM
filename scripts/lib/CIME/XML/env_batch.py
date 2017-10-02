@@ -571,3 +571,17 @@ class EnvBatch(EnvBase):
                 logger.warning("Batch query command '{}' failed with error '{}'".format(cmd, err))
             else:
                 return out.strip()
+
+    def cancel_job(self, jobid):
+        batch_cancel = self.get_optional_node("batch_cancel")
+        if batch_cancel is None:
+            logger.warning("Batch cancellation not supported on this platform")
+            return False
+        else:
+            cmd = batch_cancel.text + " "  + str(jobid)
+
+            status, out, err = run_cmd(cmd)
+            if status != 0:
+                logger.warning("Batch cancel command '{}' failed with error '{}'".format(cmd, out + "\n" + err))
+            else:
+                return True

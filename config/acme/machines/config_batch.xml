@@ -16,6 +16,7 @@
   <batch_system type="template" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
+    <batch_cancel></batch_cancel>
     <batch_redirect></batch_redirect>
     <batch_directive></batch_directive>
     <directives>
@@ -26,6 +27,7 @@
   <batch_system type="none" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
+    <batch_cancel></batch_cancel>
     <batch_redirect></batch_redirect>
     <batch_directive></batch_directive>
     <directives>
@@ -36,6 +38,7 @@
   <batch_system type="cobalt" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
+    <batch_cancel>qdel</batch_cancel>
     <batch_directive></batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
@@ -56,6 +59,7 @@
   <batch_system type="cobalt_theta" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
+    <batch_cancel>qdel</batch_cancel>
     <batch_directive>#COBALT</batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
@@ -74,6 +78,7 @@
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
+    <batch_cancel>bkill</batch_cancel>
     <batch_redirect>&lt;</batch_redirect>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
@@ -101,6 +106,7 @@
   <batch_system type="pbs" >
     <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
+    <batch_cancel>qdel</batch_cancel>
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
@@ -125,6 +131,7 @@
   <batch_system type="moab" >
     <batch_query>showq</batch_query>
     <batch_submit>msub </batch_submit>
+    <batch_cancel>canceljob</batch_cancel>
     <batch_directive>#MSUB</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
@@ -147,6 +154,7 @@
   <!-- for cab llnl -->
    <batch_system type="lc_slurm">
      <batch_submit>msub</batch_submit>
+     <batch_cancel>canceljob</batch_cancel>
      <batch_directive>#MSUB</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> -l depend=jobid</depend_string>
@@ -170,6 +178,7 @@
   <batch_system type="slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> --dependency=afterok:jobid</depend_string>

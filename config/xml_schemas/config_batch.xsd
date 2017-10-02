@@ -10,6 +10,7 @@
 
   <!-- simple elements -->
   <xs:element name="batch_submit" type="xs:string"/>
+  <xs:element name="batch_cancel" type="xs:string"/>
   <xs:element name="batch_redirect" type="xs:string"/>
   <xs:element name="batch_directive" type="xs:string"/>
   <xs:element name="jobid_pattern" type="xs:string"/>
@@ -44,6 +45,9 @@
 
   <!-- batch_submit: The command used to submit jobs in this batch_system. -->
         <xs:element minOccurs="0" ref="batch_submit"/>
+
+  <!-- batch_cancel: The command used to cancel jobs in this batch_system. -->
+        <xs:element minOccurs="0" ref="batch_cancel"/>
 
   <!-- batch_redirect: some batch systems (lsf) require the script to be read from stdin,
        this is the shell redirect to handle that -->
