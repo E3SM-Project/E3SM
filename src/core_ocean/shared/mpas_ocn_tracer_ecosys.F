@@ -1688,8 +1688,8 @@ contains
                 '0000-01-01_00:00:00', &
                 '0000-01-01_00:00:00', &
                 '0001-00-00_00:00:00', &
-                config_do_restart, &
-                config_forcing_restart_file)
+                config_do_restart)
+!mrp 171002 delete for framework merge: config_forcing_restart_file)
 !        .false.)  ! OPTIONAL?
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
@@ -1868,9 +1868,11 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field_data( forcingGroupHead, &
-         'ecosysMonthlyClimatology', &
-         domain % streamManager)
+!mrp 171002 This interface has changed. Need to fix this later.
+!      call MPAS_forcing_init_field_data( ecosysForcingGroup, &
+!         'ecosysMonthlyClimatology')
+!         domain % streamManager)
+!mrp 171002 end
 
       end if  !  associated(ecosysTracers)
 
@@ -2036,7 +2038,10 @@ contains
 
       call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
-      call MPAS_forcing_write_restart_times(forcingGroupHead, config_forcing_restart_file)
+      !mrp 171002 the restart file was removed in framework:
+      !call MPAS_forcing_write_restart_times(ecosysForcingGroup, config_forcing_restart_file)
+      ! revised to:
+      !call MPAS_forcing_write_restart_times(ecosysForcingGroup)
 
     end subroutine ocn_ecosys_forcing_write_restart!}}}
 
