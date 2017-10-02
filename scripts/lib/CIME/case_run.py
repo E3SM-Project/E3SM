@@ -280,6 +280,7 @@ def case_run(case, skip_pnl=False):
         if cycle > 0:
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
+            skip_pnl = True
 
         if prerun_script:
             case.flush()
