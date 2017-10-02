@@ -10,7 +10,7 @@ def cleanup_queue(test_root, test_id):
     """
     Delete all jobs left in the queue
     """
-    for teststatus_file in glob.glob("{}/*{}*/TestStatus".format(test_root, test_id)):
+    for teststatus_file in glob.iglob("{}/*{}*/TestStatus".format(test_root, test_id)):
         case_dir = os.path.dirname(teststatus_file)
         with Case(case_dir, read_only=True) as case:
             jobmap = case.get_job_info()
