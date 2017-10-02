@@ -736,7 +736,7 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. .not. use_ed .and. .not. use_crop )    
+    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_ed .and. .not. use_crop) )  then 
        allocate(soilorder_rdin(bounds%begg:bounds%endg))
        call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
