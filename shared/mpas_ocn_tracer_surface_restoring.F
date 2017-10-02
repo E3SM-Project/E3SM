@@ -263,8 +263,8 @@ contains
                 '0000-01-01_00:00:00', &
                 '0000-01-01_00:00:00', &
                 '0001-00-00_00:00:00', &
-                config_do_restart, &
-                config_forcing_restart_file)
+                config_do_restart)
+!mrp 171002 delete for framework merge: config_forcing_restart_file)
 !        .false.)  ! OPTIONAL?
 
            call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceSalinityMonthlyForcing',  &
@@ -282,9 +282,10 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-           call MPAS_forcing_init_field_data( forcingGroupHead, &
-                'surfaceSalinityMonthlyClimatology', &
-                domain % streamManager)
+!mrp 171002 This interface has changed.  Figure it out later.
+!           call MPAS_forcing_init_field_data( surfaceSalinityForcingGroup, &
+!                'surfaceSalinityMonthlyClimatology')
+!mrp 171002 end
 
         endif  !  first timestep
 
@@ -413,7 +414,10 @@ contains
 
       call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
-      call MPAS_forcing_write_restart_times(forcingGroupHead, config_forcing_restart_file)
+      !mrp 171002 the restart file was removed in framework:
+      !call MPAS_forcing_write_restart_times(surfaceSalinityForcingGroup, config_forcing_restart_file)
+      ! revised to:
+      !call MPAS_forcing_write_restart_times(surfaceSalinityForcingGroup)
 
     end subroutine ocn_salinity_restoring_forcing_write_restart!}}}
 
