@@ -446,7 +446,7 @@ class EnvBatch(EnvBase):
             if not batch_env_flag:
                 submitcmd += " --skip-preview-namelist"
             else:
-                submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist'"
+                submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist'".format(batch_env_flag)
 
         if dry_run:
             return submitcmd
