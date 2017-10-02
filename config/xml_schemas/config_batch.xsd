@@ -12,6 +12,7 @@
   <xs:element name="batch_submit" type="xs:string"/>
   <xs:element name="batch_cancel" type="xs:string"/>
   <xs:element name="batch_redirect" type="xs:string"/>
+  <xs:element name="batch_env" type="xs:string"/>
   <xs:element name="batch_directive" type="xs:string"/>
   <xs:element name="jobid_pattern" type="xs:string"/>
   <xs:element name="depend_string" type="xs:string"/>
@@ -52,6 +53,9 @@
   <!-- batch_redirect: some batch systems (lsf) require the script to be read from stdin,
        this is the shell redirect to handle that -->
         <xs:element minOccurs="0" ref="batch_redirect"/>
+
+  <!-- batch_env: The flag passed to submit command to set environment variable; only use if batch system doesn't support normal option passing -->
+        <xs:element minOccurs="0" ref="batch_env"/>
 
   <!-- batch_directive: The prefix used for batch directives in script comments -->
         <xs:element minOccurs="0" ref="batch_directive"/>
