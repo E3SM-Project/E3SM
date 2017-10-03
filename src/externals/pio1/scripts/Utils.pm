@@ -83,27 +83,27 @@ sub preambleResource{
      $preambleResource = "";
   }elsif($host =~ "edinburgh" or $host =~ "carver"){
      $nodes = ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n"; 
+     $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n";
   }elsif($host =~ "aum"){
      $nodes = ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n"; 
+     $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n";
   }elsif($host =~ "cyberstar" ){
      $nodes = ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l nodes=$nodes:nehalem:ppn=$corespernode\n"; 
+     $preambleResource = "#PBS -l nodes=$nodes:nehalem:ppn=$corespernode\n";
   }elsif($host =~ "lynx" or $host =~ "hopper"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l mppwidth=$pecnt\n"; 
+     $preambleResource = "#PBS -l mppwidth=$pecnt\n";
   }elsif($host =~ "athena"  or $host =~ /janus/){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l size=$pecnt\n"; 
+     $preambleResource = "#PBS -l size=$pecnt\n";
   }elsif($host =~ "kraken"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l size=$pecnt\n"; 
+     $preambleResource = "#PBS -l size=$pecnt\n";
   }elsif($host =~ "titan"){
      my $nodecnt = ceil($pecount/$corespernode);
-     $preambleResource = "#PBS -l nodes=$nodecnt\n"; 
+     $preambleResource = "#PBS -l nodes=$nodecnt\n";
   }elsif($host =~ "columbia" or $host =~ "pleiades"){
-     $preambleResource = "#PBS -l ncpus=$pecount\n"; 
+     $preambleResource = "#PBS -l ncpus=$pecount\n";
   }
 }
 
@@ -160,10 +160,10 @@ sub loadmodules{
                    carver => "/usr/common/nsg/opt/Modules/default/",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
-    
+
     return unless(defined $modpath->{$host});
 
-    
+
 #HOST SPECIFIC START
     if($host =~ "titan"){
 	require "/opt/modules/default/init/perl";
@@ -173,7 +173,7 @@ sub loadmodules{
         module(" swap xt-asyncpe xt-asyncpe/5.16");
         module("load szip/2.1");
 	module(" switch pgi pgi/12.10.0");
-	module(" load netcdf-hdf5parallel/4.2.0");      
+	module(" load netcdf-hdf5parallel/4.2.0");
 	module(" load parallel-netcdf/1.3.1");
         module("list");
     }elsif($host eq "eos"){
@@ -197,19 +197,19 @@ sub loadmodules{
 	module(" load torque moab");
         module(" load xt-mpt");
 	module(" switch pgi pgi/7.1.6");
-	module(" load netcdf/3.6.2");      
+	module(" load netcdf/3.6.2");
 	module(" load p-netcdf/1.1.1");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
     }elsif($host =~ "kraken"){
 	require "/opt/modules/default/init/perl";
 	module_check($modpath,$host);
-	module(" load netcdf/3.6.3");      
+	module(" load netcdf/3.6.3");
 	module(" load p-netcdf/1.2.0");
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
 	module_check($modpath,$host);
-	module(" load cray-netcdf-hdf5parallel/4.3.0");      
+	module(" load cray-netcdf-hdf5parallel/4.3.0");
 	module(" load cray-parallel-netcdf/1.3.1.1");
         module("list");
     }elsif($host =~ "pleiades"){
@@ -244,7 +244,7 @@ sub loadmodules{
 #        module("load pnetcdf/1.3.0");
         module("list");
     }elsif($host eq "erebus"){
-	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	require "/glade/apps/opt/lmod/lmod/init/perl";
 	module_check($modpath,$host);
         module("load intel/13.1.2");
 	module("load ncarcompilers/1.0");
@@ -257,7 +257,7 @@ sub loadmodules{
 	module("list");
     }elsif($host eq "yellowstone_pgi"){
 	print "Loading modules for $host\n";
-	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	require "/glade/apps/opt/lmod/lmod/init/perl";
 	module_check($modpath,"yellowstone");
         module("rm netcdf");
         module("rm intel");
@@ -271,7 +271,7 @@ sub loadmodules{
 	module("list");
     }elsif($host eq "yellowstone_gnu"){
 	print "Loading modules for $host\n";
-	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	require "/glade/apps/opt/lmod/lmod/init/perl";
 	module_check($modpath,"yellowstone");
         module("rm netcdf");
         module("rm intel");
@@ -284,7 +284,7 @@ sub loadmodules{
 	module("load ncarbinlibs/0.0");
 	module("list");
     }elsif($host eq "yellowstone"){
-	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	require "/glade/apps/opt/lmod/lmod/init/perl";
 	module_check($modpath,$host);
 #        module("purge");
         module("load intel/13.1.2");
@@ -297,7 +297,7 @@ sub loadmodules{
 	module("load cmake");
 	module("list");
     }
-	
+
 #HOST SPECIFIC END
 }
 

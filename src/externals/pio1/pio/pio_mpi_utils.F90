@@ -1,9 +1,9 @@
 #define __PIO_FILE__ "pio_mpi_utils.F90"
 module pio_mpi_utils
-  
+
   implicit none
   private
-  
+
   public :: pio_type_to_mpi_type
 
 contains

@@ -5,9 +5,9 @@
 !> @brief The piovdc library for writing Vapor Data Collection (VDC) 2 data files
 !> https://wiki.ucar.edu/display/dasg/PIOVDC
 !> <br>
-!> @details The piovdc library is used to write VDC2 data files in a	 
-!> parallel manner using PIO. After the prerequisite library functions are 
-!> used, a call to pio_writedarray is made, writing the passed 
+!> @details The piovdc library is used to write VDC2 data files in a
+!> parallel manner using PIO. After the prerequisite library functions are
+!> used, a call to pio_writedarray is made, writing the passed
 !> data to an on disk VDC2 collection.<br>
 !> PRE-REQUISITES: <br>
 !> 	VDF meta-file must be generated, using either rawtovdf or vdfcreate
@@ -18,16 +18,16 @@
 !>	After a successful write, VDC2 data will be in a directory located in
 !>	the same directory as the vdf file, using the vdf name, appended with _data
 !> 	(ex. ghost.vdf generates VDC2 data in the dir ghost_data in the vdf dir)
-!>	If no compression is enabled, a single, uncompressed file will be 
+!>	If no compression is enabled, a single, uncompressed file will be
 !>	generated using PIO instead of a VDC
 module piovdc
   use pio_kinds, only : i4, r4, pio_offset
   implicit none
   integer (i4)	:: vdc_dims(3), vdc_bsize(3), vdc_ts
-  integer (kind=PIO_OFFSET)  :: vdc_iostart(3), vdc_iocount(3)	
+  integer (kind=PIO_OFFSET)  :: vdc_iostart(3), vdc_iocount(3)
 contains
 
-  !> @brief subroutine checks start/count for out of bounds, adjusts if the start/count is too high, 
+  !> @brief subroutine checks start/count for out of bounds, adjusts if the start/count is too high,
   !> zeroes start if it is invalid
   !> POST-EFFECTS:
   !>	<br>all start/counts are now legal, non-IO tasks have zeroed start counts
@@ -51,7 +51,7 @@ contains
 #endif
        start = (/ 0, 0, 0/)
        count = (/ 0, 0, 0/)
-    else 
+    else
        !start is legit but count might not be, check & adjust to the boundaries
        if(count(1) + start(1) - 1 .GT. global_dims(1)) then
           count(1) = global_dims(1) - start(1) + 1
@@ -74,7 +74,7 @@ contains
   !> POST-EFFECTS:
   !>	<br>Each MPI Task is now either and IO task or a computational task. IO tasks have nonzero start/counts
   !> @param[in] rank int rank of the current MPI task
-  !> @param[inout] nioprocs int represents the max possible # of IO procs, 
+  !> @param[inout] nioprocs int represents the max possible # of IO procs,
   !> @algorithm will try to get as close as possible to this # and return it in nioprocs
   !> @param[in] blockdims int(3) global grid dimensions represented as VDC blocks
   !> @param[out] start int(3) iostart for the current MPI task
@@ -104,7 +104,7 @@ contains
        count = INT(block_dims * bsize)
     else
        do slab_counter=1, nslabs
-	  do counter=1, nlinesPslab 
+	  do counter=1, nlinesPslab
              proc_count =  CEILING(nlinesPslab / REAL(counter)) * CEILING(nslabs / REAL(slab_counter))
              !test to see if counter # of lines per processor per slab is possible
              if (nioprocs >= proc_count) then
@@ -116,7 +116,7 @@ contains
                    call adjust_bounds(data_dims, start, count, rank)
                    if(proc_count .eq. nioprocs) then !using max #of procs, suitable solution found (for now)
                       found = .TRUE.
-                      exit				
+                      exit
                    end if
                    if (found) then
                       exit
@@ -151,17 +151,17 @@ contains
     integer(i4), dimension(:), intent(in) :: data_dims, vdc_bsize
     integer (i4), intent(inout):: ioprocs
     !locals
-    real(r4) :: vdc_blocks(3)   
+    real(r4) :: vdc_blocks(3)
     integer (i4)	:: ierr
 
-    print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , &                                    
+    print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , &
          vdc_bsize, ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
 
     vdc_blocks = data_dims/real(vdc_bsize)
 
     call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize, data_dims)
 
-#ifdef DEBUG 
+#ifdef DEBUG
     print *, 'Retrieved VDF start count', iostart, '-', iocount, 'rank: ' , rank
 #endif
 
