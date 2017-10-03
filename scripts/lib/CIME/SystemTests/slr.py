@@ -53,3 +53,19 @@ class SLR(SystemTestsCommon):
             case_setup(self._case, test_mode=False, reset=True)
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+
+    def run_phase(self):
+        self._case.set_value("STOP_N",6)
+
+        ninst = 3
+        for iinst in range(1, ninst+1):
+            with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as nlfile:
+                 nlfile.write("avgflag_pertape = 'I' \n")
+                 nlfile.write("nhtfrq = 1 \n")
+                 nlfile.write("mfilt  = 1000 \n")
+                 nlfile.write("iradsw = 2 \n")
+                 nlfile.write("iradlw = 2 \n")
+                 nlfile.write("ndens  = 1 \n")
+                 nlfile.write("empty_htapes = .true. \n")
+
+        self.run_indv()
