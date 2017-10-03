@@ -442,7 +442,11 @@ class EnvBatch(EnvBase):
                 submitcmd += string + " "
 
         if job == 'case.run' and skip_pnl:
-            submitcmd += " --skip-preview-namelist"
+            batch_env_flag = self.get_value("batch_env", subgroup=None)
+            if not batch_env_flag:
+                submitcmd += " --skip-preview-namelist"
+            else:
+                submitcmd += " {} ARGS_FOR_SCRIPT='--skip-preview-namelist'".format(batch_env_flag)
 
         if dry_run:
             return submitcmd
