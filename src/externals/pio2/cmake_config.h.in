@@ -25,4 +25,7 @@
 /** Size of MPI_Offset type. */
 #define SIZEOF_MPI_OFFSET @SIZEOF_MPI_OFFSET@
 
+/* buffer size for darray data. */
+#define PIO_BUFFER_SIZE @PIO_BUFFER_SIZE@
+
 #endif /* _PIO_CONFIG_ */
