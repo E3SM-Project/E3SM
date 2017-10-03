@@ -986,7 +986,7 @@ module mpas_timekeeping
       ! Local variables
       type (MPAS_Alarm_type), pointer :: alarmPtr
       type (MPAS_TimeInterval_type) :: searchInterval, searchRemainder
-      integer :: nDivs
+      integer (kind=I8KIND) :: nDivs
       integer :: threadNum
       integer :: ierr_tmp
 
