@@ -5,15 +5,15 @@ all:
 
 build_input_gen:
 ifdef TOOL_DIR
-	(cp $(TOOL_DIR)/namelist_gen input_gen/)
-	(cp $(TOOL_DIR)/streams_gen input_gen/)
+	(cp $(TOOL_DIR)/input_gen/namelist_gen input_gen/)
+	(cp $(TOOL_DIR)/input_gen/streams_gen input_gen/)
 else
 	(cd input_gen; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(CC)" CFLAGS="$(CFLAGS)")
 endif
 
 build_registry:
 ifdef TOOL_DIR
-	(cp $(TOOL_DIR)/parse registry/)
+	(cp $(TOOL_DIR)/registry/parse registry/)
 else
 	(cd registry; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(CC)" CFLAGS="$(CFLAGS)")
 endif
