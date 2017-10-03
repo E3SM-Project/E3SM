@@ -50,6 +50,7 @@
 <config_dt ocn_grid="oEC60to30">'00:10:00'</config_dt>
 <config_dt ocn_grid="oEC60to30v3">'00:10:00'</config_dt>
 <config_dt ocn_grid="oEC60to30wLI">'00:10:00'</config_dt>
+<config_dt ocn_grid="oEC60to30v3wLI">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10v3">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10wLI">'00:10:00'</config_dt>
@@ -85,6 +86,7 @@
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30wLI">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oEC60to30v3wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10wLI">.true.</config_hmix_scaleWithMesh>
@@ -109,6 +111,7 @@
 <config_mom_del4 ocn_grid="oEC60to30">1.2e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30v3">1.2e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30wLI">1.2e12</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30v3wLI">1.2e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10v3">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
@@ -131,6 +134,7 @@
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30v3">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30wLI">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oEC60to30v3wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10v3">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10wLI">.false.</config_use_standardGM>
@@ -257,6 +261,7 @@
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oQU240wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oEC60to30wLI">'standalone'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oRRS30to10wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
@@ -323,6 +328,7 @@
 <config_btr_dt ocn_grid="oEC60to30">'0000_00:00:40'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30v3">'0000_00:00:40'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:00:40'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3wLI">'0000_00:00:40'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10wLI">'0000_00:00:18'</config_btr_dt>
@@ -1056,7 +1062,7 @@
 <config_AM_timeSeriesStatsDaily_write_on_startup>.false.</config_AM_timeSeriesStatsDaily_write_on_startup>
 <config_AM_timeSeriesStatsDaily_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsDaily_compute_interval>
 <config_AM_timeSeriesStatsDaily_output_stream>'timeSeriesStatsDailyOutput'</config_AM_timeSeriesStatsDaily_output_stream>
-<config_AM_timeSeriesStatsDaily_restart_stream>'timeSeriesStatsDailyRestart'</config_AM_timeSeriesStatsDaily_restart_stream>
+<config_AM_timeSeriesStatsDaily_restart_stream>'none'</config_AM_timeSeriesStatsDaily_restart_stream>
 <config_AM_timeSeriesStatsDaily_operation>'avg'</config_AM_timeSeriesStatsDaily_operation>
 <config_AM_timeSeriesStatsDaily_reference_times>'initial_time'</config_AM_timeSeriesStatsDaily_reference_times>
 <config_AM_timeSeriesStatsDaily_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsDaily_duration_intervals>
@@ -1070,7 +1076,7 @@
 <config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
-<config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>
+<config_AM_timeSeriesStatsMonthly_restart_stream>'none'</config_AM_timeSeriesStatsMonthly_restart_stream>
 <config_AM_timeSeriesStatsMonthly_operation>'avg'</config_AM_timeSeriesStatsMonthly_operation>
 <config_AM_timeSeriesStatsMonthly_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthly_reference_times>
 <config_AM_timeSeriesStatsMonthly_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthly_duration_intervals>

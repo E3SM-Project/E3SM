@@ -71,6 +71,12 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $ic_prefix .= 'oEC60to30wLI';
 	$decomp_date .= '160830';
         $decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'oEC60to30v3wLI' ) {
+        $ic_date .= '170328';
+        $ic_prefix .= 'oEC60to30v3wLI';
+        $decomp_date .= '170328';
+        $decomp_prefix .= 'mpas-o.graph.info.';
+        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx.EC60to30v3wLI.170328.nc';
 } elsif ( $OCN_GRID eq 'oQU240' ) {
 	$ic_date .= '151209';
 	$ic_prefix .= 'ocean.QU.240km';
@@ -79,6 +85,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 } elsif ( $OCN_GRID eq 'oQU240wLI' ) {
         $ic_date .= '160929';
         $ic_prefix .= 'ocean.QU.240wLI';
+        $decomp_date .= '160929';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU120' ) {
 	$ic_date .= '160318';
@@ -351,6 +358,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="maxLevelCell"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeTop"/>' . "\n";
         print $stream_file '    <var name="maxLevelEdgeBot"/>' . "\n";
+        print $stream_file '    <var name="columnIntegratedSpeed"/>' . "\n";
+        print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+        print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
+        print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
@@ -549,6 +560,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="vertGMvelocityAt250m"/>' . "\n";
         print $stream_file '    <var name="vertTransportVelocityAt250m"/>' . "\n";
         print $stream_file '    <var name="vertVelAt250m"/>' . "\n";
+        print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+        print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
+        print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="mixedLayerDepthsOutput"' . "\n";
@@ -676,6 +690,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
         print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
         print $stream_file '    <var name="potentialDensity"/>' . "\n";
+        print $stream_file '    <var name="columnIntegratedSpeed"/>' . "\n";
+        print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+        print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
+        print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
@@ -708,9 +726,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"' . "\n";
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
-        print $stream_file '        input_interval="initial_only"' . "\n";
+        print $stream_file '        input_interval="none"' . "\n";
         print $stream_file '        packages="timeSeriesStatsDailyAMPKG"' . "\n";
-        print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
+        print $stream_file '        output_interval="none">' . "\n";
         print $stream_file '</stream>' . "\n";
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsMonthlyRestart"' . "\n";
@@ -723,9 +741,9 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
         print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"' . "\n";
         print $stream_file '        filename_interval="output_interval"' . "\n";
         print $stream_file '        clobber_mode="truncate"' . "\n";
-        print $stream_file '        input_interval="initial_only"' . "\n";
+        print $stream_file '        input_interval="none"' . "\n";
         print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
-        print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
+        print $stream_file '        output_interval="none">' . "\n";
         print $stream_file '</stream>' . "\n";
         print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyRestart"' . "\n";

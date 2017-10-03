@@ -56,6 +56,8 @@ class Pes(GenericXML):
         logger.info("Pes setting: grid          is {} ".format(grid))
         logger.info("Pes setting: compset       is {} ".format(compset))
         logger.info("Pes setting: tasks       is {} ".format(pes_ntasks))
+        logger.info("Pes setting: threads     is {} ".format(pes_nthrds))
+        logger.info("Pes setting: rootpe      is {} ".format(pes_rootpe))
 
         logger.info("Pes other settings: {}".format(other_settings))
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
