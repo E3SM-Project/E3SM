@@ -41,9 +41,9 @@ module CNAllocationBeTRMod
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNAllocationBeTRInit         ! Initialization
-  private:: calc_plantN_kineticpar
-
+  public  :: CNAllocationBeTRInit         ! Initialization
+  private :: calc_plantN_kineticpar
+  private :: compute_t_scalar
   !!-----------------------------------------------------------------------------------------------------
   !! CNAllocation is divided into 3 subroutines/phases:
   private :: CNAllocation1_PlantNPDemand     !!Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
@@ -186,10 +186,12 @@ contains
   end subroutine CNAllocationBeTRInit
 !!-------------------------------------------------------------------------------------------------
   subroutine SetPlantMicNPDemand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
+       temperature_vars, photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars, PlantMicKinetics_vars)
+
+  use TemperatureType           , only : temperature_type
   implicit none
 
     !
@@ -199,6 +201,7 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
+    type(temperature_type)   , intent(in)    :: temperature_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(crop_type)          , intent(in)    :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
@@ -221,6 +224,9 @@ contains
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
+
+   !compute temperature scalar
+   call compute_t_scalar(bounds, num_soilc, filter_soilc, temperature_vars, carbonflux_vars)
 
    !extract the kinetic parameters
    call calc_plantN_kineticpar(bounds, num_soilc, filter_soilc               , &
@@ -926,6 +932,63 @@ contains
     end associate
 
  end subroutine CNAllocation1_PlantNPDemand
+
+!--------------------------------------------------------------------------------------------------
+  subroutine compute_t_scalar(bounds, num_soilc, filter_soilc, temperature_vars, carbonflux_vars)
+
+  !DESCRIPTION
+  ! compute temperature scaling factor for kinetic parameter calculation
+  use shr_const_mod          , only : SHR_CONST_PI, SHR_CONST_TKFRZ
+  use CNSharedParamsMod      , only : CNParamsShareInst
+  use TemperatureType        , only : temperature_type
+  use clm_varpar             , only :  nlevdecomp
+  implicit none
+  type(bounds_type)      , intent(in)    :: bounds
+  integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+  integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+  type(temperature_type) , intent(in)    :: temperature_vars
+  type(carbonflux_type)  , intent(inout) :: carbonflux_vars
+
+  real(r8) :: normalization_factor
+  real(r8) :: catanf_30
+  real(r8) :: catanf
+  real(r8) :: t1
+  real(r8) :: q10, froz_q10
+  real(r8), parameter :: normalization_tref = 15._r8            ! reference temperature for normalizaion (degrees C)
+  integer :: j, fc, c
+
+  !----- CENTURY T response function
+  catanf(t1) = 11.75_r8 +(29.7_r8 / SHR_CONST_PI) * atan( SHR_CONST_PI * 0.031_r8  * ( t1 - 15.4_r8 ))
+
+  associate(                                   &
+     t_scalar => carbonflux_vars%t_scalar_col, &
+     t_soisno => temperature_vars%t_soisno_col &
+  )
+  q10 = CNParamsShareInst%q10
+  froz_q10 = CNParamsShareInst%froz_q10
+
+  do j = 1, nlevdecomp
+    do fc=1,num_soilc
+      c = filter_soilc(fc)
+      if (t_soisno(c,j) >= SHR_CONST_TKFRZ) then
+        t_scalar(c,j)= (Q10**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))
+      else
+        t_scalar(c,j)= (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))
+      endif
+    enddo
+  enddo
+
+  catanf_30 = catanf(30._r8)
+   ! scale all decomposition rates by a constant to compensate for offset between original CENTURY temp func and Q10
+   normalization_factor = (catanf(normalization_tref)/catanf_30) / (q10**((normalization_tref-25._r8)/10._r8))
+  do j = 1, nlevdecomp
+    do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      t_scalar(c,j) = t_scalar(c,j) * normalization_factor
+    end do
+  end do
+  end associate
+  end subroutine compute_t_scalar
 !------------------------------------------------------------------------------
   subroutine calc_plantN_kineticpar(bounds, num_soilc, filter_soilc         , &
                             num_soilp, filter_soilp                         , &
@@ -938,8 +1001,9 @@ contains
   !
   !DESCRIPTION
   !compute kinetic parameters for nutrient competition
-  use clm_varpar       , only:  nlevdecomp !!nlevsoi,
-  use pftvarcon        , only:  noveg
+  use clm_varpar       , only :  nlevdecomp !!nlevsoi,
+  use pftvarcon        , only :  noveg
+  use clm_varcon       , only : spval
   implicit none
   type(bounds_type), intent(in) :: bounds
   integer, intent(in) :: num_soilc
@@ -1042,7 +1106,7 @@ contains
       decomp_eff_ncompet_b(c,j) = 0._r8
       decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
-        if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+        if (veg_pp%active(p).and. (veg_pp%itype(p) /= noveg)) then
         ! scaling factor based on  CN ratio flexibility
           leaf_totc=leafc(p) + leafc_storage(p) + leafc_xfer(p)
           leaf_totn=leafn(p) + leafn_storage(p) + leafn_xfer(p)
@@ -1055,6 +1119,7 @@ contains
 
           plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
                              cn_scalar(p) * t_scalar(c,j)
+
           plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
                              cn_scalar(p) * t_scalar(c,j)
           plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
@@ -1067,22 +1132,32 @@ contains
           plant_eff_ncompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
           plant_eff_pcompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
 
-          !effective n competing decomposers
-          decomp_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j) + &
-                e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
-          !effective p competing decomposers
-          decomp_eff_pcompet_b(c,j) = decomp_eff_pcompet_b(c,j) + &
-                e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
         else
-          cn_scalar(p) = 1.0_r8
+          cn_scalar(p) = 1._r8
+          cp_scalar(p) = 1._r8
+          plant_nh4_km_vr_patch(p,j) = spval
+          plant_no3_km_vr_patch(p,j) = spval
+          plant_p_km_vr_patch(p,j) = spval
+          plant_nh4_vmax_vr_patch(p,j) = 0._r8
+          plant_no3_vmax_vr_patch(p,j) = 0._r8
+          plant_p_vmax_vr_patch(p,j) = 0._r8
+          plant_eff_ncompet_b(p,j) = 0._r8
+          plant_eff_pcompet_b(p,j) = 0._r8
         end if
-        !effective p competing mineral surfaces, this needs update as a function of soil texutre, anion exchange capacity, pH?.
-        minsurf_p_compet(c,j) = 0._r8
-        minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)
-        !lines below are a crude approximation
-        den_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
-        nit_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
+        !effective n competing decomposers
+        decomp_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j) + &
+              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
+        !effective p competing decomposers
+        decomp_eff_pcompet_b(c,j) = decomp_eff_pcompet_b(c,j) + &
+              e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
       end do
+
+      !effective p competing mineral surfaces, this needs update as a function of soil texture, anion exchange capacity, pH?.
+      minsurf_p_compet(c,j) = 0._r8
+      minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)
+      !lines below are a crude approximation
+      den_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
+      nit_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
     enddo
   end do
   end associate

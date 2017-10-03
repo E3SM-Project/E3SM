@@ -27,7 +27,6 @@ module CNEcosystemDynBetrMod
   use WaterfluxType             , only : waterflux_type
   use atm2lndType               , only : atm2lnd_type
   use CanopyStateType           , only : canopystate_type
-  use TemperatureType           , only : temperature_type
   use PhotosynthesisType        , only : photosyns_type
   use ch4Mod                    , only : ch4_type
   use EnergyFluxType            , only : energyflux_type
@@ -212,7 +211,7 @@ module CNEcosystemDynBetrMod
 
        call t_startf('CNAllocation - phase-1')
        call SetPlantMicNPDemand (bounds                                     , &
-                num_soilc, filter_soilc, num_soilp, filter_soilp            , &
+                num_soilc, filter_soilc, num_soilp, filter_soilp,temperature_vars, &
                 photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars      , &
                 c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars  , &
