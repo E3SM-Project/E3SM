@@ -549,7 +549,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         if datename == datenames[-1]:
             datename_is_last = True
 
-        if datename < last_date:
+        if last_date is None or datename < last_date:
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
 
             histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
