@@ -50,6 +50,9 @@ if ( $MACH eq "edison" ) {
 } elsif ( $MACH eq "titan" ) {
 	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=istanbul"';
 }
+if (defined $ENV{TOOL_DIR}) {
+	$bldcmd .= " TOOL_DIR=$ENV{TOOL_DIR}";
+}
 
 # Check for Albany build
 if ( $MPASLI_USE_ALBANY eq "TRUE" ) {
