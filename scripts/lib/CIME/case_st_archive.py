@@ -13,7 +13,6 @@ import datetime
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-<<<<<<< HEAD
 def _get_archive_file_fn(copy_only):
 ###############################################################################
     """
@@ -21,27 +20,26 @@ def _get_archive_file_fn(copy_only):
     """
     return shutil.copyfile if copy_only else shutil.move
 
-
 ###############################################################################
-def _get_datenames(case, last_date=None):
+def _get_datenames(rundir, casename):
 ###############################################################################
     """
-    Returns a list of datenames giving the dates of cpl restart files
-
-    If there are no cpl restart files, this will return []
+    Returns the datetime objects specifying the times of each file
+    Note we are assuming that the coupler restart files exist and are consistent with other component datenames
+    Not doc-testable due to filesystem dependence
     """
-
-    if last_date is not None:
-        try:
-            last = datetime.datetime.strptime(last_date, '%Y-%m-%d')
-        except ValueError:
-            expect(False, 'Could not parse the last date to archive')
-    logger.debug('In get_datename...')
-    rundir = case.get_value('RUNDIR')
+    logger.info(rundir)
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
-    casename = case.get_value("CASE")
-    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl*.r*.nc')))
-=======
+    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl.r*.nc')))
+    if not files:
+        expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
+    datenames = []
+    for filename in files:
+        date = _get_file_date(filename)
+        datenames.append(date)
+    return datenames
+
+###############################################################################
 def _get_file_date(filename):
 ###############################################################################
     """
@@ -153,38 +151,6 @@ def _datetime_str_mpas(date):
                                 seconds = _get_day_second(date))
 
 ###############################################################################
-def _get_datenames(rundir, casename):
-###############################################################################
-    """
-    Returns the datetime objects specifying the times of each file
-    Note we are assuming that the coupler restart files exist and are consistent with other component datenames
-    Not doc-testable due to filesystem dependence
-    """
-    logger.debug('In get_datename...')
-    expect(isdir(rundir), 'Cannot open directory %s ' % rundir)
-    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl.r*.nc')))
->>>>>>> master
-    if not files:
-        expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
-    datenames = []
-    for filename in files:
-<<<<<<< HEAD
-        names = filename.split('.')
-        datename = names[-2]
-        year, month, day, _ = [int(x) for x in datename.split('-')]
-        if last_date is None or (year <= last.year and month <= last.month
-                                 and day <= last.day):
-            datenames.append(datename)
-            logger.debug('cpl dateName: {}'.format(datename))
-        else:
-            logger.debug('Ignoring {}'.format(datename))
-=======
-        date = _get_file_date(filename)
-        datenames.append(date)
->>>>>>> master
-    return datenames
-
-###############################################################################
 def _get_ninst_info(case, compclass):
 ###############################################################################
     """
@@ -205,7 +171,6 @@ def _get_ninst_info(case, compclass):
     logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
 
-<<<<<<< HEAD
 ###############################################################################
 def _get_component_archive_entries(case, archive):
 ###############################################################################
@@ -223,8 +188,6 @@ def _get_component_archive_entries(case, archive):
         if archive_entry is not None:
             yield(archive_entry, compname, archive_entry.get("compclass"))
 
-=======
->>>>>>> master
 ###############################################################################
 def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restart_files, archive,
                             archive_entry, archive_restdir, datename, datename_is_last):
@@ -249,11 +212,9 @@ def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restar
 
             # loop through the possible rpointer files and contents
             for rpointer_file, rpointer_content in rpointer_items:
-<<<<<<< HEAD
                 temp_rpointer_file = rpointer_file
                 temp_rpointer_content = rpointer_content
-=======
->>>>>>> master
+
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
                 if rpointer_content is not 'unset':
@@ -302,11 +263,7 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
         srcfile = join(rundir, os.path.basename(logfile))
         destfile = join(archive_logdir, os.path.basename(logfile))
         archive_file_fn(srcfile, destfile)
-<<<<<<< HEAD
-        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
-=======
-        logger.info("moving %s to %s" %(srcfile, destfile))
->>>>>>> master
+        logger.info("moving {} to {}".format(srcfile, destfile))
 
 ###############################################################################
 def _archive_history_files(case, archive, archive_entry,
@@ -344,24 +301,6 @@ def _archive_history_files(case, archive, archive_entry,
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
                 else:
                     newsuffix = casename + '.' + compname + ".*" + suffix
-<<<<<<< HEAD
-            logger.debug("short term archiving suffix is {} ".format(newsuffix))
-            pfile = re.compile(newsuffix)
-            histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-            if histfiles:
-                logger.debug("hist files are {} ".format(histfiles))
-                for histfile in histfiles:
-                    srcfile = join(rundir, histfile)
-                    expect(os.path.isfile(srcfile),
-                           "history file {} does not exist ".format(srcfile))
-                    destfile = join(archive_histdir, histfile)
-                    if histfile in histfiles_savein_rundir:
-                        logger.info("copying \n{} to \n{} ".format(srcfile, destfile))
-                        shutil.copy(srcfile, destfile)
-                    else:
-                        logger.info("moving \n{} to \n{} ".format(srcfile, destfile))
-                        archive_file_fn(srcfile, destfile)
-=======
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             if histfiles:
@@ -370,15 +309,14 @@ def _archive_history_files(case, archive, archive_entry,
                     if last_date is None or file_date <= last_date:
                         srcfile = join(rundir, histfile)
                         expect(os.path.isfile(srcfile),
-                               "history file %s does not exist " %srcfile)
+                               "history file {} does not exist ".format(srcfile))
                         destfile = join(archive_histdir, histfile)
                         if histfile in histfiles_savein_rundir:
-                            logger.info("copying \n%s to \n%s " %(srcfile, destfile))
+                            logger.info("copying \n{} to \n{} ".format(srcfile, destfile))
                             shutil.copy(srcfile, destfile)
                         else:
-                            logger.info("moving \n%s to \n%s " %(srcfile, destfile))
+                            logger.info("moving \n{} to \n{} ".format(srcfile, destfile))
                             archive_file_fn(srcfile, destfile)
->>>>>>> master
 
 ###############################################################################
 def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
@@ -393,12 +331,7 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
     histfiles = set()
     rest_hist_varname = archive.get_entry_value('rest_history_varname', archive_entry)
     if rest_hist_varname != 'unset':
-<<<<<<< HEAD
-        rundir = case.get_value("RUNDIR")
         cmd = "ncdump -v {} {} ".format(rest_hist_varname, os.path.join(rundir, restfile))
-=======
-        cmd = "ncdump -v %s %s " %(rest_hist_varname, os.path.join(rundir, restfile))
->>>>>>> master
         rc, out, error = run_cmd(cmd)
         if rc != 0:
             logger.debug(" WARNING: {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, error))
@@ -422,9 +355,8 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
     return histfiles
 
 ###############################################################################
-<<<<<<< HEAD
 def _archive_restarts_date(case, archive,
-                           datename, datename_is_last,
+                           datename, datename_is_last, last_date,
                            archive_restdir, archive_file_fn,
                            link_to_last_restart_files=False):
 ###############################################################################
@@ -437,6 +369,7 @@ def _archive_restarts_date(case, archive,
     logger.info('-------------------------------------------')
     logger.info('Archiving restarts for date {}'.format(datename))
     logger.info('-------------------------------------------')
+    logger.info("last date: {}".format(last_date))
 
     histfiles_savein_rundir_by_compname = {}
 
@@ -447,7 +380,8 @@ def _archive_restarts_date(case, archive,
         histfiles_savein_rundir = _archive_restarts_date_comp(case, archive, archive_entry,
                                                               compclass, compname,
                                                               datename, datename_is_last,
-                                                              archive_restdir, archive_file_fn,
+                                                              last_date, archive_restdir,
+                                                              archive_file_fn,
                                                               link_to_last_restart_files)
         histfiles_savein_rundir_by_compname[compname] = histfiles_savein_rundir
 
@@ -456,7 +390,7 @@ def _archive_restarts_date(case, archive,
 ###############################################################################
 def _archive_restarts_date_comp(case, archive, archive_entry,
                                 compclass, compname, datename, datename_is_last,
-                                archive_restdir, archive_file_fn,
+                                last_date, archive_restdir, archive_file_fn,
                                 link_to_last_restart_files=False):
 ###############################################################################
     """
@@ -466,33 +400,14 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     last set of restart files (i.e., the set with datename_is_last
     True); if False (the default), copy them. (This has no effect on the
     history files that are associated with these restart files.)
-=======
-def _archive_restarts(case, archive, archive_entry,
-                      compclass, compname, datename, datename_is_last,
-                      last_date, archive_file_fn):
-###############################################################################
     """
-    First archives the rpointer files
-    Next finds the restart files
-    Then determines if they should be archived
-    If so, get the histfiles for the restart
-    If this is the last date, only copy files, otherwise move them for archiving
->>>>>>> master
-    """
-
     rundir = case.get_value("RUNDIR")
     casename = case.get_value("CASE")
-<<<<<<< HEAD
+    datename_str = _datetime_str(datename)
+
     if datename_is_last or case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
         if not os.path.exists(archive_restdir):
             os.makedirs(archive_restdir)
-=======
-    datename_str = _datetime_str(datename)
-
-    archive_restdir = join(dout_s_root, 'rest', datename_str)
-    if not os.path.exists(archive_restdir):
-        os.makedirs(archive_restdir)
->>>>>>> master
 
     # archive the rpointer file(s) for this datename and all possible ninst_strings
     _archive_rpointer_files(casename, _get_ninst_info(case, compclass)[1], rundir,
@@ -544,6 +459,7 @@ def _archive_restarts(case, archive, archive_entry,
                 restfile = os.path.basename(restfile)
 
                 file_date = _get_file_date(restfile)
+                logger.info("Last date: {}".format(last_date))
                 if last_date is not None and file_date > last_date:
                     # Skip this file
                     continue
@@ -566,24 +482,14 @@ def _archive_restarts(case, archive, archive_entry,
                 if datename_is_last:
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
-<<<<<<< HEAD
                     last_restart_file_fn(srcfile, destfile)
                     logger.info("{} \n{} to \n{}".format(
                         last_restart_file_fn_msg, srcfile, destfile))
-=======
-                    shutil.copy(srcfile, destfile)
-                    logger.info("copying \n%s to \n%s" %(srcfile, destfile))
-
->>>>>>> master
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
-<<<<<<< HEAD
-                               "restart file {} does not exist ".format(srcfile))
-=======
-                               "history restart file for last date %s does not exist " % srcfile)
->>>>>>> master
+                               "history restart file {} for last date does not exist ".format(srcfile))
                         shutil.copy(srcfile, destfile)
                         logger.info("copying \n{} to \n{}".format(srcfile, destfile))
                 else:
@@ -628,32 +534,28 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     logger.debug('In archive_process...')
 
+    dout_s_root = case.get_value("DOUT_S_ROOT")
     archive_file_fn = _get_archive_file_fn(copy_only)
-
-    if copy_only is True:
-        archive_file_fn = shutil.copyfile
-    else:
-        archive_file_fn = shutil.move
 
     # archive log files
     _archive_log_files(case.get_value("DOUT_S_ROOT"), case.get_value("RUNDIR"),
                        archive_incomplete_logs, archive_file_fn)
 
-<<<<<<< HEAD
     # archive restarts and all necessary associated files (e.g. rpointer files)
+    datenames = _get_datenames(case.get_value("RUNDIR"), case.get_value("CASE"))
     histfiles_savein_rundir_by_compname = {}
-    dout_s_root = case.get_value("DOUT_S_ROOT")
-    datenames = _get_datenames(case, last_date)
     for datename in datenames:
         datename_is_last = False
         if datename == datenames[-1]:
             datename_is_last = True
 
-        archive_restdir = join(dout_s_root, 'rest', datename)
-        histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
-            case, archive, datename, datename_is_last, archive_restdir, archive_file_fn)
-        if datename_is_last:
-            histfiles_savein_rundir_by_compname = histfiles_savein_rundir_by_compname_this_date
+        if datename < last_date:
+            archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
+
+            histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
+                case, archive, datename, datename_is_last, last_date, archive_restdir, archive_file_fn)
+            if datename_is_last:
+                histfiles_savein_rundir_by_compname = histfiles_savein_rundir_by_compname_this_date
 
     # archive history files
     for (archive_entry, compname, compclass) in _get_component_archive_entries(case, archive):
@@ -662,41 +564,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         logger.info("histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
         _archive_history_files(case, archive, archive_entry,
                                compclass, compname, histfiles_savein_rundir,
-                               archive_file_fn)
-=======
-    for archive_entry in archive.get_entries():
-        # determine compname and compclass
-        compname, compclass = archive.get_entry_info(archive_entry)
-
-        # check for validity of compname
-        if compname not in compset_comps:
-            continue
-
-        # archive restarts and all necessary associated fields (e.g. rpointer files)
-        logger.info('-------------------------------------------')
-        logger.info('doing short term archiving for %s (%s)' % (compname, compclass))
-        logger.info('-------------------------------------------')
-        datenames = _get_datenames(case.get_value('RUNDIR'), case.get_value('CASE'))
-        for i, datename in enumerate(datenames):
-            logger.info('Archiving for date %s' % datename)
-            datename_is_last = False
-            if i == len(datenames) - 1:
-                datename_is_last = True
-
-            # archive restarts
-            histfiles_savein_rundir = _archive_restarts(case, archive, archive_entry,
-                                                        compclass, compname,
-                                                        datename, datename_is_last,
-                                                        last_date, archive_file_fn)
-
-            # if the last datename for restart files, then archive history files
-            # for this compname
-            if datename_is_last:
-                logger.info("histfiles_savein_rundir %s " %histfiles_savein_rundir)
-                _archive_history_files(case, archive, archive_entry,
-                                       compclass, compname, histfiles_savein_rundir,
-                                       last_date, archive_file_fn)
->>>>>>> master
+                               last_date, archive_file_fn)
 
 ###############################################################################
 def restore_from_archive(case, rest_dir=None):
@@ -722,7 +590,6 @@ def restore_from_archive(case, rest_dir=None):
         shutil.copy(item, rundir)
 
 ###############################################################################
-<<<<<<< HEAD
 def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
 ###############################################################################
     """
@@ -756,10 +623,7 @@ def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
                                link_to_last_restart_files=link_to_restart_files)
 
 ###############################################################################
-def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
-=======
 def case_st_archive(case, last_date_str=None, archive_incomplete_logs=True, copy_only=False, no_resubmit=False):
->>>>>>> master
 ###############################################################################
     """
     Create archive object and perform short term archiving
