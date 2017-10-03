@@ -122,10 +122,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler = \
+    generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
