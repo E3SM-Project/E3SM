@@ -6671,8 +6671,8 @@
         <comment>ne4 grid on 4 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
-          <ntasks_ice>96</ntasks_ice>
-          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_ice>36</ntasks_ice>
+          <ntasks_cpl>36</ntasks_cpl>
           <ntasks_lnd>36</ntasks_lnd>
           <ntasks_rof>36</ntasks_rof>
           <ntasks_ocn>36</ntasks_ocn>
@@ -6693,8 +6693,8 @@
           <rootpe_atm>0</rootpe_atm>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_lnd>108</rootpe_lnd>
-          <rootpe_rof>108</rootpe_rof>
+          <rootpe_lnd>36</rootpe_lnd>
+          <rootpe_rof>36</rootpe_rof>
           <rootpe_ocn>108</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
