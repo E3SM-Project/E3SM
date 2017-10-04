@@ -20,6 +20,7 @@ my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT	-value`;
 my $ICE_GRID		= `./xmlquery  ICE_GRID		-value`;
 my $ICE_MASK		= `./xmlquery  MASK_GRID	-value`;
 my $IC_MODE		= `./xmlquery  MPASCICE_IC_MODE -value`;
+my $ICE_BGC		= `./xmlquery  MPASCICE_BGC	-value`;
 my $NTASKS_ICE		= `./xmlquery  NTASKS_ICE	-value`;
 my $ICE_PIO_TYPENAME	= `./xmlquery  ICE_PIO_TYPENAME	-value`;
 #my $NINST_ICE       = `./xmlquery  NINST_ICE		-value`;
@@ -206,6 +207,7 @@ while ($inst_counter <= $NINST_ICE) {
 	$sysmod .= " -date_stamp '$decomp_date'";
 	$sysmod .= " -ice_grid '$ICE_MASK'";
 	$sysmod .= " -ic_mode '$IC_MODE'";
+	$sysmod .= " -ice_bgc '$ICE_BGC'";
 
     # pass in ICE_MASK for now as a short-cut for the grid
     # at some point, we may want to pass both -- but for now this is simpler
@@ -555,6 +557,12 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="meltPondAreaFinalArea"/>' . "\n";
 	print $stream_file '	<var name="meltPondDepthFinalArea"/>' . "\n";
 	print $stream_file '	<var name="meltPondLidThicknessFinalArea"/>' . "\n";
+        if ( $ICE_BGC eq 'ice_bgc' ) {
+                print $stream_file '    <var name="totalVerticalBiologyIce"/>' . "\n";
+                print $stream_file '    <var name="totalChlorophyll"/>' . "\n";
+                print $stream_file '    <var name="totalNitrate"/>' . "\n";
+                print $stream_file '    <var name="primaryProduction"/>' . "\n";
+        }
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsMonthlyRestart"' . "\n";
