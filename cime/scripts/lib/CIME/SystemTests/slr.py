@@ -31,6 +31,8 @@ class SLR(SystemTestsCommon):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
 
+        ninst = 3
+
         # Build exectuable with multiple instances
         # (in the development phase we use 3)
         # Lay all of the components out concurrently
@@ -38,7 +40,6 @@ class SLR(SystemTestsCommon):
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
         if not model_only:
-            ninst = 3
             logging.warn("Starting to build multi-instance exe")
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 ntasks = self._case.get_value("NTASKS_%s"%comp)
@@ -54,7 +55,11 @@ class SLR(SystemTestsCommon):
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
-    def run_phase(self):
+        #=================================================================
+        # Run-time settings.
+        # Do this already in build_phase so that we can check the xml and 
+        # namelist files before job starts running. 
+        #=================================================================
 
         # time step size = 2 s
         dtime = 2
@@ -70,8 +75,9 @@ class SLR(SystemTestsCommon):
 
         # namelist specifications for each instance
 
-        ninst = 3
+       #ninst = 3
         for iinst in range(1, ninst+1):
+
             with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
                  open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile: 
 
@@ -89,12 +95,15 @@ class SLR(SystemTestsCommon):
 
                  inst_label_2digits = str(iinst).zfill(2)
 
-              #  atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-              #  lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                 atmnlfile.write("!ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                 lndnlfile.write("!finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
                  # time step sizes
 
                  atmnlfile.write("dtime = "+str(dtime)+" \n")
+                 atmnlfile.write("iradsw = 2 \n")
+                 atmnlfile.write("iradlw = 2 \n")
+
                  lndnlfile.write("dtime = "+str(dtime)+" \n")
 
                  # atm model output
@@ -102,10 +111,8 @@ class SLR(SystemTestsCommon):
                  atmnlfile.write("avgflag_pertape = 'I' \n")
                  atmnlfile.write("nhtfrq = 1 \n")
                  atmnlfile.write("mfilt  = 1000 \n")
-                 atmnlfile.write("iradsw = 2 \n")
-                 atmnlfile.write("iradlw = 2 \n")
                  atmnlfile.write("ndens  = 1 \n")
                  atmnlfile.write("empty_htapes = .true. \n")
                  atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
 
-        self.run_indv()
+       #self.run_indv()
