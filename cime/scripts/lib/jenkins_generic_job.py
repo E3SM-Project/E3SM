@@ -58,7 +58,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         shutil.rmtree(old_dir)
 
     # Remove the old cases
-    for old_file in glob.glob("{}/*{}*{}*".format((test_root, mach_comp, test_id_root))):
+    for old_file in glob.glob("{}/*{}*{}*".format(test_root, mach_comp, test_id_root)):
         if (os.path.isdir(old_file)):
             shutil.rmtree(old_file)
         else:
@@ -110,7 +110,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     if submit_to_cdash:
         logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus -b {}".format(test_root, test_id, cdash_build_name))
 
-    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format((test_root, test_id))),
+    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput
                                                  check_memory=False, # don't check memory
