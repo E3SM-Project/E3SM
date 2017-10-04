@@ -72,10 +72,10 @@ def _get_file_date(filename):
     # TODO: Add these to config_archive.xml, instead of here
     # Note these must be in order of most specific to least
     # so that lesser specificities aren't used to parse greater ones
-    re_formats = ["[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}", # yyyy-mm-dd_hh.MM.ss
-                  "[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}[\-_][0-9]{1,5}",                     # yyyy-mm-dd_sssss
-                  "[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}",                                    # yyyy-mm-dd
-                  "[0-9]{4}[\-\.][0-9]{1,2}",                                          # yyyy-mm
+    re_formats = [r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}_[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}", # yyyy-mm-dd_hh.MM.ss
+                  r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}[\-_][0-9]{1,5}",                     # yyyy-mm-dd_sssss
+                  r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}",                                    # yyyy-mm-dd
+                  r"[0-9]{4}[\-\.][0-9]{1,2}",                                          # yyyy-mm
     ]
 
     for re_str in re_formats:
@@ -83,7 +83,7 @@ def _get_file_date(filename):
         if match is None:
             continue
         date_str = match.group()
-        date_tuple = [int(unit) for unit in re.split("-|_|\.", date_str)]
+        date_tuple = [int(unit) for unit in re.split(r"-|_|\.", date_str)]
         year = date_tuple[0]
         month = date_tuple[1]
         day = 1
@@ -192,9 +192,6 @@ def _get_component_archive_entries(case, archive):
 def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restart_files, archive,
                             archive_entry, archive_restdir, datename, datename_is_last):
 ###############################################################################
-
-    # archive the rpointer files associated with datename
-    compclass = archive.get_entry_info(archive_entry)[1]
 
     if datename_is_last:
         # Copy of all rpointer files for latest restart date
@@ -590,7 +587,7 @@ def restore_from_archive(case, rest_dir=None):
         shutil.copy(item, rundir)
 
 ###############################################################################
-def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
+def archive_last_restarts(case, archive_restdir, last_date=None, link_to_restart_files=False):
 ###############################################################################
     """
     Convenience function for archiving just the last set of restart
@@ -618,6 +615,7 @@ def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
                                archive=archive,
                                datename=last_datename,
                                datename_is_last=True,
+                               last_date=last_date,
                                archive_restdir=archive_restdir,
                                archive_file_fn=archive_file_fn,
                                link_to_last_restart_files=link_to_restart_files)
