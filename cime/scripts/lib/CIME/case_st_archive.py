@@ -606,7 +606,7 @@ def archive_last_restarts(case, archive_restdir, link_to_restart_files=False):
     files that are associated with these restart files.)
     """
     archive = case.get_env('archive')
-    datenames = _get_datenames(case)
+    datenames = _get_datenames(case.get_value("RUNDIR"), case.get_value("CASE"))
     expect(len(datenames) >= 1, "No restart dates found")
     last_datename = datenames[-1]
 
