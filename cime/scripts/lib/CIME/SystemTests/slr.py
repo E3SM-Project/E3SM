@@ -55,17 +55,57 @@ class SLR(SystemTestsCommon):
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run_phase(self):
-        self._case.set_value("STOP_N",6)
+
+        # time step size = 2 s
+        dtime = 2
+
+        # change the coupling frequency accordingly
+        ncpl  = 86400 / dtime
+        self._case.set_value("ATM_NCPL",ncpl)
+
+        # simulation length = 10 minutes
+        nsteps = 600/dtime
+        self._case.set_value("STOP_N",     nsteps)
+        self._case.set_value("STOP_OPTION","nsteps")
+
+        # namelist specifications for each instance
 
         ninst = 3
         for iinst in range(1, ninst+1):
-            with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as nlfile:
-                 nlfile.write("avgflag_pertape = 'I' \n")
-                 nlfile.write("nhtfrq = 1 \n")
-                 nlfile.write("mfilt  = 1000 \n")
-                 nlfile.write("iradsw = 2 \n")
-                 nlfile.write("iradlw = 2 \n")
-                 nlfile.write("ndens  = 1 \n")
-                 nlfile.write("empty_htapes = .true. \n")
+            with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
+                 open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile: 
+
+                 # atm/lnd intitial conditions
+
+                 csmdata_root = self._case.get_value("DIN_LOC_ROOT")
+                 csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
+                 csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"
+
+                 file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
+                 file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
+
+                 file_suf_atm = "-01-00000.nc"
+                 file_suf_lnd = "-01-00000.nc"
+
+                 inst_label_2digits = str(iinst).zfill(2)
+
+              #  atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+              #  lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+
+                 # time step sizes
+
+                 atmnlfile.write("dtime = "+str(dtime)+" \n")
+                 lndnlfile.write("dtime = "+str(dtime)+" \n")
+
+                 # atm model output
+
+                 atmnlfile.write("avgflag_pertape = 'I' \n")
+                 atmnlfile.write("nhtfrq = 1 \n")
+                 atmnlfile.write("mfilt  = 1000 \n")
+                 atmnlfile.write("iradsw = 2 \n")
+                 atmnlfile.write("iradlw = 2 \n")
+                 atmnlfile.write("ndens  = 1 \n")
+                 atmnlfile.write("empty_htapes = .true. \n")
+                 atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
 
         self.run_indv()
