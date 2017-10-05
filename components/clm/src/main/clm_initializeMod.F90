@@ -382,7 +382,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col, nsoilorder
     use clm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -560,7 +560,7 @@ contains
       !allocate memory for betr simulator
       allocate(ep_betr, source=create_betr_simulation_alm())
       !set internal filters for betr
-      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
+      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, nsoilorder=nsoilorder,boffline=.false.)
       call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
