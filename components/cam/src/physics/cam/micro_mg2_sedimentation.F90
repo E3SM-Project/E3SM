@@ -1,5 +1,7 @@
 module micro_mg2_sedimentation
   use micro_mg_utils, only: r8
+  use cam_logfile,       only: iulog
+
   implicit none
   private
   save
@@ -217,10 +219,10 @@ contains
          else if (mg_type == MG_SNOW) then
             write(iulog,1001) 'qs',i,k,q(i,k)
             stop "qs negative"
-         if (mg_type == MG_LIQUID) then
+         else if (mg_type == MG_LIQUID) then
             write(iulog,1001) 'qc',i,k,q(i,k)
             stop "qc negative" 
-        else if (mg_type == MG_RAIN) then
+         else if (mg_type == MG_RAIN) then
             write(iulog,1001) 'qr',i,k,q(i,k)
             stop "qr negative"
          end if
