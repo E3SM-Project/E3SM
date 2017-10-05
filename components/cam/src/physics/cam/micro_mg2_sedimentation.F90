@@ -16,7 +16,6 @@ module micro_mg2_sedimentation
   real(r8) :: oneDshape_coeff = -1._r8
   real(r8) :: lamPbr_bounds(2) = (/ -1._r8, -1._r8 /)
 
-
 contains
 
   subroutine sed_CalcFallRate(q,n,cloud_frac,rho,pdel,nlev,i, &
@@ -212,13 +211,28 @@ contains
       n(i,k) = n(i,k) - deltat_sed*deltafluxN
 
       if (q(i,k) < -1.d-10) then
-        print *, q(i,k)
-        stop "q negative"
+         if (mg_type == MG_ICE) then
+            write(iulog,1001) 'qi',i,k,q(i,k)
+            stop "qi negative"
+         else if (mg_type == MG_SNOW) then
+            write(iulog,1001) 'qs',i,k,q(i,k)
+            stop "qs negative"
+         if (mg_type == MG_LIQUID) then
+            write(iulog,1001) 'qc',i,k,q(i,k)
+            stop "qc negative" 
+        else if (mg_type == MG_RAIN) then
+            write(iulog,1001) 'qr',i,k,q(i,k)
+            stop "qr negative"
+         end if
+
       else if (n(i,k) < -1.d-10) then
         print *, n(i,k)
         stop "n negative"
       end if
     end do
+
+!if index i or k has more than 6 digits, will fail.
+1001 format ( a2,'(', i6,',', i6,') = ',e12.3) 
 
     ! units below are m/s
     ! sedimentation flux at surface is added to precip flux at surface

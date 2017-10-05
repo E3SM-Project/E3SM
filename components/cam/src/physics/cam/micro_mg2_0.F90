@@ -821,7 +821,7 @@ subroutine micro_mg_tend ( &
   real(r8) :: deltat_sed, time_sed
 
   ! number of sub-steps for loops over "n" (for sedimentation)
-  integer nstep
+  integer nstep !PMC - this var isn't needed???
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
