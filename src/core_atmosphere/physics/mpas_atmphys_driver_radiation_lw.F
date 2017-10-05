@@ -431,9 +431,10 @@
                 enddo
                 enddo
              else
-                has_reqc = 0
-                has_reqi = 0
-                has_reqs = 0
+                ! These are set in module mpas_atmphys_manager and should not be set again
+                !has_reqc = 0
+                !has_reqi = 0
+                !has_reqs = 0
                 do j = jts,jte
                 do k = kts,kte
                 do i = its,ite
@@ -872,8 +873,12 @@
     case ("cam_lw")
        xtime_m = xtime_s/60.
 
+! This should be OMP MASTER with barrier afterwards or OMP SINGLE, since declin and solcon
+! are global variables in mpas_atmphys_vars.F and race conditions may occur otherwise!
+!$OMP SINGLE
        !... calculates solar declination:
        call radconst(declin,solcon,curr_julday,degrad,dpd)
+!$OMP END SINGLE
 
 !... convert the radiation time_step to minutes:
        radt = dt_radtlw/60.
