@@ -16,6 +16,7 @@ will be created for those different methods
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case_setup import case_setup
+from CIME.build import post_build
 #import CIME.utils
 #from CIME.check_lockedfiles import *
 
@@ -32,6 +33,11 @@ class SLR(SystemTestsCommon):
     def build_phase(self, sharedlib_only=False, model_only=False):
 
         ninst = 3
+
+        #BSINGH: For debugging only - Building the model can take 
+        #significant amount of time. Setting fake_bld to True can save 
+        #that time
+        fake_bld = False
 
         # Build exectuable with multiple instances
         # (in the development phase we use 3)
@@ -53,7 +59,13 @@ class SLR(SystemTestsCommon):
 
             case_setup(self._case, test_mode=False, reset=True)
 
-        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+        #BSINGH: Faking a bld can save the time code spend in building the model components
+        if fake_bld:
+            if (not sharedlib_only):
+                post_build(self._case, [])    
+        else:
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+
 
         #=================================================================
         # Run-time settings.
