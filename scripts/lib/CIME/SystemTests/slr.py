@@ -86,24 +86,24 @@ class SLR(SystemTestsCommon):
         self._case.set_value("STOP_OPTION","nsteps")
 
         # namelist specifications for each instance
+        
+        # generate paths/file names to get files to set initial conditons
+        csmdata_root = self._case.get_value("DIN_LOC_ROOT")
+        csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
+        csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"  
+        file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
+        file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
+        
+        file_suf_atm = "-01-00000.nc"
+        file_suf_lnd = "-01-00000.nc"
 
-       #ninst = 3
+
         for iinst in range(1, ninst+1):
 
             with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
                  open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile: 
 
                  # atm/lnd intitial conditions
-
-                 csmdata_root = self._case.get_value("DIN_LOC_ROOT")
-                 csmdata_atm  = csmdata_root+"atm/cam/inic/homme/"
-                 csmdata_lnd  = csmdata_root+"lnd/clm2/initdata/"
-
-                 file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
-                 file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
-
-                 file_suf_atm = "-01-00000.nc"
-                 file_suf_lnd = "-01-00000.nc"
 
                  inst_label_2digits = str(iinst).zfill(2)
 
