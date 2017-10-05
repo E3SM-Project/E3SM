@@ -2536,16 +2536,16 @@
       <command name="load">trilinos/11.10.2</command>
       <command name="load">esmf</command>
     </modules>
-    <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+    <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
       <command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
     </modules>
-    <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+    <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
       <command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
     </modules>
-    <modules compiler="intel" mpilib="mpi-serial" debug="true">
+    <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
       <command name="load">esmf-6.3.0rp1-ncdfio-uni-g</command>
     </modules>
-    <modules compiler="intel" mpilib="mpi-serial" debug="false">
+    <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
       <command name="load"> esmf-6.3.0rp1-ncdfio-uni-O</command>
     </modules>
     <modules compiler="pgi">
@@ -2576,7 +2576,7 @@
     <env name="MP_STDOUTMODE">unordered</env>
     <env name="MP_RC_USE_LMC">yes</env>
   </environment_variables>
-  <environment_variables debug="true">
+  <environment_variables DEBUG="TRUE">
     <env name="MP_EAGER_LIMIT">0</env>
   </environment_variables>
 </machine>

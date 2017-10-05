@@ -5,7 +5,7 @@
 <xs:attribute name="version" type="xs:decimal"/>
 <xs:attribute name="lang" type="xs:NCName"/>
 <xs:attribute name="compiler" type="xs:string"/>
-<xs:attribute name="debug" type="xs:boolean"/>
+<xs:attribute name="DEBUG" type="upperBoolean"/>
 <xs:attribute name="mpilib" type="xs:string"/>
 <xs:attribute name="SMP_PRESENT" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
@@ -16,6 +16,17 @@
 <xs:element name="executable" type="xs:string"/>
 <xs:element name="type" type="xs:NCName"/>
 <xs:element name="desc" type="xs:string"/>
+
+<!--  simple types -->
+<!-- For historical and user-interface reasons, we have uppercase TRUE and
+            FALSE all over the place. This means we have to define an enumeration
+     instead of using "xs:boolean". -->
+<xs:simpleType name="upperBoolean">
+  <xs:restriction base="xs:token">
+    <xs:enumeration value="TRUE"/>
+    <xs:enumeration value="FALSE"/>
+  </xs:restriction>
+</xs:simpleType>
 
 <!-- complex elements -->
 
@@ -63,7 +74,7 @@
         <xs:element maxOccurs="unbounded" ref="command"/>
       </xs:sequence>
       <xs:attribute ref="compiler" />
-      <xs:attribute ref="debug" />
+      <xs:attribute ref="DEBUG" />
       <xs:attribute ref="mpilib"/>
     </xs:complexType>
   </xs:element>
@@ -78,7 +89,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
-      <xs:attribute ref="debug"/>
+      <xs:attribute ref="DEBUG"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="unit_testing"/>
@@ -88,6 +99,10 @@
   <xs:element name="env">
     <xs:complexType mixed="true">
       <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute ref="DEBUG"/>
+      <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="compiler"/>
+      <xs:attribute ref="SMP_PRESENT"/>
     </xs:complexType>
   </xs:element>
 
@@ -96,7 +111,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="resource"/>
       </xs:sequence>
-      <xs:attribute ref="debug"/>
+      <xs:attribute ref="DEBUG"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="unit_testing"/>
