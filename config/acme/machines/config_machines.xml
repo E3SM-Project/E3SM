@@ -2069,7 +2069,7 @@
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <mpirun mpilib="default">
-      <executable args="default">aprun</executable>
+      <executable>aprun</executable>
       <arguments>
 	<!-- <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
@@ -2173,6 +2173,7 @@
         <command name="load">cray-netcdf-hdf5parallel/4.4.1.1</command>
         <command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
+    </module_system>
       <!-- Default -->
       <environment_variables>
         <env name="COMPILER">$COMPILER</env>
@@ -2221,7 +2222,6 @@
       <environment_variables compiler="intel">
         <env name="CRAYPE_LINK_TYPE">dynamic</env>
       </environment_variables>
-    </module_system>
 </machine>
 
 <machine MACH="eos">
