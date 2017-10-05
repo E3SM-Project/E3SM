@@ -416,9 +416,9 @@ subroutine micro_mg_tend ( &
   ! Size calculation functions.
   use micro_mg_utils, only: &
        size_dist_param_liq, &
-       !!== KZ_DCS 
+                                !!== KZ_DCS 
        size_dist_param_ice, &
-       !!== KZ_DCS 
+                                !!== KZ_DCS 
        size_dist_param_basic, &
        avg_diameter
 
@@ -441,8 +441,7 @@ subroutine micro_mg_tend ( &
        bergeron_process_snow
 
   use micro_mg2_sedimentation, only: &
-       sed_CalcCFL, &
-       sed_CalcFlux, &
+       sed_CalcFallRate, &
        sed_AdvanceOneStep, &
        MG_LIQUID, &
        MG_ICE, &
@@ -765,22 +764,7 @@ subroutine micro_mg_tend ( &
   !!== KZ_DCS 
 
   ! parameters for cloud water and cloud ice sedimentation calculations
-  real(r8) :: fc(0:nlev,2), fnc(0:nlev,2)
-  real(r8) :: fi(0:nlev,2), fni(0:nlev,2)
-  real(r8) :: fr(0:nlev,2), fnr(0:nlev,2)
-  real(r8) :: fs(0:nlev,2), fns(0:nlev,2)
   real(r8) :: alphaq(0:nlev), alphan(0:nlev)
-  real(r8) :: s1(nlev),s2(nlev)
-
-!!$  real(r8) :: fc(nlev)
-!!$  real(r8) :: fnc(nlev)
-!!$  real(r8) :: fi(nlev)
-!!$  real(r8) :: fni(nlev)
-!!$
-!!$  real(r8) :: fr(nlev)
-!!$  real(r8) :: fnr(nlev)
-!!$  real(r8) :: fs(nlev)
-!!$  real(r8) :: fns(nlev)
 
   real(r8) :: faloutc(nlev)
   real(r8) :: faloutnc(nlev)
@@ -1354,7 +1338,7 @@ subroutine micro_mg_tend ( &
 
      if (do_cldice) then
         call ice_autoconversion(t(:,k), qiic(:,k), lami(:,k), n0i(:,k), &
-             !!== KZ_DCS 
+                                !!== KZ_DCS 
              dcs, dcst(:,k), dcs_tdep, prci(:,k), nprci(:,k))
         !!== KZ_DCS 
      else
@@ -1544,9 +1528,9 @@ subroutine micro_mg_tend ( &
      if (do_cldice) then
 
         call ice_deposition_sublimation(t(:,k), q(:,k), qi(:,k), ni(:,k), &
-             !!== KZ_DCS 
+                                !!== KZ_DCS 
              icldm(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), dcst(:,k), dcs_tdep, &
-             !!== KZ_DCS 
+                                !!== KZ_DCS 
              berg(:,k), vap_dep(:,k), ice_sublim(:,k))
 
         berg(:,k)=berg(:,k)*micro_mg_berg_eff_factor
@@ -2088,629 +2072,630 @@ subroutine micro_mg_tend ( &
         else
            time_sed = 0._r8
         end if
-        nstep = 0
+        nstep = 0 ! used to track number of sedimentation steps
+        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
            ! obtain CFL number
-           call sed_CalcCFL(dumi,dumni,icldm,rho,pdel,nlev,i,&
-                MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,s1,s2,dum,&
+           call sed_CalcFallRate(dumi,dumni,icldm,rho,pdel,nlev,i,&
+                MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,dum,&
                 ncons=nicons,nnst=ninst,&
                 gamma_b_plus1=gamma_bi_plus1,gamma_b_plus4=gamma_bi_plus4)
-
            ! update deltat_sed for target CFL number
            deltat_sed = min(deltat_sed*CFL/dum,time_sed)
            ! advance cloud ice sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep+1
-           call sed_CalcFlux(dumi,dumni,alphaq,alphan,s1,s2,nlev,i,MG_ICE,fi,fni)
-           call sed_AdvanceOneStep(dumi,fi,dumni,fni,pdel,deltat,deltat_sed,nlev,i,MG_ICE,g, &
-                qitend,nitend,preci,qisedten,&
+           call sed_AdvanceOneStep(dumi,dumni,alphaq,alphan,pdel,deltat,deltat_sed, &
+                nlev,i,MG_ICE,g,qitend,nitend,preci,qisedten,&
                 cloud_frac=icldm,qvlat=qvlat,tlat=tlat,xxl=xxls,preci=preci,qsevap=qisevap)
+           ! update maximum fall speed
+           dum1 = max(dum1,maxval(alphaq(:)),maxval(alphan(:)))
         end do
-
 
         ! loop over cloud liquid sedimentation to ensure stability
         !==============================================================
         deltat_sed = deltat
         time_sed = deltat
-        nstep = 0
+        nstep = 0 ! used to track number of sedimentation steps
+        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
-
            ! obtain fall speeds
-           call sed_CalcCFL(dumc,dumnc,lcldm,rho,pdel,nlev,i,&
-                MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,s1,s2,dum,&
+           call sed_CalcFallRate(dumc,dumnc,lcldm,rho,pdel,nlev,i,&
+                MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,dum,&
                 ncons=nccons,nnst=ncnst)
-
            ! update deltat_sed for target CFL number
            deltat_sed = min(deltat_sed*CFL/dum,time_sed)
            ! advance cloud liquid sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
-           call sed_CalcFlux(dumc,dumnc,alphaq,alphan,s1,s2,nlev,i,MG_LIQUID,fc,fnc)
-           call sed_AdvanceOneStep(dumc,fc,dumnc,fnc,pdel,deltat,deltat_sed,nlev,i,MG_LIQUID,g, &
-                qctend,nctend,prect,qcsedten,&
+           call sed_AdvanceOneStep(dumc,dumnc,alphaq,alphan,pdel,deltat,deltat_sed, &
+                nlev,i,MG_LIQUID,g,qctend,nctend,prect,qcsedten,&
                 cloud_frac=lcldm,qvlat=qvlat,tlat=tlat,xxl=xxlv,qsevap=qcsevap)
+           ! update maximum fall speed
+           dum1 = max(maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
         ! loop over rain sedimentation to ensure stability
         !==============================================================
         deltat_sed = deltat
         time_sed = deltat
-        nstep = 0
+        nstep = 0 ! used to track number of sedimentation steps
+        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
            ! obtain fall speeds
-           call sed_CalcCFL(dumr,dumnr,precip_frac,rho,pdel,nlev,i,&
-                MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,s1,s2,dum,&
+           call sed_CalcFallRate(dumr,dumnr,precip_frac,rho,pdel,nlev,i,&
+                MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,dum,&
                 gamma_b_plus1=gamma_br_plus1,gamma_b_plus4=gamma_br_plus4)
-
            ! update deltat_sed for target CFL number
            deltat_sed = min(deltat_sed*CFL/dum,time_sed)
            ! advance rain sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
-           call sed_CalcFlux(dumr,dumnr,alphaq,alphan,s1,s2,nlev,i,MG_RAIN,fr,fnr)
-           call sed_AdvanceOneStep(dumr,fr,dumnr,fnr,pdel,deltat,deltat_sed,nlev,i,MG_RAIN,g, &
-                qrtend,nrtend,prect,qrsedten)
+           call sed_AdvanceOneStep(dumr,dumnr,alphaq,alphan,pdel,deltat,deltat_sed, &
+                nlev,i,MG_RAIN,g,qrtend,nrtend,prect,qrsedten)
+           ! update maximum fall speed
+           dum1 = max(maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
         ! loop over snow sedimentation to ensure stability
         !==============================================================
         deltat_sed = deltat
         time_sed = deltat
-        nstep = 0
+        nstep = 0 ! used to track number of sedimentation steps
+        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
            ! obtain fall speeds
-           call sed_CalcCFL(dums,dumns,precip_frac,rho,pdel,nlev,i,&
-                MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,s1,s2,dum,&
+           call sed_CalcFallRate(dums,dumns,precip_frac,rho,pdel,nlev,i,&
+                MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,dum,&
                 gamma_b_plus1=gamma_bs_plus1,gamma_b_plus4=gamma_bs_plus4)
-
            ! update deltat_sed for target CFL number
            deltat_sed = min(deltat_sed*CFL/dum,time_sed)
            ! advance snow sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
-           call sed_CalcFlux(dums,dumns,alphaq,alphan,s1,s2,nlev,i,MG_SNOW,fs,fns)
-           call sed_AdvanceOneStep(dums,fs,dumns,fns,pdel,deltat,deltat_sed,nlev,i,MG_SNOW,g, &
-                qstend,nstend,prect,qssedten,preci=preci)
+           call sed_AdvanceOneStep(dums,dumns,alphaq,alphan,pdel,deltat,deltat_sed, &
+                nlev,i,MG_SNOW,g,qstend,nstend,prect,qssedten,preci=preci)
+           dum1 = max(maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
-        end if !not precip_off
+     end if !not precip_off
 
-        ! end sedimentation
-        !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+     ! end sedimentation
+     !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-        ! get new update for variables that includes sedimentation tendency
-        ! note : here dum variables are grid-average, NOT in-cloud
+     ! get new update for variables that includes sedimentation tendency
+     ! note : here dum variables are grid-average, NOT in-cloud
 
-        do k=1,nlev
+     do k=1,nlev
 
-           dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
-           dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)
-           dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)
-           dumni(i,k) = max(ni(i,k)+nitend(i,k)*deltat,0._r8)
+        dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
+        dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)
+        dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)
+        dumni(i,k) = max(ni(i,k)+nitend(i,k)*deltat,0._r8)
 
-           dumr(i,k) = max(qr(i,k)+qrtend(i,k)*deltat,0._r8)
-           dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)
-           dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)
-           dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)
+        dumr(i,k) = max(qr(i,k)+qrtend(i,k)*deltat,0._r8)
+        dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)
+        dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)
+        dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)
 
-           ! switch for specification of droplet and crystal number
-           if (nccons) then
-              dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
-           end if
+        ! switch for specification of droplet and crystal number
+        if (nccons) then
+           dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
+        end if
 
-           ! switch for specification of cloud ice number
-           if (nicons) then
-              dumni(i,k)=ninst/rho(i,k)*icldm(i,k)
-           end if
+        ! switch for specification of cloud ice number
+        if (nicons) then
+           dumni(i,k)=ninst/rho(i,k)*icldm(i,k)
+        end if
 
-           if (dumc(i,k).lt.qsmall) dumnc(i,k)=0._r8
-           if (dumi(i,k).lt.qsmall) dumni(i,k)=0._r8
-           if (dumr(i,k).lt.qsmall) dumnr(i,k)=0._r8
-           if (dums(i,k).lt.qsmall) dumns(i,k)=0._r8
+        if (dumc(i,k).lt.qsmall) dumnc(i,k)=0._r8
+        if (dumi(i,k).lt.qsmall) dumni(i,k)=0._r8
+        if (dumr(i,k).lt.qsmall) dumnr(i,k)=0._r8
+        if (dums(i,k).lt.qsmall) dumns(i,k)=0._r8
 
-           ! calculate instantaneous processes (melting, homogeneous freezing)
-           !====================================================================
+        ! calculate instantaneous processes (melting, homogeneous freezing)
+        !====================================================================
 
-           ! melting of snow at +2 C
+        ! melting of snow at +2 C
 
-           if (t(i,k)+tlat(i,k)/cpp*deltat > snowmelt) then
-              if (dums(i,k) > 0._r8) then
+        if (t(i,k)+tlat(i,k)/cpp*deltat > snowmelt) then
+           if (dums(i,k) > 0._r8) then
 
-                 ! make sure melting snow doesn't reduce temperature below threshold
-                 dum = -xlf/cpp*dums(i,k)
-                 if (t(i,k)+tlat(i,k)/cpp*deltat+dum.lt. snowmelt) then
-                    dum = (t(i,k)+tlat(i,k)/cpp*deltat-snowmelt)*cpp/xlf
-                    dum = dum/dums(i,k)
-                    dum = max(0._r8,dum)
-                    dum = min(1._r8,dum)
-                 else
-                    dum = 1._r8
-                 end if
-
-                 qstend(i,k)=qstend(i,k)-dum*dums(i,k)/deltat
-                 nstend(i,k)=nstend(i,k)-dum*dumns(i,k)/deltat
-                 qrtend(i,k)=qrtend(i,k)+dum*dums(i,k)/deltat
-                 nrtend(i,k)=nrtend(i,k)+dum*dumns(i,k)/deltat
-
-                 dum1=-xlf*dum*dums(i,k)/deltat
-                 tlat(i,k)=tlat(i,k)+dum1
-                 meltsdttot(i,k)=meltsdttot(i,k) + dum1
-              end if
-           end if
-
-           ! freezing of rain at -5 C
-
-           if (t(i,k)+tlat(i,k)/cpp*deltat < rainfrze) then
-
-              if (dumr(i,k) > 0._r8) then
-
-                 ! make sure freezing rain doesn't increase temperature above threshold
-                 dum = xlf/cpp*dumr(i,k)
-                 if (t(i,k)+tlat(i,k)/cpp*deltat+dum.gt.rainfrze) then
-                    dum = -(t(i,k)+tlat(i,k)/cpp*deltat-rainfrze)*cpp/xlf
-                    dum = dum/dumr(i,k)
-                    dum = max(0._r8,dum)
-                    dum = min(1._r8,dum)
-                 else
-                    dum = 1._r8
-                 end if
-
-                 qrtend(i,k)=qrtend(i,k)-dum*dumr(i,k)/deltat
-                 nrtend(i,k)=nrtend(i,k)-dum*dumnr(i,k)/deltat
-
-                 ! get mean size of rain = 1/lamr, add frozen rain to either snow or cloud ice
-                 ! depending on mean rain size
-
-                 call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
-                      lamr(i,k))
-
-                 if (lamr(i,k) < 1._r8/Dcs) then
-                    qstend(i,k)=qstend(i,k)+dum*dumr(i,k)/deltat
-                    nstend(i,k)=nstend(i,k)+dum*dumnr(i,k)/deltat
-                 else
-                    qitend(i,k)=qitend(i,k)+dum*dumr(i,k)/deltat
-                    nitend(i,k)=nitend(i,k)+dum*dumnr(i,k)/deltat
-                 end if
-
-                 ! heating tendency
-                 dum1 = xlf*dum*dumr(i,k)/deltat
-                 frzrdttot(i,k)=frzrdttot(i,k) + dum1
-                 tlat(i,k)=tlat(i,k)+dum1
-
-              end if
-           end if
-
-
-           if (do_cldice) then
-              if (t(i,k)+tlat(i,k)/cpp*deltat > tmelt) then
-                 if (dumi(i,k) > 0._r8) then
-
-                    ! limit so that melting does not push temperature below freezing
-                    !-----------------------------------------------------------------
-                    dum = -dumi(i,k)*xlf/cpp
-                    if (t(i,k)+tlat(i,k)/cpp*deltat+dum.lt.tmelt) then
-                       dum = (t(i,k)+tlat(i,k)/cpp*deltat-tmelt)*cpp/xlf
-                       dum = dum/dumi(i,k)
-                       dum = max(0._r8,dum)
-                       dum = min(1._r8,dum)
-                    else
-                       dum = 1._r8
-                    end if
-
-                    qctend(i,k)=qctend(i,k)+dum*dumi(i,k)/deltat
-
-                    ! for output
-                    melttot(i,k)=dum*dumi(i,k)/deltat
-
-                    ! assume melting ice produces droplet
-                    ! mean volume radius of 8 micron
-
-                    nctend(i,k)=nctend(i,k)+3._r8*dum*dumi(i,k)/deltat/ &
-                         (4._r8*pi*5.12e-16_r8*rhow)
-
-                    qitend(i,k)=((1._r8-dum)*dumi(i,k)-qi(i,k))/deltat
-                    nitend(i,k)=((1._r8-dum)*dumni(i,k)-ni(i,k))/deltat
-                    tlat(i,k)=tlat(i,k)-xlf*dum*dumi(i,k)/deltat
-                 end if
-              end if
-
-              ! homogeneously freeze droplets at -40 C
-              !-----------------------------------------------------------------
-
-              if (t(i,k)+tlat(i,k)/cpp*deltat < 233.15_r8) then
-                 if (dumc(i,k) > 0._r8) then
-
-                    ! limit so that freezing does not push temperature above threshold
-                    dum = dumc(i,k)*xlf/cpp
-                    if (t(i,k)+tlat(i,k)/cpp*deltat+dum.gt.233.15_r8) then
-                       dum = -(t(i,k)+tlat(i,k)/cpp*deltat-233.15_r8)*cpp/xlf
-                       dum = dum/dumc(i,k)
-                       dum = max(0._r8,dum)
-                       dum = min(1._r8,dum)
-                    else
-                       dum = 1._r8
-                    end if
-
-                    qitend(i,k)=qitend(i,k)+dum*dumc(i,k)/deltat
-                    ! for output
-                    homotot(i,k)=dum*dumc(i,k)/deltat
-
-                    ! assume 25 micron mean volume radius of homogeneously frozen droplets
-                    ! consistent with size of detrained ice in stratiform.F90
-                    nitend(i,k)=nitend(i,k)+dum*3._r8*dumc(i,k)/(4._r8*3.14_r8*1.563e-14_r8* &
-                         500._r8)/deltat
-                    qctend(i,k)=((1._r8-dum)*dumc(i,k)-qc(i,k))/deltat
-                    nctend(i,k)=((1._r8-dum)*dumnc(i,k)-nc(i,k))/deltat
-                    tlat(i,k)=tlat(i,k)+xlf*dum*dumc(i,k)/deltat
-                 end if
-              end if
-
-              ! remove any excess over-saturation, which is possible due to non-linearity when adding
-              ! together all microphysical processes
-              !-----------------------------------------------------------------
-              ! follow code similar to old CAM scheme
-
-              qtmp=q(i,k)+qvlat(i,k)*deltat
-              ttmp=t(i,k)+tlat(i,k)/cpp*deltat
-
-              ! use rhw to allow ice supersaturation
-              call qsat_water(ttmp, p(i,k), esn, qvn)
-
-              if (qtmp > qvn .and. qvn > 0 .and. allow_sed_supersat) then
-                 ! expression below is approximate since there may be ice deposition
-                 dum = (qtmp-qvn)/(1._r8+xxlv_squared*qvn/(cpp*rv*ttmp**2))/deltat
-                 ! add to output cme
-                 cmeout(i,k) = cmeout(i,k)+dum
-                 ! now add to tendencies, partition between liquid and ice based on temperature
-                 if (ttmp > 268.15_r8) then
-                    dum1=0.0_r8
-                    ! now add to tendencies, partition between liquid and ice based on te
-                    !-------------------------------------------------------
-                 else if (ttmp < 238.15_r8) then
-                    dum1=1.0_r8
-                 else
-                    dum1=(268.15_r8-ttmp)/30._r8
-                 end if
-
-                 dum = (qtmp-qvn)/(1._r8+(xxls*dum1+xxlv*(1._r8-dum1))**2 &
-                      *qvn/(cpp*rv*ttmp**2))/deltat
-                 qctend(i,k)=qctend(i,k)+dum*(1._r8-dum1)
-                 ! for output
-                 qcrestot(i,k)=dum*(1._r8-dum1)
-                 qitend(i,k)=qitend(i,k)+dum*dum1
-                 qirestot(i,k)=dum*dum1
-                 qvlat(i,k)=qvlat(i,k)-dum
-                 ! for output
-                 qvres(i,k)=-dum
-                 tlat(i,k)=tlat(i,k)+dum*(1._r8-dum1)*xxlv+dum*dum1*xxls
-              end if
-           end if
-
-           ! calculate effective radius for pass to radiation code
-           !=========================================================
-           ! if no cloud water, default value is 10 micron for droplets,
-           ! 25 micron for cloud ice
-
-           ! update cloud variables after instantaneous processes to get effective radius
-           ! variables are in-cloud to calculate size dist parameters
-
-           dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)/lcldm(i,k)
-           dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)/icldm(i,k)
-           dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)/lcldm(i,k)
-           dumni(i,k) = max(ni(i,k)+nitend(i,k)*deltat,0._r8)/icldm(i,k)
-
-           dumr(i,k) = max(qr(i,k)+qrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
-           dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
-           dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)/precip_frac(i,k)
-           dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)/precip_frac(i,k)
-
-           ! switch for specification of droplet and crystal number
-           if (nccons) then
-              dumnc(i,k)=ncnst/rho(i,k)
-           end if
-
-           ! switch for specification of cloud ice number
-           if (nicons) then
-              dumni(i,k)=ninst/rho(i,k)
-           end if
-
-           ! limit in-cloud mixing ratio to reasonable value of 5 g kg-1
-           dumc(i,k)=min(dumc(i,k),5.e-3_r8)
-           dumi(i,k)=min(dumi(i,k),5.e-3_r8)
-           ! limit in-precip mixing ratios
-           dumr(i,k)=min(dumr(i,k),10.e-3_r8)
-           dums(i,k)=min(dums(i,k),10.e-3_r8)
-
-           ! cloud ice effective radius
-           !-----------------------------------------------------------------
-
-           if (do_cldice) then
-              if (dumi(i,k).ge.qsmall) then
-
-                 dum_2D(i,k) = dumni(i,k)
-                 call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
-                      lami(i,k))
-
-                 if (dumni(i,k) /=dum_2D(i,k)) then
-                    ! adjust number conc if needed to keep mean size in reasonable range
-                    nitend(i,k)=(dumni(i,k)*icldm(i,k)-ni(i,k))/deltat
-                 end if
-
-                 effi(i,k) = 1.5_r8/lami(i,k)*1.e6_r8
-
+              ! make sure melting snow doesn't reduce temperature below threshold
+              dum = -xlf/cpp*dums(i,k)
+              if (t(i,k)+tlat(i,k)/cpp*deltat+dum.lt. snowmelt) then
+                 dum = (t(i,k)+tlat(i,k)/cpp*deltat-snowmelt)*cpp/xlf
+                 dum = dum/dums(i,k)
+                 dum = max(0._r8,dum)
+                 dum = min(1._r8,dum)
               else
-                 effi(i,k) = 25._r8
+                 dum = 1._r8
               end if
 
-              ! ice effective diameter for david mitchell's optics
-              deffi(i,k)=effi(i,k)*rhoi/rhows*2._r8
-           else
-              ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
-              ! radius has already been determined from the size distribution.
-              effi(i,k) = re_ice(i,k) * 1.e6_r8      ! m -> um
-              deffi(i,k)=effi(i,k) * 2._r8
+              qstend(i,k)=qstend(i,k)-dum*dums(i,k)/deltat
+              nstend(i,k)=nstend(i,k)-dum*dumns(i,k)/deltat
+              qrtend(i,k)=qrtend(i,k)+dum*dums(i,k)/deltat
+              nrtend(i,k)=nrtend(i,k)+dum*dumns(i,k)/deltat
+
+              dum1=-xlf*dum*dums(i,k)/deltat
+              tlat(i,k)=tlat(i,k)+dum1
+              meltsdttot(i,k)=meltsdttot(i,k) + dum1
            end if
+        end if
 
-           ! cloud droplet effective radius
-           !-----------------------------------------------------------------
-           if (dumc(i,k).ge.qsmall) then
+        ! freezing of rain at -5 C
 
+        if (t(i,k)+tlat(i,k)/cpp*deltat < rainfrze) then
 
-              ! switch for specification of droplet and crystal number
-              if (nccons) then
-                 ! make sure nc is consistence with the constant N by adjusting tendency, need
-                 ! to multiply by cloud fraction
-                 ! note that nctend may be further adjusted below if mean droplet size is
-                 ! out of bounds
+           if (dumr(i,k) > 0._r8) then
 
-                 nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
-
+              ! make sure freezing rain doesn't increase temperature above threshold
+              dum = xlf/cpp*dumr(i,k)
+              if (t(i,k)+tlat(i,k)/cpp*deltat+dum.gt.rainfrze) then
+                 dum = -(t(i,k)+tlat(i,k)/cpp*deltat-rainfrze)*cpp/xlf
+                 dum = dum/dumr(i,k)
+                 dum = max(0._r8,dum)
+                 dum = min(1._r8,dum)
+              else
+                 dum = 1._r8
               end if
 
-              dum = dumnc(i,k)
+              qrtend(i,k)=qrtend(i,k)-dum*dumr(i,k)/deltat
+              nrtend(i,k)=nrtend(i,k)-dum*dumnr(i,k)/deltat
 
-              call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                   pgam(i,k), lamc(i,k))
-
-              if (dum /= dumnc(i,k)) then
-                 ! adjust number conc if needed to keep mean size in reasonable range
-                 nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
-              end if
-
-              effc(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
-              !assign output fields for shape here
-              lamcrad(i,k)=lamc(i,k)
-              pgamrad(i,k)=pgam(i,k)
-
-
-              ! recalculate effective radius for constant number, in order to separate
-              ! first and second indirect effects
-              !======================================
-              ! assume constant number of 10^8 kg-1
-
-              dumnc(i,k)=1.e8_r8
-
-              ! Pass in "false" adjust flag to prevent number from being changed within
-              ! size distribution subroutine.
-              call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                   pgam(i,k), lamc(i,k))
-
-              effc_fn(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
-
-           else
-              effc(i,k) = 10._r8
-              lamcrad(i,k)=0._r8
-              pgamrad(i,k)=0._r8
-              effc_fn(i,k) = 10._r8
-           end if
-
-           ! recalculate 'final' rain size distribution parameters
-           ! to ensure that rain size is in bounds, adjust rain number if needed
-
-           if (dumr(i,k).ge.qsmall) then
-
-              dum = dumnr(i,k)
+              ! get mean size of rain = 1/lamr, add frozen rain to either snow or cloud ice
+              ! depending on mean rain size
 
               call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
                    lamr(i,k))
 
-              if (dum /= dumnr(i,k)) then
-                 ! adjust number conc if needed to keep mean size in reasonable range
-                 nrtend(i,k)=(dumnr(i,k)*precip_frac(i,k)-nr(i,k))/deltat
+              if (lamr(i,k) < 1._r8/Dcs) then
+                 qstend(i,k)=qstend(i,k)+dum*dumr(i,k)/deltat
+                 nstend(i,k)=nstend(i,k)+dum*dumnr(i,k)/deltat
+              else
+                 qitend(i,k)=qitend(i,k)+dum*dumr(i,k)/deltat
+                 nitend(i,k)=nitend(i,k)+dum*dumnr(i,k)/deltat
               end if
 
+              ! heating tendency
+              dum1 = xlf*dum*dumr(i,k)/deltat
+              frzrdttot(i,k)=frzrdttot(i,k) + dum1
+              tlat(i,k)=tlat(i,k)+dum1
+
+           end if
+        end if
+
+
+        if (do_cldice) then
+           if (t(i,k)+tlat(i,k)/cpp*deltat > tmelt) then
+              if (dumi(i,k) > 0._r8) then
+
+                 ! limit so that melting does not push temperature below freezing
+                 !-----------------------------------------------------------------
+                 dum = -dumi(i,k)*xlf/cpp
+                 if (t(i,k)+tlat(i,k)/cpp*deltat+dum.lt.tmelt) then
+                    dum = (t(i,k)+tlat(i,k)/cpp*deltat-tmelt)*cpp/xlf
+                    dum = dum/dumi(i,k)
+                    dum = max(0._r8,dum)
+                    dum = min(1._r8,dum)
+                 else
+                    dum = 1._r8
+                 end if
+
+                 qctend(i,k)=qctend(i,k)+dum*dumi(i,k)/deltat
+
+                 ! for output
+                 melttot(i,k)=dum*dumi(i,k)/deltat
+
+                 ! assume melting ice produces droplet
+                 ! mean volume radius of 8 micron
+
+                 nctend(i,k)=nctend(i,k)+3._r8*dum*dumi(i,k)/deltat/ &
+                      (4._r8*pi*5.12e-16_r8*rhow)
+
+                 qitend(i,k)=((1._r8-dum)*dumi(i,k)-qi(i,k))/deltat
+                 nitend(i,k)=((1._r8-dum)*dumni(i,k)-ni(i,k))/deltat
+                 tlat(i,k)=tlat(i,k)-xlf*dum*dumi(i,k)/deltat
+              end if
            end if
 
-           ! recalculate 'final' snow size distribution parameters
-           ! to ensure that snow size is in bounds, adjust snow number if needed
+           ! homogeneously freeze droplets at -40 C
+           !-----------------------------------------------------------------
 
-           if (dums(i,k).ge.qsmall) then
+           if (t(i,k)+tlat(i,k)/cpp*deltat < 233.15_r8) then
+              if (dumc(i,k) > 0._r8) then
 
-              dum = dumns(i,k)
+                 ! limit so that freezing does not push temperature above threshold
+                 dum = dumc(i,k)*xlf/cpp
+                 if (t(i,k)+tlat(i,k)/cpp*deltat+dum.gt.233.15_r8) then
+                    dum = -(t(i,k)+tlat(i,k)/cpp*deltat-233.15_r8)*cpp/xlf
+                    dum = dum/dumc(i,k)
+                    dum = max(0._r8,dum)
+                    dum = min(1._r8,dum)
+                 else
+                    dum = 1._r8
+                 end if
 
-              call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
-                   lams(i,k))
+                 qitend(i,k)=qitend(i,k)+dum*dumc(i,k)/deltat
+                 ! for output
+                 homotot(i,k)=dum*dumc(i,k)/deltat
 
-              if (dum /= dumns(i,k)) then
-                 ! adjust number conc if needed to keep mean size in reasonable range
-                 nstend(i,k)=(dumns(i,k)*precip_frac(i,k)-ns(i,k))/deltat
+                 ! assume 25 micron mean volume radius of homogeneously frozen droplets
+                 ! consistent with size of detrained ice in stratiform.F90
+                 nitend(i,k)=nitend(i,k)+dum*3._r8*dumc(i,k)/(4._r8*3.14_r8*1.563e-14_r8* &
+                      500._r8)/deltat
+                 qctend(i,k)=((1._r8-dum)*dumc(i,k)-qc(i,k))/deltat
+                 nctend(i,k)=((1._r8-dum)*dumnc(i,k)-nc(i,k))/deltat
+                 tlat(i,k)=tlat(i,k)+xlf*dum*dumc(i,k)/deltat
+              end if
+           end if
+
+           ! remove any excess over-saturation, which is possible due to non-linearity when adding
+           ! together all microphysical processes
+           !-----------------------------------------------------------------
+           ! follow code similar to old CAM scheme
+
+           qtmp=q(i,k)+qvlat(i,k)*deltat
+           ttmp=t(i,k)+tlat(i,k)/cpp*deltat
+
+           ! use rhw to allow ice supersaturation
+           call qsat_water(ttmp, p(i,k), esn, qvn)
+
+           if (qtmp > qvn .and. qvn > 0 .and. allow_sed_supersat) then
+              ! expression below is approximate since there may be ice deposition
+              dum = (qtmp-qvn)/(1._r8+xxlv_squared*qvn/(cpp*rv*ttmp**2))/deltat
+              ! add to output cme
+              cmeout(i,k) = cmeout(i,k)+dum
+              ! now add to tendencies, partition between liquid and ice based on temperature
+              if (ttmp > 268.15_r8) then
+                 dum1=0.0_r8
+                 ! now add to tendencies, partition between liquid and ice based on te
+                 !-------------------------------------------------------
+              else if (ttmp < 238.15_r8) then
+                 dum1=1.0_r8
+              else
+                 dum1=(268.15_r8-ttmp)/30._r8
               end if
 
+              dum = (qtmp-qvn)/(1._r8+(xxls*dum1+xxlv*(1._r8-dum1))**2 &
+                   *qvn/(cpp*rv*ttmp**2))/deltat
+              qctend(i,k)=qctend(i,k)+dum*(1._r8-dum1)
+              ! for output
+              qcrestot(i,k)=dum*(1._r8-dum1)
+              qitend(i,k)=qitend(i,k)+dum*dum1
+              qirestot(i,k)=dum*dum1
+              qvlat(i,k)=qvlat(i,k)-dum
+              ! for output
+              qvres(i,k)=-dum
+              tlat(i,k)=tlat(i,k)+dum*(1._r8-dum1)*xxlv+dum*dum1*xxls
            end if
+        end if
 
+        ! calculate effective radius for pass to radiation code
+        !=========================================================
+        ! if no cloud water, default value is 10 micron for droplets,
+        ! 25 micron for cloud ice
 
-        end do ! vertical k loop
+        ! update cloud variables after instantaneous processes to get effective radius
+        ! variables are in-cloud to calculate size dist parameters
 
-        do k=1,nlev
-           ! if updated q (after microphysics) is zero, then ensure updated n is also zero
-           !=================================================================================
-           if (qc(i,k)+qctend(i,k)*deltat.lt.qsmall) nctend(i,k)=-nc(i,k)/deltat
-           if (do_cldice .and. qi(i,k)+qitend(i,k)*deltat.lt.qsmall) nitend(i,k)=-ni(i,k)/deltat
-           if (qr(i,k)+qrtend(i,k)*deltat.lt.qsmall) nrtend(i,k)=-nr(i,k)/deltat
-           if (qs(i,k)+qstend(i,k)*deltat.lt.qsmall) nstend(i,k)=-ns(i,k)/deltat
+        dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)/lcldm(i,k)
+        dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)/icldm(i,k)
+        dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)/lcldm(i,k)
+        dumni(i,k) = max(ni(i,k)+nitend(i,k)*deltat,0._r8)/icldm(i,k)
 
-        end do
+        dumr(i,k) = max(qr(i,k)+qrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
+        dumnr(i,k) = max(nr(i,k)+nrtend(i,k)*deltat,0._r8)/precip_frac(i,k)
+        dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)/precip_frac(i,k)
+        dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)/precip_frac(i,k)
 
-     end do sed_col_loop! i loop
+        ! switch for specification of droplet and crystal number
+        if (nccons) then
+           dumnc(i,k)=ncnst/rho(i,k)
+        end if
 
-     ! DO STUFF FOR OUTPUT:
-     !==================================================
+        ! switch for specification of cloud ice number
+        if (nicons) then
+           dumni(i,k)=ninst/rho(i,k)
+        end if
 
-     ! qc and qi are only used for output calculations past here,
-     ! so add qctend and qitend back in one more time
-     qc = qc + qctend*deltat
-     qi = qi + qitend*deltat
+        ! limit in-cloud mixing ratio to reasonable value of 5 g kg-1
+        dumc(i,k)=min(dumc(i,k),5.e-3_r8)
+        dumi(i,k)=min(dumi(i,k),5.e-3_r8)
+        ! limit in-precip mixing ratios
+        dumr(i,k)=min(dumr(i,k),10.e-3_r8)
+        dums(i,k)=min(dums(i,k),10.e-3_r8)
 
-     ! averaging for snow and rain number and diameter
-     !--------------------------------------------------
+        ! cloud ice effective radius
+        !-----------------------------------------------------------------
 
-     ! drout2/dsout2:
-     ! diameter of rain and snow
-     ! dsout:
-     ! scaled diameter of snow (passed to radiation in CAM)
-     ! reff_rain/reff_snow:
-     ! calculate effective radius of rain and snow in microns for COSP using Eq. 9 of COSP v1.3 manual
+        if (do_cldice) then
+           if (dumi(i,k).ge.qsmall) then
 
-     where (qrout .gt. 1.e-7_r8 &
-          .and. nrout.gt.0._r8)
-        qrout2 = qrout * precip_frac
-        nrout2 = nrout * precip_frac
-        ! The avg_diameter call does the actual calculation; other diameter
-        ! outputs are just drout2 times constants.
-        drout2 = avg_diameter(qrout, nrout, rho, rhow)
-        freqr = precip_frac
+              dum_2D(i,k) = dumni(i,k)
+              call size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), &
+                   lami(i,k))
 
-        reff_rain=1.5_r8*drout2*1.e6_r8
-     elsewhere
-        qrout2 = 0._r8
-        nrout2 = 0._r8
-        drout2 = 0._r8
-        freqr = 0._r8
-        reff_rain = 0._r8
-     end where
+              if (dumni(i,k) /=dum_2D(i,k)) then
+                 ! adjust number conc if needed to keep mean size in reasonable range
+                 nitend(i,k)=(dumni(i,k)*icldm(i,k)-ni(i,k))/deltat
+              end if
 
-     where (qsout .gt. 1.e-7_r8 &
-          .and. nsout.gt.0._r8)
-        qsout2 = qsout * precip_frac
-        nsout2 = nsout * precip_frac
-        ! The avg_diameter call does the actual calculation; other diameter
-        ! outputs are just dsout2 times constants.
-        dsout2 = avg_diameter(qsout, nsout, rho, rhosn)
-        freqs = precip_frac
+              effi(i,k) = 1.5_r8/lami(i,k)*1.e6_r8
 
-        dsout=3._r8*rhosn/rhows*dsout2
-
-        reff_snow=1.5_r8*dsout2*1.e6_r8
-     elsewhere
-        dsout  = 0._r8
-        qsout2 = 0._r8
-        nsout2 = 0._r8
-        dsout2 = 0._r8
-        freqs  = 0._r8
-        reff_snow=0._r8
-     end where
-
-     ! analytic radar reflectivity
-     !--------------------------------------------------
-     ! formulas from Matthew Shupe, NOAA/CERES
-     ! *****note: radar reflectivity is local (in-precip average)
-     ! units of mm^6/m^3
-
-     do i = 1,mgncol
-        do k=1,nlev
-           if (qc(i,k).ge.qsmall .and. (nc(i,k)+nctend(i,k)*deltat).gt.10._r8) then
-              dum=(qc(i,k)/lcldm(i,k)*rho(i,k)*1000._r8)**2 &
-                   /(0.109_r8*(nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k)*rho(i,k)/1.e6_r8)*lcldm(i,k)/precip_frac(i,k)
            else
-              dum=0._r8
-           end if
-           if (qi(i,k).ge.qsmall) then
-              dum1=(qi(i,k)*rho(i,k)/icldm(i,k)*1000._r8/0.1_r8)**(1._r8/0.63_r8)*icldm(i,k)/precip_frac(i,k)
-           else
-              dum1=0._r8
+              effi(i,k) = 25._r8
            end if
 
-           if (qsout(i,k).ge.qsmall) then
-              dum1=dum1+(qsout(i,k)*rho(i,k)*1000._r8/0.1_r8)**(1._r8/0.63_r8)
+           ! ice effective diameter for david mitchell's optics
+           deffi(i,k)=effi(i,k)*rhoi/rhows*2._r8
+        else
+           ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
+           ! radius has already been determined from the size distribution.
+           effi(i,k) = re_ice(i,k) * 1.e6_r8      ! m -> um
+           deffi(i,k)=effi(i,k) * 2._r8
+        end if
+
+        ! cloud droplet effective radius
+        !-----------------------------------------------------------------
+        if (dumc(i,k).ge.qsmall) then
+
+
+           ! switch for specification of droplet and crystal number
+           if (nccons) then
+              ! make sure nc is consistence with the constant N by adjusting tendency, need
+              ! to multiply by cloud fraction
+              ! note that nctend may be further adjusted below if mean droplet size is
+              ! out of bounds
+
+              nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
+
            end if
 
-           refl(i,k)=dum+dum1
+           dum = dumnc(i,k)
 
-           ! add rain rate, but for 37 GHz formulation instead of 94 GHz
-           ! formula approximated from data of Matrasov (2007)
-           ! rainrt is the rain rate in mm/hr
-           ! reflectivity (dum) is in DBz
+           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+                pgam(i,k), lamc(i,k))
 
-           if (rainrt(i,k).ge.0.001_r8) then
-              dum=log10(rainrt(i,k)**6._r8)+16._r8
-
-              ! convert from DBz to mm^6/m^3
-
-              dum = 10._r8**(dum/10._r8)
-           else
-              ! don't include rain rate in R calculation for values less than 0.001 mm/hr
-              dum=0._r8
+           if (dum /= dumnc(i,k)) then
+              ! adjust number conc if needed to keep mean size in reasonable range
+              nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
            end if
 
-           ! add to refl
+           effc(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
+           !assign output fields for shape here
+           lamcrad(i,k)=lamc(i,k)
+           pgamrad(i,k)=pgam(i,k)
 
-           refl(i,k)=refl(i,k)+dum
 
-           !output reflectivity in Z.
-           areflz(i,k)=refl(i,k) * precip_frac(i,k)
+           ! recalculate effective radius for constant number, in order to separate
+           ! first and second indirect effects
+           !======================================
+           ! assume constant number of 10^8 kg-1
 
-           ! convert back to DBz
+           dumnc(i,k)=1.e8_r8
 
-           if (refl(i,k).gt.minrefl) then
-              refl(i,k)=10._r8*log10(refl(i,k))
-           else
-              refl(i,k)=-9999._r8
+           ! Pass in "false" adjust flag to prevent number from being changed within
+           ! size distribution subroutine.
+           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+                pgam(i,k), lamc(i,k))
+
+           effc_fn(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
+
+        else
+           effc(i,k) = 10._r8
+           lamcrad(i,k)=0._r8
+           pgamrad(i,k)=0._r8
+           effc_fn(i,k) = 10._r8
+        end if
+
+        ! recalculate 'final' rain size distribution parameters
+        ! to ensure that rain size is in bounds, adjust rain number if needed
+
+        if (dumr(i,k).ge.qsmall) then
+
+           dum = dumnr(i,k)
+
+           call size_dist_param_basic(mg_rain_props, dumr(i,k), dumnr(i,k), &
+                lamr(i,k))
+
+           if (dum /= dumnr(i,k)) then
+              ! adjust number conc if needed to keep mean size in reasonable range
+              nrtend(i,k)=(dumnr(i,k)*precip_frac(i,k)-nr(i,k))/deltat
            end if
 
-           !set averaging flag
-           if (refl(i,k).gt.mindbz) then
-              arefl(i,k)=refl(i,k) * precip_frac(i,k)
-              frefl(i,k)=precip_frac(i,k)
-           else
-              arefl(i,k)=0._r8
-              areflz(i,k)=0._r8
-              frefl(i,k)=0._r8
+        end if
+
+        ! recalculate 'final' snow size distribution parameters
+        ! to ensure that snow size is in bounds, adjust snow number if needed
+
+        if (dums(i,k).ge.qsmall) then
+
+           dum = dumns(i,k)
+
+           call size_dist_param_basic(mg_snow_props, dums(i,k), dumns(i,k), &
+                lams(i,k))
+
+           if (dum /= dumns(i,k)) then
+              ! adjust number conc if needed to keep mean size in reasonable range
+              nstend(i,k)=(dumns(i,k)*precip_frac(i,k)-ns(i,k))/deltat
            end if
 
-           ! bound cloudsat reflectivity
+        end if
 
-           csrfl(i,k)=min(csmax,refl(i,k))
 
-           !set averaging flag
-           if (csrfl(i,k).gt.csmin) then
-              acsrfl(i,k)=refl(i,k) * precip_frac(i,k)
-              fcsrfl(i,k)=precip_frac(i,k)
-           else
-              acsrfl(i,k)=0._r8
-              fcsrfl(i,k)=0._r8
-           end if
+     end do ! vertical k loop
 
-        end do
+     do k=1,nlev
+        ! if updated q (after microphysics) is zero, then ensure updated n is also zero
+        !=================================================================================
+        if (qc(i,k)+qctend(i,k)*deltat.lt.qsmall) nctend(i,k)=-nc(i,k)/deltat
+        if (do_cldice .and. qi(i,k)+qitend(i,k)*deltat.lt.qsmall) nitend(i,k)=-ni(i,k)/deltat
+        if (qr(i,k)+qrtend(i,k)*deltat.lt.qsmall) nrtend(i,k)=-nr(i,k)/deltat
+        if (qs(i,k)+qstend(i,k)*deltat.lt.qsmall) nstend(i,k)=-ns(i,k)/deltat
+
      end do
 
-     !redefine fice here....
-     dum_2D = qsout + qrout + qc + qi
-     dumi = qsout + qi
-     where (dumi .gt. qsmall .and. dum_2D .gt. qsmall)
-        nfice=min(dumi/dum_2D,1._r8)
-     elsewhere
-        nfice=0._r8
-     end where
+  end do sed_col_loop! i loop
 
-   end subroutine micro_mg_tend
+  ! DO STUFF FOR OUTPUT:
+  !==================================================
+
+  ! qc and qi are only used for output calculations past here,
+  ! so add qctend and qitend back in one more time
+  qc = qc + qctend*deltat
+  qi = qi + qitend*deltat
+
+  ! averaging for snow and rain number and diameter
+  !--------------------------------------------------
+
+  ! drout2/dsout2:
+  ! diameter of rain and snow
+  ! dsout:
+  ! scaled diameter of snow (passed to radiation in CAM)
+  ! reff_rain/reff_snow:
+  ! calculate effective radius of rain and snow in microns for COSP using Eq. 9 of COSP v1.3 manual
+
+  where (qrout .gt. 1.e-7_r8 &
+       .and. nrout.gt.0._r8)
+     qrout2 = qrout * precip_frac
+     nrout2 = nrout * precip_frac
+     ! The avg_diameter call does the actual calculation; other diameter
+     ! outputs are just drout2 times constants.
+     drout2 = avg_diameter(qrout, nrout, rho, rhow)
+     freqr = precip_frac
+
+     reff_rain=1.5_r8*drout2*1.e6_r8
+  elsewhere
+     qrout2 = 0._r8
+     nrout2 = 0._r8
+     drout2 = 0._r8
+     freqr = 0._r8
+     reff_rain = 0._r8
+  end where
+
+  where (qsout .gt. 1.e-7_r8 &
+       .and. nsout.gt.0._r8)
+     qsout2 = qsout * precip_frac
+     nsout2 = nsout * precip_frac
+     ! The avg_diameter call does the actual calculation; other diameter
+     ! outputs are just dsout2 times constants.
+     dsout2 = avg_diameter(qsout, nsout, rho, rhosn)
+     freqs = precip_frac
+
+     dsout=3._r8*rhosn/rhows*dsout2
+
+     reff_snow=1.5_r8*dsout2*1.e6_r8
+  elsewhere
+     dsout  = 0._r8
+     qsout2 = 0._r8
+     nsout2 = 0._r8
+     dsout2 = 0._r8
+     freqs  = 0._r8
+     reff_snow=0._r8
+  end where
+
+  ! analytic radar reflectivity
+  !--------------------------------------------------
+  ! formulas from Matthew Shupe, NOAA/CERES
+  ! *****note: radar reflectivity is local (in-precip average)
+  ! units of mm^6/m^3
+
+  do i = 1,mgncol
+     do k=1,nlev
+        if (qc(i,k).ge.qsmall .and. (nc(i,k)+nctend(i,k)*deltat).gt.10._r8) then
+           dum=(qc(i,k)/lcldm(i,k)*rho(i,k)*1000._r8)**2 &
+                /(0.109_r8*(nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k)*rho(i,k)/1.e6_r8)*lcldm(i,k)/precip_frac(i,k)
+        else
+           dum=0._r8
+        end if
+        if (qi(i,k).ge.qsmall) then
+           dum1=(qi(i,k)*rho(i,k)/icldm(i,k)*1000._r8/0.1_r8)**(1._r8/0.63_r8)*icldm(i,k)/precip_frac(i,k)
+        else
+           dum1=0._r8
+        end if
+
+        if (qsout(i,k).ge.qsmall) then
+           dum1=dum1+(qsout(i,k)*rho(i,k)*1000._r8/0.1_r8)**(1._r8/0.63_r8)
+        end if
+
+        refl(i,k)=dum+dum1
+
+        ! add rain rate, but for 37 GHz formulation instead of 94 GHz
+        ! formula approximated from data of Matrasov (2007)
+        ! rainrt is the rain rate in mm/hr
+        ! reflectivity (dum) is in DBz
+
+        if (rainrt(i,k).ge.0.001_r8) then
+           dum=log10(rainrt(i,k)**6._r8)+16._r8
+
+           ! convert from DBz to mm^6/m^3
+
+           dum = 10._r8**(dum/10._r8)
+        else
+           ! don't include rain rate in R calculation for values less than 0.001 mm/hr
+           dum=0._r8
+        end if
+
+        ! add to refl
+
+        refl(i,k)=refl(i,k)+dum
+
+        !output reflectivity in Z.
+        areflz(i,k)=refl(i,k) * precip_frac(i,k)
+
+        ! convert back to DBz
+
+        if (refl(i,k).gt.minrefl) then
+           refl(i,k)=10._r8*log10(refl(i,k))
+        else
+           refl(i,k)=-9999._r8
+        end if
+
+        !set averaging flag
+        if (refl(i,k).gt.mindbz) then
+           arefl(i,k)=refl(i,k) * precip_frac(i,k)
+           frefl(i,k)=precip_frac(i,k)
+        else
+           arefl(i,k)=0._r8
+           areflz(i,k)=0._r8
+           frefl(i,k)=0._r8
+        end if
+
+        ! bound cloudsat reflectivity
+
+        csrfl(i,k)=min(csmax,refl(i,k))
+
+        !set averaging flag
+        if (csrfl(i,k).gt.csmin) then
+           acsrfl(i,k)=refl(i,k) * precip_frac(i,k)
+           fcsrfl(i,k)=precip_frac(i,k)
+        else
+           acsrfl(i,k)=0._r8
+           fcsrfl(i,k)=0._r8
+        end if
+
+     end do
+  end do
+
+  !redefine fice here....
+  dum_2D = qsout + qrout + qc + qi
+  dumi = qsout + qi
+  where (dumi .gt. qsmall .and. dum_2D .gt. qsmall)
+     nfice=min(dumi/dum_2D,1._r8)
+  elsewhere
+     nfice=0._r8
+  end where
+
+end subroutine micro_mg_tend
 
 !========================================================================
 !OUTPUT CALCULATIONS

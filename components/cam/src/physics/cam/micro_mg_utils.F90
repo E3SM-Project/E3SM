@@ -66,7 +66,8 @@ public :: &
      self_collection_rain, &
      accrete_cloud_ice_snow, &
      evaporate_sublimate_precip, &
-     bergeron_process_snow
+     bergeron_process_snow, &
+     limiter_is_on !PMC added for vogl sed.
 
 ! 8 byte real and integer
 integer, parameter, public :: r8 = selected_real_kind(12)
