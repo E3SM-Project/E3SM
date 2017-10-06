@@ -107,9 +107,9 @@ _TEST_SUITES = {
                          ),
     #atmopheric tests for hi-res
     "acme_atm_hi_res" : (None, None,
-                         (("SMS.ne120_ne120.FC5AV1C-L","ne120_atm_mods")
-                          )
-                         ),
+                         (
+                          (("SMS.ne120_ne120.FC5AV1C-L","ne120_atm_mods"),)
+                         )),
     #atmopheric tests to mimic low res production runs
     "acme_atm_prod" : (None, None,
                        (("SMS_Ln5.ne30_ne30.FC5AV1C-L", "cam-cosplite"),
@@ -155,7 +155,7 @@ _TEST_SUITES = {
     #acme tests for hi-res
     "acme_hi_res" : (("acme_atm_hi_res",),None,
                      (
-                     ("SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS", "ne120_wcycl_mods")
+                      (("SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS", "ne120_wcycl_mods"),)
                      )),
 
     #acme tests to mimic production runs
