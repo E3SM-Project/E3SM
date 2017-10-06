@@ -1158,6 +1158,7 @@ contains
 
 
     do k = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
           this%m_decomp_ppools_to_fire_col(begc:endc,k) = spval
           data1dptr => this%m_decomp_ppools_to_fire_col(:,k)

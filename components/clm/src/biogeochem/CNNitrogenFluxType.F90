@@ -1395,25 +1395,6 @@ contains
         avgflag='A', long_name=longname, &
         ptr_col=data2dptr, default='inactive')
     
-    do k = 1, ndecomp_pools
-      this%bgc_npool_ext_inputs_vr_col(begc:endc, :, k) = spval    
-      data2dptr => this%bgc_npool_ext_inputs_vr_col(:,:,k)
-      fieldname='BGC_NPOOL_EINPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
-      longname='N input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
-      call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-      this%bgc_npool_ext_loss_vr_col(begc:endc, :, k) = spval    
-      data2dptr => this%bgc_npool_ext_loss_vr_col(:,:,k)
-      fieldname='BGC_NPOOL_ELOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
-      longname='N LOSS to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
-      call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-        
-    enddo
-    
     this%denit_col(begc:endc) = spval
     call hist_addfld1d (fname='DENIT', units='gN/m^2/s', &
          avgflag='A', long_name='total rate of denitrification', &

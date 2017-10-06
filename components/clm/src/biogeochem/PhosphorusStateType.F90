@@ -478,6 +478,7 @@ contains
     end if
     this%decomp_ppools_col(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
        if ( nlevdecomp_full > 1 ) then
           data2dptr => this%decomp_ppools_vr_col(:,:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_vr'
@@ -1085,6 +1086,7 @@ contains
 
     ! decomposing P pools
     do k = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_restart(k))=='')exit
        varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'p'
        if (use_vertsoilc) then
           ptr2d => this%decomp_ppools_vr_col(:,:,k)

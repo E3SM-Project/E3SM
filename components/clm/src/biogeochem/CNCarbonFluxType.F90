@@ -2865,6 +2865,7 @@ contains
        this%m_decomp_cpools_to_fire_col(begc:endc,:)      = spval
        this%m_decomp_cpools_to_fire_vr_col(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
           if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
              data1dptr => this%m_decomp_cpools_to_fire_col(:,k)
              fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
@@ -2893,13 +2894,12 @@ contains
        end do
 
 
-       if(.not. is_active_betr_bgc )then
           this%decomp_cascade_hr_col(begc:endc,:)             = spval
           this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
           this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
           do l = 1, ndecomp_cascade_transitions
-
+             if(trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))=='')exit
              ! output the vertically integrated fluxes only as  default
              !-- HR fluxes (none from CWD)
              if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
@@ -2980,7 +2980,6 @@ contains
              end if
 
           end do
-       endif
 
        this%t_scalar_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='T_SCALAR', units='unitless',  type2d='levdcmp', &
@@ -3002,10 +3001,10 @@ contains
             avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
             ptr_col=this%som_c_leached_col)!, default='inactive')
 
-       if(.not. is_active_betr_bgc )then     
           this%decomp_cpools_leached_col(begc:endc,:) = spval
           this%decomp_cpools_transport_tendency_col(begc:endc,:,:) = spval
           do k = 1, ndecomp_pools
+             if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
              if ( .not. decomp_cascade_con%is_cwd(k) ) then
                 data1dptr => this%decomp_cpools_leached_col(:,k)
                 fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_LEACHING'
@@ -3022,7 +3021,6 @@ contains
                      ptr_col=data2dptr, default='inactive')
              endif
           end do
-       endif
 
        this%lithr_col(begc:endc) = spval
        call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
@@ -3210,24 +3208,6 @@ contains
     end if
 
     ctag=get_carbontag(carbon_type)
-    do k = 1, ndecomp_pools
-       this%bgc_cpool_ext_inputs_vr_col(begc:endc, :, k) = spval    
-       data2dptr => this%bgc_cpool_ext_inputs_vr_col(:,:,k)
-       fieldname='BGC_'//trim(ctag)//'POOL_EINPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
-       longname=trim(ctag)//' input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
-       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
-            avgflag='A', long_name=longname, &
-            ptr_col=data2dptr, default='inactive')
-
-       this%bgc_cpool_ext_loss_vr_col(begc:endc, :, k) = spval    
-       data2dptr => this%bgc_cpool_ext_loss_vr_col(:,:,k)
-       fieldname='BGC_'//trim(ctag)//'POOL_ELOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
-       longname=trim(ctag)//' loss of '//trim(decomp_cascade_con%decomp_pool_name_history(k))
-       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
-            avgflag='A', long_name=longname, &
-            ptr_col=data2dptr, default='inactive')
-
-    enddo
 
     !-------------------------------
     ! C13 flux variables - native to column 
@@ -3238,6 +3218,7 @@ contains
        this%m_decomp_cpools_to_fire_col(begc:endc,:) = spval
        this%m_decomp_cpools_to_fire_vr_col(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
           if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
              data1dptr => this%m_decomp_cpools_to_fire_col(:,k)
              fieldname = 'C13_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
@@ -3256,12 +3237,12 @@ contains
              end if
           endif
        end do
-       if(.not. is_active_betr_bgc)then
           this%decomp_cascade_hr_col(begc:endc,:)             = spval
           this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
           this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
           do l = 1, ndecomp_cascade_transitions
+             if(trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))=='')exit
              !-- HR fluxes (none from CWD)
              if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
                 data2dptr => this%decomp_cascade_hr_vr_col(:,:,l)
@@ -3301,7 +3282,6 @@ contains
                      ptr_col=data2dptr, default='inactive')
              endif
           end do
-       endif
 
        this%lithr_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_LITHR', units='gC13/m^2/s', &
@@ -3445,6 +3425,7 @@ contains
        this%m_decomp_cpools_to_fire_col(begc:endc,:)      = spval
        this%m_decomp_cpools_to_fire_vr_col(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
           if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
              data1dptr => this%m_decomp_cpools_to_fire_col(:,k)
              fieldname = 'C14_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
@@ -3463,12 +3444,12 @@ contains
              end if
           endif
        end do
-       if(.not. is_active_betr_bgc)then
           this%decomp_cascade_hr_col(begc:endc,:)             = spval
           this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
           this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
           do l = 1, ndecomp_cascade_transitions
+             if(trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))=='')exit
              !-- HR fluxes (none from CWD)
              if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
                 data2dptr => this%decomp_cascade_hr_vr_col(:,:,l)
@@ -3508,7 +3489,6 @@ contains
                      ptr_col=data2dptr, default='inactive')
              endif
           end do
-       endif
 
        this%lithr_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_LITHR', units='gC14/m^2/s', &
