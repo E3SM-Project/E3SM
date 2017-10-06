@@ -101,6 +101,9 @@ CONTAINS
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
     use cam_abortutils,   only : endrun
+#ifdef HAVE_MOAB
+    use semoab_mod ,      only: MHID  ! id of homme moab coarse application 
+#endif
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -111,6 +114,12 @@ CONTAINS
     integer :: neltmp(3)
     integer :: npes_se
     integer :: npes_se_stride
+
+#ifdef HAVE_MOAB
+    integer, external :: iMOAB_RegisterFortranApplication
+    integer :: ierr
+    character*32  appname
+#endif
 
     !----------------------------------------------------------------------
 
@@ -179,6 +188,12 @@ CONTAINS
     endif
 #endif
     if(par%dynproc) then
+#ifdef HAVE_MOAB
+       appname="HM_COARSE"//CHAR(0)
+       ierr = iMOAB_RegisterFortranApplication(appname, par%comm, MHID)
+       if (ierr > 0 )  & 
+           call endrun('Error: cannot register moab app')
+#endif
        call prim_init1(elem,par,dom_mt,TimeLevel)
 
        dyn_in%elem => elem

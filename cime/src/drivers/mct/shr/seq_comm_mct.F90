@@ -195,6 +195,9 @@ module seq_comm_mct
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
+#ifdef HAVE_MOAB
+    integer, external :: iMOAB_InitializeFortran
+#endif
 !=======================================================================
 contains
 !======================================================================
@@ -482,6 +485,12 @@ contains
     endif
 
     call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
+#ifdef HAVE_MOAB
+    ierr = iMOAB_InitializeFortran()
+    if (ierr /= 0) then
+       write(logunit,*) trim(subname),' ERROR initialize MOAB '
+    endif
+#endif
 
     deallocate(comps,comms)
 
