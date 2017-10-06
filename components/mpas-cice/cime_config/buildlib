@@ -49,6 +49,9 @@ if ( $MACH eq "edison" ) {
 } elsif ( $MACH eq "titan" ) {
 	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=istanbul"';
 }
+if (defined $ENV{MPAS_TOOL_DIR}) {
+	$bldcmd .= " MPAS_TOOL_DIR=$ENV{MPAS_TOOL_DIR}";
+}
 
 system($bldcmd) == 0 or die "ERROR: $component.buildlib $bldcmd failed: $?\n";
 
