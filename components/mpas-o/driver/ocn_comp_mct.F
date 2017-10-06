@@ -190,7 +190,7 @@ contains
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
     type (MPAS_TimeInterval_type) :: denInterval, remInterval, zeroInterval
-    integer :: numDivs
+    integer (kind=I8KIND) :: numDivs
     character(len=StrKIND) :: start_timestamp
     character(len=StrKIND) :: iotype
     logical :: streamsExists
