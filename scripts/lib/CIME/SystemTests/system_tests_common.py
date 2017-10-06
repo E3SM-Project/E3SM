@@ -186,6 +186,7 @@ class SystemTestsCommon(object):
         Use for tests that have multiple cases
         """
         self._case = case
+        self._case.load_env(reset=True)
         self._caseroot = case.get_value("CASEROOT")
 
     def run_indv(self, suffix="base", st_archive=False):

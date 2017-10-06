@@ -1120,6 +1120,11 @@ for mct, etc.
   <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="theta">
+  <ADD_SLIBS>$(shell nf-config --flibs)</ADD_SLIBS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+</compiler>
+
 <compiler COMPILER="pgi" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
