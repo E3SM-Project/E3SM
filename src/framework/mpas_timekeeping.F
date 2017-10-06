@@ -687,8 +687,8 @@ module mpas_timekeeping
       type (MPAS_Alarm_type), pointer :: alarmPtr
       type (MPAS_TimeInterval_type) :: zero_interval
 
-      call mpas_set_timeInterval(zero_interval, dt = 0.0)
-      call mpas_set_timeInterval(interval, dt = 0.0)
+      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
+      call mpas_set_timeInterval(interval, dt = 0.0_RKIND)
 
       do while(associated(alarmListPtr))
          alarmPtr => clock % alarmListHead
