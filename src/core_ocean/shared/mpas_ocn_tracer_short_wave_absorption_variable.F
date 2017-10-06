@@ -46,6 +46,7 @@ module ocn_tracer_short_wave_absorption_variable
              ocn_get_shortWaveData,                          &
              ocn_shortwave_forcing_write_restart
 
+   type (MPAS_forcing_group_type), pointer :: shortwaveForcingGroup
    !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -269,17 +270,16 @@ contains
    forcingIntervalMonthly = "0000-01-00_00:00:00"
    forcingReferenceTimeMonthly = "0000-01-01_00:00:00"
 
-   call MPAS_forcing_init_group( forcingGroupHead,  &
+   call MPAS_forcing_init_group( shortwaveForcingGroup,  &
         "shortwave_monthly_observations", &
         domain, &
         '0000-01-01_00:00:00', &
         '0000-01-01_00:00:00', &
         '0001-00-00_00:00:00', &
         config_do_restart)
-!mrp 171002 delete for framework merge: config_forcing_restart_file)
 
    call MPAS_forcing_init_field( domain % streamManager, &
-        forcingGroupHead, &
+        shortwaveForcingGroup, &
         'shortwave_monthly_observations', &
         'chlorophyllData', &
         'shortwave_forcing_data', &
@@ -290,7 +290,7 @@ contains
         forcingIntervalMonthly)
 
    call MPAS_forcing_init_field( domain % streamManager, &
-        forcingGroupHead, &
+        shortwaveForcingGroup, &
         'shortwave_monthly_observations', &
         'clearSkyRadiation', &
         'shortwave_forcing_data', &
@@ -301,7 +301,7 @@ contains
         forcingIntervalMonthly)
 
    call MPAS_forcing_init_field( domain % streamManager, &
-        forcingGroupHead, &
+        shortwaveForcingGroup, &
         'shortwave_monthly_observations', &
         'zenithAngle', &
         'shortwave_forcing_data', &
@@ -311,11 +311,11 @@ contains
         forcingReferenceTimeMonthly,  &
         forcingIntervalMonthly)
 
-!mrp 171002 This interface has changed.  Need to put this back later.
-!   call MPAS_forcing_init_field_data( shortwaveForcingGroup, &
-!        'shortwave_monthly_observations')
-!        domain % streamManager)
-!mrp 171002 end
+   call MPAS_forcing_init_field_data( shortwaveForcingGroup, &
+        'shortwave_monthly_observations', &
+        domain % streamManager, &
+        config_do_restart, &
+        .false.)
 
    end subroutine ocn_init_shortwave_forcing_ohlmann!}}}
 
@@ -493,19 +493,13 @@ contains
 
       type(domain_type) :: domain
 
-      character(len=strKind), pointer :: config_forcing_restart_file,   &
-                                         config_sw_absorption_type
+      character(len=strKind), pointer :: config_sw_absorption_type
 
 
       call MPAS_pool_get_config(domain % configs, "config_sw_absorption_type", config_sw_absorption_type)
 
       if( trim(config_sw_absorption_type) == 'ohlmann00'  ) then
-          call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
-
-          !mrp 171002 the restart file was removed in framework:
-          !call MPAS_forcing_write_restart_times(shortwaveForcingGroup, config_forcing_restart_file)
-          ! revised to:
-          !call MPAS_forcing_write_restart_times(shortwaveForcingGroup)
+          call MPAS_forcing_write_restart_times(shortwaveForcingGroup)
       endif
 
     end subroutine ocn_shortwave_forcing_write_restart!}}}

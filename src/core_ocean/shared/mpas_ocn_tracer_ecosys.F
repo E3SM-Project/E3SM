@@ -60,6 +60,7 @@ module ocn_tracer_ecosys
    integer, public:: &
       numColumnsMax
 
+   type (MPAS_forcing_group_type), pointer :: ecosysForcingGroup
    !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -1682,15 +1683,13 @@ contains
       call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
-      call MPAS_forcing_init_group( forcingGroupHead,  &
+      call MPAS_forcing_init_group( ecosysForcingGroup,  &
                 "ecosysMonthlyClimatology", &
                 domain, &
                 '0000-01-01_00:00:00', &
                 '0000-01-01_00:00:00', &
                 '0001-00-00_00:00:00', &
                 config_do_restart)
-!mrp 171002 delete for framework merge: config_forcing_restart_file)
-!        .false.)  ! OPTIONAL?
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
@@ -1726,7 +1725,7 @@ contains
       call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'depositionFluzNO3', &
                 'ecosys_monthly_flux', &
@@ -1737,7 +1736,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'depositionFluzNH4', &
                 'ecosys_monthly_flux', &
@@ -1748,7 +1747,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'IRON_FLUZ_IN', &
                 'ecosys_monthly_flux', &
@@ -1759,7 +1758,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'dust_FLUZ_IN', &
                 'ecosys_monthly_flux', &
@@ -1770,7 +1769,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzNO3', &
                 'ecosys_monthly_flux', &
@@ -1781,7 +1780,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzPO4', &
                 'ecosys_monthly_flux', &
@@ -1792,7 +1791,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDON', &
                 'ecosys_monthly_flux', &
@@ -1803,7 +1802,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDOP', &
                 'ecosys_monthly_flux', &
@@ -1814,7 +1813,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzSiO3', &
                 'ecosys_monthly_flux', &
@@ -1825,7 +1824,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzFe', &
                 'ecosys_monthly_flux', &
@@ -1836,7 +1835,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDIC', &
                 'ecosys_monthly_flux', &
@@ -1847,7 +1846,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzALK', &
                 'ecosys_monthly_flux', &
@@ -1858,7 +1857,7 @@ contains
                 forcingIntervalMonthly)
 
       call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                ecosysForcingGroup, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDOC', &
                 'ecosys_monthly_flux', &
@@ -1868,11 +1867,11 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-!mrp 171002 This interface has changed. Need to fix this later.
-!      call MPAS_forcing_init_field_data( ecosysForcingGroup, &
-!         'ecosysMonthlyClimatology')
-!         domain % streamManager)
-!mrp 171002 end
+      call MPAS_forcing_init_field_data( ecosysForcingGroup, &
+        'ecosysMonthlyClimatology',  &
+         domain % streamManager,  &
+         config_do_restart, &
+         .false.)
 
       end if  !  associated(ecosysTracers)
 
@@ -1959,10 +1958,10 @@ contains
 
 !maltrud debug
         if (firstTimeStep .and. config_do_restart) then
-          call MPAS_forcing_get_forcing(forcingGroupHead, &
+          call MPAS_forcing_get_forcing(ecosysForcingGroup, &
              'ecosysMonthlyClimatology', streamManager, 0.0_RKIND)
         else
-          call MPAS_forcing_get_forcing(forcingGroupHead, &
+          call MPAS_forcing_get_forcing(ecosysForcingGroup, &
              'ecosysMonthlyClimatology', streamManager, dt)
         endif
 
@@ -2034,14 +2033,7 @@ contains
 
       type(domain_type) :: domain
 
-      character(len=strKind), pointer :: config_forcing_restart_file
-
-      call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
-
-      !mrp 171002 the restart file was removed in framework:
-      !call MPAS_forcing_write_restart_times(ecosysForcingGroup, config_forcing_restart_file)
-      ! revised to:
-      !call MPAS_forcing_write_restart_times(ecosysForcingGroup)
+      call MPAS_forcing_write_restart_times(ecosysForcingGroup)
 
     end subroutine ocn_ecosys_forcing_write_restart!}}}
 
