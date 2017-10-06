@@ -51,6 +51,7 @@ module ocn_tracer_surface_restoring
              ocn_salinity_restoring_forcing_write_restart,  &
              ocn_tracer_surface_restoring_init
 
+   type (MPAS_forcing_group_type), pointer :: surfaceSalinityForcingGroup
    !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -257,22 +258,20 @@ contains
            call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
            call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
-           call MPAS_forcing_init_group( forcingGroupHead,  &
+           call MPAS_forcing_init_group( surfaceSalinityForcingGroup,  &
                 "surfaceSalinityMonthlyClimatology", &
                 domain, &
                 '0000-01-01_00:00:00', &
                 '0000-01-01_00:00:00', &
                 '0001-00-00_00:00:00', &
                 config_do_restart)
-!mrp 171002 delete for framework merge: config_forcing_restart_file)
-!        .false.)  ! OPTIONAL?
 
            call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceSalinityMonthlyForcing',  &
                                                                      surfaceSalinityMonthlyForcing)
            call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                     surfaceSalinityMonthlyClimatologyValue)
            call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
+                surfaceSalinityForcingGroup, &
                 'surfaceSalinityMonthlyClimatology', &  !  forcing group name
                 'surfaceSalinityMonthlyClimatologyValue', &  !  array name
                 'surface_salinity_monthly_data', &  !  stream name
@@ -282,10 +281,11 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-!mrp 171002 This interface has changed.  Figure it out later.
-!           call MPAS_forcing_init_field_data( surfaceSalinityForcingGroup, &
-!                'surfaceSalinityMonthlyClimatology')
-!mrp 171002 end
+           call MPAS_forcing_init_field_data( surfaceSalinityForcingGroup, &
+                'surfaceSalinityMonthlyClimatology', & 
+                domain % streamManager, &
+                config_do_restart, &
+                .false.)
 
         endif  !  first timestep
 
@@ -389,7 +389,8 @@ contains
               activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) - avgDeltaS
         enddo
         !$omp end do
-
+         print *, 'max = ', maxval(activeTracersSurfaceRestoringValue)
+         print *, 'min = ', minval(activeTracersSurfaceRestoringValue)
          block => block % next
       end do
 
@@ -410,14 +411,7 @@ contains
 
       type(domain_type) :: domain
 
-      character(len=strKind), pointer :: config_forcing_restart_file
-
-      call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
-
-      !mrp 171002 the restart file was removed in framework:
-      !call MPAS_forcing_write_restart_times(surfaceSalinityForcingGroup, config_forcing_restart_file)
-      ! revised to:
-      !call MPAS_forcing_write_restart_times(surfaceSalinityForcingGroup)
+      call MPAS_forcing_write_restart_times(surfaceSalinityForcingGroup)
 
     end subroutine ocn_salinity_restoring_forcing_write_restart!}}}
 
