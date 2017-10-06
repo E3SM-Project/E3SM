@@ -1,6 +1,233 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-6-2017
+Tag: cime5.4.0-alpha.02
+Answer Changes: None
+Tests: scripts_regression_tests.py SMS_Ln9.f19_f19_mg17.F2000_DEV.yellowstone_intel.cam-cosp 
+       IRT_Ld7.T31_g37.B1850C5L45BGCR.cheyenne_intel
+       hand testing tools/load_balancing_tool/test/test_load_balancing_tool.py
+       load_balancing_test.py
+Dependencies:
+
+Brief Summary:
+    - Fix cosp build instructions.
+    - Pio update branch.
+    - Refactor args to submit scripts.
+    - Archive pop tavg rpointer file.
+    - Add option to define test types in query_testlists.
+    - Fix tests for small systems.
+    - Only run driver build namelist after first day cycle.
+    - Load balancing tool mods.
+    - Use local baseline directory for testing. 
+    - Add ability to cancel batch jobs to the system.
+    - A port to a generic Linux workstation.
+    - Fix pylint issue.
+    - Fix st_archive.
+    - Document uniqueness requirement for test-id.
+    - Add Argonne copyright statement.
+    - Rewrite of the load balancing tool.
+    - Imported mpi-serial changes from MCSclimate/mpi-serial.
+
+User interface changes: 
+    - New batch_env optional entry in config_batch.
+    - Add --baseline-root argument to case.cmpgen_baselines.
+    - new batch_cancel field in config_batch.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+a2f0979 Merge pull request #1947 from jedwards4b/cosp_build_fix
+1655800 Merge pull request #1948 from jedwards4b/pio_update_branch
+d590c55 Merge pull request #1945 from ESMCI/jgfouca/refactor_args_to_submit_scripts
+7f44f80 Merge pull request #1944 from jedwards4b/pop_tavg_archive
+c7cf4eb Merge pull request #1930 from billsacks/query_testtypes
+0742931 Merge pull request #1943 from jedwards4b/small_systems
+34522a3 Merge pull request #1941 from jedwards4b/da_optimization
+be3bf2e Merge pull request #1923 from jedwards4b/load-balancing-tool-mods
+2d2ab96 Merge pull request #1939 from jedwards4b/srt_baselines
+4e0e02e Merge pull request #1932 from ESMCI/jgfouca/add_job_cancel
+d3a2da4 Merge pull request #1936 from jedwards4b/centos7_linux
+bc35e32 fix pylint issue
+874dc10 Merge pull request #1916 from ESMCI/kdraeder/fix_st_archive
+7672387 Merge pull request #1934 from billsacks/document_testids
+202e9a0 Merge pull request #1925 from ESMCI/rljacob/add-anl-copyright
+b8b9f9e Merge pull request #1902 from ESMCI/sarich/tools/load-balancing-tool
+4489a90 Merge pull request #1922 from gold2718/mpiserial_update
+
+
+
+Modified files: git diff --name-status [previous_tag]
+M	LICENSE.TXT
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+M	config/cesm/config_archive.xml
+M	config/cesm/machines/Makefile
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	doc/source/misc_tools/index.rst
+A	doc/source/misc_tools/load-balancing-tool.rst
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/create_test
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/tests.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/query_testlists
+M	scripts/tests/scripts_regression_tests.py
+M	src/externals/mct/mpi-serial/Makefile
+M	src/externals/mct/mpi-serial/mpi.c
+M	src/externals/mct/mpi-serial/mpif.h
+M	src/externals/mct/mpi-serial/tests/ftest.F90
+M	src/externals/mct/mpi-serial/tests/ftest_old.F90
+M	src/externals/mct/mpi-serial/type.c
+M	src/externals/pio1/pio/CMakeLists.txt
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/externals/pio1/tests/testpio/perl5lib/ChangeLog
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Changes
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Lite.pm
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Lite/Element.pm
+M	src/externals/pio1/tests/testpio/perl5lib/XML/README
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML::Lite.3
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML::Lite::Element.3
+A	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/externals/pio1/timing/COPYING
+M	src/externals/pio2/.gitignore
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/CTestScript.cmake
+A	src/externals/pio2/Makefile.am
+A	src/externals/pio2/cmake_config.h.in
+A	src/externals/pio2/configure.ac
+M	src/externals/pio2/ctest/CTestEnvironment-cgd.cmake
+M	src/externals/pio2/ctest/runcdash-cgd-gnu-openmpi.sh
+M	src/externals/pio2/doc/source/Decomp.txt
+M	src/externals/pio2/doc/source/base.txt
+M	src/externals/pio2/doc/source/contributing_code.txt
+M	src/externals/pio2/doc/source/mach_walkthrough.txt
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML::Lite.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML::Lite::Element.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/externals/pio2/examples/c/CMakeLists.txt
+M	src/externals/pio2/scripts/prune_decomps.pl
+A	src/externals/pio2/src/Makefile.am
+M	src/externals/pio2/src/clib/CMakeLists.txt
+A	src/externals/pio2/src/clib/Makefile.am
+D	src/externals/pio2/src/clib/config.h.in
+D	src/externals/pio2/src/clib/dtypes.h
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_get_nc.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/clib/pio_put_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+M	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/flib/piolib_mod.F90
+M	src/externals/pio2/src/gptl/COPYING
+A	src/externals/pio2/tests/Makefile.am
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+A	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/pio_tests.h
+A	src/externals/pio2/tests/cunit/run_tests.sh
+M	src/externals/pio2/tests/cunit/test_async_3proc.c
+M	src/externals/pio2/tests/cunit/test_async_4proc.c
+A	src/externals/pio2/tests/cunit/test_async_manyproc.c
+A	src/externals/pio2/tests/cunit/test_async_mpi.c
+A	src/externals/pio2/tests/cunit/test_async_multi2.c
+A	src/externals/pio2/tests/cunit/test_async_multicomp.c
+M	src/externals/pio2/tests/cunit/test_async_simple.c
+M	src/externals/pio2/tests/cunit/test_common.c
+M	src/externals/pio2/tests/cunit/test_darray.c
+M	src/externals/pio2/tests/cunit/test_darray_1d.c
+A	src/externals/pio2/tests/cunit/test_darray_2sync.c
+M	src/externals/pio2/tests/cunit/test_darray_3d.c
+A	src/externals/pio2/tests/cunit/test_darray_async.c
+A	src/externals/pio2/tests/cunit/test_darray_async_many.c
+A	src/externals/pio2/tests/cunit/test_darray_async_simple.c
+A	src/externals/pio2/tests/cunit/test_darray_frame.c
+M	src/externals/pio2/tests/cunit/test_darray_multi.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar2.c
+A	src/externals/pio2/tests/cunit/test_darray_multivar3.c
+M	src/externals/pio2/tests/cunit/test_decomp_uneven.c
+M	src/externals/pio2/tests/cunit/test_decomps.c
+M	src/externals/pio2/tests/cunit/test_intercomm2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple2.c
+M	src/externals/pio2/tests/cunit/test_iosystem3.c
+M	src/externals/pio2/tests/cunit/test_iosystem3_simple.c
+M	src/externals/pio2/tests/cunit/test_iosystem3_simple2.c
+M	src/externals/pio2/tests/cunit/test_pioc.c
+M	src/externals/pio2/tests/cunit/test_pioc_fill.c
+M	src/externals/pio2/tests/cunit/test_pioc_putget.c
+M	src/externals/pio2/tests/cunit/test_pioc_unlim.c
+M	src/externals/pio2/tests/cunit/test_rearr.c
+M	src/externals/pio2/tests/cunit/test_shared.c
+M	src/externals/pio2/tests/cunit/test_spmd.c
+M	src/externals/pio2/tests/general/CMakeLists.txt
+M	src/externals/pio2/tests/general/ncdf_simple_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_fillval.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_frame_tests.F90.in
+M	src/externals/pio2/tests/general/util/pio_tutil.F90
+M	tools/load_balancing_tool/README
+D	tools/load_balancing_tool/code/cesm_scaling.gplot
+D	tools/load_balancing_tool/code/create_dataFile.pl
+D	tools/load_balancing_tool/code/f02_peList.txt
+D	tools/load_balancing_tool/code/f05_peList.txt
+D	tools/load_balancing_tool/code/f09_peList.txt
+D	tools/load_balancing_tool/code/f19_peList.txt
+D	tools/load_balancing_tool/code/fv_model.mod
+D	tools/load_balancing_tool/code/fv_model.run
+D	tools/load_balancing_tool/code/fv_second_pass.pl
+D	tools/load_balancing_tool/code/get_cesm_times.pl
+D	tools/load_balancing_tool/code/load_balance.pl
+D	tools/load_balancing_tool/code/merge.py
+D	tools/load_balancing_tool/code/model.data
+D	tools/load_balancing_tool/code/model.mod
+D	tools/load_balancing_tool/code/model.run
+D	tools/load_balancing_tool/code/neos.py
+D	tools/load_balancing_tool/global_variables.csh
+A	tools/load_balancing_tool/layouts.py
+A	tools/load_balancing_tool/load_balancing_solve.py
+A	tools/load_balancing_tool/load_balancing_submit.py
+A	tools/load_balancing_tool/optimize_model.py
+D	tools/load_balancing_tool/run_first.csh
+D	tools/load_balancing_tool/run_second.csh
+A	tools/load_balancing_tool/tests/__init__.py
+A	tools/load_balancing_tool/tests/atm_lnd.py
+A	tools/load_balancing_tool/tests/example.json
+A	tools/load_balancing_tool/tests/load_balancing_test.py
+A	tools/load_balancing_tool/tests/test.xml
+A	tools/load_balancing_tool/tests/timing/timing_1
+A	tools/load_balancing_tool/tests/timing/timing_2
+A	tools/load_balancing_tool/tests/timing/timing_3
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-25-2017
 Tag: cime5.4.0-alpha.01
 Answer Changes: None
