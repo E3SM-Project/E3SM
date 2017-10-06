@@ -1,0 +1,363 @@
+! nc write 1d array with fillvalues (the holes are explicitly specified)
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_explicit_fval
+  implicit none
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  type(var_desc_t)  :: pio_var
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wiodesc, riodesc
+  integer, dimension(VEC_LOCAL_SZ) :: wcompdof, rcompdof, compdof_rel_disps
+  ! Compdof value to suggest that data point is a hole, this hole
+  ! is usually filled with a fillvalue
+  integer, parameter :: PIO_COMPDOF_FILLVAL = 0
+  PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: wbuf, rbuf, exp_val
+  ! The buffer fillvalue to be used when writing data
+  PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, ierr, lsz
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  do i=1,VEC_LOCAL_SZ
+    compdof_rel_disps(i) = i
+  end do
+  dims(1) = VEC_LOCAL_SZ * pio_tf_world_sz_
+  rcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+  wcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+
+  wbuf = wcompdof
+  exp_val = wcompdof
+  rbuf = 0
+
+  ! Even indices need to be filled with (BUF_FILLVAL == -2)
+  do i=1,VEC_LOCAL_SZ,2
+    wcompdof(i) = PIO_COMPDOF_FILLVAL
+    exp_val(i) = BUF_FILLVAL
+  end do
+
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, wcompdof, wiodesc)
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, rcompdof, riodesc)
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  do i=1,num_iotypes
+
+    write(filename,'(a,i1)') "test_pio_decomp_fillval_tests.testfile",i
+
+    PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+    PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+    ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+    ! Write the variable out
+    call PIO_write_darray(pio_file, pio_var, wiodesc, wbuf, ierr, BUF_FILLVAL)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    call PIO_read_darray(pio_file, pio_var, riodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
+    call PIO_closefile(pio_file)
+    call PIO_deletefile(pio_tf_iosystem_, filename)
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+  call PIO_freedecomp(pio_tf_iosystem_, riodesc)
+  call PIO_freedecomp(pio_tf_iosystem_, wiodesc)
+PIO_TF_AUTO_TEST_SUB_END nc_write_1d_explicit_fval
+
+! nc write 1d array with fillvalues (the holes are implicit)
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
+  implicit none
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  type(var_desc_t)  :: pio_var
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wiodesc, riodesc
+  integer, dimension(:), allocatable :: wcompdof
+  integer :: wcompdof_sz
+  integer, dimension(VEC_LOCAL_SZ) :: rcompdof, compdof_rel_disps
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: wbuf
+  PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: rbuf, exp_val
+  ! The buffer fillvalue to be used when writing data
+  PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, ierr, lsz
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  ! compdof is only specified for valid data values, the data holes are
+  ! implicitly stated (by not specifying them rather than filling it with 0s)
+  wcompdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ) 
+  allocate(wcompdof(wcompdof_sz))
+  allocate(wbuf(wcompdof_sz))
+
+  do i=1,VEC_LOCAL_SZ
+    compdof_rel_disps(i) = i
+  end do
+  dims(1) = VEC_LOCAL_SZ * pio_tf_world_sz_
+  ! rank 0 has 1 valid data value, rank 2 has 2 data values and so on...
+  do i=1,wcompdof_sz
+    wcompdof(i) = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps(i)
+  end do
+  ! Read everything - including fillvalues that should have been 
+  ! written for locations unspecified in wcompdof(:) i.e.,
+  ! wcompdof(wcompdof_sz:VEC_LOCAL_SZ]
+  rcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+
+  wbuf = 0
+  ! The first wcompdof_sz values, wbuf[1:wcompdof_sz], are valid in wbuf
+  do i=1,wcompdof_sz
+    wbuf(i) = wcompdof(i)
+    exp_val(i) = wbuf(i)
+  end do
+  ! We expect the values (wcompdof_sz:VEC_LOCAL_SZ] to be read as 
+  ! user specified fill values
+  do i=wcompdof_sz+1,VEC_LOCAL_SZ
+    exp_val(i) = BUF_FILLVAL
+  end do
+  rbuf = 0
+
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, wcompdof, wiodesc)
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, rcompdof, riodesc)
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  filename = "test_pio_decomp_fillval_tests.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+    PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+    ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+    ! Write the variable out, user specified fillvalue = BUF_FILLVAL
+    call PIO_write_darray(pio_file, pio_var, wiodesc, wbuf, ierr, BUF_FILLVAL)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    call PIO_read_darray(pio_file, pio_var, riodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
+    call PIO_closefile(pio_file)
+    call PIO_deletefile(pio_tf_iosystem_, filename)
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+  call PIO_freedecomp(pio_tf_iosystem_, riodesc)
+  call PIO_freedecomp(pio_tf_iosystem_, wiodesc)
+  deallocate(wbuf)
+  deallocate(wcompdof)
+PIO_TF_AUTO_TEST_SUB_END nc_write_1d_implicit_fval
+
+! nc read 1d array with fillvalues (the holes are explicitly specified)
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_explicit_fval
+  implicit none
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  type(var_desc_t)  :: pio_var
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wiodesc, riodesc
+  integer, dimension(VEC_LOCAL_SZ) :: wcompdof, rcompdof, compdof_rel_disps
+  ! Compdof value to suggest that data point is a hole 
+  integer, parameter :: PIO_COMPDOF_FILLVAL = 0
+  PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: wbuf, rbuf, exp_val
+  ! The buffer fillvalue used to initialize data
+  PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, ierr, lsz
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  do i=1,VEC_LOCAL_SZ
+    compdof_rel_disps(i) = i
+  end do
+  dims(1) = VEC_LOCAL_SZ * pio_tf_world_sz_
+  rcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+  wcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+
+  wbuf = wcompdof
+  exp_val = wcompdof
+  rbuf = BUF_FILLVAL
+
+  ! We don't want to read even indices (BUF_FILLVAL == -2)
+  do i=1,VEC_LOCAL_SZ,2
+    rcompdof(i) = PIO_COMPDOF_FILLVAL
+    exp_val(i) = BUF_FILLVAL
+  end do
+
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, wcompdof, wiodesc)
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, rcompdof, riodesc)
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+
+  filename = "test_pio_decomp_fillval_tests.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+    PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+    ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+    ! Write the variable out
+    call PIO_write_darray(pio_file, pio_var, wiodesc, wbuf, ierr, BUF_FILLVAL)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    call PIO_read_darray(pio_file, pio_var, riodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
+    call PIO_closefile(pio_file)
+    call PIO_deletefile(pio_tf_iosystem_, filename)
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+  call PIO_freedecomp(pio_tf_iosystem_, riodesc)
+  call PIO_freedecomp(pio_tf_iosystem_, wiodesc)
+PIO_TF_AUTO_TEST_SUB_END nc_read_1d_explicit_fval
+
+! nc read 1d array with fillvalues (the holes are implicit)
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_implicit_fval
+  implicit none
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  type(var_desc_t)  :: pio_var
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wiodesc, riodesc
+  integer, dimension(:), allocatable :: rcompdof
+  integer :: rcompdof_sz
+  integer, dimension(VEC_LOCAL_SZ) :: wcompdof, compdof_rel_disps
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, exp_val
+  PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: wbuf
+  integer, parameter :: BUF_FILLVAL = -2
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, ierr, lsz
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  ! compdof is only specified for valid data values, the data holes are
+  ! implicitly stated (by not specifying them rather than filling it with 0s)
+  rcompdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ) 
+  allocate(rcompdof(rcompdof_sz))
+  allocate(rbuf(rcompdof_sz))
+  allocate(exp_val(rcompdof_sz))
+
+  do i=1,VEC_LOCAL_SZ
+    compdof_rel_disps(i) = i
+  end do
+  dims(1) = VEC_LOCAL_SZ * pio_tf_world_sz_
+  ! We only read 1 value on rank0, 2 values on rank1, ...
+  do i=1,rcompdof_sz
+    rcompdof(i) = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps(i)
+  end do
+  ! Write everything - we only read some of these values
+  wcompdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+  wbuf = wcompdof
+
+  rbuf = BUF_FILLVAL
+  do i=1,rcompdof_sz
+    exp_val(i) = wbuf(i)
+  end do
+
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, wcompdof, wiodesc)
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, rcompdof, riodesc)
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  filename = "test_pio_decomp_fillval_tests.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+    PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+    ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+    call PIO_write_darray(pio_file, pio_var, wiodesc, wbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    ! Read only part of the written data
+    call PIO_read_darray(pio_file, pio_var, riodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
+
+    call PIO_closefile(pio_file)
+    call PIO_deletefile(pio_tf_iosystem_, filename)
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+  call PIO_freedecomp(pio_tf_iosystem_, riodesc)
+  call PIO_freedecomp(pio_tf_iosystem_, wiodesc)
+  deallocate(exp_val)
+  deallocate(rbuf)
+  deallocate(rcompdof)
+PIO_TF_AUTO_TEST_SUB_END nc_read_1d_implicit_fval
