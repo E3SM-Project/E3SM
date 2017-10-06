@@ -217,7 +217,7 @@ module pftvarcon
   real(r8), allocatable :: ncost_ptase(:)           ! plant N cost per unit P produced by phosphatase
   real(r8), allocatable :: VMAX_NFIX(:)        ! VMAX of symbiotic N2 fixation
   real(r8), allocatable :: KM_NFIX(:)          ! KM of symbiotic N2 fixation
-  real(r8), allocatable :: VMAX_PTASE(:)       ! VMAX of biochemical P production
+  real(r8), allocatable :: VMAX_PTASE(:)    ! VMAX of biochemical P production
   real(r8)              :: KM_PTASE            ! KM of biochemical P production
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
   real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
