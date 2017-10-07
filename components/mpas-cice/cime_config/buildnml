@@ -491,8 +491,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsDailyAMPKG"' . "\n";
-	print $stream_file '        input_interval="initial_only"' . "\n";
-	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
+	print $stream_file '        input_interval="none"' . "\n";
+	print $stream_file '        output_interval="none">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsMonthlyOutput"' . "\n";
@@ -572,8 +572,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        filename_interval="output_interval"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
-	print $stream_file '        input_interval="initial_only"' . "\n";
-	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
+	print $stream_file '        input_interval="none"' . "\n";
+	print $stream_file '        output_interval="none">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";
