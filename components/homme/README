@@ -65,7 +65,7 @@ provide several base class wrapper modules.
 
 All files of the form "_base.F90" are considered base classes.  If a model
 will use the routines in these base classes, it should create a wrapper function
-of the same name, but with the _base extension. All source code accesses routines
+of the same name, but with the _mod extension. All source code accesses routines
 in these classes through these wrapper modules.
 
 As an example: 
@@ -75,7 +75,7 @@ src/sweqx/edge_mod.F90           interface only code
 src/preqx/edge_mod.F90           interface only code
 src/preqx_acc/edge_mod.F90       openACC versions of some routines
 
-To use the routines in the base class unchanged, and the wrapper
+To use the routines in the base class unchanged, the wrapper
 module contains only interface related statements.  To replace a
 routine with a version specific to that particular model, the new code
 is included in the wrapper module.
