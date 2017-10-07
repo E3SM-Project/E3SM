@@ -90,7 +90,6 @@ module namelist_mod
     dcmip2_x_h0,                      &
     dcmip2_x_d,                       &
     dcmip2_x_xi,                      &
-    dcmip2_x_xi,                      &
     dcmip4_moist,                     &
     dcmip4_X
 #endif
