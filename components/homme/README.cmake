@@ -2,9 +2,6 @@
 02/2016 MT
 10/2016 DMH
 
-Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
-https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
-
 The CMAKE build system supports a number of user-configurable targets:
 sweqx, preqx, preqx_acc, pese, swim, prim
 
@@ -56,6 +53,10 @@ The CMAKE code could use some cleanup.
 ************************************************************************************************
 
 ***OBSOLETE***
+
+Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
+https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
+
 
 03/2013 CGB and KJE and JER
 
