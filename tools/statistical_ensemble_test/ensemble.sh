@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 #==============================================================================
 # $Id$
@@ -19,10 +19,15 @@ gen_random_numbers ()
   # floor(32768/N)*N-1 for N = 151, 150, and 149.
   max_rand=( 32723 32699 32669 )
 
+  if [[ $1 -eq 1 ]]; then
+     COUNT=349
+  else
+     COUNT=151
+  fi
   for i in `seq 0 2`
   do
     # Want a random number between 0 and N-1, inclusive
-    N=$(( 151 - i ))
+    N=$(( $COUNT - i ))
 
     # Pick a random number
     tmp_rand=$((RANDOM))
@@ -68,102 +73,24 @@ gen_random_numbers ()
   fi
 }
 
-get_pertlim ()
+
+get_pertlim_uf ()
 {
-  # Return a single pertlim value from an integer in the range of 0 - 150
-  #  CASE   PERTLIM      CASE   PERTLIM
-  #  ----   -------      ----   -------
-  #   000   0.0
-  #   001   1.0d-14       076  -1.0d-14
-  #   002   1.1d-14       077  -1.1d-14
-  #   003   1.2d-14       078  -1.2d-14
-  #   004   1.3d-14       079  -1.3d-14
-  #   005   1.4d-14       080  -1.4d-14
-  #   006   1.5d-14       081  -1.5d-14
-  #   007   1.6d-14       082  -1.6d-14
-  #   008   1.7d-14       083  -1.7d-14
-  #   009   1.8d-14       084  -1.8d-14
-  #   010   1.9d-14       085  -1.9d-14
-  #   011   2.0d-14       086  -2.0d-14
-  #   012   2.1d-14       087  -2.1d-14
-  #   013   2.2d-14       088  -2.2d-14
-  #   014   2.3d-14       089  -2.3d-14
-  #   015   2.4d-14       090  -2.4d-14
-  #   016   2.5d-14       091  -2.5d-14
-  #   017   2.6d-14       092  -2.6d-14
-  #   018   2.7d-14       093  -2.7d-14
-  #   019   2.8d-14       094  -2.8d-14
-  #   020   2.9d-14       095  -2.9d-14
-  #   021   3.0d-14       096  -3.0d-14
-  #   022   3.1d-14       097  -3.1d-14
-  #   023   3.2d-14       098  -3.2d-14
-  #   024   3.3d-14       099  -3.3d-14
-  #   025   3.4d-14       100  -3.4d-14
-  #   026   3.5d-14       101  -3.5d-14
-  #   027   3.6d-14       102  -3.6d-14
-  #   028   3.7d-14       103  -3.7d-14
-  #   029   3.8d-14       104  -3.8d-14
-  #   030   3.9d-14       105  -3.9d-14
-  #   031   4.0d-14       106  -4.0d-14
-  #   032   4.1d-14       107  -4.1d-14
-  #   033   4.2d-14       108  -4.2d-14
-  #   034   4.3d-14       109  -4.3d-14
-  #   035   4.4d-14       110  -4.4d-14
-  #   036   4.5d-14       111  -4.5d-14
-  #   037   4.6d-14       112  -4.6d-14
-  #   038   4.7d-14       113  -4.7d-14
-  #   039   4.8d-14       114  -4.8d-14
-  #   040   4.9d-14       115  -4.9d-14
-  #   041   5.0d-14       116  -5.0d-14
-  #   042   5.1d-14       117  -5.1d-14
-  #   043   5.2d-14       118  -5.2d-14
-  #   044   5.3d-14       119  -5.3d-14
-  #   045   5.4d-14       120  -5.4d-14
-  #   046   5.5d-14       121  -5.5d-14
-  #   047   5.6d-14       122  -5.6d-14
-  #   048   5.7d-14       123  -5.7d-14
-  #   049   5.8d-14       124  -5.8d-14
-  #   050   5.9d-14       125  -5.9d-14
-  #   051   6.0d-14       126  -6.0d-14
-  #   052   6.1d-14       127  -6.1d-14
-  #   053   6.2d-14       128  -6.2d-14
-  #   054   6.3d-14       129  -6.3d-14
-  #   055   6.4d-14       130  -6.4d-14
-  #   056   6.5d-14       131  -6.5d-14
-  #   057   6.6d-14       132  -6.6d-14
-  #   058   6.7d-14       133  -6.7d-14
-  #   059   6.8d-14       134  -6.8d-14
-  #   060   6.9d-14       135  -6.9d-14
-  #   061   7.0d-14       136  -7.0d-14
-  #   062   7.1d-14       137  -7.1d-14
-  #   063   7.2d-14       138  -7.2d-14
-  #   064   7.3d-14       139  -7.3d-14
-  #   065   7.4d-14       140  -7.4d-14
-  #   066   7.5d-14       141  -7.5d-14
-  #   067   7.6d-14       142  -7.6d-14
-  #   068   7.7d-14       143  -7.7d-14
-  #   069   7.8d-14       144  -7.8d-14
-  #   070   7.9d-14       145  -7.9d-14
-  #   071   8.0d-14       146  -8.0d-14
-  #   072   8.1d-14       147  -8.1d-14
-  #   073   8.2d-14       148  -8.2d-14
-  #   074   8.3d-14       149  -8.3d-14
-  #   075   8.4d-14       150  -8.4d-14
-
-
-
-
   i=$1
   if (( $i == 0 )); then
     ptlim=0
-  elif (( $i < 76 )); then
-    let j=i+9
-    ippt=`/usr/bin/printf "%2.2d" $j`
-    ptlim="0.${ippt}d-13"
   else
-    let j=i-66
-    ippt=`/usr/bin/printf "%2.2d" $j`
-    ptlim="-0.${ippt}d-13"
+    j=$(( 2*((i-1)/100) + 101 ))
+    k=$(( (i-1) % 100 ))
+    if [ $(( i % 2)) -ne 0 ]; then
+      l=$(( j+(k/2)*18 ))
+      ippt=$( printf "%0*d" 3 $l )
+      ptlim="0.${ippt}d-13"
+    else
+      l=$(( j+((k-1)/2)*18 ))
+      ippt=$( printf "%0*d" 3 $l )
+      ptlim="-0.${ippt}d-13"
+    fi
   fi
   echo $ptlim
 }
@@ -182,8 +109,8 @@ create_cases ()
   # and set the arguments appropriately, otherwise, no pertlim value needed for
   # the first case
   if [ $runtype = 'validation' ]; then
-    firstpertlim=$( get_pertlim ${rand_ints[0]} )
-    . $SingleRun "$@" -p $firstpertlim
+    firstpertlim=$( get_pertlim_uf ${rand_ints[0]} )
+    . $SingleRun "$@" --pertlim $firstpertlim
     Status=$?
   else
     . $SingleRun "$@"
@@ -205,9 +132,9 @@ create_cases ()
     # the random numbers previously generated, otherwise
     # just get a pertlim value in sequence.
     if [ $runtype = 'validation' ]; then
-      PERTLIM=$(get_pertlim ${rand_ints[$i]}  )
+      PERTLIM=$(get_pertlim_uf ${rand_ints[$i]}  )
     else
-      PERTLIM=$(get_pertlim $i )
+      PERTLIM=$(get_pertlim_uf $i )
     fi
 
     CASE1_NAME=$CASE_PFX.$iens
@@ -217,8 +144,8 @@ create_cases ()
     cd $SCRIPTS_ROOT
     echo "=== SCRIPTS_ROOT ==="
     echo $SCRIPTS_ROOT
-    #./create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
-    $SCRIPTS_ROOT/create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
+    #./create_clone --keepexe --case $CASE1 --clone $CASE # Copy $CASE to $CASE1
+    $SCRIPTS_ROOT/create_clone --keepexe --case $CASE1 --clone $CASE # Copy $CASE to $CASE1
 
     # Get value for EXEROOT from $CASE
     # Note return string is "EXEROOT = $EXEROOT"
@@ -250,6 +177,7 @@ create_cases ()
       sed  -i '/pertlim/d' user_nl_cam
     fi
 
+    echo "mfilt = 2">>user_nl_cam
     # Change pertlim in clone
     echo "pertlim = $PERTLIM" >> user_nl_cam
     ./preview_namelists
@@ -279,6 +207,7 @@ fi
 # we change this to 'ensemble'. We make two clones (to have three runs).
 runtype="validation"
 CLONECOUNT=2
+UF=0
 
 # Default assumes running from command line, if the -test_suite option is set
 # then a couple of directories change
@@ -297,7 +226,7 @@ Args=("$@")
 i=0
 while [ $i -le ${#Args[@]} ]; do
   case ${Args[$i]} in
-    -case )
+    --case )
       i=$((i+1))
       CASENAME=$(basename ${Args[$i]})
       if [ ! ${CASENAME##*.} == "000" ]; then
@@ -305,21 +234,30 @@ while [ $i -le ${#Args[@]} ]; do
         exit 2
       fi
     ;;
-    -test_suite )
+    --test_suite )
       # Set test_suite to TRUE
       test_suite="TRUE"
     ;;
-    -ensemble )
+    --ensemble )
+      i=$((i+1))
       # Set CLONECOUNT and runtype
-      CLONECOUNT=150
+      #CLONECOUNT=${Args[$i]}-1
+      CLONECOUNT=$((${Args[$i]}-1))
+      if [ $CLONECOUNT -gt 999 ]; then
+        echo "ERROR: the number of ensemble member cannot be set to more than 999!"
+        exit 2
+      fi
       runtype="ensemble"
     ;;
-    -nb|-nobuild )
+    --nb )
       nobuild="on"
       nosubmit="on"
     ;;
-    -ns|-nosubmit )
+    --ns )
       nosubmit="on"
+    ;;
+    --uf )
+      UF=1
     ;;
   esac
   i=$((i+1))
@@ -331,7 +269,7 @@ if [ $runtype = 'validation' ]; then
     # between 0 and 150, inclusive
     rand_ints=()
 
-    gen_random_numbers
+    gen_random_numbers $UF
 fi
 
 # Create all the cases
@@ -340,7 +278,7 @@ create_cases "$@"
 if [ $runtype = 'validation' ]; then
   echo "---"
   echo "Set up three cases using the following pertlim values:"            \
-       "$( get_pertlim ${rand_ints[0]} ) $( get_pertlim ${rand_ints[1]} )"  \
-       "$( get_pertlim ${rand_ints[2]} )"
+     "$( get_pertlim_uf ${rand_ints[0]} ) $( get_pertlim_uf ${rand_ints[1]} )"  \
+     "$( get_pertlim_uf ${rand_ints[2]} )"
 fi
 

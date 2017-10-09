@@ -11,10 +11,11 @@ This module contains only one class, `NamelistDefinition`, inheriting from
 # pylint:disable=wildcard-import,unused-wildcard-import
 
 import re
+import collections
 
 from CIME.namelist import fortran_namelist_base_value, \
     is_valid_fortran_namelist_literal, character_literal_to_string, \
-    expand_literal_list, Namelist
+    expand_literal_list, Namelist, get_fortran_name_only
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
@@ -45,7 +46,7 @@ class NamelistDefinition(EntryID):
         if files is None:
             files = Files()
         schema = files.get_schema("NAMELIST_DEFINITION_FILE")
-        expect(os.path.isfile(infile), "File %s does not exist"%infile)
+        expect(os.path.isfile(infile), "File {} does not exist".format(infile))
         super(NamelistDefinition, self).__init__(infile, schema=schema)
 
         self._attributes = {}
@@ -141,8 +142,8 @@ class NamelistDefinition(EntryID):
         """This function is not implemented."""
         raise TypeError("NamelistDefinition does not support `set_value`.")
 
-    def get_value_match(self, item, attributes=None, exact_match=True, entry_node=None):
-        """Return the default value for the variable named `item`.
+    def get_value_match(self, vid, attributes=None, exact_match=True, entry_node=None):
+        """Return the default value for the variable named `vid`.
 
         The return value is a list of strings corresponding to the
         comma-separated list of entries for the value (length 1 for scalars). If
@@ -156,8 +157,8 @@ class NamelistDefinition(EntryID):
             all_attributes.update(attributes)
 
         if entry_node is None:
-            entry_node = self._nodes[item]
-        value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match,
+            entry_node = self._nodes[vid]
+        value = super(NamelistDefinition, self).get_value_match(vid.lower(),attributes=all_attributes, exact_match=exact_match,
                                                                 entry_node=entry_node)
         if value is None:
             value = ''
@@ -217,9 +218,7 @@ class NamelistDefinition(EntryID):
                 size = int(size_string)
             except ValueError:
                 expect(False,
-                       "In namelist definition, variable %s had the "
-                       "non-integer string %r specified as an array size." %
-                       (name, size_string))
+                       "In namelist definition, variable {} had the non-integer string {!r} specified as an array size.".format(name, size_string))
         else:
             size = 1
 
@@ -229,16 +228,14 @@ class NamelistDefinition(EntryID):
             # Length allowed only for character variables.
             expect(type_ == 'character',
                    "In namelist definition, length specified for non-character "
-                   "variable %s." % name)
+                   "variable {}.".format(name))
             # Check that the length is actually an integer, to make the error
             # message a bit cleaner if the xml input is bad.
             try:
                 max_len = int(length)
             except ValueError:
                 expect(False,
-                       "In namelist definition, character variable %s had the "
-                       "non-integer string %r specified as a length." %
-                       (name, length))
+                       "In namelist definition, character variable {} had the non-integer string {!r} specified as a length.".format(name, length))
         else:
             max_len = None
         return type_, max_len, size
@@ -273,7 +270,7 @@ class NamelistDefinition(EntryID):
             if not is_valid_fortran_namelist_literal(type_, scalar):
                 invalid.append(scalar)
         if len(invalid) > 0:
-            logger.warn("Invalid values %s"%invalid)
+            logger.warn("Invalid values {}".format(invalid))
             return False
 
         # Now that we know that the strings as input are valid Fortran, do some
@@ -290,9 +287,7 @@ class NamelistDefinition(EntryID):
         valid_values = self._valid_values[name]
         if valid_values is not None:
             expect(type_ in ('integer', 'character'),
-                   "Found valid_values attribute for variable %s with "
-                   "type %s, but valid_values only allowed for character "
-                   "and integer variables." % (name, type_))
+                   "Found valid_values attribute for variable {} with type {}, but valid_values only allowed for character and integer variables.".format(name, type_))
             if type_ == 'integer':
                 compare_list = [int(vv) for vv in valid_values]
             else:
@@ -301,18 +296,18 @@ class NamelistDefinition(EntryID):
                 if scalar not in compare_list:
                     invalid.append(scalar)
             if len(invalid) > 0:
-                logger.warn("Invalid values %s"%invalid)
+                logger.warn("Invalid values {}".format(invalid))
                 return False
 
         # Check size of input array.
         if len(expand_literal_list(value)) > size:
-            return False
+            expect(False, "Value index exceeds variable size for variable {}, allowed array length is {} value array size is {}".format(name, size, len(expand_literal_list(value))))
         return True
 
     def _expect_variable_in_definition(self, name, variable_template):
         """Used to get a better error message for an unexpected variable."""
         expect(name in self._entry_ids,
-               (variable_template + " is not in the namelist definition.") % str(name))
+               (variable_template + " is not in the namelist definition.").format(str(name)))
 
     def _user_modifiable_in_variable_definition(self, name):
         # Is name user modifiable?
@@ -320,11 +315,11 @@ class NamelistDefinition(EntryID):
         user_modifiable_only_by_xml = node.get('modify_via_xml')
         if user_modifiable_only_by_xml is not None:
             expect(False,
-                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable_only_by_xml))
+                   "Cannot change {} in user_nl file: set via xml variable {}".format(name, user_modifiable_only_by_xml))
         user_cannot_modify = node.get('cannot_modify_by_user_nl')
         if user_cannot_modify is not None:
             expect(False,
-                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_cannot_modify))
+                   "Cannot change {} in user_nl file: {}".format(name, user_cannot_modify))
 
     def validate(self, namelist,filename=None):
         """Validate a namelist object against this definition.
@@ -334,31 +329,30 @@ class NamelistDefinition(EntryID):
         """
         # Improve error reporting when a file name is provided.
         if filename is None:
-            variable_template = "Variable %r"
+            variable_template = "Variable {!r}"
         else:
-            variable_template = "Variable %r from file " + repr(str(filename))
+            variable_template = "Variable {!r} from file " + repr(str(filename))
 
         # Iterate through variables.
         for group_name in namelist.get_group_names():
             for variable_name in namelist.get_variable_names(group_name):
                 # Check that the variable is defined...
-                self._expect_variable_in_definition(variable_name, variable_template)
+                qualified_variable_name = get_fortran_name_only(variable_name)
+                self._expect_variable_in_definition(qualified_variable_name, variable_template)
 
                 # Check if can actually change this variable via filename change
                 if filename is not None:
-                    self._user_modifiable_in_variable_definition(variable_name)
+                    self._user_modifiable_in_variable_definition(qualified_variable_name)
 
                 # and has the right group name...
-                var_group = self.get_group(variable_name)
+                var_group = self.get_group(qualified_variable_name)
                 expect(var_group == group_name,
-                       (variable_template + " is in a group named %r, but should be in %r.") %
-                       (str(variable_name), str(group_name), str(var_group)))
+                       (variable_template + " is in a group named {!r}, but should be in {!r}.").format(str(variable_name), str(group_name), str(var_group)))
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
-                expect(self.is_valid_value(variable_name, value),
-                       (variable_template + " has invalid value %r.") %
-                       (str(variable_name), [str(scalar) for scalar in value]))
+                expect(self.is_valid_value(qualified_variable_name, value),
+                       (variable_template + " has invalid value {!r}.").format(str(variable_name), [str(scalar) for scalar in value]))
 
     def dict_to_namelist(self, dict_, filename=None):
         """Converts a dictionary of name-value pairs to a `Namelist`.
@@ -373,17 +367,18 @@ class NamelistDefinition(EntryID):
         """
         # Improve error reporting when a file name is provided.
         if filename is None:
-            variable_template = "Variable %rs"
+            variable_template = "Variable {!s}"
         else:
-            variable_template = "Variable %r from file " + repr(str(filename))
+            variable_template = "Variable {!r} from file " + repr(str(filename))
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()
-            self._expect_variable_in_definition(variable_lc, variable_template)
-            group_name = self.get_group(variable_lc)
-            expect (group_name is not None, "No group found for var %s"%variable_lc)
+            qualified_varname = get_fortran_name_only(variable_lc)
+            self._expect_variable_in_definition(qualified_varname, variable_template)
+            group_name = self.get_group(qualified_varname)
+            expect (group_name is not None, "No group found for var {}".format(variable_lc))
             if group_name not in groups:
-                groups[group_name] = {}
+                groups[group_name] = collections.OrderedDict()
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
 
@@ -395,6 +390,7 @@ class NamelistDefinition(EntryID):
             input_pathname = self._get_node_element_info(node, "input_pathname")
         return(input_pathname)
 
+    # pylint: disable=arguments-differ
     def get_default_value(self, item, attribute=None):
         """Return the default value for the variable named `item`.
 

@@ -2,7 +2,10 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc atm="XATM">Dead atm component</desc>
+  </description>
 
   <entry id="COMP_ATM">
     <type>char</type>
@@ -13,9 +16,10 @@
     <desc>Name of atmosphere component</desc>
   </entry>
 
-  <description>
-    <desc compset="_XATM">Dead atm component</desc>
-  </description>
+  <help>
+    =========================================
+    XATM naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>
-

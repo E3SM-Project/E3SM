@@ -38,9 +38,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.buildroot, args.installpath, args.caseroot
 
@@ -63,9 +61,7 @@ def _main_func(description):
             os.makedirs(pio_dir)
         os.chdir(pio_dir)
         casetools = case.get_value("CASETOOLS")
-        cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90\
-                        -D CMAKE_MODULE_PATH=%s\" "%\
-            os.path.join(CIME.utils.get_cime_root(), "src", "externals","pio2","cmake")
+        cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
         gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
             "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
             "SHAREDLIBROOT=%s EXEROOT=%s COMPILER=%s BUILD_THREADED=%s "\
@@ -142,11 +138,20 @@ def _main_func(description):
         if netcdf4_parallel_found:
             valid_values += ",netcdf4p,netcdf4c"
         logger.warn("Updating valid_values for PIO_TYPENAME: %s", valid_values)
+
         case.set_valid_values("PIO_TYPENAME",valid_values)
         # nothing means use the general default
         valid_values += ",nothing"
-        for comp in ("ATM","CPL","OCN","WAV","GLC","ICE","ROF","LND"):
-            case.set_valid_values("%s_PIO_TYPENAME"%comp,valid_values)
+
+        for comp in case.get_values("COMP_CLASSES"):
+            comp_pio_typename = "%s_PIO_TYPENAME"%comp
+            case.set_valid_values(comp_pio_typename,valid_values)
+            current_value = case.get_value(comp_pio_typename)
+            if current_value not in valid_values:
+                logger.warn("Resetting PIO_TYPENAME to netcdf for component %s"%comp)
+                case.set_value(comp_pio_typename,"netcdf")
+
+
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

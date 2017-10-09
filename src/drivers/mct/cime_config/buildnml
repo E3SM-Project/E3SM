@@ -7,16 +7,16 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob
+import os, shutil, sys, glob, itertools
 
-_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..")
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import run_cmd_no_fail, get_model
+from CIME.utils import get_model, get_time_in_seconds, get_timestamp
 from CIME.buildnml import create_namelist_infile, parse_input
 from CIME.XML.files import Files
 
@@ -41,6 +41,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')
+    config['MULTI_DRIVER'] = '.true.' if case.get_value('MULTI_DRIVER') else '.false.'
     config['OS'] = case.get_value('OS')
     config['glc_nec'] = 0 if case.get_value('GLC_NEC') == 0 else case.get_value('GLC_NEC')
     config['single_column'] = 'true' if case.get_value('PTS_MODE') else 'false'
@@ -93,6 +94,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
 
     comps = case.get_values("COMP_CLASSES")
+    mindt = basedt
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         if ncpl is not None:
@@ -100,7 +102,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             totaldt = cpl_dt * int(ncpl)
             if totaldt != basedt:
                 expect(False, " %s ncpl doesn't divide base dt evenly" %comp)
-            nmlgen.set_value(comp.lower() + '_cpl_dt', value=cpl_dt)
+            nmlgen.add_default(comp.lower() + '_cpl_dt', value=cpl_dt)
+            mindt = min(mindt, cpl_dt)
 #        elif comp.lower() is not 'cpl':
 
     #--------------------------------
@@ -142,6 +145,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # Set up the pause_component_list if pause is active
     pauseo = case.get_value('PAUSE_OPTION')
     if pauseo != 'never' and pauseo != 'none':
+        pausen = case.get_value('PAUSE_N')
         pcl = nmlgen.get_default('pause_component_list')
         nmlgen.add_default('pause_component_list', pcl)
         # Check to make sure pause_component_list is valid
@@ -154,6 +158,13 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
                        "Invalid PAUSE_COMPONENT_LIST, %s is not a valid component type"%comp)
             # End for
         # End if
+        # Set esp interval
+        if 'nstep' in pauseo:
+            esp_time = mindt
+        else:
+            esp_time = get_time_in_seconds(pausen, pauseo)
+
+        nmlgen.set_value('esp_cpl_dt', value=esp_time)
     # End if pause is active
 
     #--------------------------------
@@ -190,14 +201,42 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             infiles.append(infile)
 
     if len(infiles) != 0:
+
+        # First read the drv_flds_in files and make sure that
+        # for any key there are not two conflicting values
+        dicts = {}
+        for infile in infiles:
+            dict_ = {}
+            with open(infile) as myfile:
+                for line in myfile:
+                    if "=" in line and '!' not in line:
+                        name, var = line.partition("=")[::2]
+                        name = name.strip()
+                        var = var.strip()
+                        dict_[name] = var
+            dicts[infile] = dict_
+
+        for first,second in itertools.combinations(dicts.keys(),2):
+            compare_drv_flds_in(dicts[first], dicts[second], first, second)
+
+        # Now create drv_flds_in
         config = {}
         definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv_flds"})]
-
         nmlgen = NamelistGenerator(case, definition_file, files=files)
         skip_entry_loop = True
         nmlgen.init_defaults(infiles, config, skip_entry_loop=skip_entry_loop)
         drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         nmlgen.write_output_file(drv_flds_in)
+
+###############################################################################
+def compare_drv_flds_in(first, second, infile1, infile2):
+###############################################################################
+    sharedKeys = set(first.keys()).intersection(second.keys())
+    for key in sharedKeys:
+        if first[key] != second[key]:
+            print('Key: {}, \n Value 1: {}, \n Value 2: {}'.format(key, first[key], second[key]))
+            expect(False, "incompatible settings in drv_flds_in from \n %s \n and \n %s"
+                   % (infile1, infile2))
 
 ###############################################################################
 def _create_component_modelio_namelists(case, files):
@@ -208,29 +247,31 @@ def _create_component_modelio_namelists(case, files):
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"modelio"})]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
-    lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
+    lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
+    models = case.get_values("COMP_CLASSES")
+    #if we are in multi-coupler mode the number of instances of cpl will be the max
+    # of any NINST_* value
+    maxinst = 1
+    if case.get_value("MULTI_DRIVER"):
+        maxinst = case.get_value("NINST_MAX")
 
-    models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
     for model in models:
+        model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
             entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
-
-            if model == 'cpl':
-                inst_count = 1
-            else:
+            if maxinst == 1 and model != 'cpl':
                 inst_count = case.get_value("NINST_" + model.upper())
+            else:
+                inst_count = maxinst
 
+            inst_string = ""
             inst_index = 1
             while inst_index <= inst_count:
-                inst_string = inst_index
-                if inst_index <= 999:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  99:
-                    inst_string = "0" + str(inst_string)
-                if inst_index <=  9:
-                    inst_string = "0" + str(inst_string)
+                # determine instance string
+                if inst_count > 1:
+                    inst_string = '_{:04d}'.format(inst_index)
 
                 # set default values
                 for entry in entries:
@@ -243,17 +284,11 @@ def _create_component_modelio_namelists(case, files):
                 moddiro = case.get_value('RUNDIR')
                 nmlgen.set_value('diro', moddiro)
 
-                if inst_count > 1:
-                    logfile = model + "_" + inst_string + ".log." + str(lid)
-                else:
-                    logfile = model + ".log." + str(lid)
+                logfile = model + inst_string + ".log." + str(lid)
                 nmlgen.set_value('logfile', logfile)
 
                 # Write output file
-                if inst_count > 1:
-                    modelio_file = model + "_modelio.nml_" + str(inst_string)
-                else:
-                    modelio_file = model + "_modelio.nml"
+                modelio_file = model + "_modelio.nml" + inst_string
                 nmlgen.write_modelio_file(os.path.join(confdir, modelio_file))
 
                 inst_index = inst_index + 1
@@ -290,12 +325,9 @@ def buildnml(case, caseroot, component):
     if case.get_value('COMP_ATM') == 'cam':
         # cam is actually changing the driver namelist settings
         cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
-        if "adiabatic" in cam_config_opts:
-            infile_text = "atm_adiabatic = .true."
-        if "ideal" in cam_config_opts:
-            infile_text = "atm_ideal_phys = .true."
         if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
+
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
     namelist_infile = os.path.join(confdir, "namelist_infile")
     create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)

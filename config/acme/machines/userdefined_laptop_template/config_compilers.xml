@@ -29,7 +29,7 @@
       <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
       <NETCDF_PATH>/usr/local</NETCDF_PATH>
       <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
-      <PFUNIT_PATH>$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
+      <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
    </compiler>
 
    <compiler COMPILER="gnu" MACH="example-osx-macports">
@@ -57,6 +57,6 @@
       <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
       <NETCDF_PATH>/opt/local</NETCDF_PATH>
       <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
-      <PFUNIT_PATH>$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
+      <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
    </compiler>
 </config_compilers>

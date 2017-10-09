@@ -23,7 +23,8 @@ from CIME.XML.env_mach_specific import EnvMachSpecific
 
 logger = logging.getLogger(__name__)
 
-def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos):
+def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
+              sysos, unit_testing=False):
     """Add Macros, Depends, and env_mach_specific files to a directory.
 
     Arguments:
@@ -34,58 +35,61 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
     compiler - String containing the compiler vendor to configure for.
     mpilib - String containing the MPI implementation to configure for.
     debug - Boolean specifying whether debugging options are enabled.
+    unit_testing - Boolean specifying whether we're running unit tests (as
+                   opposed to a system run)
     """
     # Macros generation.
     suffixes = {'Makefile': 'make', 'CMake': 'cmake'}
-    macro_maker = Compilers(machobj)
+    macro_maker = Compilers(machobj, compiler=compiler, mpilib=mpilib)
     for form in macros_format:
         out_file_name = os.path.join(output_dir,"Macros."+suffixes[form])
         macro_maker.write_macros_file(macros_file=out_file_name, output_format=suffixes[form])
 
     _copy_depends_files(machobj.get_machine_name(), machobj.machines_dir, output_dir, compiler)
     _generate_env_mach_specific(output_dir, machobj, compiler, mpilib,
-                                debug, sysos)
+                                debug, sysos, unit_testing)
 
 def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     """
     Copy any system or compiler Depends files if they do not exist in the output directory
     If there is a match for Depends.machine_name.compiler copy that and ignore the others
     """
-    dfile = os.path.join(machines_dir, "Depends.%s.%s"%(machine_name,compiler))
-    outputdfile = os.path.join(output_dir, "Depends.%s.%s"%(machine_name,compiler))
+    dfile = os.path.join(machines_dir, "Depends.{}.{}".format(machine_name,compiler))
+    outputdfile = os.path.join(output_dir, "Depends.{}.{}".format(machine_name,compiler))
     if os.path.isfile(dfile):
         if not os.path.isfile(outputdfile):
             shutil.copyfile(dfile, outputdfile)
     else:
         for dep in (machine_name, compiler):
-            dfile = os.path.join(machines_dir, "Depends.%s"%dep)
-            outputdfile = os.path.join(output_dir, "Depends.%s"%dep)
+            dfile = os.path.join(machines_dir, "Depends.{}".format(dep))
+            outputdfile = os.path.join(output_dir, "Depends.{}".format(dep))
             if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
                 shutil.copyfile(dfile, outputdfile)
 
-
-def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sysos):
+def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
+                                sysos, unit_testing):
     """
     env_mach_specific generation.
     """
     ems_path = os.path.join(output_dir, "env_mach_specific.xml")
     if os.path.exists(ems_path):
-        logger.warn("%s already exists, delete to replace"%ems_path)
+        logger.warn("{} already exists, delete to replace".format(ems_path))
         return
-    ems_file = EnvMachSpecific(output_dir)
+    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)
     ems_file.write()
+    ems_file.load_env(compiler, debug, mpilib)
     for shell in ('sh', 'csh'):
         ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
         with open(shell_path, 'a') as shell_file:
             if shell == 'sh':
-                shell_file.write("\nexport COMPILER=%s\n" % compiler)
-                shell_file.write("export MPILIB=%s\n" % mpilib)
-                shell_file.write("export DEBUG=%s\n" % repr(debug).upper())
-                shell_file.write("export OS=%s\n" % sysos)
+                shell_file.write("\nexport COMPILER={}\n".format(compiler))
+                shell_file.write("export MPILIB={}\n".format(mpilib))
+                shell_file.write("export DEBUG={}\n".format(repr(debug).upper()))
+                shell_file.write("export OS={}\n".format(sysos))
             else:
-                shell_file.write("\nsetenv COMPILER %s\n" % compiler)
-                shell_file.write("setenv MPILIB %s\n" % mpilib)
-                shell_file.write("setenv DEBUG %s\n" % repr(debug).upper())
-                shell_file.write("setenv OS %s\n" % sysos)
+                shell_file.write("\nsetenv COMPILER {}\n".format(compiler))
+                shell_file.write("setenv MPILIB {}\n".format(mpilib))
+                shell_file.write("setenv DEBUG {}\n".format(repr(debug).upper()))
+                shell_file.write("setenv OS {}\n".format(sysos))

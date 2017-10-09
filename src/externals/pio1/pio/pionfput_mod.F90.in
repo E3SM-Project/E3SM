@@ -125,7 +125,6 @@ contains
           ierr = nfmpi_begin_indep_data(File%fh)
 
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             print *,__PIO_FILE__,__LINE__,index,count,trim(ival)
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
                   int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
                   MPI_CHARACTER)
@@ -697,9 +696,11 @@ contains
 #endif
 #endif
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(pio_iotype_netcdf4p)
           ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
           ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+#endif	  
        case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (Ios%io_rank == 0) then

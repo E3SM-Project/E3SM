@@ -349,13 +349,14 @@ Contains
        if (ret_val .ne. PIO_NOERR) then
           err_msg = "Could not set chunk cache"
           call PIO_closefile(pio_file)
+          return
        endif
        if (chunk_cache_size_in .ne. chunk_cache_size .or. chunk_cache_nelems_in .ne. chunk_cache_nelems .or. &
             chunk_cache_preemption_in .ne. chunk_cache_preemption) then
           err_msg = "Incorrect chunk cache values!"
           call PIO_closefile(pio_file)
+          return
        endif
-       return
     else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
        err_msg = "Did not get expected error when trying to set chunk cache for pnetcdf file"
        call PIO_closefile(pio_file)
@@ -441,14 +442,15 @@ Contains
        if (ret_val .ne. PIO_NOERR) then
           err_msg = "Could not set variable chunk cache"
           call PIO_closefile(pio_file)
+          return
        endif
        if (chunk_cache_size_in .ne. chunk_cache_size .or. &
             chunk_cache_nelems_in .ne. chunk_cache_nelems .or. &
             chunk_cache_preemption_in .ne. chunk_cache_preemption) then
           err_msg = "Incorrect variable chunk cache values!"
           call PIO_closefile(pio_file)
+          return
        endif
-       return
     else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
        err_msg = "Did not get expected error when trying to get variable chunk cache for pnetcdf file"
        call PIO_closefile(pio_file)

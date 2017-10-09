@@ -9,7 +9,7 @@ from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import get_cime_root, run_and_log_case_status
+from CIME.utils             import get_cime_root, run_and_log_case_status, get_model
 from CIME.test_status       import *
 
 import shutil
@@ -26,24 +26,31 @@ def _build_usernl_files(case, model, comp):
     if model == "DRV":
         model_file = case.get_value("CONFIG_CPL_FILE")
     else:
-        model_file = case.get_value("CONFIG_%s_FILE" % model)
+        model_file = case.get_value("CONFIG_{}_FILE".format(model))
     expect(model_file is not None,
-           "Could not locate CONFIG_%s_FILE in config_files.xml"%model)
+           "Could not locate CONFIG_{}_FILE in config_files.xml".format(model))
     model_dir = os.path.dirname(model_file)
 
     expect(os.path.isdir(model_dir),
-           "cannot find cime_config directory %s for component %s" % (model_dir, comp))
-
+           "cannot find cime_config directory {} for component {}".format(model_dir, comp))
+    ninst = 1
+    multi_driver = case.get_value("MULTI_DRIVER")
+    if multi_driver:
+        ninst_max = case.get_value("NINST_MAX")
+        if model not in ("DRV","CPL"):
+            ninst_model = case.get_value("NINST_{}".format(model))
+            expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             shutil.copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
-        ninst = case.get_value("NINST_%s" % model)
-        nlfile = "user_nl_%s" % comp
+        if ninst == 1:
+            ninst = case.get_value("NINST_{}".format(model))
+        nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
         if ninst > 1:
             for inst_counter in xrange(1, ninst+1):
-                inst_nlfile = "%s_%04d" % (nlfile, inst_counter)
+                inst_nlfile = "{}_{:04d}".format(nlfile, inst_counter)
                 if not os.path.exists(inst_nlfile):
                     # If there is a user_nl_foo in the case directory, copy it
                     # to user_nl_foo_INST; otherwise, copy the original
@@ -59,7 +66,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, adjust_pio=True):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -69,20 +76,18 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory: \"$din_loc_root\" ")
+           "inputdata root is not a directory: {}".format(din_loc_root))
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:
         expect(not (type(value) is str and "USERDEFINED_required_build" in value),
-               "Parameter '%s' must be defined" % vid)
+               "Parameter '{}' must be defined".format(vid))
 
-    # Create batch script
+    # Remove batch scripts
     if reset or clean:
-        # back up relevant files
         if os.path.exists("case.run"):
             os.remove("case.run")
 
-        # only do the following if are NOT in testmode
         if not test_mode:
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
@@ -122,77 +127,77 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
+        multi_driver = case.get_value("MULTI_DRIVER")
         for comp in models:
             if comp == "CPL":
                 continue
-            ninst  = case.get_value("NINST_%s" % comp)
-            ntasks = case.get_value("NTASKS_%s" % comp)
-            if ninst > ntasks:
+            ninst  = case.get_value("NINST_{}".format(comp))
+            ntasks = case.get_value("NTASKS_{}".format(comp))
+            # But the NINST_LAYOUT may only be concurrent in multi_driver mode
+            if multi_driver:
+                expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
+                       "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
+            elif ninst > ntasks:
                 if ntasks == 1:
-                    case.set_value("NTASKS_%s" % comp, ninst)
+                    case.set_value("NTASKS_{}".format(comp), ninst)
                 else:
-                    expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
+                    expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
+
+            case.initialize_derived_attributes()
         else:
             check_pelayouts_require_rebuild(case, models)
 
             unlock_file("env_build.xml")
 
             case.flush()
-            check_lockedfiles()
+            check_lockedfiles(case)
             env_mach_pes = case.get_env("mach_pes")
             pestot = env_mach_pes.get_total_tasks(models)
-            logger.debug("at update TOTALPES = %s"%pestot)
+            logger.debug("at update TOTALPES = {}".format(pestot))
             case.set_value("TOTALPES", pestot)
             thread_count = env_mach_pes.get_max_thread_count(models)
-            if thread_count > 1:
-                case.set_value("BUILD_THREADED", True)
-
-            expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
-                   "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
+
+            # Make sure pio settings are consistent
+            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
+
+            case.initialize_derived_attributes()
 
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
-            num_nodes = env_mach_pes.get_total_nodes(pestot, thread_count)
-            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
+            num_nodes = case.num_nodes
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
-                    logger.info("Writing %s script" % job)
-                    testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-                    # Short term fix to be removed when csh tests are removed
-                    if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
-                elif job != "case.test":
-                    logger.info("Writing %s script from input template %s" % (job, input_batch_script))
+                    logger.info("Writing {} script".format(job))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
-
-            # Make sure pio settings are consistant
-            if adjust_pio:
-                adjust_pio_layout(case, tasks_per_node)
+                elif job != "case.test":
+                    logger.info("Writing {} script from input template {}".format(job, input_batch_script))
+                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
-            logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
+            logger.debug("at copy TOTALPES = {}".format(case.get_value("TOTALPES")))
             lock_file("env_mach_pes.xml")
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
             logger.info("Creating user_nl_xxx files for components and cpl")
+
         # loop over models
         for model in models:
-            comp = case.get_value("COMP_%s" % model)
-            logger.debug("Building %s usernl files"%model)
+            comp = case.get_value("COMP_{}".format(model))
+            logger.debug("Building {} usernl files".format(model))
             _build_usernl_files(case, model, comp)
             if comp == "cism":
-                run_cmd_no_fail("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
+                run_cmd_no_fail("{}/../components/cism/cime_config/cism.template {}".format(cimeroot, caseroot))
 
         _build_usernl_files(case, "drv", "cpl")
 
@@ -201,16 +206,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
-        # Create test script if appropriate
-        # Short term fix to be removed when csh tests are removed
-        if os.path.exists("env_test.xml"):
-            if not os.path.exists("case.test"):
-                logger.info("Starting testcase.setup")
-                run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
-                logger.info("Finished testcase.setup")
-
-        # Some tests need namelists created here (ERP) - so do this if are in test mode
-        if test_mode:
+        # Some tests need namelists created here (ERP) - so do this if we are in test mode
+        if test_mode or get_model() == "acme":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 
@@ -220,30 +217,12 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
 
-
-def adjust_pio_layout(case, new_pio_stride):
-
-    models = case.get_values("COMP_CLASSES")
-    for comp in models:
-        pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
-        pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
-        ntasks = case.get_value("NTASKS_%s"%comp)
-        new_stride = min(ntasks, new_pio_stride)
-        new_numtasks = max(1, ntasks//new_stride)
-        if pio_stride != new_stride:
-            logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
-            case.set_value("PIO_STRIDE_%s"%comp, new_stride)
-            if pio_numtasks != new_numtasks:
-                logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
-                case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
-
-
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, adjust_pio=True):
+def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset, adjust_pio)
+    functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset)
 
     if case.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")

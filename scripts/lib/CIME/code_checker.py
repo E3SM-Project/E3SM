@@ -16,7 +16,7 @@ def _run_pylint(on_file, interactive):
 ###############################################################################
     pylint = find_executable("pylint")
 
-    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement"
+    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement,logging-format-interpolation"
     cimeroot = get_cime_root()
 
     if "scripts/Tools" in on_file:
@@ -26,7 +26,7 @@ def _run_pylint(on_file, interactive):
     cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
         (os.path.join(cimeroot,"scripts","lib"),
          os.path.join(cimeroot,"scripts","Tools"),
-         os.path.join(cimeroot,"tools","unit_testing","python"))
+         os.path.join(cimeroot,"scripts","fortran_unit_testing","python"))
 
     cmd = "%s %s %s" % (pylint, cmd_options, on_file)
     logger.debug("pylint command is %s"%cmd)
@@ -54,9 +54,9 @@ def _matches(file_path, file_ends):
 def _should_pylint_skip(filepath):
 ###############################################################################
     # TODO - get rid of this
-    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs")
+    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "doc")
     for dir_to_skip in list_of_directories_to_ignore:
-        if dir_to_skip in filepath:
+        if dir_to_skip + "/" in filepath:
             return True
 
     return False
@@ -65,7 +65,8 @@ def _should_pylint_skip(filepath):
 def get_all_checkable_files():
 ###############################################################################
     cimeroot = get_cime_root()
-    all_git_files = run_cmd_no_fail("git ls-files --full-name %s" % cimeroot, verbose=False).splitlines()
+    all_git_files = run_cmd_no_fail("git ls-files", from_dir=cimeroot, verbose=False).splitlines()
+
     files_to_test = [item for item in all_git_files
                      if ((item.endswith(".py") or is_python_executable(os.path.join(cimeroot, item))) and not _should_pylint_skip(item))]
     return files_to_test
@@ -80,9 +81,9 @@ def check_code(files, num_procs=10, interactive=False):
     """
     # Get list of files to check, we look to see if user-provided file argument
     # is a valid file, if not, we search the repo for a file with similar name.
-    repo_files = run_cmd_no_fail('git ls-files --full-name %s' % get_cime_root(), verbose=False).splitlines()
     files_to_check = []
     if files:
+        repo_files = run_cmd_no_fail('git ls-files', from_dir=get_cime_root(), verbose=False).splitlines()
         for filearg in files:
             if os.path.exists(filearg):
                 files_to_check.append(os.path.abspath(filearg))

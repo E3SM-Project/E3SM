@@ -3,11 +3,16 @@ Common Infrastructure for Modeling the Earth
 
 **cime** (pronounced: seem) represents the infrastructure code for the 
 <a href="http://www2.cesm.ucar.edu">Community Earth System Model </a>
-     (CESM) and the Accelerated Climate Model for Energy (ACME).
-*cime* includes scripts for configuration, build, and testing of
-models, as well as data and stub models for climate components, 
-and a code for coupling different climate components together.
-     
+     (CESM) and the <a href="https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy">
+Accelerated Climate Model for Energy </a> (ACME).
+*cime* providess scripts for configuration, build, and testing of
+models, as well as code for data and stub models for climate components,
+and a driver code for bringing all the climate components together in a single executable.
+
+# Documentation
+
+See <a href="http://esmci.github.io/cime">esmci.github.io/cime</a>
+
 # Developers
 
 *cime* was initially extracted from CESM as a stand-alone capability in 2015
@@ -28,18 +33,16 @@ Mariana Vertenstein | NCAR  |  1 - D   |   NSF, DOE
 Jim Edwards |         NCAR  |  1 - D   |   NSF (1-D), DOE(1-2)
 Jim Foucar  |         SNL   |  5 - D   |   DOE
 Rob Jacob |      ANL  |  5 - D   |   DOE
+Bill Sacks |    NCAR |  1 - D  | NSF, DOE
 Andreas Wilke |  ANL  | 5 - D | DOE
 Jason Sarich | ANL | 5 - D | DOE
-??Sean Santos |         NCAR  |  1 - 4   |   NSF
+Michael Deakin | SNL | 5 - D | DOE
+Erich Foster   | SNL | 5 - D | DOE
+Alice Bertini | NCAR | 1 - D | NSF
+Chris Fischer | NCAR | 5 - D | NSF
+Steve Goldhaber | NCAR | 1 - D | NSF, DOE
+Mike Levy | NCAR | 1 - D | NSF, DOE
+Sean Santos |         NCAR  |  1 - 4   |   NSF
 
 _Key: D = Current development version (i.e. still active on project)_
-
-# Documentation
-
-Currently, this is a work in progress. 
-
-
-
-
-
 

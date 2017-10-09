@@ -8,28 +8,25 @@ Should be run from case.
 from standard_script_setup import *
 
 from CIME.utils import get_model
-from CIME.XML.machines import Machines
 from CIME.check_input_data import check_input_data, SVN_LOCS
 from CIME.case import Case
 
 import argparse, doctest
 
-MACHINE = Machines()
-
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--download] [--verbose]
+        usage="""\n{0} [--download] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Download input data \033[0m
-    > %s --download
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0} --download
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -41,8 +38,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--svn-loc", default=SVN_LOCS[get_model()],
                         help="The input data repository from which to download data.")
 
-    parser.add_argument("-i", "--input-data-root", default=MACHINE.get_value("DIN_LOC_ROOT"),
-                        help="The root directory where input data goes")
+
+    parser.add_argument("-i", "--input-data-root",default=None,
+                        help="The root directory where input data goes, "
+                        "use xmlquery DIN_LOC_ROOT to see default value.")
+
 
     parser.add_argument("--data-list-dir", default="Buildconf",
                         help="Where to find list of input files")
@@ -50,9 +50,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--download", action="store_true",
                         help="Attempt to download missing input files")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
 
@@ -76,4 +74,3 @@ def _main_func(description):
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
-

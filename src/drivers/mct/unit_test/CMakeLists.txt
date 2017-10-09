@@ -11,6 +11,11 @@ add_definitions(
   -DNUM_COMP_INST_ESP=1
   )
 
+# The following definitions are needed when building with the mpi-serial library
+if (USE_MPI_SERIAL)
+  add_definitions(-DNO_MPI2 -DNO_MPIMOD)
+endif()
+
 # Add source directories from stubs. This should be done first, so that in the
 # case of name collisions, the drv versions take precedence (when there are two
 # files with the same name, the one added later wins).
@@ -46,13 +51,15 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # tests need all of these libraries, but it's easiest just to set the same list
 # for everyone.
 set(DRV_UNIT_TEST_LIBS drv;csm_share;esmf_wrf_timemgr;mct;mpeu)
+if (USE_MPI_SERIAL)
+  list(APPEND DRV_UNIT_TEST_LIBS mpi-serial)
+endif()
 list(APPEND DRV_UNIT_TEST_LIBS ${NETCDF_LIBRARIES})
 
 # Add the test directories
 add_subdirectory(avect_wrapper_test)
 add_subdirectory(seq_map_test)
 add_subdirectory(glc_elevclass_test)
-add_subdirectory(vertical_gradient_calculator_test)
-add_subdirectory(map_lnd2glc_test)
 add_subdirectory(map_glc2lnd_test)
 add_subdirectory(map_lnd2rof_irrig_test)
+add_subdirectory(check_fields_test)

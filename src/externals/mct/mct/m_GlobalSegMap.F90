@@ -1742,9 +1742,6 @@
 ! !USES:
 !
       use m_die ,          only : die
-      use m_SortingTools , only : IndexSet
-      use m_SortingTools , only : IndexSort
-      use m_SortingTools , only : Permute
 
       implicit none
 
@@ -1764,22 +1761,25 @@
   character(len=*),parameter :: myname_=myname//'::active_pes_'
 
   integer :: count, i, n, ngseg, ierr
-  logical :: new
-  integer, dimension(:), allocatable :: temp_list
-  integer, dimension(:), allocatable :: perm
+  integer :: max_activepe, p
+  logical, dimension(:), allocatable :: process_list
 
         ! retrieve total number of segments in the map:
 
   ngseg = ngseg_(GSMap)
 
+        ! retrieve maximum active process id in the map:
+
+  max_activepe = maxval(GSMap%pe_loc(:))
+
         ! allocate workspace to tally process id list:
 
-  allocate(temp_list(ngseg), stat=ierr)
-  if(ierr /= 0) call die(myname_,'allocate(temp_list...',ierr)
+  allocate(process_list(0:max_activepe), stat=ierr)
+  if(ierr /= 0) call die(myname_,'allocate(process_list)',ierr)
 
-        ! initialize temp_list to -1 (which can never be a process id)
+        ! initialize process_list to false (i.e. no active pes)
 
-  temp_list = -1
+  process_list = .false.
 
         ! initialize the distinct active process count:
 
@@ -1790,25 +1790,10 @@
   do n=1,ngseg
      if(GSMap%pe_loc(n) >= 0) then ! a legitimate pe_location
 
-	! assume initially that GSMap%pe_loc(n) is a process id previously
-        ! not encountered
-
-	new = .true.
-
-	! test this proposition against the growing list of distinct
-        ! process ids stored in temp_list(:)
-
-	do i=1, count
-	   if(GSMap%pe_loc(n) == temp_list(i)) new = .false.
-	end do
-
-        ! If GSMap%pe_loc(n) represents a previously unencountered
-        ! process id, increment the count, and add this id to the list
-
-	if(new) then
-	   count = count + 1
-	   temp_list(count) = GSMap%pe_loc(n)
-	endif
+        if (.not. process_list(GSMap%pe_loc(n))) then
+           process_list(GSMap%pe_loc(n)) = .true.
+           count = count + 1
+        endif
 
      else  ! a negative entry in GSMap%pe_loc(n)
 	ierr = 2
@@ -1817,41 +1802,37 @@
   end do
 
         ! If the argument pe_list is present, we must allocate this
-        ! array, fill it, and sort it
+        ! array and fill it
 
   if(present(pe_list)) then
 
-        ! allocate pe_list and permutation array perm
+        ! allocate pe_list
 
-     allocate(pe_list(count), perm(count), stat=ierr)
+     allocate(pe_list(count), stat=ierr)
      if (ierr /= 0) then
-	call die(myname_,'allocate(pe_list...',ierr)
+	call die(myname_,'allocate(pe_list)',ierr)
      endif
 
-     do n=1,count
-	pe_list(n) = temp_list(n)
-     end do
+     i = 0
+     do p=0,max_activepe
+        if (process_list(p)) then
+           i = i+1
+           if (i > count) exit
+           pe_list(i) = p
+        endif
+     enddo
 
-        ! sorting and permutation...
-
-     call IndexSet(perm)
-     call IndexSort(count, perm, pe_list, descend=.false.)
-     call Permute(pe_list, perm, count)
-
-        ! deallocate permutation array...
-
-     deallocate(perm, stat=ierr)
-     if (ierr /= 0) then
-	call die(myname_,'deallocate(perm)',ierr)
+     if (i > count) then
+       call die(myname_,'pe_list fill error',count)
      endif
 
   endif ! if(present(pe_list))...
 
-        ! deallocate work array temp_list...
+        ! deallocate work array process_list...
 
-  deallocate(temp_list, stat=ierr)
+  deallocate(process_list, stat=ierr)
   if (ierr /= 0) then
-     call die(myname_,'deallocate(temp_list)',ierr)
+     call die(myname_,'deallocate(process_list)',ierr)
   endif
 
         ! finally, store the active process count in output variable
@@ -1903,14 +1884,36 @@
 
 ! !REVISION HISTORY:
 ! 	18Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!       18Oct16 - P. Worley <worleyph@gmail.com> - added algorithm options:
+!                 new default changes complexity from O(npoints*ngseg) to
+!                 O(gsize + ngseg) (worst case), and much better in current
+!                 usage. Worst case memory requirements are O(gsize), but
+!                 not seen in current usage. Other new algorithm is a little
+!                 slower in practice, and worst case memory requirement is
+!                 O(ngseg), which is also not seen in current usage.
+!                 Original algorithm is recovered if compiled with
+!                 LOW_MEMORY_PELOCS defined. Otherwise nondefault new
+!                 algorithm is enabled if compiled with MEDIUM_MEMORY_PELOCS
+!                 defined.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::peLocs_'
   integer :: ierr
   integer :: iseg, ngseg, ipoint
   integer :: lower_index, upper_index
+  integer :: min_points_index, max_points_index
+#if defined MEDIUM_MEMORY_PELOCS
+  integer :: ifseg, nfseg
+  integer, dimension(:), allocatable :: feasible_seg
+#else
+  integer, dimension(:), allocatable :: pindices_to_pes
+#endif
 
 ! Input argument checks:
+
+  if (npoints < 1) then
+     return
+  endif
 
   if(size(points) < npoints) then
      ierr = size(points)
@@ -1934,20 +1937,157 @@
 
   ngseg = ngseg_(pointGSMap)
 
+#if defined LOW_MEMORY_PELOCS
+
   do ipoint=1,npoints ! loop over points
 
      do iseg=1,ngseg  ! loop over segments
 
-	lower_index = pointGSMap%start(iseg)
-	upper_index = lower_index + pointGSMap%length(iseg) - 1
+        lower_index = pointGSMap%start(iseg)
+        upper_index = lower_index + pointGSMap%length(iseg) - 1
 
-	if((points(ipoint) >= lower_index) .and. &
-	     (points(ipoint) <= upper_index)) then
-	   pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
-	endif
+        if((points(ipoint) >= lower_index) .and. &
+           (points(ipoint) <= upper_index)) then
+           pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
+
+           exit
+
+        endif
 
      end do ! do iseg=1, ngseg
+
   end do ! do ipoint=1,npoints
+
+#elif defined MEDIUM_MEMORY_PELOCS
+
+! Determine index range for points vector
+  max_points_index = 0
+  min_points_index = pointGSMap%gsize + 1
+  do ipoint=1,npoints ! loop over points
+
+     max_points_index = max(points(ipoint), max_points_index)
+     min_points_index = min(points(ipoint), min_points_index)
+
+  end do ! do ipoint=1,npoints
+
+! Determine number of segments that need to be examined
+  nfseg = 0
+  do iseg=1,ngseg  ! loop over segments
+
+     lower_index = pointGSMap%start(iseg)
+     upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+     if ((lower_index <= max_points_index) .and. &
+         (upper_index >= min_points_index)       ) then
+
+        nfseg = nfseg + 1
+
+     endif
+
+  end do ! do iseg=1, ngseg
+
+  if(nfseg < 1) then
+     ierr = nfseg
+     call die(myname_,'no feasible segments',ierr)
+  endif
+
+  ! Allocate temporary array
+  allocate(feasible_seg(nfseg), stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'allocate(feasible_seg)',ierr)
+  endif
+
+  ! Determine segments that need to be examined
+  feasible_seg(:) = 1
+  nfseg = 0
+  do iseg=1,ngseg  ! loop over segments
+
+     lower_index = pointGSMap%start(iseg)
+     upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+     if ((lower_index <= max_points_index) .and. &
+         (upper_index >= min_points_index)       ) then
+
+        nfseg = nfseg + 1
+        feasible_seg(nfseg) = iseg
+
+     endif
+
+  end do ! do iseg=1, ngseg
+
+  ! Calculate map from local points to pes
+  do ipoint=1,npoints ! loop over points
+
+     do ifseg=1,nfseg  ! loop over feasible segments
+
+        iseg = feasible_seg(ifseg)
+        lower_index = pointGSMap%start(iseg)
+        upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+        if((points(ipoint) >= lower_index) .and. &
+           (points(ipoint) <= upper_index)       ) then
+           pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
+           exit
+        endif
+
+     end do ! do ifseg=1,nfseg
+  end do ! do ipoint=1,npoints
+
+  ! Clean up
+  deallocate(feasible_seg, stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'deallocate(feasible_seg)',ierr)
+  endif
+
+#else
+
+! Determine index range for points assigned to points vector
+  max_points_index = 0
+  min_points_index = pointGSMap%gsize + 1
+  do ipoint=1,npoints ! loop over points
+
+     max_points_index = max(points(ipoint), max_points_index)
+     min_points_index = min(points(ipoint), min_points_index)
+
+  end do ! do ipoint=1,npoints
+
+! Allocate temporary array
+  allocate(pindices_to_pes(min_points_index:max_points_index), stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'allocate(pindices_to_pes)',ierr)
+  endif
+
+! Calculate map from (global) point indices to pes
+  do iseg=1,ngseg  ! loop over segments
+
+     lower_index = pointGSMap%start(iseg)
+     upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+     lower_index = max(lower_index, min_points_index)
+     upper_index = min(upper_index, max_points_index)
+
+     if (lower_index <= upper_index) then
+        do ipoint=lower_index,upper_index
+           pindices_to_pes(ipoint) = pointGSMap%pe_loc(iseg)
+        enddo
+     endif
+
+  end do ! do iseg=1, ngseg
+
+! Calculate map from local point indices to pes
+  do ipoint=1,npoints ! loop over points
+
+     pe_locs(ipoint) = pindices_to_pes(points(ipoint))
+
+  end do ! do ipoint=1,npoints
+
+! Clean up
+  deallocate(pindices_to_pes, stat=ierr)
+  if (ierr /= 0) then
+     call die(myname_,'deallocate(pindices_to_pes)',ierr)
+  endif
+
+#endif
 
  end subroutine peLocs_
 

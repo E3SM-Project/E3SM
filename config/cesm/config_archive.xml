@@ -2,11 +2,12 @@
 
   <comp_archive_spec compname="cam" compclass="atm">
     <rest_file_extension>\.[ri]\..*</rest_file_extension>
-    <rest_file_extension>\.r[sh]\.*</rest_file_extension>
+    <rest_file_extension>\.rh\d\.*</rest_file_extension>
+    <rest_file_extension>\.rs\.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>
+      <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -15,7 +16,7 @@
     <rest_file_extension>\.r.*</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>
+      <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
       <rpointer_content >$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -26,7 +27,7 @@
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.lnd</rpointer_file>
+      <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -35,7 +36,7 @@
     <rest_file_extension>\.r.*</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.lnd</rpointer_file>
+      <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
       <rpointer_content >$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -45,7 +46,7 @@
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
+      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -55,7 +56,7 @@
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
+      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -66,7 +67,7 @@
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.ice</rpointer_file>
+      <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -77,11 +78,11 @@
     <hist_file_extension>\.h.*.nc$|\.d[dovt]\.</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.ocn.restart</rpointer_file>
+      <rpointer_file>rpointer.ocn$NINST_STRING.restart</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,RESTART_FMT=nc</rpointer_content>
     </rpointer>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.ocn.ovf</rpointer_file>
+      <rpointer_file>rpointer.ocn$NINST_STRING.ovf</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.ro.$DATENAME</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -92,7 +93,7 @@
     <hist_file_extension>\.initial_hist\..*\.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.glc</rpointer_file>
+      <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
       <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -102,7 +103,7 @@
     <hist_file_extension>\.hi\..*\.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.wav</rpointer_file>
+      <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
       <rpointer_content>unset</rpointer_content>
     </rpointer>
   </comp_archive_spec>
@@ -124,4 +125,3 @@
   </comp_archive_spec>
 
 </components>
-

@@ -2,7 +2,11 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc ice="SICE">Stub ice component</desc>
+  </description>
+
 
   <entry id="COMP_ICE">
     <type>char</type>
@@ -13,8 +17,10 @@
     <desc>Name of sea-ice component</desc>
   </entry>
 
-  <description>
-    <desc compset="_SICE">Stub ice component</desc>
-  </description>
+  <help>
+    =========================================
+    SICE naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>

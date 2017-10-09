@@ -5,6 +5,7 @@
   <xs:attribute name="id" type="xs:NCName"/>
   <xs:attribute name="compset" type="xs:string"/>
   <xs:attribute name="grid" type="xs:string"/>
+  <xs:attribute name="match" type="xs:string"/>
 
   <!-- simple elements -->
   <xs:element name="help" type="xs:string"/>
@@ -33,7 +34,6 @@
         <xs:element ref="lname"/>
 	<xs:element ref="science_support" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
-      <xs:attribute ref="grid"/>
     </xs:complexType>
   </xs:element>
 
@@ -60,14 +60,15 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="value"/>
       </xs:sequence>
+      <xs:attribute ref="match"/>
     </xs:complexType>
   </xs:element>
 
   <xs:element name="value">
     <xs:complexType>
       <xs:simpleContent>
-        <xs:extension base="xs:NMTOKEN">
-          <xs:attribute ref="compset" use="required"/>
+        <xs:extension base="xs:string">
+          <xs:attribute ref="compset"/>
           <xs:attribute ref="grid"/>
         </xs:extension>
       </xs:simpleContent>

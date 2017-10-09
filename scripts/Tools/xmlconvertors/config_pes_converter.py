@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
-config_pes_converter.py -- convert (or verify) config_pesfrom CIME2 format
-    to CIME5
+config_pes_converter.py -- convert (or verify) config_pes elements from CIME2
+format to CIME5. This tool will compare the two versions and suggest updates to
+the CIME5 file.
 
 The location of these files are needed by the script:
     CIME2: cime/machines-acme/config_pes.xml
@@ -25,12 +26,14 @@ def parse_command_line(args):
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
-    parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
-    parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 repository")
+    parser.add_argument("-cime2file", "--cime2file",
+                        help="location of config_grid.xml file in CIME2 format",
+                        required=True)
+    parser.add_argument("-cime5file", "--cime5file",
+                        help="location of config_grids.xml file in CIME5 format",
+                        required=True)
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.cime2file is None or args.cime5file is None:
         parser.print_help()
@@ -55,7 +58,7 @@ class PesNode(grid_xml_converter.DataNode):
             node.set(tag, 'any')
 
     def keyvalue(self):
-        return "%s:%s:%s:%s" % (self.data['gridname'], self.data['machname'],
+        return "{}:{}:{}:{}".format(self.data['gridname'], self.data['machname'],
                                 self.data['pesize'], self.data['compset'])
 
 
@@ -178,18 +181,23 @@ class PesTree(grid_xml_converter.DataTree):
     def __init__(self, xmlfilename):
         # original xml file has bad comments
         import re, StringIO
-        with open(xmlfilename,'r') as xmlfile:
-            t1 = xmlfile.read()
-            t2 = re.sub(r'(?<=<!--)([ -]+)',
-                        lambda x: x.group(0).replace('-',' '), t1)
-            t3 = re.sub(r'([ -]+)(?=-->)',
-                        lambda x: x.group(0).replace('-',' '), t2)
-            tempxml = StringIO.StringIO(t3)
-            super(PesTree, self).__init__(tempxml)
-            tempxml.close()
-        
-        
+        if os.access(xmlfilename, os.R_OK):
+            with open(xmlfilename, 'r') as xmlfile:
+                t1 = xmlfile.read()
+                t2 = re.sub(r'(?<=<!--)([ -]+)',
+                            lambda x: x.group(0).replace('-', ' '), t1)
+                t3 = re.sub(r'([ -]+)(?=-->)',
+                            lambda x: x.group(0).replace('-', ' '), t2)
+                tempxml = StringIO.StringIO(t3)
+                super(PesTree, self).__init__(tempxml)
+                tempxml.close()
+
+        else:
+            super(PesTree, self).__init__(xmlfilename)
+
     def populate(self):
+        if self.root is None:
+            return
         xmlnodes = self.root.findall('grid')
         nodeclass = Cime5PesNode
 
@@ -215,7 +223,7 @@ class PesTree(grid_xml_converter.DataTree):
                 root.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
-            run_cmd("%s --format --output %s -"%(xmllint, newfilename),
+            run_cmd("{} --format --output {} -".format(xmllint, newfilename),
                     input_str=ET.tostring(root))
 
 def diff_tree(atree, btree):
@@ -254,12 +262,12 @@ def diff_tree(atree, btree):
 
 
 
-    LOGGER.info("Number of ok nodes: %d" % len(oklist))
-    LOGGER.info("Number of wrong nodes: %d" % len(fixlist))
-    LOGGER.info("Number of missing nodes: %d" % len(addlist))
+    LOGGER.info("Number of ok nodes: {:d}".format(len(oklist)))
+    LOGGER.info("Number of wrong nodes: {:d}".format(len(fixlist)))
+    LOGGER.info("Number of missing nodes: {:d}".format(len(addlist)))
     for miss in addlist:
-        LOGGER.info(miss[0].keyvalue())
-    LOGGER.info("Number of duplicate nodes: %d" % len(duplist))
+        LOGGER.debug(miss[0].keyvalue())
+    LOGGER.info("Number of duplicate nodes: {:d}".format(len(duplist)))
     for dup in duplist:
         LOGGER.info(dup)
     return [oklist, fixlist, addlist]

@@ -1,6 +1,20 @@
 <?xml version="1.0"?>
 
-<entry_id>
+<entry_id version="3.0">
+
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have wav desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc wav="DWAV[%NULL][%CLIMO]">Data wave model (DWAV)</desc>
+    <desc option="NULL">null mode</desc>
+    <desc option="CLIMO">climatological mode</desc>
+  </description>
 
   <entry id="COMP_WAV">
     <type>char</type>
@@ -13,11 +27,11 @@
 
   <entry id="DWAV_MODE">
     <type>char</type>
-    <valid_values>null,copyall</valid_values>
-    <default_value>copyall</default_value>
-    <values>
-      <value compset="_DWAV%NULL">null</value>
-      <value compset="_DWAV">copyall</value>
+    <valid_values>NULL,CLIMO</valid_values>
+    <default_value>NULL</default_value>
+    <values match="last">
+      <value compset="_DWAV%NULL">NULL</value>
+      <value compset="_DWAV%CLIMO">CLIMO</value>
     </values>
     <group>run_component_dwav</group>
     <file>env_run.xml</file>
@@ -25,11 +39,6 @@
       In null mode, land forcing is set to zero and not used.
       default is copyall</desc>
   </entry>
-
-  <description>
-    <desc compset="_DWAV%NULL">dwav null mode:</desc>
-    <desc compset="_DWAV">dwav copy mode:</desc>
-  </description>
 
   <help>
     =========================================

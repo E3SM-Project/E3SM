@@ -36,7 +36,19 @@ default: $(EXENAME)
 $(MACROS):
 	@echo "use the configure script located in the Machines directory to create the Makefile $(MACROS) file"
 
--include $(MACROS)
+# Do not include Macros for clean or distclean targets
+USE_MACROS=TRUE
+ifeq ($(MAKECMDGOALS),clean)
+  USE_MACROS=FALSE
+endif
+ifeq ($(MAKECMDGOALS),distcleanclean)
+  USE_MACROS=FALSE
+endif
+
+ifeq ($(USE_MACROS),TRUE)
+  -include $(MACROS)
+endif
+
 # Check for the netcdf library and include directories
 ifdef NETCDF_PATH
   LIB_NETCDF:=$(NETCDF_PATH)/lib
@@ -133,7 +145,7 @@ $(EXENAME): $(OBJS)
 clean:
 	$(RM) -f $(OBJS) $(EXENAME) *.mod
 
-veryclean:
-	$(RM) -f $(OBJS) $(EXENAME) *.mod $(MACROS) env_mach* Depends* .env_mach*
+distclean: clean
+	../../../configure --clean
 
 gen_domain.o : gen_domain.F90

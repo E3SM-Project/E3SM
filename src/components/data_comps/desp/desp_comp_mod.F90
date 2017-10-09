@@ -15,8 +15,12 @@ module desp_comp_mod
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_advance
   use shr_strdata_mod, only: shr_strdata_pioinit
 
-  use seq_timemgr_mod, only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
+  use seq_timemgr_mod, only: seq_timemgr_EClockGetData
+  use seq_timemgr_mod, only: seq_timemgr_RestartAlarmIsOn
   use seq_comm_mct,    only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+  use seq_comm_mct,    only: num_inst_cpl => num_inst_driver
+  ! Used to link esp components across multiple drivers
+  use seq_comm_mct,    only: global_comm
 
   implicit none
   private
@@ -30,39 +34,29 @@ module desp_comp_mod
   public                     :: desp_comp_final
 
 !--------------------------------------------------------------------------
-! Public data
+! Public module data
 !--------------------------------------------------------------------------
-
-  integer, parameter, public :: atm_ind = 1
-  integer, parameter, public :: lnd_ind = 2
-  integer, parameter, public :: ice_ind = 3
-  integer, parameter, public :: ocn_ind = 4
-  integer, parameter, public :: glc_ind = 5
-  integer, parameter, public :: rof_ind = 6
-  integer, parameter, public :: wav_ind = 7
-  integer, parameter, public :: cpl_ind = 8
-  integer, parameter, public :: max_ind = cpl_ind
+  integer,          public, parameter :: desp_num_comps = 8
+  character(len=3), public, parameter :: comp_names(desp_num_comps) =         &
+       (/ 'atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'drv' /)
 
 !--------------------------------------------------------------------------
 ! Private data
 !--------------------------------------------------------------------------
 
-  character(len=CS)           :: myModelName = 'esp'       ! user defined model name
+  character(len=CS)           :: myModelName = 'esp'    ! user defined model name
   integer(IN)                 :: mpicom
-  integer(IN)                 :: COMPID                    ! mct comp id
-  integer(IN)                 :: my_task                   ! my task in mpi communicator mpicom
-  integer(IN)                 :: npes                      ! total number of tasks
-  integer(IN),      parameter :: master_task=0             ! task number of master task
-  integer(IN)                 :: logunit                   ! logging unit number
+  integer(IN)                 :: COMPID                 ! mct comp id
+  integer(IN)                 :: my_task                ! my task in mpi communicator mpicom
+  integer(IN)                 :: npes                   ! total number of tasks
+  integer(IN),      parameter :: master_task=0          ! task number of master task
+  integer(IN)                 :: logunit                ! logging unit number
   integer(IN)                 :: loglevel
-  integer                     :: inst_index                ! number of current instance (ie. 1)
-  character(len=16)           :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)           :: inst_suffix               ! char string associated with instance
-                                                           ! (ie. "_0001" or "")
-  character(len=CL)           :: desp_mode                 ! mode of operation
-
-  character(len=3), parameter :: comp_names(8) = (/ 'atm', 'lnd', 'ice',      &
-       'ocn', 'glc', 'rof', 'wav', 'drv' /)
+  integer                     :: inst_index             ! number of current instance (ie. 1)
+  character(len=16)           :: inst_name              ! fullname of current instance (ie. "lnd_0001")
+  character(len=16)           :: inst_suffix            ! char string associated with instance
+                                                        ! (ie. "_0001" or "")
+  character(len=CL)           :: desp_mode              ! mode of operation
   character(len=*), parameter :: rpprefix  = 'rpointer.'
   character(len=*), parameter :: rpfile    = rpprefix//'esp'
   character(len=*), parameter :: nullstr   = 'undefined'
@@ -108,8 +102,6 @@ CONTAINS
 
   subroutine desp_comp_init(EClock, espid, mpicom_in, phase, read_restart,    &
        esp_present, esp_prognostic)
-    use pio,         only: iosystem_desc_t
-    use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -120,44 +112,36 @@ CONTAINS
     logical,          intent(in)  :: read_restart
     logical,          intent(out) :: esp_present    ! flag
     logical,          intent(out) :: esp_prognostic ! flag
-    
+
     !EOP
-    
+
     !--- local variables ---
     integer(IN)                    :: ierr       ! error code
     integer(IN)                    :: shrlogunit ! original log unit
     integer(IN)                    :: shrloglev  ! original log level
     integer(IN)                    :: nunit      ! unit number
 
-    type(iosystem_desc_t), pointer :: iosystem
-
     character(len=CL)              :: fileName   ! generic file name
 
     character(len=CL)              :: rest_file  ! restart filename
     character(len=CL)              :: restfilm   ! model restart file namelist
     logical                        :: exists     ! filename existance
-    integer(IN)                    :: info_debug ! logging level
     integer(IN)                    :: nu         ! unit number
     integer(IN)                    :: CurrentYMD ! model date
     integer(IN)                    :: CurrentTOD ! model sec into model date
     integer(IN)                    :: stepno     ! step number
     character(len=CL)              :: calendar   ! calendar type
+    integer :: global_mype, global_numpes
 
     !----- define namelist -----
     namelist / desp_nml /                                                     &
-         desp_mode, info_debug, restfilm
+         desp_mode, restfilm
 
     !--- formats ---
-    character(*), parameter :: F00   = "('(desp_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(desp_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(desp_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(desp_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F03   = "('(desp_comp_init) ',a,i8,a)"
-    character(*), parameter :: F04   = "('(desp_comp_init) ',2a,2i8,'s')"
-    character(*), parameter :: F05   = "('(desp_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F90   = "('(desp_comp_init) ',73('='))"
-    character(*), parameter :: F91   = "('(desp_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(desp_comp_init) "
+    character(*), parameter :: F00     = "('"//subName//"',8a)"
+    character(*), parameter :: F01     = "('"//subName//"',a,5i8)"
+    character(*), parameter :: F04     = "('"//subName//"',2a,2i8,'s')"
 !-------------------------------------------------------------------------------
 
     call t_startf('DESP_INIT')
@@ -206,7 +190,6 @@ CONTAINS
 
       filename   = "desp_in"//trim(inst_suffix)
       desp_mode  = trim(nullstr)
-      info_debug = -1
       restfilm   = trim(nullstr)
       if (my_task == master_task) then
         nunit = shr_file_getUnit() ! get unused unit number
@@ -219,27 +202,30 @@ CONTAINS
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
         end if
-        write(logunit,F01)' info_debug  = ',info_debug
-        write(logunit,F00)' restfilm    = ',trim(restfilm)
+        write(logunit,F00) 'restfilm    = ',trim(restfilm)
         write(logunit,F01) 'inst_index  = ',inst_index
         write(logunit,F00) 'inst_name   = ',trim(inst_name)
         write(logunit,F00) 'inst_suffix = ',trim(inst_suffix)
         call shr_sys_flush(logunit)
       end if
       call shr_mpi_bcast(desp_mode,  mpicom, 'desp_mode')
-      call shr_mpi_bcast(info_debug, mpicom, 'info_debug')
       call shr_mpi_bcast(restfilm,   mpicom, 'restfilm')
 
       rest_file = trim(restfilm)
-      loglevel = info_debug
+      loglevel = 1 ! could be shrloglev
       call shr_file_setLogLevel(loglevel)
 
       !------------------------------------------------------------------------
       ! Initialize PIO
       !------------------------------------------------------------------------
 
-      iosystem => shr_pio_getiosys(trim(inst_name))
-      call shr_strdata_pioinit(SDESP, iosystem, shr_pio_getiotype(trim(inst_name)))
+      call shr_strdata_pioinit(SDESP, COMPID)
+
+      call mpi_comm_rank(global_comm, global_mype, ierr)
+      call mpi_comm_size(global_comm, global_numpes, ierr)
+
+      write(logunit,*)'DESP: I am global rank ',global_mype,' of ',global_numpes
+
 
       !------------------------------------------------------------------------
       ! Validate mode
@@ -250,7 +236,7 @@ CONTAINS
            (trim(desp_mode) == test_mode)) then
 
         if (my_task == master_task) then
-          write(logunit,F00) ' desp mode = ',trim(desp_mode)
+          write(logunit,F00) 'desp mode = ',trim(desp_mode)
           call shr_sys_flush(logunit)
         end if
         if (trim(desp_mode) /= null_mode) then
@@ -360,7 +346,7 @@ CONTAINS
 
     type(ESMF_Clock),  intent(in)    :: EClock
     character(len=*),  intent(in)    :: case_name
-    logical,           intent(in)    :: pause_sig(max_ind)
+    logical,           intent(in)    :: pause_sig(desp_num_comps)
     character(len=CL), intent(inout) :: atm_resume(num_inst_atm)
     character(len=CL), intent(inout) :: lnd_resume(num_inst_lnd)
     character(len=CL), intent(inout) :: rof_resume(num_inst_rof)
@@ -368,7 +354,7 @@ CONTAINS
     character(len=CL), intent(inout) :: ice_resume(num_inst_ice)
     character(len=CL), intent(inout) :: glc_resume(num_inst_glc)
     character(len=CL), intent(inout) :: wav_resume(num_inst_wav)
-    character(len=CL), intent(inout) :: cpl_resume
+    character(len=CL), intent(inout) :: cpl_resume(num_inst_cpl)
 
                                                               !--- local ---
     integer(IN)                      :: CurrentYMD            ! model date
@@ -408,7 +394,7 @@ CONTAINS
     ice_resume(:) = ' '
     glc_resume(:) = ' '
     wav_resume(:) = ' '
-    cpl_resume    = ' '
+    cpl_resume(:)    = ' '
 
     !--------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -442,52 +428,60 @@ CONTAINS
 
     call t_startf('desp_mode')
 
+    if (.not. ANY(pause_sig)) then
+      if ( (my_task == master_task) .and.                                     &
+           ((loglevel > 1) .or. (trim(desp_mode) == test_mode))) then
+        write(logunit, '(2a,i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
+             'WARNING: No pause signals found at ',yy,mm,dd,CurrentTOD
+      end if
+    end if
+
     ! Find the active components and their restart files
     ! Note hard-coded variable names are just for testing. This could be
     !   changed if this feature comes to regular use
-    do ind = 1, max_ind
+    do ind = 1, desp_num_comps
       if (pause_sig(ind)) then
-        select case (ind)
-        case(atm_ind)
+        select case (comp_names(ind))
+        case('atm')
           call get_restart_filenames(ind, atm_resume, errcode)
           allocate(rfilenames(size(atm_resume)))
           rfilenames = atm_resume
           varname = 'T'
-        case(lnd_ind)
+        case('lnd')
           call get_restart_filenames(ind, lnd_resume, errcode)
           allocate(rfilenames(size(lnd_resume)))
           rfilenames = lnd_resume
           varname = 'T'
-        case(ice_ind)
+        case('ice')
           call get_restart_filenames(ind, ice_resume, errcode)
           allocate(rfilenames(size(ice_resume)))
           rfilenames = ice_resume
           varname = 'T'
-        case(ocn_ind)
+        case('ocn')
           call get_restart_filenames(ind, ocn_resume, errcode)
           allocate(rfilenames(size(ocn_resume)))
           rfilenames = ocn_resume
-          varname = 'T'
-        case(glc_ind)
+          varname = 'PSURF_CUR'
+        case('glc')
           call get_restart_filenames(ind, glc_resume, errcode)
           allocate(rfilenames(size(glc_resume)))
           rfilenames = glc_resume
           varname = 'T'
-        case(rof_ind)
+        case('rof')
           call get_restart_filenames(ind, rof_resume, errcode)
           allocate(rfilenames(size(rof_resume)))
           rfilenames = rof_resume
           varname = 'T'
-        case(wav_ind)
+        case('wav')
           call get_restart_filenames(ind, wav_resume, errcode)
           allocate(rfilenames(size(wav_resume)))
           rfilenames = wav_resume
           varname = 'T'
-        case(cpl_ind)
+        case('drv')
           call get_restart_filenames(ind, cpl_resume, errcode)
-          allocate(rfilenames(1))
-          rfilenames(1) = cpl_resume
-          varname = 'a2x_ax_Sa_tbot'
+          allocate(rfilenames(size(cpl_resume)))
+          rfilenames = cpl_resume
+          varname = 'x2oacc_ox_Foxx_swnet'
         case default
           call shr_sys_abort(subname//'Unrecognized ind')
         end select
@@ -520,6 +514,9 @@ CONTAINS
               write(logunit, *) subname, 'Found restart file ',trim(rfilenames(inst))
             end if
             call esp_pio_modify_variable(COMPID, mpicom, rfilenames(inst), varname, var_found)
+            if (.not. var_found) then
+              call shr_sys_abort(subname//'Variable, '//trim(varname)//', not found on '//rfilenames(inst))
+            end if
           end do
         case (null_mode)
           ! Since DESP is not 'present' for this mode, we should not get here.
@@ -618,7 +615,7 @@ CONTAINS
 
   subroutine get_restart_filenames_a(comp_ind, filenames, retcode)
     use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID
-    use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix
+    use seq_comm_mct, only: WAVID, CPLID, seq_comm_suffix, cpl_inst_tag
     use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
 
     ! Dummy arguments
@@ -642,22 +639,22 @@ CONTAINS
     filenames = ' '
     num_inst = size(filenames)
     allocate(ids(num_inst))
-    select case (comp_ind)
-      case(atm_ind)
+    select case (comp_names(comp_ind))
+      case('atm')
         ids = ATMID
-      case(lnd_ind)
+      case('lnd')
         ids = LNDID
-      case(ice_ind)
+      case('ice')
         ids = ICEID
-      case(ocn_ind)
+      case('ocn')
         ids = OCNID
-      case(glc_ind)
+      case('glc')
         ids = GLCID
-      case(rof_ind)
+      case('rof')
         ids = ROFID
-      case(wav_ind)
+      case('wav')
         ids = WAVID
-      case(cpl_ind)
+      case('drv')
         ids = CPLID
       case default
         call shr_sys_abort(subname//'Unrecognized comp_ind')
@@ -665,15 +662,24 @@ CONTAINS
     rpointer_name = rpprefix//comp_names(comp_ind)
 
     do ind = 1, num_inst
-      rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
+      if (num_inst_cpl > 1) then
+         rpointer_name = rpprefix//comp_names(comp_ind)//trim(cpl_inst_tag)
+      else
+         rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
+      endif
       if (my_task == master_task) then
         inquire(file=rpointer_name, EXIST=file_exists)
+        ! POP decided to not follow the convention
+        if ((.not. file_exists) .and. (trim(comp_names(comp_ind)) == 'ocn')) then
+           rpointer_name = rpprefix//comp_names(comp_ind)//".restart"//trim(seq_comm_suffix(ids(ind)))
+           inquire(file=rpointer_name, EXIST=file_exists)
+        end if
         if (.not. file_exists) then
           retcode = NO_RPOINTER
         else
           unitn = shr_file_getUnit()
           if (loglevel > 0) then
-            write(logunit,"(3A)") subname,"read rpointer file ", rpointer_name
+            write(logunit,"(3A)") subname,"read rpointer file ", trim(rpointer_name)
           end if
           open(unitn, file=rpointer_name, form='FORMATTED', status='old',     &
                action='READ', iostat=ierr)

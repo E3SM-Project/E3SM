@@ -39,7 +39,7 @@ contains
     character(len=*), parameter :: subname = 'mct_init'
     !-----------------------------------------------------------------------
 
-    call seq_comm_init(Comm_in = mct_communicator, nmlfile = ' ')
+    call seq_comm_init(mct_communicator, mct_communicator, nmlfile = ' ')
   end subroutine mct_init
 
   !-----------------------------------------------------------------------

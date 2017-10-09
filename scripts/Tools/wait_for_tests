@@ -66,11 +66,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-g", "--cdash-build-group", default=CIME.wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
                         help="The build group to be used to display results on the CDash dashboard.")
 
-    args = parser.parse_args(args[1:])
+    parser.add_argument("--timeout", type=int,
+                        help="Timeout wait in seconds.")
 
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.ignore_memleak, args.cdash_build_name, args.cdash_project, args.cdash_build_group
+    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.ignore_memleak, args.cdash_build_name, args.cdash_project, args.cdash_build_group, args.timeout
 
 ###############################################################################
 def _main_func(description):
@@ -79,18 +80,19 @@ def _main_func(description):
         CIME.utils.run_cmd_no_fail("python -m doctest %s/wait_for_tests.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
-    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, ignore_memleak, cdash_build_name, cdash_project, cdash_build_group = \
+    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, ignore_memleak, cdash_build_name, cdash_project, cdash_build_group, timeout = \
         parse_command_line(sys.argv, description)
 
     sys.exit(0 if CIME.wait_for_tests.wait_for_tests(test_paths,
-                                                no_wait=no_wait,
-                                                check_throughput=check_throughput,
-                                                check_memory=check_memory,
-                                                ignore_namelists=ignore_namelist_diffs,
-                                                ignore_memleak=ignore_memleak,
-                                                cdash_build_name=cdash_build_name,
-                                                cdash_project=cdash_project,
-                                                cdash_build_group=cdash_build_group)
+                                                     no_wait=no_wait,
+                                                     check_throughput=check_throughput,
+                                                     check_memory=check_memory,
+                                                     ignore_namelists=ignore_namelist_diffs,
+                                                     ignore_memleak=ignore_memleak,
+                                                     cdash_build_name=cdash_build_name,
+                                                     cdash_project=cdash_project,
+                                                     cdash_build_group=cdash_build_group,
+                                                     timeout=timeout)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

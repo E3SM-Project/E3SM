@@ -1,14 +1,10 @@
 !===============================================================================
-! SVN $Id: seq_timemgr_mod.F90 68253 2015-02-18 22:24:57Z mvertens $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_1_15/shr/seq_timemgr_mod.F90 $
-!===============================================================================
-!BOP ===========================================================================
 !
 ! !MODULE: seq_timemgr_mod --- Time-manager module
 !
 ! !DESCRIPTION:
 !
-!     A module to create derived types to manage time and clock information 
+!     A module to create derived types to manage time and clock information
 !     for use with CCSM drivers and models.
 !
 ! !REMARKS:
@@ -45,7 +41,7 @@ module seq_timemgr_mod
    ! --- Clock object methods --------------------------------------------------
    public :: seq_timemgr_clockInit         ! Setup the sync clock
    public :: seq_timemgr_clockAdvance      ! Advance the sync clock
-   public :: seq_timemgr_clockPrint        ! Print sync clock information 
+   public :: seq_timemgr_clockPrint        ! Print sync clock information
 
    public :: seq_timemgr_EClockGetData     ! Get data from an ESMF clock
 
@@ -60,13 +56,15 @@ module seq_timemgr_mod
    public :: seq_timemgr_restartAlarmIsOn    ! Is a restart alarm ringing
    public :: seq_timemgr_stopAlarmIsOn       ! Is a stop alarm ringing
    public :: seq_timemgr_historyAlarmIsOn    ! Is a history alarm ringing
-
-   ! --- Data that belongs to the driver (but is here to avoid loops)
-   character(SHR_KIND_CS),public :: seq_timemgr_pause_component_list  ! Pause - resume components
+   public :: seq_timemgr_pauseAlarmIsOn      ! Is a pause alarm ringing
+   ! --- ESP components need to know about the state of other components
+   public :: seq_timemgr_pause_active        ! Pause/resume is enabled
+   public :: seq_timemgr_pause_component_index ! Index of named component
+   public :: seq_timemgr_pause_component_active ! .true. is comp should pause
 
  ! ! PUBLIC PARAMETERS:
 
-   integer(SHR_KIND_IN),public :: seq_timemgr_histavg_type 
+   integer(SHR_KIND_IN),public :: seq_timemgr_histavg_type
    integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_other  = -1
    integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_never  = 1
    integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_nhour  = 2
@@ -79,14 +77,14 @@ module seq_timemgr_mod
 
 !  These are public but declared in the private area for clarity
 
-!  clocknames: 
+!  clocknames:
 !   character(len=*),public,parameter :: &
-!      seq_timemgr_clock_drv 
-!      seq_timemgr_clock_atm 
-!      seq_timemgr_clock_lnd 
+!      seq_timemgr_clock_drv
+!      seq_timemgr_clock_atm
+!      seq_timemgr_clock_lnd
 !      seq_timemgr_clock_rof
-!      seq_timemgr_clock_ocn 
-!      seq_timemgr_clock_ice 
+!      seq_timemgr_clock_ocn
+!      seq_timemgr_clock_ice
 !      seq_timemgr_clock_glc
 !      seq_timemgr_clock_wav
 !      seq_timemgr_clock_esp
@@ -94,25 +92,24 @@ module seq_timemgr_mod
 !  alarmnames:
 !   character(len=*),public,parameter :: &
 !      seq_timemgr_alarm_restart
-!      seq_timemgr_alarm_run    
-!      seq_timemgr_alarm_stop   
+!      seq_timemgr_alarm_run
+!      seq_timemgr_alarm_stop
 !      seq_timemgr_alarm_datestop
 !      seq_timemgr_alarm_history
-!      seq_timemgr_alarm_atmrun 
-!      seq_timemgr_alarm_lndrun 
-!      seq_timemgr_alarm_rofrun 
-!      seq_timemgr_alarm_ocnrun 
-!      seq_timemgr_alarm_icerun 
-!      seq_timemgr_alarm_glcrun 
-!      seq_timemgr_alarm_wavrun 
+!      seq_timemgr_alarm_atmrun
+!      seq_timemgr_alarm_lndrun
+!      seq_timemgr_alarm_rofrun
+!      seq_timemgr_alarm_ocnrun
+!      seq_timemgr_alarm_icerun
+!      seq_timemgr_alarm_glcrun
+!      seq_timemgr_alarm_glcrun_avg
+!      seq_timemgr_alarm_wavrun
 !      seq_timemgr_alarm_esprun
 !      seq_timemgr_alarm_ocnnext
 !      seq_timemgr_alarm_tprof
 !      seq_timemgr_alarm_histavg
 !      seq_timemgr_alarm_pause
 !      seq_timemgr_alarm_barrier
-
-!EOP
 
    private:: seq_timemgr_alarmGet
    private:: seq_timemgr_alarmInit
@@ -141,7 +138,8 @@ module seq_timemgr_mod
       seq_timemgr_optYearly         = "yearly"    , &
       seq_timemgr_optDate           = "date"      , &
       seq_timemgr_optIfdays0        = "ifdays0"   , &
-      seq_timemgr_optEnd            = "end"     
+      seq_timemgr_optEnd            = "end"       , &
+      seq_timemgr_optGLCCouplingPeriod = "glc_coupling_period"
 
    integer(SHR_KIND_IN),private,parameter :: &
       seq_timemgr_nclock_drv  = 1, &
@@ -153,9 +151,10 @@ module seq_timemgr_mod
       seq_timemgr_nclock_wav  = 7, &
       seq_timemgr_nclock_rof  = 8, &
       seq_timemgr_nclock_esp  = 9
+
    integer(SHR_KIND_IN),private,parameter :: max_clocks = 9
    character(len=*),public,parameter :: &
-      seq_timemgr_clock_drv  = 'seq_timemgr_clock_drv' , & 
+      seq_timemgr_clock_drv  = 'seq_timemgr_clock_drv' , &
       seq_timemgr_clock_atm  = 'seq_timemgr_clock_atm' , &
       seq_timemgr_clock_lnd  = 'seq_timemgr_clock_lnd' , &
       seq_timemgr_clock_ocn  = 'seq_timemgr_clock_ocn' , &
@@ -163,89 +162,97 @@ module seq_timemgr_mod
       seq_timemgr_clock_glc  = 'seq_timemgr_clock_glc' , &
       seq_timemgr_clock_wav  = 'seq_timemgr_clock_wav' , &
       seq_timemgr_clock_rof  = 'seq_timemgr_clock_rof' , &
-      seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp' 
+      seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp'
    character(len=8),private,parameter :: seq_timemgr_clocks(max_clocks) = &
       (/'drv     ','atm     ','lnd     ','ocn     ', &
         'ice     ','glc     ','wav     ','rof     ','esp     '/)
 
+   ! Alarms on both component clocks and driver clock
    integer(SHR_KIND_IN),private,parameter :: &
-      seq_timemgr_nalarm_restart = 1, &
-      seq_timemgr_nalarm_run     = 2, &
-      seq_timemgr_nalarm_stop    = 3, &
-      seq_timemgr_nalarm_datestop= 4, &
-      seq_timemgr_nalarm_history = 5, &
-      seq_timemgr_nalarm_atmrun  = 6, &
-      seq_timemgr_nalarm_lndrun  = 7, &
-      seq_timemgr_nalarm_ocnrun  = 8, &
-      seq_timemgr_nalarm_icerun  = 9, &
-      seq_timemgr_nalarm_glcrun  =10, &
-      seq_timemgr_nalarm_ocnnext =11, &
-      seq_timemgr_nalarm_tprof   =12, &
-      seq_timemgr_nalarm_histavg =13, &
-      seq_timemgr_nalarm_rofrun  =14, &
-      seq_timemgr_nalarm_wavrun  =15, &
-      seq_timemgr_nalarm_esprun  =16, &
-      seq_timemgr_nalarm_pause   =17, &
-      seq_timemgr_nalarm_barrier =18, &
+      seq_timemgr_nalarm_restart    = 1 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_run        = 2 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_stop       = 3 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_datestop   = 4 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_history    = 5 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_atmrun     = 6 , & ! driver only clock alarm
+      seq_timemgr_nalarm_lndrun     = 7 , & ! driver only clock alarm
+      seq_timemgr_nalarm_ocnrun     = 8 , & ! driver only clock alarm
+      seq_timemgr_nalarm_icerun     = 9 , & ! driver only clock alarm
+      seq_timemgr_nalarm_glcrun     =10 , & ! driver only clock alarm
+      seq_timemgr_nalarm_glcrun_avg =11 , & ! driver only clock alarm
+      seq_timemgr_nalarm_ocnnext    =12 , & ! driver only clock alarm
+      seq_timemgr_nalarm_tprof      =13 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_histavg    =14 , & ! driver and component clock alarm
+      seq_timemgr_nalarm_rofrun     =15 , & ! driver only clock alarm
+      seq_timemgr_nalarm_wavrun     =16 , & ! driver only clock alarm
+      seq_timemgr_nalarm_esprun     =17 , & ! driver only clock alarm
+      seq_timemgr_nalarm_pause      =18 , &
+      seq_timemgr_nalarm_barrier    =19 , & ! driver and component clock alarm
       max_alarms = seq_timemgr_nalarm_barrier
+
    character(len=*),public,parameter :: &
-      seq_timemgr_alarm_restart = 'seq_timemgr_alarm_restart ', &
-      seq_timemgr_alarm_run     = 'seq_timemgr_alarm_run     ', &
-      seq_timemgr_alarm_stop    = 'seq_timemgr_alarm_stop    ', &
-      seq_timemgr_alarm_datestop= 'seq_timemgr_alarm_datestop', &
-      seq_timemgr_alarm_history = 'seq_timemgr_alarm_history ', &
-      seq_timemgr_alarm_atmrun  = 'seq_timemgr_alarm_atmrun  ', &
-      seq_timemgr_alarm_lndrun  = 'seq_timemgr_alarm_lndrun  ', &
-      seq_timemgr_alarm_ocnrun  = 'seq_timemgr_alarm_ocnrun  ', &
-      seq_timemgr_alarm_icerun  = 'seq_timemgr_alarm_icerun  ', &
-      seq_timemgr_alarm_glcrun  = 'seq_timemgr_alarm_glcrun  ', &
-      seq_timemgr_alarm_ocnnext = 'seq_timemgr_alarm_ocnnext ', &
-      seq_timemgr_alarm_tprof   = 'seq_timemgr_alarm_tprof   ', &
-      seq_timemgr_alarm_histavg = 'seq_timemgr_alarm_histavg ', &
-      seq_timemgr_alarm_rofrun  = 'seq_timemgr_alarm_rofrun  ', &
-      seq_timemgr_alarm_wavrun  = 'seq_timemgr_alarm_wavrun  ', &
-      seq_timemgr_alarm_esprun  = 'seq_timemgr_alarm_esprun  ', &
-      seq_timemgr_alarm_pause   = 'seq_timemgr_alarm_pause   ', &
-      seq_timemgr_alarm_barrier = 'seq_timemgr_alarm_barrier '
+      seq_timemgr_alarm_restart    = 'seq_timemgr_alarm_restart ', &
+      seq_timemgr_alarm_run        = 'seq_timemgr_alarm_run     ', &
+      seq_timemgr_alarm_stop       = 'seq_timemgr_alarm_stop    ', &
+      seq_timemgr_alarm_datestop   = 'seq_timemgr_alarm_datestop', &
+      seq_timemgr_alarm_history    = 'seq_timemgr_alarm_history ', &
+      seq_timemgr_alarm_atmrun     = 'seq_timemgr_alarm_atmrun  ', &
+      seq_timemgr_alarm_lndrun     = 'seq_timemgr_alarm_lndrun  ', &
+      seq_timemgr_alarm_ocnrun     = 'seq_timemgr_alarm_ocnrun  ', &
+      seq_timemgr_alarm_icerun     = 'seq_timemgr_alarm_icerun  ', &
+      seq_timemgr_alarm_glcrun     = 'seq_timemgr_alarm_glcrun  ', &
+      seq_timemgr_alarm_glcrun_avg = 'seq_timemgr_alarm_glcrun_avg' , &
+      seq_timemgr_alarm_ocnnext    = 'seq_timemgr_alarm_ocnnext ', &
+      seq_timemgr_alarm_tprof      = 'seq_timemgr_alarm_tprof   ', &
+      seq_timemgr_alarm_histavg    = 'seq_timemgr_alarm_histavg ', &
+      seq_timemgr_alarm_rofrun     = 'seq_timemgr_alarm_rofrun  ', &
+      seq_timemgr_alarm_wavrun     = 'seq_timemgr_alarm_wavrun  ', &
+      seq_timemgr_alarm_esprun     = 'seq_timemgr_alarm_esprun  ', &
+      seq_timemgr_alarm_pause      = 'seq_timemgr_alarm_pause   ', &
+      seq_timemgr_alarm_barrier    = 'seq_timemgr_alarm_barrier '
+
+   ! Active pause - resume components
+   logical, private :: pause_active(max_clocks) = .false.
 
    type EClock_pointer     ! needed for array of pointers
       type(ESMF_Clock),pointer :: EClock => null()
    end type EClock_pointer
+
    type seq_timemgr_type
       private
       type(EClock_pointer) :: ECP(max_clocks)    ! ESMF clocks, array of pointers
       type(ESMF_Alarm) :: EAlarm(max_clocks,max_alarms) ! array of clock alarms
    end type seq_timemgr_type
- 
-   ! --- Private local data -------------------------------------------------------
 
-   type(ESMF_Calendar), target, save :: seq_timemgr_cal        ! calendar
-   character(SHR_KIND_CL)      ,save :: seq_timemgr_calendar   ! calendar string
-   logical :: seq_timemgr_end_restart  ! write restarts at end of run?
-   logical, save :: seq_timemgr_setCalendar = .false.          ! if calendar has been set
-   integer, parameter :: SecPerDay = 86400         ! Seconds per day
+   ! --- Private local data ----------------------------------------------------
+
+   type(ESMF_Calendar), target, save :: seq_timemgr_cal      ! calendar
+   character(SHR_KIND_CL)      ,save :: seq_timemgr_calendar ! calendar string
+   integer, parameter                :: SecPerDay = 86400    ! Seconds per day
+
+   integer :: seq_timemgr_pause_sig_index  ! Index of pause comp with smallest dt
+   logical :: seq_timemgr_esp_run_on_pause ! Run ESP component on pause cycle
+   logical :: seq_timemgr_end_restart      ! write restarts at end of run?
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-!===============================================================================
 ! !IROUTINE: seq_timemgr_clockInit -- Initializes clocks
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Initializes clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioid, mpicom, &
       EClock_drv, EClock_atm, EClock_lnd, EClock_ocn, EClock_ice, Eclock_glc, &
       Eclock_rof, EClock_wav, Eclock_esp)
-                                           
+
 ! !USES:
-  use pio, only : file_desc_T
-   use shr_string_mod, only : shr_string_toupper
+   use pio, only : file_desc_T
    use shr_file_mod,   only : shr_file_getunit, shr_file_freeunit
    use shr_mpi_mod,    only : shr_mpi_bcast
    use seq_io_read_mod
@@ -269,7 +276,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
    type(ESMF_clock),target, intent(IN)    :: EClock_wav   ! wav clock
    type(ESMF_clock),target, intent(IN)    :: EClock_esp   ! esp clock
    type(file_desc_t)                      :: pioid
-!EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_clockInit) '
@@ -280,10 +286,11 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     type(ESMF_Time)             :: StopTime1          ! Stop time
     type(ESMF_Time)             :: StopTime2          ! Stop time
     type(ESMF_TimeInterval)     :: TimeStep           ! Clock time-step
-    type(ESMF_TimeInterval)     :: AlarmInterval      ! Alarm interval
     type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
     integer                     :: rc                 ! Return code
-    integer                     :: n                  ! index
+    integer                     :: n, i               ! index
+    logical                     :: found
+    integer                     :: min_dt             ! smallest time step
     integer                     :: dtime(max_clocks)  ! time-step to use
     integer                     :: offset(max_clocks) ! run offset
     integer                     :: unitn              ! i/o unit number
@@ -323,6 +330,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     integer(SHR_KIND_IN)    :: ice_cpl_dt            ! Sea-Ice coupling interval
     integer(SHR_KIND_IN)    :: ocn_cpl_dt            ! Ocean coupling interval
     integer(SHR_KIND_IN)    :: glc_cpl_dt            ! Glc coupling interval
+    character(SHR_KIND_CS)  :: glc_avg_period        ! Glc avering coupling period
     integer(SHR_KIND_IN)    :: rof_cpl_dt            ! Runoff coupling interval
     integer(SHR_KIND_IN)    :: wav_cpl_dt            ! Wav coupling interval
     integer(SHR_KIND_IN)    :: esp_cpl_dt            ! Esp coupling interval
@@ -334,8 +342,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     integer(SHR_KIND_IN)    :: wav_cpl_offset        ! Wav coupling interval
     integer(SHR_KIND_IN)    :: rof_cpl_offset        ! Runoff coupling interval
     integer(SHR_KIND_IN)    :: esp_cpl_offset        ! Esp coupling interval
+    logical                 :: esp_run_on_pause      ! Run ESP on pause cycle
     logical                 :: end_restart           ! Write restart at end of run
-    integer(SHR_KIND_IN)    :: nlUnit                ! Namelist unit number
     integer(SHR_KIND_IN)    :: ierr                  ! Return code
 
     character(len=*), parameter ::  F0A = "(2A,A)"
@@ -353,22 +361,22 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          start_ymd, start_tod, ref_ymd, ref_tod,                 &
          atm_cpl_dt, ocn_cpl_dt, ice_cpl_dt, lnd_cpl_dt,         &
          atm_cpl_offset, lnd_cpl_offset, ocn_cpl_offset,         &
-         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset,             &
+         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset, glc_avg_period, &
          wav_cpl_dt, wav_cpl_offset, esp_cpl_dt, esp_cpl_offset, &
-         rof_cpl_dt, rof_cpl_offset, end_restart
+         rof_cpl_dt, rof_cpl_offset, esp_run_on_pause, end_restart
 !-------------------------------------------------------------------------------
 ! Notes:
 !-------------------------------------------------------------------------------
 
-    SyncClock%ECP(seq_timemgr_nclock_drv)%EClock => EClock_drv
-    SyncClock%ECP(seq_timemgr_nclock_atm)%EClock => EClock_atm
-    SyncClock%ECP(seq_timemgr_nclock_lnd)%EClock => EClock_lnd
-    SyncClock%ECP(seq_timemgr_nclock_ocn)%EClock => EClock_ocn
-    SyncClock%ECP(seq_timemgr_nclock_ice)%EClock => EClock_ice
-    SyncClock%ECP(seq_timemgr_nclock_glc)%EClock => EClock_glc
-    SyncClock%ECP(seq_timemgr_nclock_rof)%EClock => EClock_rof
-    SyncClock%ECP(seq_timemgr_nclock_wav)%EClock => EClock_wav
-    SyncClock%ECP(seq_timemgr_nclock_esp)%EClock => EClock_esp
+    SyncClock%ECP(seq_timemgr_nclock_drv)%EClock     => EClock_drv
+    SyncClock%ECP(seq_timemgr_nclock_atm)%EClock     => EClock_atm
+    SyncClock%ECP(seq_timemgr_nclock_lnd)%EClock     => EClock_lnd
+    SyncClock%ECP(seq_timemgr_nclock_ocn)%EClock     => EClock_ocn
+    SyncClock%ECP(seq_timemgr_nclock_ice)%EClock     => EClock_ice
+    SyncClock%ECP(seq_timemgr_nclock_glc)%EClock     => EClock_glc
+    SyncClock%ECP(seq_timemgr_nclock_rof)%EClock     => EClock_rof
+    SyncClock%ECP(seq_timemgr_nclock_wav)%EClock     => EClock_wav
+    SyncClock%ECP(seq_timemgr_nclock_esp)%EClock     => EClock_esp
 
     call mpi_comm_rank(mpicom,iam,ierr)
 
@@ -415,6 +423,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        ice_cpl_dt       = 0
        ocn_cpl_dt       = 0
        glc_cpl_dt       = 0
+       glc_avg_period   = seq_timemgr_optGLCCouplingPeriod
        rof_cpl_dt       = 0
        wav_cpl_dt       = 0
        esp_cpl_dt       = 0
@@ -426,6 +435,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        rof_cpl_offset   = 0
        wav_cpl_offset   = 0
        esp_cpl_offset   = 0
+       esp_run_on_pause = .true.
        end_restart      = .true.
 
        !---------------------------------------------------------------------------
@@ -534,6 +544,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0A) trim(subname),' pause_option   = ',trim(pause_option)
        write(logunit,F0I) trim(subname),' pause_n        = ',pause_n
        write(logunit,F0A) trim(subname),' pause_component_list = ',trim(pause_component_list)
+       write(logunit,F0L) trim(subname),' esp_run_on_pause = ',esp_run_on_pause
        write(logunit,F0A) trim(subname),' history_option = ',trim(history_option)
        write(logunit,F0I) trim(subname),' history_n      = ',history_n
        write(logunit,F0I) trim(subname),' history_ymd    = ',history_ymd
@@ -555,6 +566,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' ice_cpl_dt     = ',ice_cpl_dt
        write(logunit,F0I) trim(subname),' ocn_cpl_dt     = ',ocn_cpl_dt
        write(logunit,F0I) trim(subname),' glc_cpl_dt     = ',glc_cpl_dt
+       write(logunit,F0A) trim(subname),' glc_avg_period = ',glc_avg_period
        write(logunit,F0I) trim(subname),' rof_cpl_dt     = ',rof_cpl_dt
        write(logunit,F0I) trim(subname),' wav_cpl_dt     = ',wav_cpl_dt
        write(logunit,F0I) trim(subname),' esp_cpl_dt     = ',esp_cpl_dt
@@ -644,6 +656,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( ice_cpl_dt,           mpicom )
     call shr_mpi_bcast( ocn_cpl_dt,           mpicom )
     call shr_mpi_bcast( glc_cpl_dt,           mpicom )
+    call shr_mpi_bcast( glc_avg_period,       mpicom )
     call shr_mpi_bcast( rof_cpl_dt,           mpicom )
     call shr_mpi_bcast( wav_cpl_dt,           mpicom )
     call shr_mpi_bcast( esp_cpl_dt,           mpicom )
@@ -655,6 +668,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( rof_cpl_offset,       mpicom )
     call shr_mpi_bcast( wav_cpl_offset,       mpicom )
     call shr_mpi_bcast( esp_cpl_offset,       mpicom )
+    call shr_mpi_bcast( esp_run_on_pause,     mpicom )
     call shr_mpi_bcast( end_restart,          mpicom )
 
     ! --- derive a couple things ---
@@ -680,10 +694,62 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     endif
 
 
-    ! --- Initialize generic stuff --- 
+    ! --- Initialize generic stuff ---
     seq_timemgr_calendar             = shr_cal_calendarName(calendar)
+    seq_timemgr_esp_run_on_pause     = esp_run_on_pause
     seq_timemgr_end_restart          = end_restart
-    seq_timemgr_pause_component_list = pause_component_list
+    ! --- Figure out which components (if any) are doing pause this run
+    rc = 1
+    i = 1
+    if (trim(pause_component_list) == 'all') then
+      pause_active = .true.
+    else if (trim(pause_component_list) == 'none') then
+      pause_active = .false.
+    else
+      do
+        i = scan(trim(pause_component_list(rc:)), ':') - 1
+        if ((i < 0) .and. (len_trim(pause_component_list) >= rc)) then
+          i = len_trim(pause_component_list(rc:))
+        end if
+        if (i > 0) then
+          found = .false.
+          do n = 1, max_clocks
+            if (pause_component_list(rc:rc+i-1) == trim(seq_timemgr_clocks(n))) then
+              pause_active(n) = .true.
+              found = .true.
+              exit
+            end if
+          end do
+          ! Special case for cpl -- synonym for drv
+          if ((.not. found) .and. (pause_component_list(rc:rc+i-1) == 'cpl')) then
+            pause_active(seq_timemgr_nclock_drv) = .true.
+            found = .true.
+          end if
+          if (.not. found) then
+            call shr_sys_abort(subname//': unknown pause component, '//pause_component_list(rc:rc+i-1))
+          end if
+          rc = rc + i
+          if (pause_component_list(rc:rc) == ':') then
+            rc = rc + 1
+          end if
+          if (rc >= len_trim(pause_component_list)) then
+            exit
+          end if
+        else
+          exit
+        end if
+      end do
+    end if
+    if ( ANY(pause_active) .and.                                              &
+         (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
+         (trim(pause_option) /= seq_timemgr_optNever)) then
+       do n = 1, max_clocks
+          if (pause_active(n) .and. (iam == 0)) then
+             write(logunit, '(4a)') subname, ': Pause active for ',           &
+                  trim(seq_timemgr_clocks(n)),' component'
+          end if
+       end do
+    end if
 
     ! --- Create the new calendar if not already set ------
     if ( trim(seq_timemgr_calendar) == trim(seq_timemgr_noleap)) then
@@ -706,30 +772,47 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call seq_timemgr_ETimeInit( RefTime  , ref_ymd  , ref_tod  , "Reference date" )
     call seq_timemgr_ETimeInit( CurrTime , curr_ymd , curr_tod , "Current date")
 
-    ! --- Figure out what CCSM time-stepping interval should be. ---------------
+    ! --- Figure out what time-stepping interval should be. ---------------
 
     dtime = 0
-    dtime(seq_timemgr_nclock_atm   ) = atm_cpl_dt
-    dtime(seq_timemgr_nclock_lnd   ) = lnd_cpl_dt
-    dtime(seq_timemgr_nclock_ocn   ) = ocn_cpl_dt
-    dtime(seq_timemgr_nclock_ice   ) = ice_cpl_dt
-    dtime(seq_timemgr_nclock_glc   ) = glc_cpl_dt
-    dtime(seq_timemgr_nclock_rof   ) = rof_cpl_dt
-    dtime(seq_timemgr_nclock_wav   ) = wav_cpl_dt
-    dtime(seq_timemgr_nclock_esp   ) = esp_cpl_dt
+    dtime(seq_timemgr_nclock_atm     ) = atm_cpl_dt
+    dtime(seq_timemgr_nclock_lnd     ) = lnd_cpl_dt
+    dtime(seq_timemgr_nclock_ocn     ) = ocn_cpl_dt
+    dtime(seq_timemgr_nclock_ice     ) = ice_cpl_dt
+    dtime(seq_timemgr_nclock_glc     ) = glc_cpl_dt
+    dtime(seq_timemgr_nclock_rof     ) = rof_cpl_dt
+    dtime(seq_timemgr_nclock_wav     ) = wav_cpl_dt
+    dtime(seq_timemgr_nclock_esp     ) = esp_cpl_dt
 
     ! --- this finds the min of dtime excluding the driver value ---
     dtime(seq_timemgr_nclock_drv) = maxval(dtime)
     dtime(seq_timemgr_nclock_drv) = minval(dtime)
+
+    ! --- For figuring pause cycle
+    min_dt = maxval(dtime)
+    seq_timemgr_pause_sig_index = -1
 
     do n = 1,max_clocks
        if ( mod(dtime(n),dtime(seq_timemgr_nclock_drv)) /= 0) then
           write(logunit,*) trim(subname),' ERROR: dtime inconsistent = ',dtime
           call shr_sys_abort( subname//' :coupling intervals not compatible' )
        endif
+       if (pause_active(n) .and. (dtime(n) < min_dt)) then
+          min_dt = dtime(n)
+          seq_timemgr_pause_sig_index = n
+       end if
     enddo
+    if (ANY(pause_active)) then
+       if (seq_timemgr_pause_sig_index < 1) then
+          write(logunit, *) subname,"ERROR: No pause_sig_index even with active pause"
+          call shr_sys_abort(subname//"ERROR: No pause_sig_index even with active pause")
+       end if
+    else
+       ! Don't try to run ESP on non-existent pauses
+       seq_timemgr_esp_run_on_pause = .false.
+    end if
 
-    ! --- Initialize clocks and alarms ---
+    ! --- Initialize component and driver clocks and alarms common to components and driver clocks ---
 
     do n = 1,max_clocks
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
@@ -739,8 +822,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
           EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_run),  &
-          option  = seq_timemgr_optNSeconds,         &
-          opt_n   = dtime(n), RefTime = CurrTime,    &
+          option  = seq_timemgr_optNSeconds, &
+          opt_n   = dtime(n),                &
+          RefTime = CurrTime,                &
           alarmname = trim(seq_timemgr_alarm_run))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -757,7 +841,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
           option  = seq_timemgr_optDate, &
           opt_ymd = stop_ymd,            &
           opt_tod = stop_tod,            &
-          RefTime = StartTime,            &
+          RefTime = StartTime,           &
           alarmname = trim(seq_timemgr_alarm_datestop))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
@@ -809,12 +893,21 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        endif
 
        ! Set the pause option if pause/resume is active
-       call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                    &
-            EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),           &
-            option  = pause_option,                                           &
-            opt_n   = pause_n,                                                &
-            RefTime = StartTime,                                              &
-            alarmname = trim(seq_timemgr_alarm_pause))
+       if (pause_active(n)) then
+         call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                  &
+              EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),         &
+              option  = pause_option,                                         &
+              opt_n   = pause_n,                                              &
+              RefTime = CurrTime,                                             &
+              alarmname = trim(seq_timemgr_alarm_pause))
+       else
+         call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                  &
+              EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),         &
+              option  = seq_timemgr_optNever,                                 &
+              opt_n   = -1,                                                   &
+              RefTime = StartTime,                                            &
+              alarmname = trim(seq_timemgr_alarm_pause))
+       endif
 
     enddo
 
@@ -829,15 +922,15 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     ! via namelist.  tcraig, 10/2007
     ! --------------------------------------------------------------------
 
-    offset(seq_timemgr_nclock_drv) = 0
-    offset(seq_timemgr_nclock_atm) = atm_cpl_offset
-    offset(seq_timemgr_nclock_lnd) = lnd_cpl_offset
-    offset(seq_timemgr_nclock_ocn) = ocn_cpl_offset
-    offset(seq_timemgr_nclock_ice) = ice_cpl_offset
-    offset(seq_timemgr_nclock_glc) = glc_cpl_offset
-    offset(seq_timemgr_nclock_rof) = rof_cpl_offset
-    offset(seq_timemgr_nclock_wav) = wav_cpl_offset
-    offset(seq_timemgr_nclock_esp) = esp_cpl_offset
+    offset(seq_timemgr_nclock_drv)     = 0
+    offset(seq_timemgr_nclock_atm)     = atm_cpl_offset
+    offset(seq_timemgr_nclock_lnd)     = lnd_cpl_offset
+    offset(seq_timemgr_nclock_ocn)     = ocn_cpl_offset
+    offset(seq_timemgr_nclock_ice)     = ice_cpl_offset
+    offset(seq_timemgr_nclock_glc)     = glc_cpl_offset
+    offset(seq_timemgr_nclock_rof)     = rof_cpl_offset
+    offset(seq_timemgr_nclock_wav)     = wav_cpl_offset
+    offset(seq_timemgr_nclock_esp)     = esp_cpl_offset
 
     do n = 1,max_clocks
        if (abs(offset(n)) > dtime(n)) then
@@ -901,16 +994,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_wavrun))
 
-    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_esp), rc=rc )
-    OffsetTime = CurrTime + TimeStep
-    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
-       EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun),  &
-       option  = seq_timemgr_optNSeconds,       &
-       opt_n   = dtime(seq_timemgr_nclock_esp), &
-       RefTime = OffsetTime,                    &
-       alarmname = trim(seq_timemgr_alarm_esprun))
-
-    ! --- this is the glcrun alarm (there ^) offset by a -dtime of the driver
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc), rc=rc )
     OffsetTime = CurrTime + TimeStep
     call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv), rc=rc )
@@ -921,6 +1004,23 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        opt_n   = dtime(seq_timemgr_nclock_glc), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_glcrun))
+    if (glc_avg_period == seq_timemgr_optGLCCouplingPeriod) then
+       ! Create this alarm identically to the glcrun alarm (which is created above)
+       call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+            EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
+            option  = seq_timemgr_optNSeconds,       &
+            opt_n   = dtime(seq_timemgr_nclock_glc), &
+            RefTime = OffsetTime,                    &
+            alarmname = trim(seq_timemgr_alarm_glcrun_avg))
+    else if (glc_avg_period == seq_timemgr_optYearly) then
+       call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+            EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
+            option  = seq_timemgr_optYearly,         &
+            RefTime = OffsetTime,                    &
+            alarmname = trim(seq_timemgr_alarm_glcrun_avg))
+    else
+       call shr_sys_abort(subname//':: glc_avg_period can only be glc_coupling_period or yearly')
+    end if
 
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_ocn), rc=rc )
     OffsetTime = CurrTime + TimeStep
@@ -943,16 +1043,25 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_ocnnext))
 
+    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_esp), rc=rc )
+    OffsetTime = CurrTime + TimeStep
+    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+       EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun),  &
+       option  = seq_timemgr_optNSeconds,       &
+       opt_n   = dtime(seq_timemgr_nclock_esp), &
+       RefTime = OffsetTime,                    &
+       alarmname = trim(seq_timemgr_alarm_esprun))
+
 end subroutine seq_timemgr_clockInit
 
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_EClockGetData -- Get information from the clock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Get various values from the clock.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
@@ -985,13 +1094,11 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     type(ESMF_Time),      intent(OUT), optional :: ECurrTime  ! Current ESMF time
     real(SHR_KIND_R8)   , intent(OUT), optional :: curr_cday  ! current calendar day
     real(SHR_KIND_R8)   , intent(OUT), optional :: next_cday  ! current calendar day
-    real(SHR_KIND_R8)   , intent(OUT), optional :: curr_time  ! time interval between current time 
+    real(SHR_KIND_R8)   , intent(OUT), optional :: curr_time  ! time interval between current time
                                                               ! and reference date
     real(SHR_KIND_R8)   , intent(OUT), optional :: prev_time  ! time interval between previous time
                                                               ! and reference date
     character(len=*)    , intent(OUT), optional :: calendar   ! calendar type
-
-!EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_EClockGetData) '
@@ -1008,9 +1115,6 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     integer(SHR_KIND_IN) :: ymd               ! Date (YYYYMMDD)
     integer(SHR_KIND_IN) :: tod               ! time of day (sec)
     integer(SHR_KIND_IN) :: ldtime            ! local dtime
-    integer(SHR_KIND_IN) :: intyrs            ! alarm variable
-    integer(SHR_KIND_IN) :: intmon            ! alarm variable
-    integer(SHR_KIND_IN) :: intsec            ! alarm variable
     integer(SHR_KIND_IN) :: days              ! number of whole days in time interval
     integer(SHR_KIND_IN) :: seconds           ! number of seconds in time interval
     integer(SHR_KIND_IN) :: acount            ! number of valid alarms
@@ -1059,7 +1163,7 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     endif
 
     ! ---Current Time (the time interval between the current date and the reference date) ---
-    if ( present(curr_time)) then 
+    if ( present(curr_time)) then
        timediff = CurrentTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        call seq_timemgr_ESMFCodeCheck( rc, msg=subname//"Error from  TimeIntervalGet timediff")
@@ -1067,7 +1171,7 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     end if
 
     ! ---Previous Time (the time interval between the previous date and the reference date) ---
-    if ( present(prev_time)) then 
+    if ( present(prev_time)) then
        timediff = PreviousTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        call seq_timemgr_ESMFCodeCheck( rc, msg=subname//"Error from  TimeIntervalGet timediff")
@@ -1106,11 +1210,11 @@ end subroutine seq_timemgr_EClockGetData
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_clockAdvance  -- Advance the syncclock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 ! Advance this clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, force_stop_tod )
@@ -1124,11 +1228,9 @@ subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, forc
    integer, optional, intent(in) :: force_stop_ymd       ! force stop ymd
    integer, optional, intent(in) :: force_stop_tod       ! force stop tod
 
-!EOP
-
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_clockAdvance) '
-    integer :: n    
+    integer :: n
     type(ESMF_Time) :: NextAlarm              ! Next restart alarm time
     integer :: rc    ! Return code
 
@@ -1205,6 +1307,16 @@ subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, forc
       call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from esp ESMF_ClockAdvance")
    endif
 
+   ! Special handling of ESP component if linked to pause cycles
+   if (seq_timemgr_esp_run_on_pause) then
+      ! We need to figure out if any pause clock is ringing
+      call seq_timemgr_alarmSetOff(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock,seq_timemgr_alarm_esprun)
+      if (seq_timemgr_alarmIsOn(SyncClock%ECP(seq_timemgr_pause_sig_index)%EClock,seq_timemgr_alarm_pause)) then
+         call seq_timemgr_alarmSetOn(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock,seq_timemgr_alarm_esprun)
+      end if
+   end if
+
+   ! Special handling of restart alarm if end_restart is .true.
    if (seq_timemgr_end_restart) then
       do n = 1,max_clocks
          if (seq_timemgr_alarmIsOn(SyncClock%ECP(n)%EClock,seq_timemgr_alarm_stop) .or. &
@@ -1219,11 +1331,11 @@ end subroutine seq_timemgr_clockAdvance
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmInit -- Set an alarm
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Setup an alarm in a clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, alarmname)
@@ -1241,8 +1353,6 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
     type(ESMF_Time)     ,optional, intent(IN)    :: RefTime   ! ref time
     character(len=*)    ,optional, intent(IN)    :: alarmname ! alarm name
 
-!EOP
-
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_alarmInit): '
     integer :: rc                             ! Return code
@@ -1254,13 +1364,12 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
     logical :: update_nextalarm               ! update next alarm
     type(ESMF_Time) :: CurrTime               ! Current Time
     type(ESMF_Time) :: NextAlarm              ! Next restart alarm time
-    type(ESMF_Time) :: AltAlarm               ! Alternate alarm time
     type(ESMF_TimeInterval) :: AlarmInterval  ! Alarm interval
 
 !-------------------------------------------------------------------------------
 ! Notes: This is slightly screwed up because of the way the ESMF alarm
 !        initializes.  The ringtime sent to AlarmCreate MUST be the next
-!        alarm time.  If you send an arbitrary but proper ringtime from 
+!        alarm time.  If you send an arbitrary but proper ringtime from
 !        the past and the ring interval, the alarm will always go off on
 !        the next clock advance and this will cause serious problems.
 !        So, even if it makes sense to initialize an alarm with some
@@ -1301,21 +1410,21 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
     selectcase (trim(option))
 
     case (seq_timemgr_optNONE)
-       !--- tcx seems we need an alarm interval or the alarm create fails, 
+       !--- tcx seems we need an alarm interval or the alarm create fails,
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
        call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
        update_nextalarm  = .false.
 
     case (seq_timemgr_optNever)
-       !--- tcx seems we need an alarm interval or the alarm create fails, 
+       !--- tcx seems we need an alarm interval or the alarm create fails,
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
        call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
        update_nextalarm  = .false.
 
     case (seq_timemgr_optDate)
-       !--- tcx seems we need an alarm interval or the alarm create fails, 
+       !--- tcx seems we need an alarm interval or the alarm create fails,
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
        if (.not. present(opt_ymd)) call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
@@ -1461,11 +1570,11 @@ end subroutine seq_timemgr_AlarmInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmGet -- Get information from the alarm
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Get various values from the alarm.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_alarmGet( EAlarm, next_ymd, next_tod, prev_ymd, prev_tod,    &
@@ -1484,8 +1593,6 @@ subroutine seq_timemgr_alarmGet( EAlarm, next_ymd, next_tod, prev_ymd, prev_tod,
     integer(SHR_KIND_IN), intent(OUT), optional :: IntMon   ! alarm int mon
     integer(SHR_KIND_IN), intent(OUT), optional :: IntYrs   ! alarm int yrs
     character(len=*)    , intent(OUT), optional :: name     ! alarm name
-
-!EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_alarmGet) '
@@ -1536,11 +1643,11 @@ end subroutine seq_timemgr_alarmGet
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmSetOn -- turn alarm on
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     turn alarm on
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
@@ -1552,8 +1659,6 @@ subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
     character(len=*), intent(IN), optional :: alarmname  ! alarmname
 
-!EOP
-
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_alarmSetOn) '
     character(len=*), parameter :: xalarm = 'unset'
@@ -1562,7 +1667,6 @@ subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
     logical :: found
     logical :: set
     character(len=64) :: name
-    type(ESMF_Alarm),pointer :: EAlarm
     type(ESMF_Alarm),pointer :: EAlarm_list(:)
     integer(SHR_KIND_IN) :: AlarmCount ! Number of valid alarms
 
@@ -1572,8 +1676,8 @@ subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
 !   and the alarm pointer is valid if it's associated.  If it's not associated
 !   the AlarmGet calls will generally return an error code.  What we really
 !   want is to ignore the unset alarms.  So below, we have to kind of kludge
-!   this up.  We set name=xalarm, a special value, before the AlarmGet call so 
-!   if Alarm_list(n) is not associated, the name will remain the value of 
+!   this up.  We set name=xalarm, a special value, before the AlarmGet call so
+!   if Alarm_list(n) is not associated, the name will remain the value of
 !   xalarm.  Then we check whether it's a valid alarm by first checking
 !   the name vs xalarm.  If name is not xalarm, then it must be a valid alarm
 !   and we either set found to true if we are setting all alarms or we compare
@@ -1620,11 +1724,11 @@ end subroutine seq_timemgr_AlarmSetOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmSetOff -- turn alarm off
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     turn alarm off
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
@@ -1636,8 +1740,6 @@ subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
     type(ESMF_Clock), intent(INOUT) :: EClock      ! clock/alarm
     character(len=*), intent(IN), optional :: alarmname  ! alarmname
 
-!EOP
-
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_alarmSetOff) '
     character(len=*), parameter :: xalarm = 'unset'
@@ -1646,7 +1748,6 @@ subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
     logical :: found
     logical :: set
     character(len=64) :: name
-    type(ESMF_Alarm),pointer :: EAlarm
     type(ESMF_Alarm),pointer :: EAlarm_list(:)
     integer(SHR_KIND_IN) :: AlarmCount ! Number of valid alarms
 
@@ -1656,8 +1757,8 @@ subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
 !   and the alarm pointer is valid if it's associated.  If it's not associated
 !   the AlarmGet calls will generally return an error code.  What we really
 !   want is to ignore the unset alarms.  So below, we have to kind of kludge
-!   this up.  We set name=xalarm, a special value, before the AlarmGet call so 
-!   if Alarm_list(n) is not associated, the name will remain the value of 
+!   this up.  We set name=xalarm, a special value, before the AlarmGet call so
+!   if Alarm_list(n) is not associated, the name will remain the value of
 !   xalarm.  Then we check whether it's a valid alarm by first checking
 !   the name vs xalarm.  If name is not xalarm, then it must be a valid alarm
 !   and we either set found to true if we are setting all alarms or we compare
@@ -1704,11 +1805,11 @@ end subroutine seq_timemgr_AlarmSetOff
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_alarmIsOn( EClock, alarmname)
@@ -1720,18 +1821,14 @@ logical function seq_timemgr_alarmIsOn( EClock, alarmname)
     type(ESMF_Clock), intent(IN) :: EClock     ! clock/alarm
     character(len=*), intent(IN) :: alarmname  ! which alarm
 
-!EOP
-
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_alarmIsOn) '
     character(len=*), parameter :: xalarm = 'unset'
     integer :: n
     integer :: rc
     logical :: found
-    logical :: set
     character(len=64) :: name
     type(ESMF_Time) :: ETime1, ETime2
-    type(ESMF_Alarm),pointer :: EAlarm
     type(ESMF_Alarm),pointer :: EAlarm_list(:)
     integer(SHR_KIND_IN) :: AlarmCount ! Number of valid alarms
 
@@ -1788,11 +1885,11 @@ end function seq_timemgr_alarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_restartAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_restartAlarmIsOn( EClock)
@@ -1803,10 +1900,7 @@ logical function seq_timemgr_restartAlarmIsOn( EClock)
 
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
-!EOP
-
     !----- local -----
-    integer :: rc
     character(len=*), parameter :: subname = '(seq_timemgr_restartAlarmIsOn) '
 
 !-------------------------------------------------------------------------------
@@ -1821,11 +1915,11 @@ end function seq_timemgr_restartAlarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_stopAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_stopAlarmIsOn( EClock)
@@ -1835,8 +1929,6 @@ logical function seq_timemgr_stopAlarmIsOn( EClock)
 ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
-
-!EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_stopAlarmIsOn) '
@@ -1853,11 +1945,11 @@ end function seq_timemgr_stopAlarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_historyAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_historyAlarmIsOn( EClock)
@@ -1868,10 +1960,7 @@ logical function seq_timemgr_historyAlarmIsOn( EClock)
 
     type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
 
-!EOP
-
     !----- local -----
-    integer :: rc
     character(len=*), parameter :: subname = '(seq_timemgr_historyAlarmIsOn) '
 
 !-------------------------------------------------------------------------------
@@ -1885,14 +1974,145 @@ end function seq_timemgr_historyAlarmIsOn
 
 !===============================================================================
 !===============================================================================
-! !IROUTINE: seq_timemgr_ETimeInit -- Create ESMF_Time object based on YMD values
-!   
+! !IROUTINE: seq_timemgr_pauseAlarmIsOn -- check if an alarm is ringing
+!
 ! !DESCRIPTION:
-!   
+!
+!     check if an alarm is ringing
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+logical function seq_timemgr_pauseAlarmIsOn( EClock)
+
+    implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+
+!EOP
+
+    !----- local -----
+    character(len=*), parameter :: subname = '(seq_timemgr_pauseAlarmIsOn) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    seq_timemgr_pauseAlarmIsOn =  &
+       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_pause)
+
+  end function seq_timemgr_pauseAlarmIsOn
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pause_active -- Is pause/resume active this run?
+!
+! !DESCRIPTION:
+!
+!     Return .true. if any component is configured for pause/resume
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+  logical function seq_timemgr_pause_active()
+
+!    !INPUT/OUTPUT PARAMETERS:
+
+!EOP
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    seq_timemgr_pause_active = ANY(pause_active)
+
+  end function seq_timemgr_pause_active
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pause_component_index -- return an index for a component
+!
+! !DESCRIPTION:
+!
+!     Look up a component's internal index for faster processing
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+  integer function seq_timemgr_pause_component_index(component_name)
+
+!    !INPUT/OUTPUT PARAMETERS:
+
+     character(len=*), intent(IN) :: component_name
+
+!EOP
+
+     !----- local -----
+     integer                     :: ind
+     character(len=*), parameter :: subname = '(seq_timemgr_pause_component_index) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+     seq_timemgr_pause_component_index = 0
+     do ind = 1, max_clocks
+        if (trim(component_name) == trim(seq_timemgr_clocks(ind))) then
+           seq_timemgr_pause_component_index = ind
+           exit
+        end if
+     end do
+     if (seq_timemgr_pause_component_index < 1) then
+        if (trim(component_name) == 'cpl') then
+           seq_timemgr_pause_component_index = seq_timemgr_nclock_drv
+        end if
+     end if
+     if (seq_timemgr_pause_component_index < 1) then
+        call shr_sys_abort(subname//': No index for component '//trim(component_name))
+     end if
+
+  end function seq_timemgr_pause_component_index
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_pause_component_active -- Check if component paused
+!
+! !DESCRIPTION:
+!
+!     Return .true. if component is active in driver pause
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+  logical function seq_timemgr_pause_component_active(component_index)
+
+!    !INPUT/OUTPUT PARAMETERS:
+
+     integer, intent(IN) :: component_index
+
+!EOP
+
+    !----- local -----
+    character(len=*), parameter :: subname = '(seq_timemgr_pause_component_active) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    if ((component_index < 1) .or. (component_index > max_clocks)) then
+       call shr_sys_abort(subname//': component_index out of range')
+    end if
+    seq_timemgr_pause_component_active = pause_active(component_index)
+
+  end function seq_timemgr_pause_component_active
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_ETimeInit -- Create ESMF_Time object based on YMD values
+!
+! !DESCRIPTION:
+!
 !     Create the ESMF_Time object corresponding to the given input time, given in
 !  YMD (Year Month Day) and TOD (Time-of-day) format.
 ! Set the time by an integer as YYYYMMDD and integer seconds in the day
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ETimeInit( ETime, ymd, tod, desc )
@@ -1905,8 +2125,6 @@ subroutine seq_timemgr_ETimeInit( ETime, ymd, tod, desc )
    integer         , intent(in)    :: ymd       ! Year, month, day YYYYMMDD
    integer         , intent(in), optional    :: tod       ! Time of day in seconds
    character(len=*), intent(in), optional    :: desc      ! Description of time to set
-
-!EOP
 
    !----- local -----
    character(len=*), parameter :: subname = '(seq_timemgr_ETimeInit) '
@@ -1947,11 +2165,11 @@ end subroutine seq_timemgr_ETimeInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ETimeGet -- Get the date in YYYYMMDD from from ESMF Time
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Get the date in YYYYMMDD format from a ESMF time object.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ETimeGet( ETime, offset, ymd, tod )
@@ -1964,8 +2182,6 @@ subroutine seq_timemgr_ETimeGet( ETime, offset, ymd, tod )
     integer, optional, intent(IN)  :: offset  ! Offset from input time (sec)
     integer, optional, intent(OUT) :: ymd     ! date of day
     integer, optional, intent(OUT) :: tod     ! Time of day
-
-!EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_ETimeGet) '
@@ -2014,13 +2230,13 @@ end subroutine seq_timemgr_ETimeGet
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_EClockInit -- Initialize the ESMF clock in the shared clock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 ! Private method:
 !
 ! Setup the ESMF clock inside the wrapped CCSM clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_EClockInit( TimeStep, StartTime, RefTime, CurrTime, EClock )
@@ -2034,8 +2250,6 @@ subroutine seq_timemgr_EClockInit( TimeStep, StartTime, RefTime, CurrTime, ECloc
     type(ESMF_Time)        , intent(IN)  :: RefTime     ! Reference time
     type(ESMF_Time)        , intent(IN)  :: CurrTime    ! Current time
     type(ESMF_Clock)       , intent(OUT) :: EClock      ! Output ESMF clock
-
-!EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_EClockInit) '
@@ -2080,11 +2294,11 @@ end subroutine seq_timemgr_EClockInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_EClockDateInSync -- Check that input date in sync with clock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Check that the given input date/time is in sync with clock time
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_EClockDateInSync( EClock, ymd, tod, prev)
@@ -2097,8 +2311,6 @@ logical function seq_timemgr_EClockDateInSync( EClock, ymd, tod, prev)
    integer,          intent(IN) :: ymd     ! Date (YYYYMMDD)
    integer,          intent(IN) :: tod     ! Time of day (sec)
    logical, optional,intent(IN) :: prev    ! If should get previous time
-
-!EOP
 
    !----- local -----
    character(len=*), parameter :: subname = "(seq_timemgr_EClockDateInSync) "
@@ -2137,11 +2349,11 @@ end function seq_timemgr_EClockDateInSync
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_clockPrint -- Print clock information out
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !      Print clock information out.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_clockPrint( SyncClock )
@@ -2150,9 +2362,7 @@ subroutine seq_timemgr_clockPrint( SyncClock )
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-  type(seq_timemgr_type), intent(in) :: SyncClock   ! Input clock to print
-
-!EOP
+   type(seq_timemgr_type), intent(in) :: SyncClock   ! Input clock to print
 
    character(len=*), parameter :: subname = "(seq_timemgr_clockPrint) "
    integer(SHR_KIND_IN) :: m,n
@@ -2240,11 +2450,11 @@ end subroutine seq_timemgr_clockPrint
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ESMFDebug -- Print ESMF stuff for debugging
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 ! Print ESMF stuff for debugging
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ESMFDebug( EClock, ETime, ETimeInterval, istring )
@@ -2257,8 +2467,6 @@ subroutine seq_timemgr_ESMFDebug( EClock, ETime, ETimeInterval, istring )
    type(ESMF_Time) , optional, intent(inout) :: ETime     ! ESMF Time
    type(ESMF_TimeInterval), optional, intent(inout) :: ETimeInterval  ! ESMF Time Interval
    character(len=*), optional, intent(in) :: istring
-
-!EOP
 
    !----- local -----
    character(len=*), parameter :: subname = '(seq_timemgr_ESMFDebug) '
@@ -2314,11 +2522,11 @@ end subroutine seq_timemgr_ESMFDebug
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ESMFCodeCheck -- Check return-code from ESMF -- abort if not
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Check ESMF return code and abort if not successful.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ESMFCodeCheck( rc, msg )
@@ -2331,8 +2539,6 @@ subroutine seq_timemgr_ESMFCodeCheck( rc, msg )
 
    integer, intent(in)          :: rc   ! return code from ESMF
    character(len=*),optional,intent(in) :: msg  ! error message
-
-!EOP
 
    character(len=*),parameter :: subname = 'seq_timemgr_ESMFCodeCheck'
 !-------------------------------------------------------------------------------

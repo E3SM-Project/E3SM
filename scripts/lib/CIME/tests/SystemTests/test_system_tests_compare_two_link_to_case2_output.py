@@ -99,10 +99,9 @@ class TestLinkToCase2Output(unittest.TestCase):
 
         Returns full path to the file created
         """
-        filename = '%s.%s.nc.%s'%(
-            mytest._case2.get_value('CASE'),
-            core_filename,
-            run2_suffix)
+        filename = '{}.{}.nc.{}'.format(mytest._case2.get_value('CASE'),
+                                        core_filename,
+                                        run2_suffix)
         filepath = os.path.join(mytest._case2.get_value('RUNDIR'), filename)
         open(filepath, 'w').close()
         return filepath
@@ -124,13 +123,13 @@ class TestLinkToCase2Output(unittest.TestCase):
         mytest._link_to_case2_output()
 
         # Verify
-        expected_link_filename1 = '%s.clm2.h0.nc.%s'%(casename1, run2_suffix)
+        expected_link_filename1 = '{}.clm2.h0.nc.{}'.format(casename1, run2_suffix)
         expected_link_filepath1 = os.path.join(mytest._case1.get_value('RUNDIR'),
                                                expected_link_filename1)
         self.assertTrue(os.path.islink(expected_link_filepath1))
         self.assertEqual(filepath1, os.readlink(expected_link_filepath1))
 
-        expected_link_filename2 = '%s.clm2.h1.nc.%s'%(casename1, run2_suffix)
+        expected_link_filename2 = '{}.clm2.h1.nc.{}'.format(casename1, run2_suffix)
         expected_link_filepath2 = os.path.join(mytest._case1.get_value('RUNDIR'),
                                                expected_link_filename2)
         self.assertTrue(os.path.islink(expected_link_filepath2))

@@ -98,8 +98,8 @@ def parse_command_line(args, description):
                         help=queryhelp)
     parser.add_argument("-machine", "--machine", default=None,
                         help="can be a supported machine name")
-    args = parser.parse_args(args[1:])
-    CIME.utils.handle_standard_logging_options(args)
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
     CIME.utils.expect(args.add or args.query,
                       "Either --query or --add must be on command line")
 
@@ -337,7 +337,7 @@ class ManagePes(object):
                         gridname, machname, compsetname, pesizename)
             drv_config_file = Files().get_value("CONFIG_CPL_FILE")
             drv_comps = [x.lower() for x in
-                        Component(drv_config_file).get_valid_model_components()]
+                        Component(drv_config_file, "CPL").get_valid_model_components()]
 
             logger.info("                   " +
                         (len(drv_comps)*' {:10}').format(*drv_comps))

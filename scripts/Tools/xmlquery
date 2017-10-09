@@ -30,49 +30,117 @@ logger = logging.getLogger("xmlquery")
 def parse_command_line(args):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""%s <VAR> [<VAR> <VAR> ...]
+usage="""
 
-Examples:
+xmlquery provides users the ability to query the xml files in a CIME case and
+has two usage categories:
 
-# Show NTASKS for all components
-> %s NTASKS
+1) Querying variables:
 
-# Show RUNDIR
-> %s RUNDIR
+   - You can query a variable, or a list of variables via
+      ./xmlquery var1
 
-# Show all vars containing the substring ROOT
-> %s -p ROOT
+     or, for multiple variables (either comma or space separated)
+      ./xmlquery var1,var2,var3 ....
+      ./xmlquery var1 var2 var3 ....
+     where var1, var2 and var3 are variables that appear in a CIME case xml file
 
-# Show all vars in the case
-> %s --listall
+     Several xml variables that have settings for each component have somewhat special treatment
+     The variables that this current applies to are
+         NTASKS, NTRDS, ROOTPE, PIO_TYPENAME, PIO_STRIDE, PIO_NUMTASKS
+     As examples:
+     - to show the number of tasks for each component, issue
+        >  ./xmlquery NTASKS
+     - to show the number of tasks just for the atm component, issue
+        > ./xmlauery NTASKS_ATM
 
-# Show everything in the run_pio subgroup
-> %s --listall --subgroup=run_pio
+    -  the CIME case xml variables are grouped together in xml elements <group></group>.
+       These are done to associate together xml variables with common features.
+       Most variables are only associated with one group.
+       However, in env_batch.xml, there are also xml variables that are associated with more than one group.
+       For these variables, the '--subgroup' qualifier permits querying an xml variable that appears in more than
+       one group.
 
-# Show all vars containing the substring ROOT in subgroup build_def
-> %s -p ROOT --subgroup build_def""" % ((os.path.basename(sys.argv[0]), ) * 7),
+       As an example, in env_batch.xml, the xml variable JOB_QUEUE appears in 3 groups:
+        <group id="case.run">
+        <group id="case.st_archive">
+        <group id="case.test">
 
-description="Query the xml files for attributes and return their values." ,
-formatter_class=argparse.RawDescriptionHelpFormatter,
-epilog=textwrap.dedent(__doc__))
+       To query the variable JOB_QUEUE only for one group in case.run, you need
+       to specify a sub-group argument to xmlquery.
+          ./xmlquery JOB_QUEUE --subgroup case.test
+              JOB_QUEUE: regular
+          ./xmlquery JOB_QUEUE
+            Results in group case.run
+                 JOB_QUEUE: regular
+            Results in group case.st_archive
+                 JOB_QUEUE: caldera
+            Results in group case.test
+                JOB_QUEUE: regular
+
+   - You can tailor the query by adding ONE of the following possible qualifier arguments:
+       [--full --fileonly --value --raw --description --get-group --type --valid-values ]
+       as examples:
+          ./xmlquery var1,var2 --full
+          ./xmlquery var1,var2 --fileonly
+
+   - You can query variables via a partial-match
+       as examples:
+          ./xmlquery STOP --partial-match
+              Results in group run_begin_stop_restart
+                  STOP_DATE: -999
+                  STOP_N: 5
+                  STOP_OPTION: ndays
+          ./xmlquery STOP_N
+                  STOP_N: 5
+
+    - By default variable values are resolved prior to output. If you want to see the unresolved
+      value(s), use the --no-resolve qualifier
+      as examples:
+         ./xmlquery RUNDIR
+             RUNDIR: /glade/scratch/mvertens/atest/run
+         ./xmlquery RUNDIR --no-resolve
+             RUNDIR: $CIME_OUTPUT_ROOT/$CASE/run
+
+2) Listing all groups and variables in those groups
+
+      ./xmlquery --listall
+
+     - You can tailor the query by adding ONE of the following possible qualifier arguments:
+       [--full --fileonly --raw --description --get-group --type --valid-values --subgroup GROUP --file FILE]
+
+       As examples:
+
+       If you want to see the all of the variables in group 'case.run' issue
+       > ./xmlquery --listall --subgroup case.run
+
+       If you want to see all of the variables in 'env_run.xml' issue
+       > ./xmlquery --listall --file env_run.xml
+
+       If you want to see all of the variables in LockedFiles/env_build.xml issue
+       > ./xmlquery --listall --file LockedFiles/env_build.xml
+
+""" ,
+
+formatter_class=argparse.RawDescriptionHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
     parser.add_argument("variables", nargs="*"  ,
-                        help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
+                        help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> ) ")
 
     parser.add_argument("-file" , "--file",
-                        help="deprecated option, do not use")
+                        help="specify the file you want to query")
 
     parser.add_argument("-subgroup","--subgroup",
-                        help="apply to this subgroup only")
+                        help="Apply to this subgroup only. ")
 
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
                         help="Case directory to reference")
 
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
-                        help="List all variables and their values")
+                        help="List all variables and their values ")
 
     parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
@@ -83,20 +151,21 @@ epilog=textwrap.dedent(__doc__))
     group = parser.add_mutually_exclusive_group()
 
     group.add_argument("--full", default=False, action="store_true",
-                        help="Print a full listing for the variable")
+                        help="Print a full listing for a variable, or a list of variables")
 
     group.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
                         help="Only print the filename that the field is defined in.")
 
     group.add_argument("-value", "--value", default=False, action="store_true",
-                        help="Only print one value without newline character. If more than one has been found print first value in list.")
+                        help="Only print one value without newline character. "
+                       " If more than one has been found print first value in list.")
 
     group.add_argument("--raw", default=False, action="store_true",
                         help="Print the complete raw record associated with this variable")
     group.add_argument("--description", default=False, action="store_true",
                         help="Print the description associated with this variable")
 
-    group.add_argument("--group", default=False, action="store_true",
+    group.add_argument("--get-group", default=False, action="store_true",
                         help="Print the group associated with this variable")
 
     group.add_argument("--type", default=False, action="store_true",
@@ -105,9 +174,7 @@ epilog=textwrap.dedent(__doc__))
     group.add_argument("--valid-values", default=False, action="store_true",
                         help="Print the valid values associated with this variable if defined")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if (len(sys.argv) == 1) :
         parser.print_help()
@@ -119,8 +186,8 @@ epilog=textwrap.dedent(__doc__))
         variables = args.variables
 
     return variables, args.subgroup, args.caseroot, args.listall, args.fileonly, \
-        args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
-        args.type, args.valid_values, args.partial_match
+        args.value, args.no_resolve, args.raw, args.description, args.get_group, args.full, \
+        args.type, args.valid_values, args.partial_match, args.file
 
 def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
     thistype = case.get_type_info(var)
@@ -129,22 +196,37 @@ def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None
         value = convert_to_string(value, thistype, var)
     return value
 
-def xmlquery(case, variables, subgroup=None, fileonly=False,
-             resolved=True, raw=False, description=False, group=False,
-             full=False, dtype=False, valid_values=False):
+def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
+                 resolved=True, raw=False, description=False, get_group=False,
+                 full=False, dtype=False, valid_values=False, xmlfile=None):
     """
     Return list of attributes and their values, print formatted
 
     """
     results = {}
     comp_classes = case.get_values("COMP_CLASSES")
+    if xmlfile:
+        case.set_file(xmlfile)
+
+    # Loop over variables
     for var in variables:
         if subgroup is not None:
             groups = [subgroup]
         else:
             groups = case.get_record_fields(var, "group")
+            if not groups:
+                groups = ['none']
 
-        expect(groups, " No results found for variable %s"%var)
+        if xmlfile:
+            if not groups:
+                value =  case.get_value(var, resolved=resolved)
+                results['none'] = {}
+                results['none'][var] = {}
+                results['none'][var]['value']  = value
+        elif not groups:
+            results['none'] = {}
+            results['none'][var] = {}
+
         for group in groups:
             if not group in results:
                 results[group] = {}
@@ -152,19 +234,30 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 results[group][var] = {}
 
             expect(group, "No group found for var %s"% var)
-            value = get_value_as_string(case, var, resolved=resolved, subgroup=subgroup)
+            if get_group:
+                results[group][var]['get_group'] = group
+
+            value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
             if value is None:
                 var, comp, iscompvar = case.check_if_comp_var(var)
                 if iscompvar:
                     value = []
                     for comp in comp_classes:
-                        nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        try:
+                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        except:
+                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=False, subgroup=group)
+
                         if nextval is not None:
                             value.append(comp + ":" + "%s"%nextval)
                 else:
                     value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
 
-            expect(value is not None, " No results found for variable %s"%var)
+            if value is None:
+                if xmlfile:
+                    expect(False, " No results found for variable %s in file %s"%(var, xmlfile))
+                else:
+                    expect(False, " No results found for variable %s"%var)
 
             results[group][var]['value'] = value
 
@@ -177,7 +270,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if dtype or full:
                 results[group][var]['type'] = case.get_type_info(var)
             if valid_values or full:
-                results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values")
+                results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values") #*** this is the problem ***
 
     return results
 
@@ -188,8 +281,8 @@ def _main_func():
 
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
-        value, no_resolve, raw, description, group, full, dtype, \
-        valid_values, partial_match = parse_command_line(sys.argv)
+        value, no_resolve, raw, description, get_group, full, dtype, \
+        valid_values, partial_match, xmlfile = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
@@ -224,9 +317,9 @@ def _main_func():
                     variables = all_variables
 
         expect(variables, "No variables found")
-        results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve,
-                           raw=raw, description=description, group=group, full=full,
-                           dtype=dtype, valid_values=valid_values)
+        results = xmlquery_sub(case, variables, subgroup, fileonly, resolved=not no_resolve,
+                               raw=raw, description=description, get_group=get_group, full=full,
+                               dtype=dtype, valid_values=valid_values, xmlfile=xmlfile)
 
     if full or description:
         wrapper=textwrap.TextWrapper()
@@ -234,17 +327,20 @@ def _main_func():
         wrapper.fix_sentence_endings = True
 
     for group in sorted(iter(results)):
-        if len(variables) > 1 or len(results.keys()) > 1 or full:
+        if (len(variables) > 1 or len(results.keys()) > 1 or full) and not get_group:
             print "\nResults in group %s"%group
         for var in variables:
             if var in results[group]:
                 if raw:
                     print results[group][var]['raw']
+                elif get_group:
+                    print "\t%s: %s"%(var, results[group][var]['get_group'])
                 elif value:
                     sys.stdout.write("%s"%results[group][var]['value'])
                 elif description:
-                    desc_text = ' '.join(results[group][var]['desc'][0].split())
-                    print "\t%s: %s"%(var, wrapper.fill(desc_text))
+                    if results[group][var]['desc'][0] is not None:
+                        desc_text = ' '.join(results[group][var]['desc'][0].split())
+                        print "\t%s: %s"%(var, wrapper.fill(desc_text))
                 elif fileonly:
                     print "\t%s: %s"%(var, results[group][var]['file'])
                 elif dtype:
@@ -253,7 +349,8 @@ def _main_func():
                     if 'valid_values' in results[group][var]:
                         print  "\t%s: %s"%(var, results[group][var]["valid_values"])
                 elif full:
-                    desc_text = ' '.join(results[group][var]['desc'][0].split())
+                    if results[group][var]['desc'][0] is not None:
+                        desc_text = ' '.join(results[group][var]['desc'][0].split())
                     print "\t%s: value=%s"%(var, results[group][var]['value'])
                     print  "\t\ttype: %s"%(results[group][var]['type'][0])
                     if 'valid_values' in results[group][var]:

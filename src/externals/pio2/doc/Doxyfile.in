@@ -769,11 +769,14 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/source \
-                         @CMAKE_CURRENT_SOURCE_DIR@/../src/clib \
                          @CMAKE_CURRENT_SOURCE_DIR@/../src/flib \
                          @CMAKE_CURRENT_SOURCE_DIR@/../examples/c \
                          @CMAKE_CURRENT_SOURCE_DIR@/../examples/f03 \
-                         @CMAKE_BINARY_DIR@/src/flib
+                         @CMAKE_BINARY_DIR@/src/flib \
+			 @C_SRC_FILES@
+
+# Uncomment this after the async code is fully merged into PIO.
+#                         @CMAKE_CURRENT_SOURCE_DIR@/../src/clib 
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

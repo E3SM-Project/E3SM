@@ -221,9 +221,9 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="modelio"      >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_modelio.xml</value>
-      <value component="drv_flds"      >$CIMEROOT/src/drivers/mct/bld/namelist_files/namelist_definition_drv_flds.xml</value>
-      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</value>
+      <value component="modelio" >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_modelio.xml</value>
+      <value component="drv_flds">$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv_flds.xml</value>
+      <value component="drv"     >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
@@ -247,14 +247,6 @@
     <schema>$CIMEROOT/config/xml_schemas/entry_id_namelist.xsd</schema>
   </entry>
 
-  <entry id="LTARCHIVE_SPEC_FILE">
-    <type>char</type>
-    <default_value>$CIMEROOT/config/$MODEL/machines/config_lt_archive.xml</default_value>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing all lt archive configuration variables (for documentation only - DO NOT EDIT)</desc>
-  </entry>
-
   <!-- =============================================================== -->
   <!-- File names for all component specific configuration variables -->
   <!-- =============================================================== -->
@@ -265,6 +257,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
@@ -273,7 +267,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>
-    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ATM_FILE">
@@ -288,6 +283,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_LND_FILE">
@@ -303,6 +300,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ROF_FILE">
@@ -318,6 +317,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ICE_FILE">
@@ -333,6 +334,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_OCN_FILE">
@@ -349,6 +352,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_GLC_FILE">
@@ -366,6 +371,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_WAV_FILE">
@@ -380,6 +387,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ESP_FILE">
@@ -392,6 +401,8 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
   </entry>
 
 </entry_id>

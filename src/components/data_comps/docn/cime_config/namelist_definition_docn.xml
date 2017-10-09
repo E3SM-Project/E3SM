@@ -33,7 +33,6 @@
       prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
       som           SOM         (Slab ocean model)
       null          NULL        (NULL mode)
-      copyall       COPYALL     (Copy fields only)
   -->
 
   <!-- ========================================================================================  -->
@@ -46,10 +45,21 @@
     <group>streams_file</group>
     <desc>List of streams used for the given docn_mode.</desc>
     <values>
-      <value docn_mode="prescribed" >prescribed</value>
-      <value docn_mode="som"        >som</value>
+      <value docn_mode="prescribed">prescribed</value>
+      <value docn_mode="sst_aquap1">''</value>
+      <value docn_mode="sst_aquap2">''</value>
+      <value docn_mode="sst_aquap3">''</value>
+      <value docn_mode="sst_aquap4">''</value>
+      <value docn_mode="sst_aquap5">''</value>
+      <value docn_mode="sst_aquap6">''</value>
+      <value docn_mode="sst_aquap7">''</value>
+      <value docn_mode="sst_aquap8">''</value>
+      <value docn_mode="sst_aquap9">''</value>
+      <value docn_mode="sst_aquap10">''</value>
+      <value docn_mode="sst_aquapfile">aquapfile</value>
+      <value docn_mode="som">som</value>
+      <value docn_mode="som_aquap">som</value>
       <value docn_mode="interannual">interannual</value>
-      <value docn_mode="copyall"    >copyall</value>
     </values>
   </entry>
 
@@ -59,7 +69,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="copyall">$SSTICE_GRID_FILENAME</value>
       <value stream="prescribed">$SSTICE_GRID_FILENAME</value>
     </values>
   </entry>
@@ -70,7 +79,6 @@
     <group>derived</group>
     <desc>does not appear in namelist - only used to set domain and data information</desc>
     <values>
-      <value stream="copyall">$SSTICE_DATA_FILENAME</value>
       <value stream="prescribed">$SSTICE_DATA_FILENAME</value>
     </values>
   </entry>
@@ -82,6 +90,7 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
+      <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
@@ -94,6 +103,7 @@
     <desc>Stream domain file path(s).</desc>
     <values>
       <value>null</value>
+      <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
@@ -112,15 +122,15 @@
         area    area
         mask    mask
       </value>
-      <value stream="copyall" sstice_stream="WW3">
-        time    time
-        gridLon lon
-        gridLat lat
-      </value>
       <value stream="interannual">
         time    time
-        lon      lon
-        lat      lat
+        lon     lon
+        lat     lat
+      </value>
+      <value stream="aquapfile">
+        time    time
+        lon     lon
+        lat     lat
       </value>
     </values>
   </entry>
@@ -132,6 +142,7 @@
     <desc>Stream data file directory.</desc>
     <values>
       <value>null</value>
+      <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
@@ -144,20 +155,7 @@
     <desc>Stream data file path(s).</desc>
     <values>
       <value>null</value>
-      <value  stream="prescribed" sstice_stream="WRFDATA_wus12">
-        sst_wus12_110111.2003-10.nc
-        sst_wus12_110111.2003-11.nc
-        sst_wus12_110111.2003-12.nc
-        sst_wus12_110111.2004-01.nc
-        sst_wus12_110111.2004-02.nc
-        sst_wus12_110111.2004-03.nc
-        sst_wus12_110111.2004-04.nc
-        sst_wus12_110111.2004-05.nc
-        sst_wus12_110111.2004-06.nc
-        sst_wus12_110111.2004-07.nc
-        sst_wus12_110111.2004-08.nc
-        sst_wus12_110111.2004-09.nc
-      </value>
+      <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
@@ -172,9 +170,6 @@
       <value>
         sst    t
       </value>
-      <value stream="copyall" sstice_stream="WW3">
-        iceCon  s
-      </value>
       <value stream="som">
         T     t
         S     s
@@ -186,10 +181,13 @@
         qdp   qbot
       </value>
       <value stream="interannual">
-        SST_cpl  t
+        SST_cpl t
       </value>
       <value stream="prescribed" sstice_stream="CAMDATA">
-        SST_cpl    t
+        SST_cpl t
+      </value>
+      <value stream="aquapfile">
+        SST_cpl t
       </value>
     </values>
   </entry>
@@ -212,7 +210,7 @@
     <values>
       <value>-999</value>
       <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
-      <value stream="copyall">$SSTICE_YEAR_ALIGN</value>
+      <value stream="aquapfile">0</value>
       <value stream="som">1</value>
       <value stream="interannual">1</value>
     </values>
@@ -226,7 +224,7 @@
     <values>
       <value>-999</value>
       <value stream="prescribed">$SSTICE_YEAR_START</value>
-      <value stream="copyall">$SSTICE_YEAR_START</value>
+      <value stream="aquapfile">0</value>
       <value stream="som">1</value>
       <value stream="interannual">1850</value>
     </values>
@@ -239,10 +237,10 @@
     <desc>Last year of stream.</desc>
     <values>
       <value>-999</value>
-      <value   stream="prescribed">$SSTICE_YEAR_END</value>
-      <value   stream="copyall">$SSTICE_YEAR_END</value>
-      <value   stream="som">1</value>
-      <value   stream="interannual">2014</value>
+      <value stream="prescribed">$SSTICE_YEAR_END</value>
+      <value stream="aquapfile">0</value>
+      <value stream="som">1</value>
+      <value stream="interannual">2014</value>
     </values>
   </entry>
 
@@ -258,7 +256,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>SSTDATA,SOM,IAF,NULL,COPYALL</valid_values>
+    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAPFILE,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
     <desc>
       General method that operates on the data. This is generally
       implemented in the data models but is set in the strdata method for
@@ -305,16 +303,29 @@
       If DOCN_MODE is prescribed, datamode will be set to SSTDATA
       If DOCN_MODE is interannual, datamode will be set to IAF
       If DOCN_MODE is som , datamode will be set to SOM
+      If DOCN_MODE is sst_aqup[n], datamode will be set to SST_AQUAP
+      If DOCN_MODE is som_aqup[n], datamode will be set to SOM_AQUAP
       If DOCN_MODE is null, datamode will be set to NULL
 
       default: SSTDATA (prescribed setting for DOCN_MODE)'
     </desc>
     <values>
-      <value docn_mode="null"       >NULL</value>
-      <value docn_mode="prescribed" >SSTDATA</value>
-      <value docn_mode="som"        >SOM</value>
+      <value docn_mode="null">NULL</value>
+      <value docn_mode="prescribed">SSTDATA</value>
+      <value docn_mode="sst_aquap1$">SST_AQUAP1</value>
+      <value docn_mode="sst_aquap2$">SST_AQUAP2</value>
+      <value docn_mode="sst_aquap3$">SST_AQUAP3</value>
+      <value docn_mode="sst_aquap4$">SST_AQUAP4</value>
+      <value docn_mode="sst_aquap5$">SST_AQUAP5</value>
+      <value docn_mode="sst_aquap6$">SST_AQUAP6</value>
+      <value docn_mode="sst_aquap7$">SST_AQUAP7</value>
+      <value docn_mode="sst_aquap8$">SST_AQUAP8</value>
+      <value docn_mode="sst_aquap9$">SST_AQUAP9</value>
+      <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
+      <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
+      <value docn_mode="som$">SOM</value>
+      <value docn_mode="som_aquap">SOM_AQUAP</value>
       <value docn_mode="interannual">IAF</value>
-      <value docn_mode="copyall"    >COPYALL</value>
     </values>
   </entry>
 
@@ -497,8 +508,24 @@
     </desc>
     <values>
       <value>cycle</value>
-      <value stream="prescribed" sstice_stream="WRFDATA_wus12">limit</value>
       <value stream="prescribed" sstice_stream="WRFDATA">limit</value>
+    </values>
+  </entry>
+
+  <entry id="readmode" per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>single,full_file</valid_values>
+    <desc>
+      array (up to 30 elements) of reading mode associated with the array of
+      streams.  specifies the mode of reading temporal stream dataset.
+      valid options are "single" (read temporal dataset one at a time) or
+      "full_file" (read all entires of temporal dataset in a given netcdf file)
+      valid values: single,full_file
+    </desc>
+    <values>
+      <value>single</value>
     </values>
   </entry>
 

@@ -14,16 +14,16 @@ from CIME.case_cmpgen_namelists import case_cmpgen_namelists
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<casedir>] [--verbose]
+        usage="""\n{0} [<casedir>] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Setup case \033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -49,9 +49,7 @@ OR
                         help="Force generation to use baselines with this name. "
                         "Default will be to follow the case specification")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.caseroot, args.compare, args.generate, args.compare_name, args.generate_name
 

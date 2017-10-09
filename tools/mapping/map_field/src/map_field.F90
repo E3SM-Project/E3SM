@@ -469,7 +469,8 @@ contains
        if (rcode == 0) then
           call check_ret(nf_put_att_text(fid,NF_GLOBAL,'hostname' ,len_trim(host),host))
        else
-          write(6,*) 'WARNING: could not determine hostname, so that information will not be stored in netCDF attribute. To avoid this warning in the future, set environment variable HOST or HOSTNAME.'
+          write(6,*) 'WARNING: could not determine hostname, so that information will not be &
+               &stored in netCDF attribute. To avoid this warning in the future, set environment variable HOST or HOSTNAME.'
        end if
     end if
 

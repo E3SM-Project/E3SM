@@ -114,6 +114,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
@@ -122,7 +123,7 @@ class Compilers(GenericXML):
         expect(subgroup is None, "This class does not support subgroups")
         value = None
 
-        node = self.get_optional_compiler_node(name)
+        node = self.get_optional_compiler_node(name, attributes=attribute)
         if node is not None:
             value = node.text
 
@@ -149,7 +150,7 @@ class Compilers(GenericXML):
             for compiler_node in reversed(self.compiler_nodes):
                 _add_to_macros(compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
-                                        self.machine, macros_file="Macros.make",
+                                        self.machine, macros_file=macros_file,
                                         output_format=output_format)
         else:
             if output_format == "make":
@@ -208,9 +209,9 @@ class Compilers(GenericXML):
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The file %s has bad <var> references. "
+                   "The file {} has bad <var> references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined."%self.filename)
+                   "are in a <var> tag but not actually defined.".format(self.filename))
             big_normal_tree = None
             big_append_tree = None
             for var_name in ready_variables:
@@ -243,9 +244,9 @@ def _add_to_macros(node, macros):
             if name.startswith("ADD_"):
                 basename = name[4:]
                 if basename in macros:
-                    macros[basename] = "%s %s" % (macros[basename], value)
+                    macros[basename] = "{} {}".format(macros[basename], value)
                 elif name in macros:
-                    macros[name] = "%s %s" % (macros[name], value)
+                    macros[name] = "{} {}".format(macros[name], value)
                 else:
                     macros[name] = value
             else:

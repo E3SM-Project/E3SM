@@ -716,6 +716,8 @@ program OfflineTester
               failCnt = failCnt + 1
               if (Verbose) then
                 print *, "FAILED: conservation error = ", totArea
+                print *, "        area1 = ", sum(grid1area)
+                print *, "        area2 = ", sum(grid2area)
               else
                 print *, "FAILED: conservation error = ", totArea, &
                          " in test ", j

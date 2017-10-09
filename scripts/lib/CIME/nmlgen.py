@@ -96,6 +96,9 @@ class NamelistGenerator(object):
     def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
         """Return array of names of all definition nodes
         """
+        # first clean out any settings left over from previous calls
+        self.new_instance()
+
         self._definition.set_nodes(skip_groups=skip_groups)
 
         # Determine the array of entry nodes that will be acted upon
@@ -211,7 +214,8 @@ class NamelistGenerator(object):
         """
         var_group = self._definition.get_group(name)
         literals = self._to_namelist_literals(name, value)
-        self._namelist.set_variable_value(var_group, name, literals)
+        _, _, var_size, = self._definition.split_type_string(name)
+        self._namelist.set_variable_value(var_group, name, literals, var_size)
 
     def get_default(self, name, config=None, allow_none=False):
         """Get the value of a variable from the namelist definition file.
@@ -244,7 +248,7 @@ class NamelistGenerator(object):
         """
         default = self._definition.get_value_match(name, attributes=config, exact_match=False)
         if default is None:
-            expect(allow_none, "No default value found for %s." % name)
+            expect(allow_none, "No default value found for {}.".format(name))
             return None
         default = expand_literal_list(default)
 
@@ -259,8 +263,7 @@ class NamelistGenerator(object):
             while match:
                 env_val = self._case.get_value(match.group('name'))
                 expect(env_val is not None,
-                       "Namelist default for variable %s refers to unknown XML "
-                       "variable %s." % (name, match.group('name')))
+                       "Namelist default for variable {} refers to unknown XML variable {}.".format(name, match.group('name')))
                 scalar = scalar.replace(match.group(0), str(env_val), 1)
                 match = _var_ref_re.search(scalar)
             default[i] = scalar
@@ -274,11 +277,23 @@ class NamelistGenerator(object):
                     default[i] = self.quote_string(scalar)
 
         default = self._to_python_value(name, default)
+
         return default
 
     def get_streams(self):
         """Get a list of all streams used for the current data model  mode."""
         return self.get_default("streamslist")
+
+    def clean_streams(self):
+        for variable in self._streams_variables:
+            self._streams_namelists[variable] = []
+        self._streams_namelists["streams"] = []
+
+    def new_instance(self):
+        """ Clean the object just enough to introduce a new instance """
+        self.clean_streams()
+        self._namelist.clean_groups()
+
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.
@@ -310,11 +325,14 @@ class NamelistGenerator(object):
             if not line:
                 continue
             if "%glc" in line:
-                glc_nec_indices = range(self._case.get_value('GLC_NEC'))
+                if self._case.get_value('GLC_NEC') == 0:
+                    glc_nec_indices = [0]
+                else:
+                    glc_nec_indices = range(self._case.get_value('GLC_NEC'))
                 glc_nec_indices.append(glc_nec_indices[-1] + 1)
                 glc_nec_indices.pop(0)
                 for i in glc_nec_indices:
-                    new_lines.append(line.replace("%glc", "%02d" % i))
+                    new_lines.append(line.replace("%glc", "{:02d}".format(i)))
             else:
                 new_lines.append(line)
         return "\n".join(new_lines)
@@ -371,25 +389,24 @@ class NamelistGenerator(object):
                 new_lines.append(line)
                 continue
             if match.group('digits'):
-                year_format = "%0"+match.group('digits')+"d"
+                year_format = "{:0"+match.group('digits')+"d}"
             else:
-                year_format = "%04d"
+                year_format = "{:04d}"
             for year in range(year_start, year_end+1):
                 if match.group('day'):
                     for month in range(1, 13):
                         days = self._days_in_month(month)
                         for day in range(1, days+1):
-                            date_string = (year_format + "-%02d-%02d") % \
-                                          (year, month, day)
+                            date_string = (year_format + "-{:02d}-{:02d}").format(year, month, day)
                             new_line = line.replace(match.group(0), date_string)
                             new_lines.append(new_line)
                 elif match.group('month'):
                     for month in range(1, 13):
-                        date_string = (year_format + "-%02d") % (year, month)
+                        date_string = (year_format + "-{:02d}").format(year, month)
                         new_line = line.replace(match.group(0), date_string)
                         new_lines.append(new_line)
                 else:
-                    date_string = year_format % year
+                    date_string = year_format.format(year)
                     new_line = line.replace(match.group(0), date_string)
                     new_lines.append(new_line)
         return "\n".join(new_lines)
@@ -407,6 +424,7 @@ class NamelistGenerator(object):
         `stream_path` - Path to write the stream file to.
         `data_list_path` - Path of file to append input data information to.
         """
+
         # Stream-specific configuration.
         config = config.copy()
         config["stream"] = stream
@@ -454,12 +472,12 @@ class NamelistGenerator(object):
                 if filename.strip() == '':
                     continue
                 filepath = os.path.join(domain_filepath, filename.strip())
-                input_data_list.write("domain%d = %s\n" % (i+1, filepath))
+                input_data_list.write("domain{:d} = {}\n".format(i+1, filepath))
             for i, filename in enumerate(data_filenames.split("\n")):
                 if filename.strip() == '':
                     continue
                 filepath = os.path.join(data_filepath, filename.strip())
-                input_data_list.write("file%d = %s\n" % (i+1, filepath))
+                input_data_list.write("file{:d} = {}\n".format(i+1, filepath))
         self.update_shr_strdata_nml(config, stream, stream_path)
 
     def update_shr_strdata_nml(self, config, stream, stream_path):
@@ -469,24 +487,22 @@ class NamelistGenerator(object):
         directly, since `create_stream_file` calls this method itself.
         """
         assert config['stream'] == stream, \
-            "config stream is %s, but input stream is %s" % \
-            (config['stream'], stream)
+            "config stream is {}, but input stream is {}".format(config['stream'], stream)
         # Double-check the years for sanity.
         year_start = int(self.get_default("strm_year_start", config))
         year_end = int(self.get_default("strm_year_end", config))
         year_align = int(self.get_default("strm_year_align", config))
         expect(year_end >= year_start,
-               "Stream %s starts at year %d, but ends at earlier year %d." %
-               (stream, year_start, year_end))
+               "Stream {} starts at year {:d}, but ends at earlier year {:d}.".format(stream, year_start, year_end))
         # Add to streams file.
-        stream_string = "%s %d %d %d" % (os.path.basename(stream_path),
-                                         year_align, year_start, year_end)
+        stream_string = "{} {:d} {:d} {:d}".format(os.path.basename(stream_path),
+                                                   year_align, year_start,
+                                                   year_end)
         self._streams_namelists["streams"].append(stream_string)
         for variable in self._streams_variables:
             default = self.get_default(variable, config)
             expect(len(default) == 1,
-                   "Stream %s had multiple settings for variable %s." %
-                   (stream, variable))
+                   "Stream {} had multiple settings for variable {}.".format(stream, variable))
             self._streams_namelists[variable].append(default[0])
 
     def set_abs_file_path(self, file_path):
@@ -517,13 +533,8 @@ class NamelistGenerator(object):
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
-
         # Check for existing value.
         current_literals = self._namelist.get_variable_value(group, name)
-        if current_literals != [""]:
-            have_value = True
-            # Do not proceed further since this has been obtained the -infile contents
-            return
 
         # Check for input argument.
         if value is not None:
@@ -538,11 +549,12 @@ class NamelistGenerator(object):
             have_value = True
             default_literals = self._to_namelist_literals(name, default)
             current_literals = merge_literal_lists(default_literals, current_literals)
-        expect(have_value, "No default value found for %s." % name)
+        expect(have_value, "No default value found for {}.".format(name))
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        if ignore_abs_path is None:
+        var_type, _, var_size = self._definition.split_type_string(name)
+        if var_type == "character" and ignore_abs_path is None:
             var_input_pathname = self._definition.get_input_pathname(name)
             if var_input_pathname == 'abs':
                 current_literals = expand_literal_list(current_literals)
@@ -557,12 +569,12 @@ class NamelistGenerator(object):
                         continue
                     file_path = self.set_abs_file_path(file_path)
                     if not os.path.exists(file_path):
-                        logger.warn ("File not found: %s = %s, will attempt to download in check_input_data phase" % (name, literal))
+                        logger.warn("File not found: {} = {}, will attempt to download in check_input_data phase".format(name, literal))
                     current_literals[i] = string_to_character_literal(file_path)
                 current_literals = compress_literal_list(current_literals)
 
         # Set the new value.
-        self._namelist.set_variable_value(group, name, current_literals)
+        self._namelist.set_variable_value(group, name, current_literals, var_size)
 
     def create_shr_strdata_nml(self):
         """Set defaults for `shr_strdata_nml` variables other than the variable domainfile """
@@ -603,10 +615,9 @@ class NamelistGenerator(object):
                             file_path = os.path.join(root_dir, file_path)
                         else:
                             expect(False,
-                                   "Bad input_pathname value: %s." %
-                                   input_pathname)
+                                   "Bad input_pathname value: {}.".format(input_pathname))
                         # Write to the input data list.
-                        input_data_list.write("%s = %s\n" % (variable_name, file_path))
+                        input_data_list.write("{} = {}\n".format(variable_name, file_path))
 
     def write_output_file(self, namelist_file, data_list_path=None, groups=None, sorted_groups=True):
         """Write out the namelists and input data files.

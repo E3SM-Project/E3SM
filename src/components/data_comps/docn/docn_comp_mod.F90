@@ -3,182 +3,139 @@
 #endif
 module docn_comp_mod
 
-! !USES:
+  ! !USES:
 
-  use shr_const_mod
-  use shr_frz_mod, only: shr_frz_freezetemp
-  use shr_sys_mod
-  use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
-                               CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_file_mod     , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel, &
-                               shr_file_setlogunit, shr_file_setloglevel, shr_file_setio, &
-                               shr_file_freeunit
-  use shr_mpi_mod      , only: shr_mpi_bcast
-  use mct_mod
   use esmf
+  use mct_mod
   use perf_mod
-  use pio, only : iosystem_desc_t, pio_init, pio_rearr_box
-
-  use shr_strdata_mod
-  use shr_dmodel_mod
   use shr_pcdf_mod
+  use shr_const_mod
+  use shr_sys_mod
+  use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_file_mod    , only: shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod     , only: shr_mpi_bcast
+  use shr_frz_mod     , only: shr_frz_freezetemp
+  use shr_strdata_mod , only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod , only: shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod , only: shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod  , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
+  use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
+  use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
-  use seq_cdata_mod
-  use seq_infodata_mod
-  use seq_timemgr_mod
-  use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_flds_mod     , only: seq_flds_o2x_fields, &
-                               seq_flds_x2o_fields
-!
-! !PUBLIC TYPES:
+  use docn_shr_mod   , only: ocn_mode       ! namelist input
+  use docn_shr_mod   , only: aquap_option   ! derived from ocn_mode namelist input
+  use docn_shr_mod   , only: decomp         ! namelist input
+  use docn_shr_mod   , only: rest_file      ! namelist input
+  use docn_shr_mod   , only: rest_file_strm ! namelist input
+  use docn_shr_mod   , only: nullstr
+
+  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: docn_comp_init
   public :: docn_comp_run
   public :: docn_comp_final
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
-  !--- other ---
-  type(iosystem_desc_t), pointer :: iosystem
   character(CS) :: myModelName = 'ocn'   ! user defined model name
-  integer(IN)   :: mpicom
-  integer(IN)   :: my_task               ! my task in mpi communicator mpicom
-  integer(IN)   :: npes                  ! total number of tasks
-  integer(IN),parameter :: master_task=0 ! task number of master task
-  integer(IN)   :: logunit               ! logging unit number
-  integer       :: inst_index            ! number of current instance (ie. 1)
-  character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
-                                         ! (ie. "_0001" or "")
-  character(CL) :: ocn_mode              ! mode
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
-  logical       :: firstcall             ! first call logical
-  logical       :: scmMode = .false.     ! single column mode
-  real(R8)      :: scmLat  = shr_const_SPVAL  ! single column lat
-  real(R8)      :: scmLon  = shr_const_SPVAL  ! single column lon
-  logical       :: read_restart          ! start from restart
+  logical       :: firstcall = .true.    ! first call logical
 
   character(len=*),parameter :: rpfile = 'rpointer.ocn'
-  character(len=*),parameter :: nullstr = 'undefined'
 
-  real(R8),parameter :: cpsw    = shr_const_cpsw    ! specific heat of sea h2o ~ J/kg/K
-  real(R8),parameter :: rhosw   = shr_const_rhosw   ! density of sea water ~ kg/m^3
-  real(R8),parameter :: TkFrz   = shr_const_TkFrz   ! freezing point, fresh water (Kelvin)
-  real(R8),parameter :: TkFrzSw = shr_const_TkFrzSw ! freezing point, sea   water (Kelvin)
-  real(R8),parameter :: latice  = shr_const_latice  ! latent heat of fusion
-  real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal  ! ocean reference salinity
+  real(R8),parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
+  real(R8),parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
+  real(R8),parameter :: TkFrz   = shr_const_TkFrz       ! freezing point, fresh water (Kelvin)
+  real(R8),parameter :: TkFrzSw = shr_const_TkFrzSw     ! freezing point, sea   water (Kelvin)
+  real(R8),parameter :: latice  = shr_const_latice      ! latent heat of fusion
+  real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
+  integer(IN)   :: index_lat, index_lon
 
-  type(shr_strdata_type) :: SDOCN
-  type(mct_rearr) :: rearr
-  type(mct_avect) :: avstrm   ! av of data from stream
-  real(R8), pointer :: somtp(:)
-  real(R8), pointer :: tfreeze(:)
-  integer , pointer :: imask(:)
+  type(mct_rearr)        :: rearr
+  type(mct_avect)        :: avstrm       ! av of data from stream
+  real(R8), pointer      :: somtp(:)
+  real(R8), pointer      :: tfreeze(:)
+  integer , pointer      :: imask(:)
+  real(R8), pointer      :: xc(:), yc(:) ! arryas of model latitudes and longitudes
+
+  !--------------------------------------------------------------------------
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
 
   integer(IN),parameter :: ktrans = 29
   character(12),parameter  :: avifld(1:ktrans) = &
-     (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
-        "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
-        "melth       ","salt        ","prec        ","snow        ","rain        ", &
-        "evap        ","meltw       ","rofl        ","rofi        ",                &
-        "t           ","u           ","v           ","dhdx        ","dhdy        ", &
-        "s           ","q           ","h           ","qbot        ","fswpen      "  /)
+       (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
+       "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
+       "melth       ","salt        ","prec        ","snow        ","rain        ", &
+       "evap        ","meltw       ","rofl        ","rofi        ",                &
+       "t           ","u           ","v           ","dhdx        ","dhdy        ", &
+       "s           ","q           ","h           ","qbot        ","fswpen      "  /)
+
   character(12),parameter  :: avofld(1:ktrans) = &
-     (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
-        "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
-        "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
-        "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
-        "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
-        "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   ","So_fswpen   "  /)
+       (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
+       "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
+       "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
+       "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
+       "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
+       "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   ","So_fswpen   "  /)
+  !--------------------------------------------------------------------------
 
   save
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !===============================================================================
+  subroutine docn_comp_init(Eclock, x2o, o2x, &
+       seq_flds_x2o_fields, seq_flds_o2x_fields, &
+       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       inst_suffix, inst_name, logunit, read_restart, &
+       scmMode, scmlat, scmlon)
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: docn_comp_init
-!
-! !DESCRIPTION:
-!     initialize data ocn model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-
-subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
+    ! !DESCRIPTION: initialize docn model
+    use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock)            , intent(in)    :: EClock
-    type(seq_cdata)             , intent(inout) :: cdata
-    type(mct_aVect)             , intent(inout) :: x2o, o2x
-    character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
-
-!EOP
+    ! !INPUT/OUTPUT PARAMETERS:
+    type(ESMF_Clock)       , intent(in)    :: EClock
+    type(mct_aVect)        , intent(inout) :: x2o, o2x            ! input/output attribute vectors
+    character(len=*)       , intent(in)    :: seq_flds_x2o_fields ! fields from mediator
+    character(len=*)       , intent(in)    :: seq_flds_o2x_fields ! fields to mediator
+    type(shr_strdata_type) , intent(inout) :: SDOCN               ! model shr_strdata instance (output)
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
+    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
+    integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
+    integer(IN)            , intent(in)    :: compid              ! mct comp id
+    integer(IN)            , intent(in)    :: my_task             ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task         ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
+    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+    integer(IN)            , intent(in)    :: logunit             ! logging unit number
+    logical                , intent(in)    :: read_restart        ! start from restart
+    logical                , intent(in)    :: scmMode             ! single column mode
+    real(R8)               , intent(in)    :: scmLat              ! single column lat
+    real(R8)               , intent(in)    :: scmLon              ! single column lon
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
-    integer(IN)   :: COMPID      ! comp id
-    integer(IN)   :: gsize       ! global size
-    integer(IN)   :: lsize     ! local size
-    integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-    integer(IN)   :: nunit       ! unit number
-    integer(IN)   :: kmask       ! field reference
-    logical       :: ocn_present    ! flag
-    logical       :: ocn_prognostic ! flag
-    logical       :: ocnrof_prognostic  ! flag
-    character(CL) :: calendar    ! model calendar
-
-    type(seq_infodata_type), pointer :: infodata
-    type(mct_gsMap)        , pointer :: gsmap
-    type(mct_gGrid)        , pointer :: ggrid
-
-    character(CL) :: filePath    ! generic file path
-    character(CL) :: fileName    ! generic file name
-    character(CS) :: timeName    ! domain file: time variable name
-    character(CS) ::  lonName    ! domain file: lon  variable name
-    character(CS) ::  latName    ! domain file: lat  variable name
-    character(CS) :: maskName    ! domain file: mask variable name
-    character(CS) :: areaName    ! domain file: area variable name
-
-    integer(IN)   :: yearFirst   ! first year to use in data stream
-    integer(IN)   :: yearLast    ! last  year to use in data stream
-    integer(IN)   :: yearAlign   ! data year that aligns with yearFirst
-
-    character(CL) :: decomp      ! decomp strategy
-    character(CL) :: rest_file   ! restart filename
-    character(CL) :: rest_file_strm   ! restart filename for stream
-    character(CL) :: restfilm    ! restart filename for namelist
-    character(CL) :: restfils    ! restart filename for stream for namelist
-    logical       :: force_prognostic_true ! if true set prognostic true
-
-    logical       :: exists      ! file existance
-    integer(IN)   :: nu          ! unit number
-
-    !----- define namelist -----
-    namelist / docn_nml / &
-        decomp, restfilm, restfils, &
-        force_prognostic_true
+    integer(IN)   :: n,k      ! generic counters
+    integer(IN)   :: ierr     ! error code
+    integer(IN)   :: lsize    ! local size
+    logical       :: exists   ! file existance
+    integer(IN)   :: nu       ! unit number
+    integer(IN)   :: kmask    ! field reference
+    integer(IN)   :: kfrac    ! field reference
+    character(CL) :: calendar ! model calendar
+    type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
@@ -191,155 +148,35 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     character(*), parameter :: F90   = "('(docn_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(docn_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(docn_comp_init) "
-!-------------------------------------------------------------------------------
-
+    !-------------------------------------------------------------------------------
 
     call t_startf('DOCN_INIT')
 
-    firstcall = .true.
-
-    ! Set cdata pointers
-
-    call seq_cdata_setptrs(cdata, ID=COMPID, mpicom=mpicom, &
-         gsMap=gsmap, dom=ggrid, infodata=infodata)
-
-    ! Determine communicator groups and sizes
-
-    call mpi_comm_rank(mpicom, my_task, ierr)
-    call mpi_comm_size(mpicom, npes, ierr)
-
-    inst_name   = seq_comm_name(COMPID)
-    inst_index  = seq_comm_inst(COMPID)
-    inst_suffix = seq_comm_suffix(COMPID)
-
-    !--- open log file ---
-    logUnit = 6
-    if (my_task == master_task) then
-       inquire(FILE='ocn_modelio.nml'//trim(inst_suffix), exist=exists)
-       if (exists) then
-         logUnit = shr_file_getUnit()
-         call shr_file_setIO('ocn_modelio.nml'//trim(inst_suffix),logUnit)
-       end if
-    endif
-
     !----------------------------------------------------------------------------
-    ! Reset shr logging to my log file
-    !----------------------------------------------------------------------------
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logUnit)
-
-    !----------------------------------------------------------------------------
-    ! Set a Few Defaults
+    ! Initialize pio
     !----------------------------------------------------------------------------
 
-    call seq_infodata_getData(infodata,single_column=scmMode, &
-   &                          scmlat=scmlat, scmlon=scmLon)
-
-    ocn_present = .false.
-    ocn_prognostic = .false.
-    ocnrof_prognostic = .false.
-    call seq_infodata_GetData(infodata,read_restart=read_restart)
+    call shr_strdata_pioinit(SDOCN, COMPID)
 
     !----------------------------------------------------------------------------
-    ! Read docn_in
-    !----------------------------------------------------------------------------
-
-    call t_startf('docn_readnml')
-
-    filename = "docn_in"//trim(inst_suffix)
-    decomp = "1d"
-    restfilm = trim(nullstr)
-    restfils = trim(nullstr)
-    force_prognostic_true = .false.
-    if (my_task == master_task) then
-       nunit = shr_file_getUnit() ! get unused unit number
-       open (nunit,file=trim(filename),status="old",action="read")
-       read (nunit,nml=docn_nml,iostat=ierr)
-       close(nunit)
-       call shr_file_freeUnit(nunit)
-       if (ierr > 0) then
-          write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
-          call shr_sys_abort(subName//': namelist read error '//trim(filename))
-       end if
-       write(logunit,F00)' decomp = ',trim(decomp)
-       write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
-       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
-    endif
-    call shr_mpi_bcast(decomp,mpicom,'decomp')
-    call shr_mpi_bcast(restfilm,mpicom,'restfilm')
-    call shr_mpi_bcast(restfils,mpicom,'restfils')
-    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
- 
-    rest_file = trim(restfilm)
-    rest_file_strm = trim(restfils)
-    if (force_prognostic_true) then
-       ocn_present    = .true.
-       ocn_prognostic = .true.
-       ocnrof_prognostic = .true.
-    endif
-
-    !----------------------------------------------------------------------------
-    ! Read dshr namelist
-    !----------------------------------------------------------------------------
-
-    call shr_strdata_readnml(SDOCN,trim(filename),mpicom=mpicom)
-
-    !----------------------------------------------------------------------------
-    ! Validate mode
-    !----------------------------------------------------------------------------
-
-    ocn_mode = trim(SDOCN%dataMode)
-
-    ! check that we know how to handle the mode
-
-    if (trim(ocn_mode) == 'NULL' .or. &
-        trim(ocn_mode) == 'SSTDATA' .or. &
-        trim(ocn_mode) == 'COPYALL' .or. &
-        trim(ocn_mode) == 'IAF' .or. &
-        trim(ocn_mode) == 'SOM') then
-      if (my_task == master_task) &
-         write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
-    else
-      write(logunit,F00) ' ERROR illegal ocn mode = ',trim(ocn_mode)
-      call shr_sys_abort()
-    endif
-
-    call t_stopf('docn_readnml')
-
-    !----------------------------------------------------------------------------
-    ! Initialize datasets
+    ! Initialize SDOCN
     !----------------------------------------------------------------------------
 
     call t_startf('docn_strdata_init')
 
-    if (trim(ocn_mode) /= 'NULL') then
-       ocn_present = .true.
-       call seq_timemgr_EClockGetData( EClock, calendar=calendar )
-       iosystem => shr_pio_getiosys(trim(inst_name))
-       
-       call shr_strdata_pioinit(SDOCN, iosystem, shr_pio_getiotype(trim(inst_name)))
+    call seq_timemgr_EClockGetData( EClock, calendar=calendar )
 
-       if (scmmode) then
-          if (my_task == master_task) &
-             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-                      scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-                      calendar=calendar)
-       else
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-                      calendar=calendar)
-       endif
-    endif
+    ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
+    ! grid and from that computes SDOCN%gsmap and SDOCN%ggrid. DOCN%gsmap is created
+    ! using the decomp '2d1d' (1d decomp of 2d grid)
 
-    if (trim(ocn_mode) == 'IAF') then
-       ocn_prognostic = .true.
-       ocnrof_prognostic = .true.
-    endif
-
-    if (trim(ocn_mode) == 'SOM') then
-       ocn_prognostic = .true.
+    if (scmmode) then
+       if (my_task == master_task) &
+            write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
+            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
+    else
+       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
     endif
 
     if (my_task == master_task) then
@@ -349,39 +186,44 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call t_stopf('docn_strdata_init')
 
     !----------------------------------------------------------------------------
-    ! Set flag to specify data components
-    !----------------------------------------------------------------------------
-
-    call seq_infodata_PutData(infodata, ocnrof_prognostic=ocnrof_prognostic, &
-      ocn_present=ocn_present, ocn_prognostic=ocn_prognostic, &
-      ocn_nx=SDOCN%nxg, ocn_ny=SDOCN%nyg )
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp
+    ! Initialize data model MCT global seg map, 1d decomp
     !----------------------------------------------------------------------------
 
     call t_startf('docn_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
     call shr_sys_flush(logunit)
 
-    call shr_dmodel_gsmapcreate(gsmap,SDOCN%nxg*SDOCN%nyg,compid,mpicom,decomp)
-    lsize = mct_gsmap_lsize(gsmap,mpicom)
+    ! create a data model global seqmap (gsmap) given the data model global grid sizes
+    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
+    ! (which by default is "1d")
+    call shr_dmodel_gsmapcreate(gsmap, SDOCN%nxg*SDOCN%nyg, compid, mpicom, decomp)
+    lsize = mct_gsmap_lsize(gsmap, mpicom)
 
-    if (ocn_present) then
-       call mct_rearr_init(SDOCN%gsmap,gsmap,mpicom,rearr)
-    endif
-
+    ! create a rearranger from the data model SDOCN%gsmap to gsmap
+    call mct_rearr_init(SDOCN%gsmap, gsmap, mpicom, rearr)
     call t_stopf('docn_initgsmaps')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT domain
+    ! Initialize data model MCT domain
     !----------------------------------------------------------------------------
 
     call t_startf('docn_initmctdom')
     if (my_task == master_task) write(logunit,F00) 'copy domains'
     call shr_sys_flush(logunit)
 
-    if (ocn_present) call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
+    call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
+
+    ! Special logic for either prescribed or som aquaplanet - overwrite and
+    ! set mask/frac to 1
+    if (ocn_mode == 'SST_AQUAPANAL' .or. ocn_mode == 'SST_AQUAPFILE' .or. ocn_mode == 'SOM_AQUAP') then
+       kmask = mct_aVect_indexRA(ggrid%data,'mask')
+       ggrid%data%rattr(kmask,:) = 1
+
+       kfrac = mct_aVect_indexRA(ggrid%data,'frac')
+       ggrid%data%rattr(kfrac,:) = 1.0_r8
+
+       write(logunit,F00) ' Resetting the data ocean mask and frac to 1 for aquaplanet'
+    end if
 
     call t_stopf('docn_initmctdom')
 
@@ -426,9 +268,17 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     allocate(somtp(lsize))
     allocate(tfreeze(lsize))
     allocate(imask(lsize))
+    allocate(xc(lsize))
+    allocate(yc(lsize))
 
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
+
+    index_lon = mct_aVect_indexRA(ggrid%data,'lon')
+    xc(:) = ggrid%data%rAttr(index_lon,:)
+
+    index_lat = mct_aVect_indexRA(ggrid%data,'lat')
+    yc(:) = ggrid%data%rAttr(index_lat,:)
 
     call t_stopf('docn_initmctavs')
 
@@ -437,8 +287,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     !----------------------------------------------------------------------------
 
     if (read_restart) then
-       if (trim(rest_file) == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
+       if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
           if (my_task == master_task) then
              write(logunit,F00) ' restart filenames from rpointer'
              call shr_sys_flush(logunit)
@@ -466,9 +315,10 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
           endif
        endif
        call shr_mpi_bcast(exists,mpicom,'exists')
-       if (trim(ocn_mode) == 'SOM') then
+       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-          call shr_pcdf_readwrite('read',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
+          call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
+               trim(rest_file), mpicom, gsmap=gsmap, rf1=somtp, rf1n='somtp', io_format=SDOCN%io_format)
        endif
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
@@ -480,329 +330,531 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     endif
 
     !----------------------------------------------------------------------------
-    ! Set initial ocn state, needed for CCSM atm initialization
+    ! Set initial ocn state
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
-    call docn_comp_run( EClock, cdata,  x2o, o2x)
+    call docn_comp_run(EClock, x2o, o2x, &
+         SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart)
     call t_adj_detailf(-2)
-
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to original values
-    !----------------------------------------------------------------------------
 
     if (my_task == master_task) write(logunit,F00) 'docn_comp_init done'
     call shr_sys_flush(logunit)
 
-    call shr_file_setLogUnit (shrlogunit)
-    call shr_file_setLogLevel(shrloglev)
-    call shr_sys_flush(logunit)
-
     call t_stopf('DOCN_INIT')
 
-end subroutine docn_comp_init
+  end subroutine docn_comp_init
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: docn_comp_run
-!
-! !DESCRIPTION:
-!     run method for dead ocn model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  subroutine docn_comp_run(EClock, x2o, o2x, &
+       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       inst_suffix, logunit, read_restart, case_name)
 
-subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
+    ! !DESCRIPTION:  run method for docn model
+    implicit none
 
-   implicit none
+    ! !INPUT/OUTPUT PARAMETERS:
+    type(ESMF_Clock)       , intent(in)    :: EClock
+    type(mct_aVect)        , intent(inout) :: x2o
+    type(mct_aVect)        , intent(inout) :: o2x
+    type(shr_strdata_type) , intent(inout) :: SDOCN
+    type(mct_gsMap)        , pointer       :: gsMap
+    type(mct_gGrid)        , pointer       :: ggrid
+    integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
+    integer(IN)            , intent(in)    :: compid           ! mct comp id
+    integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer(IN)            , intent(in)    :: master_task      ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
+    integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    logical                , intent(in)    :: read_restart     ! start from restart
+    character(CL)          , intent(in), optional :: case_name ! case name
 
-! !INPUT/OUTPUT PARAMETERS:
+    !--- local ---
+    integer(IN)   :: CurrentYMD            ! model date
+    integer(IN)   :: CurrentTOD            ! model sec into model date
+    integer(IN)   :: yy,mm,dd              ! year month day
+    integer(IN)   :: n                     ! indices
+    integer(IN)   :: nf                    ! fields loop index
+    integer(IN)   :: nl                    ! ocn frac index
+    integer(IN)   :: lsize                 ! size of attr vect
+    integer(IN)   :: idt                   ! integer timestep
+    real(R8)      :: dt                    ! timestep
+    integer(IN)   :: nu                    ! unit number
+    real(R8)      :: hn                    ! h field
+    logical       :: write_restart         ! restart now
 
-   type(ESMF_Clock)            ,intent(in)    :: EClock
-   type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2o        ! driver -> dead
-   type(mct_aVect)             ,intent(inout) :: o2x        ! dead   -> driver
+    real(R8), parameter :: &
+         swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
-!EOP
+    character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
+    character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: subName = "(docn_comp_run) "
+    !-------------------------------------------------------------------------------
 
-   !--- local ---
-   type(mct_gsMap)        , pointer :: gsmap
-   type(mct_gGrid)        , pointer :: ggrid
+    call t_startf('DOCN_RUN')
 
-   integer(IN)   :: CurrentYMD        ! model date
-   integer(IN)   :: CurrentTOD        ! model sec into model date
-   integer(IN)   :: yy,mm,dd          ! year month day
-   integer(IN)   :: n                 ! indices
-   integer(IN)   :: nf                ! fields loop index
-   integer(IN)   :: nl                ! ocn frac index
-   integer(IN)   :: lsize           ! size of attr vect
-   integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-   logical       :: glcrun_alarm      ! is glc going to run now
-   logical       :: newdata           ! has newdata been read
-   logical       :: mssrmlf           ! remove old data
-   integer(IN)   :: idt               ! integer timestep
-   real(R8)      :: dt                ! timestep
-   real(R8)      :: hn                ! h field
-   logical       :: write_restart     ! restart now
-   character(CL) :: case_name         ! case name
-   character(CL) :: rest_file         ! restart_file
-   character(CL) :: rest_file_strm    ! restart_file for stream
-   integer(IN)   :: nu                ! unit number
-   integer(IN)   :: nflds_x2o
-   type(seq_infodata_type), pointer :: infodata
+    call t_startf('docn_run1')
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
+    call seq_timemgr_EClockGetData( EClock, dtime=idt)
+    dt = idt * 1.0_R8
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    call t_stopf('docn_run1')
 
-   real(R8), parameter     :: swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) &
-      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8) 
-   character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
-   character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
-   character(*), parameter :: subName = "(docn_comp_run) "
-!-------------------------------------------------------------------------------
+    !--------------------
+    ! ADVANCE OCN
+    !--------------------
 
-   call t_startf('DOCN_RUN')
+    call t_barrierf('docn_BARRIER',mpicom)
+    call t_startf('docn')
 
-   call t_startf('docn_run1')
+    !--- defaults, copy all fields from streams to o2x ---
 
-  !----------------------------------------------------------------------------
-  ! Reset shr logging to my log file
-  !----------------------------------------------------------------------------
-   call shr_file_getLogUnit (shrlogunit)
-   call shr_file_getLogLevel(shrloglev)
-   call shr_file_setLogUnit (logUnit)
+    lsize = mct_avect_lsize(o2x)
+    do n = 1,lsize
+       o2x%rAttr(kt   ,n) = TkFrz
+       o2x%rAttr(ks   ,n) = ocnsalt
+       o2x%rAttr(ku   ,n) = 0.0_R8
+       o2x%rAttr(kv   ,n) = 0.0_R8
+       o2x%rAttr(kdhdx,n) = 0.0_R8
+       o2x%rAttr(kdhdy,n) = 0.0_R8
+       o2x%rAttr(kq   ,n) = 0.0_R8
+       o2x%rAttr(kswp ,n) = swp
+    enddo
 
-   call seq_cdata_setptrs(cdata, gsMap=gsmap, dom=ggrid)
+    ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
+    ! and thereby shr_strdata_advance does nothing
 
-   call seq_cdata_setptrs(cdata, infodata=infodata)
+    call t_startf('docn_strdata_advance')
+    call shr_strdata_advance(SDOCN, currentYMD, currentTOD, mpicom, 'docn')
+    call t_stopf('docn_strdata_advance')
 
-   call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-   call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
-   call seq_timemgr_EClockGetData( EClock, dtime=idt)
-   dt = idt * 1.0_R8
-   write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+    !--- copy streams to o2x ---
+    call t_barrierf('docn_scatter_BARRIER', mpicom)
+    call t_startf('docn_scatter')
+    do n = 1, SDOCN%nstreams
+       call shr_dmodel_translateAV(SDOCN%avs(n), o2x, avifld, avofld, rearr)
+    enddo
+    call t_stopf('docn_scatter')
 
-   call t_stopf('docn_run1')
+    ! --- handle the docn modes
 
-   !--------------------
-   ! UNPACK
-   !--------------------
+    call t_startf('docn_mode')
+    select case (trim(ocn_mode))
 
-   call t_startf('docn_unpack')
+    case('COPYALL')
+       ! do nothing extra
 
-!  lsize = mct_avect_lsize(x2o)
-!  nflds_x2o = mct_avect_nRattr(x2o)
+    case('SSTDATA')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          o2x%rAttr(kswp ,n) = swp
+       enddo
 
-!   do nf=1,nflds_x2o
-!   do n=1,lsize
-!     ?? = x2o%rAttr(nf,n)
-!   enddo
-!   enddo
+    case('SST_AQUAPANAL')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(:,n) = 0.0_r8
+       end do
+       call prescribed_sst(xc, yc, lsize, aquap_option, o2x%rAttr(kt,:))
+       do n = 1,lsize
+          o2x%rAttr(kt,n) = o2x%rAttr(kt,n) + TkFrz
+       enddo
 
-   call t_stopf('docn_unpack')
+    case('SST_AQUAPFILE')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          o2x%rAttr(kswp ,n) = swp
+       enddo
 
-   !--------------------
-   ! ADVANCE OCN
-   !--------------------
+    case('IAF')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          o2x%rAttr(kswp ,n) = swp
+       enddo
 
-   call t_barrierf('docn_BARRIER',mpicom)
-   call t_startf('docn')
+    case('SOM')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,SDOCN%nstreams
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+       enddo
+       if (firstcall) then
+          do n = 1,lsize
+             if (.not. read_restart) then
+                somtp(n) = o2x%rAttr(kt,n) + TkFrz
+             endif
+             o2x%rAttr(kt,n) = somtp(n)
+             o2x%rAttr(kq,n) = 0.0_R8
+          enddo
+       else   ! firstcall
+          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+          do n = 1,lsize
+             if (imask(n) /= 0) then
+                !--- pull out h from av for resuse below ---
+                hn = avstrm%rAttr(kh,n)
+                !--- compute new temp ---
+                o2x%rAttr(kt,n) = somtp(n) + &
+                     (x2o%rAttr(kswnet,n) + &  ! shortwave
+                     x2o%rAttr(klwup ,n) + &  ! longwave
+                     x2o%rAttr(klwdn ,n) + &  ! longwave
+                     x2o%rAttr(ksen  ,n) + &  ! sensible
+                     x2o%rAttr(klat  ,n) + &  ! latent
+                     x2o%rAttr(kmelth,n) - &  ! ice melt
+                     avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
+                     (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
+                     dt/(cpsw*rhosw*hn)
+                !--- compute ice formed or melt potential ---
+                o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+                o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
+                somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
+             endif
+          enddo
+       endif   ! firstcall
 
-   !--- defaults, copy all fields from streams to o2x ---
-
-   if (trim(ocn_mode) /= 'NULL') then
-
-      !--- defaults ---
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,lsize
-         o2x%rAttr(kt   ,n) = TkFrz
-         o2x%rAttr(ks   ,n) = ocnsalt
-         o2x%rAttr(ku   ,n) = 0.0_R8
-         o2x%rAttr(kv   ,n) = 0.0_R8
-         o2x%rAttr(kdhdx,n) = 0.0_R8
-         o2x%rAttr(kdhdy,n) = 0.0_R8
-         o2x%rAttr(kq   ,n) = 0.0_R8
-         o2x%rAttr(kswp ,n) = swp
-      enddo
-
-      !--- copy streams to o2x ---
-      call t_startf('docn_strdata_advance')
-      call shr_strdata_advance(SDOCN,currentYMD,currentTOD,mpicom,'docn')
-      call t_stopf('docn_strdata_advance')
-      call t_barrierf('docn_scatter_BARRIER',mpicom)
-      call t_startf('docn_scatter')
-      do n = 1,SDOCN%nstreams
-         call shr_dmodel_translateAV(SDOCN%avs(n),o2x,avifld,avofld,rearr)
-      enddo
-      call t_stopf('docn_scatter')
-   else
-      call mct_aVect_zero(o2x)
-   endif
-
-   call t_startf('docn_mode')
-
-   select case (trim(ocn_mode))
-
-   case('COPYALL') 
-      ! do nothing extra
-
-   case('SSTDATA')
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,lsize
-         o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-         o2x%rAttr(ks   ,n) = ocnsalt
-         o2x%rAttr(ku   ,n) = 0.0_R8
-         o2x%rAttr(kv   ,n) = 0.0_R8
-         o2x%rAttr(kdhdx,n) = 0.0_R8
-         o2x%rAttr(kdhdy,n) = 0.0_R8
-         o2x%rAttr(kq   ,n) = 0.0_R8
-         o2x%rAttr(kswp ,n) = swp
-      enddo
-
-   case('IAF')
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,lsize
-         o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-         o2x%rAttr(ks   ,n) = ocnsalt
-         o2x%rAttr(ku   ,n) = 0.0_R8
-         o2x%rAttr(kv   ,n) = 0.0_R8
-         o2x%rAttr(kdhdx,n) = 0.0_R8
-         o2x%rAttr(kdhdy,n) = 0.0_R8
-         o2x%rAttr(kq   ,n) = 0.0_R8
-         o2x%rAttr(kswp ,n) = swp
-      enddo
-
-   case('SOM')
-      lsize = mct_avect_lsize(o2x)
-      do n = 1,SDOCN%nstreams
-         call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
-      enddo
-      if (firstcall) then
-         do n = 1,lsize
-            if (.not. read_restart) then
-               somtp(n) = o2x%rAttr(kt,n) + TkFrz
-            endif
-            o2x%rAttr(kt,n) = somtp(n)
-            o2x%rAttr(kq,n) = 0.0_R8
-         enddo
-      else   ! firstcall
-         tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
-         do n = 1,lsize
-         if (imask(n) /= 0) then
-            !--- pull out h from av for resuse below ---
-            hn = avstrm%rAttr(kh,n)
-            !--- compute new temp ---
-            o2x%rAttr(kt,n) = somtp(n) + &
-               (x2o%rAttr(kswnet,n) + &  ! shortwave 
-                x2o%rAttr(klwup ,n) + &  ! longwave
-                x2o%rAttr(klwdn ,n) + &  ! longwave
-                x2o%rAttr(ksen  ,n) + &  ! sensible
-                x2o%rAttr(klat  ,n) + &  ! latent
-                x2o%rAttr(kmelth,n) - &  ! ice melt
-                avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
-                (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
-                dt/(cpsw*rhosw*hn)
+    case('SOM_AQUAP')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,SDOCN%nstreams
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+       enddo
+       if (firstcall) then
+          do n = 1,lsize
+             if (.not. read_restart) then
+                somtp(n) = o2x%rAttr(kt,n) + TkFrz
+             endif
+             o2x%rAttr(kt,n) = somtp(n)
+             o2x%rAttr(kq,n) = 0.0_R8
+          enddo
+       else   ! firstcall
+          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+          do n = 1,lsize
+             !--- pull out h from av for resuse below ---
+             hn = avstrm%rAttr(kh,n)
+             !--- compute new temp ---
+             o2x%rAttr(kt,n) = somtp(n) + &
+                  (x2o%rAttr(kswnet,n) + &  ! shortwave
+                  x2o%rAttr(klwup ,n) + &  ! longwave
+                  x2o%rAttr(klwdn ,n) + &  ! longwave
+                  x2o%rAttr(ksen  ,n) + &  ! sensible
+                  x2o%rAttr(klat  ,n) + &  ! latent
+                  x2o%rAttr(kmelth,n) - &  ! ice melt
+                  avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
+                  (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
+                  dt/(cpsw*rhosw*hn)
              !--- compute ice formed or melt potential ---
-            o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
-            o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
-            somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
-         endif
-         enddo
-      endif   ! firstcall
+             o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
+          enddo
+       endif   ! firstcall
 
-   end select
+    end select
 
-   call t_stopf('docn_mode')
+    call t_stopf('docn_mode')
 
-   if (write_restart) then
-      call t_startf('docn_restart')
-      call seq_infodata_GetData( infodata, case_name=case_name)
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.docn'//trim(inst_suffix)//'.r.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-      write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.docn'//trim(inst_suffix)//'.rs1.', &
-        yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
-      if (my_task == master_task) then
-         nu = shr_file_getUnit()
-         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-         write(nu,'(a)') rest_file
-         write(nu,'(a)') rest_file_strm
-         close(nu)
-         call shr_file_freeUnit(nu)
-      endif
-      if (trim(ocn_mode) == 'SOM') then
-         if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
-         call shr_pcdf_readwrite('write',iosystem,SDOCN%io_type,trim(rest_file),mpicom,gsmap,clobber=.true., &
-            rf1=somtp,rf1n='somtp')
-      endif
-      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
-      call shr_strdata_restWrite(trim(rest_file_strm),SDOCN,mpicom,trim(case_name),'SDOCN strdata')
-      call shr_sys_flush(logunit)
-      call t_stopf('docn_restart')
-   endif
+    !--------------------
+    ! Write restart
+    !--------------------
 
-   call t_stopf('docn')
+    if (write_restart) then
+       call t_startf('docn_restart')
+       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.docn'//trim(inst_suffix)//'.r.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(case_name), '.docn'//trim(inst_suffix)//'.rs1.', &
+            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          write(nu,'(a)') rest_file_strm
+          close(nu)
+          call shr_file_freeUnit(nu)
+       endif
+       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
+          if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
+          call shr_pcdf_readwrite('write', SDOCN%pio_subsystem, SDOCN%io_type,&
+               trim(rest_file), mpicom, gsmap, clobber=.true., rf1=somtp,rf1n='somtp')
+       endif
+       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
+       call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
+       call shr_sys_flush(logunit)
+       call t_stopf('docn_restart')
+    endif
 
-   !----------------------------------------------------------------------------
-   ! Log output for model date
-   ! Reset shr logging to original values
-   !----------------------------------------------------------------------------
+    call t_stopf('docn')
 
-   call t_startf('docn_run2')
-   if (my_task == master_task) then
-      write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-      call shr_sys_flush(logunit)
-   end if
-   firstcall = .false.
-      
-   call shr_file_setLogUnit (shrlogunit)
-   call shr_file_setLogLevel(shrloglev)
-   call shr_sys_flush(logunit)
-   call t_stopf('docn_run2')
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    !----------------------------------------------------------------------------
 
-   call t_stopf('DOCN_RUN')
+    call t_startf('docn_run2')
+    if (my_task == master_task) then
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit)
+    end if
 
-end subroutine docn_comp_run
+    firstcall = .false.
+    call t_stopf('docn_run2')
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: docn_comp_final
-!
-! !DESCRIPTION:
-!     finalize method for dead ocn model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
-!
-subroutine docn_comp_final()
+    call t_stopf('DOCN_RUN')
 
-   implicit none
+  end subroutine docn_comp_run
 
-!EOP
+  !===============================================================================
+  subroutine docn_comp_final(my_task, master_task, logunit)
 
-   !--- formats ---
-   character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
-   character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
-   character(*), parameter :: subName = "(docn_comp_final) "
-   integer :: rcode
-!-------------------------------------------------------------------------------
-!
-!-------------------------------------------------------------------------------
+    ! !DESCRIPTION:  finalize method for docn model
+    implicit none
 
-   call t_startf('DOCN_FINAL')
-   if (my_task == master_task) then
-      write(logunit,F91) 
-      write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
-   end if
-      
-   call t_stopf('DOCN_FINAL')
+    ! !INPUT/OUTPUT PARAMETERS:
+    integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
+    integer(IN) , intent(in) :: master_task ! task number of master task
+    integer(IN) , intent(in) :: logunit     ! logging unit number
 
-end subroutine docn_comp_final
-!===============================================================================
-!===============================================================================
+    !--- formats ---
+    character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
+    character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
+    character(*), parameter :: subName = "(docn_comp_final) "
+    !-------------------------------------------------------------------------------
 
+    call t_startf('DOCN_FINAL')
+
+    if (my_task == master_task) then
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
+    end if
+
+    call t_stopf('DOCN_FINAL')
+
+  end subroutine docn_comp_final
+
+  !===============================================================================
+  subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
+
+    real(R8)     , intent(in)    :: xc(:)  !degrees
+    real(R8)     , intent(in)    :: yc(:)  !degrees
+    integer(IN)  , intent(in)    :: lsize
+    integer(IN)  , intent(in)    :: sst_option
+    real(R8)     , intent(inout) :: sst(:)
+
+    ! local
+    integer  :: i
+    real(r8) :: tmp, tmp1, pi
+    real(r8) :: rlon(lsize), rlat(lsize)
+
+    real(r8), parameter :: pio180 = SHR_CONST_PI/180._r8
+
+    ! Parameters for zonally symmetric experiments
+    real(r8), parameter ::   t0_max     = 27._r8
+    real(r8), parameter ::   t0_min     = 0._r8
+    real(r8), parameter ::   maxlat     = 60._r8*pio180
+    real(r8), parameter ::   shift      = 5._r8*pio180
+    real(r8), parameter ::   shift9     = 10._r8*pio180
+    real(r8), parameter ::   shift10    = 15._r8*pio180
+
+    ! Parameters for zonally asymmetric experiments
+    real(r8), parameter ::   t0_max6    = 1._r8
+    real(r8), parameter ::   t0_max7    = 3._r8
+    real(r8), parameter ::   latcen     = 0._r8*pio180
+    real(r8), parameter ::   loncen     = 0._r8*pio180
+    real(r8), parameter ::   latrad6    = 15._r8*pio180
+    real(r8), parameter ::   latrad8    = 30._r8*pio180
+    real(r8), parameter ::   lonrad     = 30._r8*pio180
+    !-------------------------------------------------------------------------------
+
+    pi = SHR_CONST_PI
+
+    ! convert xc and yc from degrees to radians
+
+    rlon(:) = xc(:) * pio180
+    rlat(:) = yc(:) * pio180
+
+    ! Control
+
+    if (sst_option < 1 .or. sst_option > 10) then
+       call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 10')
+    end if
+
+    if (sst_option == 1 .or. sst_option == 6 .or. sst_option == 7 .or. sst_option == 8) then
+       do i = 1,lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else
+             tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          end if
+       end do
+    end if
+
+    ! Flat
+
+    if (sst_option == 2) then
+       do i = 1,lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else
+             tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+             tmp = 1._r8 - tmp*tmp*tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          end if
+       end do
+    end if
+
+    ! Qobs
+
+    if (sst_option == 3) then
+       do i = 1,lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else
+             tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+             tmp = (2._r8 - tmp*tmp*tmp*tmp - tmp*tmp)*0.5_r8
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          end if
+       end do
+    end if
+
+    ! Peaked
+
+    if (sst_option == 4) then
+       do i = 1,lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else
+             tmp = (maxlat - abs(rlat(i)))/maxlat
+             tmp1 = 1._r8 - tmp
+             sst(i) = t0_max*tmp + t0_min*tmp1
+          end if
+       end do
+    end if
+
+    ! Control-5N
+
+    if (sst_option == 5) then
+       do i = 1,lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else if (rlat(i) > shift) then
+             tmp = sin((rlat(i)-shift)*pi*0.5_r8/(maxlat-shift))
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          else
+             tmp = sin((rlat(i)-shift)*pi*0.5_r8/(maxlat+shift))
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          end if
+       end do
+    end if
+
+    ! 1KEQ
+
+    if (sst_option == 6) then
+       do i = 1,lsize
+          if (abs(rlat(i)-latcen) <= latrad6) then
+             tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
+             tmp1 = tmp1*tmp1
+             tmp = abs(rlon(i)-loncen)
+             tmp = min(tmp , 2._r8*pi-tmp)
+             if(tmp <= lonrad) then
+                tmp = cos(tmp*pi*0.5_r8/lonrad)
+                tmp = tmp*tmp
+                sst(i) = sst(i) + t0_max6*tmp*tmp1
+             end if
+          end if
+       end do
+    end if
+
+    ! 3KEQ
+
+    if (sst_option == 7) then
+       do i = 1, lsize
+          if (abs(rlat(i)-latcen) <= latrad6) then
+             tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
+             tmp1 = tmp1*tmp1
+             tmp = abs(rlon(i)-loncen)
+             tmp = min(tmp , 2._r8*pi-tmp)
+             if (tmp <= lonrad) then
+                tmp = cos(tmp*pi*0.5_r8/lonrad)
+                tmp = tmp*tmp
+                sst(i) = sst(i) + t0_max7*tmp*tmp1
+             end if
+          end if
+       end do
+    end if
+
+    ! 3KW1
+
+    if (sst_option == 8) then
+       do i = 1, lsize
+          if (abs(rlat(i)-latcen) <= latrad8) then
+             tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad8)
+             tmp1 = tmp1*tmp1
+             tmp = cos(rlon(i)-loncen)
+             sst(i) = sst(i) + t0_max7*tmp*tmp1
+          end if
+       end do
+    end if
+
+    ! Control-10N
+
+    if (sst_option == 9) then
+       do i = 1, lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else if (rlat(i) > shift9) then
+             tmp = sin((rlat(i)-shift9)*pi*0.5_r8/(maxlat-shift9))
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          else
+             tmp = sin((rlat(i)-shift9)*pi*0.5_r8/(maxlat+shift9))
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          end if
+       end do
+    end if
+
+    ! Control-15N
+
+    if (sst_option == 10) then
+       do i = 1, lsize
+          if (abs(rlat(i)) > maxlat) then
+             sst(i) = t0_min
+          else if(rlat(i) > shift10) then
+             tmp = sin((rlat(i)-shift10)*pi*0.5_r8/(maxlat-shift10))
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          else
+             tmp = sin((rlat(i)-shift10)*pi*0.5_r8/(maxlat+shift10))
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min
+          end if
+       end do
+    end if
+
+  end subroutine prescribed_sst
 
 end module docn_comp_mod

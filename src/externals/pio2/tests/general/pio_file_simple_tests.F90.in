@@ -53,7 +53,7 @@ PIO_TF_TEST_DRIVER_BEGIN
   integer :: num_iotypes
 
   num_iotypes = 0
-  call PIO_TF_Get_iotypes(iotypes, iotype_descs, num_iotypes) 
+  call PIO_TF_Get_iotypes(iotypes, iotype_descs, num_iotypes)
   dummy_file = "test_pio_file_simple_tests.testfile"
   do i=1,num_iotypes
     PIO_TF_TEST_RUN(create_file_no_opts(iotypes(i), dummy_file), trim(iotype_descs(i)))
@@ -66,4 +66,3 @@ PIO_TF_TEST_DRIVER_BEGIN
   end if
 
 PIO_TF_TEST_DRIVER_END
-

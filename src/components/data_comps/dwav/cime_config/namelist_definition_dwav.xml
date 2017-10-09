@@ -47,10 +47,10 @@
     <type>char(100)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>List of streams used for the given datm_mode.</desc>
+    <desc>List of streams used for the given dwav_mode.</desc>
     <values>
-      <value dwav_mode="null">NULL</value>
-      <value dwav_mode="copyall">wav.copyall</value>
+      <value dwav_mode="NULL">null</value>
+      <value dwav_mode="CLIMO">climo</value>
     </values>
   </entry>
 
@@ -60,7 +60,7 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value stream="wav.copyall">$DIN_LOC_ROOT/wav/dwav</value>
+      <value stream="climo">$DIN_LOC_ROOT/wav/dwav</value>
     </values>
   </entry>
 
@@ -70,7 +70,7 @@
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
     <values>
-      <value stream="wav.copyall">waveclim.mon.ww3a.150612.nc</value>
+      <value stream="climo">waveclim.mon.ww3a.150612.nc</value>
     </values>
   </entry>
 
@@ -80,7 +80,7 @@
     <group>streams_file</group>
     <desc>Stream domain variable name(s).</desc>
     <values>
-      <value stream="wav.copyall">
+      <value stream="climo">
         time   time
         xc     lon
         yc     lat
@@ -96,7 +96,7 @@
     <group>streams_file</group>
     <desc>Stream data file directory.</desc>
     <values>
-      <value stream="wav.copyall">$DIN_LOC_ROOT/wav/dwav</value>
+      <value stream="climo">$DIN_LOC_ROOT/wav/dwav</value>
     </values>
   </entry>
 
@@ -106,7 +106,7 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="wav.copyall">waveclim.mon.ww3a.150612.nc</value>
+      <value stream="climo">waveclim.mon.ww3a.150612.nc</value>
     </values>
   </entry>
 
@@ -116,7 +116,7 @@
     <group>streams_file</group>
     <desc>Stream data variable name(s).</desc>
     <values>
-      <value stream="wav.copyall">
+      <value stream="climo">
         lamult  lamult
         ustokes ustokes
         vstokes vstokes
@@ -140,7 +140,7 @@
     <group>streams_file</group>
     <desc>Simulation year to align stream to.</desc>
     <values>
-      <value stream="wav.copyall">1</value>
+      <value stream="climo">1</value>
     </values>
   </entry>
 
@@ -150,7 +150,7 @@
     <group>streams_file</group>
     <desc>First year of stream.</desc>
     <values>
-      <value stream="wav.copyall">1</value>
+      <value stream="climo">1</value>
     </values>
   </entry>
 
@@ -160,7 +160,7 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value   stream="wav.copyall">1</value>
+      <value   stream="climo">1</value>
     </values>
   </entry>
 
@@ -188,15 +188,14 @@
       fields not found on an input stream will be set to zero.
       Set by the following xml variables in env_run.xml DWAV_MODE
       specifies values for wav mode: copyall,null
-      default value: copyall
     </desc>
     <values>
-      <value dwav_mode="null">null</value>
-      <value dwav_mode="copyall">copyall</value>
+      <value>copyall</value>
+      <value dwav_mode="NULL">null</value>
     </values>
   </entry>
 
-  <entry id="domainfile">
+  <entry id="domainfile" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
@@ -207,7 +206,7 @@
       for all input data for this strdata input.
     </desc>
     <values>
-      <value/>
+      <value>null</value>
     </values>
   </entry>
 
@@ -253,7 +252,7 @@
       and fillmask are ignored.
     </desc>
     <values>
-      <value/>
+      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -268,7 +267,7 @@
       save and reuse a set of weights later.
     </desc>
     <values>
-      <value/>
+      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -317,7 +316,7 @@
       is set, mapalgo and mapmask are ignored.
     </desc>
     <values>
-      <value/>
+      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -332,7 +331,7 @@
       allows a user to save and reuse a set of weights later.
     </desc>
     <values>
-      <value/>
+      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -378,6 +377,23 @@
     </values>
   </entry>
 
+  <entry id="readmode" per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>single,full_file</valid_values>
+    <desc>
+      array (up to 30 elements) of reading mode associated with the array of
+      streams.  specifies the mode of reading temporal stream dataset.
+      valid options are "single" (read temporal dataset one at a time) or
+      "full_file" (read all entires of temporal dataset in a given netcdf file)
+      valid values: single,full_file
+    </desc>
+    <values>
+      <value>single</value>
+    </values>
+  </entry>
+
   <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
@@ -401,7 +417,7 @@
     </values>
   </entry>
 
-  <entry id="vectors" skip_default_entry="true">
+  <entry id="vectors">
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -483,8 +499,8 @@
 
   <entry id="force_prognostic_true">
     <type>logical</type>
-    <category>drof</category>
-    <group>drof_nml</group>
+    <category>dwav</category>
+    <group>dwav_nml</group>
     <desc>If TRUE, prognostic is forced to true. </desc>
     <values>
       <value>.false.</value>

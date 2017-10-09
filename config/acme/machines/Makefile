@@ -27,8 +27,8 @@ VPATH := $(subst $(space),:,$(VPATH))
 RM    := rm
 CP    := cp
 
-exec_se: $(EXEC_SE)  $(CURDIR)/Depends
-complib: $(COMPLIB)  $(CURDIR)/Depends
+exec_se: $(EXEC_SE)  Depends
+complib: $(COMPLIB)  Depends
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -90,12 +90,7 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-# ESMF_INTERFACE is currently only defined in env_build.xml
-ifeq ($(COMP_INTERFACE), ESMF)
-   CPPDEFS += -DESMF_INTERFACE
-else
-   CPPDEFS += -DMCT_INTERFACE
-endif
+CPPDEFS += -DMCT_INTERFACE
 
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
@@ -300,11 +295,22 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
   endif
 endif
 
+# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
+# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
+ifeq ($(PIO_VERSION),2)
+  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
+else
+  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
+  EXTRA_PIO_FPPDEFS := $(subst $(comma),\\$(comma),$(EXTRA_PIO_CPPDEFS))
+  EXTRA_PIO_FPPDEFS := $(patsubst -D%,$(CPRE)%,$(EXTRA_PIO_FPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
+  EXTRA_PIO_FPPDEFS := $(EXTRA_PIO_CPPDEFS)
 endif
 
 #===============================================================================
@@ -455,6 +461,7 @@ FFLAGS += $(FPPDEFS)
 FFLAGS_NOOPT += $(FPPDEFS)
 
 
+
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
 # The following is for the COSP simulator code:
 COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
@@ -471,15 +478,15 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
-  ifdef COSP_LIBDIR
-    INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
-    $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
-    $(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
-    F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
-    F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
+ifdef COSP_LIBDIR
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+$(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
+	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
+	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
+	F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
 
-    cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
-  endif
+cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
+endif
 
 endif
 
@@ -608,13 +615,13 @@ endif
 # FIXEDFLAGS, so that both free & fixed code can be built (cmake
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
-CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
-              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
-              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
+CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(INCLDIR)" \
+              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
+              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/src/externals/CMake
+	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
@@ -667,7 +674,7 @@ $(PIO_LIBDIR)/Makefile:
 #-------------------------------------------------------------------------------
 
 touch_filepath:
-	touch $(CURDIR)/Filepath
+	touch Filepath
 
 # Get list of files and build dependency file for all .o files
 #   using perl scripts mkSrcfiles and mkDepends
@@ -679,17 +686,17 @@ INCS    := $(foreach dir,$(cpp_dirs),-I$(dir))
 
 CURDIR := $(shell pwd)
 
-$(CURDIR)/Depends: $(CURDIR)/Srcfiles $(CURDIR)/Deppath
+Depends: Srcfiles Deppath
 	$(CASETOOLS)/mkDepends $(USER_MKDEPENDS_OPTS) Deppath Srcfiles > $@
 
-$(CURDIR)/Deppath: $(CURDIR)/Filepath
-	$(CP) -f $(CURDIR)/Filepath $@
+Deppath: Filepath
+	$(CP) -f Filepath $@
 	@echo "$(MINCROOT)" >> $@
 
-$(CURDIR)/Srcfiles: $(CURDIR)/Filepath
+Srcfiles: Filepath
 	$(CASETOOLS)/mkSrcfiles
 
-$(CURDIR)/Filepath:
+Filepath:
 	@echo "$(VPATH)" > $@
 
 
@@ -835,22 +842,22 @@ $(COMPLIB): $(OBJS)
 
 cleanatm:
 	$(RM) -f $(LIBROOT)/libatm.a
-	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/atm/obj
 
 cleancpl:
-	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/cpl/obj
 
 cleanocn:
 	$(RM) -f $(LIBROOT)/libocn.a
-	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/ocn/obj
 
 cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
-	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/wav/obj
 
 cleanesp:
 	$(RM) -f $(LIBROOT)/libesp.a
-	cd $(EXEROOT)/esp/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/esp/obj
 
 cleanglc:
 	$(RM) -f $(LIBROOT)/libglc.a
@@ -858,15 +865,15 @@ cleanglc:
 
 cleanice:
 	$(RM) -f $(LIBROOT)/libice.a
-	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/ice/obj
 
 cleanrof:
 	$(RM) -f $(LIBROOT)/librof.a
-	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/rof/obj
 
 cleanlnd:
 	$(RM) -f $(LIBROOT)/liblnd.a
-	cd $(EXEROOT)/lnd/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/lnd/obj
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)
@@ -892,7 +899,7 @@ realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
+    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
 endif

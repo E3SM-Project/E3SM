@@ -79,7 +79,7 @@ module pio_types
 !! @defgroup PIO_rearr_comm_fc_options PIO_rearr_comm_fc_options
 !! @brief Type that defines the PIO rearranger options
 !! @details
-!!  - enable_hs : Enable handshake (true/false) 
+!!  - enable_hs : Enable handshake (true/false)
 !!  - enable_isend : Enable Isends (true/false)
 !!  - max_pend_req : Maximum pending requests (To indicated unlimited
 !!                    number of requests use PIO_REARR_COMM_UNLIMITED_PEND_REQ)

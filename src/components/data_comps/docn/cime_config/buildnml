@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob
+import os, shutil, sys, glob, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -108,6 +108,13 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
         else:
             nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
+    # For aquaplanet prescribed have no streams
+    match = re.match(r'^sst_aquap\d+',docn_mode)
+    if match is not None:
+        if match.group(0):
+            value = ['null']
+            nmlgen.set_value("streams",value)
+
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------
@@ -166,7 +173,6 @@ def buildnml(case, caseroot, compname):
     # Loop over instances
     #----------------------------------------------------
     for inst_counter in range(1, ninst+1):
-
         # determine instance string
         inst_string = ""
         if ninst > 1:

@@ -13,7 +13,61 @@ more.
 import os
 from abc import ABCMeta, abstractmethod
 from CIME.XML.standard_module_setup import *
+from CIME.utils import get_cime_root
 logger = logging.getLogger(__name__)
+
+def _get_components(value):
+    """
+    >>> value = '-something ${shell ${NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack'
+    >>> _get_components(value)
+    [(False, '-something'), (True, '${NETCDF_PATH}/bin/nf-config --flibs'), (False, '-lblas -llapack')]
+    >>> value = '${shell ${NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack'
+    >>> _get_components(value)
+    [(True, '${NETCDF_PATH}/bin/nf-config --flibs'), (False, '-lblas -llapack')]
+    >>> value = '${shell ${NETCDF_PATH}/bin/nf-config --flibs}'
+    >>> _get_components(value)
+    [(True, '${NETCDF_PATH}/bin/nf-config --flibs')]
+    """
+    value = value.strip()
+    components = []
+    curr_comp = ""
+    idx = 0
+    while idx < len(value):
+        if value[idx:idx+8] == "${shell ":
+            if curr_comp:
+                components.append((False, curr_comp.strip()))
+                curr_comp = ""
+
+            idx += 8
+            brace_cnt = 0
+            done = False
+            while not done:
+                if value[idx] == "{":
+                    brace_cnt += 1
+                    curr_comp += value[idx]
+
+                elif value[idx] == "}":
+                    if brace_cnt == 0:
+                        done = True
+                    else:
+                        brace_cnt -= 1
+                        curr_comp += value[idx]
+
+                else:
+                    curr_comp += value[idx]
+
+                idx += 1
+
+            components.append((True, curr_comp.strip()))
+            curr_comp = ""
+        else:
+            curr_comp += value[idx]
+            idx += 1
+
+    if curr_comp:
+        components.append((False, curr_comp.strip()))
+
+    return components
 
 class MacroWriterBase(object):
 
@@ -153,16 +207,16 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:
         if not item in macros and item in os.environ:
-            logger.warn("Setting %s from Environment" % item)
+            logger.warn("Setting {} from Environment".format(item))
             macros[item] = os.environ[item]
 
     with open(macros_file, "w") as fd:
         fd.write(
 """#
-# COMPILER=%s
-# OS=%s
-# MACH=%s
-""" % (compiler, os_, machine)
+# COMPILER={}
+# OS={}
+# MACH={}
+""".format(compiler, os_, machine)
 )
         if output_format == "make":
             fd.write("#\n# Makefile Macros \n")
@@ -172,15 +226,16 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
                 if key == "_COND_":
                     pass
                 elif key.startswith("ADD_"):
-                    fd.write("%s+=%s\n\n" % (key[4:], value))
+                    fd.write("{}+={}\n\n".format(key[4:], value))
                 else:
-                    fd.write("%s:=%s\n\n" % (key, value))
+                    fd.write("{}:={}\n\n".format(key, value))
 
         elif output_format == "cmake":
             fd.write(
 '''#
 # cmake Macros generated from $compiler_file
 #
+set(CMAKE_MODULE_PATH %s)
 include(Compilers)
 set(CMAKE_C_FLAGS_RELEASE "" CACHE STRING "Flags used by c compiler." FORCE)
 set(CMAKE_C_FLAGS_DEBUG "" CACHE STRING "Flags used by c compiler." FORCE)
@@ -188,7 +243,7 @@ set(CMAKE_Fortran_FLAGS_RELEASE "" CACHE STRING "Flags used by Fortran compiler.
 set(CMAKE_Fortran_FLAGS_DEBUG "" CACHE STRING "Flags used by Fortran compiler." FORCE)
 set(all_build_types "None Debug Release RelWithDebInfo MinSizeRel")
 set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: ${all_build_types}." FORCE)
-''')
+''' % os.path.join(get_cime_root(), "src", "CMake"))
 
             # print the settings out to the Macros file, do it in
             # two passes so that path values appear first in the
@@ -199,22 +254,46 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                 else:
                     value = value.replace("(", "{").replace(")", "}")
                     if key.endswith("_PATH"):
-                        fd.write("set(%s %s)\n" % (key, value))
-                        fd.write("list(APPEND CMAKE_PREFIX_PATH %s)\n\n" % value)
+                        if value.startswith("$"):
+                            value = "$ENV{}".format(value[1:])
+
+
+                        cmake_var = key.replace("NETCDF_PATH", "NetCDF_PATH").replace("PNETCDF_PATH", "Pnetcdf_PATH")
+                        fd.write("set({} {})\n".format(cmake_var, value))
+                        fd.write("list(APPEND CMAKE_PREFIX_PATH {})\n\n".format(value))
 
             for key, value in sorted(macros.iteritems()):
                 if key == "_COND_":
                     pass
                 else:
                     value = value.replace("(", "{").replace(")", "}")
-                    if "CFLAGS" in key:
-                        fd.write("add_flags(CMAKE_C_FLAGS %s)\n\n" % value)
-                    elif "FFLAGS" in key:
-                        fd.write("add_flags(CMAKE_Fortran_FLAGS %s)\n\n" % value)
-                    elif "CPPDEFS" in key:
-                        fd.write("list(APPEND COMPILE_DEFINITIONS %s)\n\n" % value)
-                    elif "SLIBS" in key or "LDFLAGS" in key:
-                        fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS %s)\n\n" % value)
+                    if "CFLAGS" in key or "FFLAGS" in key or "CPPDEFS" in key or "SLIBS" in key or "LDFLAGS" in key:
+                        if "shell " in value:
+                            components = _get_components(value)
+
+                            idx = 0
+                            for is_shell, component in components:
+                                component = component.replace("NETCDF", "NetCDF").replace("PNETCDF_PATH", "Pnetcdf_PATH")
+                                if is_shell:
+                                    fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
+                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "${{TEMP{:d}}}")\n'.format(idx, idx))
+                                else:
+                                    fd.write('set(TEMP{:d} "{}")\n'.format(idx, component))
+
+                                idx += 1
+
+                            fd.write('set(TEMP "{}")\n'.format(" ".join(["${{TEMP{:d}}}".format(i) for i in range(idx)])))
+                        else:
+                            fd.write('set(TEMP "{}")\n'.format(value))
+
+                        if "CFLAGS" in key:
+                            fd.write("add_flags(CFLAGS ${TEMP})\n\n")
+                        elif "FFLAGS" in key:
+                            fd.write("add_flags(FFLAGS ${TEMP})\n\n")
+                        elif "CPPDEFS" in key:
+                            fd.write("list(APPEND CPPDEFS ${TEMP})\n\n")
+                        elif "SLIBS" in key or "LDFLAGS" in key:
+                            fd.write("add_flags(LDFLAGS ${TEMP})\n\n")
 
         # Recursively print the conditionals, combining tests to avoid repetition
         _parse_hash(macros["_COND_"], fd, 0, output_format)
@@ -227,28 +306,28 @@ def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
             if output_format == "make" or "DEBUG" in key:
                 for key2, value2 in value.iteritems():
                     if output_format == "make":
-                        fd.write("%sifeq ($(%s), %s) \n" % (" " * width, key, key2))
+                        fd.write("{}ifeq ($({}), {}) \n".format(" " * width, key, key2))
 
                     _parse_hash(value2, fd, depth + 1, output_format, key2)
         else:
             if output_format == "make":
                 if key.startswith("ADD_"):
-                    fd.write("%s %s += %s\n" % (" " * width, key[4:], value))
+                    fd.write("{} {} += {}\n".format(" " * width, key[4:], value))
                 else:
-                    fd.write("%s %s += %s\n" % (" " * width, key, value))
+                    fd.write("{} {} += {}\n".format(" " * width, key, value))
 
             else:
                 value = value.replace("(", "{").replace(")", "}")
                 release = "DEBUG" if "TRUE" in cmakedebug else "RELEASE"
                 if "CFLAGS" in key:
-                    fd.write("add_flags(CMAKE_C_FLAGS_%s %s)\n\n" % (release, value))
+                    fd.write("add_flags(CMAKE_C_FLAGS_{} {})\n\n".format(release, value))
                 elif "FFLAGS" in key:
-                    fd.write("add_flags(CMAKE_Fortran_FLAGS_%s %s)\n\n" % (release, value))
+                    fd.write("add_flags(CMAKE_Fortran_FLAGS_{} {})\n\n".format(release, value))
                 elif "CPPDEF" in key:
-                    fd.write("add_config_definitions(%s %s)\n\n" % (release, value))
+                    fd.write("add_config_definitions({} {})\n\n".format(release, value))
                 elif "SLIBS" in key or "LDFLAGS" in key:
-                    fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS_%s %s)\n\n" % (release, value))
+                    fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS_{} {})\n\n".format(release, value))
 
     width -= 2
     if output_format == "make" and depth > 0:
-        fd.write("%sendif\n\n" % (" " * width))
+        fd.write("{}endif\n\n".format(" " * width))

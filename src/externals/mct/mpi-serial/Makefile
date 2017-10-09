@@ -18,6 +18,8 @@ SRCS_C		= mpi.c \
 		  list.c \
 		  handles.c \
                   comm.c \
+		  error.c \
+                  ic_merge.c \
                   group.c \
                   time.c \
                   pack.c \
@@ -86,6 +88,3 @@ install: lib
 	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
 	$(INSTALL) mpi.h -m 644 $(includedir)
 	$(INSTALL) mpif.h -m 644 $(includedir)
-
-
-

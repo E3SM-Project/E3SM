@@ -49,6 +49,13 @@ ERS    exact restart from startup (default 6 days + 5 days)
        if $IOP_ON is set then suffix is rest_iop
        compare component history files ".base" and ".rest" at day 11
 
+ERS2    exact restart from startup (default 6 days + 5 days)
+       do an 11 day initial test without making restarts     (suffix: base)
+       if $IOP_ON is set then suffix is base_iop
+       do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6 (suffix: rest)
+       if $IOP_ON is set then suffix is rest_iop
+       compare component history files ".base" and ".rest" at day 11
+
 ERP    pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days (previousy PER)
        initial pes set up out of the box
        do an 11 day initial test - write a restart at day 6     (suffix base)
@@ -118,7 +125,6 @@ NCR    multi-instance validation vs single instance - concurrent PE for instance
        do an initial run test with NINST 1 (suffix: base)
        do an initial run test with NINST 2 (suffix: multiinst for both _0001 and _0002)
         compare base and _0001 and _0002
-       (***note that NCR_script and NCK_script are the same - but NCR_build.csh and NCK_build.csh are different***)
 
 NOC    multi-instance validation for single instance ocean (default length)
        do an initial run test with NINST 2 (other than ocn), with mod to instance 1 (suffix: inst1_base, inst2_mod)
@@ -138,12 +144,6 @@ OCP    pop performance test
     SPINUP tests
 ======================================================================
 
-SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45)
-       do an initial spin test (setting CLM_ACCELERATED_SPINUP to on)
-         write restarts at the end of the run
-         short term archiving is on
-       do a hybrid non-spinup simulation run from the restart files generated in the first phase
-
 SPO    smoke spinup-ocean test
 
 ======================================================================
@@ -158,12 +158,52 @@ LAR    long term archive test
 
 DAE    data assimilation test: non answer changing
 
+PRE    pause-resume test: by default a BFB test of pause-resume cycling
+
 ======================================================================
-    Other component-specific tests
+    Other component-specific tests should be located with components
 ======================================================================
 
-LII    CLM initial condition interpolation test
 
+======================================================================
+    Infrastructural tests for CIME. These are used by scripts_regression_tests.
+    Users won't generally run these.
+======================================================================
+
+
+TESTBUILDFAIL     Insta-fail build step. Used to confirm that failed
+                  builds are caught and reported correctly.
+
+TESTBUILDFAILEXC  Insta-fail build step by failing to init. Used to test
+                  correct behavior when exceptions are generated.
+
+TESTRUNFAIL       Insta-fail run step. Used to confirm that model run
+                  failures are caught and reported correctly.
+
+TESTRUNFAILEXC    Insta-fail run step via exception. Used to test correct
+                  correct behavior when exceptions are generated.
+
+TESTRUNPASS       Insta-pass run step. Used to test that run that work
+                  are reported correctly.
+
+TESTMEMLEAKFAIL   Insta-fail memleak step. Used to test that memleaks are
+                  detected and reported correctly.
+
+TESTMEMLEAKPASS   Insta-pass memleak step. Used to test that non-memleaks are
+                  reported correctly.
+
+TESTRUNDIFF       Produces a canned hist file. Env var TESTRUNDIFF_ALTERNATE can
+                  be used to cause a DIFF. Used to check that baseline diffs are
+                  detected and reported correctly.
+
+TESTTESTDIFF      Simulates internal test diff (non baseline). Used to check that
+                  internal comparison failures are detected and reported correctly.
+
+TESTRUNSLOWPASS   After 5 minutes of sleep, pass run step. Used to test timeouts
+                  and kills.
+
+NODEFAIL          Tests restart upon detected node failure. Generates fake failures,
+                  the number of which is controlled by NODEFAIL_NUM_FAILS.
 
 -->
 
@@ -204,6 +244,10 @@ LII    CLM initial condition interpolation test
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
     <DOUT_S>FALSE</DOUT_S>
+    <REST_N>$STOP_N / 2 + 1 </REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="ERS">
@@ -219,6 +263,32 @@ LII    CLM initial condition interpolation test
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
+  <test NAME="ERS2">
+    <DESC>exact restart from startup, default 6 days + 5 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
+  <test NAME="IRT">
+    <DESC>exact restart from startup, default 4 days + 7 days with restart from interim file</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 - 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <DOUT_S_SAVE_INTERIM_RESTART_FILES>TRUE</DOUT_S_SAVE_INTERIM_RESTART_FILES>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
   <test NAME="ERIO">
     <DESC>exact restart from startup with different PIO methods, default 6 days + 5 days</DESC>
     <INFO_DBUG>1</INFO_DBUG>
@@ -230,6 +300,20 @@ LII    CLM initial condition interpolation test
 
   <test NAME="ERR">
     <DESC>exact restart from startup with resubmit, default 4 days + 3 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>7</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <DOUT_S>TRUE</DOUT_S>
+    <RESUBMIT>1</RESUBMIT>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
+  <test NAME="ERRI">
+    <DESC>exact restart from startup with resubmit, default 4 days + 3 days. Tests incomplete logs option for st_archive</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>7</STOP_N>
@@ -361,6 +445,22 @@ LII    CLM initial condition interpolation test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="NODEFAIL">
+    <DESC>For testing infra only. Tests restart upon detected node failure</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>nsteps</STOP_OPTION>
+    <OCN_NCPL>$ATM_NCPL</OCN_NCPL>
+    <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <NODE_FAIL_REGEX>JGF FAKE NODE FAIL</NODE_FAIL_REGEX>
+    <FORCE_SPARE_NODES>3</FORCE_SPARE_NODES>
+  </test>
+
   <test NAME="ICP">
     <DESC>cice performance test</DESC>
     <INFO_DBUG>1</INFO_DBUG>
@@ -370,25 +470,6 @@ LII    CLM initial condition interpolation test
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <DOUT_S>FALSE</DOUT_S>
-  </test>
-
-  <test NAME="LAR">
-    <DESC>long term archive test</DESC>
-    <INFO_DBUG>1</INFO_DBUG>
-    <STOP_OPTION>nmonths</STOP_OPTION>
-    <STOP_N></STOP_N>
-    <DOUT_L_MS>TRUE</DOUT_L_MS>
-    <DOUT_S>TRUE</DOUT_S>
-  </test>
-
-  <test NAME="LII">
-    <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
-    <INFO_DBUG>1</INFO_DBUG>
-    <DOUT_S>FALSE</DOUT_S>
-    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
-    <REST_OPTION>never</REST_OPTION>
-    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
-    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="PEA">
@@ -410,7 +491,6 @@ LII    CLM initial condition interpolation test
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
-    <REST_OPTION>none</REST_OPTION>
   </test>
 
   <test NAME="PET">
@@ -435,6 +515,17 @@ LII    CLM initial condition interpolation test
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
+  <test NAME="MCC">
+    <DESC>multi-driver validation vs single-instance (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <MULTI_DRIVER>TRUE</MULTI_DRIVER>
+  </test>
+
   <test NAME="NCK">
     <DESC>multi-instance validation vs single instance (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
@@ -446,9 +537,15 @@ LII    CLM initial condition interpolation test
   </test>
 
   <test NAME="NCR">
+    <!-- Note that this is untested and may not be working currently -->
     <DESC>multi-instance validation sequential vs concurrent (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <DOUT_S>FALSE</DOUT_S>
+
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
   </test>
 
   <test NAME="OCP">
@@ -499,15 +596,6 @@ LII    CLM initial condition interpolation test
     <REST_OPTION>none</REST_OPTION>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
-  </test>
-
-  <test NAME="SSP">
-    <DESC>smoke CLM spinup test (only valid for CLM45 or CLM50 compsets)</DESC>
-    <INFO_DBUG>1</INFO_DBUG>
-    <STOP_OPTION>ndays</STOP_OPTION>
-    <RUN_TYPE>startup</RUN_TYPE>
-    <STOP_N>4</STOP_N>
-    <DOUT_S>FALSE</DOUT_S>
   </test>
 
 </config_test>

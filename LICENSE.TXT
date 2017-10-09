@@ -1,9 +1,15 @@
-Copyright (c) 2015, University Corporation for Atmospheric Research (UCAR)
+Copyright (c) 2017, University Corporation for Atmospheric Research (UCAR)
 All rights reserved.
+  and
+Copyright (c) 2017, Sandia Corporation. 
+Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
+the U.S. Government retains certain rights in this software.
 
 Developed by:
               University Corporation for Atmospheric Research - National Center for Atmospheric Research
               https://www2.cesm.ucar.edu/working-groups/sewg
+                and
+              DOE BER ACME project team members, including those at SNL and ANL
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the "Software"),
@@ -17,7 +23,7 @@ the Software is furnished to do so, subject to the following conditions:
     - Redistributions in binary form must reproduce the above copyright notice,
       this list of conditions and the following disclaimers in the documentation
       and/or other materials provided with the distribution.
-    - Neither the names of [Name of Development Group, UCAR],
+    - Neither the names of UCAR or Sandia Corporation,
       nor the names of its contributors may be used to endorse or promote
       products derived from this Software without specific prior written permission.
 

@@ -5,6 +5,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.build import post_build
 from CIME.utils import append_testlog
+from CIME.test_status import *
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ class HOMME(SystemTestsCommon):
         initialize an object interface to the SMS system test
         """
         SystemTestsCommon.__init__(self, case)
+        case.load_env()
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         if not sharedlib_only:
@@ -31,10 +33,10 @@ class HOMME(SystemTestsCommon):
             gmake    = self._case.get_value("GMAKE")
 
             basename = basegen if generate else basecmp
-            cmake_cmd = "cmake -C %s/components/homme/cmake/machineFiles/%s.cmake -DUSE_NUM_PROCS=%s %s/components/homme -DHOMME_BASELINE_DIR=%s/%s >& homme.bldlog" % (srcroot, mach, procs, srcroot, baseline, basename)
+            cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{}".format(srcroot, mach, procs, srcroot, baseline, basename)
 
-            run_cmd_no_fail(cmake_cmd, from_dir=exeroot)
-            run_cmd_no_fail("%s -j8 >> homme.bldlog 2>&1" % gmake, from_dir=exeroot)
+            run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
+            run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
             post_build(self._case, [os.path.join(exeroot, "homme.bldlog")])
 
@@ -54,25 +56,33 @@ class HOMME(SystemTestsCommon):
 
         if generate:
             full_baseline_dir = os.path.join(baseline, basegen, "tests", "baseline")
-            run_cmd_no_fail("%s -j 4 baseline >& %s" % (gmake, log), from_dir=exeroot)
-            if os.path.isdir(full_baseline_dir):
-                shutil.rmtree(full_baseline_dir)
-            shutil.copytree(os.path.join(exeroot, "tests", "baseline"), full_baseline_dir)
+            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+            if stat == 0:
+                if os.path.isdir(full_baseline_dir):
+                    shutil.rmtree(full_baseline_dir)
+
+                shutil.copytree(os.path.join(exeroot, "tests", "baseline"), full_baseline_dir)
+
         elif compare:
-            run_cmd_no_fail("%s -j 4 check >& %s" % (gmake, log), from_dir=exeroot)
+            stat = run_cmd("{} -j 4 check".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
+
         else:
-            run_cmd_no_fail("%s -j 4 baseline >& %s" % (gmake, log), from_dir=exeroot)
+            stat = run_cmd("{} -j 4 baseline".format(gmake), arg_stdout=log, combine_output=True, from_dir=exeroot)[0]
 
         # Add homme.log output to TestStatus.log so that it can
         # appear on the dashboard. Otherwise, the TestStatus.log
         # is pretty useless for this test.
         append_testlog(open(log, "r").read())
 
+        expect(stat == 0, "RUN FAIL for HOMME")
+
     # Homme is a bit of an oddball test since it's not really running the ACME model
     # We need to override some methods to make the core infrastructure work.
 
     def _generate_baseline(self):
-        pass
+        with self._test_status:
+            self._test_status.set_status(GENERATE_PHASE, TEST_PASS_STATUS)
 
     def _compare_baseline(self):
-        pass
+        with self._test_status:
+            self._test_status.set_status(BASELINE_PHASE, TEST_PASS_STATUS)

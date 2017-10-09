@@ -30,7 +30,7 @@ class EnvTest(EnvBase):
         tnode = self.get_node("test")
         for child in tnode:
             if child.text is not None:
-                logger.debug("Setting %s to %s for test"%(child.tag,child.text))
+                logger.debug("Setting {} to {} for test".format(child.tag, child.text))
                 if "$" in child.text:
                     case.set_value(child.tag,child.text,ignore_type=True)
                 else:
@@ -80,7 +80,7 @@ class EnvTest(EnvBase):
         settings = []
         if node is not None:
             for child in node:
-                logger.debug ("Here child is %s with value %s"%(child.tag,child.text))
+                logger.debug ("Here child is {} with value {}".format(child.tag, child.text))
                 settings.append((child.tag, child.text))
 
         return settings
@@ -103,3 +103,22 @@ class EnvTest(EnvBase):
         if dnode is not None:
             node.remove(dnode)
         return node
+
+    def set_value(self, vid, value, subgroup=None, ignore_type=False):
+        """
+        check if vid is in test section of file
+        """
+        newval = EnvBase.set_value(self, vid, value, subgroup, ignore_type)
+        if newval is None:
+            tnode = self.get_optional_node("test")
+            if tnode is not None:
+                newval = self.set_element_text(vid, value, root=tnode)
+        return newval
+
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
+        value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
+        if value is None:
+            tnode = self.get_optional_node("test")
+            if tnode is not None:
+                value = self.get_element_text(vid, root=tnode)
+        return value

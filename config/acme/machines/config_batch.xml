@@ -33,23 +33,25 @@
     </directives>
   </batch_system>
 
-   <batch_system type="cobalt" >
-     <batch_query>qstat</batch_query>
-     <batch_submit>qsub</batch_submit>
-     <batch_directive></batch_directive>
-     <jobid_pattern>(\d+)</jobid_pattern>
-     <depend_string> --dependencies</depend_string>
-     <walltime_format>%H:%M:%s</walltime_format>
-     <submit_args>
-       <arg flag="--cwd" name="CASEROOT"/>
-       <arg flag="-A" name="PROJECT"/>
-       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-       <!-- ceiling of $a/$b is ($a+$b-1)/$b -->
-       <arg flag="-n" name=" ( $TOTALPES + $MAX_TASKS_PER_NODE - 1 ) / $MAX_TASKS_PER_NODE"/>
-       <arg flag="-q" name="JOB_QUEUE"/>
-       <arg flag="--mode script"/>
-     </submit_args>
-   </batch_system>
+  <batch_system type="cobalt" >
+    <batch_query>qstat</batch_query>
+    <batch_submit>qsub</batch_submit>
+    <batch_directive></batch_directive>
+    <jobid_pattern>(\d+)</jobid_pattern>
+    <depend_string> --dependencies</depend_string>
+    <walltime_format>%H:%M:%s</walltime_format>
+    <batch_mail_flag>-M</batch_mail_flag>
+    <batch_mail_type_flag></batch_mail_type_flag>
+    <batch_mail_type></batch_mail_type>
+    <submit_args>
+      <arg flag="--cwd" name="CASEROOT"/>
+      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="--mode script"/>
+    </submit_args>
+  </batch_system>
 
   <batch_system type="cobalt_theta" >
     <batch_query>qstat</batch_query>
@@ -57,10 +59,13 @@
     <batch_directive>#COBALT</batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
+    <batch_mail_flag>-M</batch_mail_flag>
+    <batch_mail_type_flag></batch_mail_type_flag>
+    <batch_mail_type></batch_mail_type>
     <submit_args>
       <arg flag="-A" name="PROJECT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
@@ -74,6 +79,9 @@
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
     <walltime_format>%H:%M</walltime_format>
+    <batch_mail_flag>-u</batch_mail_flag>
+    <batch_mail_type_flag></batch_mail_type_flag>
+    <batch_mail_type></batch_mail_type>
     <submit_args>
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
@@ -97,6 +105,9 @@
     <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>-M</batch_mail_flag>
+    <batch_mail_type_flag>-m</batch_mail_type_flag>
+    <batch_mail_type>, bea, b, e, a</batch_mail_type>
     <submit_args>
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
@@ -107,7 +118,6 @@
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
-      <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive> -V </directive>
     </directives>
   </batch_system>
@@ -119,6 +129,9 @@
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>-M</batch_mail_flag>
+    <batch_mail_type_flag>-m</batch_mail_type_flag>
+    <batch_mail_type>, bea, b, e, a</batch_mail_type>
     <submit_args>
       <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-A" name="$PROJECT"/>
@@ -127,79 +140,107 @@
       <directive> -N {{ job_id }}</directive>
       <directive> -j oe </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
-      <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive default="/bin/bash" > -S {{ shell }}</directive>
     </directives>
   </batch_system>
 
-   <batch_system type="slurm" >
-     <batch_query>squeue</batch_query>
-     <batch_submit>sbatch</batch_submit>
-     <batch_directive>#SBATCH</batch_directive>
+  <!-- for cab llnl -->
+   <batch_system type="lc_slurm">
+     <batch_submit>msub</batch_submit>
+     <batch_directive>#MSUB</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
-     <depend_string> --dependency=afterok:jobid</depend_string>
+     <depend_string> -l depend=jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
-     <submit_args>
-       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-       <arg flag="-p" name="$JOB_QUEUE"/>
-       <arg flag="--account" name="$PROJECT"/>
-     </submit_args>
      <directives>
-       <directive> --job-name={{ job_id }}</directive>
-       <directive> --nodes={{ num_nodes }}</directive>
-       <directive> --output={{ output_error_path }}.%j </directive>
-       <directive> --exclusive                        </directive>
+       <directive>-V</directive>
+       <directive>-q {{ job_queue }}</directive>
+       <directive>-N {{ job_id }}</directive>
+       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+       <directive>-l walltime={{ job_wallclock_time }}</directive>
+       <directive>-o {{ output_error_path }}.out</directive>
+       <directive>-e {{ output_error_path }}.err</directive>
+       <directive>-m be</directive>
+      <directive> -A {{ project }} </directive>
      </directives>
+     <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">pbatch</queue>
+     </queues>
    </batch_system>
 
-    <!-- blues is PBS -->
-    <batch_system MACH="blues" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
-      <queues>
-	<queue walltimemax="01:00:00" jobmin="1" jobmax="4096" default="true">shared</queue>
-      </queues>
-    </batch_system>
+  <batch_system type="slurm" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_submit>sbatch</batch_submit>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string> --dependency=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+      <arg flag="--mail-user" name="$MAIL_USER"/>
+      <arg flag="--mail-type" name="$MAIL_TYPE"/>
+    </submit_args>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+      <directive> --output={{ output_error_path }}.%j </directive>
+      <directive> --exclusive                        </directive>
+    </directives>
+  </batch_system>
 
-    <!-- anvil is PBS -->
-    <batch_system MACH="anvil" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
-      <queues>
-	<queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">acme</queue>
-      </queues>
-    </batch_system>
+  <!-- blues is PBS -->
+  <batch_system MACH="blues" type="pbs" >
+    <directives>
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="01:00:00" jobmin="1" jobmax="64" strict="true">shared</queue>
+      <queue walltimemax="03:00:00" jobmin="1" jobmax="4096" default="true">batch</queue>
+    </queues>
+  </batch_system>
 
-    <!-- edison is SLURM as of Jan-4-2016 -->
-    <batch_system MACH="edison" type="slurm" >
-      <queues>
-        <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
-      </queues>
-    </batch_system>
+  <!-- anvil is PBS -->
+  <batch_system MACH="anvil" type="pbs" >
+    <directives>
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">acme</queue>
+    </queues>
+  </batch_system>
 
-    <!-- eos is PBS -->
-    <batch_system MACH="eos" type="pbs" >
+  <!-- edison is SLURM as of Jan-4-2016 -->
+  <batch_system MACH="edison" type="slurm" >
+    <queues>
+      <queue walltimemax="00:30:00" jobmin="1" jobmax="12288" strict="true">debug</queue>
+      <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
+    </queues>
+  </batch_system>
+
+  <!-- eos is PBS -->
+  <batch_system MACH="eos" type="pbs" >
     <directives>
       <directive>-A {{ project }}</directive>
       <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+      <queue walltimemax="00:30:00" jobmin="1" jobmax="9999" default="true">batch</queue>
     </queues>
-   </batch_system>
+  </batch_system>
 
     <batch_system MACH="cori-haswell" type="slurm">
       <directives>
         <directive> --constraint=haswell</directive>
       </directives>
       <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096" strict="true">debug</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="10000" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
       </queues>
     </batch_system>
 
@@ -208,8 +249,8 @@
         <directive> --constraint=knl,quad,cache</directive>
       </directives>
       <queues>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000" strict="true">debug</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="3000000" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000">debug</queue>
       </queues>
     </batch_system>
 
@@ -225,10 +266,24 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="theta" type="cobalt_theta">
+      <queues>
+        <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="cascade" type="slurm">
+      <directives>
+        <directive>--mail-type=END</directive>
+        <directive>--mail-user=email@pnnl.gov</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="00:30:00" jobmin="1" jobmax="9999" default="true">small</queue>
+      </queues>
+    </batch_system>
+
    <batch_system MACH="constance" type="slurm">
     <directives>
-       <directive>-A  climate</directive>
-       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--mail-type=END</directive>
        <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
@@ -239,12 +294,36 @@
     </queues>
    </batch_system>
 
+   <batch_system MACH="sooty" type="slurm" >
+     <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--mail-type=END</directive>
+       <directive>--mail-user=email@pnnl.gov</directive>
+       <directive>--output=slurm.out</directive>
+       <directive>--error=slurm.err</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">slurm</queue>
+     </queues>
+   </batch_system>
+
   <batch_system MACH="skybridge" type="slurm" >
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="480" walltimemax="01:00:00" default="true">ec</queue>
+      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
+      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="chama" type="slurm" >
+    <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
+      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
@@ -253,7 +332,7 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="480" walltimemax="01:00:00" default="true">ec</queue>
+      <queue jobmin="1" jobmax="1024" walltimemax="06:00:00" default="true">ec</queue>
     </queues>
   </batch_system>
 
@@ -263,49 +342,62 @@
     </directives>
   </batch_system>
 
-   <batch_system MACH="wolf" type="moab" >
-	<directives>
-		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-	</directives>
-    </batch_system>
+  <batch_system MACH="grizzly" type="moab" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive>-l qos=standard </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="16:00:00" default="true">moab</queue>
+    </queues>
+  </batch_system>
 
-    <batch_system MACH="mesabi" type="pbs">
-      <queues>
-        <queue walltimemax="24:00" default="true">mesabi</queue>
-        <queue walltimemax="24:00">debug</queue>
-      </queues>
-    </batch_system>
+  <batch_system MACH="wolf" type="moab" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="16:00:00" default="true">moab</queue>
+    </queues>
+  </batch_system>
 
-   <batch_system MACH="oic2" type="pbs" >
-         <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-		 <directive>-q esd08q</directive>
-         </directives>
-         <queues>
-           <queue default="true">esd08q</queue>
-         </queues>
-   </batch_system>
+  <batch_system MACH="mesabi" type="pbs">
+    <queues>
+      <queue walltimemax="24:00" default="true">mesabi</queue>
+      <queue walltimemax="24:00">debug</queue>
+    </queues>
+  </batch_system>
 
-   <batch_system MACH="oic5" type="pbs" >
-         <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-		 <directive>-q esd13q</directive>
-         </directives>
-         <queues>
-           <queue default="true">esd13q</queue>
-           <queue walltimemax="1:00">esddbg13q</queue>
-         </queues>
-   </batch_system>
+  <batch_system MACH="oic2" type="pbs" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive>-q esd08q</directive>
+    </directives>
+    <queues>
+      <queue default="true">esd08q</queue>
+    </queues>
+  </batch_system>
 
-   <batch_system MACH="cades" type="pbs" >
-         <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-                 <directive>-W group_list=cades-ccsi</directive>
-         </directives>
-         <queues>
-           <queue default="true">batch</queue>
-         </queues>
-   </batch_system>
+  <batch_system MACH="oic5" type="pbs" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive>-q esd13q</directive>
+    </directives>
+    <queues>
+      <queue default="true">esd13q</queue>
+      <queue walltimemax="1:00">esddbg13q</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="cades" type="pbs" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive>-W group_list=cades-ccsi</directive>
+    </directives>
+    <queues>
+      <queue default="true">batch</queue>
+    </queues>
+  </batch_system>
 
    <batch_system MACH="itasca" type="pbs">
      <queues>
@@ -320,59 +412,51 @@
        <directive>-l nodes={{ num_nodes }}</directive>
      </directives>
      <queues>
-       <queue walltimemax="24:00" default="true">batch</queue>
-       <queue walltimemax="24:00">debug</queue>
+       <queue walltimemax="02:00:00" default="true">batch</queue>
+       <queue walltimemax="01:00:00" jobmin="0" jobmax="64" strict="true">debug</queue>
      </queues>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr2" type="slurm" >
+     <submit_args>
+       <arg flag="--qos" name="condo_esd2"/>
+     </submit_args>
      <directives>
-       <directive>--partition=lr2</directive>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--account={{ project }}</directive>
-       <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
-   </batch_system>
+  </batch_system>
 
-   <batch_system MACH="lawrencium-lr3" type="slurm" >
-     <directives>
-       <directive>--partition=lr3</directive>
-       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--account={{ project }}</directive>
-       <directive>--exclusive</directive>
-     </directives>
+  <batch_system MACH="lawrencium-lr3" type="slurm" >
+    <submit_args>
+      <arg flag="--qos" name="condo_esd2"/>
+    </submit_args>
+    <directives>
+      <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
-   </batch_system>
+  </batch_system>
 
   <batch_jobs>
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>
-      <task_count>default</task_count>
       <prereq>$BUILD_COMPLETE and not $TEST</prereq>
     </job>
-   <job name="case.test">
+    <job name="case.test">
       <template>template.case.test</template>
-      <task_count>default</task_count>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
     <job name="case.st_archive">
       <template>template.st_archive</template>
       <task_count>1</task_count>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>case.run or case.test</dependency>
+      <dependency>case.run case.test</dependency>
       <prereq>$DOUT_S</prereq>
-    </job>
-    <job name="case.lt_archive">
-      <template>template.lt_archive</template>
-      <task_count>1</task_count>
-      <dependency>case.st_archive</dependency>
-      <prereq>$DOUT_L_MS</prereq>
     </job>
   </batch_jobs>
 

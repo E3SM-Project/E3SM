@@ -4,7 +4,7 @@
   <xs:attribute name="version" type="xs:decimal"/>
   <xs:attribute name="alias" type="xs:NMTOKEN"/>
   <xs:attribute name="compset" type="xs:token"/>
-  <xs:attribute name="not_compset" type="xs:NMTOKEN"/>
+  <xs:attribute name="not_compset" type="xs:token"/>
   <xs:attribute name="name" type="xs:NMTOKEN"/>
   <xs:attribute name="grid" type="xs:token"/>
   <xs:attribute name="lnd_mask" type="xs:NMTOKEN"/>
@@ -63,10 +63,8 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="grid" maxOccurs="unbounded"/>
-        <xs:choice minOccurs="0">
-          <xs:element ref="support"/>
-          <xs:element ref="mask"/>
-        </xs:choice>
+        <xs:element ref="support" minOccurs="0"/>
+        <xs:element ref="mask" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="alias" use="required"/>
       <xs:attribute ref="compset"/>

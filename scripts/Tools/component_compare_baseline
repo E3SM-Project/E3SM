@@ -13,16 +13,16 @@ from CIME.hist_utils import compare_baseline
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<casedir>] [--verbose]
+        usage="""\n{0} [<casedir>] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Compare baselines \033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -35,9 +35,7 @@ OR
     parser.add_argument("-b", "--baseline-dir",
                         help="Use custom baseline dir")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     return args.caseroot, args.baseline_dir
 

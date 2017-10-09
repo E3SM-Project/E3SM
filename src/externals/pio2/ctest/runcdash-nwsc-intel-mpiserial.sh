@@ -14,7 +14,7 @@ module load git/2.3.0
 module load cmake/3.0.2
 module load netcdf/4.3.3.1
 
-export MPISERIAL=/glade/p/work/katec/installs/intel_15.0.3
+export MPISERIAL=/glade/u/home/jedwards/mpi-serial/intel15.0.3/
 
 export CC=icc
 export FC=ifort
@@ -28,8 +28,10 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone https://github.com/PARALLELIO/ParallelIO src
+  git clone --branch develop https://github.com/PARALLELIO/ParallelIO src
 fi
 cd src
+git checkout develop
+git pull origin develop
 
 ctest -S CTestScript.cmake,${model} -VV

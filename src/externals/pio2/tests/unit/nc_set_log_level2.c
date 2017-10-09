@@ -3,8 +3,8 @@
 
 int nc_set_log_level2_(int *il)
 {
-  int i;
-  i = nc_set_log_level( *il );
-  return(i);
+    int i;
+    i = nc_set_log_level( *il );
+    return(i);
 }
 #endif
