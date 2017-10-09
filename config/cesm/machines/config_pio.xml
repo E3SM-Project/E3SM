@@ -50,6 +50,8 @@
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mach="hobart" compiler="nag">netcdf</value>
+      <value mach="lbl-lr3">netcdf</value>
+      <value mach="lbl-lr2">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
     </values>
   </entry>
