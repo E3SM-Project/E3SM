@@ -13,6 +13,10 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
 
+#ifdef HAVE_MOAB
+  use semoab_mod, only : MHID
+#endif
+
   implicit none
   private  ! except
 #include <mpif.h>
@@ -306,6 +310,17 @@ contains
     type(mct_gsMap), pointer :: gsmap_new
     type(mct_gsMap)          :: gsmap_old_join   ! gsmap_old on joined id, temporary
     character(len=*),parameter :: subname = "(seq_mctext_gsmapInit) "
+
+#ifdef HAVE_MOAB
+    integer                  :: mpigrp_cplid ! coupler pes
+    integer                  :: mpigrp_old   !  component group pes
+    integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
+    integer, external        :: iMOAB_WriteMesh 
+    integer                  :: ierr
+    character*32             :: appname, outfile, wopts
+    integer                  :: pid_target, pid_source
+    
+#endif
     !-----------------------------------------------------
 
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID)
@@ -333,6 +348,29 @@ contains
     call seq_mctext_gsmapCreate(gsmap_old_join, mpicom_join , gsmap_new     , mpicom_new , ID_new  )
 
     call mct_gsMap_clean(gsmap_old_join)
+#ifdef HAVE_MOAB
+    if (comp%oneletterid == 'a') then
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+      ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+        !  send mesh to coupler
+        pid_target = 0 !   TODO
+        ierr = iMOAB_SendMesh(MHID, mpicom_old, mpicom_join, mpigrp_cplid, pid_target);
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_HM"//CHAR(0)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, pid_target) 
+        pid_source = 0
+        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_new, mpicom_join, mpigrp_old, pid_source)
+        ! debug test
+        outfile = 'recMesh.h5m'//CHAR(0)
+        wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+!      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
+      endif
+    endif !  only for atm for the time being
+#endif
 
   end subroutine seq_mctext_gsmapInit
 
