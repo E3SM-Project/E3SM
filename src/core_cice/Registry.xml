@@ -806,7 +806,8 @@
 				type="input"
 				filename_template="points.nc"
 				input_interval="initial_only"
-				runtime_format="single_file">
+				runtime_format="single_file"
+				immutable="true">
 			<var name="pointCellGlobalID"/>
 			<var name="pointVertexGlobalID"/>
 		</stream>
