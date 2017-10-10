@@ -74,7 +74,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_restoring_compute(groupName, nTracers, nCellsSolve, tracers, pistonVelocity, &
+   subroutine ocn_tracer_surface_restoring_compute(groupName, nTracers, nCells, tracers, pistonVelocity, &
                  tracersSurfaceRestoringValue, tracersSurfaceFlux, indexSalinity,  &
                  use_surface_salinity_monthly_restoring, err)!{{{
 
@@ -90,7 +90,7 @@ contains
       integer, intent(in) ::  &
           nTracers,           &
           indexSalinity,      &
-          nCellsSolve
+          nCells
 
       ! logicals
       logical, intent(in) ::  &
@@ -135,7 +135,7 @@ contains
       iLevel = 1  ! base surface flux restoring on tracer fields in the top layer
 
       !$omp do schedule(runtime) private(iTracer)
-      do iCell=1,nCellsSolve
+      do iCell=1,nCells
         do iTracer=1,nTracers
 
 !maltrud for monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS
@@ -256,7 +256,6 @@ contains
            forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
 
            call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-           call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
            call MPAS_forcing_init_group( surfaceSalinityForcingGroup,  &
                 "surfaceSalinityMonthlyClimatology", &
@@ -266,10 +265,6 @@ contains
                 '0001-00-00_00:00:00', &
                 config_do_restart)
 
-           call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceSalinityMonthlyForcing',  &
-                                                                     surfaceSalinityMonthlyForcing)
-           call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
-                                                                    surfaceSalinityMonthlyClimatologyValue)
            call MPAS_forcing_init_field( domain % streamManager, &
                 surfaceSalinityForcingGroup, &
                 'surfaceSalinityMonthlyClimatology', &  !  forcing group name
@@ -303,7 +298,7 @@ contains
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                  surfaceSalinityMonthlyClimatologyValue)
 
-        call MPAS_forcing_get_forcing(forcingGroupHead, &
+        call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
              'surfaceSalinityMonthlyClimatology', streamManager, dt)
 
       sumAreaDeltaS = 0.0_RKIND
@@ -342,7 +337,7 @@ contains
 
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-        do iCell = 1, nCells
+        do iCell = 1, nCellsSolve
            deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
            if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
            if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
@@ -350,11 +345,7 @@ contains
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
            activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) =  &
                    salinity_restoring_constant_piston_velocity
-        enddo
-
-        do iCell=1,nCellsSolve
-           deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
-
+        
            sumAreaDeltaS = sumAreaDeltaS + deltaS*areaCell(iCell)
            sumArea = sumArea + areaCell(iCell)
         enddo
@@ -369,12 +360,12 @@ contains
         call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
         sumAreaDeltaSGlobal = reductions(1)
         sumAreaGlobal       = reductions(2)
-        avgDeltaS = sumAreaDeltaSGlobal/(sumAreaGlobal)! + 1.e-20_RKIND)
+        avgDeltaS = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
 
       block => domain % blocklist
       do while (associated(block))
 
-        call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+        call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
@@ -382,16 +373,14 @@ contains
            activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
-        !$omp do schedule(runtime)
-        do iCell = 1, nCells
+         !$omp do schedule(runtime)
+       do iCell = 1, nCellsSolve
            if (iceFraction(iCell) <= 1.e-10_RKIND)  &
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
               activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) - avgDeltaS
         enddo
         !$omp end do
-         print *, 'max = ', maxval(activeTracersSurfaceRestoringValue)
-         print *, 'min = ', minval(activeTracersSurfaceRestoringValue)
-         block => block % next
+        block => block % next
       end do
 
     end subroutine ocn_get_surfaceSalinityData!}}}

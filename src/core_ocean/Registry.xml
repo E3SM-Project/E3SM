@@ -1183,7 +1183,6 @@
 		/>
 	</nml_record>
 	<packages>
-		<package name="pkgForcing" description="On if the framework forcing is being used"/>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
