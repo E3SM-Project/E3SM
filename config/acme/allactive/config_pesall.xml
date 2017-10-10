@@ -36,6 +36,41 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="theta">
+      <pes compset="any" pesize="any">
+        <comment>none</comment>
+        <ntasks>
+          <ntasks_atm>64</ntasks_atm>
+          <ntasks_lnd>64</ntasks_lnd>
+          <ntasks_rof>64</ntasks_rof>
+          <ntasks_ice>64</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+          <ntasks_glc>64</ntasks_glc>
+          <ntasks_wav>64</ntasks_wav>
+          <ntasks_cpl>64</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
   </grid>
   <grid name="any">
     <mach name="lawrencium-lr2|lawrencium-lr3">
@@ -6671,8 +6706,8 @@
         <comment>ne4 grid on 4 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
-          <ntasks_ice>36</ntasks_ice>
-          <ntasks_cpl>36</ntasks_cpl>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_cpl>96</ntasks_cpl>
           <ntasks_lnd>36</ntasks_lnd>
           <ntasks_rof>36</ntasks_rof>
           <ntasks_ocn>36</ntasks_ocn>
@@ -6693,8 +6728,8 @@
           <rootpe_atm>0</rootpe_atm>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_lnd>36</rootpe_lnd>
-          <rootpe_rof>36</rootpe_rof>
+          <rootpe_lnd>108</rootpe_lnd>
+          <rootpe_rof>108</rootpe_rof>
           <rootpe_ocn>108</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
