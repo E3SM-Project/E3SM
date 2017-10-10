@@ -1048,6 +1048,12 @@ contains
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
+         if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain_ptr)
+
+         if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain_ptr)
+
+         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
+             call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams')
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
@@ -1066,17 +1072,7 @@ contains
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
-
-            open(22, file=config_forcing_restart_file, form='formatted', status='replace')
-            close(22)
          end if
-
-         if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain_ptr)
-
-         if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain_ptr)
-
-         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
-             call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
 
          if (debugOn) call mpas_log_write('Finished writing restart streams')
       end if

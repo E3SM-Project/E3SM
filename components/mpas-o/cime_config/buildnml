@@ -416,7 +416,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file"
 						. '"' . "\n";
 		print $stream_file '       input_interval="none"' . "\n";
-		print $stream_file '       packages="activeTracersBulkRestoringPKG">' . "\n";
+		print $stream_file '       packages="activeTracersSurfaceRestoringPKG">' . "\n";
 		print $stream_file '' . "\n";
 		print $stream_file '       <var name="xtime"/>' . "\n";
 		print $stream_file '       <var name="surfaceSalinityMonthlyClimatologyValue"/>' . "\n";
