@@ -216,6 +216,14 @@
 		<var name="relativeVorticityVertexAt250m" type="real" dimensions="nVertices Time" units="s^{-1}"
 			description="relative vorticity at cell vertices at a depth of approximately 250 m"
 		/>
+                <var_array name="activeTracersAtSurface" type="real" dimensions="nCells Time">
+                        <var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="^\circ C" name_in_code="temperatureAtSurface"
+                                description="ocean temperature at top layer"
+                        />
+                        <var name="salinityAtSurface" array_group="activeTracersAtSurface" units="PSU" name_in_code="salinityAtSurface"
+                                description="salinity at top layer"
+                        />
+                </var_array>
                 <var_array name="activeTracersAt250m" type="real" dimensions="nCells Time">
                         <var name="temperatureAt250m" array_group="activeTracersAt250m" units="^\circ C" name_in_code="temperatureAt250m"
                                 description="ocean temperature at 250 m"

@@ -205,7 +205,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: barotropicSpeed, columnIntegratedSpeed, dvEdge, dcEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell
       real (kind=RKIND), dimension(:,:), pointer :: activeTracersAt250m, activeTracersAvgTopto0100, activeTracersAvg0100to0250
-      real (kind=RKIND), dimension(:,:), pointer :: activeTracersAtBottom
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersAtSurface, activeTracersAtBottom
       real (kind=RKIND), dimension(:,:), pointer :: activeTracersAvg0250to0700, activeTracersAvg0700to2000, activeTracersAvg2000toBottom
       real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence, layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity, BruntVaisalaFreqTop
@@ -266,6 +266,7 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAtBottom', divergenceAtBottom)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAtBottom', kineticEnergyAtBottom)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityVertexAt250m', relativeVorticityVertexAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtSurface', activeTracersAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAt250m', activeTracersAt250m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtBottom', activeTracersAtBottom)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAvgTopto0100', activeTracersAvgTopto0100)
@@ -413,6 +414,8 @@ contains
          divergenceAt250m(:) = divergence(iLevel0250,:)
          relativeVorticityVertexAt250m(:) = relativeVorticity(iLevel0250,:)
          kineticEnergyAtSurface(:) = kineticEnergyCell(1,:)
+         activeTracersAtSurface(1,:) = activeTracers(1,1,:)
+         activeTracersAtSurface(2,:) = activeTracers(2,1,:)
          activeTracersAt250m(1,:) = activeTracers(1,iLevel0250,:)
          activeTracersAt250m(2,:) = activeTracers(2,iLevel0250,:)
          vertGMvelocitySFC(:) = vertGMBolusVelocityTop(1,:)
