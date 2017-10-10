@@ -54,5 +54,12 @@ cat <<EOF >> user_nl_cam
 cosp_lite = .true.
 EOF
 
+./case.setup
+# -O3 causes seg-faults in RRTMG with cosp_lite turned on
+cp Macros.make Macros.make.orig
+sed 's@-O3 -qstrict -Q@-O2 -qstrict -Q@' Macros.make.orig >Macros.make
+rm Macros.make.orig
+./case.setup --reset
+
 fi
 
