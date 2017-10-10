@@ -384,6 +384,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (dm_info) :: dminfo
 
@@ -393,7 +394,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       integer :: iTracer, cell, cell1, cell2
       real (kind=RKIND) :: normalThicknessFluxSum, thicknessSum, hEdge1, zMidPBC
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, landIceMask
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, &
          refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth, refZMid, refLayerThickness
       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
@@ -420,6 +421,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -435,6 +437,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
          ! TopOfCell needed where zero depth for the very top may be referenced.
          refBottomDepthTopOfCell(1) = 0.0_RKIND
@@ -458,19 +462,31 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          endif
 
          if (config_check_ssh_consistency) then
+            ! Check if abs(ssh)>20m.  If so, print warning.
             consistentSSH = .true.
-            do iCell = 1,nCells
-               ! Check if abs(ssh)>20m.  If so, print warning.
-               if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>20.0_RKIND) then
-                  consistentSSH = .false.
-                  call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.' // & 
-                     '  Most likely, initial layerThickness does not match bottomDepth.', &
-                     MPAS_LOG_ERR)
-                  call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r, sum(h): $r', &
-                     intArgs=(/iCell, maxLevelCell(iCell) /), &
-                     realArgs=(/ bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)) /) )
-               endif
-            enddo
+            if ( associated(landIceMask) ) then
+              do iCell = 1,nCells
+                 if (landIceMask(iCell)==0.and.abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>20.0_RKIND) then
+                    consistentSSH = .false.
+                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', & 
+                       MPAS_LOG_ERR)
+                    call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r, sum(h): $r', &
+                       intArgs=(/iCell, maxLevelCell(iCell) /), &
+                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)) /) )
+                 endif
+               enddo
+            else ! landIceMask not associated, so no ice shelves
+              do iCell = 1,nCells
+                 if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>20.0_RKIND) then
+                    consistentSSH = .false.
+                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', & 
+                       MPAS_LOG_ERR)
+                    call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r, sum(h): $r', &
+                       intArgs=(/iCell, maxLevelCell(iCell) /), &
+                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)) /) )
+                 endif
+               enddo
+            endif
 
             if (.not. consistentSSH) then
                call mpas_log_write('Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.')
