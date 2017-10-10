@@ -252,7 +252,7 @@ class TestStatus(object):
                 if (self._test_name is None):
                     self._test_name = curr_test_name
                 else:
-                    expect(self._test_name == curr_test_name,
+                    expect(curr_test_name.startswith(self._test_name),
                            "inconsistent test name in parse_test_status: '%s' != '%s'" % (self._test_name, curr_test_name))
 
                 expect(status in ALL_PHASE_STATUSES,
