@@ -489,6 +489,9 @@ module ocn_forward_mode
       ! read initial data required for variable shortwave
       call mpas_timer_start('io_shortwave',.false.)
       call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .true.)
+!      call mpas_dmpar_field_halo_exch(domain, 'chlorophyllData')
+!      call mpas_dmpar_field_halo_exch(domain, 'clearSkyRadiation')
+!      call mpas_dmpar_field_halo_exch(domain, 'zenithAngle')
       call mpas_timer_stop('io_shortwave')
 
       ! read initial data required for ecosys forcing
@@ -502,8 +505,8 @@ module ocn_forward_mode
       if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
         call mpas_timer_start('io_monthly_surface_salinity',.false.)
         call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .true.)
-        call mpas_dmpar_field_halo_exch(domain, 'activeTracersPistonVelocity')
-        call mpas_dmpar_field_halo_exch(domain, 'activeTracersSurfaceRestoringValue')
+!        call mpas_dmpar_field_halo_exch(domain, 'activeTracersPistonVelocity')
+!        call mpas_dmpar_field_halo_exch(domain, 'activeTracersSurfaceRestoringValue')
         call mpas_timer_stop('io_monthly_surface_salinity')
       endif
 
@@ -628,6 +631,9 @@ module ocn_forward_mode
          ! read next time level data required for variable shortwave
          call mpas_timer_start('io_shortwave',.false.)
          call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .false.)
+!         call mpas_dmpar_field_halo_exch(domain, 'chlorophyllData')
+!         call mpas_dmpar_field_halo_exch(domain, 'clearSkyRadiation')
+!         call mpas_dmpar_field_halo_exch(domain, 'zenithAngle')
          call mpas_timer_stop('io_shortwave')
 
          ! read next time level data required for ecosys forcing
@@ -641,8 +647,8 @@ module ocn_forward_mode
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
            call mpas_timer_start('io_monthly_surface_salinity',.false.)
            call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
-           call mpas_dmpar_field_halo_exch(domain, 'activeTracersPistonVelocity')
-           call mpas_dmpar_field_halo_exch(domain, 'activeTracersSurfaceRestoringValue')
+!           call mpas_dmpar_field_halo_exch(domain, 'activeTracersPistonVelocity')
+!           call mpas_dmpar_field_halo_exch(domain, 'activeTracersSurfaceRestoringValue')
            call mpas_timer_stop('io_monthly_surface_salinity')
          endif
 

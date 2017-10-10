@@ -337,7 +337,7 @@ contains
 
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-        do iCell = 1, nCellsSolve
+        do iCell = 1, nCells
            deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
            if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
            if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
@@ -345,7 +345,10 @@ contains
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
            activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) =  &
                    salinity_restoring_constant_piston_velocity
-        
+        end do 
+
+        do iCell=1,nCellsSolve
+           deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
            sumAreaDeltaS = sumAreaDeltaS + deltaS*areaCell(iCell)
            sumArea = sumArea + areaCell(iCell)
         enddo
@@ -365,7 +368,7 @@ contains
       block => domain % blocklist
       do while (associated(block))
 
-        call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
@@ -374,7 +377,7 @@ contains
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
          !$omp do schedule(runtime)
-       do iCell = 1, nCellsSolve
+       do iCell = 1, nCells
            if (iceFraction(iCell) <= 1.e-10_RKIND)  &
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
               activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) - avgDeltaS
