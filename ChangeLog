@@ -1,6 +1,34 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-9-2017
+Tag: cime5.4.0-alpha.03
+Answer Changes: None
+Tests: scripts_regression_tests.pr
+       manual test of create_clone
+Dependencies:
+
+Brief Summary:
+    - Fix SE domain files.
+    - Use keyword-value pairs for create_clone call.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+55d2dbe Merge pull request #1957 from billsacks/create_clone_args
+443312c Merge pull request #1951 from gold2718/seDomainFiles
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/create_clone
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-6-2017
 Tag: cime5.4.0-alpha.02
 Answer Changes: None
