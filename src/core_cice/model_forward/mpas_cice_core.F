@@ -335,6 +335,11 @@ module cice_core
          call cice_analysis_restart(domain, ierr)
          call cice_analysis_write(domain, ierr)
 
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
+              streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+            call cice_forcing_write_restart_times(domain)
+         endif
+
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
 
          ! update the restart_timestamp file with the new time if needed
@@ -351,7 +356,6 @@ module cice_core
                     MPAS_LOG_CRIT, intArgs=(/ierr/))
             endif
             close(22)
-            call cice_forcing_write_restart_times(domain)
          end if
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)

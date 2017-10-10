@@ -44,6 +44,7 @@ module mpas_timekeeping
 
    interface operator (*)
       module procedure mul_ti_n
+      module procedure mul_ti_n8
    end interface
 
    interface operator (/)
@@ -664,6 +665,53 @@ module mpas_timekeeping
 
 
    !-----------------------------------------------------------------------
+   !  routine mpas_minimum_alarm_interval
+   !
+   !> \brief This function returns the shortest alarm interval in an alarm list
+   !> \author Dom Heinzeller
+   !> \date   08/23/2017
+   !> \details This function returns the shortest alarm interval in an alarm list.
+   !>   If the alarm list is empty or contains contains only one-off events (e.g.
+   !>   initial_only, final_only), the resulting interval is set to zero. This
+   !>   routine modifies the alarmListPtr and potentially leaves it in an
+   !>   undefined status upon exit.
+   !-----------------------------------------------------------------------
+   subroutine mpas_minimum_alarm_interval(clock, alarmListPtr, interval)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(in) :: clock
+      type (MPAS_stream_list_type), pointer :: alarmListPtr
+      type (MPAS_TimeInterval_type), intent(out) :: interval
+
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+      type (MPAS_TimeInterval_type) :: zero_interval
+
+      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
+      call mpas_set_timeInterval(interval, dt = 0.0_RKIND)
+
+      do while(associated(alarmListPtr))
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+            if (trim(alarmPtr % alarmID) == trim(alarmListPtr % name)) then
+               if (alarmPtr % isRecurring) then
+                  if (interval .eq. zero_interval) then
+                     interval = alarmPtr % ringTimeInterval
+                  else if (alarmPtr % ringTimeInterval .lt. interval) then
+                     interval = alarmPtr % ringTimeInterval
+                  end if
+               end if
+               exit
+            end if
+            alarmPtr => alarmPtr % next
+         end do
+         alarmListPtr => alarmListPtr % next
+      end do
+
+   end subroutine mpas_minimum_alarm_interval
+
+
+   !-----------------------------------------------------------------------
    !  routine mpas_alarm_get_next_ring_time
    !
    !> \brief This function returns the next ring time of an alarm.
@@ -745,7 +793,6 @@ module mpas_timekeeping
       !$omp barrier
 
    end subroutine mpas_print_alarm
-
 
 
    logical function mpas_is_alarm_ringing(clock, alarmID, interval, ierr)
@@ -872,7 +919,7 @@ module mpas_timekeeping
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
       type (MPAS_TimeInterval_type) :: nowInterval, nowRemainder
-      integer :: nDivs
+      integer (kind=I8KIND) :: nDivs
       integer :: threadNum
 
       threadNum = mpas_threading_get_thread_num()
@@ -920,6 +967,75 @@ module mpas_timekeeping
       !$omp barrier
 
    end subroutine mpas_reset_clock_alarm
+
+
+   ! Adjust the previous ring time of a recurring alarm to be away from a provided reference time
+   ! by an integer multiple of the alarm's interval.
+   ! This is useful if the alarm's default prevRingTime, which is the current time when the alarm
+   ! is created, is not desired.
+   subroutine mpas_adjust_alarm_to_reference_time(clock, alarmID, referenceTime, ierr)
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: clock
+      character (len=*), intent(in) :: alarmID
+      type (MPAS_Time_type) :: referenceTime
+      type (MPAS_Time_type) :: now
+      integer, intent(out) :: ierr
+
+      ! Local variables
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+      type (MPAS_TimeInterval_type) :: searchInterval, searchRemainder
+      integer (kind=I8KIND) :: nDivs
+      integer :: threadNum
+      integer :: ierr_tmp
+
+      ierr = 0
+      ierr_tmp = 0
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+
+               if (alarmPtr % isRecurring) then
+                  !call mpas_print_alarm(clock, alarmID, ierr_tmp)
+                  now = mpas_get_clock_time(clock, MPAS_NOW, ierr_tmp)
+                  ierr = ior(ierr, ierr_tmp)
+                  if(clock % direction == MPAS_FORWARD) then
+                     if (now > referenceTime) then
+                        searchInterval = now - referenceTime
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - searchRemainder
+                     else
+                        searchInterval = referenceTime - now
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - (alarmPtr % ringTimeInterval - searchRemainder)
+                     endif
+                  else ! MPAS_REVERSE
+                     if (now < referenceTime) then
+                        searchInterval = now - referenceTime
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - searchRemainder
+                     else
+                        searchInterval = referenceTime - now
+                        call mpas_interval_division(referenceTime, searchInterval, alarmPtr % ringTimeInterval, nDivs, searchRemainder)
+                        alarmPtr % prevRingTime = now - (alarmPtr % ringTimeInterval - searchRemainder)
+                     endif
+                  end if  ! forward direction
+                  !call mpas_print_alarm(clock, alarmID, ierr_tmp)
+               end if  ! isRecurring
+            exit ! exit after we found the alarm we were looking for
+            end if ! if this alarm we were looking for
+            alarmPtr => alarmPtr % next
+         end do
+      end if ! thread check
+
+      !$omp barrier
+   end subroutine mpas_adjust_alarm_to_reference_time
 
 
 
@@ -1569,6 +1685,18 @@ module mpas_timekeeping
    end function mul_ti_n
 
 
+   type (MPAS_TimeInterval_type) function mul_ti_n8(ti, n8)
+
+      implicit none
+
+      type (MPAS_TimeInterval_type), intent(in) :: ti
+      integer (kind=I8KIND), intent(in) :: n8
+
+      mul_ti_n8 % ti = ti % ti * n8
+
+   end function mul_ti_n8
+
+
    type (MPAS_TimeInterval_type) function div_ti_n(ti, n)
 
       implicit none
@@ -1603,10 +1731,10 @@ module mpas_timekeeping
       type (MPAS_Time_type), intent(in) :: ref_time
       type (MPAS_TimeInterval_type), intent(in) :: num
       type (MPAS_TimeInterval_type), intent(in) :: den
-      integer, intent(out) :: n
+      integer (kind=I8KIND), intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      integer :: m
+      integer (kind=I8KIND) :: m
       type (MPAS_Time_type) :: target_time
       type (MPAS_Time_type) :: updated_time
 
@@ -1621,7 +1749,7 @@ module mpas_timekeeping
       !
       if (den == zero) then
          call mpas_log_write('mpas_interval_division: Attempting to divide by zero.', MPAS_LOG_WARN)
-         n = 0
+         n = 0_I8KIND
          rem = zero
          return
       end if
@@ -1634,7 +1762,7 @@ module mpas_timekeeping
       ! numerator == denominator
       !
       if (target_time == updated_time) then
-         n = 1
+         n = 1_I8KIND
          rem = zero
          return
       end if
@@ -1644,29 +1772,29 @@ module mpas_timekeeping
       ! denominator > numerator
       !
       if ( target_time < updated_time ) then
-         n = 0
+         n = 0_I8KIND
          rem = num
          return
       end if
 
       ! One interval of den already fits into num
-      n = 1
+      n = 1_I8KIND
 
       ! Search forward, doubling the interval each time
       do while (target_time > updated_time)
-         n = n * 2
+         n = n * 2_I8KIND
          temp = den * n
          updated_time = ref_time + temp
       end do
 
-      n = n / 2
+      n = n / 2_I8KIND
       m = n
       temp = den * n
       updated_time = ref_time + temp
 
 
       ! Search backward, halving the interval each time
-      do while ( m > 0 )
+      do while ( m > 0_I8KIND )
          temp = den * m
 
          if ( updated_time + temp <= target_time ) then
@@ -1674,7 +1802,7 @@ module mpas_timekeeping
             n = n + m
          end if
 
-         m = m / 2
+         m = m / 2_I8KIND
       end do
 
       rem = target_time - updated_time

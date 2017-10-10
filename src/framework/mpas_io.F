@@ -281,7 +281,11 @@ module mpas_io
             pio_mode = PIO_64BIT_OFFSET
          else if (ioformat == MPAS_IO_NETCDF4) then
             pio_iotype = PIO_iotype_netcdf4p
+#ifdef USE_PIO2
+            pio_mode = 0
+#else
             pio_mode = PIO_64BIT_OFFSET
+#endif
          end if
       end if
 
@@ -4588,8 +4592,8 @@ module mpas_io
       trimmedVal = trim(attValue)
 
       if ( valLen > StrKind ) then
-         call mpas_log_write('Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. " // &
-            "It will be cut to a length of $i', MPAS_LOG_WARN, intArgs=(/StrKIND/) )
+         call mpas_log_write('Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. ' // &
+             'It will be cut to a length of $i', MPAS_LOG_WARN, intArgs=(/StrKIND/) )
          attValueLocal = trimmedVal(1:StrKIND)
       else
          attValueLocal = trimmedVal

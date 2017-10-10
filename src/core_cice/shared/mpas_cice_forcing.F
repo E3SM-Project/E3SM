@@ -140,8 +140,7 @@ contains
     character(len=strKIND), pointer :: &
          config_forcing_start_time, &
          config_forcing_cycle_start, &
-         config_forcing_cycle_duration, &
-         config_forcing_restart_file
+         config_forcing_cycle_duration
 
     logical, pointer :: &
          config_do_restart
@@ -158,7 +157,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
     call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
     ! create the six hourly forcing group
     call MPAS_forcing_init_group(&
@@ -169,7 +167,6 @@ contains
          config_forcing_cycle_start, &
          config_forcing_cycle_duration, &
          config_do_restart, &
-         config_forcing_restart_file, &
          .false.)
 
     forcingIntervalSixHourly = "06:00:00"
@@ -230,7 +227,9 @@ contains
     call MPAS_forcing_init_field_data(&
          ciceForcingGroups, &
          "cice_atmospheric_forcing_sixhrly", &
-         domain % streamManager)
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
 
     ! create the monthly forcing group
     call MPAS_forcing_init_group(&
@@ -240,8 +239,7 @@ contains
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
          '0001-00-00_00:00:00', &
-         config_do_restart, &
-         config_forcing_restart_file)
+         config_do_restart)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
@@ -273,7 +271,9 @@ contains
     call MPAS_forcing_init_field_data(&
          ciceForcingGroups, &
          "cice_atmospheric_forcing_monthly", &
-         domain % streamManager)
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
 
   end subroutine init_atmospheric_forcing_CORE
 
@@ -1174,9 +1174,6 @@ contains
 
     type (domain_type) :: domain
 
-    character(len=strKIND), pointer :: &
-         config_forcing_restart_file
-
     logical, pointer :: &
          config_do_restart
 
@@ -1186,7 +1183,6 @@ contains
 
     ! get oceanic forcing configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
@@ -1199,8 +1195,7 @@ contains
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
          '0001-00-00_00:00:00', &
-         config_do_restart, &
-         config_forcing_restart_file)
+         config_do_restart)
 
     ! sea surface temperature
     call MPAS_forcing_init_field(&
@@ -1218,7 +1213,9 @@ contains
     call MPAS_forcing_init_field_data(&
          ciceForcingGroups, &
          "cice_sst_forcing_monthly", &
-         domain % streamManager)
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
 
     ! create the monthly forcing group
     call MPAS_forcing_init_group(&
@@ -1228,8 +1225,7 @@ contains
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
          '0001-00-00_00:00:00', &
-         config_do_restart, &
-         config_forcing_restart_file)
+         config_do_restart)
 
     ! sea surface salinity
     call MPAS_forcing_init_field(&
@@ -1325,7 +1321,9 @@ contains
     call MPAS_forcing_init_field_data(&
          ciceForcingGroups, &
          "cice_oceanic_forcing_monthly", &
-         domain % streamManager)
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
 
   end subroutine init_oceanic_forcing_ncar
 
@@ -1865,9 +1863,6 @@ contains
 
     type(domain_type) :: domain
 
-    character(len=strKIND), pointer :: &
-         config_forcing_restart_file
-
     logical, pointer :: &
          config_use_forcing
 
@@ -1875,9 +1870,7 @@ contains
 
     if (config_use_forcing) then
 
-       call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
-
-       call MPAS_forcing_write_restart_times(ciceForcingGroups, config_forcing_restart_file)
+       call MPAS_forcing_write_restart_times(ciceForcingGroups)
 
     endif
 

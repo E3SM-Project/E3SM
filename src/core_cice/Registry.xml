@@ -215,6 +215,9 @@
 			definition="1"
 			units="unitless" description="The maximum number of points in any group."
 		/>
+		<dim name="nForcingGroupsMax"
+			definition="4"
+		/>
 	</dims>
 
 	<nml_record name="cice_model" in_defaults="true">
@@ -275,7 +278,6 @@
 		<nml_option name="config_forcing_start_time"		type="character"	default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_forcing_cycle_start"		type="character"	default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_forcing_cycle_duration"	type="character"	default_value="2-00-00_00:00:00"/>
-		<nml_option name="config_forcing_restart_file"		type="character"	default_value="restart_forcing_timestamps"/>
 		<nml_option name="config_forcing_precipitation_units"	type="character"	default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"		type="character"	default_value="ncar"/>
 		<nml_option name="config_update_ocean_fluxes"		type="logical"		default_value="false"/>
@@ -698,6 +700,8 @@
 			<var name="testArrayRegression"/>
 			<var name="testArrayParallelism"/>
 			<var name="testArrayRestartability"/>
+			<var name="forcingGroupNames"/>
+			<var name="forcingGroupRestartTimes"/>
 		</stream>
 
 		<stream name="restart"
@@ -992,6 +996,9 @@
 
 		<!-- testing system test -->
 		<package name="pkgTestingSystemTest" description=""/>
+
+		<!-- forcing -->
+		<package name="pkgForcing" description="On if the framework forcing is being used"/>
 
 	</packages>
 
@@ -2031,6 +2038,13 @@
 		<var name="maskCell"				type="integer"	dimensions="nCells"					name_in_code="maskCell"/>
 		<var name="maskCategoryCell"			type="integer"	dimensions="nCategories nCells"			name_in_code="maskCategoryCell"/>
 		<var name="workCategoryCell"			type="real"	dimensions="nCategories nCells"			name_in_code="workCategoryCell"/>
+	</var_struct>
+
+	<!--forcing framework-->
+	<var_struct name="forcing" time_levs="1" packages="pkgForcing">
+		<var name="nForcingGroupCounter"		type="integer"	dimensions="Time"/>
+		<var name="forcingGroupNames"			type="text"	dimensions="nForcingGroupsMax Time"/>
+		<var name="forcingGroupRestartTimes"		type="text"	dimensions="nForcingGroupsMax Time"/>
 	</var_struct>
 
 	<!--atmos coupling -->

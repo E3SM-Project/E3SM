@@ -112,7 +112,7 @@ module cice_core_interface
       call cice_analysis_setup_packages(configPool, packagePool, iocontext, ierr)
 
       ! testing system test
-      call setup_packages_testing_system_test(configPool, packagePool, ierr)
+      call setup_packages_other(configPool, packagePool, ierr)
 
    end function cice_setup_packages!}}}
 
@@ -531,7 +531,7 @@ module cice_core_interface
 
    !***********************************************************************
    !
-   !  routine setup_packages_testing_system_test
+   !  routine setup_packages_other
    !
    !> \brief
    !> \author  Adrian K. Turner
@@ -541,17 +541,32 @@ module cice_core_interface
    !
    !-----------------------------------------------------------------------
 
-   subroutine setup_packages_testing_system_test(configPool, packagePool, ierr)!{{{
+   subroutine setup_packages_other(configPool, packagePool, ierr)!{{{
 
      type (mpas_pool_type), intent(in) :: configPool
      type (mpas_pool_type), intent(in) :: packagePool
      integer, intent(out) :: ierr
 
      logical, pointer :: &
+          config_use_forcing, &
           config_testing_system_test
 
      logical, pointer :: &
+          pkgForcingActive, &
           pkgTestingSystemTestActive
+
+     ! pkgForcing
+
+     call MPAS_pool_get_config(configPool, "config_use_forcing", config_use_forcing)
+
+     call MPAS_pool_get_package(packagePool, "pkgForcingActive", pkgForcingActive)
+
+     ! see if we are using the forcing system
+     if (config_use_forcing) then
+
+        pkgForcingActive = .true.
+
+     endif
 
      !pkgTestingSystemTest
 
@@ -566,7 +581,7 @@ module cice_core_interface
 
      endif
 
-   end subroutine setup_packages_testing_system_test!}}}
+   end subroutine setup_packages_other!}}}
 
    !***********************************************************************
    !

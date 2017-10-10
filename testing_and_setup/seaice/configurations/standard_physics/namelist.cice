@@ -55,7 +55,6 @@
     config_forcing_start_time = '2000-01-01_00:00:00'
     config_forcing_cycle_start = '2000-01-01_00:00:00'
     config_forcing_cycle_duration = '2-00-00_00:00:00'
-    config_forcing_restart_file = 'restart_forcing_timestamps'
     config_forcing_precipitation_units = 'mm_per_sec'
     config_forcing_sst_type = 'ncar'
     config_update_ocean_fluxes = false
