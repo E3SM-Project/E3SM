@@ -356,15 +356,16 @@ contains
          block => block % next
       end do
 
-!       do global sum to subtract global mean of deltaS
-        dminfo = domain % dminfo
-        sums(1) = sumAreaDeltaS
-        sums(2) = sumArea
-        call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
-        sumAreaDeltaSGlobal = reductions(1)
-        sumAreaGlobal       = reductions(2)
-        avgDeltaS1 = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
-        avgDeltaS = float (int(avgDeltaS1 * 1.0E10_RKIND + 0.5_RKIND)) / 1.0E10_RKIND
+!     do global sum to subtract global mean of deltaS
+      dminfo = domain % dminfo
+      sums(1) = sumAreaDeltaS
+      sums(2) = sumArea
+      call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
+      sumAreaDeltaSGlobal = reductions(1)
+      sumAreaGlobal       = reductions(2)
+      avgDeltaS1 = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
+      avgDeltaS = float (int(avgDeltaS1 * 1.0E10_RKIND + 0.5_RKIND)) / 1.0E10_RKIND
+      
       block => domain % blocklist
       do while (associated(block))
 
@@ -376,7 +377,7 @@ contains
            activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
-         !$omp do schedule(runtime)
+       !$omp do schedule(runtime)
        do iCell = 1, nCells
            if (iceFraction(iCell) <= 1.e-10_RKIND)  &
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
