@@ -453,7 +453,7 @@ module mpas_stream_manager
         end if
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
-        call mpas_set_timeInterval(time_interval_zero, dt = 0.0)
+        call mpas_set_timeInterval(time_interval_zero, dt = 0.0_RKIND)
 
         if (present(streamID)) then
            call MPAS_stream_mgr_begin_iteration(manager, streamID, ierr=err_local)
@@ -480,7 +480,7 @@ module mpas_stream_manager
                if (trim(filename_interval) /= 'none') then
                   call mpas_set_timeInterval(time_interval_file, timeString=filename_interval)
                else
-                  call mpas_set_timeInterval(time_interval_file, dt = 0.0)
+                  call mpas_set_timeInterval(time_interval_file, dt = 0.0_RKIND)
                end if
 
                if (direction == MPAS_STREAM_INPUT .or. direction == MPAS_STREAM_INPUT_OUTPUT) then
@@ -1645,7 +1645,7 @@ module mpas_stream_manager
 
        ierr = MPAS_STREAM_MGR_NOERR
        nullify(streamCursor)
-       call mpas_set_timeInterval(interval, dt = 0.0)
+       call mpas_set_timeInterval(interval, dt = 0.0_RKIND)
 
        if ( mpas_stream_list_query(manager % streams, streamID, streamCursor) ) then
 
