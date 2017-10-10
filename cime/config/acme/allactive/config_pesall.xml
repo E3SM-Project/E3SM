@@ -6705,9 +6705,9 @@
       <pes compset="any" pesize="any">
         <comment>ne4 grid on 4 nodes pure-MPI </comment>
         <ntasks>
-          <ntasks_atm>96</ntasks_atm>
-          <ntasks_ice>96</ntasks_ice>
-          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_atm>108</ntasks_atm>
+          <ntasks_ice>108</ntasks_ice>
+          <ntasks_cpl>108</ntasks_cpl>
           <ntasks_lnd>36</ntasks_lnd>
           <ntasks_rof>36</ntasks_rof>
           <ntasks_ocn>36</ntasks_ocn>
