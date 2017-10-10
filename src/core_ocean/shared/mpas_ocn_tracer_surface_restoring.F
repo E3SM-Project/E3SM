@@ -209,7 +209,7 @@ contains
         logical, intent(in) :: firstTimeStep
         character(len=strKind), pointer :: config_dt
         real(kind=RKIND) :: dt, sumAreaDeltaS, sumArea, avgDeltaS, deltaS, sumAreaDeltaSGlobal, sumAreaGlobal
-
+        real(kind=RKIND) :: avgDeltaS1
         type (block_type), pointer :: block
 
         type (dm_info) :: dminfo
@@ -360,8 +360,8 @@ contains
         call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
         sumAreaDeltaSGlobal = reductions(1)
         sumAreaGlobal       = reductions(2)
-        avgDeltaS = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
-
+        avgDeltaS1 = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
+        avgDeltaS = float (int(avgDeltaS1 * 1.0E10_RKIND + 0.5_RKIND)) / 1.0E10_RKIND
       block => domain % blocklist
       do while (associated(block))
 
