@@ -1,6 +1,7 @@
 module micro_mg2_sedimentation
   use micro_mg_utils, only: r8
   use cam_logfile,       only: iulog
+  use cam_abortutils,    only: endrun
 
   implicit none
   private
@@ -11,7 +12,7 @@ module micro_mg2_sedimentation
   integer, parameter, public  :: MG_ICE = 2
   integer, parameter, public  :: MG_RAIN = 3
   integer, parameter, public  :: MG_SNOW = 4
-  real(r8), parameter, public :: CFL = 0.9_r8
+  real(r8), parameter, public :: CFL_FAC = 0.9_r8
 
   real(r8) :: brDeff_dim = -1._r8
   real(r8) :: eff_dimDbr = -1._r8
@@ -94,8 +95,7 @@ contains
         call size_dist_param_basic(mg_snow_props, qic(:), nic(:), lam(:))
 
       case default
-        print *, "Invalid mg_type to mg2_sedimentation"
-        stop
+        call endrun("Invalid mg_type to mg2_sedimentation")
 
     end select
 
@@ -145,13 +145,18 @@ contains
         end do
 
       case default
-        print *, "Invalid mg_type to mg2_sedimentation"
-        stop
+        call endrun("Invalid mg_type to mg2_sedimentation")
 
     end select
 
     ! compute CFL number
     cfl = max(maxval(alphaq(:)*deltat/pdel(i,:)),maxval(alphan(:)*deltat/pdel(i,:)))
+
+    !+++next lines are just debugging sanity check and can be deleted later
+    if (cfl < -1e-10_r8) then
+       write(iulog,*) 'in micro_mg2_sedimentation.F90, cfl<0: cfl = ',cfl
+    end if
+    !---debug
 
   end subroutine sed_CalcFallRate
 
@@ -173,6 +178,7 @@ contains
     real(r8) :: deltafluxQ_evap
     integer :: k
 
+    integer :: cnt_fq,cnt_fn,cnt_alphan,cnt_n
 
     ! Compute flux
     fq(0) = 0._r8
@@ -180,11 +186,13 @@ contains
     fn(0) = 0._r8
     fn(1:nlev) = alphan(:)*n(i,:)
 
+
     ! for cloud liquid and ice, if cloud fraction increases with height
     ! then add flux from above to both vapor and cloud water of current level
     ! this means that flux entering clear portion of cell from above evaporates
     ! instantly
     ! note: this is not an issue with precip, since we assume max overlap
+
     if (mg_type == MG_ICE .or. mg_type == MG_LIQUID) then
       ratio(1) = 1._r8
       ratio(2:nlev) = cloud_frac(i,2:nlev)/cloud_frac(i,1:(nlev-1))
@@ -197,6 +205,9 @@ contains
       deltafluxQ = (fq(k)-ratio(k)*fq(k-1))/pdel(i,k)
       deltafluxN = (fn(k)-ratio(k)*fn(k-1))/pdel(i,k)
       ! add fallout terms to eulerian tendencies
+      !PMC note: deltat_sed/deltat = frac of total step handled by this substep
+      !it is needed in order for the total sed tend in qtend to be the *average*
+      !sed tend over all substeps.
       qtend(i,k) = qtend(i,k) - deltafluxQ*deltat_sed/deltat
       ntend(i,k) = ntend(i,k) - deltafluxN*deltat_sed/deltat
       ! sedimentation tendency for output
@@ -214,27 +225,43 @@ contains
 
       if (q(i,k) < -1.d-10) then
          if (mg_type == MG_ICE) then
-            write(iulog,1001) 'qi',i,k,q(i,k)
-            stop "qi negative"
+            write(iulog,1001) 'after','qi',i,k,q(i,k)
+            q(i,k) = 0._r8
          else if (mg_type == MG_SNOW) then
-            write(iulog,1001) 'qs',i,k,q(i,k)
-            stop "qs negative"
+            write(iulog,1001) 'after','qs',i,k,q(i,k)
+            q(i,k) = 0._r8
          else if (mg_type == MG_LIQUID) then
-            write(iulog,1001) 'qc',i,k,q(i,k)
-            stop "qc negative" 
+            write(iulog,1001) 'after','qc',i,k,q(i,k)
+            q(i,k) = 0._r8
          else if (mg_type == MG_RAIN) then
-            write(iulog,1001) 'qr',i,k,q(i,k)
-            stop "qr negative"
+            write(iulog,1001) 'after','qr',i,k,q(i,k)
+            q(i,k) = 0._r8
+
+            !check simplified version of deltat_sed:
+            if (abs(deltat_sed - CFL_FAC*minval(pdel(i,:)/alphaq(:)))>1e-10_r8) then
+               write(iulog,*) 'deltat_sed,min(pdel),min(alphaq)=',deltat_sed,minval(pdel(i,:)),minval(alphaq(:))
+            end if
+            !check ratio
+            if ( ( alphaq(k)/pdel(i,k) )/maxval(alphaq(:)/pdel(i,:)) > 1._r8) then
+               write(iulog,*) 'max ratio exceeded for k = ',k
+            end if
+
+            if (deltafluxQ < fq(k)/pdel(i,k)) then
+               write(iulog,*) '  deltafluxQ,fq/pdel=',deltafluxQ,fq(k)/pdel(i,k)
+            end if
+            !check
+
          end if
 
       else if (n(i,k) < -1.d-10) then
-        print *, n(i,k)
-        stop "n negative"
+        print *, 'n(i,k)=', n(i,k)
+        n(i,k) = 0._r8
       end if
-    end do
+
+    end do !loop over k
 
 !if index i or k has more than 6 digits, will fail.
-1001 format ( a2,'(', i6,',', i6,') = ',e12.3) 
+1001 format ( a6,': ',a2,'(', i6,',', i6,') = ',e12.3) 
 
     ! units below are m/s
     ! sedimentation flux at surface is added to precip flux at surface

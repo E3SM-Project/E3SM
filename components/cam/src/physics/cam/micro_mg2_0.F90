@@ -91,6 +91,10 @@ module micro_mg2_0
 use shr_spfn_mod, only: gamma => shr_spfn_gamma
 #endif
 
+!debug
+use cam_logfile,       only: iulog
+
+
 use wv_sat_methods, only: &
      qsat_water => wv_sat_qsat_water, &
      qsat_ice => wv_sat_qsat_ice
@@ -447,7 +451,7 @@ subroutine micro_mg_tend ( &
        MG_ICE, &
        MG_RAIN,&
        MG_SNOW, &
-       CFL
+       CFL_FAC
 
   !Authors: Hugh Morrison, Andrew Gettelman, NCAR, Peter Caldwell, LLNL
   ! e-mail: morrison@ucar.edu, andrew@ucar.edu
@@ -818,7 +822,7 @@ subroutine micro_mg_tend ( &
   integer i, k, n
 
   ! sedimentation substep loop variables
-  real(r8) :: deltat_sed, time_sed
+  real(r8) :: cfl, deltat_sed, time_sed
 
   ! number of sub-steps for loops over "n" (for sedimentation)
   integer nstep !PMC - this var isn't needed???
@@ -2079,11 +2083,18 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain CFL number
            call sed_CalcFallRate(dumi,dumni,icldm,rho,pdel,nlev,i,&
-                MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,dum,&
+                MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,cfl,&
                 ncons=nicons,nnst=ninst,&
                 gamma_b_plus1=gamma_bi_plus1,gamma_b_plus4=gamma_bi_plus4)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
+
+           !+++debug
+           if (abs(deltat_sed - CFL_FAC*minval(pdel(i,1:nlev)/alphaq(1:nlev)))>1e-10_r8) then
+              write(iulog,*) '**deltat_sed,cfl,minval(pdel(i,:)/alphaq(:))=',deltat_sed,cfl,minval(pdel(i,1:nlev)/alphaq(1:nlev))
+           end if
+           !---debug
+
            ! advance cloud ice sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep+1
@@ -2105,10 +2116,10 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain fall speeds
            call sed_CalcFallRate(dumc,dumnc,lcldm,rho,pdel,nlev,i,&
-                MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,dum,&
+                MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,cfl,&
                 ncons=nccons,nnst=ncnst)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
            ! advance cloud liquid sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
@@ -2130,10 +2141,10 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain fall speeds
            call sed_CalcFallRate(dumr,dumnr,precip_frac,rho,pdel,nlev,i,&
-                MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,dum,&
+                MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,cfl,&
                 gamma_b_plus1=gamma_br_plus1,gamma_b_plus4=gamma_br_plus4)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
            ! advance rain sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
@@ -2154,10 +2165,10 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain fall speeds
            call sed_CalcFallRate(dums,dumns,precip_frac,rho,pdel,nlev,i,&
-                MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,dum,&
+                MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,cfl,&
                 gamma_b_plus1=gamma_bs_plus1,gamma_b_plus4=gamma_bs_plus4)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL/dum,time_sed)
+           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
            ! advance snow sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
