@@ -1198,7 +1198,7 @@ class Case(object):
         executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if executable is not None and "aprun" in executable:
+        if executable is not None and "aprun" in executable and "titan" in self.get_value("MACH"):
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
@@ -1231,8 +1231,9 @@ class Case(object):
         else:
             logger.warn("WARNING: No {} Model version found.".format(model))
 
-    def load_env(self):
-        if not self._is_env_loaded:
+    def load_env(self, reset=False):
+        if not self._is_env_loaded or reset:
+            os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
             env_module.load_env(self)
             self._is_env_loaded = True

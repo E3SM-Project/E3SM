@@ -1121,6 +1121,11 @@ for mct, etc.
   <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="theta">
+  <ADD_SLIBS>$(shell nf-config --flibs)</ADD_SLIBS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+</compiler>
+
 <compiler COMPILER="pgi" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
@@ -1189,8 +1194,15 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="anvil">
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas -mkl </ADD_SLIBS>
-  <ADD_SLIBS> -Wl,-rpath -Wl,$(NETCDF_PATH)/lib </ADD_SLIBS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</ADD_FFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp -static-intel</ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true" DEBUG="TRUE">-heap-arrays</ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true" DEBUG="TRUE">-heap-arrays</ADD_FFLAGS>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -Wl,-rpath -Wl,$(NETCDF_PATH)/lib</ADD_SLIBS>
+  <ADD_SLIBS>-mkl</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
