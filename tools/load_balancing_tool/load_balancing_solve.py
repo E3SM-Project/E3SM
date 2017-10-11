@@ -71,8 +71,7 @@ def parse_command_line(args, description):
                         help='Number of pes available for assignment')
 
     parser.add_argument("--layout",
-                        help="name of layout to solve (currently only "
-                        "IceLndAtmOcn available", default=DEFAULT_LAYOUT)
+                        help="name of layout to solve (default selected internally)")
 
     parser.add_argument("--graph-models", action="store_true",
                         help="plot cost v. ntasks models. requires matplotlib")
@@ -168,7 +167,11 @@ def _parse_timing_files(timing_files):
                 logger.warning('Existing value: cost=%s. Ignoring new value: '
                                'cost=%s', data[key]['cost'][index],
                                timing[key]['cost'])
+            elif 'name' in data[key] and data[key]['name'] != timing[key]['name']:
+                expect(False, "Timing files have inconsistant model components {} has {} vs {}"
+                       .format(key, data[key]['name'], timing[key]['name']))
             else:
+                data[key]['name'] = timing[key]['name']
                 data[key]['cost'].append(timing[key]['cost'])
                 data[key]['ntasks'].append(timing[key]['ntasks'])
                 data[key]['nthrds'].append(timing[key]['nthrds'])
@@ -214,13 +217,15 @@ def _read_timing_file(filename):
         m = re.search(r"(\w+) = (\w+)\s+\d+\s+\d+\s+(\d+)\s+x\s+(\d+)", line)
         if m:
             component = m.groups()[0].upper()
+            name = m.groups()[1].upper()
             ntasks = int(m.groups()[2])
             nthrds = int(m.groups()[3])
             if component in models:
                 models[component]['ntasks'] = ntasks
                 models[component]['nthrds'] = nthrds
+                models[component]['name'] = name
             else:
-                models[component] = {'ntasks':ntasks, 'nthrds':nthrds}
+                models[component] = {'name':name,'ntasks':ntasks, 'nthrds':nthrds}
             continue
 
         # get cost
@@ -268,7 +273,21 @@ def load_balancing_solve(test_id, test_root, timing_dir, blocksizes, total_tasks
 
         data['totaltasks'] = total_tasks
         if layout is None:
-            data['layout'] = DEFAULT_LAYOUT
+            # try to determine layout automatically
+            if 'ATM' in data and 'OCN' in data and 'WAV' in data:
+                aname = data['ATM']['name']
+                oname = data['OCN']['name']
+                wname = data['WAV']['name']
+                if aname not in ('DATM', 'XATM', 'SATM') and \
+                   oname not in ('DOCN', 'XOCN', 'SOCN'):
+                    if wname in ('DWAV', 'XWAV', 'SWAV'):
+                        data['layout'] = "IceLndAtmOcn"
+                    else:
+                        data['layout'] = "IceLndWavAtmOcn"
+
+                    logger.info("Using layout  = {}".format(data['layout']))
+                else:
+                    expect(False, "Could not automatically determine layout")
         else:
             data['layout'] = layout
 
