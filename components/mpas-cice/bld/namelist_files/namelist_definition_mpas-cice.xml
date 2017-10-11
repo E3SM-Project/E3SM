@@ -2272,6 +2272,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_ocean_surface_type" type="char*1024"
+	category="ocean" group="ocean">
+MISSING DESCRIPTION
+
+Valid values: 'free' or 'non-free'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- diagnostics -->
 

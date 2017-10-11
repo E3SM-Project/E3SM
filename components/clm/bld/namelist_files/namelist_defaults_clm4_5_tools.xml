@@ -287,7 +287,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- soil phosphorus dataset -->
 <mksrf_fphosphorus hgrid="0.5x0.5" lmask="GSDTG2000"
->lnd/clm2/rawdata/mksrf_soilphos_0.5x0.5_simyr1850.c160623.nc</mksrf_fphosphorus>
+>lnd/clm2/rawdata/mksrf_soilphos_0.5x0.5_simyr1850.c170623.nc</mksrf_fphosphorus>
 
 <!-- mksrf_fvegtyp -->
 

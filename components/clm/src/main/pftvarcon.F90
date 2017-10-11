@@ -194,7 +194,7 @@ module pftvarcon
   real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gC/m3
   real(r8), allocatable :: VMAX_NFIX(:)        ! VMAX of symbiotic N2 fixation
   real(r8), allocatable :: KM_NFIX(:)          ! KM of symbiotic N2 fixation
-  real(r8), allocatable :: VMAX_PTASE_vr(:)    ! VMAX of biochemical P production
+  real(r8), allocatable :: VMAX_PTASE(:)       ! VMAX of biochemical P production
   real(r8)              :: KM_PTASE            ! KM of biochemical P production
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
   real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
@@ -444,7 +444,7 @@ contains
     allocate( KM_PLANT_P(0:mxpft) )
     allocate( KM_MINSURF_P_vr(1:nlevdecomp_full,0:nsoilorder))
     allocate( decompmicc_patch_vr (1:nlevdecomp_full,0:mxpft))
-    allocate( VMAX_PTASE_vr(1:nlevdecomp_full))
+    allocate( VMAX_PTASE(0:mxpft))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
     allocate( VMAX_NFIX          (0:mxpft) )
@@ -766,8 +766,8 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NFIX'//errMsg(__FILE__, __LINE__))
-        call ncd_io('VMAX_PTASE_vr',VMAX_PTASE_vr, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PTASE',VMAX_PTASE, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_PTASE',KM_PTASE, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_PTASE'//errMsg(__FILE__, __LINE__))
         call ncd_io('lamda_ptase',lamda_ptase, 'read', ncid, readvar=readv)  

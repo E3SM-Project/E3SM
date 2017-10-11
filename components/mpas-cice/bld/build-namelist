@@ -52,6 +52,7 @@ OPTIONS
      -inst_string          inst_string variable
      -ic_mode              variable for initial condition file mode
                            Options are: spunup, cold_start
+     -ice_bgc              variable for enabling sea ice BGC
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -94,6 +95,7 @@ my %opts = ( help        => 0,
              ice_grid    => undef,
              date_stamp  => undef,
              ic_mode     => undef,
+             ice_bgc     => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -109,6 +111,7 @@ GetOptions(
     "ice_grid=s"    => \$opts{'ice_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
     "ic_mode=s"     => \$opts{'ic_mode'},
+    "ice_bgc=s"     => \$opts{'ice_bgc'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
 )  or usage();
@@ -141,6 +144,7 @@ my $inst_string = $opts{'inst_string'};
 my $ICE_GRID    = $opts{'ice_grid'};
 my $date_stamp  = $opts{'date_stamp'};
 my $ic_mode     = $opts{'ic_mode'};
+my $ice_bgc     = $opts{'ice_bgc'};
 $cfgdir         = $opts{'cfg_dir'};
 
 my $CIMEROOT;     
@@ -563,7 +567,11 @@ add_default($nl, 'config_recover_tracer_means_check');
 
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
-add_default($nl, 'config_use_column_biogeochemistry');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".false.");
+}
 add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
 
@@ -583,22 +591,39 @@ add_default($nl, 'config_use_aerosols');
 # Namelist group: biogeochemistry #
 ###################################
 
-add_default($nl, 'config_use_brine');
 add_default($nl, 'config_use_vertical_zsalinity');
-add_default($nl, 'config_use_vertical_biochemistry');
 add_default($nl, 'config_use_shortwave_bioabsorption');
-add_default($nl, 'config_use_vertical_tracers');
 add_default($nl, 'config_use_skeletal_biochemistry');
-add_default($nl, 'config_use_nitrate');
-add_default($nl, 'config_use_carbon');
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".true.");
+        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".true.");
+        add_default($nl, 'config_use_vertical_tracers', 'val'=>".true.");
+        add_default($nl, 'config_use_brine', 'val'=>".true.");
+        add_default($nl, 'config_use_nitrate', 'val'=>".true.");
+        add_default($nl, 'config_use_carbon', 'val'=>".true.");
+        add_default($nl, 'config_use_ammonium', 'val'=>".true.");
+        add_default($nl, 'config_use_silicate', 'val'=>".true.");
+        add_default($nl, 'config_use_DMS', 'val'=>".true.");
+        add_default($nl, 'config_use_nonreactive', 'val'=>".true.");
+        add_default($nl, 'config_use_humics', 'val'=>".true.");
+        add_default($nl, 'config_use_DON', 'val'=>".true.");
+        add_default($nl, 'config_use_iron', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".false.");
+        add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".false.");
+        add_default($nl, 'config_use_vertical_tracers', 'val'=>".false.");
+        add_default($nl, 'config_use_brine', 'val'=>".false.");
+        add_default($nl, 'config_use_nitrate', 'val'=>".false.");
+        add_default($nl, 'config_use_carbon', 'val'=>".false.");
+        add_default($nl, 'config_use_ammonium', 'val'=>".false.");
+        add_default($nl, 'config_use_silicate', 'val'=>".false.");
+        add_default($nl, 'config_use_DMS', 'val'=>".false.");
+        add_default($nl, 'config_use_nonreactive', 'val'=>".false.");
+        add_default($nl, 'config_use_humics', 'val'=>".false.");
+        add_default($nl, 'config_use_DON', 'val'=>".false.");
+        add_default($nl, 'config_use_iron', 'val'=>".false.");
+}
 add_default($nl, 'config_use_chlorophyll');
-add_default($nl, 'config_use_ammonium');
-add_default($nl, 'config_use_silicate');
-add_default($nl, 'config_use_DMS');
-add_default($nl, 'config_use_nonreactive');
-add_default($nl, 'config_use_humics');
-add_default($nl, 'config_use_DON');
-add_default($nl, 'config_use_iron');
 add_default($nl, 'config_use_modal_aerosols');
 add_default($nl, 'config_use_zaerosols');
 add_default($nl, 'config_skeletal_bgc_flux_type');
@@ -806,6 +831,7 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
+add_default($nl, 'config_ocean_surface_type');
 
 ###############################
 # Namelist group: diagnostics #
