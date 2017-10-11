@@ -1,8 +1,8 @@
 name: acme_diags_env
 channels:
 - acme
-- uvcdat
 - conda-forge
+- uvcdat
 - defaults
 dependencies:
 - acme_diags=1.0.0=0
@@ -127,7 +127,7 @@ dependencies:
 - tk=8.5.19=2
 - toolz=0.8.2=py27_0
 - tornado=4.5.2=py27_0
-- udunits2=2.2.23=0
+- udunits2=2.2.23=1
 - urllib3=1.22=py27_0
 - wheel=0.29.0=py27_0
 - x264=20131217=3
