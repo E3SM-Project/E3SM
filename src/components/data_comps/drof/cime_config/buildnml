@@ -119,10 +119,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
             logger.info("   ....  Obtaining DROF model domain info from first stream file: {}".format(streams[0]))
         else:
             logger.info("   ....  Obtaining DROF model domain info from stream {}".format(streams[0]))
-            logger.info("   ....    lonname  must be xc   in {}".format(streams[0]))
-            logger.info("   ....    latname  must be yc   in {}".format(streams[0]))
-            logger.info("   ....    areaname must be area in {}".format(streams[0]))
-            logger.info("   ....    fracname must be frac in {}".format(streams[0]))
         nmlgen.add_default("domainfile", value=drof_cplhist_domain_file)
     else:
         rof_domain_file = case.get_value("ROF_DOMAIN_FILE")
