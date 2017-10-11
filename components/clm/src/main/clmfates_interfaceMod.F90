@@ -48,6 +48,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_planthydro
    use clm_varctl        , only : use_fates_ed_st3
    use clm_varctl        , only : use_fates_ed_prescribed_phys
+   use clm_varctl        , only : use_fates_logging
    use clm_varctl        , only : use_fates_inventory_init
    use clm_varctl        , only : fates_inventory_ctrl_filename
    use clm_varcon        , only : tfrz
@@ -240,6 +241,7 @@ contains
       integer                                        :: pass_vertsoilc
       integer                                        :: pass_spitfire     
       integer                                        :: pass_ed_st3
+      integer                                        :: pass_logging
       integer                                        :: pass_ed_prescribed_phys
       integer                                        :: pass_planthydro
       integer                                        :: pass_inventory_init
@@ -320,6 +322,13 @@ contains
       end if
       call set_fates_ctrlparms('use_ed_st3',ival=pass_ed_st3)
       
+      if(use_fates_logging) then
+         pass_logging = 1
+      else
+         pass_logging = 0
+      end if
+      call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
       if(use_fates_ed_prescribed_phys) then
          pass_ed_prescribed_phys = 1
       else
