@@ -239,9 +239,6 @@ contains
            forcingIntervalMonthly,  &
            forcingReferenceTimeMonthly
 
-        character(len=strKind), pointer :: &
-           config_forcing_restart_file
-
         logical, pointer :: &
            config_do_restart
 

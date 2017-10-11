@@ -254,9 +254,6 @@ contains
 
    type(domain_type) :: domain
 
-   character(len=strKind), pointer :: &
-        config_forcing_restart_file
-
    logical, pointer :: &
         config_do_restart
 
@@ -265,7 +262,6 @@ contains
         forcingReferenceTimeMonthly
 
    call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-   call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
    forcingIntervalMonthly = "0000-01-00_00:00:00"
    forcingReferenceTimeMonthly = "0000-01-01_00:00:00"

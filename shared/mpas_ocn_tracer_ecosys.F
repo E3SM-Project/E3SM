@@ -1330,9 +1330,6 @@ contains
          forcingIntervalMonthly,  &
          forcingReferenceTimeMonthly
 
-      character(len=strKind), pointer :: &
-         config_forcing_restart_file
-
       logical, pointer :: &
          config_do_restart
 
@@ -1681,7 +1678,6 @@ contains
       forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
 
       call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
       call MPAS_forcing_init_group( ecosysForcingGroup,  &
                 "ecosysMonthlyClimatology", &
