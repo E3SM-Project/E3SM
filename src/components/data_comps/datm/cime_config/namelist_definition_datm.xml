@@ -189,6 +189,9 @@
       <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value>
       <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
+      <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
+      <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
+      <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
       <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/share/domains</value>
@@ -242,6 +245,7 @@
       <value stream="CLMCRUNCEPv7">domain.lnd.360x720_cruncep.130305.nc</value>
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3v1">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
+      <value stream="CLMGSWP3">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
       <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
       <value stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</value>
       <value stream="CORE2_NYF.NCEP">nyf.ncep.T62.050923.nc</value>
@@ -375,6 +379,12 @@
       <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar</value>
       <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip</value>
       <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL</value>
+      <value stream="CLMCRUNCEP_V5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Solar6Hrly</value>
+      <value stream="CLMCRUNCEP_V5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Precip6Hrly</value>
+      <value stream="CLMCRUNCEP_V5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/TPHWL6Hrly</value>
+      <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar3Hrly</value>
+      <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip3Hrly</value>
+      <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL3Hrly</value>
       <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
