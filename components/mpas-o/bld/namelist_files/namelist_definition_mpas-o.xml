@@ -1218,15 +1218,6 @@ Valid values: Real Values greater than zero less than bottomDepth
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_forcing_restart_file" type="char*1024"
-	category="shortwaveRadiation" group="shortwaveRadiation">
-Filename for the restart timestamp in the forcing file
-
-Valid values: MISSING POSSIBLE VALUES
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- frazil_ice -->
 
 <entry id="config_use_frazil_ice_formation" type="logical"

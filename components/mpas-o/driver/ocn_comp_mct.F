@@ -837,7 +837,6 @@ contains
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       character (len=StrKIND), pointer :: config_sw_absorption_type
-      character (len=StrKIND), pointer :: config_forcing_restart_file
 
       ! Added for coupling interval initialization
       integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -861,7 +860,6 @@ contains
 
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(domain_ptr % configs, 'config_sw_absorption_type', config_sw_absorption_type)
-      call mpas_pool_get_config(domain_ptr % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
