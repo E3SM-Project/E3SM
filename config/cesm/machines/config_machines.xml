@@ -1577,41 +1577,9 @@
      </environment_variables>
   </machine>
 
-  <machine MACH="eddi">
-    <DESC>eddi linux PC</DESC> 
-    <NODENAME_REGEX>eddi</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <PROJECT>ngeet</PROJECT>
-    <CIME_OUTPUT_ROOT>/home/lbleco/cesm/</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/lbleco/cesm/cesm_input_datasets/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/lbleco/cesm/cesm_input_datasets/atm/datm7/</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/home/lbleco/cesm/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/home/lbleco/cesm/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/lbleco/cesm/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>1</GMAKE_J>
-    <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <SUPPORTED_BY>rgknox at lbl gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>4</PES_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="mpi-serial">
-      <executable></executable>
-    </mpirun>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-	<arg name="num_tasks">-np $TOTALPES</arg>
-	<arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
-      </arguments>
-    </mpirun>  
-    <module_system type="none"/>
-  </machine>
-
   <machine MACH="lbl-lr3">
     <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
-    <NODENAME_REGEX>n0*</NODENAME_REGEX>
+    <NODENAME_REGEX>n0*.lr3.lbl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
@@ -1663,7 +1631,7 @@
 
   <machine MACH="lbl-lr2">
     <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
-    <NODENAME_REGEX>n0*</NODENAME_REGEX>
+    <NODENAME_REGEX>n0*.lr2.lbl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
