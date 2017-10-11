@@ -21,11 +21,13 @@ module histFileMod
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
   use ncdio_pio 
-  use EDTypesMod     , only : nclmax
-  use EDTypesMod     , only : nlevleaf
-  use EDTypesMod     , only : nlevsclass_ed, nlevage_ed
-  use EDTypesMod     , only : nfsc, ncwd
-  use FatesInterfaceMod , only : numpft_ed => numpft
+  use EDTypesMod        , only : nclmax_fates     => nclmax
+  use EDTypesMod        , only : nlevleaf_fates   => nlevleaf
+  use FatesInterfaceMod , only : nlevsclass_fates => nlevsclass
+  use FatesInterfaceMod , only : nlevage_fates    => nlevage
+  use EDTypesMod        , only : nfsc_fates       => nfsc
+  use EDTypesMod        , only : ncwd_fates       => ncwd
+  use FatesInterfaceMod , only : numpft_fates     => numpft
 
   !
   implicit none
@@ -1845,16 +1847,16 @@ contains
     call ncd_defdim( lnfid, 'levtrc', nlevtrc_full, dimid)    
     
     if(use_ed)then
-       call ncd_defdim(lnfid, 'fates_levscag', nlevsclass_ed * nlevage_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levscls', nlevsclass_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levpft', numpft_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levage', nlevage_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levfuel', nfsc, dimid)
-       call ncd_defdim(lnfid, 'fates_levcwdsc', ncwd, dimid)
-       call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_ed*numpft_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levcan', nclmax, dimid)
-       call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf * nclmax, dimid)
-       call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf * nclmax * numpft_ed, dimid)
+       call ncd_defdim(lnfid, 'fates_levscag', nlevsclass_fates * nlevage_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levscls', nlevsclass_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levpft', numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levage', nlevage_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levfuel', nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcwdsc', ncwd_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -4464,25 +4466,25 @@ contains
     case ('levsno')
        num2d = nlevsno
     case ('fates_levscls')
-       num2d = nlevsclass_ed
+       num2d = nlevsclass_fates
     case ('fates_levpft')
-       num2d = numpft_ed
+       num2d = numpft_fates
     case ('fates_levage')
-       num2d = nlevage_ed
+       num2d = nlevage_fates
     case ('fates_levfuel')
-       num2d = nfsc
+       num2d = nfsc_fates
     case ('fates_levcwdsc')
-       num2d = ncwd
+       num2d = ncwd_fates
     case ('fates_levscpf')
-       num2d = nlevsclass_ed*numpft_ed
+       num2d = nlevsclass_fates*numpft_fates
     case ('fates_levscag')
-       num2d = nlevsclass_ed*nlevage_ed
+       num2d = nlevsclass_fates*nlevage_fates
     case ('fates_levcan')
-       num2d = nclmax
+       num2d = nclmax_fates
     case ('fates_levcnlf')
-       num2d = nlevleaf * nclmax
+       num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')
-       num2d = nlevleaf * nclmax * numpft_ed
+       num2d = nlevleaf_fates * nclmax_fates * numpft_fates
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &

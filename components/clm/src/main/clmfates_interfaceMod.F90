@@ -223,7 +223,7 @@ contains
       use FatesInterfaceMod, only : FatesInterfaceInit 
       use FatesInterfaceMod, only : FatesReportParameters
       use FatesParameterDerivedMod, only : param_derived
-      use FatesInterfaceMod, only : numpft_ed => numpft
+      use FatesInterfaceMod, only : numpft_fates => numpft
 
 
 
@@ -258,7 +258,7 @@ contains
       ! This involves to stages
       ! 1) allocate the vectors
       ! 2) add the history variables defined in clm_inst to the history machinery
-      call param_derived%Init( numpft_ed )
+      call param_derived%Init( numpft_fates )
 
       verbose_output = .false.
       call FatesInterfaceInit(iulog, verbose_output)
@@ -2342,15 +2342,18 @@ contains
  subroutine hlm_bounds_to_fates_bounds(hlm, fates)
 
    use FatesIODimensionsMod, only : fates_bounds_type
-   use EDtypesMod, only : nlevsclass_ed, nlevage_ed
-   use EDtypesMod, only : nfsc, ncwd
-   use EDtypesMod, only : nlevleaf, nclmax
-   use clm_varpar, only : nlevgrnd
-   use FatesInterfaceMod, only : numpft_ed => numpft
+   use FatesInterfaceMod, only : nlevsclass_fates => nlevsclass
+   use FatesInterfaceMod, only : nlevage_fates    => nlevage
+   use EDtypesMod,        only : nfsc_fates       => nfsc
+   use EDtypesMod,        only : ncwd_fates       => ncwd
+   use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
+   use EDtypesMod,        only : nclmax_fates     => nclmax
+   use clm_varpar,        only : nlevgrnd
+   use FatesInterfaceMod, only : numpft_fates     => numpft
 
    implicit none
 
-   type(bounds_type), intent(in) :: hlm
+   type(bounds_type), intent(in)        :: hlm
    type(fates_bounds_type), intent(out) :: fates
 
    fates%cohort_begin = hlm%begcohort
@@ -2366,34 +2369,34 @@ contains
    fates%ground_end = nlevgrnd
    
    fates%sizepft_class_begin = 1
-   fates%sizepft_class_end = nlevsclass_ed * numpft_ed
+   fates%sizepft_class_end = nlevsclass_fates * numpft_fates
    
    fates%size_class_begin = 1
-   fates%size_class_end = nlevsclass_ed
+   fates%size_class_end = nlevsclass_fates
 
    fates%pft_class_begin = 1
-   fates%pft_class_end = numpft_ed
+   fates%pft_class_end = numpft_fates
 
    fates%age_class_begin = 1
-   fates%age_class_end = nlevage_ed
+   fates%age_class_end = nlevage_fates
 
    fates%sizeage_class_begin = 1
-   fates%sizeage_class_end   = nlevsclass_ed * nlevage_ed
+   fates%sizeage_class_end   = nlevsclass_fates * nlevage_fates
    
    fates%fuel_begin = 1
-   fates%fuel_end = nfsc
+   fates%fuel_end = nfsc_fates
    
    fates%cwdsc_begin = 1
-   fates%cwdsc_end = ncwd
+   fates%cwdsc_end = ncwd_fates
    
    fates%can_begin = 1
-   fates%can_end = nclmax
+   fates%can_end = nclmax_fates
    
    fates%cnlf_begin = 1
-   fates%cnlf_end = nlevleaf * nclmax
+   fates%cnlf_end = nlevleaf_fates * nclmax_fates
    
    fates%cnlfpft_begin = 1
-   fates%cnlfpft_end = nlevleaf * nclmax * numpft_ed
+   fates%cnlfpft_end = nlevleaf_fates * nclmax_fates * numpft_fates
    
  end subroutine hlm_bounds_to_fates_bounds
 
