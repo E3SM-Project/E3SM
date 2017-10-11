@@ -409,14 +409,6 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_forcing_restart_file" type="char*1024"
-	category="forcing" group="forcing">
-MISSING DESCRIPTION
-
-Valid values: MISSING POSSIBLE VALUES
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_forcing_precipitation_units" type="char*1024"
 	category="forcing" group="forcing">
 MISSING DESCRIPTION
