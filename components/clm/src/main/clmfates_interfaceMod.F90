@@ -113,6 +113,7 @@ module CLMFatesInterfaceMod
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
    use EDInitMod             , only : zero_site
+   use EDInitMod             , only : init_site_vars
    use EDInitMod             , only : init_patches
    use EDInitMod             , only : set_site_properties
    use EDPftVarcon           , only : EDpftvarcon_inst
@@ -1169,6 +1170,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
+              call init_site_vars(this%fates(nc)%sites(s))
               call zero_site(this%fates(nc)%sites(s))
            end do
            
