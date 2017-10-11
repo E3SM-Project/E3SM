@@ -32,18 +32,18 @@ These variables will appear in ``env_run.xml`` and the resulting values are comp
    "DATM_TOPO",                "Optional Surface topography"
    "DATM_CO2_TSERIES",         "Optional CO2 time series type"
 
-   "DATM_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode full pathname model domain file "
-   "DATM_CPLHIST_CASE",        "Coupler history forcing data mode case name"
-   "DATM_CPLHIST_DIR",         "Coupler history forcing data mode directory containing coupler history data"
-   "DATM_CPLHIST_YR_ALIGN",    "Coupler history forcing data model simulation year corresponding to data starting year"
-   "DATM_CPLHIST_YR_START",    "Coupler history forcing data model starting year to loop data over"
-   "DATM_CPLHIST_YR_END",      "Coupler history forcing data model ending year to loop data over"
+   "DATM_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode - full pathname of model domain file "
+   "DATM_CPLHIST_CASE",        "Coupler history forcing data mode - case name"
+   "DATM_CPLHIST_DIR",         "Coupler history forcing data mode - directory containing coupler history data"
+   "DATM_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to data starting year"
+   "DATM_CPLHIST_YR_START",    "Coupler history forcing data mode - starting year to loop data over"
+   "DATM_CPLHIST_YR_END",      "Coupler history forcing data mode - ending year to loop data over"
 
    "DATM_CLMNCEP_YR_ALIGN",    "I compsets only - simulation year corresponding to data starting year"
    "DATM_CLMNCEP_YR_START",    "I compsets only - data model starting year to loop data over"
    "DATM_CLMNCEP_YR_END",      "I compsets only - data model ending year to loop data over"
 
-.. note:: If ``DATM_MODE`` is set to ``CPLHIST``, it is normally assumed that the model domain will be identical to **all** of the stream domains. To ensure this, the xml variables ``ATM_DOMAIN_PATH`` and ``ATM_DOMAIN_FILE`` are ignored and a valid setting **must be given** for ``DATM_CPLHIST_DOMAIN_FILE``. If ``DATM_CPLHIST_DOMAIN_FILE`` is set to ``null``, then the datm component domain information is read in from the first coupler history file in the target stream and  it is assumed that the first coupler stream file that is pointed to contains the domain  information for that stream. This is the default mode that should be used for this mode. Alternatively, ``DATM_CPLHIST_DOMAIN_FILE`` can be set to ``$ATM_DOMAIN_PATH/$ATM_DOMAIN_FILE`` in a non-default configuration.
+.. note:: If ``DATM_MODE`` is set to ``CPLHIST``, it is normally assumed that the model domain will be identical to **all** of the stream domains. To ensure this, the xml variables ``ATM_DOMAIN_PATH`` and ``ATM_DOMAIN_FILE`` are ignored and a valid setting **must be given** for ``DATM_CPLHIST_DOMAIN_FILE``. If ``DATM_CPLHIST_DOMAIN_FILE`` is set to ``null``, then the datm component domain information is read in from the first coupler history file in the target stream and it is assumed that the first coupler stream file that is pointed to contains the domain information for that stream. This is the default that should be used for this mode. Alternatively, ``DATM_CPLHIST_DOMAIN_FILE`` can be set to ``$ATM_DOMAIN_PATH/$ATM_DOMAIN_FILE`` in a non-default configuration.
 
 .. _datm-datamodes:
 

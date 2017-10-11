@@ -26,12 +26,12 @@ These variables will appear in ``env_run.xml`` and are used by the DROF ``cime_c
    "DROF_MODE",                "Data mode"
    "",                         "Valid values are: NULL,CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1"
 
-   "DROF_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode full pathname model domain file "
-   "DROF_CPLHIST_CASE",        "Coupler history forcing data mode case name"
-   "DROF_CPLHIST_DIR",         "Coupler history forcing data mode directory containing coupler history forcing data"
-   "DROF_CPLHIST_YR_ALIGN",    "Coupler history forcing data model simulation year corresponding to forcing data starting year"
-   "DROF_CPLHIST_YR_START",    "Coupler history forcing data model starting year to loop forcing data over"
-   "DROF_CPLHIST_YR_END",      "Coupler history forcing data model ending year to loop forcing data over"
+   "DROF_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode - full pathname of model domain file "
+   "DROF_CPLHIST_CASE",        "Coupler history forcing data mode - case name"
+   "DROF_CPLHIST_DIR",         "Coupler history forcing data mode - directory containing coupler history forcing data"
+   "DROF_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to forcing data starting year"
+   "DROF_CPLHIST_YR_START",    "Coupler history forcing data mode - starting year to loop forcing data over"
+   "DROF_CPLHIST_YR_END",      "Coupler history forcing data mode - ending year to loop forcing data over"
 
 .. note:: If ``DROF_MODE`` is set to ``CPLHIST``, it is normally assumed that the model domain will be identical to **all** of the stream domains. To ensure this, the xml variables ``ROF_DOMAIN_PATH`` and ``ROF_DOMAIN_FILE`` are ignored and a valid setting **must be given** for ``DROF_CPLHIST_DOMAIN_FILE``. If ``DROF_CPLHIST_DOMAIN_FILE`` is set to ``null``, then the drof component domain information is read in from the first coupler history file in the target stream and  it is assumed that the first coupler stream file that is pointed to contains the domain  information for that stream. This is the default mode that should be used for this mode. Alternatively, ``DROF_CPLHIST_DOMAIN_FILE`` can be set to ``$ROF_DOMAIN_PATH/$ROF_DOMAIN_FILE`` in a non-default configuration.
 

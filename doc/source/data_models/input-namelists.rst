@@ -9,12 +9,12 @@ The stream-dependent namelist group (``shr_strdata_nml``) specifies the data mod
 The stream description files will be provided as separate input files and contain the files and fields that need to be read.
 The stream-independent namelist group (one of ``[datm_nml, dice_nml, dlnd_nml, docn_nml, drof_nml, dwav_nml]``) contains namelist input such as the data model decomposition, etc.
 
-From a user perspective, for any data model, it is important to know what modes are supported and the internal field names in the data model.
+For users wanting to introduce new data sources for any data model, it is important to know what modes are supported and the internal field names in the data model.
 That information will be used in the ``shr_strdata_nml`` namelist and stream input files.
 
-Users will primarily setup different data model configurations through namelist settings.
+Users will primarily set up different data model configurations through namelist settings.
 **The stream input options and format are identical for all data models**.
-The data model specific namelist has significant overlap between data models, but each data model has a slightly different set of input namelist variables and each model reads that namelist from a unique filename.
+The data model-specific namelist has significant overlap between data models, but each data model has a slightly different set of input namelist variables and each model reads that namelist from a unique filename.
 The detailed namelist options for each data model will be described later, but each model will specify a filename or filenames for stream namelist input and each ``shr_strdata_nml`` namelist will specify a set of stream input files.
 
 The following example illustrates the basic set of namelist inputs::
@@ -29,7 +29,7 @@ The following example illustrates the basic set of namelist inputs::
      mapalgo    = 'interpa', 'interpb', 'interpc'
    /
 
-As mentioned above, the ``dataMode`` namelist variable that is associated with each data model specifies if there is any additional operations that need to be performed on that data model's input streams before return to the driver.
+As mentioned above, the ``dataMode`` namelist variable that is associated with each data model specifies if there are any additional operations that need to be performed on that data model's input streams before return to the driver.
 At a minimum, all data models support ``datamode`` values of ``NULL`` and ``COPYALL``.
 
 - ``NULL`` - turns off the data model as a provider of data to the coupler.

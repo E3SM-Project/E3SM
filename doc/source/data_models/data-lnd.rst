@@ -28,12 +28,12 @@ These variables will appear in ``env_run.xml`` and are used by the DLND ``cime_c
    "DLND_MODE", "Mode for data land component"
    "", "Valid values are: NULL, CPLHIST, GLC_CPLHIST"
 
-   "DATM_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode full pathname model domain file "
-   "DLND_CPLHIST_CASE", "Coupler history data mode case name"
-   "DLND_CPLHIST_DIR", "Coupler history data mode directory containing coupler history data"
-   "DLND_CPLHIST_YR_ALIGN",  "Coupler history data model simulation year corresponding to data starting year"
-   "DLND_CPLHIST_YR_START", "Coupler history data model starting year to loop data over"
-   "DLND_CPLHIST_YR_END", "Coupler history data model ending year to loop data over"
+   "DLND_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode - full pathname of model domain file"
+   "DLND_CPLHIST_CASE", "Coupler history forcing data mode - case name"
+   "DLND_CPLHIST_DIR", "Coupler history forcing data mode - directory containing coupler history data"
+   "DLND_CPLHIST_YR_ALIGN",  "Coupler history forcing data mode - simulation year corresponding to data starting year"
+   "DLND_CPLHIST_YR_START", "Coupler history forcing data mode - starting year to loop data over"
+   "DLND_CPLHIST_YR_END", "Coupler history forcing data mode - ending year to loop data over"
 
 .. note:: If ``DLND_MODE`` is set to ``CPLHIST``, it is normally assumed that the model domain will be identical to **all** of the stream domains. To ensure this, the xml variables ``LND_DOMAIN_PATH`` and ``LND_DOMAIN_FILE`` are ignored and a valid setting **must be given** for ``DLND_CPLHIST_DOMAIN_FILE``. If ``DLND_CPLHIST_DOMAIN_FILE`` is set to ``null``, then the dlnd component domain information is read in from the first coupler history file in the target stream and  it is assumed that the first coupler stream file that is pointed to contains the domain  information for that stream. This is the default mode that should be used for this mode. Alternatively, ``DLND_CPLHIST_DOMAIN_FILE`` can be set to ``$LND_DOMAIN_PATH/$LND_DOMAIN_FILE`` in a non-default configuration.
 
