@@ -59,7 +59,6 @@ set restart_units    = $stop_units
 set restart_num      = $stop_num
 set num_resubmits    = 0
 set do_short_term_archiving      = false
-set do_long_term_archiving       = false
 
 ### SIMULATION OPTIONS
 set atm_output_freq              = -24
@@ -171,7 +170,6 @@ set cpl_hist_num   = 1
 #    continue the simulation.  num_resubmits is the number of times to submit after initial completion.
 #    After the first submission, the CONTINUE_RUN flage in env_run.xml will be changed to TRUE.
 #do_short_term_archiving: If TRUE, then move simulation output to the archive directory in your scratch directory.
-#do_long_term_archiving : If TRUE, then move simulation output from the short_term_archive to the local mass storage system.
 
 ### SIMULATION OPTIONS (10)
 
@@ -210,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.14
+set script_ver = 3.0.15
 
 #===========================================
 # DEFINE ALIASES
@@ -540,7 +538,6 @@ if ( -f ${create_newcase_exe} ) then
   set xmlchange_exe = $case_scripts_dir/xmlchange
   set xmlquery_exe = $case_scripts_dir/xmlquery
   set shortterm_archive_script = $case_scripts_dir/case.st_archive
-  set longterm_archive_script = $case_scripts_dir/case.lt_archive
 else                                                                   # No version of create_newcase found
   acme_print 'ERROR: ${create_newcase_exe} not found'
   acme_print '       This is most likely because fetch_code should be true.'
@@ -996,7 +993,7 @@ endif
 
 # Set options for batch scripts (see above for queue and batch time, which are handled separately)
 
-# NOTE: This also modifies the short-term and long-term archiving scripts.
+# NOTE: This also modifies the short-term archiving script.
 # NOTE: We want the batch job log to go into a sub-directory of case_scripts (to avoid it getting clogged up)
 
 # NOTE: we are currently not modifying the archiving scripts to run in debug queue when $debug_queue=true
@@ -1019,9 +1016,6 @@ if ( $machine =~ 'cori*' || $machine == edison ) then
     sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=ST+${job_name}"                  $shortterm_archive_script
     sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $shortterm_archive_script
     sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/ST+'${case_name}'.o%j'  $shortterm_archive_script
-    sed -i /"#SBATCH \( \)*--job-name"/c"#SBATCH  --job-name=LT+${job_name}"                  $longterm_archive_script
-    sed -i /"#SBATCH \( \)*--job-name"/a"#SBATCH  --account=${project}"                       $longterm_archive_script
-    sed -i /"#SBATCH \( \)*--output"/c'#SBATCH  --output=batch_output/LT+'${case_name}'.o%j'  $longterm_archive_script
 
 else if ( $machine == titan || $machine == eos ) then
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ${job_name}"                                ${case_run_exe}
@@ -1030,8 +1024,6 @@ else if ( $machine == titan || $machine == eos ) then
 
     sed -i /"#PBS \( \)*-N"/c"#PBS  -N ST+${job_name}"                             $shortterm_archive_script
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $shortterm_archive_script
-    sed -i /"#PBS \( \)*-N"/c"#PBS  -N LT+${job_name}"                             $longterm_archive_script
-    sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
 
 else if ( $machine == anvil ) then
 # Priority for Anvil
@@ -1067,18 +1059,13 @@ endif
 #endif
 
 #============================================
-# SETUP SHORT AND LONG TERM ARCHIVING
+# SETUP SHORT TERM ARCHIVING
 #============================================
 
-$xmlchange_exe --id DOUT_S    --val `uppercase $do_short_term_archiving`
+$xmlchange_exe --id DOUT_S --val `uppercase $do_short_term_archiving`
 if ( `lowercase $short_term_archive_root_dir` != default ) then
   $xmlchange_exe --id DOUT_S_ROOT --val $short_term_archive_root_dir
 endif
-
-$xmlchange_exe --id DOUT_L_MS --val `uppercase $do_long_term_archiving`
-
-# DOUT_L_MSROOT is the directory in your account on the local mass storage system (typically an HPSS tape system)
-$xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #============================================
 # COUPLER HISTORY OUTPUT
@@ -1086,7 +1073,6 @@ $xmlchange_exe --id DOUT_L_MSROOT --val "ACME_simulation_output/${case_name}"
 
 #$xmlchange_exe --id HIST_OPTION --val ndays
 #$xmlchange_exe --id HIST_N      --val 1
-
 
 #=======================================================
 # SETUP SIMULATION LENGTH AND FREQUENCY OF RESTART FILES
@@ -1360,6 +1346,7 @@ acme_newline
 # 3.0.13   2017-08-07    Verify that the number of periods between a restart evenly divides the number until the stop with the same units.
 #                        Update the machine check for cori to account for cori-knl (MD)
 # 3.0.14   2017-09-11    Add checks for blues and bebop when trying to use the debug queue. Mostly by Andy Salinger with assist from (MD)
+# 3.0.15   2017-09-18    Removes long term archiving settings, as they no longer exist in CIME (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 

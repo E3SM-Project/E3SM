@@ -26,16 +26,16 @@ def parse_command_line(args, description):
 ###############################################################################
 
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--verbose]
+        usage="""\n{0} [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.run SMS\033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -53,9 +53,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--copy-only", default=False, action="store_true",
                         help="Copy instead of move the files to be archived")
 
-    args = parser.parse_args()
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.caseroot is not None:
         os.chdir(args.caseroot)

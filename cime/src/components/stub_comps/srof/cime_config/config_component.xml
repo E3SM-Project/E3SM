@@ -17,4 +17,10 @@
     <desc compset="_SROF">Stub river component</desc>
   </description>
 
+  <help>
+    =========================================
+    SROF naming conventions in compset name
+    =========================================
+  </help>
+
 </entry_id>

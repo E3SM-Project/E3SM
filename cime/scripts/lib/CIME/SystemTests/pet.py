@@ -27,16 +27,20 @@ class PET(SystemTestsCompareTwo):
     def _case_one_setup(self):
         # first make sure that all components have threaded settings
         for comp in self._case.get_values("COMP_CLASSES"):
-            if self._case.get_value("NTHRDS_%s"%comp) <= 1:
-                self._case.set_value("NTHRDS_%s"%comp, 2)
+            if self._case.get_value("NTHRDS_{}".format(comp)) <= 1:
+                self._case.set_value("NTHRDS_{}".format(comp), 2)
 
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
 
+        # Hack until CIME queue selection is more dynamic
+        if self._case.get_value("MACH") == "chama":
+            self._case.set_value("JOB_QUEUE", "batch", subgroup="case.test")
+
     def _case_two_setup(self):
         #Do a run with all threads set to 1
         for comp in self._case.get_values("COMP_CLASSES"):
-            self._case.set_value("NTHRDS_%s"%comp, 1)
+            self._case.set_value("NTHRDS_{}".format(comp), 1)
 
         # The need for this is subtle. On batch systems, the entire PET test runs
         # under a single submission and that submission is configured based on
@@ -49,3 +53,7 @@ class PET(SystemTestsCompareTwo):
 
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
+
+        # Hack until CIME queue selection is more dynamic
+        if self._case.get_value("MACH") == "chama":
+            self._case.set_value("JOB_QUEUE", "batch", subgroup="case.test")

@@ -53,12 +53,12 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         shutil.rmtree("Testing")
 
     # Remove the old build/run dirs
-    test_id_root = "jenkins_%s" % baseline_name
-    for old_dir in glob.glob("%s/*%s*%s*" % (scratch_root, mach_comp, test_id_root)):
+    test_id_root = "jenkins_{}".format(baseline_name)
+    for old_dir in glob.glob("{}/*{}*{}*".format(scratch_root, mach_comp, test_id_root)):
         shutil.rmtree(old_dir)
 
     # Remove the old cases
-    for old_file in glob.glob("%s/*%s*%s*" % (test_root, mach_comp, test_id_root)):
+    for old_file in glob.glob("{}/*{}*{}*".format(test_root, mach_comp, test_id_root)):
         if (os.path.isdir(old_file)):
             shutil.rmtree(old_file)
         else:
@@ -71,31 +71,30 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
     create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
     if (generate_baselines):
-        create_test_args.append("-g -b %s" % baseline_name)
+        create_test_args.append("-g -b " + baseline_name)
     elif (baseline_compare):
-        create_test_args.append("-c -b %s" % baseline_name)
+        create_test_args.append("-c -b " + baseline_name)
 
     if scratch_root != machine.get_value("CIME_OUTPUT_ROOT"):
-        create_test_args.append("--output-root=%s" % scratch_root)
+        create_test_args.append("--output-root=" + scratch_root)
 
     if no_batch:
         create_test_args.append("--no-batch")
 
     if parallel_jobs is not None:
-        create_test_args.append("-j %d" % parallel_jobs)
+        create_test_args.append("-j {:d}".format(parallel_jobs))
 
     if walltime is not None:
-        create_test_args.append(" --walltime %s" % walltime)
+        create_test_args.append(" --walltime " + walltime)
 
-
-    create_test_cmd = "./create_test %s" % " ".join(create_test_args)
+    create_test_cmd = "./create_test " + " ".join(create_test_args)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
         create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
                                              verbose=True, arg_stdout=None, arg_stderr=None)[0]
         # Create_test should have either passed, detected failing tests, or timed out
         expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
-               "Create_test script FAILED with error code '%d'!" % create_test_stat)
+               "Create_test script FAILED with error code '{:d}'!".format(create_test_stat))
 
     #
     # Wait for tests
@@ -111,7 +110,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     if submit_to_cdash:
         logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus -b {}".format(test_root, test_id, cdash_build_name))
 
-    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("%s/*%s/TestStatus" % (test_root, test_id)),
+    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput
                                                  check_memory=False, # don't check memory

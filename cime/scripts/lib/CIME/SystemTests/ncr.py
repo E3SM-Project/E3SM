@@ -1,111 +1,69 @@
 """
 Implementation of the CIME NCR test.  This class inherits from SystemTestsCommon
 
-Build two exectuables for this test, the first is a default build the
-second halves the number of tasks and runs two instances for each component
-Lay all of the components out concurrently
+Build two exectuables for this test:
+The first runs two instances for each component with the same total number of tasks,
+and runs each of them concurrently
+The second is a default build
+
+NOTE: This is currently untested, and may not be working properly
 """
-import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
-import CIME.utils
-from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
 from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
-class NCR(SystemTestsCommon):
+class NCR(SystemTestsCompareTwo):
 
     def __init__(self, case):
         """
-        initialize a test object
+        initialize an NCR test
         """
-        SystemTestsCommon.__init__(self, case)
+        SystemTestsCompareTwo.__init__(self, case,
+                                       separate_builds = True,
+                                       run_two_suffix = "singleinst",
+                                       run_one_description = "two instances, each with the same number of tasks",
+                                       run_two_description = "default build")
 
-    def build_phase(self, sharedlib_only=False, model_only=False):
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = CIME.utils.get_model()
+    def _comp_classes(self):
+        # Return the components which we need to set things for
+        # ESP cannot have more than one instance, so don't set anything for it
+        comp_classes = self._case.get_values("COMP_CLASSES")
+        if "CPL" in comp_classes:
+            comp_classes.remove("CPL")
+        if "ESP" in comp_classes:
+            comp_classes.remove("ESP")
+        return comp_classes
 
-        machpes1 = "env_mach_pes.NCR1.xml"
-        if is_locked(machpes1):
-            restore(machpes1, newname="env_mach_pes.xml")
+    def _common_setup(self):
+        # Set the default number of tasks
+        for comp in self._comp_classes():
+            ntasks = self._case.get_value("NTASKS_{}".format(comp))
+            if ntasks > 1:
+                self._case.set_value("NTASKS_{}".format(comp), ntasks // 2)
 
-        # Build two exectuables for this test, the first is a default build, the
-        # second halves the number of tasks and runs two instances for each component
-        # Lay all of the components out concurrently
-        for bld in range(1,3):
-            logging.warn("Starting bld %s"%bld)
-            machpes = "env_mach_pes.NCR%s.xml" % bld
-            ntasks_sum = 0
-            for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
-                self._case.set_value("NINST_%s"%comp,str(bld))
-                ntasks      = self._case.get_value("NTASKS_%s"%comp)
-                if(bld == 1):
-                    self._case.set_value("ROOTPE_%s"%comp, 0)
-                    if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-                else:
-                    self._case.set_value("ROOTPE_%s"%comp, ntasks_sum)
-                    ntasks_sum += ntasks*2
-                    self._case.set_value("NTASKS_%s"%comp, ntasks*2)
-            self._case.flush()
+    def _case_one_setup(self):
+        # Set the number of instances, the ROOTPEs, and the number of tasks
+        # This case should have twice the number of instances and half the number of tasks
+        # All tasks should be running concurrently
+        # Note that this case must be the multiinstance one
+        # to correctly set the required number of nodes and avoid crashing
+        ntasks_sum = 0
 
-            case_setup(self._case, test_mode=True, reset=True)
-            self.clean_build()
-            self.build_indv(sharedlib_only, model_only)
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
-            lock_file("env_build.xml", newname="env_build.NCR%s.xml" % bld)
-            lock_file("env_mach_pes.xml", newname=machpes)
+        for comp in self._comp_classes():
+            self._case.set_value("NINST_{}".format(comp), str(2))
+            self._case.set_value("ROOTPE_{}".format(comp), ntasks_sum)
+            ntasks = self._case.get_value("NTASKS_{}".format(comp)) * 2
+            ntasks_sum += ntasks
+            self._case.set_value("NTASKS_{}".format(comp), ntasks)
+        # test_mode must be False here so the case.test file is updated
+        # This ensures that the correct number of nodes are used in case it's larger than in case 2
+        case_setup(self._case, test_mode = False, reset = True)
 
-        # Because mira/cetus interprets its run script differently than
-        # other systems we need to copy the original env_mach_pes.xml back
-        restore(machpes1, newname="env_mach_pes.xml")
-
-    def run_phase(self):
-        os.chdir(self._caseroot)
-
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = CIME.utils.get_model()
-
-        # Reset beginning test settings
-        expect(is_locked("env_mach_pes.NCR1.xml"),
-               "ERROR: LockedFiles/env_mach_pes.NCR1.xml does not exist\n"
-               "   this would been produced in the build - must run case.test_build")
-
-        restore("env_mach_pes.NCR1.xml", newname="env_mach_pes.xml")
-        restore("env_build.NCR1.xml", newname="env_build.xml")
-        shutil.copy("%s/%s.exe.NCR1" % (exeroot, cime_model),
-                    "%s/%s.exe" % (exeroot, cime_model))
-
-
-        stop_n      = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-
-        self._case.set_value("HIST_N", stop_n)
-        self._case.set_value("HIST_OPTION", stop_option)
-        self._case.set_value("CONTINUE_RUN", False)
-        self._case.set_value("REST_OPTION", "none")
-        self._case.flush()
-
-        #======================================================================
-        # do an initial run test with NINST 1
-        #======================================================================
-        logger.info("default: doing a %s %s with NINST1" % (stop_n, stop_option))
-        self.run_indv()
-
-        #======================================================================
-        # do an initial run test with NINST 2
-        # want to run on same pe counts per instance and same cpl pe count
-        #======================================================================
-
-        os.remove("%s/%s.exe" % (exeroot, cime_model))
-        shutil.copy("%s/%s.exe.NCR2" % (exeroot, cime_model),
-                    "%s/%s.exe" % (exeroot, cime_model))
-        restore("env_build.NCR2.xml", "env_build.xml")
-
-        logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
-        self.run_indv(suffix="multiinst")
-
-        # Compare
-        self._component_compare_test("base", "multiinst")
+    def _case_two_setup(self):
+        for comp in self._comp_classes():
+            self._case.set_value("NINST_{}".format(comp), str(1))
+            self._case.set_value("ROOTPE_{}".format(comp), 0)
+        case_setup(self._case, test_mode = True, reset = True)

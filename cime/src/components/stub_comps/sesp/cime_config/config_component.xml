@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-
-<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
-
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc esp="SESP">Stub external system processing (ESP) component</desc>
+  </description>
 
   <entry id="COMP_ESP">
     <type>char</type>
@@ -13,9 +13,11 @@
     <desc>Name of ESP component</desc>
   </entry>
 
-  <description>
-    <desc compset="_"> No ESP component  </desc>
-    <desc compset="_SESP">Stub esp component</desc>
-  </description>
+
+  <help>
+    =========================================
+    SESP naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>

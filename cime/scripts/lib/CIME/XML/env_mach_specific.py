@@ -4,8 +4,8 @@ Interface to the env_mach_specific.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars
-import string
+from CIME.utils import transform_vars, get_cime_root
+import string, resource
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +18,14 @@ class EnvMachSpecific(EnvBase):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
-        fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
-        EnvBase.__init__(self, caseroot, fullpath)
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
+        EnvBase.__init__(self, caseroot, infile, schema=schema)
+        self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing")
         self._unit_testing = unit_testing
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
-        items = ("module_system", "environment_variables", "mpirun", "run_exe","run_misc_suffix")
+        items = ("module_system", "environment_variables", "resource_limits", "mpirun", "run_exe","run_misc_suffix")
         default_run_exe_node = machobj.get_node("default_run_exe")
         default_run_misc_suffix_node = machobj.get_node("default_run_misc_suffix")
 
@@ -84,6 +85,19 @@ class EnvMachSpecific(EnvBase):
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
 
+        self._get_resources_for_case(case)
+
+    def _get_resources_for_case(self, case):
+        resource_nodes = self.get_nodes("resource_limits")
+        if resource_nodes is not None:
+            nodes = self._compute_resource_actions(resource_nodes, case)
+            for name, val in nodes:
+                attr = getattr(resource, name)
+                limits = resource.getrlimit(attr)
+                logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
+                limits = (int(val), limits[1])
+                resource.setrlimit(attr, limits)
+
     def load_modules(self, modules_to_load):
         module_system = self.get_module_system_type()
         if (module_system == "module"):
@@ -97,7 +111,7 @@ class EnvMachSpecific(EnvBase):
         elif (module_system == "none"):
             self._load_none_modules(modules_to_load)
         else:
-            expect(False, "Unhandled module system '%s'" % module_system)
+            expect(False, "Unhandled module system '{}'".format(module_system))
 
     def list_modules(self):
         module_system = self.get_module_system_type()
@@ -107,21 +121,21 @@ class EnvMachSpecific(EnvBase):
         # setup script if it exists.
         init_path = self.get_module_system_init_path("sh")
         if init_path:
-            source_cmd = "source %s && " % init_path
+            source_cmd = "source {} && ".format(init_path)
         else:
             source_cmd = ""
 
         if (module_system in ["module", "module_lmod"]):
-            return run_cmd_no_fail("%smodule list" % source_cmd, combine_output=True)
+            return run_cmd_no_fail("{}module list".format(source_cmd), combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
         elif (module_system == "generic"):
-            return run_cmd_no_fail("%suse -lv" % source_cmd)
+            return run_cmd_no_fail("{}use -lv".format(source_cmd))
         elif (module_system == "none"):
             return ""
         else:
-            expect(False, "Unhandled module system '%s'" % module_system)
+            expect(False, "Unhandled module system '{}'".format(module_system))
 
     def save_all_env_info(self, filename):
         """
@@ -135,7 +149,7 @@ class EnvMachSpecific(EnvBase):
     def make_env_mach_specific_file(self, shell, case):
         modules_to_load = self._get_modules_for_case(case)
         envs_to_set = self._get_envs_for_case(case)
-        filename = ".env_mach_specific.%s" % shell
+        filename = ".env_mach_specific.{}".format(shell)
         lines = []
         if modules_to_load is not None:
             lines.extend(self._get_module_commands(modules_to_load, shell))
@@ -143,11 +157,11 @@ class EnvMachSpecific(EnvBase):
         if envs_to_set is not None:
             for env_name, env_value in envs_to_set:
                 if shell == "sh":
-                    lines.append("export %s=%s" % (env_name, env_value))
+                    lines.append("export {}={}".format(env_name, env_value))
                 elif shell == "csh":
-                    lines.append("setenv %s %s" % (env_name, env_value))
+                    lines.append("setenv {} {}".format(env_name, env_value))
                 else:
-                    expect(False, "Unknown shell type: '%s'" % shell)
+                    expect(False, "Unknown shell type: '{}'".format(shell))
 
         with open(filename, "w") as fd:
             fd.write("\n".join(lines))
@@ -164,6 +178,9 @@ class EnvMachSpecific(EnvBase):
     def _compute_env_actions(self, env_nodes, case):
         return self._compute_actions(env_nodes, "env", case)
 
+    def _compute_resource_actions(self, resource_nodes, case):
+        return self._compute_actions(resource_nodes, "resource", case)
+
     def _compute_actions(self, nodes, child_tag, case):
         result = [] # list of tuples ("name", "argument")
         compiler, mpilib = case.get_value("COMPILER"), case.get_value("MPILIB")
@@ -171,7 +188,7 @@ class EnvMachSpecific(EnvBase):
         for node in nodes:
             if (self._match_attribs(node.attrib, case)):
                 for child in node:
-                    expect(child.tag == child_tag, "Expected %s element" % child_tag)
+                    expect(child.tag == child_tag, "Expected {} element".format(child_tag))
                     if (self._match_attribs(child.attrib, case)):
                         val = child.text
                         if val is not None:
@@ -180,7 +197,7 @@ class EnvMachSpecific(EnvBase):
                                 val = val.replace(repl_this, repl_with)
 
                             val = self.get_resolved_value(val)
-                            expect("$" not in val, "Not safe to leave unresolved items in env var value: '%s'" % val)
+                            expect("$" not in val, "Not safe to leave unresolved items in env var value: '{}'".format(val))
 
                         # intentional unindent, result is appended even if val is None
                         result.append( (child.get("name"), val) )
@@ -212,7 +229,7 @@ class EnvMachSpecific(EnvBase):
         else:
             result = my_value == xml_value
 
-        logger.debug("(env_mach_specific) _match %s %s %s" % (my_value, xml_value, result))
+        logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
         return result
 
     def _get_module_commands(self, modules_to_load, shell):
@@ -222,15 +239,15 @@ class EnvMachSpecific(EnvBase):
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
-            cmds.append("%s %s %s" % (mod_cmd, action, argument))
+            cmds.append("{} {} {}".format(mod_cmd, action, argument))
         return cmds
 
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
-            logger.debug("module command is %s"%cmd)
+            logger.debug("module command is {}".format(cmd))
             stat, py_module_code, errout = run_cmd(cmd)
             expect(stat==0 and len(errout) == 0,
-                   "module command %s failed with message:\n%s"%(cmd,errout))
+                   "module command {} failed with message:\n{}".format(cmd, errout))
             exec(py_module_code)
 
     def _load_modules_generic(self, modules_to_load):
@@ -240,9 +257,9 @@ class EnvMachSpecific(EnvBase):
         # Purpose is for environment management system that does not have
         # a python interface and therefore can only determine what they
         # do by running shell command and looking at the changes
-        # in the environment.  
+        # in the environment.
 
-        cmd = "source %s" % sh_init_cmd
+        cmd = "source {}".format(sh_init_cmd)
 
         if os.environ.has_key("SOFTENV_ALIASES"):
             cmd += " && source $SOFTENV_ALIASES"
@@ -250,7 +267,7 @@ class EnvMachSpecific(EnvBase):
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
-            cmd += " && %s %s %s" % (sh_mod_cmd, action, argument)
+            cmd += " && {} {} {}".format(sh_mod_cmd, action, argument)
 
         cmd += " && env"
         output = run_cmd_no_fail(cmd)
@@ -279,7 +296,7 @@ class EnvMachSpecific(EnvBase):
                 valunresolved = m.groups()[1]
                 val = string.Template(valunresolved).safe_substitute(newenv)
                 expect(val is not None,
-                       'string value %s unable to be resolved' % valunresolved)
+                       'string value {} unable to be resolved'.format(valunresolved))
                 newenv[key] = val
 
         # Set environment with new or updated values
@@ -287,7 +304,7 @@ class EnvMachSpecific(EnvBase):
             if key in os.environ and key not in newenv:
                 del(os.environ[key])
             else:
-                os.environ[key] = newenv[key] 
+                os.environ[key] = newenv[key]
 
     def _load_none_modules(self, modules_to_load):
         """
@@ -301,14 +318,14 @@ class EnvMachSpecific(EnvBase):
         write a shell module file for this case.
         '''
         header = '''
-#!/usr/bin/env %s
+#!/usr/bin/env {}
 #===============================================================================
-# Automatically generated module settings for $self->{machine}
+# Automatically generated module settings for $self->{{machine}}
 # DO NOT EDIT THIS FILE DIRECTLY!  Please edit env_mach_specific.xml
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
-'''%shell
-        header += "source %s"%self.get_module_system_init_path(shell)
+'''.format(shell)
+        header += "source {}".format(self.get_module_system_init_path(shell))
         return header
 
     def get_module_system_type(self):
@@ -341,7 +358,9 @@ class EnvMachSpecific(EnvBase):
             all_match = True
             matches = 0
             is_default = False
+
             for key, value in attribs.iteritems():
+                expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
                 if key in xml_attribs:
                     if xml_attribs[key].lower() == "false":
                         xml_attrib = False
@@ -352,14 +371,11 @@ class EnvMachSpecific(EnvBase):
 
                     if xml_attrib == value:
                         matches += 1
-                    elif key == "mpilib" and xml_attrib == "default":
+                    elif key == "mpilib" and value != "mpi-serial" and xml_attrib == "default":
                         is_default = True
                     else:
                         all_match = False
                         break
-
-            for key in xml_attribs:
-                expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
             if all_match:
                 if is_default:
@@ -371,8 +387,12 @@ class EnvMachSpecific(EnvBase):
                         best_match = mpirun_node
                         best_num_matched = matches
 
+        # if there are no special arguments required for mpi-serial it need not have an entry in config_machines.xml
+        if "mpilib" in attribs and attribs["mpilib"] == "mpi-serial" and best_match is None:
+            return "",[]
+
         expect(best_match is not None or default_match is not None,
-               "Could not find a matching MPI for attributes: %s" % attribs)
+               "Could not find a matching MPI for attributes: {}".format(attribs))
 
         the_match = best_match if best_match is not None else default_match
 

@@ -256,7 +256,7 @@ contains
     integer, save :: index_a2x_Faxa_rainl_18O
     integer, save :: index_a2x_Faxa_snowc_18O
     integer, save :: index_a2x_Faxa_snowl_18O
-    integer, save :: index_x2i_Faxa_rain_18O 
+    integer, save :: index_x2i_Faxa_rain_18O
     integer, save :: index_x2i_Faxa_snow_18O
     integer, save :: index_a2x_Faxa_rainc_HDO
     integer, save :: index_a2x_Faxa_rainl_HDO
@@ -399,8 +399,8 @@ contains
           x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_16O,i) + &
                                                a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_16O,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i) 
-   
+                                               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
+
           x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) * flux_epbalfact
        end if
@@ -408,8 +408,8 @@ contains
           x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_18O,i) + &
                                                a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_18O,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i) 
-   
+                                               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
+
           x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) * flux_epbalfact
        end if
@@ -417,8 +417,8 @@ contains
           x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_HDO,i) + &
                                                a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
           x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_HDO,i) + &
-                                               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i) 
-   
+                                               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
+
           x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) * flux_epbalfact
           x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) * flux_epbalfact
        end if

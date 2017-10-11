@@ -29,7 +29,7 @@ class Machines(GenericXML):
         if infile is None:
             infile = files.get_value("MACHINES_SPEC_FILE")
         schema = files.get_schema("MACHINES_SPEC_FILE")
-        logger.debug("Verifying using schema %s"%schema)
+        logger.debug("Verifying using schema {}".format(schema))
 
         self.machines_dir = os.path.dirname(infile)
 
@@ -38,7 +38,7 @@ class Machines(GenericXML):
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
         local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.debug("Infile: %s" , local_infile)
+        logger.debug("Infile: {}".format(local_infile))
         if os.path.exists(local_infile):
             GenericXML.read(self, local_infile, schema)
 
@@ -48,7 +48,7 @@ class Machines(GenericXML):
             else:
                 machine = self.probe_machine_name()
 
-        expect(machine is not None, "Could not initialize machine object from %s or %s" % (infile, local_infile))
+        expect(machine is not None, "Could not initialize machine object from {} or {}".format(infile, local_infile))
         self.set_machine(machine)
 
     def get_machines_dir(self):
@@ -91,7 +91,7 @@ class Machines(GenericXML):
             machines.append(mach)
         return machines
 
-    def probe_machine_name(self):
+    def probe_machine_name(self, warn=True):
         """
         Find a matching regular expression for hostname
         in the NODENAME_REGEX field in the file.   First match wins.
@@ -113,7 +113,8 @@ class Machines(GenericXML):
 
                 names_not_found_quoted = ["'" + name + "'" for name in names_not_found]
                 names_not_found_str = ' or '.join(names_not_found_quoted)
-                logger.warning("Could not find machine match for %s" % names_not_found_str)
+                if warn:
+                    logger.warning("Could not find machine match for {}".format(names_not_found_str))
 
         return machine
 
@@ -136,7 +137,7 @@ class Machines(GenericXML):
                 logger.debug("machine regex string is " + regex_str)
                 regex = re.compile(regex_str)
                 if regex.match(nametomatch):
-                    logger.debug("Found machine: %s matches %s" % (machtocheck, nametomatch))
+                    logger.debug("Found machine: {} matches {}".format(machtocheck, nametomatch))
                     machine = machtocheck
                     break
 
@@ -158,11 +159,11 @@ class Machines(GenericXML):
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
             self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
-            expect(self.machine_node is not None, "No machine %s found" % machine)
+            expect(self.machine_node is not None, "No machine {} found".format(machine))
             self.machine = machine
 
         return machine
-
+    #pylint: disable=arguments-differ
     def get_value(self, name, attributes=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_machines.xml file
@@ -210,7 +211,7 @@ class Machines(GenericXML):
 
         expect(supported_values is not None,
                "No list found for " + listname + " on machine " + self.machine)
-        supported_values = supported_values.split(",")
+        supported_values = supported_values.split(",") #pylint: disable=no-member
 
         if reqval is None or reqval == "UNSET":
             return supported_values[0]
@@ -239,7 +240,7 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="edison")
         >>> machobj.get_default_compiler()
         'intel'
-        >>> machobj.is_valid_compiler("cray")
+        >>> machobj.is_valid_compiler("gnu")
         True
         >>> machobj.is_valid_compiler("nag")
         False
@@ -256,7 +257,8 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("fake-mpi")
         False
         """
-        return mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
+        return mpilib == "mpi-serial" or \
+            self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 
     def has_batch_system(self):
         """
@@ -274,7 +276,7 @@ class Machines(GenericXML):
         batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
             result = (batch_system.text is not None and batch_system.text != "none")
-        logger.debug("Machine %s has batch: %s" % (self.machine, result))
+        logger.debug("Machine {} has batch: {}".format(self.machine, result))
         return result
 
     def get_suffix(self, suffix_type):
@@ -289,7 +291,7 @@ class Machines(GenericXML):
     def print_values(self):
         # write out machines
         machines = self.get_nodes(nodename="machine")
-        print  "Machines"
+        print( "Machines")
         for machine in machines:
             name = machine.get("MACH")
             desc = machine.find("DESC")
@@ -298,10 +300,38 @@ class Machines(GenericXML):
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
             pes_per_node = machine.find("PES_PER_NODE")
 
-            print  "  %s : %s "% (name , desc.text)
-            print  "      os             ", os_.text
-            print  "      compilers      ",compilers.text
+            print( "  {} : {} ".format(name , desc.text))
+            print( "      os             ", os_.text)
+            print( "      compilers      ",compilers.text)
             if pes_per_node is not None:
-                print  "      pes/node       ",pes_per_node.text
+                print( "      pes/node       ",pes_per_node.text)
             if max_tasks_per_node is not None:
-                print  "      max_tasks/node ",max_tasks_per_node.text
+                print( "      max_tasks/node ",max_tasks_per_node.text)
+
+    def return_all_values(self):
+        # return a dictionary of machines
+        mach_dict = dict()
+        machines = self.get_nodes(nodename="machine")
+        for machine in machines:
+            name = machine.get("MACH")
+            desc = machine.find("DESC")
+            os_  = machine.find("OS")
+            compilers = machine.find("COMPILERS")
+            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
+            pes_per_node = machine.find("PES_PER_NODE")
+            ppn = ''
+            if pes_per_node is not None:
+                ppn = pes_per_node.text
+
+            max_tasks_pn = ''
+            if max_tasks_per_node is not None:
+                max_tasks_pn = max_tasks_per_node.text
+
+            mach_dict[name] = { 'description'    : desc.text, 
+                                'os'             : os_.text,
+                                'compilers'      : compilers.text,
+                                'pes/node'       : ppn,
+                                'max_tasks/node' : max_tasks_pn }
+
+        return mach_dict
+

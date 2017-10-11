@@ -517,12 +517,12 @@
 
   <compset>
     <alias>FC4AQUAP</alias>
-    <lname>2000_CAM4_SLND_SICE_AQUAP_SROF_SGLC_SWAV</lname>
+    <lname>2000_CAM4_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FC5AQUAP</alias>
-    <lname>2000_CAM5_SLND_SICE_AQUAP_SROF_SGLC_SWAV</lname>
+    <lname>2000_CAM5_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
