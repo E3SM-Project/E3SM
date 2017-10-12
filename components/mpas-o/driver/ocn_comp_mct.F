@@ -987,14 +987,14 @@ contains
 
          ! read next time level data required for variable shortwave
          call mpas_timer_start('io_shortwave',.false.)
-         call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .false.)
+         call ocn_get_shortWaveData(domain % streamManager, domain, domain_ptr % clock, .false.)
          call mpas_timer_stop('io_shortwave')
 
          ! read next time level data required for ecosys forcing
          call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
          if (config_use_ecosysTracers) then
            call mpas_timer_start('io_ecosys',.false.)
-           call ocn_get_ecosysData(domain % streamManager, domain, domain % clock, .false.)
+           call ocn_get_ecosysData(domain % streamManager, domain, domain_ptr % clock, .false.)
            call mpas_timer_stop('io_ecosys')
          endif
 
@@ -1005,7 +1005,7 @@ contains
                                                       config_use_surface_salinity_monthly_restoring)
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
            call mpas_timer_start('io_monthly_surface_salinity',.false.)
-           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
+           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain_ptr % clock, .false.)
            call mpas_timer_stop('io_monthly_surface_salinity')
          endif
          if (iam==0.and.debugOn) then
