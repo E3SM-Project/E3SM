@@ -1121,12 +1121,8 @@ contains
     real(kind=real_kind) ::  gv(np,np,2),vvtemp(np,np)
 
     ! convert to contra variant form and multiply by g
-    do j=1,np
-       do i=1,np
-          gv(i,j,1)=elem%metdet(i,j)*(elem%Dinv(i,j,1,1)*v(i,j,1) + elem%Dinv(i,j,1,2)*v(i,j,2))
-          gv(i,j,2)=elem%metdet(i,j)*(elem%Dinv(i,j,2,1)*v(i,j,1) + elem%Dinv(i,j,2,2)*v(i,j,2))
-       enddo
-    enddo
+    gv(:,:,1)=elem%metdet(:,:)*(elem%Dinv(:,:,1,1)*v(:,:,1) + elem%Dinv(:,:,1,2)*v(:,:,2))
+    gv(:,:,2)=elem%metdet(:,:)*(elem%Dinv(:,:,2,1)*v(:,:,1) + elem%Dinv(:,:,2,2)*v(:,:,2))
 
     ! compute d/dx and d/dy         
     do j=1,np
