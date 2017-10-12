@@ -142,7 +142,7 @@
     <modules compiler="intel18">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/2018.beta</command>
+      <command name="load">intel/18.0.0.128</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
@@ -277,7 +277,7 @@
     <modules compiler="intel18">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/2018.beta</command>
+      <command name="load">intel/18.0.0.128</command>
     </modules>
 
     <modules compiler="gnu">
@@ -427,7 +427,7 @@
     <modules compiler="intel18">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/2018.beta</command>
+      <command name="load">intel/18.0.0.128</command>
     </modules>
 
     <modules compiler="gnu">
