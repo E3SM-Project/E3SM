@@ -296,7 +296,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
             arg_stdout.close() # pylint: disable=no-member
         if isinstance(arg_stderr, io.IOBase) and arg_stderr is not arg_stdout:
             arg_stderr.close() # pylint: disable=no-member
-        
+
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
@@ -342,7 +342,7 @@ def check_minimum_python_version(major, minor):
     >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
     >>>
     """
-    expect(sys.version_info[0] > major or 
+    expect(sys.version_info[0] > major or
            (sys.version_info[0] == major and sys.version_info[1] >= minor),
            "Python {:d}, minor version {:d}+ is required, you have {:d}.{:d}".format(major, minor, sys.version_info[0], sys.version_info[1]))
 
@@ -868,8 +868,16 @@ def convert_to_string(value, type_str=None, vid=""):
     """
     Convert value back to string.
     vid is only for generating better error messages.
+    >>> convert_to_string(6, type_str="integer") == '6'
+    True
+    >>> convert_to_string('6', type_str="integer") == '6'
+    True
+    >>> convert_to_string('6.0', type_str="real") == '6.0'
+    True
+    >>> convert_to_string(6.01, type_str="real") == '6.01'
+    True
     """
-    if value is not None and type(value) is not str:
+    if value is not None and not isinstance(value, six.string_types):
         if type_str == "char":
             expect(isinstance(value, six.string_types), "Wrong type for entry id '{}'".format(vid))
         elif type_str == "integer":
@@ -1302,7 +1310,7 @@ def is_python_executable(filepath):
                 first_line = f.readline()
             except:
                 pass
-        
+
         return first_line is not None and first_line.startswith("#!") and "python" in first_line
     return False
 
