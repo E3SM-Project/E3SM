@@ -170,9 +170,6 @@ contains
     !
     call ncd_pio_closefile(ncid)
 
-    ! FATES does read its own parameters from its own file
-    ! but that reading does not occur here
-
 
  end subroutine readPrivateParameters
 end module readParamsMod
