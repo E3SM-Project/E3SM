@@ -392,9 +392,9 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                             try:
                                 os.remove(srcfile)
                             except OSError:
-                                logger.warn("unable to remove interim restart file {}".format(srcfile))
+                                logger.warning("unable to remove interim restart file {}".format(srcfile))
                         else:
-                            logger.warn("interim restart file {} does not exist".format(srcfile))
+                            logger.warning("interim restart file {} does not exist".format(srcfile))
 
     return histfiles_savein_rundir
 
@@ -512,7 +512,7 @@ def case_st_archive(case, last_date=None, archive_incomplete_logs=True, copy_onl
         rest_n = case.get_value('REST_N')
         stop_n = case.get_value('STOP_N')
         if rest_n < stop_n:
-            logger.warn('Restart files from end of run will be saved'
+            logger.warning('Restart files from end of run will be saved'
                         'interim restart files will be deleted')
 
     logger.info("st_archive starting")

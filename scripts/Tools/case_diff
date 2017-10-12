@@ -68,8 +68,8 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
     for dirname, set_obj in [(dir1, dir1_only), (dir2, dir2_only)]:
         for item in sorted(set_obj):
             if (item not in skip_list):
-                print "==============================================================================="
-                print os.path.join(dirname, item), "is unique"
+                print ("===============================================================================")
+                print (os.path.join(dirname, item), "is unique")
                 num_differing_files += 1
 
     # Handling of the common items is trickier
@@ -82,8 +82,8 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
 
         # If the directory status of the files differs, report diff
         if (path1isdir != os.path.isdir(path2)):
-            print "==============================================================================="
-            print path1 + " DIFFERS (directory status)"
+            print ("===============================================================================")
+            print (path1 + " DIFFERS (directory status)")
             num_differing_files += 1
             continue
 
@@ -100,7 +100,7 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
 
             stat, out, err = run_cmd("file {}".format(path1))
             if (stat != 0):
-                logging.warn("Failed to probe file '{}', out: '{}', err: '{}'".format(path1, out, err))
+                logging.warning("Failed to probe file '{}', out: '{}', err: '{}'".format(path1, out, err))
                 continue
 
             is_text_file = "text" in out
@@ -111,10 +111,10 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
 
                 stat, out, _ = run_cmd("diff -w {} -".format(path1), input_str=the_text)
                 if (stat != 0):
-                    print "==============================================================================="
-                    print path1 + " DIFFERS (contents)"
+                    print ("===============================================================================")
+                    print (path1 + " DIFFERS (contents)")
                     num_differing_files += 1
-                    print "  ", out
+                    print ("  "+ out)
 
     return num_differing_files
 
@@ -135,7 +135,7 @@ def _main_func(description):
         repls[val2] = val1
 
     num_differing_files = recursive_diff(case1, case2, repls, show_binary, skip_list)
-    print num_differing_files, "files are different"
+    print (num_differing_files, "files are different")
     sys.exit(0 if num_differing_files == 0 else 1)
 
 ###############################################################################

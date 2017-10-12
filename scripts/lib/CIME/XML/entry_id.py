@@ -39,7 +39,7 @@ class EntryID(GenericXML):
         if node is not None:
             val = self.set_element_text("default_value", val, root=node)
             if val is None:
-                logger.warn("Called set_default_value on a node without default_value field")
+                logger.warning("Called set_default_value on a node without default_value field")
 
         return val
 
@@ -211,7 +211,7 @@ class EntryID(GenericXML):
         current_value = node.get("value")
         valid_values_list = self._get_valid_values(node)
         if current_value is not None and current_value not in valid_values_list:
-            logger.warn("WARNING: Current setting for {} not in new valid values. Updating setting to \"{}\"".format(node.get("id"), valid_values_list[0]))
+            logger.warning("WARNING: Current setting for {} not in new valid values. Updating setting to \"{}\"".format(node.get("id"), valid_values_list[0]))
             self._set_value(node, valid_values_list[0])
         return new_valid_values
 

@@ -15,7 +15,7 @@ def cleanup_queue(test_root, test_id):
         with Case(case_dir, read_only=True) as case:
             jobmap = case.get_job_info()
             jobkills = []
-            for jobname, jobid in jobmap.iteritems():
+            for jobname, jobid in jobmap.items():
                 logging.warning("Found leftover batch job {} ({}) that need to be deleted".format(jobid, jobname))
                 jobkills.append(jobid)
 

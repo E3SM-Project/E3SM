@@ -75,7 +75,7 @@ class Component(EntryID):
 
         for valnode in self.get_nodes("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
-            for key,value in valnode.attrib.iteritems():
+            for key,value in valnode.attrib.items():
                 # determine if key is in attributes dictionary
                 match_count = 0
                 if attributes is not None and key in attributes:
@@ -281,6 +281,6 @@ class Component(EntryID):
             compsets[attrib] = text
 
         logger.info(" {}".format(helptext))
-        for v in sorted(compsets.iteritems()):
+        for v in sorted(compsets.items()):
             label, definition = v
             logger.info("   {:20s} : {}".format(label, definition))

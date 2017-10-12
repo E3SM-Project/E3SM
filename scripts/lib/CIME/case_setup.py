@@ -49,7 +49,7 @@ def _build_usernl_files(case, model, comp):
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
         if ninst > 1:
-            for inst_counter in xrange(1, ninst+1):
+            for inst_counter in range(1, ninst+1):
                 inst_nlfile = "{}_{:04d}".format(nlfile, inst_counter)
                 if not os.path.exists(inst_nlfile):
                     # If there is a user_nl_foo in the case directory, copy it
@@ -144,7 +144,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                         ntasks = ninst
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
-                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks / ninst)
+                case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")

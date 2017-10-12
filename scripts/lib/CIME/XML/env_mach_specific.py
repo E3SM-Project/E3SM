@@ -258,9 +258,9 @@ class EnvMachSpecific(EnvBase):
 
         cmd = "source {}".format(sh_init_cmd)
 
-        if os.environ.has_key("SOFTENV_ALIASES"):
+        if "SOFTENV_ALIASES" in os.environ:
             cmd += " && source $SOFTENV_ALIASES"
-        if os.environ.has_key("SOFTENV_LOAD"):
+        if "SOFTENV_LOAD" in os.environ:
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
@@ -356,7 +356,7 @@ class EnvMachSpecific(EnvBase):
             matches = 0
             is_default = False
 
-            for key, value in attribs.iteritems():
+            for key, value in attribs.items():
                 expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
                 if key in xml_attribs:
                     if xml_attribs[key].lower() == "false":

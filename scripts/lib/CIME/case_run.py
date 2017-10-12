@@ -210,12 +210,12 @@ def resubmit_check(case):
     # Note that Mira requires special logic
 
     dout_s = case.get_value("DOUT_S")
-    logger.warn("dout_s {} ".format(dout_s))
+    logger.warning("dout_s {} ".format(dout_s))
     mach = case.get_value("MACH")
-    logger.warn("mach {} ".format(mach))
+    logger.warning("mach {} ".format(mach))
     testcase = case.get_value("TESTCASE")
     resubmit_num = case.get_value("RESUBMIT")
-    logger.warn("resubmit_num {}".format(resubmit_num))
+    logger.warning("resubmit_num {}".format(resubmit_num))
     # If dout_s is True than short-term archiving handles the resubmit
     # If dout_s is True and machine is mira submit the st_archive script
     resubmit = False
@@ -310,7 +310,7 @@ def case_run(case, skip_pnl=False):
 
         save_postrun_provenance(case)
 
-    logger.warn("check for resubmit")
+    logger.warning("check for resubmit")
     resubmit_check(case)
 
     return True

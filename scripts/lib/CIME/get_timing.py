@@ -125,8 +125,11 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         ncpl = 0
         for compclass in self.case.get_values("COMP_CLASSES"):
-            ncpl = max(ncpl, self.case.get_value("{}_NCPL".format(compclass)))
-        ocn_ncpl = self.case.get_value("OCN_NCPL")
+            comp_ncpl = self.case.get_value("{}_NCPL".format(compclass))
+            if compclass == "OCN":
+                ocn_ncpl = comp_ncpl
+            if comp_ncpl is not None:
+                ncpl = max(ncpl, comp_ncpl)
 
         compset = self.case.get_value("COMPSET")
         if compset is None:
@@ -179,7 +182,7 @@ class _TimingParser:
 
         try:
             shutil.copyfile(binfilename, finfilename)
-        except Exception, e:
+        except Exception as e:
             if not os.path.isfile(binfilename):
                 logger.critical("File {} not found".format(binfilename))
             else:
@@ -191,7 +194,7 @@ class _TimingParser:
             fin = open(finfilename, "r")
             self.finlines = fin.readlines()
             fin.close()
-        except Exception, e:
+        except Exception as e:
             logger.critical("Unable to open file {}".format(finfilename))
             raise e
 
@@ -228,7 +231,7 @@ class _TimingParser:
         cpl.offset = 0
         try:
             self.fout = open(foutfilename, "w")
-        except Exception, e:
+        except Exception as e:
             logger.critical("Could not open file for writing: {}".format(foutfilename))
             raise e
 

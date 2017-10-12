@@ -99,7 +99,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         if ncpl is not None:
-            cpl_dt = basedt / int(ncpl)
+            cpl_dt = int(basedt / int(ncpl))
             totaldt = cpl_dt * int(ncpl)
             if totaldt != basedt:
                 expect(False, " {} ncpl doesn't divide base dt evenly".format(comp))

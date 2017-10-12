@@ -2,10 +2,13 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
 import stat as statlib
 import warnings
+import six
 from contextlib import contextmanager
+#pylint: disable=import-error
+from six.moves import configparser
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -74,7 +77,7 @@ def check_name(fullname, additional_chars=None, fullpath=False):
         name = fullname
     match = re.search(r"["+re.escape(chars)+"]", name)
     if match is not None:
-        logger.warn("Illegal character {} found in name {}".format(match.group(0), name))
+        logger.warning("Illegal character {} found in name {}".format(match.group(0), name))
         return False
     return True
 
@@ -86,11 +89,10 @@ def _read_cime_config_file():
     CIME_MODEL=acme,cesm
     PROJECT=someprojectnumber
     """
-    from ConfigParser import SafeConfigParser as config_parser
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
-    cime_config = config_parser()
+    cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
     else:
@@ -247,12 +249,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     # Real defaults for these value should be subprocess.PIPE
     if arg_stdout is _hack:
         arg_stdout = subprocess.PIPE
-    elif isinstance(arg_stdout, str):
+    elif isinstance(arg_stdout, six.string_types):
         arg_stdout = _convert_to_fd(arg_stdout, from_dir)
 
     if arg_stderr is _hack:
         arg_stderr = subprocess.STDOUT if combine_output else subprocess.PIPE
-    elif isinstance(arg_stderr, str):
+    elif isinstance(arg_stderr, six.string_types):
         arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
@@ -272,15 +274,29 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
                             env=env)
 
     output, errput = proc.communicate(input_str)
-    output = output.strip() if output is not None else output
-    errput = errput.strip() if errput is not None else errput
+    if output is not None:
+        try:
+            output = output.decode('utf-8').strip()
+        except AttributeError:
+            pass
+    if errput is not None:
+        try:
+            errput = errput.decode('utf-8').strip()
+        except AttributeError:
+            pass
+
     stat = proc.wait()
-
-    if isinstance(arg_stdout, file):
-        arg_stdout.close() # pylint: disable=no-member
-
-    if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout:
-        arg_stderr.close() # pylint: disable=no-member
+    if six.PY2:
+        if isinstance(arg_stdout, file): # pylint: disable=undefined-variable
+            arg_stdout.close() # pylint: disable=no-member
+        if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout: # pylint: disable=undefined-variable
+            arg_stderr.close() # pylint: disable=no-member
+    else:
+        if isinstance(arg_stdout, io.IOBase):
+            arg_stdout.close() # pylint: disable=no-member
+        if isinstance(arg_stderr, io.IOBase) and arg_stderr is not arg_stdout:
+            arg_stderr.close() # pylint: disable=no-member
+        
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
@@ -298,19 +314,17 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
 
-    >>> run_cmd_no_fail('echo foo')
-    'foo'
-
+    >>> run_cmd_no_fail('echo foo') == 'foo'
+    True
     >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
     SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR' from dir ...
 
-    >>> run_cmd_no_fail('grep foo', input_str='foo')
-    'foo'
-
-    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True)
-    'THE ERROR'
+    >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
+    True
+    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
+    True
     """
     stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
     if stat != 0:
@@ -328,7 +342,8 @@ def check_minimum_python_version(major, minor):
     >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
     >>>
     """
-    expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
+    expect(sys.version_info[0] > major or 
+           (sys.version_info[0] == major and sys.version_info[1] >= minor),
            "Python {:d}, minor version {:d}+ is required, you have {:d}.{:d}".format(major, minor, sys.version_info[0], sys.version_info[1]))
 
 def normalize_case_id(case_id):
@@ -856,9 +871,9 @@ def convert_to_string(value, type_str=None, vid=""):
     """
     if value is not None and type(value) is not str:
         if type_str == "char":
-            expect(type(value) is str, "Wrong type for entry id '{}'".format(vid))
+            expect(isinstance(value, six.string_types), "Wrong type for entry id '{}'".format(vid))
         elif type_str == "integer":
-            expect(type(value) is int, "Wrong type for entry id '{}'".format(vid))
+            expect(isinstance(value, six.integer_types), "Wrong type for entry id '{}'".format(vid))
             value = str(value)
         elif type_str == "logical":
             expect(type(value) is bool, "Wrong type for entry id '{}'".format(vid))
@@ -900,9 +915,9 @@ def convert_to_babylonian_time(seconds):
     >>> convert_to_babylonian_time(3661)
     '01:01:01'
     """
-    hours = seconds / 3600
+    hours = int(seconds / 3600)
     seconds %= 3600
-    minutes = seconds / 60
+    minutes = int(seconds / 60)
     seconds %= 60
 
     return "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
@@ -944,7 +959,7 @@ def compute_total_time(job_cost_map, proc_pool):
     running_jobs = {} # name -> (procs, est-time, start-time)
     while len(waiting_jobs) > 0 or len(running_jobs) > 0:
         launched_jobs = []
-        for jobname, data in waiting_jobs.iteritems():
+        for jobname, data in waiting_jobs.items():
             procs_for_job, time_for_job = data
             if procs_for_job <= proc_pool:
                 proc_pool -= procs_for_job
@@ -955,7 +970,7 @@ def compute_total_time(job_cost_map, proc_pool):
             del waiting_jobs[launched_job]
 
         completed_jobs = []
-        for jobname, data in running_jobs.iteritems():
+        for jobname, data in running_jobs.items():
             procs_for_job, time_for_job, time_started = data
             if (current_time - time_started) >= time_for_job:
                 proc_pool += procs_for_job
@@ -1113,7 +1128,7 @@ def transform_vars(text, case=None, subgroup=None, overrides=None, default=None)
             if "-q {{ queue }}" in text:
                 text = ""
             else:
-                logger.warn("Could not replace variable '{}'".format(variable))
+                logger.warning("Could not replace variable '{}'".format(variable))
                 text = text.replace(whole_match, "")
 
     return text
@@ -1147,11 +1162,11 @@ def gzip_existing_file(filepath):
 
     >>> import tempfile
     >>> fd, filename = tempfile.mkstemp(text=True)
-    >>> _ = os.write(fd, "Hello World")
+    >>> _ = os.write(fd, b"Hello World")
     >>> os.close(fd)
     >>> gzfile = gzip_existing_file(filename)
-    >>> gunzip_existing_file(gzfile)
-    'Hello World'
+    >>> gunzip_existing_file(gzfile) == b'Hello World'
+    True
     >>> os.remove(gzfile)
     """
     expect(os.path.exists(filepath), "{} does not exists".format(filepath))
@@ -1272,19 +1287,23 @@ def analyze_build_log(comp, log, compiler):
             if re.search(warn_re, line):
                 warncnt += 1
             if re.search(error_re, line):
-                logger.warn(line)
+                logger.warning(line)
             if re.search(undefined_re, line):
-                logger.warn(line)
+                logger.warning(line)
 
     if warncnt > 0:
         logger.info("Component {} build complete with {} warnings".format(comp, warncnt))
 
 def is_python_executable(filepath):
+    first_line = None
     if os.path.isfile(filepath):
-        with open(filepath, "r") as f:
-            first_line = f.readline()
-
-        return first_line.startswith("#!") and "python" in first_line
+        with open(filepath, "rt") as f:
+            try:
+                first_line = f.readline()
+            except:
+                pass
+        
+        return first_line is not None and first_line.startswith("#!") and "python" in first_line
     return False
 
 def get_umask():

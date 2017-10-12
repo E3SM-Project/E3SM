@@ -7,7 +7,8 @@ through the Case module.
 from copy import deepcopy
 import glob, os, shutil, math
 from CIME.XML.standard_module_setup import *
-
+#pylint: disable=import-error,redefined-builtin
+from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.utils                     import get_current_commit, check_name
@@ -402,15 +403,15 @@ class Case(object):
                 return result
 
     def set_lookup_value(self, item, value):
-        if item in self.lookups.keys() and self.lookups[item] is not None:
-            logger.warn("Item {} already in lookups with value {}".format(item,self.lookups[item]))
+        if item in self.lookups and self.lookups[item] is not None:
+            logger.warning("Item {} already in lookups with value {}".format(item,self.lookups[item]))
         else:
             logger.debug("Setting in lookups: item {}, value {}".format(item,value))
             self.lookups[item] = value
 
     def clean_up_lookups(self, allow_undefined=False):
         # put anything in the lookups table into existing env objects
-        for key,value in self.lookups.items():
+        for key,value in list(self.lookups.items()):
             logger.debug("lookup key {} value {}".format(key, value))
             result = self.set_value(key,value, allow_undefined=allow_undefined)
             if result is not None:
@@ -619,7 +620,7 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
-        for i in xrange(1,len(self._component_classes)):
+        for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
             node_name = 'CONFIG_' + comp_class + '_FILE'
@@ -738,10 +739,10 @@ class Case(object):
             mach_pes_obj.set_value(key, ninst)
 
             key = "NTASKS_{}".format(compclass)
-            if key not in pes_ntasks.keys():
+            if key not in pes_ntasks:
                 mach_pes_obj.set_value(key,1)
             key = "NTHRDS_{}".format(compclass)
-            if compclass not in pes_nthrds.keys():
+            if compclass not in pes_nthrds:
                 mach_pes_obj.set_value(compclass,1)
 
         return pesize
@@ -892,7 +893,7 @@ class Case(object):
             if os.path.exists(wdir):
                 expect(not test, "Directory {} already exists, aborting test".format(wdir))
                 if answer is None:
-                    response = raw_input("\nDirectory {} already exists, (r)eplace, (a)bort, or (u)se existing?".format(wdir))
+                    response = input("\nDirectory {} already exists, (r)eplace, (a)bort, or (u)se existing?".format(wdir))
                 else:
                     response = answer
 
@@ -1181,7 +1182,7 @@ class Case(object):
         if not jobmap:
             logger.info("No job ids associated with this case. Either case.submit was not run or was run with no-batch")
         else:
-            for jobname, jobid in jobmap.iteritems():
+            for jobname, jobid in jobmap.items():
                 status = self.get_env("batch").get_status(jobid)
                 if status:
                     logger.info("{}: {}".format(jobname, status))
@@ -1248,7 +1249,7 @@ class Case(object):
         if version != "unknown":
             logger.info("{} model version found: {}".format(model, version))
         else:
-            logger.warn("WARNING: No {} Model version found.".format(model))
+            logger.warning("WARNING: No {} Model version found.".format(model))
 
     def load_env(self):
         if not self._is_env_loaded:
@@ -1289,9 +1290,9 @@ class Case(object):
                 if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
                     testcnt += 1
         if testcnt > 0:
-            logger.warn("\n*********************************************************************************************************************************")
-            logger.warn("This compset and grid combination is not scientifically supported, however it is used in {:d} tests.".format(testcnt))
-            logger.warn("*********************************************************************************************************************************\n")
+            logger.warning("\n*********************************************************************************************************************************")
+            logger.warning("This compset and grid combination is not scientifically supported, however it is used in {:d} tests.".format(testcnt))
+            logger.warning("*********************************************************************************************************************************\n")
         else:
             expect(False, "\nThis compset and grid combination is untested in CESM.  "
                    "Override this warning with the --run-unsupported option to create_newcase.",
@@ -1309,7 +1310,7 @@ class Case(object):
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
         components = self.get_value("COMP_CLASSES")
-        logger.warn("setting case file to {}".format(xmlfile))
+        logger.warning("setting case file to {}".format(xmlfile))
         new_env_file = None
         for env_file in self._env_entryid_files:
             if os.path.basename(env_file.filename) == ftype:
@@ -1416,10 +1417,10 @@ class Case(object):
         except:
             if os.path.exists(self._caseroot):
                 if not logger.isEnabledFor(logging.DEBUG) and not test:
-                    logger.warn("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
+                    logger.warning("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
                     shutil.rmtree(self._caseroot)
                 else:
-                    logger.warn("Leaving broken case dir {}".format(self._caseroot))
+                    logger.warning("Leaving broken case dir {}".format(self._caseroot))
 
             raise
 

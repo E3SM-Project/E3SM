@@ -252,7 +252,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             bldlog = open(file_build, "r")
             for line in bldlog:
                 if re.search("Current setting for", line):
-                    logger.warn(line)
+                    logger.warning(line)
 
     # clm not a shared lib for ACME
     if get_model() != "acme" and (buildlist is None or "lnd" in buildlist):
@@ -290,7 +290,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
     t1 = time.time()
     cmd = os.path.join(caseroot, "SourceMods", "src." + compname, "buildlib")
     if os.path.isfile(cmd):
-        logger.warn("WARNING: using local buildlib script for {}".format(compname))
+        logger.warning("WARNING: using local buildlib script for {}".format(compname))
     else:
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
@@ -324,7 +324,7 @@ def _clean_impl(case, cleanlist, clean_all):
         sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
         expect(sharedlibroot is not None,"No SHAREDLIBROOT defined in case")
         if sharedlibroot != exeroot and os.path.isdir(sharedlibroot):
-            logging.warn("cleaning directory {}".format(sharedlibroot))
+            logging.warning("cleaning directory {}".format(sharedlibroot))
             shutil.rmtree(sharedlibroot)
     else:
         expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
@@ -387,7 +387,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
     # needs to be unset before building again.
-    if "MODEL" in os.environ.keys():
+    if "MODEL" in os.environ:
         del os.environ["MODEL"]
     build_threaded      = case.get_build_threaded()
     casetools           = case.get_value("CASETOOLS")

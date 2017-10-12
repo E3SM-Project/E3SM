@@ -49,7 +49,7 @@ fi
         with open(fake_exe_file, "w") as fd:
             fd.write(fake_exe)
 
-        os.chmod(fake_exe_file, 0755)
+        os.chmod(fake_exe_file, 0o755)
 
         prev_run_exe = self._case.get_value("run_exe")
         env_mach_specific = self._case.get_env("mach_specific")

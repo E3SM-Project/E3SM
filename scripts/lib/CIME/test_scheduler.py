@@ -249,7 +249,7 @@ class TestScheduler(object):
 
     ###########################################################################
     def get_testnames(self):
-        return self._tests.keys()
+        return list(self._tests.keys())
 
     ###########################################################################
     def _log_output(self, test, output):
@@ -547,7 +547,7 @@ class TestScheduler(object):
                     # handled in create_newcase
                     continue
                 elif opt.startswith('IOP'):
-                    logger.warn("IOP test option not yet implemented")
+                    logger.warning("IOP test option not yet implemented")
                 else:
                     expect(False, "Could not parse option '{}' ".format(opt))
 
@@ -660,7 +660,7 @@ class TestScheduler(object):
         expect(len(threads_in_flight) <= self._parallel_jobs, "Oversubscribed?")
         finished_tests = []
         while not finished_tests:
-            for test, thread_info in threads_in_flight.iteritems():
+            for test, thread_info in threads_in_flight.items():
                 if not thread_info[0].is_alive():
                     finished_tests.append((test, thread_info[1]))
 

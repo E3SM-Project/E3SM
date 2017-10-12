@@ -14,6 +14,8 @@ import os
 from abc import ABCMeta, abstractmethod
 from CIME.XML.standard_module_setup import *
 from CIME.utils import get_cime_root
+from six import add_metaclass
+
 logger = logging.getLogger(__name__)
 
 def _get_components(value):
@@ -69,6 +71,7 @@ def _get_components(value):
 
     return components
 
+@add_metaclass(ABCMeta)
 class MacroWriterBase(object):
 
     """Abstract base class for macro file writers.
@@ -101,8 +104,6 @@ class MacroWriterBase(object):
     end_ifeq
     """
 
-    __metaclass__ = ABCMeta
-
     indent_increment = 2
 
     def __init__(self, output):
@@ -132,7 +133,7 @@ class MacroWriterBase(object):
 
         A trailing newline is added, whether or not the input has one.
         """
-        self.output.write(unicode(self.indent_string() + line + "\n"))
+        self.output.write(str(self.indent_string() + line + "\n"))
 
     @abstractmethod
     def environment_variable_string(self, name):
@@ -207,7 +208,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:
         if not item in macros and item in os.environ:
-            logger.warn("Setting {} from Environment".format(item))
+            logger.warning("Setting {} from Environment".format(item))
             macros[item] = os.environ[item]
 
     with open(macros_file, "w") as fd:
@@ -222,7 +223,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
             fd.write("#\n# Makefile Macros \n")
 
             # print the settings out to the Macros file
-            for key, value in sorted(macros.iteritems()):
+            for key, value in sorted(macros.items()):
                 if key == "_COND_":
                     pass
                 elif key.startswith("ADD_"):
@@ -248,7 +249,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
             # print the settings out to the Macros file, do it in
             # two passes so that path values appear first in the
             # file.
-            for key, value in sorted(macros.iteritems()):
+            for key, value in sorted(macros.items()):
                 if key == "_COND_":
                     pass
                 else:
@@ -262,7 +263,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                         fd.write("set({} {})\n".format(cmake_var, value))
                         fd.write("list(APPEND CMAKE_PREFIX_PATH {})\n\n".format(value))
 
-            for key, value in sorted(macros.iteritems()):
+            for key, value in sorted(macros.items()):
                 if key == "_COND_":
                     pass
                 else:
@@ -301,10 +302,10 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
 
 def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
     width = 2 * depth
-    for key, value in macros.iteritems():
+    for key, value in macros.items():
         if type(value) is dict:
             if output_format == "make" or "DEBUG" in key:
-                for key2, value2 in value.iteritems():
+                for key2, value2 in value.items():
                     if output_format == "make":
                         fd.write("{}ifeq ($({}), {}) \n".format(" " * width, key, key2))
 

@@ -1,7 +1,6 @@
 """
 Base class for env files.  This class inherits from EntryID.py
 """
-import string
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
 from CIME.XML.headers import Headers
@@ -48,9 +47,9 @@ class EnvBase(EntryID):
         new_vid = None
         for comp in self._components:
             if "_"+comp in vid:
-                new_vid = string.replace(vid, '_'+comp, '', 1)
+                new_vid = vid.replace('_'+comp, '', 1)
             elif comp+"_" in vid:
-                new_vid = string.replace(vid, comp+'_', '', 1)
+                new_vid = vid.replace(comp+'_', '', 1)
 
             if new_vid is not None:
                 break

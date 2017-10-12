@@ -359,7 +359,7 @@ class EnvBatch(EnvBase):
             if self._prereq_jobid is not None:
                 jobid = self._prereq_jobid
             for dep in deps:
-                if dep in depid.keys() and depid[dep] is not None:
+                if dep in depid and depid[dep] is not None:
                     jobid += " " + str(depid[dep])
 #TODO: doubt these will be used
 #               elif dep == "and":
@@ -372,7 +372,7 @@ class EnvBatch(EnvBase):
             if slen == 0:
                 jobid = None
 
-            logger.warn("job is {}".format(job))
+            logger.warning("job is {}".format(job))
             result = self._submit_single_job(case, job, jobid,
                                              no_batch=no_batch,
                                              skip_pnl=skip_pnl,
@@ -394,7 +394,7 @@ class EnvBatch(EnvBase):
     def _submit_single_job(self, case, job, depid=None, no_batch=False,
                            skip_pnl=False, mail_user=None, mail_type='never',
                            batch_args=None, dry_run=False):
-        logger.warn("Submit job {}".format(job))
+        logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none" or no_batch:
             # Import here to avoid circular include
