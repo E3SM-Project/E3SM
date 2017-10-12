@@ -119,10 +119,12 @@
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>
-      Full pathname for domain file for datm when DATM model is CPLHIST, NOTE: if this is set to 'null',
-      then domain information is read in from the first coupler history file in the target stream and
-      it is assumed that the first coupler stream file that is pointed to contains the domain
-      information for that stream. This is the default mode that should be used when DATM_MODE is CPLHIST.
+      Full pathname for domain file for datm when DATM_MODE is
+      CPLHIST, NOTE: if this is set to 'null' (the default), then
+      domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
     </desc>
   </entry>
 
@@ -139,9 +141,6 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
-    <values match="last">
-      <value compset="1850_DATM%CPLHIST">UNSET</value>
-    </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>case name used to determine stream filenames when DATM_MODE is CPLHIST</desc>
@@ -150,13 +149,10 @@
   <entry id="DATM_CPLHIST_YR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>1</default_value>
-    <values match="last">
-      <value compset="1850_DATM%CPLHIST">-999</value>
-    </values>
+    <default_value>-999</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>Simulation year corresponding to starting year (only used when DATM_MODE is CPLHIST)</desc>
+    <desc>simulation year corresponding to starting year (only used when DATM_MODE is CPLHIST)</desc>
   </entry>
 
   <entry id="DATM_CPLHIST_YR_START">
