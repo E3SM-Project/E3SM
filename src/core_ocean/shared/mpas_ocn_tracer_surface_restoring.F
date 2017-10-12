@@ -206,6 +206,9 @@ contains
         type (MPAS_timeInterval_type) :: timeStepSurfaceSalinity
         type (MPAS_clock_type) :: simulationClock
 
+        type (MPAS_Time_Type) :: currTime
+        character(len=strKind) :: timeStamp
+
         logical, intent(in) :: firstTimeStep
         character(len=strKind), pointer :: config_dt
         real(kind=RKIND) :: dt, sumAreaDeltaS, sumArea, avgDeltaS, deltaS, sumAreaDeltaSGlobal, sumAreaGlobal
@@ -239,6 +242,7 @@ contains
            forcingIntervalMonthly,  &
            forcingReferenceTimeMonthly
 
+        integer :: ierr
         logical, pointer :: &
            config_do_restart
 
@@ -249,6 +253,10 @@ contains
 
         if (firstTimeStep) then
 
+           currTime = mpas_get_clock_time( simulationClock, MPAS_NOW, ierr)
+           call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+           timeStamp = '0000'//trim(timeStamp(5:))
+          
            forcingIntervalMonthly = "0000-01-00_00:00:00"
            forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
 
@@ -257,7 +265,7 @@ contains
            call MPAS_forcing_init_group( surfaceSalinityForcingGroup,  &
                 "surfaceSalinityMonthlyClimatology", &
                 domain, &
-                '0000-01-01_00:00:00', &
+                timeStamp, &
                 '0000-01-01_00:00:00', &
                 '0001-00-00_00:00:00', &
                 config_do_restart)
