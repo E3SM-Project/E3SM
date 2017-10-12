@@ -464,18 +464,23 @@ module li_time_integration_fe
 
             block => block % next
          end do
+      else
+         ! If not adaptive, Get dt from any block to check for CFL violation below
+         block => domain % blocklist
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
       end if
 
 
       ! Check for CFL error before finishing
-      if (dtSeconds > allowableAdvecDtOnProc) then
+      if (deltat > allowableAdvecDtOnProc) then
          call mpas_log_write('Advective CFL violation on this processor.  ' // &
           'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString), MPAS_LOG_ERR)
          err = ior(err,1)
       endif
 
       ! Local diffusive CFL info
-      if ( (config_adaptive_timestep_include_DCFL) .and. (dtSeconds > allowableDiffDtOnProc) ) then
+      if ( (config_adaptive_timestep_include_DCFL) .and. (deltat > allowableDiffDtOnProc) ) then
          call mpas_log_write('Diffusive CFL violation on this processor.  ' // &
             'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString), MPAS_LOG_WARN)
       endif
@@ -776,7 +781,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(out) :: dtSeconds
+      real (kind=RKIND), intent(out) :: dtSeconds  !< Output: time step in seconds determined by this routine
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
