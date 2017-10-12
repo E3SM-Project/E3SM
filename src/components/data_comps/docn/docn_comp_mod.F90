@@ -178,7 +178,12 @@ CONTAINS
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
             scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
     else
-       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
+       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+          ! Special logic for either prescribed or som aquaplanet - overwrite and
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
+       else
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
+       end if
     endif
 
     if (my_task == master_task) then
@@ -214,18 +219,6 @@ CONTAINS
     call shr_sys_flush(logunit)
 
     call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
-
-    ! Special logic for either prescribed or som aquaplanet - overwrite and
-    ! set mask/frac to 1
-    if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-       kmask = mct_aVect_indexRA(ggrid%data,'mask')
-       ggrid%data%rattr(kmask,:) = 1
-
-       kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-       ggrid%data%rattr(kfrac,:) = 1.0_r8
-
-       write(logunit,F00) ' Resetting the data ocean mask and frac to 1 for aquaplanet'
-    end if
 
     call t_stopf('docn_initmctdom')
 
