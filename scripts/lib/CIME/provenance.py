@@ -261,12 +261,14 @@ def _save_postrun_timing_acme(case, lid):
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR '%s' is not valid. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
         return
 
     mach = case.get_value("MACH")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
+
+    if not os.path.isdir(full_timing_dir):
+        return
 
     # Kill mach_syslog
     job_id = _get_batch_job_id_for_syslog(case)
