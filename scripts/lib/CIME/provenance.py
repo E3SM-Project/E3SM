@@ -96,7 +96,7 @@ def save_build_provenance(case, lid=None):
 def _save_prerun_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR {} is not valid. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings".format(timing_dir))
+        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data".format(timing_dir))
         return
 
     logger.info("timing dir is {}".format(timing_dir))
