@@ -11,7 +11,7 @@
 !
 !> \brief MPAS ocean tracer advection driver
 !> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
+!> \date   October 2017
 !> \details
 !>  This module contains driver routine for tracer advection tendencys
 !>  as well as the routines for setting up advection coefficients and
@@ -51,7 +51,7 @@ module ocn_tracer_advection
 !
 !> \brief MPAS ocean tracer advection tendency
 !> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
+!> \date   October 2017
 !> \details
 !>  This routine is the driver routine for computing the tendency for
 !>  advection of tracers.
@@ -85,8 +85,6 @@ module ocn_tracer_advection
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nAdvCellsForEdge
       integer, dimension(:,:), pointer :: highOrderAdvectionMask, edgeSignOnCell, advCellsForEdge
 
-      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrime
-      real (kind=RKIND), dimension(:,:,:), allocatable :: tracersPrime
       character (len=*), intent(in) :: tracerGroupName ! variable to check for tracer budget
       if(.not. tracerAdvOn) return
 
@@ -114,47 +112,36 @@ module ocn_tracer_advection
         nVertLevels = size(tracers,dim=2)
         nCells = size(tracers,dim=3)
 
-        allocate(layerThicknessPrime(nVertLevels,nCells))
-        allocate(tracersPrime(num_tracers,nVertLevels,nCells))
+! mrp: move this down one.
+!        if (config_compute_active_tracer_budgets) then
+!           if (tracerGroupName == 'activeTracers') then
+!              activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:)
+!           end if
+!        end if
 
-        layerThicknessPrime(:,:) = 0.0_RKIND
-        tracersPrime(:,:,:) = 0.0_RKIND
+! mrp: move this down one.
+!        if (config_compute_active_tracer_budgets) then
+!          if (tracerGroupName == 'activeTracers') then
+!             activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:) - &
+!                     activeTracerHorizontalAdvectionTendency(:,:,:)
+!
+!             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:)
+!          end if
+!        end if
 
-        ! Note: We could flip the order of operations of horizontal versus vertical
-        ! every other step for 2nd order splitting.  That would be done here.
+         call ocn_tracer_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
+            nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
+            verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
+            highOrderAdvectionMask, edgeSignOnCell)
 
-        if (config_compute_active_tracer_budgets) then
-           if (tracerGroupName == 'activeTracers') then
-              activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:)
-           end if
-        end if
+! mrp: move this down one.
+!        if (config_compute_active_tracer_budgets) then
+!          if (tracerGroupName == 'activeTracers') then
+!             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:) - &
+!                     activeTracerVerticalAdvectionTendency(:,:,:)
+!          end if
+!        end if
 
-        call ocn_tracer_hor_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
-           nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, layerThickness, &
-           dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
-           highOrderAdvectionMask, edgeSignOnCell, layerThicknessPrime, tracersPrime)
-
-        if (config_compute_active_tracer_budgets) then
-          if (tracerGroupName == 'activeTracers') then
-             activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:) - &
-                     activeTracerHorizontalAdvectionTendency(:,:,:)
-
-             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:)
-          end if
-        end if
-
-        call ocn_tracer_vert_advection_mono_tend(tracersPrime, advCoefs, advCoefs3rd, &
-           w, layerThicknessPrime, layerThicknessPrime, dt, meshPool, scratchPool, tend, maxLevelCell)
-
-        if (config_compute_active_tracer_budgets) then
-          if (tracerGroupName == 'activeTracers') then
-             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:) - &
-                     activeTracerVerticalAdvectionTendency(:,:,:)
-          end if
-        end if
-
-        deallocate(layerThicknessPrime)
-        deallocate(tracersPrime)
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
@@ -171,7 +158,7 @@ module ocn_tracer_advection
 !
 !> \brief MPAS ocean tracer advection tendency
 !> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
+!> \date   October 2017
 !> \details
 !>  This routine is the driver routine for initialization of
 !>  the tracer advection routines.

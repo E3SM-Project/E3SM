@@ -11,7 +11,7 @@
 !
 !> \brief MPAS monotonic tracer advection with FCT
 !> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
+!> \date   October 2017
 !> \details
 !>  This module contains routines for monotonic advection of tracers using a FCT
 !
@@ -38,8 +38,7 @@ module ocn_tracer_advection_mono
    logical :: vert2ndOrder, vert3rdOrder, vert4thOrder
    logical :: positiveDzDk, monotonicityCheck
 
-   public :: ocn_tracer_hor_advection_mono_tend, &
-             ocn_tracer_vert_advection_mono_tend, &
+   public :: ocn_tracer_advection_mono_tend, &
              ocn_tracer_advection_mono_init
 
    contains
@@ -50,15 +49,15 @@ module ocn_tracer_advection_mono
 !
 !> \brief MPAS monotonic tracer horizontal advection tendency with FCT
 !> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
+!> \date   October 2017
 !> \details
 !>  This routine computes the monotonic tracer horizontal advection tendencity using a FCT.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tracer_hor_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, &!{{{
-                                              normalThicknessFlux, layerThickness, dt, meshPool, scratchPool, tend, &
-                                              maxLevelCell, maxLevelEdgeTop, highOrderAdvectionMask, edgeSignOnCell, &
-                                              layerThicknessPrime, tracersPrime)
+   subroutine ocn_tracer_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, &!{{{
+                                              normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, &
+                                              scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
+                                              highOrderAdvectionMask, edgeSignOnCell)
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
@@ -66,14 +65,37 @@ module ocn_tracer_advection_mono
       integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
       integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
+      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
+!mrp removce this variable!!!
+      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
+      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field  ! note mrp this is not needed.
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch fields
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
-      real (kind=RKIND), dimension(:,:), intent(out) :: layerThicknessPrime !< Input: Provisional tracer values
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: tracersPrime !< Input: Provisional tracer values
 
+
+!   subroutine ocn_tracer_hor_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, &!{{{
+!                                              normalThicknessFlux, layerThickness, dt, meshPool, scratchPool, tend, &
+!                                              maxLevelCell, maxLevelEdgeTop, highOrderAdvectionMask, edgeSignOnCell, &
+!                                              layerThicknessPrime, tracersPrime)
+!
+!      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
+!      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
+!      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coeffs for mising 3rd/4th order advection
+!      integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
+!      integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
+!      real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
+!      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
+!      real (kind=RKIND), intent(in) :: dt !< Input: Timestep
+!      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+!      type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch fields
+!      real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
+!      real (kind=RKIND), dimension(:,:), intent(out) :: layerThicknessPrime !< Input: Provisional tracer values
+!      real (kind=RKIND), dimension(:,:,:), intent(out) :: tracersPrime !< Input: Provisional tracer values
+
+! mrp these dont need to be passed in.
       integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
       integer, dimension(:), pointer :: maxLevelEdgeTop !< Input: Index to max level at edge with non-land cells on both sides
       integer, dimension(:,:), pointer :: highOrderAdvectionMask !< Input: Mask for high order advection
@@ -87,16 +109,23 @@ module ocn_tracer_advection_mono
 
       real (kind=RKIND) :: signedFactor
       real (kind=RKIND) :: flux_upwind, tracer_min_new, tracer_max_new, tracer_upwind_new, scale_factor
-      real (kind=RKIND) :: tracer_min_hor_new, tracer_max_hor_new
       real (kind=RKIND) :: flux, tracer_weight, invAreaCell1, invAreaCell2
+      real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, tracer_new, upwind_tendency, inv_h_new
       real (kind=RKIND), dimension(:,:), pointer :: tracer_max_hor, tracer_min_hor
-      real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing, high_order_horiz_flux
+      real (kind=RKIND), dimension(:,:), pointer :: tracer_max_vert, tracer_min_vert
+      real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing
+      real (kind=RKIND), dimension(:,:), pointer :: high_order_horiz_flux, high_order_vert_flux
+      real (kind=RKIND), dimension(:,:), pointer :: hProv, hProvInv
 
       type (field2DReal), pointer :: highOrderHorizFluxField, tracerNewField, &
                                      tracerCurField, upwindTendencyField, inverseLayerThicknessField, tracerMinHorField, &
-                                     tracerMaxHorField, fluxIncomingField, fluxOutgoingField
+                                     tracerMaxHorField, fluxIncomingField, fluxOutgoingField, &
+                                     layerThicknessPrimeField, tracersPrimeField, tracerMinVertField, &
+                                     tracerMaxVertField, highOrderVertFluxField
+!      type (field2DReal), pointer :: tracerNewField, tracerCurField, upwindTendencyField, inverseLayerThicknessField, &
+!           fluxIncomingField, fluxOutgoingField, highOrderVertFluxField, tracerMinVertField, tracerMaxVertField
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
@@ -127,6 +156,11 @@ module ocn_tracer_advection_mono
       call mpas_pool_get_field(scratchPool, 'tracerMaxHor', tracerMaxHorField)
       call mpas_pool_get_field(scratchPool, 'fluxIncoming', fluxIncomingField)
       call mpas_pool_get_field(scratchPool, 'fluxOutgoing', fluxOutgoingField)
+      call mpas_pool_get_field(scratchPool, 'layerThicknessPrime', layerThicknessPrimeField)
+      call mpas_pool_get_field(scratchPool, 'tracersPrime', tracersPrimeField)
+      call mpas_pool_get_field(scratchPool, 'tracerMinVert', tracerMinVertField)
+      call mpas_pool_get_field(scratchPool, 'tracerMaxVert', tracerMaxVertField)
+      call mpas_pool_get_field(scratchPool, 'highOrderVertFlux', highOrderVertFluxField)
 
       call mpas_allocate_scratch_field(highOrderHorizFluxField, .true., .false.)
       call mpas_allocate_scratch_field(tracerNewField, .true., .false.)
@@ -137,6 +171,11 @@ module ocn_tracer_advection_mono
       call mpas_allocate_scratch_field(tracerMaxHorField, .true., .false.)
       call mpas_allocate_scratch_field(fluxIncomingField, .true., .false.)
       call mpas_allocate_scratch_field(fluxOutgoingField, .true., .false.)
+      call mpas_allocate_scratch_field(layerThicknessPrimeField, .true., .false.)
+      call mpas_allocate_scratch_field(tracersPrimeField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMinVertField, .true., .false.)
+      call mpas_allocate_scratch_field(tracerMaxVertField, .true., .false.)
+      call mpas_allocate_scratch_field(highOrderVertFluxField, .true., .false.)
       call mpas_threading_barrier()
 
       ! Setup high order horizontal flux field
@@ -151,6 +190,11 @@ module ocn_tracer_advection_mono
       tracer_min_hor => tracerMinHorField % array
       flux_incoming => fluxIncomingField % array
       flux_outgoing => fluxOutgoingField % array
+      hProvInv => layerThicknessPrimeField % array ! note mrp change name of layerThicknessPrimeField
+      hProv => tracersPrimeField % array ! note mrp change name tracersPrimeField
+      tracer_max_vert => tracerMaxVertField % array
+      tracer_min_vert => tracerMinVertField % array
+      high_order_vert_flux => highOrderVertFluxField % array
 
       nCells = nCellsArray( size(nCellsArray) )
 
@@ -162,23 +206,27 @@ module ocn_tracer_advection_mono
       do iCell = 1, nCells
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do k = 1, maxLevelCell(iCell)
-          layerThicknessPrime(k, iCell) = layerThickness(k, iCell)
+          hProv(k, iCell) = layerThickness(k, iCell)
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            layerThicknessPrime(k, iCell) = layerThicknessPrime(k, iCell) + dt * invAreaCell1 * dvEdge(iEdge) * &
+            hProv(k, iCell) = hProv(k, iCell) + dt * invAreaCell1 * dvEdge(iEdge) * &
                                             edgeSignOnCell(i, iCell) * normalThicknessFlux(k, iEdge)
           end do
+! after horizontal thickness flux
+          hProvInv(k, iCell) = 1.0_RKIND / hProv(k, iCell)
+! after horizontal and vertical thickness flux
+          inv_h_new(k, iCell) = 1.0_RKIND / (hProv(k, iCell) - dt * w(k, iCell) + dt * w(k+1, iCell))
         end do
       end do
       !$omp end do
 
-      !$omp do schedule(runtime) private(k)
-      do iCell = 1, nCells
-        do k=1, maxLevelCell(iCell)
-          inv_h_new(k, iCell) = 1.0_RKIND / layerThicknessPrime(k, iCell)
-        end do
-      end do
-      !$omp end do
+!      !$omp do schedule(runtime) private(k)
+!      do iCell = 1, nCells
+!        do k=1, maxLevelCell(iCell)
+!          inv_h_new(k, iCell) = 1.0_RKIND / layerThicknessPrime(k, iCell)
+!        end do
+!      end do
+!      !$omp end do
 
 #ifdef _ADV_TIMERS
       call mpas_timer_stop('startup')
@@ -317,10 +365,10 @@ module ocn_tracer_advection_mono
             ! building 'new' values with both horizontal and vertical fluxes.
             ! This is something to consider, may not be important in practice.
             tracer_min_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) &
-                           * inv_h_new(k,iCell)
+                           * hProvInv(k,iCell)
             tracer_max_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_incoming(k,iCell))) &
-                           * inv_h_new(k,iCell)
-            tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
+                           * hProvInv(k,iCell)
+            tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * hProvInv(k,iCell)
 
             scale_factor = (tracer_max_hor(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
             flux_incoming(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
@@ -396,7 +444,7 @@ module ocn_tracer_advection_mono
 
               !tracer_new is now the new state of the tracer. Only for a check on monotonicity
               tracer_new(k, iCell) = (tracer_cur(k, iCell)*layerThickness(k, iCell) + dt * tracer_new(k, iCell)) &
-                                   * inv_h_new(k, iCell)
+                                   * hProvInv(k, iCell)
             end do
           end if
         end do ! iCell loop
@@ -436,8 +484,12 @@ module ocn_tracer_advection_mono
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
           do k = 1, maxLevelCell(iCell)
-            tracersPrime(iTracer,k,iCell) = (tracer_cur(k, iCell)*layerThickness(k, iCell) + dt*tend(iTracer, k, iCell)) &
-                                          * inv_h_new(k, iCell)
+            ! mrp we are calling this tracer_cur, but this is now the
+            ! provisional tracer after only horizontal fluxes.
+! note: this adds ALL of tend.  But this might be a problem because there might
+! be other tendencies already added.  I really just want hor adv.
+            tracer_cur(k,iCell) = (tracer_cur(k, iCell)*layerThickness(k, iCell) + dt*tend(iTracer, k, iCell)) &
+                                  * hProvInv(k, iCell)
           end do
         end do
 #ifdef _ADV_TIMERS
@@ -447,131 +499,134 @@ module ocn_tracer_advection_mono
 #ifdef _ADV_TIMERS
         call mpas_timer_stop('monotonic check')
 #endif
-      end do ! iTracer loop
-
-#ifdef _ADV_TIMERS
-      call mpas_timer_start('deallocates')
-#endif
-      call mpas_threading_barrier()
-      call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
-      call mpas_deallocate_scratch_field(tracerNewField, .true.)
-      call mpas_deallocate_scratch_field(tracerCurField, .true.)
-      call mpas_deallocate_scratch_field(upwindTendencyField, .true.)
-      call mpas_deallocate_scratch_field(inverseLayerThicknessField, .true.)
-      call mpas_deallocate_scratch_field(tracerMinHorField, .true.)
-      call mpas_deallocate_scratch_field(tracerMaxHorField, .true.)
-      call mpas_deallocate_scratch_field(fluxIncomingField, .true.)
-      call mpas_deallocate_scratch_field(fluxOutgoingField, .true.)
-
-#ifdef _ADV_TIMERS
-      call mpas_timer_stop('deallocates')
-#endif
-
-   end subroutine ocn_tracer_hor_advection_mono_tend!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!      end do ! iTracer loop
 !
-!  routine ocn_tracer_vert_advection_mono_tend
+!#ifdef _ADV_TIMERS
+!      call mpas_timer_start('deallocates')
+!#endif
+!      call mpas_threading_barrier()
+!      call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
+!      call mpas_deallocate_scratch_field(tracerNewField, .true.)
+!      call mpas_deallocate_scratch_field(tracerCurField, .true.)
+!      call mpas_deallocate_scratch_field(upwindTendencyField, .true.)
+!      call mpas_deallocate_scratch_field(inverseLayerThicknessField, .true.)
+!      call mpas_deallocate_scratch_field(tracerMinHorField, .true.)
+!      call mpas_deallocate_scratch_field(tracerMaxHorField, .true.)
+!      call mpas_deallocate_scratch_field(fluxIncomingField, .true.)
+!      call mpas_deallocate_scratch_field(fluxOutgoingField, .true.)
 !
-!> \brief MPAS monotonic tracer vertical advection tendency with FCT
-!> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
-!> \details
-!>  This routine computes the monotonic tracer vertical advection tendencity using a FCT.
-!>  Both horizontal and vertical.
+!#ifdef _ADV_TIMERS
+!      call mpas_timer_stop('deallocates')
+!#endif
 !
-!-----------------------------------------------------------------------
-   subroutine ocn_tracer_vert_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, w, layerThickness, verticalCellSize,&!{{{
-                                              dt, meshPool, scratchPool, tend, maxLevelCell)
-
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
-      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
-      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coeffs for mising 3rd/4th order advection
-      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocity
-      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
-      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
-      real (kind=RKIND), intent(in) :: dt !< Input: Timestep
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
-      type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch fields
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
-
-      integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
-
-      integer :: i, iCell, k, iTracer, nVertLevels, num_tracers, nCells
-      integer, dimension(:), pointer :: nCellsArray
-
-      real (kind=RKIND) :: flux_upwind, tracer_min_new, tracer_max_new, tracer_upwind_new, scale_factor
-      real (kind=RKIND) :: flux, tracer_weight
-      real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
-      real (kind=RKIND), dimension(:), pointer :: verticalDivergenceFactor
-      real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, tracer_new, upwind_tendency, inv_h_new, tracer_max_vert, tracer_min_vert
-      real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing, high_order_vert_flux
-
-      type (field2DReal), pointer :: tracerNewField, tracerCurField, upwindTendencyField, inverseLayerThicknessField, &
-           fluxIncomingField, fluxOutgoingField, highOrderVertFluxField, tracerMinVertField, tracerMaxVertField
-
-      real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
-
-#ifdef _ADV_TIMERS
-      call mpas_timer_start('startup')
-#endif
-      ! Get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      nVertLevels = size(tracers,dim=2)
-      num_tracers = size(tracers,dim=1)
-
-      allocate(verticalDivergenceFactor(nVertLevels))
-      verticalDivergenceFactor = 1.0_RKIND
-
-      call mpas_pool_get_field(scratchPool, 'tracerValue', tracerNewField, 2)
-      call mpas_pool_get_field(scratchPool, 'tracerValue', tracerCurField, 1)
-      call mpas_pool_get_field(scratchPool, 'upwindTendency', upwindTendencyField)
-      call mpas_pool_get_field(scratchPool, 'inverseLayerThickness', inverseLayerThicknessField)
-      call mpas_pool_get_field(scratchPool, 'tracerMinVert', tracerMinVertField)
-      call mpas_pool_get_field(scratchPool, 'tracerMaxVert', tracerMaxVertField)
-      call mpas_pool_get_field(scratchPool, 'fluxIncoming', fluxIncomingField)
-      call mpas_pool_get_field(scratchPool, 'fluxOutgoing', fluxOutgoingField)
-      call mpas_pool_get_field(scratchPool, 'highOrderVertFlux', highOrderVertFluxField)
-
-      call mpas_allocate_scratch_field(tracerNewField, .true., .false.)
-      call mpas_allocate_scratch_field(tracerCurField, .true., .false.)
-      call mpas_allocate_scratch_field(upwindTendencyField, .true., .false.)
-      call mpas_allocate_scratch_field(inverseLayerThicknessField, .true., .false.)
-      call mpas_allocate_scratch_field(tracerMinVertField, .true., .false.)
-      call mpas_allocate_scratch_field(tracerMaxVertField, .true., .false.)
-      call mpas_allocate_scratch_field(fluxIncomingField, .true., .false.)
-      call mpas_allocate_scratch_field(fluxOutgoingField, .true., .false.)
-      call mpas_allocate_scratch_field(highOrderVertFluxField, .true., .false.)
-      call mpas_threading_barrier()
-
-      ! allocate nCells arrays
-      tracer_new => tracerNewField % array
-      tracer_cur => tracerCurField % array
-      upwind_tendency => upwindTendencyField % array
-      inv_h_new => inverseLayerThicknessField % array
-      tracer_max_vert => tracerMaxVertField % array
-      tracer_min_vert => tracerMinVertField % array
-      flux_incoming => fluxIncomingField % array
-      flux_outgoing => fluxOutgoingField % array
-
-      ! allocate nVertLevels+1 and nCells arrays
-      high_order_vert_flux => highOrderVertFluxField % array
-
-      nCells = nCellsArray( size(nCellsArray) )
-
-      !$omp do schedule(runtime) private(k)
-      do iCell = 1, nCells
-        do k=1, maxLevelCell(iCell)
-          inv_h_new(k, iCell) = 1.0_RKIND / (layerThickness(k, iCell) - dt * w(k, iCell) + dt * w(k+1, iCell))
-        end do
-      end do
-      !$omp end do
-#ifdef _ADV_TIMERS
-      call mpas_timer_stop('startup')
-#endif
-
-      ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
-      do iTracer = 1, num_tracers
+!   end subroutine ocn_tracer_hor_advection_mono_tend!}}}
+!
+!!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!!
+!!  routine ocn_tracer_vert_advection_mono_tend
+!!
+!!> \brief MPAS monotonic tracer vertical advection tendency with FCT
+!!> \author Mark Petersen, David Lee, Doug Jacobsen
+!!> \date   October 2017
+!!> \details
+!!>  This routine computes the monotonic tracer vertical advection tendencity using a FCT.
+!!>  Both horizontal and vertical.
+!!
+!!-----------------------------------------------------------------------
+!   subroutine ocn_tracer_vert_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, w, layerThickness, verticalCellSize,&!{{{
+!                                              dt, meshPool, scratchPool, tend, maxLevelCell)
+!
+!      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
+!      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
+!      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coeffs for mising 3rd/4th order advection
+!      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocity
+!      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
+!      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
+!      real (kind=RKIND), intent(in) :: dt !< Input: Timestep
+!      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+!      type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch fields
+!      real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
+!
+!      integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
+!
+!      integer :: i, iCell, k, iTracer, nVertLevels, num_tracers, nCells
+!      integer, dimension(:), pointer :: nCellsArray
+!
+!      real (kind=RKIND) :: flux_upwind, tracer_min_new, tracer_max_new, tracer_upwind_new, scale_factor
+!      real (kind=RKIND) :: flux, tracer_weight
+!      real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
+!      real (kind=RKIND), dimension(:), pointer :: verticalDivergenceFactor
+!      real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, tracer_new, upwind_tendency, inv_h_new, tracer_max_vert, tracer_min_vert
+!      real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing, high_order_vert_flux
+!
+!      type (field2DReal), pointer :: tracerNewField, tracerCurField, upwindTendencyField, inverseLayerThicknessField, &
+!           fluxIncomingField, fluxOutgoingField, highOrderVertFluxField, tracerMinVertField, tracerMaxVertField
+!
+!      real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
+!
+!#ifdef _ADV_TIMERS
+!      call mpas_timer_start('startup')
+!#endif
+!      ! Get dimensions
+!      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+!      nVertLevels = size(tracers,dim=2)
+!      num_tracers = size(tracers,dim=1)
+!
+!      allocate(verticalDivergenceFactor(nVertLevels))
+!      verticalDivergenceFactor = 1.0_RKIND
+!
+!      call mpas_pool_get_field(scratchPool, 'tracerValue', tracerNewField, 2)
+!      call mpas_pool_get_field(scratchPool, 'tracerValue', tracerCurField, 1)
+!      call mpas_pool_get_field(scratchPool, 'upwindTendency', upwindTendencyField)
+!      call mpas_pool_get_field(scratchPool, 'inverseLayerThickness', inverseLayerThicknessField)
+!      call mpas_pool_get_field(scratchPool, 'fluxIncoming', fluxIncomingField)
+!      call mpas_pool_get_field(scratchPool, 'fluxOutgoing', fluxOutgoingField)
+!
+!      call mpas_allocate_scratch_field(tracerNewField, .true., .false.)
+!      call mpas_allocate_scratch_field(tracerCurField, .true., .false.)
+!      call mpas_allocate_scratch_field(upwindTendencyField, .true., .false.)
+!      call mpas_allocate_scratch_field(inverseLayerThicknessField, .true., .false.)
+!      call mpas_allocate_scratch_field(fluxIncomingField, .true., .false.)
+!      call mpas_allocate_scratch_field(fluxOutgoingField, .true., .false.)
+!      call mpas_pool_get_field(scratchPool, 'tracerMinVert', tracerMinVertField)
+!      call mpas_pool_get_field(scratchPool, 'tracerMaxVert', tracerMaxVertField)
+!      call mpas_pool_get_field(scratchPool, 'highOrderVertFlux', highOrderVertFluxField)
+!      call mpas_allocate_scratch_field(tracerMinVertField, .true., .false.)
+!      call mpas_allocate_scratch_field(tracerMaxVertField, .true., .false.)
+!      call mpas_allocate_scratch_field(highOrderVertFluxField, .true., .false.)
+!      call mpas_threading_barrier()
+!
+!      ! allocate nCells arrays
+!      tracer_new => tracerNewField % array
+!      tracer_cur => tracerCurField % array
+!      upwind_tendency => upwindTendencyField % array
+!      inv_h_new => inverseLayerThicknessField % array
+!      tracer_max_vert => tracerMaxVertField % array
+!      tracer_min_vert => tracerMinVertField % array
+!      flux_incoming => fluxIncomingField % array
+!      flux_outgoing => fluxOutgoingField % array
+!
+!      ! allocate nVertLevels+1 and nCells arrays
+!      high_order_vert_flux => highOrderVertFluxField % array
+!
+!      nCells = nCellsArray( size(nCellsArray) )
+!
+! note mrp need to compute inv_h_new, but put it up above the iTracer loop.
+! There needs to be two inv_h, one after hor flux, and one after vert flux.
+! 
+!      !$omp do schedule(runtime) private(k)
+!      do iCell = 1, nCells
+!        do k=1, maxLevelCell(iCell)
+!          inv_h_new(k, iCell) = 1.0_RKIND / (layerThickness(k, iCell) - dt * w(k, iCell) + dt * w(k+1, iCell))
+!        end do
+!      end do
+!      !$omp end do
+!#ifdef _ADV_TIMERS
+!      call mpas_timer_stop('startup')
+!#endif
+!
+!      ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
+!      do iTracer = 1, num_tracers
 #ifdef _ADV_TIMERS
         call mpas_timer_start('cell init')
 #endif
@@ -581,7 +636,10 @@ module ocn_tracer_advection_mono
         do iCell = 1, nCells
           do k=1, nVertLevels
             high_order_vert_flux(k, iCell) = 0.0_RKIND
-            tracer_cur(k,iCell) = tracers(iTracer,k,iCell)
+! note mrp 171013 later: replace tracer_cur with tracersPrime, delete following
+! line.
+!mrp no longer need this. Assigned it to tracer_cur above.
+!            tracer_cur(k,iCell) = tracersPrime(k,iCell)
             upwind_tendency(k, iCell) = 0.0_RKIND
           end do ! k loop
           high_order_vert_flux(nVertLevels+1, iCell) = 0.0_RKIND
@@ -604,14 +662,16 @@ module ocn_tracer_advection_mono
 
           ! Operate on top cell in column
           k = 1
+! note mrp: now that hor and vert are separate, can change to single array of
+! each: tracer_min and tracer_max
           tracer_max_vert(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
           tracer_min_vert(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
 
           ! Operate on next-to-top cell in column
           k = max(1, min(maxLevelCell(iCell), 2))
           if ( k >= 2 ) then
-            verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
-            verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
+            verticalWeightK = hProv(k-1, iCell) / (hProv(k, iCell) + hProv(k-1, iCell))
+            verticalWeightKm1 = hProv(k, iCell) / (hProv(k, iCell) + hProv(k-1, iCell))
             high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1 &
                 *tracer_cur(k-1,iCell))
             tracer_max_vert(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
@@ -637,8 +697,8 @@ module ocn_tracer_advection_mono
              end do
           else if ( vert2ndOrder ) then
              do k=3,maxLevelCell(iCell)-1
-                verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
-                verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
+                verticalWeightK = hProv(k-1, iCell) / (hProv(k, iCell) + hProv(k-1, iCell))
+                verticalWeightKm1 = hProv(k, iCell) / (hProv(k, iCell) + hProv(k-1, iCell))
                 high_order_vert_flux(k,iCell) = w(k,iCell) * (verticalWeightK * tracer_cur(k,iCell) + verticalWeightKm1 &
                                               * tracer_cur(k-1,iCell))
 
@@ -649,8 +709,8 @@ module ocn_tracer_advection_mono
 
           ! Operate on deepest vertical cell in column.
           k = max(1, maxLevelCell(iCell))
-          verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
-          verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
+          verticalWeightK = hProv(k-1, iCell) / (hProv(k, iCell) + hProv(k-1, iCell))
+          verticalWeightKm1 = hProv(k, iCell) / (hProv(k, iCell) + hProv(k-1, iCell))
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
           tracer_max_vert(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
           tracer_min_vert(k,iCell) = min(tracer_cur(k,iCell),tracer_cur(k-1,iCell))
@@ -696,11 +756,11 @@ module ocn_tracer_advection_mono
           ! Factors are placed in the flux_incoming and flux_outgoing arrays
           do k = 1, maxLevelCell(iCell)
             ! TODO: assumes second half step
-            tracer_min_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) &
+            tracer_min_new = (tracer_cur(k,iCell)*hProv(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) &
                            * inv_h_new(k,iCell)
-            tracer_max_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_incoming(k,iCell))) &
+            tracer_max_new = (tracer_cur(k,iCell)*hProv(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_incoming(k,iCell))) &
                            * inv_h_new(k,iCell)
-            tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
+            tracer_upwind_new = (tracer_cur(k,iCell)*hProv(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
 
             scale_factor = (tracer_max_vert(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
             flux_incoming(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
@@ -731,7 +791,7 @@ module ocn_tracer_advection_mono
           end do ! k loop
 
           do k = 1,maxLevelCell(iCell)
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) &
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (high_order_vert_flux(k+1, iCell) &
                                     - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
           end do ! k loop
 
@@ -739,12 +799,12 @@ module ocn_tracer_advection_mono
           if ( monotonicityCheck) then
             do k = 1, maxLevelCell(iCell)
               !tracer_new holds a tendency for now. Only for a check on monotonicity
-              tracer_new(k, iCell) = verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) &
+              tracer_new(k, iCell) = (high_order_vert_flux(k+1, iCell) &
                                    - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
 
               !tracer_new is now the new state of the tracer. Only for a check on monotonicity
               ! TODO: assumes second half step
-              tracer_new(k, iCell) = (tracer_cur(k, iCell)*layerThickness(k, iCell) + dt * tracer_new(k, iCell)) &
+              tracer_new(k, iCell) = (tracer_cur(k, iCell)*hProv(k, iCell) + dt * tracer_new(k, iCell)) &
                                    * inv_h_new(k, iCell)
             end do
           end if
@@ -802,14 +862,15 @@ module ocn_tracer_advection_mono
       call mpas_deallocate_scratch_field(tracerMaxVertField, .true.)
       call mpas_deallocate_scratch_field(fluxIncomingField, .true.)
       call mpas_deallocate_scratch_field(fluxOutgoingField, .true.)
+      call mpas_deallocate_scratch_field(layerThicknessPrimeField, .true.)
+      call mpas_deallocate_scratch_field(tracersPrimeField, .true.)
       call mpas_deallocate_scratch_field(highOrderVertFluxField, .true.)
 
-      deallocate(verticalDivergenceFactor)
 #ifdef _ADV_TIMERS
       call mpas_timer_stop('deallocates')
 #endif
 
-   end subroutine ocn_tracer_vert_advection_mono_tend!}}}
+   end subroutine ocn_tracer_advection_mono_tend!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -817,7 +878,7 @@ module ocn_tracer_advection_mono
 !
 !> \brief MPAS initialize monotonic tracer advection tendency with FCT
 !> \author Mark Petersen, David Lee, Doug Jacobsen
-!> \date   August 2017
+!> \date   October 2017
 !> \details
 !>  This routine initializes the monotonic tracer advection tendencity using a FCT.
 !
