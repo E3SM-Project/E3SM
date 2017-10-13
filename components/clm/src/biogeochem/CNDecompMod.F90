@@ -496,6 +496,29 @@ contains
             end do
          end do
       end do
+
+      if (nu_com .eq. 'RD') then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            do j = 1,nlevdecomp
+                gross_nmin_vr(c,j) = 0.0_r8
+                gross_pmin_vr(c,j) = 0.0_r8
+            end do
+         end do
+         do k = 1, ndecomp_cascade_transitions
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+             	  if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then 
+                      gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
+                  end if
+                  if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then 
+                      gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
+                  end if
+                end do
+             end do
+          end do
+      end if
      
       if (nu_com .ne. 'RD') then
       do fc = 1,num_soilc
