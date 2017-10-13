@@ -113,7 +113,7 @@ def _save_prerun_timing_acme(case, lid):
     try:
         os.makedirs(full_timing_dir)
     except OSError:
-        logger.warning("{} can not be created. Skipping archive of timing data and associated provenance".format(full_timing_dir))
+        logger.warning("{} cannot be created. Skipping archive of timing data and associated provenance".format(full_timing_dir))
         return
 
     mach = case.get_value("MACH")
