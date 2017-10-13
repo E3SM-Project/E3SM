@@ -91,10 +91,6 @@ module micro_mg2_0
 use shr_spfn_mod, only: gamma => shr_spfn_gamma
 #endif
 
-!debug
-use cam_logfile,       only: iulog
-
-
 use wv_sat_methods, only: &
      qsat_water => wv_sat_qsat_water, &
      qsat_ice => wv_sat_qsat_ice
@@ -2077,7 +2073,6 @@ subroutine micro_mg_tend ( &
            time_sed = 0._r8
         end if
         nstep = 0 ! used to track number of sedimentation steps
-        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2089,20 +2084,12 @@ subroutine micro_mg_tend ( &
            ! update deltat_sed for target CFL number
            deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
 
-           !+++debug
-           if (abs(deltat_sed - CFL_FAC*minval(pdel(i,1:nlev)/alphaq(1:nlev)))>1e-10_r8) then
-              write(iulog,*) '**deltat_sed,cfl,minval(pdel(i,:)/alphaq(:))=',deltat_sed,cfl,minval(pdel(i,1:nlev)/alphaq(1:nlev))
-           end if
-           !---debug
-
            ! advance cloud ice sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep+1
            call sed_AdvanceOneStep(dumi,dumni,alphaq,alphan,pdel,deltat,deltat_sed, &
                 nlev,i,MG_ICE,g,qitend,nitend,preci,qisedten,&
                 cloud_frac=icldm,qvlat=qvlat,tlat=tlat,xxl=xxls,preci=preci,qsevap=qisevap)
-           ! update maximum fall speed
-           dum1 = max(dum1,maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
         ! loop over cloud liquid sedimentation to ensure stability
@@ -2110,7 +2097,6 @@ subroutine micro_mg_tend ( &
         deltat_sed = deltat
         time_sed = deltat
         nstep = 0 ! used to track number of sedimentation steps
-        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2126,8 +2112,6 @@ subroutine micro_mg_tend ( &
            call sed_AdvanceOneStep(dumc,dumnc,alphaq,alphan,pdel,deltat,deltat_sed, &
                 nlev,i,MG_LIQUID,g,qctend,nctend,prect,qcsedten,&
                 cloud_frac=lcldm,qvlat=qvlat,tlat=tlat,xxl=xxlv,qsevap=qcsevap)
-           ! update maximum fall speed
-           dum1 = max(maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
         ! loop over rain sedimentation to ensure stability
@@ -2135,7 +2119,6 @@ subroutine micro_mg_tend ( &
         deltat_sed = deltat
         time_sed = deltat
         nstep = 0 ! used to track number of sedimentation steps
-        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2150,8 +2133,6 @@ subroutine micro_mg_tend ( &
            nstep = nstep + 1
            call sed_AdvanceOneStep(dumr,dumnr,alphaq,alphan,pdel,deltat,deltat_sed, &
                 nlev,i,MG_RAIN,g,qrtend,nrtend,prect,qrsedten)
-           ! update maximum fall speed
-           dum1 = max(maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
         ! loop over snow sedimentation to ensure stability
@@ -2159,7 +2140,6 @@ subroutine micro_mg_tend ( &
         deltat_sed = deltat
         time_sed = deltat
         nstep = 0 ! used to track number of sedimentation steps
-        dum1 = 0._r8 ! used to track maximum fall speed
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2174,7 +2154,6 @@ subroutine micro_mg_tend ( &
            nstep = nstep + 1
            call sed_AdvanceOneStep(dums,dumns,alphaq,alphan,pdel,deltat,deltat_sed, &
                 nlev,i,MG_SNOW,g,qstend,nstend,prect,qssedten,preci=preci)
-           dum1 = max(maxval(alphaq(:)),maxval(alphan(:)))
         end do
 
      end if !not precip_off

@@ -1,6 +1,5 @@
 module micro_mg2_sedimentation
   use micro_mg_utils, only: r8
-  use cam_logfile,       only: iulog
   use cam_abortutils,    only: endrun
 
   implicit none
@@ -41,6 +40,12 @@ contains
 
     real(r8) :: qic(nlev), nic(nlev), lam(nlev), pgam(nlev), cq, cn, lamPbr(nlev)
     integer :: k, ngptl
+
+    ! initialize stuff. 
+    ! If qic==0 for entire col, alpha=0 => cfl=0 => deltat_sed blows up. 
+    ! Using small val causes cfl to be small, causing large deltat_sed (which is appropriate)
+    alphaq(:) = qsmall
+    alphan(:) = qsmall
 
     ! compute module lambda quantities for rain if not already computed
     if (brDeff_dim .eq. -1._r8) then
@@ -88,7 +93,7 @@ contains
               lamPbr(k) = lamPbr_bounds(2)
               nic(k) = lamPbr(k)**eff_dimDbr * qic(k)*oneDshape_coeff
             end if
-          end if
+         end if
         end do
 
       case (MG_SNOW)
@@ -149,14 +154,11 @@ contains
 
     end select
 
-    ! compute CFL number
-    cfl = max(maxval(alphaq(:)*deltat/pdel(i,:)),maxval(alphan(:)*deltat/pdel(i,:)))
-
-    !+++next lines are just debugging sanity check and can be deleted later
-    if (cfl < -1e-10_r8) then
-       write(iulog,*) 'in micro_mg2_sedimentation.F90, cfl<0: cfl = ',cfl
-    end if
-    !---debug
+    !COMPUTE CFL NUMBER. Note that alphaq and alphan are defined on cell edges while
+    !pdel is defined on cell centers. I'm using alpha(1:) here because the CFL number 
+    !can be interpreted as the fraction of a timestep before advection flushes out the 
+    !entire contents of the cell. Since all motion is downward, the lower edge is appropriate.
+    cfl = max(maxval(alphaq(1:nlev)*deltat/pdel(i,1:nlev)),maxval(alphan(1:nlev)*deltat/pdel(i,1:nlev)))
 
   end subroutine sed_CalcFallRate
 
@@ -223,45 +225,7 @@ contains
       q(i,k) = q(i,k) - deltat_sed*deltafluxQ
       n(i,k) = n(i,k) - deltat_sed*deltafluxN
 
-      if (q(i,k) < -1.d-10) then
-         if (mg_type == MG_ICE) then
-            write(iulog,1001) 'after','qi',i,k,q(i,k)
-            q(i,k) = 0._r8
-         else if (mg_type == MG_SNOW) then
-            write(iulog,1001) 'after','qs',i,k,q(i,k)
-            q(i,k) = 0._r8
-         else if (mg_type == MG_LIQUID) then
-            write(iulog,1001) 'after','qc',i,k,q(i,k)
-            q(i,k) = 0._r8
-         else if (mg_type == MG_RAIN) then
-            write(iulog,1001) 'after','qr',i,k,q(i,k)
-            q(i,k) = 0._r8
-
-            !check simplified version of deltat_sed:
-            if (abs(deltat_sed - CFL_FAC*minval(pdel(i,:)/alphaq(:)))>1e-10_r8) then
-               write(iulog,*) 'deltat_sed,min(pdel),min(alphaq)=',deltat_sed,minval(pdel(i,:)),minval(alphaq(:))
-            end if
-            !check ratio
-            if ( ( alphaq(k)/pdel(i,k) )/maxval(alphaq(:)/pdel(i,:)) > 1._r8) then
-               write(iulog,*) 'max ratio exceeded for k = ',k
-            end if
-
-            if (deltafluxQ < fq(k)/pdel(i,k)) then
-               write(iulog,*) '  deltafluxQ,fq/pdel=',deltafluxQ,fq(k)/pdel(i,k)
-            end if
-            !check
-
-         end if
-
-      else if (n(i,k) < -1.d-10) then
-        print *, 'n(i,k)=', n(i,k)
-        n(i,k) = 0._r8
-      end if
-
     end do !loop over k
-
-!if index i or k has more than 6 digits, will fail.
-1001 format ( a6,': ',a2,'(', i6,',', i6,') = ',e12.3) 
 
     ! units below are m/s
     ! sedimentation flux at surface is added to precip flux at surface
