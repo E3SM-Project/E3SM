@@ -35,7 +35,7 @@ These variables will appear in ``env_run.xml`` and the resulting values are comp
    "DATM_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode - full pathname of model domain file "
    "DATM_CPLHIST_CASE",        "Coupler history forcing data mode - case name"
    "DATM_CPLHIST_DIR",         "Coupler history forcing data mode - directory containing coupler history data"
-   "DATM_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to data starting year"
+   "DATM_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to DATM_CPLHIST_YR_START"
    "DATM_CPLHIST_YR_START",    "Coupler history forcing data mode - starting year to loop data over"
    "DATM_CPLHIST_YR_END",      "Coupler history forcing data mode - ending year to loop data over"
 

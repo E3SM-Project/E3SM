@@ -152,7 +152,19 @@
     <default_value>-999</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>simulation year corresponding to starting year (only used when DATM_MODE is CPLHIST)</desc>
+    <desc>
+      Simulation year corresponding to DATM_CPLHIST_YR_START (only used
+      when DATM_MODE is CPLHIST). A common usage is to set this to
+      RUN_STARTDATE. With this setting, the forcing in the first year of
+      the run will be the forcing of year DATM_CPLHIST_YR_START. Another
+      use case is to align the calendar of transient forcing with the
+      model calendar. For example, setting
+      DATM_CPLHIST_YR_ALIGN=DATM_CPLHIST_YR_START will lead to the
+      forcing calendar being the same as the model calendar. The forcing
+      for a given model year would be the forcing of the same year. This
+      would be appropriate in transient runs where the model calendar is
+      setup to span the same year range as the forcing data.
+    </desc>
   </entry>
 
   <entry id="DATM_CPLHIST_YR_START">

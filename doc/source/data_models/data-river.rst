@@ -29,7 +29,7 @@ These variables will appear in ``env_run.xml`` and are used by the DROF ``cime_c
    "DROF_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode - full pathname of model domain file "
    "DROF_CPLHIST_CASE",        "Coupler history forcing data mode - case name"
    "DROF_CPLHIST_DIR",         "Coupler history forcing data mode - directory containing coupler history forcing data"
-   "DROF_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to forcing data starting year"
+   "DROF_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to DROF_CPLHIST_YR_START"
    "DROF_CPLHIST_YR_START",    "Coupler history forcing data mode - starting year to loop forcing data over"
    "DROF_CPLHIST_YR_END",      "Coupler history forcing data mode - ending year to loop forcing data over"
 
