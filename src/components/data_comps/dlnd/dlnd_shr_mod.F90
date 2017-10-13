@@ -32,7 +32,7 @@ module dlnd_shr_mod
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
   character(CL) , public :: rest_file_strm        ! restart filename for streams
-  character(CL) , public :: lnd_mode              ! mode
+  character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -121,18 +121,18 @@ CONTAINS
     call shr_strdata_readnml(SDLND,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
-    ! Determine and validate lnd_mode
+    ! Determine and validate datamode
     !----------------------------------------------------------------------------
 
-    lnd_mode = trim(SDLND%dataMode)
+    datamode = trim(SDLND%dataMode)
 
-    if (trim(lnd_mode) == 'NULL' .or. &
-        trim(lnd_mode) == 'COPYALL') then
+    if (trim(datamode) == 'NULL' .or. &
+        trim(datamode) == 'COPYALL') then
         if (my_task == master_task) then
-           write(logunit,F00) 'lnd mode = ',trim(lnd_mode)
+           write(logunit,F00) 'dlnd datamode = ',trim(datamode)
         end if
     else
-      write(logunit,F00) ' ERROR illegal lnd mode = ',trim(lnd_mode)
+      write(logunit,F00) ' ERROR illegal dlnd datamode = ',trim(datamode)
       call shr_sys_abort()
    end if
 
@@ -146,7 +146,7 @@ CONTAINS
        lnd_present    = .true.
        lnd_prognostic = .true.
     endif
-    if (trim(lnd_mode) /= 'NULL') then
+    if (trim(datamode) /= 'NULL') then
        lnd_present = .true.
     end if
 
