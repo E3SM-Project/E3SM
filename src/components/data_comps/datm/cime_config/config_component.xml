@@ -17,7 +17,7 @@
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSW"> GSWP3 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
-    <desc option="CPLHIST"> Coupler hist data set (assumes that model grid and stream domains are the same)</desc>
+    <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="1PT">single point tower site data set </desc>
     <desc option="NYF">COREv2 normal year forcing</desc>
     <desc option="IAF">COREv2 interannual forcing</desc>
