@@ -225,6 +225,53 @@ where:
    year_align
       a model year that will be aligned with data for year_first
 
+---------------------
+Details on year_align
+---------------------
+
+The ``year_align`` value gives the simulation year corresponding to
+``year_first``. A common usage is to set this to the year of
+``RUN_STARTDATE``. With this setting, the forcing in the first year of
+the run will be the forcing of year ``year_first``. Another use case is
+to align the calendar of transient forcing with the model calendar. For
+example, setting ``year_align`` = ``year_first`` will lead to the
+forcing calendar being the same as the model calendar. The forcing for a
+given model year would be the forcing of the same year. This would be
+appropriate in transient runs where the model calendar is setup to span
+the same year range as the forcing data.
+
+For some data model modes, ``year_align`` can be set via an xml variable
+whose name ends with ``YR_ALIGN`` (there are a few such xml variables,
+each pertaining to a particular data model mode).
+
+An example of this is land-only historical simulations in which we run
+the model for 1850 to 2010 using atmospheric forcing data that is only
+available for 1901 to 2010. In this case, we want to run the model for
+years 1850 (so ``RUN_STARTDATE`` has year 1850) through 1900 by looping
+over the forcing data for 1901-1920, and then run the model for years
+1901-2010 using the forcing data from 1901-2010. To do this, we
+initially set::
+
+  ./xmlchange DATM_CLMNCEP_YR_ALIGN=1901
+  ./xmlchange DATM_CLMNCEP_YR_START=1901
+  ./xmlchange DATM_CLMNCEP_YR_END=1920
+
+When the model has completed year 1900, then we set::
+
+  ./xmlchange DATM_CLMNCEP_YR_ALIGN=1901
+  ./xmlchange DATM_CLMNCEP_YR_START=1901
+  ./xmlchange DATM_CLMNCEP_YR_END=2010
+
+With this setup, the correlation between model run year and forcing year
+looks like this::
+
+  RUN   Year : 1850 ... 1860 1861 ... 1870 ... 1880 1881 ... 1890 ... 1900 1901 ... 2010
+  FORCE Year : 1910 ... 1920 1901 ... 1910 ... 1920 1901 ... 1910 ... 1920 1901 ... 2010
+
+Setting ``DATM_CLMNCEP_YR_ALIGN`` to 1901 tells the code that you want
+to align model year 1901 with forcing data year 1901, and then it
+calculates what the forcing year should be if the model starts in
+year 1850.
 
 --------------------------------------------------
 Customizing shr_strdata_nml values
@@ -255,8 +302,8 @@ As an example we refer to the following ``datm_in`` contents (that would appear 
 
 As is discussed in the :ref:`CIME User's Guide<running-a-case>`, to change the contents of ``datm_in``, you must edit ``$CASEROOT/user_nl_datm``.
 In the above example, you can to this to change any of the above settings **except for the names**
-
 ::
+
    datm.streams.txt.CLM_QIAN.Solar
    datm.streams.txt.CLM_QIAN.Precip
    datm.streams.txt.CLM_QIAN.TPQW
