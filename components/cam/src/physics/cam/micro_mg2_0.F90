@@ -2078,11 +2078,11 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain CFL number
            call sed_CalcFallRate(dumi,dumni,icldm,rho,pdel,nlev,i,&
-                MG_ICE,deltat_sed,g,ain,rhof,alphaq,alphan,cfl,&
+                MG_ICE,deltat,g,ain,rhof,alphaq,alphan,cfl,&
                 ncons=nicons,nnst=ninst,&
                 gamma_b_plus1=gamma_bi_plus1,gamma_b_plus4=gamma_bi_plus4)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
+           deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
 
            ! advance cloud ice sedimentation
            time_sed = time_sed - deltat_sed
@@ -2102,10 +2102,10 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain fall speeds
            call sed_CalcFallRate(dumc,dumnc,lcldm,rho,pdel,nlev,i,&
-                MG_LIQUID,deltat_sed,g,acn,rhof,alphaq,alphan,cfl,&
+                MG_LIQUID,deltat,g,acn,rhof,alphaq,alphan,cfl,&
                 ncons=nccons,nnst=ncnst)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
+           deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
            ! advance cloud liquid sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
@@ -2124,10 +2124,10 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain fall speeds
            call sed_CalcFallRate(dumr,dumnr,precip_frac,rho,pdel,nlev,i,&
-                MG_RAIN,deltat_sed,g,arn,rhof,alphaq,alphan,cfl,&
+                MG_RAIN,deltat,g,arn,rhof,alphaq,alphan,cfl,&
                 gamma_b_plus1=gamma_br_plus1,gamma_b_plus4=gamma_br_plus4)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
+           deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
            ! advance rain sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1
@@ -2145,10 +2145,10 @@ subroutine micro_mg_tend ( &
         do while (time_sed > qsmall)
            ! obtain fall speeds
            call sed_CalcFallRate(dums,dumns,precip_frac,rho,pdel,nlev,i,&
-                MG_SNOW,deltat_sed,g,asn,rhof,alphaq,alphan,cfl,&
+                MG_SNOW,deltat,g,asn,rhof,alphaq,alphan,cfl,&
                 gamma_b_plus1=gamma_bs_plus1,gamma_b_plus4=gamma_bs_plus4)
            ! update deltat_sed for target CFL number
-           deltat_sed = min(deltat_sed*CFL_FAC/cfl,time_sed)
+           deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
            ! advance snow sedimentation
            time_sed = time_sed - deltat_sed
            nstep = nstep + 1

@@ -22,6 +22,7 @@ contains
 
   subroutine sed_CalcFallRate(q,n,cloud_frac,rho,pdel,nlev,i, &
     mg_type,deltat,g,an,rhof,alphaq,alphan,cfl,ncons,nnst,gamma_b_plus1,gamma_b_plus4)
+
     use micro_mg_utils, only: size_dist_param_liq, &
                                            size_dist_param_basic, &
                                            mg_ice_props, mg_liq_props, &
@@ -41,47 +42,87 @@ contains
     real(r8) :: qic(nlev), nic(nlev), lam(nlev), pgam(nlev), cq, cn, lamPbr(nlev)
     integer :: k, ngptl
 
-    ! initialize stuff. 
-    ! If qic==0 for entire col, alpha=0 => cfl=0 => deltat_sed blows up. 
-    ! Using small val causes cfl to be small, causing large deltat_sed (which is appropriate)
+    ! INITIALIZE ALPHA:
+    !=======================
+    ! If qic==0 for entire col alphaq and alphan=0 => cfl=0 => deltat_sed blows up. 
+    ! Using a small val causes cfl to be small, causing large deltat_sed which gets
+    ! limited to a max of deltat. This is appropriate since if you have nothing to 
+    ! sediment you don't need a short timestep.
     alphaq(:) = qsmall
     alphan(:) = qsmall
 
-    ! compute module lambda quantities for rain if not already computed
-    if (brDeff_dim .eq. -1._r8) then
-      brDeff_dim = br/mg_rain_props%eff_dim
-      eff_dimDbr = mg_rain_props%eff_dim/br
-      oneDshape_coeff = 1._r8/mg_rain_props%shape_coef
-      lamPbr_bounds(1) = mg_rain_props%lambda_bounds(1)**br
-      lamPbr_bounds(2) = mg_rain_props%lambda_bounds(2)**br
-    end if
 
-    ! use quantity in cloud
+    ! CALCULATE IN-CLOUD QUANTITIES:
+    !========================
     qic = q(i,:)/cloud_frac(i,:)
     nic = n(i,:)/cloud_frac(i,:)
 
-    ! switch for specification of droplet and crystal number or ice cloud number
+    ! IF FIXED DROP/CRYSTAL NUMBER REQUESTED, RESET nic
+    !========================
     if ((mg_type == MG_LIQUID  .or. mg_type == MG_ICE) .and. ncons) then
       nic = nnst/rho(i,:)
     end if
 
-    ! calculate lambda
+    ! HANDLE EACH CONDENSATE SPECIES SEPARATELY
+    !========================
     select case (mg_type)
 
       case (MG_ICE)
+        !GET LAMBDA:
+        !------------
         call size_dist_param_basic(mg_ice_props, qic(:), nic(:), lam(:))
 
+        !GET FALL SPEED:
+        !------------
+        do k=1,nlev
+          if (qic(k) .ge. qsmall) then
+            alphaq(k) = g*rho(i,k)*min(an(i,k)*gamma_b_plus4/(6._r8*lam(k)**bi), &
+                  1.2_r8*rhof(i,k))
+            alphan(k) = g*rho(i,k)* &
+                  min(an(i,k)*gamma_b_plus1/lam(k)**bi,1.2_r8*rhof(i,k))
+          end if
+        end do
+
       case (MG_LIQUID)
+        !GET LAMBDA:
+        !------------
         call size_dist_param_liq(mg_liq_props, qic(:), nic(:), rho(i,:), pgam(:), lam(:))
 
+        !GET FALL SPEED:
+        !------------
+        do k=1,nlev
+          if (qic(k) .ge. qsmall) then
+            alphaq(k) = g*rho(i,k)*an(i,k)*gamma(4._r8+bc+pgam(k))/ &
+                        (lam(k)**bc*gamma(pgam(k)+4._r8))
+
+            alphan(k) = g*rho(i,k)* &
+                        an(i,k)*gamma(1._r8+bc+pgam(k))/ &
+                        (lam(k)**bc*gamma(pgam(k)+1._r8))
+          end if
+        end do
+
       case (MG_RAIN)
+        !GET LAMBDA:
+        !------------
+        !Note: could make lamPbr a scalar by merging lambda and fallspeed 
+        !calculation, but this would be harder to read/understand.
+        if (brDeff_dim .eq. -1._r8) then
+           brDeff_dim = br/mg_rain_props%eff_dim
+           eff_dimDbr = mg_rain_props%eff_dim/br
+           oneDshape_coeff = 1._r8/mg_rain_props%shape_coef
+           lamPbr_bounds(1) = mg_rain_props%lambda_bounds(1)**br
+           lamPbr_bounds(2) = mg_rain_props%lambda_bounds(2)**br
+        end if
+
         do k=1,nlev
           if (qic(k) > qsmall) then
+
             ! add upper limit to in-cloud number concentration to prevent
             ! numerical error
             if (limiter_is_on(mg_rain_props%min_mean_mass)) then
               nic(k) = min(nic(k), qic(k) / mg_rain_props%min_mean_mass)
             end if
+
             ! lambda^b = (c nic/qic)^(b/d)
             lamPbr(k) = (mg_rain_props%shape_coef * nic(k)/qic(k))**brDeff_dim
             ! check for slope
@@ -96,40 +137,8 @@ contains
          end if
         end do
 
-      case (MG_SNOW)
-        call size_dist_param_basic(mg_snow_props, qic(:), nic(:), lam(:))
-
-      case default
-        call endrun("Invalid mg_type to mg2_sedimentation")
-
-    end select
-
-    ! Loop through levels to compute alphaq, alphan, and possibly eigenspaces
-    select case (mg_type)
-
-      case (MG_ICE)
-        do k=1,nlev
-          if (qic(k) .ge. qsmall) then
-            alphaq(k) = g*rho(i,k)*min(an(i,k)*gamma_b_plus4/(6._r8*lam(k)**bi), &
-                  1.2_r8*rhof(i,k))
-            alphan(k) = g*rho(i,k)* &
-                  min(an(i,k)*gamma_b_plus1/lam(k)**bi,1.2_r8*rhof(i,k))
-          end if
-        end do
-
-      case (MG_LIQUID)
-        do k=1,nlev
-          if (qic(k) .ge. qsmall) then
-            alphaq(k) = g*rho(i,k)*an(i,k)*gamma(4._r8+bc+pgam(k))/ &
-                        (lam(k)**bc*gamma(pgam(k)+4._r8))
-
-            alphan(k) = g*rho(i,k)* &
-                        an(i,k)*gamma(1._r8+bc+pgam(k))/ &
-                        (lam(k)**bc*gamma(pgam(k)+1._r8))
-          end if
-        end do
-
-      case (MG_RAIN)
+        !GET FALL SPEED:
+        !------------
         do k=1,nlev
           if (qic(k) > qsmall) then
             cq = g*rho(i,k)*an(i,k)*gamma_b_plus4/6._r8
@@ -140,6 +149,12 @@ contains
         end do
 
       case (MG_SNOW)
+        !GET LAMBDA:
+        !------------
+        call size_dist_param_basic(mg_snow_props, qic(:), nic(:), lam(:))
+
+        !GET FALL SPEED:
+        !------------
         do k=1,nlev
           if (lam(k) .ge. qsmall) then
             alphaq(k) = g*rho(i,k)* &
