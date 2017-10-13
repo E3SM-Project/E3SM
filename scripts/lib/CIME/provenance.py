@@ -107,13 +107,13 @@ def _save_prerun_timing_acme(case, lid):
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
     if os.path.exists(full_timing_dir):
-        logger.warning("{} already exists. Skipping archive of timing data and associated provenance".format(full_timing_dir))
+        logger.warning("{} already exists. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
         return
 
     try:
         os.makedirs(full_timing_dir)
     except OSError:
-        logger.warning("{} cannot be created. Skipping archive of timing data and associated provenance".format(full_timing_dir))
+        logger.warning("{} cannot be created. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
         return
 
     mach = case.get_value("MACH")
