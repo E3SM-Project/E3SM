@@ -1978,18 +1978,18 @@
                               desired layout (change '${group}/${USER}' to your
         prefered location). -->
       <DESC> OR-CONDO, CADES-CCSI, os is Linux, 16 pes/nodes, batch system is PBS</DESC>
-      <NODENAME_REGEX>or-condo-*.ornl.gov</NODENAME_REGEX>
+      <NODENAME_REGEX>or-condo</NODENAME_REGEX>
       <TESTS>acme_developer</TESTS>
       <OS>LINUX</OS>
       <COMPILERS>gnu,intel</COMPILERS>
       <MPILIBS>openmpi</MPILIBS>
-      <RUNDIR>/lustre/or-hydra/cades-ccsi/scratch/$USER/$CASE/run</RUNDIR>
-      <EXEROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER/$CASE/bld</EXEROOT>
+      <CIME_OUTPUT_ROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER</CIME_OUTPUT_ROOT>
+      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
       <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
       <DIN_LOC_ROOT_CLMFORC>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-      <DOUT_S_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/archives/$CASE</DOUT_S_ROOT>
+      <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-      <CIME_OUTPUT_ROOT>/lustre/or-hydra/cades-ccsi/scratch</CIME_OUTPUT_ROOT>
       <BASELINE_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/baselines</BASELINE_ROOT>
       <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
       <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
@@ -1999,7 +1999,7 @@
       <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
       <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
       <mpirun mpilib="openmpi" compiler="gnu">
-        <executable args="default">/software/dev_tools/swtree/cs400/xalt/0.7.5/centos7.3/bin/mpirun</executable>
+        <executable>mpirun</executable>
         <arguments>
           <arg name="num_tasks"> -np $TOTALPES</arg>
           <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
