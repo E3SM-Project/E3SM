@@ -117,7 +117,7 @@ CONTAINS
 
 #ifdef HAVE_MOAB
     integer, external :: iMOAB_RegisterFortranApplication
-    integer :: ierr
+    integer :: ierr, ATM_ID1
     character*32  appname
 #endif
 
@@ -190,7 +190,8 @@ CONTAINS
     if(par%dynproc) then
 #ifdef HAVE_MOAB
        appname="HM_COARSE"//CHAR(0)
-       ierr = iMOAB_RegisterFortranApplication(appname, par%comm, MHID)
+       ATM_ID1 = 19
+       ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, MHID)
        if (ierr > 0 )  & 
            call endrun('Error: cannot register moab app')
 #endif

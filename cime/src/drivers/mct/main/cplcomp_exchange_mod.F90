@@ -356,13 +356,13 @@ contains
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
         pid_target = 0 !   TODO
-        ierr = iMOAB_SendMesh(MHID, mpicom_old, mpicom_join, mpigrp_cplid, pid_target);
+        ierr = iMOAB_SendMesh(MHID, mpicom_join, mpigrp_cplid, id_new);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_HM"//CHAR(0)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, pid_target) 
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target) 
         pid_source = 0
-        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_new, mpicom_join, mpigrp_old, pid_source)
+        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
         ! debug test
         outfile = 'recMesh.h5m'//CHAR(0)
         wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
