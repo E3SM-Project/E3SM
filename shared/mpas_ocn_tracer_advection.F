@@ -70,14 +70,6 @@ module ocn_tracer_advection
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch fields
       type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: pool for traceradvection budget term
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: &
-              activeTracerHorizontalAdvectionTendency, &
-              activeTracerVerticalAdvectionTendency
-
-      logical, pointer :: config_compute_active_tracer_budgets
-
-      integer :: num_tracers, nVertLevels, nCells
-
       real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd
 
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nAdvCellsForEdge
@@ -88,7 +80,6 @@ module ocn_tracer_advection
 
       call mpas_timer_start("tracer adv")
 
-      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
       call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
       call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -98,48 +89,11 @@ module ocn_tracer_advection
       call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge', nAdvCellsForEdge)
       call mpas_pool_get_array(meshPool, 'advCellsForEdge', advCellsForEdge)
 
-      if (config_compute_active_tracer_budgets) then
-         call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
-                 activeTracerHorizontalAdvectionTendency)
-         call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
-                 activeTracerVerticalAdvectionTendency)
-      end if
-
       if(monotonicOn) then
-        num_tracers = size(tracers,dim=1)
-        nVertLevels = size(tracers,dim=2)
-        nCells = size(tracers,dim=3)
-
-! mrp: move this down one.
-!        if (config_compute_active_tracer_budgets) then
-!           if (tracerGroupName == 'activeTracers') then
-!              activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:)
-!           end if
-!        end if
-
-! mrp: move this down one.
-!        if (config_compute_active_tracer_budgets) then
-!          if (tracerGroupName == 'activeTracers') then
-!             activeTracerHorizontalAdvectionTendency(:,:,:) = tend(:,:,:) - &
-!                     activeTracerHorizontalAdvectionTendency(:,:,:)
-!
-!             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:)
-!          end if
-!        end if
-
          call ocn_tracer_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
-            highOrderAdvectionMask, edgeSignOnCell)
-
-! mrp: move this down one.
-!        if (config_compute_active_tracer_budgets) then
-!          if (tracerGroupName == 'activeTracers') then
-!             activeTracerVerticalAdvectionTendency(:,:,:) = tend(:,:,:) - &
-!                     activeTracerVerticalAdvectionTendency(:,:,:)
-!          end if
-!        end if
-
+            dt, meshPool, scratchPool, diagnosticsPool, tend, maxLevelCell, maxLevelEdgeTop, &
+            highOrderAdvectionMask, edgeSignOnCell, tracerGroupName)
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
