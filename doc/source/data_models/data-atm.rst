@@ -51,28 +51,29 @@ These variables will appear in ``env_run.xml`` and the resulting values are comp
 datamode values
 --------------------
 
-The xml variable ``DATM_MODE`` is used to set the streams that are associated with DATM and also to set the namelist variable ``datamode`` that specifies what additional operations need to be done by DATM on the streams before returning to the driver.
-One of the variables in ``shr_strdata_nml`` is ``datamode``, whose value is a character string.  Each data model has a unique set of ``datamode`` values that it supports.
-The valid values for ``datamode`` are set in the file ``namelist_definition_datm.xml`` using the xml variable ``DATM_MODE`` in the ``config_component.xml`` file for DATM.
-CIME will generate a value ``datamode`` that is compset dependent.
+The xml variable ``DATM_MODE`` (described in :ref:`datm_mode`) sets the streams that are associated with DATM and also sets the namelist variable ``datamode``.
+``datamode`` (which appears in ``shr_strdata_nml``) specifies what additional operations need to be done by DATM on the streams before returning to the driver.
 
-The following are the supported DATM ``datamode`` values and their relationship to the ``$DATM_MODE`` xml variable value.
+Each data model has its own set of supported ``datamode`` values. The following are the supported DATM ``datamode`` values, as defined in the file ``namelist_definition_datm.xml``.
 
 .. csv-table:: "Valid values for datamode namelist variable"
    :header: "datamode variable", "description"
    :widths: 20, 80
 
    "NULL", "This mode turns off the data model as a provider of data to the coupler. The ``atm_present`` flag will be set to ``false`` and the coupler assumes no exchange of data to or from the data model."
-   "COPYALL", "The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams, if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero except for aerosol deposition fields which will be set to a special value. "
+   "COPYALL", "The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams; if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero except for aerosol deposition fields which will be set to a special value. "
    "CLMNCEP", "In conjunction with NCEP climatological atmosphere data, provides the atmosphere forcing favored by the Land Model Working Group when coupling an active land model with observed atmospheric forcing. This  mode replicates code previously found in CLM (circa 2005), before the LMWG started using the CIME coupling infrastructure and data models to do active-land-only simulations."
    "CORE2_NYF", "Coordinated Ocean-ice Reference Experiments (CORE) Version 2 Normal Year Forcing."
    "CORE2_IAF", "In conjunction with with CORE Version 2 atmospheric forcing data, provides the atmosphere forcing favored by the Ocean Model Working Group when coupling an active ocean model with observed atmospheric forcing. This mode and associated data sets implement the CORE-IAF Version 2 forcing data, as developed by Large and Yeager (2008) at NCAR.  Note that CORE2_NYF and CORE2_IAF work exactly the same way."
+
+.. _datm_mode:
 
 -------------------------------
 DATM_MODE, datamode and streams
 -------------------------------
 
-The following tabe describes the valid values of ``DATM_MODE``, and how it relates to the associated input streams and the ``datamode`` namelist variable.
+The following table describes the valid values of ``DATM_MODE`` (defined in the ``config_component.xml`` file for DATM), and how they relate to the associated input streams and the ``datamode`` namelist variable.
+CIME will generate a value of ``DATM_MODE`` based on the compset.
 
 .. csv-table:: "Relationship between DATM_MODE, datamode and streams"
    :header: "DATM_MODE", "description-streams-datamode"

@@ -4,35 +4,11 @@
  Design Details
 ================
 
-The data model functionality is executed via set of specific operations associated with reading and interpolating data in space and time. 
-The strdata implementation does the following:
-
-1. determines nearest lower and upper bound data from the input dataset 
-2. if that is new data then read lower and upper bound data
-3. fill lower and upper bound data
-4. spatially map lower and upper bound data to model grid
-5. time interpolate lower and upper bound data to model time
-6. return fields to data model
-
-
-.. _io-details:
-
 ----------------------
-IO Through Data Models
+Data Model Performance
 ----------------------
 
-Namlist variables referenced below are discussed in detail in :ref:`stream data namelist section <shr-strdata-nml>`.
-
-The two timestamps of input data that bracket the present model time are read first.
-These are called the lower and upper bounds of data and will change as the model advances. 
-Those two sets of inputdata are first filled based on the user setting of the namelist variables ``str_fillalgo`` and ``str_fillmask``. 
-That operation occurs on the input data grid.
-The lower and upper bound data are then spatially mapped to the model grid based upon the user setting of the namelist variables ``str_mapalgo`` and ``str_mapmask``. 
-Spatial interpolation only occurs if the input data grid and model grid are not the identical, and this is determined in the strdata module automatically.
-Time interpolation is the final step and is done using a time interpolation method specified by the user in namelist (via the shr_strdata_nml namelist variable "tintalgo"). 
-A final set of fields is then available to the data model on the model grid and for the current model time.
-
-There are two primary costs associated with strdata, reading data and spatially mapping data.
+There are two primary costs associated with strdata: reading data and spatially mapping data.
 Time interpolation is relatively cheap in the current implementation. 
 As much as possible, redundant operations are minimized.
 Fill and mapping weights are generated at initialization and saved. 
@@ -43,43 +19,48 @@ The present implementation doesn't support changing the order of operations, for
 Because the present computations are always linear, changing the order of operations will not fundamentally change the results.
 The present order of operations generally minimizes the mapping cost for typical data model use cases.
 
+----------------------
+Data Model Limitations
+----------------------
+
 There are several limitations in both options and usage within the data models at the present time.
 Spatial interpolation can only be performed from a two-dimensional latitude-longitude input grid. 
-The target grid can be arbitrary but the source grid must be able to be described by simple one-dimensional lists of longitudes and latitudes, although they don't have to have equally spaced.
+The target grid can be arbitrary but the source grid must be able to be described by simple one-dimensional lists of longitudes and latitudes, although they don't have to be equally spaced.
+
+----------------------
+IO Through Data Models
+----------------------
 
 At the present time, data models can only read netcdf data, and IO is handled through either standard netcdf interfaces or through the PIO library using either netcdf or pnetcdf.
 If standard netcdf is used, global fields are read and then scattered one field at a time. 
-If PIO is used, then data will be read either serially or in parallel in chunks that are approximately the global field size divided by the number of io tasks.
+If PIO is used, then data will be read either serially or in parallel in chunks that are approximately the global field size divided by the number of IO tasks.
 If pnetcdf is used through PIO, then the pnetcdf library must be included during the build of the model. 
 The pnetcdf path and option is hardwired into the ``Macros.make`` file for the specific machine.
-To turn on ``pnetcdf`` in the build, make sure the ``Macros.make`` variables PNETCDF_PATH, INC_PNETCDF, and LIB_PNETCDF are set and that the PIO CONFIG_ARGS sets the PNETCDF_PATH argument. 
+To turn on ``pnetcdf`` in the build, make sure the ``Macros.make`` variables ``PNETCDF_PATH``, ``INC_PNETCDF``, and ``LIB_PNETCDF`` are set and that the PIO ``CONFIG_ARGS`` sets the ``PNETCDF_PATH`` argument. 
 
-Beyond just the option of selecting IO with PIO, several namelist are available to help optimize PIO IO performance.
+Beyond just the option of selecting IO with PIO, several namelist variables are available to help optimize PIO IO performance.
 Those are **TODO** - list these. 
 The total mpi tasks that can be used for IO is limited to the total number of tasks used by the data model.
-Often though, fewer io tasks result in improved performance. 
+Often though, using fewer IO tasks results in improved performance. 
 In general, [io_root + (num_iotasks-1)*io_stride + 1] has to be less than the total number of data model tasks.
 In practice, PIO seems to perform optimally somewhere between the extremes of 1 task and all tasks, and is highly machine and problem dependent.
-.. _restart-files:
-
-.. _restart-files:
 
 -------------
 Restart Files
 -------------
-Restart files are generated automatically by the data models based upon a flag sent from the driver.
+Restart files are generated automatically by the data models based on a flag sent from the driver.
 The restart files must meet the CIME naming convention and an ``rpointer`` file is generated at the same time. 
 An ``rpointer`` file is a *restart pointer* file which contains the name of the most recently created restart file. 
-Normally, if restart files are read, the restart filenames are specified in the rpointer file. 
-Optionally though, there are namelist variables such as `restfilm`` to specify the restart filenames via namelist. If those namelist are set, the ``rpointer`` file will be ignored. 
-The default method is to use the ``rpointer`` files to specify the restart filenames. 
-In most cases, no model restart is required for the data models to restart exactly. 
+Normally, if restart files are read, the restart filenames are specified in the ``rpointer`` file. 
+Optionally though, there are namelist variables such as ``restfilm`` to specify the restart filenames via namelist. If those namelist variables are set, the ``rpointer`` file will be ignored. 
+
+In most cases, no restart file is required for the data models to restart exactly.
 This is because there is no memory between timesteps in many of the data model science modes. 
-If a model restart is required, it will be written automatically and then must be used to continue the previous run.
+If a restart file is required, it will be written automatically and then must be used to continue the previous run.
 
 There are separate stream restart files that only exist for performance reasons. 
 A stream restart file contains information about the time axis of the input streams. 
-This information helps reduce the start costs associated with reading the input dataset time axis information. 
+This information helps reduce the startup costs associated with reading the input dataset time axis information. 
 If a stream restart file is missing, the code will restart without it but may need to reread data from the input data files that would have been stored in the stream restart file. 
 This will take extra time but will not impact the results.
 
@@ -101,7 +82,7 @@ These routines contain three data structures that are leveraged by all the data 
 
 The most basic type, ``shr_stream_fileType`` is contained in ``shr_stream_mod.F90`` and specifies basic information related to a given stream file.
 
-::
+.. code-block:: Fortran
 
    type shr_stream_fileType
       character(SHR_KIND_CL) :: name = shr_stream_file_null	! the file name
@@ -116,7 +97,7 @@ that encapsulates the information related to all files specific to a
 target stream. These are the list of files found in the ``domainInfo``
 and ``fieldInfo`` blocks of the target stream description file (see the overview of the :ref:`stream_description_file`).
 
-::
+.. code-block:: Fortran
 
    type shr_stream_streamType
       !private                                    ! no public access to internal components
@@ -162,13 +143,13 @@ and ``fieldInfo`` blocks of the target stream description file (see the overview
       character(SHR_KIND_CL) :: calendar          ! stream calendar
    end type shr_stream_streamType
 
-and finally, the ``shr_strdata_type`` is the heart of the CIME data
+Finally, the ``shr_strdata_type`` is the heart of the CIME data
 model implemenentation and contains information for all the streams
 that are active for the target data model. The first part of the
-shr_strdata_type is filled in by the namelist values read in from the
+``shr_strdata_type`` is filled in by the namelist values read in from the
 namelist group (see the :ref:`stream data namelist section <shr-strdata-nml>`).
 
-::
+.. code-block:: Fortran
 
    type shr_strdata_type
      ! --- set by input namelist ---
