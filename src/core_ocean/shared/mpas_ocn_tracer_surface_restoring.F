@@ -287,6 +287,7 @@ contains
                 config_do_restart, &
                 .false.)
 
+           return
         endif  !  first timestep
 
         call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
@@ -303,8 +304,13 @@ contains
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                  surfaceSalinityMonthlyClimatologyValue)
 
-        call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
-             'surfaceSalinityMonthlyClimatology', streamManager, dt)
+        if(firstTimestep .and. config_do_restart) then
+           call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
+                'surfaceSalinityMonthlyClimatology', streamManager, 0.0_RKIND)
+        else
+           call MPAS_forcing_get_forcing(surfaceSalinityForcingGroup, &
+                'surfaceSalinityMonthlyClimatology', streamManager, dt)
+        end if
 
       sumAreaDeltaS = 0.0_RKIND
       sumArea = 0.0_RKIND
