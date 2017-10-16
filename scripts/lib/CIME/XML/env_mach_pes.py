@@ -14,8 +14,6 @@ class EnvMachPes(EnvBase):
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
         self._components = components
-        self._component_value_list = ["NTASKS", "NTHRDS", "NINST",
-                                      "ROOTPE", "PSTRID", "NINST_LAYOUT", "NTASKS_PER_INST"]
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
@@ -61,7 +59,7 @@ class EnvMachPes(EnvBase):
         ''' Find the maximum number of openmp threads for any component in the case '''
         max_threads = 1
         for comp in comp_classes:
-            threads = self.get_value("NTHRDS",attribute={"component":comp})
+            threads = self.get_value("NTHRDS",attribute={"compclass":comp})
             expect(threads is not None, "Error no thread count found for component class {}".format(comp))
             if threads > max_threads:
                 max_threads = threads
@@ -86,11 +84,11 @@ class EnvMachPes(EnvBase):
         total_tasks = 0
         maxinst = 1
         for comp in comp_classes:
-            ntasks = self.get_value("NTASKS", attribute={"component":comp})
-            rootpe = self.get_value("ROOTPE", attribute={"component":comp})
-            pstrid = self.get_value("PSTRID", attribute={"component":comp})
+            ntasks = self.get_value("NTASKS", attribute={"compclass":comp})
+            rootpe = self.get_value("ROOTPE", attribute={"compclass":comp})
+            pstrid = self.get_value("PSTRID", attribute={"compclass":comp})
             if comp != "CPL":
-                ninst = self.get_value("NINST", attribute={"component":comp})
+                ninst = self.get_value("NINST", attribute={"compclass":comp})
                 maxinst = max(maxinst, ninst)
             tt = rootpe + (ntasks - 1) * pstrid + 1
             total_tasks = max(tt, total_tasks)
@@ -99,7 +97,7 @@ class EnvMachPes(EnvBase):
         return total_tasks
 
     def get_tasks_per_node(self, total_tasks, max_thread_count):
-        expect(total_tasks > 0,"totaltasks > 0 expected totaltasks = {}".format(total_tasks))
+        expect(total_tasks > 0,"totaltasks > 0 expected, totaltasks = {}".format(total_tasks))
         tasks_per_node = min(self.get_value("MAX_TASKS_PER_NODE")/ max_thread_count,
                              self.get_value("MAX_MPITASKS_PER_NODE"), total_tasks)
         return tasks_per_node if tasks_per_node > 0 else 1

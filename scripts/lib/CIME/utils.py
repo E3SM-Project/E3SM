@@ -1233,6 +1233,7 @@ def find_system_test(testname, case):
                         if system_test_dir not in sys.path:
                             sys.path.append(system_test_dir)
                         system_test_path = "{}.{}".format(testname.lower(), testname)
+        expect(len(fdir) > 0, "Test {} not found, aborting".format(testname))
         expect(len(fdir) == 1, "Test {} found in multiple locations {}, aborting".format(testname, fdir))
     expect(system_test_path is not None, "No test {} found".format(testname))
 
