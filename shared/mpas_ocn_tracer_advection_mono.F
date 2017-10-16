@@ -634,12 +634,13 @@ module ocn_tracer_advection_mono
 #endif
         if (monotonicityCheck) then
           nCells = nCellsArray( 1 )
-          !build min and max bounds on old and new tracer for check on monotonicity.
+          ! Check for monotonicity of new tracer value
           !$omp do schedule(runtime) private(k)
           do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
               ! work_tend on the RHS is the total vertical advection tendency
-              tracer_new = tracer_cur(k, iCell) + work_tend(k,iCell)
+              tracer_new = (tracer_cur(k, iCell)*h_prov(k, iCell) + dt * work_tend(k, iCell)) * h_new_inv(k, iCell)
+
               if(tracer_new < tracer_min(k, iCell)-eps) then
                  call mpas_log_write( &
                     'Vertical minimum out of bounds on tracer: $i $i $i $r $r ', &
