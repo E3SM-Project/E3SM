@@ -3165,11 +3165,8 @@
 		<var name="du2TopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
 			 description="du2TopOfEdge"
 		/>
-		<var name="highOrderHorizFlux" persistence="scratch" type="real" dimensions="nVertLevels nEdges" units=""
-			 description="High order horizontal flux for advection"
-		/>
-		<var name="tracerValue" time_levs="2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Single tracer value for advection"
+		<var name="tracerCur" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Current single tracer value for advection"
 		/>
 		<var name="hNewInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Inverse layer thickness for advection"
@@ -3180,8 +3177,8 @@
 		<var name="hProvInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="m"
 			 description="inverse of provisional layer thickness for advection"
 		/>
-		<var name="upwindTendency" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Upwind advective tendency"
+		<var name="workTendency" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Advective tendency work array"
 		/>
 		<var name="tracerMin" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Min tracer value for monotonic advection"
@@ -3195,8 +3192,8 @@
 		<var name="fluxOutgoing" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Outgoing flux of a tracer for advection"
 		/>
-		<var name="highOrderVertFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells" units=""
-			 description="High order vertical flux for advection"
+		<var name="highOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
+			 description="High order flux scratch variable for both horizontal and vertical advection."
 		/>
 		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
 			 description="btrvel_temp"
