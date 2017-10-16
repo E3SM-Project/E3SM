@@ -1021,7 +1021,7 @@ void *buf;
         b->ql.blink->ql.flink = b->ql.flink;
         b->ql.flink->ql.blink = b->ql.blink;
         //      printf("%s %d calling direct release for %x\n",__FILE__,__LINE__,b);
-//        (*relfcn)(b);
+        (*relfcn)(b);
         //      printf("%s %d completed direct release \n",__FILE__,__LINE__);
 #ifdef BufStats
         numprel++;                    /* Nr of expansion block releases */
