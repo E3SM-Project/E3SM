@@ -59,7 +59,7 @@ EOF
 cp Macros.make Macros.make.orig
 sed 's@-O3 -qstrict -Q@-O2 -qstrict -Q@' Macros.make.orig >Macros.make
 rm Macros.make.orig
-./case.setup --reset
+./case.setup --clean
 
 fi
 
