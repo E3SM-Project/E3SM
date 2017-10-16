@@ -57,20 +57,18 @@ module ocn_tracer_advection
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, & !{{{
-                                        scratchPool, diagnosticsPool, tend_layerThickness, tend, tracerGroupName)
+   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, dt, meshPool, & !{{{
+                                        scratchPool, diagnosticsPool, tend, tracerGroupName)
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input/Output: tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thickness weighted horizontal velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: w  !< Input: Vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness  !< Input: Thickness field
-      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch fields
       type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: pool for traceradvection budget term
-      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Thickness tendency information
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
               activeTracerHorizontalAdvectionTendency, &
@@ -131,7 +129,7 @@ module ocn_tracer_advection
 
          call ocn_tracer_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
+            dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
             highOrderAdvectionMask, edgeSignOnCell)
 
 ! mrp: move this down one.
@@ -145,7 +143,7 @@ module ocn_tracer_advection
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
+            layerThickness, dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
             highOrderAdvectionMask, edgeSignOnCell)
       endif
 
