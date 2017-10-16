@@ -1222,7 +1222,6 @@ def find_system_test(testname, case):
 
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
-                print (tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
                 if os.path.isfile(system_test_file):
                     fdir.append(tdir)
