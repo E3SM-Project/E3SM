@@ -130,8 +130,8 @@ contains
     if ( (use_cn .or. use_fates) ) then
 
        call readCNAllocParams(ncid)
+       call readCNDecompParams(ncid)
        if(.not. is_active_betr_bgc) then
-         call readCNDecompParams(ncid)
          if (use_century_decomp) then
             call readCNDecompBgcParams(ncid)
          else

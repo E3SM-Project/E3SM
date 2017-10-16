@@ -44,6 +44,7 @@ module PhosphorusFluxType
      real(r8), pointer :: m_deadcrootp_to_litter_patch              (:)     ! patch dead coarse root P mortality (gP/m2/s)
      real(r8), pointer :: m_retransp_to_litter_patch                (:)     ! patch retranslocated P pool mortality (gP/m2/s)
      real(r8), pointer :: m_ppool_to_litter_patch                   (:)     ! patch storage P pool mortality (gP/m2/s)
+     real(r8), pointer :: supplement_to_sminp_surf_patch            (:)     ! patch surface layer (diagnostic) supplemental P supply (gP/m2/s)
 
      ! harvest fluxes
      real(r8), pointer :: hrv_leafp_to_litter_patch                 (:)     ! patch leaf P harvest mortality (gP/m2/s)
@@ -326,6 +327,7 @@ module PhosphorusFluxType
      real(r8), pointer :: hrv_ploss_litter                          (:)     ! total ploss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
 
+     real(r8), pointer :: pflx_plant_to_soilbgc_col                 (:)
    contains
 
      procedure , public  :: Init   
@@ -338,7 +340,7 @@ module PhosphorusFluxType
      procedure , private :: InitCold
      ! bgc & pflotran interface
      procedure , private :: PSummary_interface
-
+     procedure , private :: Summary_betr
   end type phosphorusflux_type
   !------------------------------------------------------------------------
 
@@ -513,6 +515,7 @@ contains
     allocate(this%grainp_storage_to_xfer_patch      (begp:endp)) ; this%grainp_storage_to_xfer_patch      (:) = nan
     allocate(this%fert_p_patch                      (begp:endp)) ; this%fert_p_patch                      (:) = nan
     allocate(this%fert_p_counter_patch                (begp:endp)) ; this%fert_p_counter_patch                (:) = nan
+    allocate(this%supplement_to_sminp_surf_patch    (begp:endp)) ; this%supplement_to_sminp_surf_patch    (:) = nan
 
     allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col     (:) = nan
     allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col     (:) = nan
@@ -686,6 +689,8 @@ contains
     allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    
     this%sminp_net_transport_delta_col     (:)     = spval
     !------------------------------------------------------------------------
+    allocate(this%pflx_plant_to_soilbgc_col   (begc:endc                   )) ; this%pflx_plant_to_soilbgc_col   (:)   = nan
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1835,7 +1840,7 @@ contains
 
     do fi = 1,num_patch
        i=filter_patch(fi)
-
+       this%supplement_to_sminp_surf_patch (i)           = value_patch
        this%m_leafp_to_litter_patch(i)                   = value_patch
        this%m_frootp_to_litter_patch(i)                  = value_patch
        this%m_leafp_storage_to_litter_patch(i)           = value_patch
@@ -2196,6 +2201,92 @@ contains
 
   end subroutine ZeroDwt
 
+  !-----------------------------------------------------------------------
+   subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+     !
+     ! !USES:
+     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+     use clm_varctl    , only: use_nitrif_denitrif
+     use subgridAveMod , only: p2c
+     use pftvarcon     , only: npcropmin
+
+     ! !ARGUMENTS:
+     class (phosphorusflux_type) :: this
+     type(bounds_type) , intent(in) :: bounds
+     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+     integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+     integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+
+     integer :: fc, c, j
+     ! total column-level fire P losses
+     do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%fire_ploss_col(c) = this%fire_ploss_p2c_col(c)  + this%fire_decomp_ploss_col(c)
+     end do
+     ! vertically integrate inorganic P flux
+     do j = 1, nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%primp_to_labilep_col(c) = &
+                this%primp_to_labilep_col(c) + &
+                this%primp_to_labilep_vr_col(c,j) * dzsoi_decomp(j)
+        end do
+     end do
+
+     do fc = 1,num_soilc
+        c = filter_soilc(fc)
+
+        ! column-level P losses due to landcover change
+        this%dwt_ploss_col(c) = &
+             this%dwt_conv_pflux_col(c)
+
+        ! total wood product P loss
+        this%product_ploss_col(c) = &
+             this%prod1p_loss_col(c) + &
+             this%prod10p_loss_col(c) + &
+             this%prod100p_loss_col(c)
+
+
+        this%pflx_plant_to_soilbgc_col(c) = 0._r8
+
+        do j = 1, nlevdecomp
+          this%pflx_plant_to_soilbgc_col(c) = this%pflx_plant_to_soilbgc_col(c) + dzsoi_decomp(j) * &
+              (this%phenology_p_to_litr_met_p_col(c,j)     + &
+               this%dwt_frootp_to_litr_met_p_col(c,j)      + &
+               this%gap_mortality_p_to_litr_met_p_col(c,j) + &
+               this%harvest_p_to_litr_met_p_col(c,j)       + &
+               this%m_p_to_litr_met_fire_col(c,j)          + &
+               this%phenology_p_to_litr_cel_p_col(c,j)     + &
+               this%dwt_frootp_to_litr_cel_p_col(c,j)      + &
+               this%gap_mortality_p_to_litr_cel_p_col(c,j) + &
+               this%harvest_p_to_litr_cel_p_col(c,j)       + &
+               this%m_p_to_litr_cel_fire_col(c,j)          + &
+               this%phenology_p_to_litr_lig_p_col(c,j)     + &
+               this%dwt_frootp_to_litr_lig_p_col(c,j)      + &
+               this%gap_mortality_p_to_litr_lig_p_col(c,j) + &
+               this%harvest_p_to_litr_lig_p_col(c,j)       + &
+               this%m_p_to_litr_lig_fire_col(c,j)          + &
+               this%dwt_livecrootp_to_cwdp_col(c,j)        + &
+               this%dwt_deadcrootp_to_cwdp_col(c,j)        + &
+               this%gap_mortality_p_to_cwdp_col(c,j)       + &
+               this%harvest_p_to_cwdp_col(c,j)             + &
+               this%fire_mortality_p_to_cwdp_col(c,j))
+       enddo
+     end do
+
+     ! supplementary P supplement_to_sminp
+     do j = 1, nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%supplement_to_sminp_col(c) = &
+                this%supplement_to_sminp_col(c) + &
+                this%supplement_to_sminp_vr_col(c,j) * dzsoi_decomp(j)
+        end do
+     end do
+
+  end subroutine Summary_betr
+
  !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
@@ -2204,6 +2295,7 @@ contains
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only: npcropmin
+    use tracer_varcon , only : is_active_betr_bgc
     ! pflotran
 !    use clm_varctl    , only: use_pflotran, pf_cmode
     !
@@ -2343,6 +2435,10 @@ contains
          this%wood_harvestp_patch(bounds%begp:bounds%endp), &
          this%wood_harvestp_col(bounds%begc:bounds%endc))
 
+    if(is_active_betr_bgc)then
+      call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      return
+    endif
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%supplement_to_sminp_col(c) = 0._r8

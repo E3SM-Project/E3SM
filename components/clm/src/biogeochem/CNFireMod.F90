@@ -51,6 +51,7 @@ module CNFireMod
   use PhosphorusStateType    , only : phosphorusstate_type
   use CNSharedParamsMod      , only : CNParamsShareInst
   use clm_varctl             , only : nu_com
+  use tracer_varcon          , only : is_active_betr_bgc
   !
   implicit none
   save
@@ -234,7 +235,7 @@ contains
          dtrotr_col         =>    cnstate_vars%dtrotr_col                   , & ! Output: [real(r8) (:)     ]  decreased frac. coverage of BET+BDT on grid for dt
          lfc                =>    cnstate_vars%lfc_col                      , & ! Output: [real(r8) (:)     ]  conversion area frac. of BET+BDT that haven't burned before
          wtlf               =>    cnstate_vars%wtlf_col                     , & ! Output: [real(r8) (:)     ]  fractional coverage of non-crop Patches              
-         
+         cwdc_col           =>    carbonstate_vars%cwdc_col                 , & ! Input:  [real(r8) (:)     ]  (gC/m2) coarse woody debris          
          deadcrootc         =>    carbonstate_vars%deadcrootc_patch         , & ! Input:  [real(r8) (:)     ]  (gC/m2) dead coarse root C                        
          deadcrootc_storage =>    carbonstate_vars%deadcrootc_storage_patch , & ! Input:  [real(r8) (:)     ]  (gC/m2) dead coarse root C storage                
          deadcrootc_xfer    =>    carbonstate_vars%deadcrootc_xfer_patch    , & ! Input:  [real(r8) (:)     ]  (gC/m2) dead coarse root C transfer               
@@ -569,17 +570,21 @@ contains
            else
               fuelc(c) = totlitc(c)+totvegc_col(c)-rootc_col(c)-fuelc_crop(c)*cropf_col(c)
               if (spinup_state == 1) fuelc(c) = fuelc(c) + ((spinup_mortality_factor - 1._r8)*deadstemc_col(c))
-              do j = 1, nlevdecomp 
-                if (spinup_state == 1 .and. kyr < 40) then 
-                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
-                    decomp_cascade_con%spinup_factor(i_cwd) 
-                else if (spinup_state == 1 .and. kyr >= 40) then 
-                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
-                    decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c,j)
-                else  
-                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
-                end if 
-              end do
+              if(is_active_betr_bgc)then
+                 fuelc(c) = fuelc(c) + cwdc_col(c)
+              else
+                do j = 1, nlevdecomp 
+                  if (spinup_state == 1 .and. kyr < 40) then 
+                    fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
+                      decomp_cascade_con%spinup_factor(i_cwd) 
+                  else if (spinup_state == 1 .and. kyr >= 40) then 
+                    fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
+                      decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c)
+                  else  
+                    fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
+                  end if 
+                end do
+              endif
               fuelc(c) = fuelc(c)/(1._r8-cropf_col(c))
               fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
               m        = max(0._r8,wf(c))
@@ -794,6 +799,8 @@ contains
         trotr1_col                          =>    cnstate_vars%trotr1_col                                     , & ! Input:  [real(r8) (:)     ]  pft weight of BET on the gridcell (0-1)           
         trotr2_col                          =>    cnstate_vars%trotr2_col                                     , & ! Input:  [real(r8) (:)     ]  pft weight of BDT on the gridcell (0-1)           
         dtrotr_col                          =>    cnstate_vars%dtrotr_col                                     , & ! Input:  [real(r8) (:)     ]  ann. decreased frac. coverage of BET+BDT (0-1) on GC
+        frac_loss_lit_to_fire_col           =>    cnstate_vars%frac_loss_lit_to_fire_col                      , & ! Output: [real(r8) (:)     ] fraction of litter loss to fire
+        frac_loss_cwd_to_fire_col           =>    cnstate_vars%frac_loss_cwd_to_fire_col                      , & ! Output: [real(r8) (:)     ] fraction of cwd loss to fire       
         
         decomp_cpools_vr                    =>    carbonstate_vars%decomp_cpools_vr_col                       , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
         totsomc                             =>    carbonstate_vars%totsomc_col                                , & ! Input:  [real(r8) (:)     ]  (gC/m2) total soil organic matter C
@@ -1442,12 +1449,15 @@ contains
         c = filter_soilc(fc)
 
         f = farea_burned(c) 
-
-        ! change CC for litter from 0.4_r8 to 0.5_r8 and CC for CWD from 0.2_r8
-        ! to 0.25_r8 according to Li et al.(2014) 
-        do j = 1, nlevdecomp
-           ! carbon fluxes
-           do l = 1, ndecomp_pools
+        if(is_active_betr_bgc)then
+          frac_loss_lit_to_fire_col(c) = f * 0.5_r8
+          frac_loss_cwd_to_fire_col(c) = (f-baf_crop(c)) * 0.25_r8
+        else
+          ! change CC for litter from 0.4_r8 to 0.5_r8 and CC for CWD from 0.2_r8
+          ! to 0.25_r8 according to Li et al.(2014) 
+          do j = 1, nlevdecomp
+            ! carbon fluxes
+            do l = 1, ndecomp_pools
               if ( is_litter(l) ) then
                  m_decomp_cpools_to_fire_vr(c,j,l) = decomp_cpools_vr(c,j,l) * f * 0.5_r8 
               end if
@@ -1461,38 +1471,38 @@ contains
                    if (kyr >= 40) m_decomp_cpools_to_fire_vr(c,j,l) = &
                      m_decomp_cpools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
                  end if
-              end if
-           end do
+               end if
+             end do
 
-           ! nitrogen fluxes
-           do l = 1, ndecomp_pools
-              if ( is_litter(l) ) then
+             ! nitrogen fluxes
+             do l = 1, ndecomp_pools
+               if ( is_litter(l) ) then
                  m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * f * 0.5_r8
-              end if
-              if ( is_cwd(l) ) then
-                 m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * &
+               end if
+               if ( is_cwd(l) ) then
+                  m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * &
                       (f-baf_crop(c)) * 0.25_r8
-                 if (spinup_state == 1) then 
-                   m_decomp_npools_to_fire_vr(c,j,l) = m_decomp_npools_to_fire_vr(c,j,l) * &
-                     decomp_cascade_con%spinup_factor(l) 
-                   if (kyr >= 40) m_decomp_npools_to_fire_vr(c,j,l) = &
-                     m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
-                 end if             
-             end if
-           end do
+                  if (spinup_state == 1) then 
+                    m_decomp_npools_to_fire_vr(c,j,l) = m_decomp_npools_to_fire_vr(c,j,l) * &
+                      decomp_cascade_con%spinup_factor(l) 
+                    if (kyr >= 40) m_decomp_npools_to_fire_vr(c,j,l) = &
+                      m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c)
+                  end if             
+               end if
+             end do
 
-           ! phosphorus fluxes - loss due to fire
-           do l = 1, ndecomp_pools
-              if ( is_litter(l) ) then
-                 m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * f * 0.5_r8
-              end if
-              if ( is_cwd(l) ) then
-                 m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * &
+             ! phosphorus fluxes - loss due to fire
+             do l = 1, ndecomp_pools
+                if ( is_litter(l) ) then
+                  m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * f * 0.5_r8
+                end if
+                if ( is_cwd(l) ) then
+                   m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * &
                       (f-baf_crop(c)) * 0.25_r8
-              end if
-           end do
-
-        end do
+                end if
+             end do
+          end do
+       endif !end is_active_betr
      end do  ! end of column loop
 
      ! carbon loss due to deforestation fires

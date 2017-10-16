@@ -83,6 +83,9 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begcb(c) = totcolc(c)
+!         if(c==5657 .and. .false.)then
+!           print*,'totbgc blgc',carbonstate_vars%totabgc_col(c),carbonstate_vars%totblgc_col(c)
+!         endif
       end do
 
     end associate
@@ -117,6 +120,10 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begnb(c) = totcoln(c)
+!         if(c==2330)then
+!           print*,'begabgn =',nitrogenstate_vars%totabgn_col(c)
+!           print*,'begsoin =',nitrogenstate_vars%totblgn_col(c)
+!         endif
       end do
 
     end associate
@@ -161,6 +168,10 @@ contains
 !         col_begpb(c) = totpftp(c)
 !         col_begpb(c) = sminp(c)
 !         col_begpb(c) = totsomp(c)+totlitp(c)+cwdp(c)
+!        if(c==2284)then
+!          print*,'begabgp=', phosphorusstate_vars%totabgp_col(c)
+!          print*,'begblgp=', phosphorusstate_vars%totblgp_col(c)
+!        endif
       end do
 
     end associate
@@ -253,18 +264,21 @@ contains
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            write(iulog,*)'input=',col_cinputs*dt
-            write(iulog,*)'output=',col_coutputs*dt
-            write(iulog,*)'er=',er(c)*dt,carbonflux_vars%hr_col(c)*dt
-            write(iulog,*)'fire=',col_fire_closs(c)*dt
-            write(iulog,*)'dwt=',dwt_closs(c)*dt
+            write(iulog,*)'input  =',col_cinputs*dt
+            write(iulog,*)'output =',col_coutputs*dt
+            write(iulog,*)'er     =',er(c)*dt
+            write(iulog,*)'hr     =',carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'fire   =',col_fire_closs(c)*dt
+            write(iulog,*)'dwt    =',dwt_closs(c)*dt
             write(iulog,*)'product=',product_closs(c)*dt
-            write(iulog,*)'hrv=',col_hrv_xsmrpool_to_atm(c)*dt
-            write(iulog,*)'leach=',som_c_leached(c)*dt
+            write(iulog,*)'hrv    =',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'leach  =',som_c_leached(c)*dt
             write(iulog,*)'begcb       = ',col_begcb(c)
             write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
-
+            write(iulog,*)'abgc =',carbonstate_vars%totabgc_col(c)
+            write(iulog,*)'blgc=',carbonstate_vars%totblgc_col(c)
+            write(iulog,*)'plt2soi=',carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if
@@ -414,6 +428,40 @@ contains
             err_found = .true.
             err_index = c
          end if
+
+!      if (err_found) then
+!         c = err_index
+!         write(*,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
+!         write(*,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+!         write(*,*)'begnb                 = ',col_begnb(c)
+!         write(*,*)'endnb                 = ',col_endnb(c)
+!         write(*,*)'delta_store           = ',col_endnb(c)-col_begnb(c)
+!         write(*,*)'net_flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
+!         write(*,*)'input_mass            = ',col_ninputs(c)*dt
+!         write(*,*)'ndep                  = ',ndep_to_sminn(c)*dt
+!         write(*,*)'nfix                  = ', nfix_to_sminn(c)*dt
+!         write(*,*)'nsup                  = ',supplement_to_sminn(c)*dt
+!         if(crop_prog) then
+!            write(*,*)'fertm                 = ',fert_to_sminn(c)*dt
+!            write(*,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
+!         endif
+!         write(*,*)'fire                  = ',col_fire_nloss(c)*dt
+!         write(*,*)'dwt                   = ',dwt_nloss(c)*dt
+!         write(*,*)'prod                  = ',product_nloss(c)*dt
+!         write(*,*)'output_mass           = ',col_noutputs(c)*dt
+!         write(*,*)'denit                 = ',denit(c)*dt
+!         write(*,*)'n2onit                = ',f_n2o_nit(c)*dt
+!         write(*,*)'no3_leach             = ', smin_no3_leached(c)*dt
+!         write(*,*)'no3_runof             = ', smin_no3_runoff(c)*dt
+!         write(*,*)'som_n_leach           = ', -som_n_leached(c)*dt
+!         write(*,*)'decompfireloss        = ',nitrogenflux_vars%fire_decomp_nloss_col(c)*dt
+!         write(*,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
+!         write(*,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
+!         write(*,*)'abgn                  = ',nitrogenstate_vars%totabgn_col(c)
+!         write(*,*)'blgn                  = ',totcoln(c)-nitrogenstate_vars%totabgn_col(c)
+!         call endrun(msg=errMsg(__FILE__, __LINE__))
+!      end if
+
       end do ! end of columns loop
 
       if (err_found) then
@@ -516,6 +564,7 @@ contains
          cascade_receiver_pool =>  decomp_cascade_con%cascade_receiver_pool    , &
          pf                    =>  phosphorusflux_vars                         , &
          ps                    =>  phosphorusstate_vars                          &
+         som_p_leached         =>  phosphorusflux_vars%som_p_leached_col         &
          )
 
       ! set time steps
@@ -613,7 +662,7 @@ contains
 !         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt
 !          col_poutputs(c) = sminp_to_plant(c)
-
+         col_poutputs(c) = col_poutputs(c) - som_p_leached(c)
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
@@ -622,19 +671,53 @@ contains
             err_found = .true.
             err_index = c
          end if
+!      if (err_found) then
+!         c = err_index
+!         write(*,*)'column pbalance error = ', col_errpb(c), c,  get_nstep()
+!         write(*,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+!         write(*,*)'begpb          = ',col_begpb(c)
+!         write(*,*)'endpb          = ',col_endpb(c)
+!         write(*,*)'delta store    = ',col_endpb(c)-col_begpb(c)
+!         write(*,*)'input mass     = ',col_pinputs(c)*dt
+!         write(*,*)'output mass    = ',col_poutputs(c)*dt
+!         write(*,*)'net flux       = ',(col_pinputs(c)-col_poutputs(c))*dt
+!         write(*,*)'weathering p   = ', primp_to_labilep(c) * dt
+!         write(*,*)'supp p         = ', supplement_to_sminp(c) * dt
+!         write(*,*)'2nd2occl p     = ', secondp_to_occlp(c) * dt
+!         write(*,*)'leached min p  = ',sminp_leached(c) * dt
+!         write(*,*)'lost to fire   = ', col_fire_ploss(c) * dt
+!         write(*,*)'harvest loss   = ', dwt_ploss(c) * dt
+!         write(*,*)'woodpro loss   = ', product_ploss(c) * dt
+!         write(*,*)'plant2bgcp     = ', phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt
+!         write(*,*)'leached som_p  = ', -som_p_leached(c) * dt
+!         write(*,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
+!         write(*,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)
+!         call endrun(msg=errMsg(__FILE__, __LINE__))
+!      end if
       end do ! end of columns loop
 
 
       if (err_found) then
          c = err_index
-         write(iulog,*)'column pbalance error = ', col_errpb(c), c
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+         write(iulog,*)'column pbalance error = ', col_errpb(c), c, get_nstep()
          write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-         write(iulog,*)'begpb       = ',col_begpb(c)
-         write(iulog,*)'endpb       = ',col_endpb(c)
-         write(iulog,*)'delta store = ',col_endpb(c)-col_begpb(c)
-         write(iulog,*)'input mass  = ',col_pinputs(c)*dt
-         write(iulog,*)'output mass = ',col_poutputs(c)*dt
-         write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         write(iulog,*)'begpb          = ',col_begpb(c)
+         write(iulog,*)'endpb          = ',col_endpb(c)
+         write(iulog,*)'delta store    = ',col_endpb(c)-col_begpb(c)
+         write(iulog,*)'input mass     = ',col_pinputs(c)*dt
+         write(iulog,*)'output mass    = ',col_poutputs(c)*dt
+         write(iulog,*)'net flux       = ',(col_pinputs(c)-col_poutputs(c))*dt
+         write(iulog,*)'weathering p   = ', primp_to_labilep(c) * dt
+         write(iulog,*)'supp p         = ', supplement_to_sminp(c) * dt
+         write(iulog,*)'2nd2occl p     = ', secondp_to_occlp(c) * dt
+         write(iulog,*)'leached min p  = ',sminp_leached(c) * dt
+         write(iulog,*)'lost to fire   = ', col_fire_ploss(c) * dt
+         write(iulog,*)'harvest loss   = ', dwt_ploss(c) * dt
+         write(iulog,*)'woodpro loss   = ', product_ploss(c) * dt
+         write(iulog,*)'plant2bgcp     = ', phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt
+         write(iulog,*)'leached som_p  = ', -som_p_leached(c) * dt
+         write(iulog,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

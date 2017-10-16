@@ -69,13 +69,13 @@ module CNEcosystemDynBetrMod
     use CNNDynamicsMod            , only : CNNDeposition,CNNFixation, CNNFert, CNSoyfix
     use CNMRespMod                , only : CNMResp
     use CNDecompMod               , only : CNDecompAlloc
-    use CNPhenologyBeTRMod            , only : CNPhenology
+    use CNPhenologyMod            , only : CNPhenology
     use CNGRespMod                , only : CNGResp
     use CNCStateUpdate1Mod        , only : CStateUpdate1,CStateUpdate0
-    use CNNStateUpdate1BeTRMod        , only : NStateUpdate1
-    use CNGapMortalityBeTRMod         , only : CNGapMortality
+    use CNNStateUpdate1BeTRMod    , only : NStateUpdate1
+    use CNGapMortalityBeTRMod     , only : CNGapMortality
     use CNCStateUpdate2Mod        , only : CStateUpdate2, CStateUpdate2h
-    use CNNStateUpdate2BeTRMod        , only : NStateUpdate2, NStateUpdate2h
+    use CNNStateUpdate2BeTRMod    , only : NStateUpdate2, NStateUpdate2h
     use CNFireMod                 , only : CNFireArea, CNFireFluxes
     use CNCStateUpdate3Mod        , only : CStateUpdate3
     use CNCIsoFluxMod             , only : CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
@@ -89,7 +89,8 @@ module CNEcosystemDynBetrMod
     use CNCropHarvestPoolsMod     , only : CNCropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
-    use CNNStateUpdate3BeTRMod        , only : NStateUpdate3
+    use PStateUpdate3Mod          , only : PStateUpdate3
+    use CNNStateUpdate3BeTRMod    , only : NStateUpdate3
     use CNNDynamicsMod            , only : CNNFixation_balance
     use PStateUpdate1Mod          , only : PStateUpdate1
     use PStateUpdate2Mod          , only : PStateUpdate2, PStateUpdate2h
@@ -497,6 +498,17 @@ module CNEcosystemDynBetrMod
           call C14BombSpike(num_soilp, filter_soilp, &
                cnstate_vars)
        end if
+
+       call t_startf('CNUpdate3')
+       call NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            nitrogenflux_vars, nitrogenstate_vars)
+       call t_stopf('CNUpdate3')
+
+
+       call t_startf('PUpdate3')
+       call PStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       call t_stopf('PUpdate3')
 
     endif
 

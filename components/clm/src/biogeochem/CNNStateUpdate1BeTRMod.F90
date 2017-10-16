@@ -142,7 +142,11 @@ contains
          ! uptake from soil mineral N pool
          ns%npool_patch(p) = &
               ns%npool_patch(p) + nf%sminn_to_npool_patch(p)*dt
-         !write(*,*)'sminn uptake',p,nf%sminn_to_npool_patch(p)*dt
+
+         ! update from surface layer supp nitrogen
+         ns%npool_patch(p) = &
+              ns%npool_patch(p) + nf%supplement_to_sminn_surf_patch(p) * dt
+
          ! deployment from retranslocation pool
          ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt
          ns%retransn_patch(p) = ns%retransn_patch(p) - nf%retransn_to_npool_patch(p)*dt

@@ -94,6 +94,8 @@ contains
     use shr_sys_mod      , only : shr_sys_flush
     use clm_varcon       , only : secspday, spval
     use soilorder_varcon, only: r_weather
+    use GridcellType        , only : grc_pp
+    use ColumnType          , only : col_pp
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -129,17 +131,19 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
-   
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-      
-            !! read in monthly rate is converted to that in half hour
-            r_weather_c = r_weather( isoilorder(c) )
-            rr=-log(1._r8-r_weather_c)
-            r_weather_c=1._r8-exp(-rr*dtd)
-      
-            primp_to_labilep(c,j) = primp(c,j)*r_weather_c/dt
+            if(isoilorder(c) ==16)then
+              !this is a workaround to avoid NaN on mistaken soil, which should really be ocean
+              primp_to_labilep(c,j)  = 0._r8
+            else      
+              !! read in monthly rate is converted to that in half hour
+              r_weather_c = r_weather( isoilorder(c) )
+              rr=-log(1._r8-r_weather_c)
+              r_weather_c=1._r8-exp(-rr*dtd)
+              primp_to_labilep(c,j) = primp(c,j)*r_weather_c/dt
+            endif
       !     primp_to_labilep(c,j) = 0.005_r8/(365._r8*24._r8*3600._r8)
       !     primp_to_labilep(c,j) = 0._r8       
          end do

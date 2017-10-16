@@ -57,6 +57,7 @@ module PhosphorusStateType
      real(r8), pointer :: ppool_patch                  (:)     ! patch (gP/m2) temporary plant P pool
      real(r8), pointer :: ptrunc_patch                 (:)     ! patch (gP/m2) pft-level sink for P truncation
      real(r8), pointer :: plant_p_buffer_patch        (:)     ! patch (gP/m2) pft-level abstract p storage
+     real(r8), pointer :: plant_p_buffer_col          (:)     ! col (gP/m2) pft-level abstract p storage
      real(r8), pointer :: decomp_ppools_vr_col         (:,:,:)     ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools 
      real(r8), pointer :: solutionp_vr_col             (:,:)       ! col (gP/m3) vertically-resolved soil solution P
      real(r8), pointer :: labilep_vr_col               (:,:)       ! col (gP/m3) vertically-resolved soil labile mineral P
@@ -98,7 +99,8 @@ module PhosphorusStateType
      ! patch averaged to column variables 
      real(r8), pointer :: totvegp_col                  (:)     ! col (gP/m2) total vegetation phosphorus (p2c)
      real(r8), pointer :: totpftp_col                  (:)     ! col (gP/m2) total pft-level phosphorus (p2c)
-
+     real(r8), pointer :: totabgp_col                  (:)
+     real(r8), pointer :: totblgp_col                  (:)
      ! col balance checks
      real(r8), pointer :: begpb_patch                  (:)     ! patch phosphorus mass, beginning of time step (gP/m**2)
      real(r8), pointer :: endpb_patch                  (:)     ! patch phosphorus mass, end of time step (gP/m**2)
@@ -145,7 +147,7 @@ module PhosphorusStateType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
-
+     procedure , private :: Summary_betr
   end type phosphorusstate_type
   !------------------------------------------------------------------------
 
@@ -221,7 +223,9 @@ contains
     allocate(this%totvegp_patch            (begp:endp))                   ; this%totvegp_patch            (:)   = nan
     allocate(this%totpftp_patch            (begp:endp))                   ; this%totpftp_patch            (:)   = nan
     allocate(this%plant_p_buffer_patch    (begp:endp))                   ; this%plant_p_buffer_patch      (:)   = nan
-
+    allocate(this%plant_p_buffer_col       (begc:endc))                   ; this%plant_p_buffer_col      (:)   = nan
+    allocate(this%totabgp_col             (begc:endc))                    ; this%totabgp_col              (:) = nan
+    allocate(this%totblgp_col             (begc:endc))                    ; this%totblgp_col              (:) = nan
     allocate(this%ptrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr_col            (:,:) = nan
     
     allocate(this%solutionp_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col         (:,:) = nan  
@@ -604,6 +608,16 @@ contains
          avgflag='A', long_name='total soil organic matter P', &
          ptr_col=this%totsomp_col)
 
+    this%totabgp_col(begc:endc) = spval
+    call hist_addfld1d (fname='TOTABGP', units='gP/m^2', &
+         avgflag='A', long_name='total aboveground P', &
+         ptr_col=this%totabgp_col)
+
+    this%totblgp_col(begc:endc) = spval
+    call hist_addfld1d (fname='TOTBLGP', units='gP/m^2', &
+         avgflag='A', long_name='total belowground P', &
+         ptr_col=this%totblgp_col)
+
     this%totecosysp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
          avgflag='A', long_name='total ecosystem P', &
@@ -653,6 +667,7 @@ contains
     use clm_varpar     , only : crop_prog
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, npcropmin
+    use tracer_varcon    , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS:
     class(phosphorusstate_type)      :: this
@@ -786,8 +801,10 @@ contains
           ! column phosphorus state variables
           this%ptrunc_col(c) = 0._r8
           this%sminp_col(c) = 0._r8
+          if(.not. is_active_betr_bgc)then
           do j = 1, nlevdecomp
              do k = 1, ndecomp_pools
+                if(decomp_cascade_con%initial_cp_ratio(k)/=decomp_cascade_con%initial_cp_ratio(k))exit
                 this%decomp_ppools_vr_col(c,j,k) = decomp_cpools_vr_col(c,j,k) / decomp_cascade_con%initial_cp_ratio(k)
              end do
              this%sminp_vr_col(c,j) = 0._r8
@@ -806,7 +823,7 @@ contains
              this%decomp_ppools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cp_ratio(k)
              this%decomp_ppools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cp_ratio(k)
           end do
-
+          endif
           do j = 1, nlevdecomp_full
              this%solutionp_vr_col(c,j) = 0._r8
              this%labilep_vr_col(c,j)   = 0._r8
@@ -873,6 +890,7 @@ contains
     use CNStateType         , only : cnstate_type
     use restUtilMod
     use ncdio_pio
+    use tracer_varcon       , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
@@ -1250,6 +1268,7 @@ contains
           call endrun(msg=' Error in entering/exiting spinup - should occur only when nstep = 1'//&
                errMsg(__FILE__, __LINE__))
        endif
+       if(.not. is_active_betr_bgc)then
        do k = 1, ndecomp_pools
           do c = bounds%begc, bounds%endc
             do j = 1, nlevdecomp
@@ -1264,7 +1283,7 @@ contains
              end do
           end do
        end do
-
+       end if
        do i = bounds%begp, bounds%endp
           if (exit_spinup) then
              m_veg = spinup_mortality_factor
@@ -1516,6 +1535,89 @@ contains
     end do
 
   end subroutine ZeroDwt
+    !-----------------------------------------------------------------------
+    subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      !
+      ! DESCRIPTION
+      ! summarize things belowground and add them together to the aboveground components
+      ! to obtain column and ecosystem level variables
+
+      ! !USES:
+      use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+      use subgridAveMod , only: p2c
+      !
+      ! !ARGUMENTS:
+      class (phosphorusstate_type) :: this
+      type(bounds_type) , intent(in) :: bounds
+      integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+      integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+      integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+      integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+
+      integer :: fc, c, j
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+           this%plant_p_buffer_patch(bounds%begp:bounds%endp), &
+           this%plant_p_buffer_col(bounds%begc:bounds%endc))
+
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%primp_col(c)     =0._r8
+      end do
+
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%primp_col(c) = &
+                 this%primp_col(c) + &
+                 this%primp_vr_col(c,j) * dzsoi_decomp(j)
+         end do
+      end do
+
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+
+         ! total wood product phosphorus
+         this%totprodp_col(c) = &
+              this%prod1p_col(c) + &
+              this%prod10p_col(c) + &
+              this%prod100p_col(c)
+
+         ! total ecosystem phosphorus, including veg (TOTECOSYSP)
+         this%totecosysp_col(c) = &
+              this%cwdp_col(c) + &
+              this%totlitp_col(c) + &
+              this%totsomp_col(c) + &
+              this%sminp_col(c) + &
+              this%primp_col(c) + &
+              this%occlp_col(c) + &
+              this%totprodp_col(c) + &
+              this%totvegp_col(c)
+
+         ! total column phosphorus, including pft (TOTCOLP)
+         this%totcolp_col(c) = &
+              this%totpftp_col(c) + &
+              this%cwdp_col(c) + &
+              this%totlitp_col(c) + &
+              this%totsomp_col(c) + &
+              this%sminp_col(c) + &
+              this%totprodp_col(c) + &
+              this%seedp_col(c) + &
+              this%plant_p_buffer_col(c)
+
+         this%totabgp_col(c) = &
+              this%totpftp_col(c) + &
+              this%totprodp_col(c) + &
+              this%seedp_col(c) + &
+              this%plant_p_buffer_col(c)
+
+         this%totblgp_col(c) = &
+            this%cwdp_col(c) + &
+            this%totlitp_col(c) + &
+            this%totsomp_col(c) + &
+            this%sminp_col(c)
+      end do
+   end subroutine Summary_betr
 
   !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
@@ -1524,6 +1626,7 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
+    use tracer_varcon , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
@@ -1599,6 +1702,11 @@ contains
         this%totpftp_patch(bounds%begp:bounds%endp), &
         this%totpftp_col(bounds%begc:bounds%endc))
 
+
+   if(is_active_betr_bgc)then
+     call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+     return
+   endif
    ! vertically integrate soil mineral P pools
 
    do fc = 1,num_soilc

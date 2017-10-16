@@ -60,7 +60,6 @@ contains
       dt = real( get_step_size(), r8 )
 
       ! patch-level nitrogen fluxes
-
       do fp = 1,num_soilp
          p = filter_soilp(fp)
 
@@ -93,7 +92,6 @@ contains
          ns%deadstemn_storage_patch(p)  =  ns%deadstemn_storage_patch(p)  - nf%m_deadstemn_storage_to_litter_fire_patch(p)  * dt
          ns%livecrootn_storage_patch(p) =  ns%livecrootn_storage_patch(p) - nf%m_livecrootn_storage_to_litter_fire_patch(p) * dt
          ns%deadcrootn_storage_patch(p) =  ns%deadcrootn_storage_patch(p) - nf%m_deadcrootn_storage_to_litter_fire_patch(p) * dt
-
 
          ! transfer pools
          ns%leafn_xfer_patch(p)         =  ns%leafn_xfer_patch(p)      - nf%m_leafn_xfer_to_fire_patch(p)      * dt

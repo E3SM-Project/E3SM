@@ -413,7 +413,7 @@ module CNCarbonFluxType
      real(r8), pointer :: f_co2_soil_vr_col                         (:,:)   ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
      real(r8), pointer :: f_co2_soil_col                            (:)     ! total soil-atm. CO2 exchange (gC/m2/s)
     !------------------------------------------------------------------------
-
+     real(r8), pointer :: cflx_plant_to_soilbgc_col(:)
    contains
 
      procedure , public  :: Init   
@@ -426,6 +426,7 @@ module CNCarbonFluxType
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
      procedure , private :: InitCold
+     procedure , private :: Summary_betr
      ! bgc & pflotran interface
      procedure , private :: CSummary_interface
   end type carbonflux_type
@@ -825,6 +826,7 @@ contains
      allocate(this%f_co2_soil_col                (begc:endc))
      this%f_co2_soil_col                (:)     = nan
      !------------------------------------------------------------------------
+     allocate(this%cflx_plant_to_soilbgc_col (begc:endc)); this%cflx_plant_to_soilbgc_col(:) = nan
   end subroutine InitAllocate; 
 
   !------------------------------------------------------------------------
@@ -4412,6 +4414,134 @@ contains
   end subroutine ZeroDwt
 
   !-----------------------------------------------------------------------
+  subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       isotope)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform patch and column-level carbon summary calculations
+    !
+    ! !USES:
+    use clm_varctl       , only : iulog, use_cndv
+    use clm_time_manager , only : get_step_size
+    use clm_varcon       , only : secspday
+    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use subgridAveMod    , only : p2c
+
+    use MathfuncMod      , only : dot_sum
+    !
+    ! !ARGUMENTS:
+    class(carbonflux_type)                 :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    character(len=*)       , intent(in)    :: isotope
+
+    integer :: c, fc, j
+
+    ! column-level carbon losses to fire, including pft losses
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       ! total soil respiration, heterotrophic + root respiration (SR)
+       this%sr_col(c) = &
+            this%rr_col(c) + &
+            this%hr_col(c)
+
+       ! total ecosystem respiration, autotrophic + heterotrophic (ER)
+       this%er_col(c) = &
+            this%ar_col(c) + &
+            this%hr_col(c)
+
+       ! total product loss
+       this%product_closs_col(c) = &
+            this%prod10c_loss_col(c)  + &
+            this%prod100c_loss_col(c) + &
+            this%prod1c_loss_col(c)
+
+       this%fire_closs_col(c) = this%fire_closs_p2c_col(c) +  this%fire_decomp_closs_col(c)
+
+       ! column-level carbon losses due to landcover change
+       this%dwt_closs_col(c) = &
+            this%dwt_conv_cflux_col(c)
+
+       ! net ecosystem production, excludes fire flux, landcover change, and loss from wood products, positive for sink (NEP)
+       this%nep_col(c) = &
+            this%gpp_col(c) - &
+            this%er_col(c)
+
+       ! net biome production of carbon, includes depletion from: fire flux, landcover change flux, and loss
+       ! from wood products pools, positive for sink (NBP)
+       this%nbp_col(c) =             &
+            this%nep_col(c)        - &
+            this%fire_closs_col(c) - &
+            this%dwt_closs_col(c)  - &
+            this%product_closs_col(c)
+
+       ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
+       ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
+       this%nee_col(c) =                &
+           -this%nep_col(c)           + &
+            this%fire_closs_col(c)    + &
+            this%dwt_closs_col(c)     + &
+            this%product_closs_col(c) + &
+            this%hrv_xsmrpool_to_atm_col(c)
+
+       ! land use flux and land uptake
+       this%landuseflux_col(c) = &
+            this%dwt_closs_col(c) + &
+            this%product_closs_col(c)
+
+       this%landuptake_col(c) = &
+            this%nee_col(c) - &
+            this%landuseflux_col(c)
+
+       this%cflx_plant_to_soilbgc_col(c) = 0._r8
+
+       do j = 1, nlevdecomp
+          this%cflx_plant_to_soilbgc_col(c) = this%cflx_plant_to_soilbgc_col(c) + dzsoi_decomp(j) * &
+              (this%phenology_c_to_litr_met_c_col(c,j)     + &
+               this%dwt_frootc_to_litr_met_c_col(c,j)      + &
+               this%gap_mortality_c_to_litr_met_c_col(c,j) + &
+               this%harvest_c_to_litr_met_c_col(c,j)       + &
+               this%m_c_to_litr_met_fire_col(c,j)          + &
+               this%phenology_c_to_litr_cel_c_col(c,j)     + &
+               this%dwt_frootc_to_litr_cel_c_col(c,j)      + &
+               this%gap_mortality_c_to_litr_cel_c_col(c,j) + &
+               this%harvest_c_to_litr_cel_c_col(c,j)       + &
+               this%m_c_to_litr_cel_fire_col(c,j)          + &
+               this%phenology_c_to_litr_lig_c_col(c,j)     + &
+               this%dwt_frootc_to_litr_lig_c_col(c,j)      + &
+               this%gap_mortality_c_to_litr_lig_c_col(c,j) + &
+               this%harvest_c_to_litr_lig_c_col(c,j)       + &
+               this%m_c_to_litr_lig_fire_col(c,j)          + &
+               this%dwt_livecrootc_to_cwdc_col(c,j)        + &
+               this%dwt_deadcrootc_to_cwdc_col(c,j)        + &
+               this%gap_mortality_c_to_cwdc_col(c,j)       + &
+               this%harvest_c_to_cwdc_col(c,j)             + &
+               this%fire_mortality_c_to_cwdc_col(c,j))
+
+       enddo
+    end do
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+
+       ! litter fire losses (LITFIRE)
+       this%litfire_col(c) = 0._r8
+
+       ! soil organic matter fire losses (SOMFIRE)
+       this%somfire_col(c) = 0._r8
+
+       ! total ecosystem fire losses (TOTFIRE)
+       this%totfire_col(c) = &
+            this%litfire_col(c) + &
+            this%somfire_col(c) + &
+            this%vegfire_col(c)
+    end do
+
+  end subroutine Summary_betr
+  !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        isotope)
     !
@@ -4830,6 +4960,11 @@ contains
     ! column variables
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+    if(is_active_betr_bgc)then
+      call this%summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,isotope)
+      return
+    endif
 
     ! some zeroing
     do fc = 1,num_soilc

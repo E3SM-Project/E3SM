@@ -132,6 +132,7 @@ module CNCarbonStateType
      procedure , public  :: ZeroDWT
      procedure , public  :: Restart
      procedure , public  :: Summary
+     procedure , private :: Summary_betr
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -854,6 +855,16 @@ contains
        call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
              avgflag='A', long_name='total soil organic matter carbon', &
              ptr_col=this%totsomc_col)
+
+       this%totabgc_col(begc:endc) = spval
+       call hist_addfld1d (fname='TOTABGC', units='gC/m^2', &
+             avgflag='A', long_name='total aboveground organic carbon', &
+             ptr_col=this%totabgc_col)
+
+       this%totblgc_col(begc:endc) = spval
+       call hist_addfld1d (fname='TOTBLGC', units='gC/m^2', &
+             avgflag='A', long_name='total belowground carbon', &
+             ptr_col=this%totblgc_col)
 
        call hist_addfld1d (fname='SOILC', units='gC/m^2', &
              avgflag='A', long_name='soil C', &
@@ -2360,6 +2371,7 @@ contains
 
     if (carbon_type == 'c12') then
        do k = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_restart(k))=='')exit
           varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c'
           if (use_vertsoilc) then
              ptr2d => this%decomp_cpools_vr_col(:,:,k)
@@ -2457,6 +2469,7 @@ contains
 
     if ( carbon_type == 'c13' ) then
        do k = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_restart(k))=='')exit
           varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_13'
           if (use_vertsoilc) then
              ptr2d => this%decomp_cpools_vr_col(:,:,k)
@@ -2577,6 +2590,7 @@ contains
 
     if ( carbon_type == 'c14' ) then
        do k = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_restart(k))=='')exit
           varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_14'
           if (use_vertsoilc) then
              ptr2d => this%decomp_cpools_vr_col(:,:,k)
@@ -2755,6 +2769,7 @@ contains
               call endrun(msg=' CNRest: error in entering/exiting spinup - should occur only when nstep = 1'//&
                    errMsg(__FILE__, __LINE__))
            endif
+           if(.not. is_active_betr_bgc)then
            do k = 1, ndecomp_pools
               do c = bounds%begc, bounds%endc
                  do j = 1, nlevdecomp
@@ -2769,6 +2784,7 @@ contains
                  end do
               end do
            end do
+           endif
            do i = bounds%begp, bounds%endp
               if (exit_spinup) then 
                  m_veg = spinup_mortality_factor
@@ -2915,6 +2931,66 @@ contains
     end do
 
   end subroutine ZeroDwt
+  !-----------------------------------------------------------------------
+  subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform patch and column-level carbon summary calculations
+    !
+    ! !USES:
+    use clm_varctl       , only: iulog
+    use clm_time_manager , only: get_step_size
+    use clm_varcon       , only: secspday
+    use clm_varpar       , only: nlevdecomp, ndecomp_pools
+
+    !
+    ! !ARGUMENTS:
+    class(carbonstate_type) :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer :: fc, c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+
+       ! total product carbon
+       this%totprodc_col(c) = &
+            this%prod10c_col(c)  + &
+            this%prod100c_col(c) + &
+            this%prod1c_col(c)
+
+       ! total ecosystem carbon, including veg but excluding cpool (TOTECOSYSC)
+       this%totecosysc_col(c) = &
+            this%cwdc_col(c)     + &
+            this%totlitc_col(c)  + &
+            this%totsomc_col(c)  + &
+            this%totprodc_col(c) + &
+            this%totvegc_col(c)
+
+       ! total column carbon, including veg and cpool (TOTCOLC)
+       ! adding col_ctrunc, seedc
+       this%totcolc_col(c) = &
+            this%totpftc_col(c)  + & !non-sbgc pftc
+            this%totprodc_col(c) + & !non-sbgc product c
+            this%seedc_col(c)    + & !non-sbgc seed c
+            this%cwdc_col(c)     + & !sbgc cwdc
+            this%totlitc_col(c)  + & !sbgc litc
+            this%totsomc_col(c)      !sbgc somc
+
+       this%totabgc_col(c) = &
+            this%totpftc_col(c)  + &
+            this%totprodc_col(c) + &
+            this%seedc_col(c)
+
+       this%totblgc_col(c) = &
+            this%cwdc_col(c) + &
+            this%totlitc_col(c) + &
+            this%totsomc_col(c)
+    end do
+  end subroutine Summary_betr
 
   !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
@@ -2927,6 +3003,7 @@ contains
     use clm_time_manager , only: get_step_size
     use clm_varcon       , only: secspday
     use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
+    use tracer_varcon    , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class(carbonstate_type) :: this
@@ -3041,6 +3118,11 @@ contains
      nlev = nlevdecomp
      if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
+    ! column level summary
+    if( is_active_betr_bgc)then
+       call  this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      return
+    endif
 
       ! vertically integrate each of the decomposing C pools
       do l = 1, ndecomp_pools

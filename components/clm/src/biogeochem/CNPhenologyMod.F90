@@ -194,7 +194,7 @@ contains
     tString='lwtop_ann'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNPhenolParamsInst%lwtop=tempr   
+    CNPhenolParamsInst%lwtop=tempr !can turn off livewood turnover here
 
   end subroutine readCNPhenolParams
 
@@ -650,7 +650,6 @@ contains
          deadcrootp_storage_to_xfer          =>    phosphorusflux_vars%deadcrootp_storage_to_xfer_patch      & ! Output:  [real(r8) (:)   ]                                                    
 
          )
-
       ! start pft loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -2149,7 +2148,7 @@ contains
             ! The transfer rate is a linearly decreasing function of time,
             ! going to zero on the last timestep of the onset period
 
-            if (onset_counter(p) == dt) then
+            if (onset_counter(p) == dt .or. onset_counter(p)==0._r8) then
                t1 = 1.0_r8 / dt
             else
                t1 = 2.0_r8 / (onset_counter(p))
@@ -2428,7 +2427,6 @@ contains
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
       ! over time, with displayed growth going to 0.0 on the last day of litterfall
-      
       do fp = 1,num_soilp
          p = filter_soilp(fp)
 
@@ -2590,11 +2588,9 @@ contains
          leafp             =>    phosphorusstate_vars%leafp_patch            , &
          frootp            =>    phosphorusstate_vars%frootp_patch             &
          )
-
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-
          ! only calculate these fluxes if the background litterfall rate is non-zero
          if (bglfr_leaf(p) > 0._r8) then
             ! units for bglfr are already 1/s
@@ -2696,7 +2692,6 @@ contains
          livecrootp_to_deadcrootp =>    phosphorusflux_vars%livecrootp_to_deadcrootp_patch , & ! Output: [real(r8) (:) ]                                                    
          livecrootp_to_retransp   =>    phosphorusflux_vars%livecrootp_to_retransp_patch     & ! Output: [real(r8) (:) ]                                              
          )
-
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)

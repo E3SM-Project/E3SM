@@ -164,7 +164,7 @@ contains
             end if
 
          end if
-
+         am = 0._r8 !turn off gap mort
          m  = am/(get_days_per_year() * secspday)
 
          !------------------------------------------------------

@@ -44,6 +44,8 @@ module CNNitrogenFluxType
      real(r8), pointer :: m_deadcrootn_to_litter_patch              (:)     ! patch dead coarse root N mortality (gN/m2/s)
      real(r8), pointer :: m_retransn_to_litter_patch                (:)     ! patch retranslocated N pool mortality (gN/m2/s)
      real(r8), pointer :: m_npool_to_litter_patch                   (:)     ! patch npool mortality (gN/m2/s)
+     real(r8), pointer :: supplement_to_sminn_surf_patch            (:)     ! patch supplmenental N (gN / m2/s)
+
      ! harvest fluxes
      real(r8), pointer :: hrv_leafn_to_litter_patch                 (:)     ! patch leaf N harvest mortality (gN/m2/s)
      real(r8), pointer :: hrv_frootn_to_litter_patch                (:)     ! patch fine root N harvest mortality (gN/m2/s)
@@ -398,6 +400,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: hrv_nloss_litter                          (:)     ! total nloss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
 
+     real(r8), pointer :: nflx_plant_to_soilbgc_col                 (:)
    contains
 
      procedure , public  :: Init   
@@ -408,7 +411,7 @@ module CNNitrogenFluxType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
-
+     procedure , private :: Summary_betr
      procedure , private :: NSummary_interface
 
   end type nitrogenflux_type
@@ -586,6 +589,7 @@ contains
     allocate(this%fert_counter_patch                (begp:endp)) ; this%fert_counter_patch                (:) = nan
     allocate(this%soyfixn_patch                     (begp:endp)) ; this%soyfixn_patch                     (:) = nan
     allocate(this%nfix_to_plantn_patch              (begp:endp)) ; this%nfix_to_plantn_patch              (:) = nan
+    allocate(this%supplement_to_sminn_surf_patch    (begp:endp)) ; this%supplement_to_sminn_surf_patch    (:) = nan
 
     allocate(this%ndep_to_sminn_col             (begc:endc))    ; this%ndep_to_sminn_col	     (:) = nan
     allocate(this%nfix_to_sminn_col             (begc:endc))    ; this%nfix_to_sminn_col	     (:) = nan
@@ -816,6 +820,7 @@ contains
     allocate(this%hrv_nloss_litter            (begp:endp)) ; this%hrv_nloss_litter                  (:) = nan
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
     
+    allocate(this%nflx_plant_to_soilbgc_col   (begc:endc)) ;             this%nflx_plant_to_soilbgc_col(:)= nan    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -2338,7 +2343,7 @@ contains
 
     do fi = 1,num_patch
        i=filter_patch(fi)
-
+       this%supplement_to_sminn_surf_patch(i)            = value_patch
        this%m_leafn_to_litter_patch(i)                   = value_patch
        this%m_frootn_to_litter_patch(i)                  = value_patch
        this%m_leafn_storage_to_litter_patch(i)           = value_patch
@@ -2758,6 +2763,132 @@ contains
 
   end subroutine ZeroDwt
 
+  !-----------------------------------------------------------------------
+   subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+     !
+     ! !USES:
+     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+     use clm_varctl    , only: use_nitrif_denitrif
+     use subgridAveMod , only: p2c
+     use pftvarcon     , only : npcropmin
+     !
+     ! !ARGUMENTS:
+     class (nitrogenflux_type) :: this
+     type(bounds_type) , intent(in) :: bounds
+     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+     integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+     integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+
+     integer :: fc, c, j, fp, p
+     real(r8):: dtmp
+
+     ! total column-level fire N losses
+     do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%fire_nloss_col(c) = this%fire_nloss_p2c_col(c) + this%fire_decomp_nloss_col(c)
+     end do
+
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+       this%sminn_to_plant_patch(p) = this%smin_no3_to_plant_patch(p) + &
+         this%smin_nh4_to_plant_patch(p)
+    enddo
+
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%sminn_to_plant_patch(bounds%begp:bounds%endp), &
+         this%sminn_to_plant_col(bounds%begc:bounds%endc))
+
+     ! supplementary N supplement_to_sminn
+     do j = 1, nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%supplement_to_sminn_col(c) = &
+                this%supplement_to_sminn_col(c) + &
+                this%supplement_to_sminn_vr_col(c,j) * dzsoi_decomp(j)
+
+           this%sminn_input_col(c) = &
+                this%sminn_input_col(c) + &
+                (this%sminn_nh4_input_vr_col(c,j)+this%sminn_no3_input_vr_col(c,j))*dzsoi_decomp(j)
+
+           this%sminn_nh4_input_col(c) = &
+                this%sminn_nh4_input_col(c) + &
+                this%sminn_nh4_input_vr_col(c,j)*dzsoi_decomp(j)
+
+           this%sminn_no3_input_col(c) = &
+                this%sminn_no3_input_col(c) + &
+                this%sminn_no3_input_vr_col(c,j)*dzsoi_decomp(j)
+        end do
+     end do
+
+     do fc = 1,num_soilc
+        c = filter_soilc(fc)
+
+        ! column-level N losses due to landcover change
+        this%dwt_nloss_col(c) = &
+             this%dwt_conv_nflux_col(c)
+
+        ! total wood product N loss
+        this%product_nloss_col(c) = &
+             this%prod10n_loss_col(c) + &
+             this%prod100n_loss_col(c)+ &
+             this%prod1n_loss_col(c)
+
+        this%nflx_plant_to_soilbgc_col(c) = 0._r8
+
+        do j = 1, nlevdecomp
+
+          dtmp =(this%phenology_n_to_litr_met_n_col(c,j)     + &
+                 this%gap_mortality_n_to_litr_met_n_col(c,j) + &
+                 this%dwt_frootn_to_litr_met_n_col(c,j)      + &
+                 this%harvest_n_to_litr_met_n_col(c,j)       + &
+                 this%m_n_to_litr_met_fire_col(c,j)          + &
+                 this%phenology_n_to_litr_cel_n_col(c,j)     + &
+                 this%gap_mortality_n_to_litr_cel_n_col(c,j) + &
+                 this%dwt_frootn_to_litr_cel_n_col(c,j)      + &
+                 this%harvest_n_to_litr_cel_n_col(c,j)       + &
+                 this%m_n_to_litr_cel_fire_col(c,j)          + &
+                 this%phenology_n_to_litr_lig_n_col(c,j)     + &
+                 this%gap_mortality_n_to_litr_lig_n_col(c,j) + &
+                 this%dwt_frootn_to_litr_lig_n_col(c,j)      + &
+                 this%harvest_n_to_litr_lig_n_col(c,j)       + &
+                 this%m_n_to_litr_lig_fire_col(c,j)          + &
+                 this%gap_mortality_n_to_cwdn_col(c,j)       + &
+                 this%dwt_livecrootn_to_cwdn_col(c,j)        + &
+                 this%dwt_deadcrootn_to_cwdn_col(c,j)        + &
+                 this%harvest_n_to_cwdn_col(c,j)             + &
+                 this%fire_mortality_n_to_cwdn_col(c,j))
+
+        this%nflx_plant_to_soilbgc_col(c) = this%nflx_plant_to_soilbgc_col(c) + dzsoi_decomp(j) * dtmp
+
+        if(dtmp/=0._r8 .and. .false.)then
+          write(*,*)'==========================='
+          write(*,*)'j',j
+          write(*,*)'phenology_n_to_litr_met_n_col    =',this%phenology_n_to_litr_met_n_col(c,j)
+          write(*,*)'dwt_frootn_to_litr_met_n_col     =', this%dwt_frootn_to_litr_met_n_col(c,j)
+          write(*,*)'gap_mortality_n_to_litr_met_n_col=',this%gap_mortality_n_to_litr_met_n_col(c,j)
+          write(*,*)'harvest_n_to_litr_met_n_col      =',this%harvest_n_to_litr_met_n_col(c,j)
+          write(*,*)'m_n_to_litr_met_fire_col         =',this%m_n_to_litr_met_fire_col(c,j)
+          write(*,*)'phenology_n_to_litr_cel_n_col    =', this%phenology_n_to_litr_cel_n_col(c,j)
+          write(*,*)'dwt_frootn_to_litr_cel_n_col     =',this%dwt_frootn_to_litr_cel_n_col(c,j)
+          write(*,*)'gap_mortality_n_to_litr_cel_n_col=',this%gap_mortality_n_to_litr_cel_n_col(c,j)
+          write(*,*)'harvest_n_to_litr_cel_n_col      =',this%harvest_n_to_litr_cel_n_col(c,j)
+          write(*,*)'m_n_to_litr_cel_fire_col         =',this%m_n_to_litr_cel_fire_col(c,j)
+          write(*,*)'phenology_n_to_litr_lig_n_col    =',this%phenology_n_to_litr_lig_n_col(c,j)
+          write(*,*)'dwt_frootn_to_litr_lig_n_col     =',this%dwt_frootn_to_litr_lig_n_col(c,j)
+          write(*,*)'gap_mortality_n_to_litr_lig_n_col=',this%gap_mortality_n_to_litr_lig_n_col(c,j)
+          write(*,*)'harvest_n_to_litr_lig_n_col      =',this%harvest_n_to_litr_lig_n_col(c,j)
+          write(*,*)'m_n_to_litr_lig_fire_col         =',this%m_n_to_litr_lig_fire_col(c,j)
+          write(*,*)'dwt_livecrootn_to_cwdn_col       =',this%dwt_livecrootn_to_cwdn_col(c,j)
+          write(*,*)'dwt_deadcrootn_to_cwdn_col       =',this%dwt_deadcrootn_to_cwdn_col(c,j)
+          write(*,*)'gap_mortality_n_to_cwdn_col      =',this%gap_mortality_n_to_cwdn_col(c,j)
+          write(*,*)'harvest_n_to_cwdn_col            =',this%harvest_n_to_cwdn_col(c,j)
+          write(*,*)'fire_mortality_n_to_cwdn_col     =',this%fire_mortality_n_to_cwdn_col(c,j)
+        endif
+       enddo
+     end do
+
+   end subroutine Summary_betr
  !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
@@ -2904,6 +3035,12 @@ contains
     call p2c(bounds, num_soilc, filter_soilc, &
          this%wood_harvestn_patch(bounds%begp:bounds%endp), &
          this%wood_harvestn_col(bounds%begc:bounds%endc))
+
+    if(is_active_betr_bgc)then
+      call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      return
+    endif
+
 
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full

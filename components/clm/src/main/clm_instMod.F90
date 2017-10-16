@@ -230,7 +230,7 @@ contains
     use landunit_varcon                   , only : istice, istice_mec, istsoil
     use clm_varcon                        , only : h2osno_max, bdsno
     use domainMod                         , only : ldomain
-    use clm_varpar                        , only : nlevsno, numpft
+    use clm_varpar                        , only : nlevsno, numpft, nlevsoi
     use clm_varctl                        , only : single_column, fsurdat, scmlat, scmlon
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
@@ -387,7 +387,7 @@ contains
 
 
     ! Note - always initialize the memory for ch4_vars
-    call ch4_vars%Init(bounds_proc, soilstate_vars%cellorg_col(begc:endc, 1:))
+    call ch4_vars%Init(bounds_proc, soilstate_vars%cellorg_col(begc:endc, 1:nlevsoi))
 
     ! Note - always initialize the memory for cnstate_vars (used in biogeophys/)
     call cnstate_vars%Init(bounds_proc)
