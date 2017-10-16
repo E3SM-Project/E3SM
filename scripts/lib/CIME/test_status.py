@@ -192,7 +192,7 @@ class TestStatus(object):
                 if subsequent_phase in self._phase_statuses:
                     del self._phase_statuses[subsequent_phase]
                 if subsequent_phase.startswith(COMPARE_PHASE):
-                    for stored_phase in self._phase_statuses.keys():
+                    for stored_phase in list(self._phase_statuses.keys()):
                         if stored_phase.startswith(COMPARE_PHASE):
                             del self._phase_statuses[stored_phase]
 
