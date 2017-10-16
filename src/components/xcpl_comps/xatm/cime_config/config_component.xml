@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id version="3.0">
+  <description>
+    <desc atm="XATM">Dead atm component</desc>
+  </description>
+
+  <entry id="COMP_ATM">
+    <type>char</type>
+    <valid_values>xatm</valid_values>
+    <default_value>xatm</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of atmosphere component</desc>
+  </entry>
+
+  <help>
+    =========================================
+    XATM naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>
