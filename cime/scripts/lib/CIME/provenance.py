@@ -96,7 +96,7 @@ def save_build_provenance(case, lid=None):
 def _save_prerun_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR '%s' is not valid. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
+        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data.".format(timing_dir))
         return
 
     logger.info("timing dir is {}".format(timing_dir))
@@ -106,10 +106,16 @@ def _save_prerun_timing_acme(case, lid):
     cimeroot = case.get_value("CIMEROOT")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
-    expect(not os.path.exists(full_timing_dir), "{} already exists".format(full_timing_dir))
+    if os.path.exists(full_timing_dir):
+        logger.warning("{} already exists. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
+        return
 
-    os.makedirs(full_timing_dir)
-    expect(os.path.exists(full_timing_dir), "{} does not exists".format(full_timing_dir))
+    try:
+        os.makedirs(full_timing_dir)
+    except OSError:
+        logger.warning("{} cannot be created. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
+        return
+
     mach = case.get_value("MACH")
     compiler = case.get_value("COMPILER")
 
@@ -255,12 +261,14 @@ def _save_postrun_timing_acme(case, lid):
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR '%s' is not valid. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
         return
 
     mach = case.get_value("MACH")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
+
+    if not os.path.isdir(full_timing_dir):
+        return
 
     # Kill mach_syslog
     job_id = _get_batch_job_id_for_syslog(case)
