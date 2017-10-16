@@ -243,6 +243,10 @@ include 'mpif.h'
 
       if ( present(mpi_comm) ) then
          dminfo % initialized_mpi = .false.
+#ifdef MPAS_OPENMP
+         desiredThreadLevel = MPI_THREAD_FUNNELED
+         call MPI_Query_thread(threadLevel, mpi_ierr)
+#endif
          call MPI_Comm_dup(mpi_comm, dminfo % comm, mpi_ierr)
       else
          dminfo % initialized_mpi = .true.
