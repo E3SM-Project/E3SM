@@ -1222,6 +1222,7 @@ def find_system_test(testname, case):
 
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
+                print (tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
                 if os.path.isfile(system_test_file):
                     fdir.append(tdir)
@@ -1233,6 +1234,7 @@ def find_system_test(testname, case):
                         if system_test_dir not in sys.path:
                             sys.path.append(system_test_dir)
                         system_test_path = "{}.{}".format(testname.lower(), testname)
+        expect(len(fdir) > 0, "Test {} not found, aborting".format(testname))
         expect(len(fdir) == 1, "Test {} found in multiple locations {}, aborting".format(testname, fdir))
     expect(system_test_path is not None, "No test {} found".format(testname))
 

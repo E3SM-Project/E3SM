@@ -36,13 +36,13 @@ class EnvBase(EntryID):
         if len(nodes):
             node = nodes[0]
         if node:
-            valnodes = node.findall(".//value")
+            valnodes = node.findall(".//value[@compclass]")
             if len(valnodes) == 0:
                 logger.debug("vid {} is not a compvar".format(vid))
                 return vid, None, False
             else:
                 logger.debug("vid {} is a compvar".format(vid))
-                if attribute is not None and "compclass" in attribute:
+                if attribute is not None:
                     comp = attribute["compclass"]
                 return vid, comp, True
         else:
