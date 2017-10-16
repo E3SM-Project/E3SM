@@ -87,7 +87,6 @@
 
   <entry id="COMP_ROOT_DIR_ATM">
     <type>char</type>
-    <default_value>unset</default_value>
     <values>
       <value component="cam"      >$SRCROOT/components/cam/</value>
       <value component="datm"      >$CIMEROOT/src/components/data_comps/datm</value>

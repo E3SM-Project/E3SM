@@ -626,6 +626,8 @@ class Case(object):
             node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
             if comp_root_dir is not None:
+                # the set_value in files is needed for the archiver setup below
+                files.set_value(root_dir_node_name, comp_root_dir)
                 self.set_value(root_dir_node_name, comp_root_dir)
                 compatt = None
             else:
@@ -861,7 +863,7 @@ class Case(object):
         infile = self.get_resolved_value(infile)
         logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
-        archive.setup(env_archive, self._components)
+        archive.setup(env_archive, self._components, files=files)
         self.schedule_rewrite(env_archive)
 
         self.set_value("COMPSET",self._compsetname)
