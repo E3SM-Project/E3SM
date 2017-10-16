@@ -5,7 +5,7 @@ from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
 
-import os, glob, time
+import os, glob, time, six
 
 ###############################################################################
 def bless_namelists(test_name, report_only, force, baseline_name, baseline_root):
@@ -17,7 +17,7 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     # Update namelist files
     print("Test '{}' had namelist diff".format(test_name))
     if (not report_only and
-        (force or input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
+        (force or six.moves.input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
         stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
         if stat != 0:
@@ -42,7 +42,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
         else:
             print(comments)
             if (not report_only and
-                (force or input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
+                (force or six.moves.input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
                 result, comments = generate_baseline(case, baseline_dir=baseline_full_dir)
                 if not result:
                     logging.warning("Hist file bless FAILED for test {}".format(test_name))
