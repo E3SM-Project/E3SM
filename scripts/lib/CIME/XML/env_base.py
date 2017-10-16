@@ -31,31 +31,35 @@ class EnvBase(EntryID):
 
     def check_if_comp_var(self, vid, attribute=None):
         # pylint: disable=no-member
-        if not hasattr(self, "_component_value_list") or\
-                (self.get_nodes("entry", {"id" : vid}) and \
-                     not vid in self._component_value_list):
-            return vid, None, False
+        nodes = self.get_nodes("entry", {"id" : vid})
+        node = None
+        if len(nodes):
+            node = nodes[0]
+        if node:
+            valnodes = node.findall(".//value")
+            if len(valnodes) == 0:
+                logger.debug("vid {} is not a compvar".format(vid))
+                return vid, None, False
+            else:
+                comp = None
+                logger.debug("vid {} is a compvar".format(vid))
+                if attribute is not None and "compclass" in attribute:
+                    comp = attribute["compclass"]
+                return vid, comp, True
+        else:
+            if hasattr(self, "_components"):
+                new_vid = None
+                for comp in self._components:
+                    if "_"+comp in vid:
+                        new_vid = vid.replace('_'+comp, '', 1)
+                    elif comp+"_" in vid:
+                        new_vid = vid.replace(comp+'_', '', 1)
 
-        comp = None
-        if vid in self._component_value_list:
-            if attribute is not None:
-                if "component" in attribute:
-                    comp = attribute["component"]
-
-            return vid, comp, True
-
-        new_vid = None
-        for comp in self._components:
-            if "_"+comp in vid:
-                new_vid = vid.replace('_'+comp, '', 1)
-            elif comp+"_" in vid:
-                new_vid = vid.replace(comp+'_', '', 1)
-
-            if new_vid is not None:
-                break
-
-        if new_vid is not None and new_vid in self._component_value_list:
-            return new_vid, comp, True
+                    if new_vid is not None:
+                        break
+                if new_vid is not None:
+                    logger.debug("vid {} is a compvar with comp {}".format(vid, comp))
+                    return new_vid, comp, True
 
         return vid, None, False
 
@@ -76,9 +80,9 @@ class EnvBase(EntryID):
                     logger.debug("Not enough info to get value for {}".format(vid))
                     return value
             if attribute is None:
-                attribute = {"component" : comp}
+                attribute = {"compclass" : comp}
             else:
-                attribute["component"] = comp
+                attribute["compclass"] = comp
             node = self.get_optional_node("entry", {"id":vid})
             if node is not None:
                 type_str = self._get_type_info(node)
@@ -105,19 +109,19 @@ class EnvBase(EntryID):
             if iscompvar and comp is None:
                 # pylint: disable=no-member
                 for comp in self._components:
-                    val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
+                    val = self._set_value(node, value, vid, subgroup, ignore_type, compclass=comp)
             else:
-                val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
+                val = self._set_value(node, value, vid, subgroup, ignore_type, compclass=comp)
         return val
 
     # pylint: disable=arguments-differ
-    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, component=None):
+    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, compclass=None):
         if vid is None:
             vid = node.get("id")
         vid, _, iscompvar = self.check_if_comp_var(vid, None)
 
         if iscompvar:
-            attribute = {"component":component}
+            attribute = {"compclass":compclass}
             str_value = self.get_valid_value_string(node, value, vid, ignore_type)
             val = self.set_element_text("value", str_value, attribute, root=node)
         else:
@@ -140,8 +144,18 @@ class EnvBase(EntryID):
         if dnode is not None:
             node.remove(dnode)
         vnode = node.find(".//values")
-        vid = node.get("id")
-        _, _, iscompvar = self.check_if_comp_var(vid)
-        if vnode is not None and not iscompvar:
-            node.remove(vnode)
+        if vnode is not None:
+            componentatt = vnode.findall(".//value[@component=\"ATM\"]")
+            # backward compatibility (compclasses and component were mixed
+            # now we seperated into component and compclass)
+            if len(componentatt) > 0:
+                for ccnode in vnode.findall(".//value[@component]"):
+                    val = ccnode.attrib.get("component")
+                    ccnode.attrib.pop("component")
+                    ccnode.set("compclass",val)
+            compclassatt = vnode.findall(".//value[@compclass]")
+
+            if len(compclassatt) == 0:
+                node.remove(vnode)
+
         return node

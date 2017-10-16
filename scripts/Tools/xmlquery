@@ -244,9 +244,9 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
                     value = []
                     for comp in comp_classes:
                         try:
-                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                            nextval = get_value_as_string(case,var, attribute={"compclass" : comp}, resolved=resolved, subgroup=group)
                         except:
-                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=False, subgroup=group)
+                            nextval = get_value_as_string(case,var, attribute={"compclass" : comp}, resolved=False, subgroup=group)
 
                         if nextval is not None:
                             value.append(comp + ":" + "%s"%nextval)

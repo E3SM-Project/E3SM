@@ -129,7 +129,6 @@ class Case(object):
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
         MAX_MPITASKS_PER_NODE  = self.get_value("MAX_MPITASKS_PER_NODE")
-
         self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
