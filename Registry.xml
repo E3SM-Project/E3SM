@@ -3171,28 +3171,22 @@
 		<var name="tracerValue" time_levs="2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Single tracer value for advection"
 		/>
-		<var name="layerThicknessPrime" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="m"
-			 description="temporary layer thickness"
+		<var name="hNewInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Inverse layer thickness for advection"
 		/>
-		<var name="tracersPrime" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="temporary tracers"
+		<var name="hProv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="provisional layer thickness for advection"
+		/>
+		<var name="hProvInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="m"
+			 description="inverse of provisional layer thickness for advection"
 		/>
 		<var name="upwindTendency" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Upwind advective tendency"
 		/>
-		<var name="inverseLayerThickness" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Inverse layer thickness for advection"
-		/>
-		<var name="tracerMinHor" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="tracerMin" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Min tracer value for monotonic advection"
 		/>
-		<var name="tracerMaxHor" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Max tracer value for monotonic advection"
-		/>
-		<var name="tracerMinVert" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Min tracer value for monotonic advection"
-		/>
-		<var name="tracerMaxVert" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="tracerMax" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Max tracer value for monotonic advection"
 		/>
 		<var name="fluxIncoming" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""

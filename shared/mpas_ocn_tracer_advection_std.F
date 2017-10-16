@@ -54,7 +54,7 @@ module ocn_tracer_advection_std
 !-----------------------------------------------------------------------
    subroutine ocn_tracer_advection_std_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, &!{{{
                                              normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, &
-                                             scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
+                                             scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
                                              highOrderAdvectionMask, edgeSignOnCell)
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
@@ -66,7 +66,6 @@ module ocn_tracer_advection_std
       real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
       real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
-      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch fields
