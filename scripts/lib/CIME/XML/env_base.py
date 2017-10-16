@@ -30,9 +30,9 @@ class EnvBase(EntryID):
             self._components = components
 
     def check_if_comp_var(self, vid, attribute=None):
-        # pylint: disable=no-member
         nodes = self.get_nodes("entry", {"id" : vid})
         node = None
+        comp = None
         if len(nodes):
             node = nodes[0]
         if node:
@@ -41,7 +41,6 @@ class EnvBase(EntryID):
                 logger.debug("vid {} is not a compvar".format(vid))
                 return vid, None, False
             else:
-                comp = None
                 logger.debug("vid {} is a compvar".format(vid))
                 if attribute is not None and "compclass" in attribute:
                     comp = attribute["compclass"]
