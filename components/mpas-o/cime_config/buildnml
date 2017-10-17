@@ -330,7 +330,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '		reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '		output_interval="00-01-00_00:00:00">' . "\n";
 	print $stream_file '' . "\n";
-	print $stream_file '    <var_array name="activeTracerAdvectionTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerHorizontalAdvectionTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerVerticalAdvectionTendency"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracerVertMixTendency"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracerSurfaceFluxTendency"/>' . "\n";
 	print $stream_file '    <var_array name="temperatureShortWaveTendency"/>' . "\n";
@@ -612,7 +613,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="transportVelocityZonal"/>' . "\n";
 	print $stream_file '    <var name="transportVelocityMeridional"/>' . "\n";
 	print $stream_file '    <var name="vertTransportVelocityTop"/>' . "\n";
-	print $stream_file '    <var_array name="activeTracerAdvectionTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerHorizontalAdvectionTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerVerticalAdvectionTendency"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracerVertMixTendency"/>' . "\n";
 	print $stream_file '    <var_array name="avgValueWithinOceanLayerRegion"/>' . "\n";
 	print $stream_file '    <var_array name="avgValueWithinOceanVolumeRegion"/>' . "\n";
