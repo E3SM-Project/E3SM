@@ -57,6 +57,12 @@ include 'mpif.h'
    integer, parameter, public :: IO_NODE = 0
    integer, parameter, public :: BUFSIZE = 6000
 
+#ifdef _MPI
+   public :: MPI_COMM_SELF
+#else
+   integer, parameter, public :: MPI_COMM_SELF = 0
+#endif
+
    public :: mpas_dmpar_init
    public :: mpas_dmpar_finalize
    public :: mpas_dmpar_abort
@@ -237,6 +243,10 @@ include 'mpif.h'
 
       if ( present(mpi_comm) ) then
          dminfo % initialized_mpi = .false.
+#ifdef MPAS_OPENMP
+         desiredThreadLevel = MPI_THREAD_FUNNELED
+         call MPI_Query_thread(threadLevel, mpi_ierr)
+#endif
          call MPI_Comm_dup(mpi_comm, dminfo % comm, mpi_ierr)
       else
          dminfo % initialized_mpi = .true.
@@ -7957,7 +7967,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (mpas_exchange_field_list), pointer :: exchFieldListPtr
       type (mpas_communication_list), pointer :: commListPtr
 
-      !logical :: allReceived
       integer :: mpi_ierr, iErr_tmp
       integer :: threadNum
 
@@ -7965,6 +7974,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          iErr = MPAS_DMPAR_NOERR
       end if
 
+      exchangeGroup % allReceived = .false.
       threadNum = mpas_threading_get_thread_num()
 
       if (threadNum == 0) then
@@ -7975,10 +7985,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
            commListPtr % unpacked = .false.
            commListPtr => commListPtr % next
         end do
-        exchangeGroup % allReceived = .false.
       endif
-
-      call mpas_threading_barrier()
 
       ! asarje: changing the loop structures to reduce omp barrier calls to just one
       !         adding 'unpacked' boolean to the comm list
@@ -7990,9 +7997,9 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
         call mpas_threading_barrier()   !! to make sure 'allReceived' is not updated by thread 0 \
                                         !! before all threads check its value
         ! first let master thread check what has been received before unpacking
-        commListPtr => exchangeGroup % recvList
         if(threadNum == 0) then
           exchangeGroup % allReceived = .true.
+          commListPtr => exchangeGroup % recvList
           do while ( associated(commListPtr) )
             ! Poll receive list messages, and unpack as they are received.
             if ( .not. commListPtr % received ) then
@@ -8002,6 +8009,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             commListPtr => commListPtr % next 
           end do
         end if
+        !$omp flush
 
         call mpas_threading_barrier()   !! to make sure thread 0 has tested the list before \
                                         !! any thread attempts to read its status

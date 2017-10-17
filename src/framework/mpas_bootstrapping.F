@@ -221,7 +221,8 @@ module mpas_bootstrapping
       !       in a scrambled order
 
       !
-      ! Determine which cells are owned by this process
+      ! Determine which cells are owned by this process. Currently, this routine just reads a graph.info.part.*
+      !    file, but in principle it could call some online, distributed mesh partitioning library.
       !
       call mpas_block_decomp_cells_for_proc(domain % dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, &
                                             block_count, config_number_of_blocks, config_explicit_proc_decomp, &
@@ -231,8 +232,17 @@ module mpas_bootstrapping
       deallocate(partial_global_graph_info % nAdjacent)
       deallocate(partial_global_graph_info % adjacencyList)
 
+      !
+      ! Transfer owned cells from local_cell_list into the indexToCellID_Block field (which may contain multiple blocks)
+      !
       call mpas_block_creator_setup_blocks_and_0halo_cells(nHalos, domain, indexToCellID_Block, local_cell_list, block_id, &
                                                            block_start, block_count)
+
+      !
+      ! The *Field arguments contain fields read by mpas_io_setup_*_block_fields on the simple, contiguous decompositions
+      !    that were set up by mpas_dmpar_get_index_range. These next calls communicate the *Field mesh fields from these
+      !    simple decompositions to the native MPAS decomposition in the *_Block fields.
+      !
       call mpas_block_creator_build_0halo_cell_fields(nHalos, indexToCellIDField, nEdgesOnCellField, cellsOnCellField, &
                                                       verticesOnCellField, edgesOnCellField, indexToCellID_Block, &
                                                       nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, &
@@ -245,6 +255,12 @@ module mpas_bootstrapping
                                                             nEdgesOnCell_Block, verticesOnCell_Block, indexToVertexID_Block, &
                                                             cellsOnVertex_Block, nVerticesSolveField)
 
+      !
+      ! The following three calls are responsible for taking the *_Block fields that upon entry
+      !    to the routines are defined only for owned elements and adding nHalos layers on to them so that
+      !    upon exit they contain all owned and halo elements. A side effect of this is that the exchange
+      !    lists for these fields are valid (and can be used, e.g., by mpas_block_creator_finalize_block_phase1).
+      !
       call mpas_block_creator_build_cell_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, &
                                                verticesOnCell_Block, edgesOnCell_Block, nCellsSolveField)
 
@@ -376,8 +392,9 @@ module mpas_bootstrapping
       call mpas_deallocate_field(indexToCellIDField)
       call mpas_deallocate_field(indexToEdgeIDField)
       call mpas_deallocate_field(indexToVertexIDField)
-      call mpas_deallocate_field(cellsOnCellField)
 
+      call mpas_deallocate_field(nEdgesOnCellField)
+      call mpas_deallocate_field(cellsOnCellField)
       call mpas_deallocate_field(edgesOnCellField)
       call mpas_deallocate_field(verticesOnCellField)
       call mpas_deallocate_field(cellsOnEdgeField)

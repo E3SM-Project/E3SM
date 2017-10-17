@@ -1188,7 +1188,7 @@ module mpas_block_creator
        nVerticesCursor => nVerticesCursor % next
        indexToCellCursor => indexToCellCursor % next
        indexToEdgeCursor => indexToEdgeCursor % next
-       indexToVertexCursor => indextoVertexcursor % next
+       indexToVertexCursor => indexToVertexcursor % next
      end do
 
    end subroutine mpas_block_creator_finalize_block_phase1!}}}
@@ -1294,7 +1294,7 @@ module mpas_block_creator
 
        indexField % array(:) = indexFieldBlk % array(:)
 
-       call mpas_pool_remove_field(block_ptr % allFields, 'indextoCellID_blk')
+       call mpas_pool_remove_field(block_ptr % allFields, 'indexToCellID_blk')
        call mpas_deallocate_field(indexFieldBlk)
 
        call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID', indexField)
@@ -1321,7 +1321,7 @@ module mpas_block_creator
 
        indexField % array(:) = indexFieldBlk % array(:)
 
-       call mpas_pool_remove_field(block_ptr % allFields, 'indextoEdgeID_blk')
+       call mpas_pool_remove_field(block_ptr % allFields, 'indexToEdgeID_blk')
        call mpas_deallocate_field(indexFieldBlk)
 
        call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID', indexField)
@@ -1348,7 +1348,7 @@ module mpas_block_creator
 
        indexField % array(:) = indexFieldBlk % array(:)
 
-       call mpas_pool_remove_field(block_ptr % allFields, 'indextoVertexID_blk')
+       call mpas_pool_remove_field(block_ptr % allFields, 'indexToVertexID_blk')
        call mpas_deallocate_field(indexFieldBlk)
        call mpas_pool_set_error_level(err_level)
 
