@@ -7,7 +7,8 @@ through the Case module.
 from copy import deepcopy
 import glob, os, shutil, math
 from CIME.XML.standard_module_setup import *
-
+#pylint: disable=import-error,redefined-builtin
+from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
@@ -113,14 +114,12 @@ class Case(object):
             self.initialize_derived_attributes()
 
     def check_if_comp_var(self, vid):
-        vid = vid
-        comp = None
-        iscompvar = False
         for env_file in self._env_entryid_files:
-            vid, comp, iscompvar = env_file.check_if_comp_var(vid)
+            new_vid, new_comp, iscompvar = env_file.check_if_comp_var(vid)
             if iscompvar:
-                return vid, comp, iscompvar
-        return vid, comp, iscompvar
+                return new_vid, new_comp, iscompvar
+
+        return vid, None, False
 
     def initialize_derived_attributes(self):
         """
@@ -130,18 +129,17 @@ class Case(object):
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
-        pes_per_node  = self.get_value("PES_PER_NODE")
-
+        MAX_MPITASKS_PER_NODE  = self.get_value("MAX_MPITASKS_PER_NODE")
         self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
         logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
 
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
-        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / MAX_MPITASKS_PER_NODE))
 
         threads_per_node = self.tasks_per_node * self.thread_count
-        threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
+        threads_per_core = 1 if (threads_per_node <= MAX_MPITASKS_PER_NODE) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
         mpi_attribs = {
@@ -404,15 +402,15 @@ class Case(object):
                 return result
 
     def set_lookup_value(self, item, value):
-        if item in self.lookups.keys() and self.lookups[item] is not None:
-            logger.warn("Item {} already in lookups with value {}".format(item,self.lookups[item]))
+        if item in self.lookups and self.lookups[item] is not None:
+            logger.warning("Item {} already in lookups with value {}".format(item,self.lookups[item]))
         else:
             logger.debug("Setting in lookups: item {}, value {}".format(item,value))
             self.lookups[item] = value
 
     def clean_up_lookups(self, allow_undefined=False):
         # put anything in the lookups table into existing env objects
-        for key,value in self.lookups.items():
+        for key,value in list(self.lookups.items()):
             logger.debug("lookup key {} value {}".format(key, value))
             result = self.set_value(key,value, allow_undefined=allow_undefined)
             if result is not None:
@@ -463,6 +461,11 @@ class Case(object):
             expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
 
         return None, science_support
+
+    def get_primary_component(self):
+        if self._primary_component is None:
+            self._primary_component = self._find_primary_component()
+        return self._primary_component
 
     def _find_primary_component(self):
         """
@@ -524,7 +527,7 @@ class Case(object):
         Assumes that self._primary_component has already been set.
         """
 
-        component = self._primary_component
+        component = self.get_primary_component()
 
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
@@ -616,7 +619,7 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
-        for i in xrange(1,len(self._component_classes)):
+        for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
             node_name = 'CONFIG_' + comp_class + '_FILE'
@@ -635,10 +638,7 @@ class Case(object):
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-
-
         self.clean_up_lookups()
-
 
     def _setup_mach_pes(self, pecount, multi_driver, ninst, machine_name, mpilib):
         #--------------------------------------------
@@ -719,10 +719,10 @@ class Case(object):
             mach_pes_obj.set_value(rootpe_str, rootpe)
 
         pesize = 1
-        pes_per_node = self.get_value("PES_PER_NODE")
+        MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
         for val in totaltasks:
             if val < 0:
-                val = -1*val*pes_per_node
+                val = -1*val*MAX_MPITASKS_PER_NODE
             if val > pesize:
                 pesize = val
         if multi_driver:
@@ -738,14 +738,13 @@ class Case(object):
             mach_pes_obj.set_value(key, ninst)
 
             key = "NTASKS_{}".format(compclass)
-            if key not in pes_ntasks.keys():
+            if key not in pes_ntasks:
                 mach_pes_obj.set_value(key,1)
             key = "NTHRDS_{}".format(compclass)
-            if compclass not in pes_nthrds.keys():
+            if compclass not in pes_nthrds:
                 mach_pes_obj.set_value(compclass,1)
 
         return pesize
-
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
@@ -785,7 +784,7 @@ class Case(object):
 
         # This needs to be called after self.set_comp_classes, which is called
         # from self._get_component_config_data
-        self._primary_component = self._find_primary_component()
+        self._primary_component = self.get_primary_component()
 
         self._set_info_from_primary_component(files, pesfile=pesfile)
 
@@ -841,7 +840,7 @@ class Case(object):
         env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
-        pesize = self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
+        self._setup_mach_pes(pecount, multi_driver, ninst, machine_name, mpilib)
 
         if multi_driver and ninst>1:
             logger.info(" Driver/Coupler has %s instances" % ninst)
@@ -898,7 +897,7 @@ class Case(object):
             if os.path.exists(wdir):
                 expect(not test, "Directory {} already exists, aborting test".format(wdir))
                 if answer is None:
-                    response = raw_input("\nDirectory {} already exists, (r)eplace, (a)bort, or (u)se existing?".format(wdir))
+                    response = input("\nDirectory {} already exists, (r)eplace, (a)bort, or (u)se existing?".format(wdir))
                 else:
                     response = answer
 
@@ -926,6 +925,11 @@ class Case(object):
         #--------------------------------------------
         # batch system (must come after initialize_derived_attributes)
         #--------------------------------------------
+        if walltime:
+            self.set_value("USER_REQUESTED_WALLTIME", walltime)
+        if queue:
+            self.set_value("USER_REQUESTED_QUEUE", queue)
+
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
@@ -934,7 +938,7 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=pesize, num_nodes=self.num_nodes, tasks_per_node=self.tasks_per_node, walltime=walltime, force_queue=queue, allow_walltime_override=test)
+        env_batch.set_job_defaults(bjobs, self)
         self.schedule_rewrite(env_batch)
 
         # Make sure that parallel IO is not specified if total_tasks==1
@@ -991,7 +995,6 @@ class Case(object):
                     os.path.join(toolsdir, "preview_run"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
-                    os.path.join(toolsdir, "archive_metadata.sh"),
                     os.path.join(toolsdir, "xmlchange"),
                     os.path.join(toolsdir, "xmlquery"),
                     os.path.join(toolsdir, "pelayout"))
@@ -1162,19 +1165,40 @@ class Case(object):
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)
 
-    def report_job_status(self):
+    def get_job_info(self):
+        """
+        Get information on batch jobs associated with this case
+        """
         xml_job_ids = self.get_value("JOB_IDS")
         if not xml_job_ids:
-            logger.info("No job ids associated with this case. Either case.submit was not run or was run with no-batch")
+            return {}
         else:
+            result = {}
             job_infos = xml_job_ids.split(", ") # pylint: disable=no-member
             for job_info in job_infos:
                 jobname, jobid = job_info.split(":")
+                result[jobname] = jobid
+
+            return result
+
+    def report_job_status(self):
+        jobmap = self.get_job_info()
+        if not jobmap:
+            logger.info("No job ids associated with this case. Either case.submit was not run or was run with no-batch")
+        else:
+            for jobname, jobid in jobmap.items():
                 status = self.get_env("batch").get_status(jobid)
                 if status:
                     logger.info("{}: {}".format(jobname, status))
                 else:
                     logger.info("{}: Unable to get status. Job may be complete already.".format(jobname))
+
+    def cancel_batch_jobs(self, jobids):
+        env_batch = self.get_env('batch')
+        for jobid in jobids:
+            success = env_batch.cancel_job(jobid)
+            if not success:
+                logger.warning("Failed to kill {}".format(jobid))
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
@@ -1229,7 +1253,7 @@ class Case(object):
         if version != "unknown":
             logger.info("{} model version found: {}".format(model, version))
         else:
-            logger.warn("WARNING: No {} Model version found.".format(model))
+            logger.warning("WARNING: No {} Model version found.".format(model))
 
     def load_env(self, reset=False):
         if not self._is_env_loaded or reset:
@@ -1269,9 +1293,9 @@ class Case(object):
                 if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
                     testcnt += 1
         if testcnt > 0:
-            logger.warn("\n*********************************************************************************************************************************")
-            logger.warn("This compset and grid combination is not scientifically supported, however it is used in {:d} tests.".format(testcnt))
-            logger.warn("*********************************************************************************************************************************\n")
+            logger.warning("\n*********************************************************************************************************************************")
+            logger.warning("This compset and grid combination is not scientifically supported, however it is used in {:d} tests.".format(testcnt))
+            logger.warning("*********************************************************************************************************************************\n")
         else:
             expect(False, "\nThis compset and grid combination is untested in CESM.  "
                    "Override this warning with the --run-unsupported option to create_newcase.",
@@ -1291,7 +1315,7 @@ class Case(object):
 
         self.flush(flushall=True)
 
-        logger.warn("setting case file to {}".format(xmlfile))
+        logger.warning("setting case file to {}".format(xmlfile))
         components = self.get_value("COMP_CLASSES")
         new_env_file = None
         for env_file in self._env_entryid_files:
@@ -1399,15 +1423,18 @@ class Case(object):
         except:
             if os.path.exists(self._caseroot):
                 if not logger.isEnabledFor(logging.DEBUG) and not test:
-                    logger.warn("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
+                    logger.warning("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))
                     shutil.rmtree(self._caseroot)
                 else:
-                    logger.warn("Leaving broken case dir {}".format(self._caseroot))
+                    logger.warning("Leaving broken case dir {}".format(self._caseroot))
 
             raise
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None,
-                 user_mods_dir=None):
+
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
+                     cime_output_root=None, exeroot=None, rundir=None,
+                     user_mods_dir=None):
         """ moved to case_clone """
         return create_case_clone(self, newcase, keepexe=keepexe, mach_dir=mach_dir,
-                          project=project, cime_output_root=cime_output_root,
-                          user_mods_dir=user_mods_dir)
+                                 project=project, cime_output_root=cime_output_root,
+                                 exeroot=exeroot, rundir=rundir,
+                                 user_mods_dir=user_mods_dir)

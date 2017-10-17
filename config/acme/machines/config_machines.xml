@@ -71,7 +71,7 @@
   <SUPPORTED_BY>acme</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>24</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
   <PROJECT>acme</PROJECT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
@@ -382,7 +382,6 @@
       <command name="rm">craype</command>
       <command name="rm">craype-mic-knl</command>
       <command name="rm">craype-haswell</command>
-
       <command name="rm">PrgEnv-intel</command>
       <command name="rm">PrgEnv-gnu</command>
       <command name="rm">intel</command>
@@ -516,7 +515,7 @@
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>2</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
 </machine>
 
 <machine MACH="linux-generic">
@@ -540,7 +539,7 @@
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>2</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -571,7 +570,7 @@
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <mpirun mpilib="default">
@@ -640,7 +639,7 @@
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -707,7 +706,7 @@
     <GMAKE>make</GMAKE>
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -769,7 +768,7 @@
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>16</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
   <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PROJECT>fy150001</PROJECT>
@@ -845,7 +844,7 @@
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>16</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
   <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PROJECT>fy150001</PROJECT>
@@ -920,7 +919,7 @@
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>36</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
   <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PROJECT>fy150001</PROJECT>
@@ -990,7 +989,7 @@
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>16</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>ACME</PROJECT>
          <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
@@ -1093,7 +1092,7 @@
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>36</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
 	 <PROJECT>ACME</PROJECT>
          <mpirun mpilib="openmpi">
@@ -1208,7 +1207,7 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>36</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT>acme</PROJECT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -1290,7 +1289,7 @@
          <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <PES_PER_NODE>4</PES_PER_NODE>
+         <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PROJECT>ClimateEnergy_2</PROJECT>
@@ -1300,7 +1299,7 @@
            <executable>/usr/bin/runjob</executable>
              <arguments>
                <arg name="label">--label short</arg>
-               <arg name="tasks_per_node">--ranks-per-node $PES_PER_NODE</arg>
+               <arg name="tasks_per_node">--ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
                <arg name="num_tasks">--np $TOTALPES</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
@@ -1345,7 +1344,7 @@
          <SUPPORTED_BY>bogenschutz1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>16</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
@@ -1401,7 +1400,7 @@
          <SUPPORTED_BY>bogenschutz1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>16</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
@@ -1462,7 +1461,7 @@
          <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>36</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
 	 <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
@@ -1518,7 +1517,7 @@
 	 <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <PES_PER_NODE>4</PES_PER_NODE>
+         <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PROJECT>ClimateEnergy_2</PROJECT>
@@ -1528,7 +1527,7 @@
            <executable>/usr/bin/runjob</executable>
              <arguments>
                <arg name="label">--label short</arg>
-               <arg name="tasks_per_node">--ranks-per-node $PES_PER_NODE</arg>
+               <arg name="tasks_per_node">--ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
                <arg name="num_tasks">--np $TOTALPES</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
@@ -1573,6 +1572,7 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
     <PROJECT>OceanClimate</PROJECT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -1672,7 +1672,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>8</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable/>
@@ -1745,7 +1745,7 @@
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
@@ -1812,7 +1812,7 @@
          <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
 	 <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>24</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
 	 <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
 	 <mpirun mpilib="mpi-serial">
 	   <executable></executable>
@@ -1911,7 +1911,7 @@
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-	 <PES_PER_NODE>8</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
@@ -1959,7 +1959,7 @@
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
          <GMAKE_J>32</GMAKE_J>
-	 <PES_PER_NODE>32</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
@@ -1995,7 +1995,7 @@
       <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
       <GMAKE_J>4</GMAKE_J>
       <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-      <PES_PER_NODE>16</PES_PER_NODE>
+      <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
       <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
       <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
       <mpirun mpilib="openmpi" compiler="gnu">
@@ -2065,8 +2065,8 @@
     <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
     <OS>CNL</OS>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-    <PES_PER_NODE>16</PES_PER_NODE>
     <ALLOCATE_SPARE_NODES>TRUE</ALLOCATE_SPARE_NODES>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <!-- difference to MAX_TASKS_PER_NODE-->
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
@@ -2082,7 +2082,7 @@
 	<!-- <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
         <arg name="num_tasks" > -n $TOTALPES</arg>
-        <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
+        <arg name="tasks_per_node" > -N $MAX_MPITASKS_PER_NODE</arg>
         <arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
         <arg name="numa_node" > -cc numa_node </arg>
 	-->
@@ -2252,7 +2252,7 @@
          <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <PES_PER_NODE>16</PES_PER_NODE>
+         <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -2262,7 +2262,7 @@
              <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
              <arg name="num_tasks" > -n $TOTALPES</arg>
-             <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
+             <arg name="tasks_per_node" > -N $MAX_MPITASKS_PER_NODE</arg>
              <arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
@@ -2402,7 +2402,7 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-	<PES_PER_NODE>32</PES_PER_NODE>
+	<MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
 	<PROJECT>climateacme</PROJECT>
     	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     	<SUPPORTED_BY>luke.vanroekel @ gmail.com</SUPPORTED_BY>
@@ -2424,7 +2424,7 @@
 	<SUPPORTED_BY>jonbob -at- lanl.gov</SUPPORTED_BY>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	<PES_PER_NODE>16</PES_PER_NODE>
+	<MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
 	<PROJECT>climateacme</PROJECT>
 	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
@@ -2512,7 +2512,7 @@
   <SUPPORTED_BY>jedwards@ucar.edu</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>15</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>15</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <mpirun >
     <executable>mpirun.lsf</executable>
@@ -2623,7 +2623,7 @@
              <arguments>
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+                <arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
                 <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
@@ -2662,7 +2662,7 @@
              <arguments>
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+                <arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
                 <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
@@ -2687,20 +2687,20 @@
   <SUPPORTED_BY>gbisht at lbl dot gov </SUPPORTED_BY>
   <GMAKE_J>4</GMAKE_J>
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>16</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
       <arg name="num_tasks">-np $TOTALPES</arg>
-      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
+      <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
       <arg name="num_tasks">-np $TOTALPES</arg>
-      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
+      <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -2750,20 +2750,20 @@
   <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
   <GMAKE_J>4</GMAKE_J>
   <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>12</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
       <arg name="num_tasks">-np $TOTALPES</arg>
-      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
+      <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
       <arg name="num_tasks">-np $TOTALPES</arg>
-      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
+      <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -2811,7 +2811,7 @@
   <BATCH_SYSTEM>none</BATCH_SYSTEM>
   <SUPPORTED_BY>rgknox at lbl gov</SUPPORTED_BY>
   <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-  <PES_PER_NODE>4</PES_PER_NODE>
+  <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
   <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
   <mpirun mpilib="mpi-serial">
     <executable></executable>
@@ -2820,7 +2820,7 @@
     <executable>mpirun</executable>
     <arguments>
       <arg name="num_tasks">-np $TOTALPES</arg>
-      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
+      <arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
     </arguments>
   </mpirun>
   <module_system type="none"/>
@@ -2847,7 +2847,7 @@
 	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
 	 <SUPPORTED_BY>acme</SUPPORTED_BY>
 	 <GMAKE_J>32</GMAKE_J>
-	 <PES_PER_NODE>20</PES_PER_NODE>
+	 <MAX_MPITASKS_PER_NODE>20</MAX_MPITASKS_PER_NODE>
 	 <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>csc249</PROJECT>
@@ -2862,7 +2862,7 @@
 		 <arg name="show-binding"> --report-bindings </arg>
 		 <arg name="show-processmap"> --display-map </arg>
 		 <!--
-		 <arg name="tasks_per_node"> map-by ppr:$PES_PER_NODE:node</arg>
+		 <arg name="tasks_per_node"> map-by ppr:$MAX_MPITASKS_PER_NODE:node</arg>
 		 -->
 	 </arguments>
 	 </mpirun>

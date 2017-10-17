@@ -84,7 +84,7 @@ def _main_func(description):
         if cleanlist is not None or clean_all:
             build.clean(case, cleanlist, clean_all)
         elif(testname is not None):
-            logging.warn("Building test for {} in directory {}".format(testname,
+            logging.warning("Building test for {} in directory {}".format(testname,
                                                                        caseroot))
             try:
                 # The following line can throw exceptions if the testname is

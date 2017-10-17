@@ -16,6 +16,9 @@ The following are the test functionality categories:
   11) other component-specific tests
 
 NOTES:
+- specifying the attribute INFRASTRUCTURE_TEST="TRUE" declares the given
+  test type to be an infrastructure-only test that is only meant to be
+  run by scripts_regression_tests.
 - unless otherwise noted everything is run in one executable directory
 - suffix: denotes the component history file suffixes that are added as part of the test
 - IOP test is done along with regular tests - not as a separate test
@@ -308,7 +311,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <REST_OPTION>$STOP_OPTION</REST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
-    <DOUT_S>TRUE</DOUT_S>
     <RESUBMIT>1</RESUBMIT>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
@@ -338,7 +340,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
   </test>
 
   <test NAME="HOMME">
-    <DESC>Run homme tests.</DESC>
+    <DESC>Run homme tests. Only works with the ACME version of the atmosphere component.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
@@ -356,7 +358,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTBUILDFAIL">
+  <test NAME="TESTBUILDFAIL" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail build step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -365,7 +367,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTBUILDFAILEXC">
+  <test NAME="TESTBUILDFAILEXC" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail build step by failing to init.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -374,7 +376,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTRUNFAIL">
+  <test NAME="TESTRUNFAIL" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail run step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -383,7 +385,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTRUNFAILEXC">
+  <test NAME="TESTRUNFAILEXC" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail run step via exception.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -392,7 +394,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTRUNPASS">
+  <test NAME="TESTRUNPASS" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-pass run step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -401,7 +403,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTMEMLEAKFAIL">
+  <test NAME="TESTMEMLEAKFAIL" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail memleak step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -410,7 +412,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTMEMLEAKPASS">
+  <test NAME="TESTMEMLEAKPASS" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-pass memleak step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -419,7 +421,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTRUNDIFF">
+  <test NAME="TESTRUNDIFF" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Produces a canned hist file.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -428,7 +430,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTTESTDIFF">
+  <test NAME="TESTTESTDIFF" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Simulates internal test diff (non baseline)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -437,7 +439,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="TESTRUNSLOWPASS">
+  <test NAME="TESTRUNSLOWPASS" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. After 5 minutes of sleep, pass run step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
@@ -446,7 +448,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="NODEFAIL">
+  <test NAME="NODEFAIL" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Tests restart upon detected node failure</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>nsteps</STOP_OPTION>
@@ -491,7 +493,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
-    <REST_OPTION>none</REST_OPTION>
   </test>
 
   <test NAME="PET">

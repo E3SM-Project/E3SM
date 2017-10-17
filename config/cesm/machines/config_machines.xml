@@ -66,14 +66,14 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks"> -n $TOTALPES</arg>
 	<!-- <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg> -->
-	<arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+	<arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
@@ -145,12 +145,12 @@
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpich">
       <executable>mpirun</executable>
       <arguments>
 	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
-	<arg name="tasks_per_node"> -ppn $PES_PER_NODE</arg>
+	<arg name="tasks_per_node"> -ppn $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="num_tasks"> -n $TOTALPES</arg>
       </arguments>
     </mpirun>
@@ -191,6 +191,64 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="centos7-linux">
+    <DESC>
+	Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
+        using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules         
+    </DESC>
+    <NODENAME_REGEX>regex.expression.matching.your.machine</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY> https://howto.get.out </PROXY>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>none</PROJECT>
+    <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/cesm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/cesm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/cesm/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/cesm/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/cesm/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{HOME}/cesm/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE>gmake</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>me@my.address</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec</executable>
+      <arguments>
+	<arg name="ntasks"> -np {{ total_tasks }} </arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+      </modules>
+       <modules compiler="gnu">
+	<command name="load">compiler/gnu/7.2.0</command>
+	<command name="load">mpi/gcc/mpich-3.2</command>
+	<command name="load">tool/netcdf/4.4.1.1/gcc</command>
+	<command name="load">tool/parallel-netcdf/mpich</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
   <machine MACH="cheyenne">
     <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
@@ -208,7 +266,7 @@
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <!-- have not seen any performance benefit in smt -->
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>36</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -312,7 +370,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>24</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
@@ -409,7 +467,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>32</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
@@ -512,7 +570,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
@@ -612,7 +670,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>12</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mvapich">
       <executable>srun</executable>
       <arguments>
@@ -669,7 +727,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>24</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
@@ -768,14 +826,14 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>julio -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>24</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
 	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
 	<arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-	<arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
+	<arg name="tasks_per_node" > -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
@@ -834,7 +892,7 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY> cseg </SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>48</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mvapich2">
       <executable>mpiexec</executable>
       <arguments>
@@ -889,7 +947,7 @@
     <DESC>
 
      Customize these fields as appropriate for your system,
-     particularly changing MAX_TASKS_PER_NODE and PES_PER_NODE to the
+     particularly changing MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE to the
      number of cores on your machine.  You may also want to change
      instances of '$ENV{HOME}/projects' to your desired directory
      organization.  You can use this in either of two ways: (1)
@@ -898,9 +956,12 @@
      config_machines.xml file in your personal .cime directory and
      then changing the machine name (MACH="homebrew") to
      your machine name and the NODENAME_REGEX to something matching
-     your machine's hostname.  In this case, you should not need the
+     your machine's hostname.  With (2), you should not need the
      `--machine` argument, because the machine should be determined
-     automatically.
+     automatically.  However, with (2), you will also need to copy the
+     homebrew-specific settings in config_compilers.xml into a
+     config_compilers.xml file in your personal .cime directory, again
+     changing the machine name (MACH="homebrew") to your machine name.
 
     </DESC>
     <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
@@ -918,7 +979,7 @@
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>4</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -950,7 +1011,7 @@
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <!-- have not seen any performance benefit in smt -->
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>36</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -1017,7 +1078,7 @@
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -1069,14 +1130,14 @@
     <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
     <SUPPORTED_BY> cseg </SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>8</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>/usr/bin/runjob</executable>
       <arguments>
 	<arg name="label"> --label short</arg>
 	<!-- Ranks per node!! -->
-	<arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
+	<arg name="tasks_per_node"> --ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
 	<!-- Total MPI Tasks -->
 	<arg name="num_tasks"> --np $TOTALPES</arg>
 	<arg name="locargs">--block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
@@ -1120,7 +1181,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>32</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -1165,7 +1226,7 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>28</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>28</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>28</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -1219,7 +1280,7 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>24</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -1273,7 +1334,7 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -1327,7 +1388,7 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>20</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>20</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -1381,12 +1442,12 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>edouard.davin -at- env.ethz.ch</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>32</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks"> -n $TOTALPES</arg>
-	<arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+	<arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
@@ -1417,7 +1478,7 @@
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -1469,14 +1530,14 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
 	<arg name="num_tasks"> -np $TOTALPES</arg>
-	<arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
+	<arg name="tasks_per_node"> -npernode $MAX_MPITASKS_PER_NODE</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1531,7 +1592,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
 
     <mpirun mpilib="impi">
       <executable>ibrun</executable>
@@ -1594,13 +1655,13 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>64</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
 	<arg name="num_tasks" >-n $TOTALPES</arg>
-	<arg name="tasks_per_node" >-N $PES_PER_NODE</arg>
+	<arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
 	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
 	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
 	<arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
@@ -1682,7 +1743,7 @@
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>15</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>15</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default" unit_testing="true">
       <!-- For unit testing, avoid all of the extra stuff that we use before and
@@ -1690,13 +1751,27 @@
       <executable>mpirun.lsf </executable>
     </mpirun>
     <mpirun mpilib="default" threaded="false">
-      <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/launch </executable>
+      <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
+      <arguments>
+	<arg name="anum_tasks"> -n $TOTALPES</arg>
+        <arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
+	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/launch </arg>
+      </arguments>
     </mpirun>
     <mpirun mpilib="default" threaded="true">
-      <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/hybrid_launch </executable>
+      <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
+      <arguments>
+	<arg name="anum_tasks"> -n $TOTALPES</arg>
+        <arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
+	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/hybrid_launch </arg>
+      </arguments>
     </mpirun>
     <mpirun compiler="gnu">
-      <executable>mpirun.lsf </executable>
+      <executable> $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
+      <arguments>
+	<arg name="anum_tasks"> -n $TOTALPES</arg>
+        <arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>

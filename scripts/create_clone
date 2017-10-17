@@ -83,7 +83,10 @@ def _main_func():
             user_mods_dir = os.path.abspath(user_mods_dir)
 
     with Case(cloneroot, read_only=False) as clone:
-        clone.create_clone(case, keepexe, mach_dir, project, cime_output_root, user_mods_dir)
+        clone.create_clone(case, keepexe=keepexe, mach_dir=mach_dir,
+                           project=project,
+                           cime_output_root=cime_output_root,
+                           user_mods_dir=user_mods_dir)
 
 ###############################################################################
 

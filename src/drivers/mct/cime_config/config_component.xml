@@ -976,7 +976,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+    <desc>pes or cores used relative to MAX_MPITASKS_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -1993,33 +1993,50 @@
   <entry id="NTASKS">
     <type>integer</type>
     <values>
-      <value component="ATM"> 0</value>
-      <value component="CPL"> 0</value>
-      <value component="OCN"> 0</value>
-      <value component="WAV"> 0</value>
-      <value component="GLC"> 0</value>
-      <value component="ICE"> 0</value>
-      <value component="ROF"> 0</value>
-      <value component="LND"> 0</value>
-      <value component="ESP"> 0</value>
+      <value compclass="ATM"> 0</value>
+      <value compclass="CPL"> 0</value>
+      <value compclass="OCN"> 0</value>
+      <value compclass="WAV"> 0</value>
+      <value compclass="GLC"> 0</value>
+      <value compclass="ICE"> 0</value>
+      <value compclass="ROF"> 0</value>
+      <value compclass="LND"> 0</value>
+      <value compclass="ESP"> 0</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
     <desc>number of tasks for each component</desc>
   </entry>
 
+  <entry id="NTASKS_PER_INST">
+    <type>integer</type>
+    <values>
+      <value compclass="ATM"> 0</value>
+      <value compclass="OCN"> 0</value>
+      <value compclass="WAV"> 0</value>
+      <value compclass="GLC"> 0</value>
+      <value compclass="ICE"> 0</value>
+      <value compclass="ROF"> 0</value>
+      <value compclass="LND"> 0</value>
+      <value compclass="ESP"> 0</value>
+    </values>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Number of tasks per instance for each component. DO NOT EDIT: Set automatically by case.setup based on NTASKS, NINST and MULTI_DRIVER</desc>
+  </entry>
+
   <entry id="NTHRDS">
     <type>integer</type>
     <values>
-      <value component="ATM">1</value>
-      <value component="CPL">1</value>
-      <value component="OCN">1</value>
-      <value component="WAV">1</value>
-      <value component="GLC">1</value>
-      <value component="ICE">1</value>
-      <value component="ROF">1</value>
-      <value component="LND">1</value>
-      <value component="ESP">1</value>
+      <value compclass="ATM">1</value>
+      <value compclass="CPL">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2029,15 +2046,15 @@
   <entry id="ROOTPE">
     <type>integer</type>
     <values>
-      <value component="ATM">0</value>
-      <value component="CPL">0</value>
-      <value component="OCN">0</value>
-      <value component="WAV">0</value>
-      <value component="GLC">0</value>
-      <value component="ICE">0</value>
-      <value component="ROF">0</value>
-      <value component="LND">0</value>
-      <value component="ESP">0</value>
+      <value compclass="ATM">0</value>
+      <value compclass="CPL">0</value>
+      <value compclass="OCN">0</value>
+      <value compclass="WAV">0</value>
+      <value compclass="GLC">0</value>
+      <value compclass="ICE">0</value>
+      <value compclass="ROF">0</value>
+      <value compclass="LND">0</value>
+      <value compclass="ESP">0</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2059,14 +2076,14 @@
   <entry id="NINST">
     <type>integer</type>
     <values>
-      <value component="ATM">1</value>
-      <value component="OCN">1</value>
-      <value component="WAV">1</value>
-      <value component="GLC">1</value>
-      <value component="ICE">1</value>
-      <value component="ROF">1</value>
-      <value component="LND">1</value>
-      <value component="ESP">1</value>
+      <value compclass="ATM">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2079,14 +2096,14 @@
     <type>char</type>
     <valid_values>sequential,concurrent</valid_values>
     <values>
-      <value component="ATM">concurrent</value>
-      <value component="OCN">concurrent</value>
-      <value component="WAV">concurrent</value>
-      <value component="GLC">concurrent</value>
-      <value component="ICE">concurrent</value>
-      <value component="ROF">concurrent</value>
-      <value component="LND">concurrent</value>
-      <value component="ESP">concurrent</value>
+      <value compclass="ATM">concurrent</value>
+      <value compclass="OCN">concurrent</value>
+      <value compclass="WAV">concurrent</value>
+      <value compclass="GLC">concurrent</value>
+      <value compclass="ICE">concurrent</value>
+      <value compclass="ROF">concurrent</value>
+      <value compclass="LND">concurrent</value>
+      <value compclass="ESP">concurrent</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2096,15 +2113,15 @@
   <entry id="PSTRID">
     <type>integer</type>
     <values>
-      <value component="ATM">1</value>
-      <value component="CPL">1</value>
-      <value component="OCN">1</value>
-      <value component="WAV">1</value>
-      <value component="GLC">1</value>
-      <value component="ICE">1</value>
-      <value component="ROF">1</value>
-      <value component="LND">1</value>
-      <value component="ESP">1</value>
+      <value compclass="ATM">1</value>
+      <value compclass="CPL">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2127,7 +2144,7 @@
     <desc>maximum number of tasks/ threads allowed per node </desc>
   </entry>
 
-  <entry id="PES_PER_NODE">
+  <entry id="MAX_MPITASKS_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
@@ -2271,15 +2288,15 @@
     <file>env_run.xml</file>
     <desc>pio io type</desc>
     <values>
-      <value component="ATM">default</value>
-      <value component="CPL">default</value>
-      <value component="OCN">default</value>
-      <value component="WAV">default</value>
-      <value component="GLC">default</value>
-      <value component="ICE">default</value>
-      <value component="ROF">default</value>
-      <value component="LND">default</value>
-      <value component="ESP">default</value>
+      <value compclass="ATM">default</value>
+      <value compclass="CPL">default</value>
+      <value compclass="OCN">default</value>
+      <value compclass="WAV">default</value>
+      <value compclass="GLC">default</value>
+      <value compclass="ICE">default</value>
+      <value compclass="ROF">default</value>
+      <value compclass="LND">default</value>
+      <value compclass="ESP">default</value>
     </values>
   </entry>
 
@@ -2292,15 +2309,15 @@
     https://www.unidata.ucar.edu/software/netcdf/docs/data_type.html
     </desc>
     <values>
-      <value component="ATM">64bit_offset</value>
-      <value component="CPL">64bit_offset</value>
-      <value component="OCN">64bit_offset</value>
-      <value component="WAV">64bit_offset</value>
-      <value component="GLC">64bit_offset</value>
-      <value component="ICE">64bit_offset</value>
-      <value component="ROF">64bit_offset</value>
-      <value component="LND">64bit_offset</value>
-      <value component="ESP">64bit_offset</value>
+      <value compclass="ATM">64bit_offset</value>
+      <value compclass="CPL">64bit_offset</value>
+      <value compclass="OCN">64bit_offset</value>
+      <value compclass="WAV">64bit_offset</value>
+      <value compclass="GLC">64bit_offset</value>
+      <value compclass="ICE">64bit_offset</value>
+      <value compclass="ROF">64bit_offset</value>
+      <value compclass="LND">64bit_offset</value>
+      <value compclass="ESP">64bit_offset</value>
     </values>
   </entry>
 
@@ -2313,15 +2330,15 @@
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
     <values>
-      <value component="ATM"></value>
-      <value component="CPL"></value>
-      <value component="OCN"></value>
-      <value component="WAV"></value>
-      <value component="GLC"></value>
-      <value component="ICE"></value>
-      <value component="ROF"></value>
-      <value component="LND"></value>
-      <value component="ESP"></value>
+      <value compclass="ATM"></value>
+      <value compclass="CPL"></value>
+      <value compclass="OCN"></value>
+      <value compclass="WAV"></value>
+      <value compclass="GLC"></value>
+      <value compclass="ICE"></value>
+      <value compclass="ROF"></value>
+      <value compclass="LND"></value>
+      <value compclass="ESP"></value>
     </values>
   </entry>
 
@@ -2333,15 +2350,15 @@
     <desc>pio rearranger choice box=1, subset=2 </desc>
     <values>
       <value>$PIO_VERSION</value>
-      <value component="ATM"></value>
-      <value component="CPL"></value>
-      <value component="OCN"></value>
-      <value component="WAV"></value>
-      <value component="GLC"></value>
-      <value component="ICE"></value>
-      <value component="ROF"></value>
-      <value component="LND"></value>
-      <value component="ESP"></value>
+      <value compclass="ATM"></value>
+      <value compclass="CPL"></value>
+      <value compclass="OCN"></value>
+      <value compclass="WAV"></value>
+      <value compclass="GLC"></value>
+      <value compclass="ICE"></value>
+      <value compclass="ROF"></value>
+      <value compclass="LND"></value>
+      <value compclass="ESP"></value>
     </values>
   </entry>
 
@@ -2351,15 +2368,15 @@
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
     <values>
-      <value component="ATM">1</value>
-      <value component="CPL">1</value>
-      <value component="OCN">1</value>
-      <value component="WAV">1</value>
-      <value component="GLC">1</value>
-      <value component="ICE">1</value>
-      <value component="ROF">1</value>
-      <value component="LND">1</value>
-      <value component="ESP">1</value>
+      <value compclass="ATM">1</value>
+      <value compclass="CPL">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
     </values>
   </entry>
 
@@ -2372,15 +2389,15 @@
       number of tasks
     </desc>
     <values>
-      <value component="ATM">-99</value>
-      <value component="CPL">-99</value>
-      <value component="OCN">-99</value>
-      <value component="WAV">-99</value>
-      <value component="GLC">-99</value>
-      <value component="ICE">-99</value>
-      <value component="ROF">-99</value>
-      <value component="LND">-99</value>
-      <value component="ESP">-99</value>
+      <value compclass="ATM">-99</value>
+      <value compclass="CPL">-99</value>
+      <value compclass="OCN">-99</value>
+      <value compclass="WAV">-99</value>
+      <value compclass="GLC">-99</value>
+      <value compclass="ICE">-99</value>
+      <value compclass="ROF">-99</value>
+      <value compclass="LND">-99</value>
+      <value compclass="ESP">-99</value>
     </values>
   </entry>
 
@@ -2667,6 +2684,20 @@
   </entry>
 
  <!-- Job Submission stuff -->
+ <entry id="USER_REQUESTED_QUEUE">
+   <type>char</type>
+   <group>run_desc</group>
+   <file>env_run.xml</file>
+   <desc>Store user override for queue</desc>
+ </entry>
+
+ <entry id="USER_REQUESTED_WALLTIME">
+   <type>char</type>
+   <group>run_desc</group>
+   <file>env_run.xml</file>
+   <desc>Store user override for walltime</desc>
+ </entry>
+
  <entry id="JOB_QUEUE">
    <type>char</type>
    <valid_values></valid_values>

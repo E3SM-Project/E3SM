@@ -44,6 +44,25 @@
     set to zero and not utilized. The default is NULL.</desc>
   </entry>
 
+  <entry id="DLND_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <values match="last">
+      <value compset="_DLND%SCPL" grid="l%0.9x1.25">$LND_DOMAIN_PATH/$LND_DOMAIN_FILE</value>
+    </values>
+    <group>run_component_dlnd</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for dlnd when DLND_MODE is CPLHIST
+      or GLC_CPLHIST.  NOTE: if this is set to 'null' (the default),
+      then domain information is read in from the first coupler
+      history file in the target stream and it is assumed that the
+      first coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+
   <entry id="DLND_CPLHIST_DIR">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -76,7 +95,7 @@
 
   <entry id="DLND_CPLHIST_YR_ALIGN">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">1</value>
@@ -86,12 +105,24 @@
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
-    <desc>year align (only used for CPLHIST mode)</desc>
+    <desc>
+      Simulation year corresponding to DLND_CPLHIST_YR_START (only used
+      when DLND_MODE is CPLHIST or GLC_CPLHIST). A common usage is to
+      set this to RUN_STARTDATE. With this setting, the forcing in the
+      first year of the run will be the forcing of year
+      DLND_CPLHIST_YR_START. Another use case is to align the calendar
+      of transient forcing with the model calendar. For example, setting
+      DLND_CPLHIST_YR_ALIGN=DLND_CPLHIST_YR_START will lead to the
+      forcing calendar being the same as the model calendar. The forcing
+      for a given model year would be the forcing of the same year. This
+      would be appropriate in transient runs where the model calendar is
+      setup to span the same year range as the forcing data.
+    </desc>
   </entry>
 
   <entry id="DLND_CPLHIST_YR_START">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">1976</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">26</value>
@@ -101,12 +132,12 @@
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
-    <desc>starting year to loop data over (only used for CPLHIST mode)</desc>
+    <desc>starting year to loop data over (only used when DLND_MODE is CPLHIST or GLC_CPLHIST)</desc>
   </entry>
 
   <entry id="DLND_CPLHIST_YR_END">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <values match="last">
       <value compset="2000.*_DLND%SCPL" grid="l%0.9x1.25">2005</value>
       <value compset="1850.*_DLND%SCPL" grid="l%0.9x1.25">100</value>
@@ -116,7 +147,7 @@
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
-    <desc>ending year to loop data over (only used for CPLHIST mode)</desc>
+    <desc>ending year to loop data over (only used when DLND_MODE is CPLHIST or GLC_CPLHIST)</desc>
   </entry>
 
   <help>

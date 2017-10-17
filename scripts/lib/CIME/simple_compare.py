@@ -65,7 +65,7 @@ def _compare_data(gold_lines, comp_lines, case):
     ... data00
     ... '''
     >>> results = _compare_data(teststr.splitlines(), teststr2.splitlines(), None)
-    >>> print results
+    >>> print(results)
     Inequivalent lines data2 data3 != data2 data30
       NORMALIZED: data2 data3 != data2 data30
     Found extra lines

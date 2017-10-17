@@ -261,9 +261,9 @@ class EnvMachSpecific(EnvBase):
 
         cmd = "source {}".format(sh_init_cmd)
 
-        if os.environ.has_key("SOFTENV_ALIASES"):
+        if "SOFTENV_ALIASES" in os.environ:
             cmd += " && source $SOFTENV_ALIASES"
-        if os.environ.has_key("SOFTENV_LOAD"):
+        if "SOFTENV_LOAD" in os.environ:
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
@@ -343,7 +343,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, check_members=None, job="case.run", exe_only=False):
+    def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -359,7 +359,7 @@ class EnvMachSpecific(EnvBase):
             matches = 0
             is_default = False
 
-            for key, value in attribs.iteritems():
+            for key, value in attribs.items():
                 expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
                 if key in xml_attribs:
                     if xml_attribs[key].lower() == "false":
@@ -405,7 +405,6 @@ class EnvMachSpecific(EnvBase):
                     arg_value = transform_vars(arg_node.text,
                                                case=case,
                                                subgroup=job,
-                                               check_members=check_members,
                                                default=arg_node.get("default"))
                     args.append(arg_value)
 

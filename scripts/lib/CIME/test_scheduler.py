@@ -199,7 +199,7 @@ class TestScheduler(object):
 
         # Oversubscribe by 1/4
         if proc_pool is None:
-            pes = int(self._machobj.get_value("PES_PER_NODE"))
+            pes = int(self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
             self._proc_pool = int(pes * 1.25)
         else:
             self._proc_pool = int(proc_pool)
@@ -246,6 +246,10 @@ class TestScheduler(object):
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
+
+    ###########################################################################
+    def get_testnames(self):
+        return list(self._tests.keys())
 
     ###########################################################################
     def _log_output(self, test, output):
@@ -364,9 +368,13 @@ class TestScheduler(object):
         _, case_opts, grid, compset,\
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
 
-        create_newcase_cmd = "{} --case {} --res {} --mach {} --compiler {} --compset {}"\
-                               " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
-                                                test_dir, grid, machine, compiler, compset)
+        create_newcase_cmd = "{} --case {} --res {} --compset {}"\
+                             " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
+                                              test_dir, grid, compset)
+        if machine is not None:
+            create_newcase_cmd += " --machine {}".format(machine)
+        if compiler is not None:
+            create_newcase_cmd += " --compiler {}".format(compiler)
         if self._project is not None:
             create_newcase_cmd += " --project {} ".format(self._project)
         if self._output_root is not None:
@@ -520,6 +528,7 @@ class TestScheduler(object):
                     envtest.set_test_parameter("STOP_OPTION",stop_option[opt])
                     opti = match.group(2)
                     envtest.set_test_parameter("STOP_N", opti)
+
                     logger.debug (" STOP_OPTION set to %s" %stop_option[opt])
                     logger.debug (" STOP_N      set to %s" %opti)
 
@@ -540,6 +549,10 @@ class TestScheduler(object):
                         envtest.set_test_parameter("PTS_LAT", "36.6")
                         envtest.set_test_parameter("PTS_LON", "262.5")
 
+                elif opt.startswith('I'):
+                    # Marker to distinguish tests with same name - ignored
+                    continue
+
                 elif opt.startswith('M'):
                     # M option handled by create newcase
                     continue
@@ -555,7 +568,7 @@ class TestScheduler(object):
                     # handled in create_newcase
                     continue
                 elif opt.startswith('IOP'):
-                    logger.warn("IOP test option not yet implemented")
+                    logger.warning("IOP test option not yet implemented")
                 else:
                     expect(False, "Could not parse option '{}' ".format(opt))
 
@@ -668,7 +681,7 @@ class TestScheduler(object):
         expect(len(threads_in_flight) <= self._parallel_jobs, "Oversubscribed?")
         finished_tests = []
         while not finished_tests:
-            for test, thread_info in threads_in_flight.iteritems():
+            for test, thread_info in threads_in_flight.items():
                 if not thread_info[0].is_alive():
                     finished_tests.append((test, thread_info[1]))
 

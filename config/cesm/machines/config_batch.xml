@@ -25,8 +25,6 @@
  be used.  The following variables can be used to choose a queue :
  walltimemin: Giving the minimum amount of walltime for the queue.
  walltimemax: The maximum amount of walltime for a queue.
- jobmin:      The minimum task count required to use this queue.
- jobmax:      The maximum task count required to use this queue.
  nodemin:      The minimum node count required to use this queue.
  nodemax:      The maximum node count required to use this queue.
     -->
@@ -53,6 +51,8 @@
   <batch_system type="cobalt" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
+    <batch_cancel>qdel</batch_cancel>
+    <batch_env>-v</batch_env>
     <batch_directive></batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
@@ -65,7 +65,7 @@
       <arg flag="-A" name="PROJECT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
       <!-- space required at beginning of name -->
-      <arg flag="-n" name=" $TOTALPES / $PES_PER_NODE"/>
+      <arg flag="-n" name=" $TOTALPES / $MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
@@ -74,6 +74,8 @@
   <batch_system type="cobalt_theta" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
+    <batch_cancel>qdel</batch_cancel>
+    <batch_env>-v</batch_env>
     <batch_directive>#COBALT</batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
@@ -83,7 +85,7 @@
     <submit_args>
       <arg flag="-A" name="PROJECT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
@@ -92,6 +94,7 @@
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
+    <batch_cancel>bkill</batch_cancel>
     <batch_redirect>&lt;</batch_redirect>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
@@ -110,8 +113,8 @@
       <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
-      <directive default="cesm.stdout" > -o {{ output_error_path }}.%J  </directive>
-      <directive default="cesm.stderr" > -e {{ output_error_path }}.%J  </directive>
+      <directive default="cesm.stdout" > -o {{ job_id }}.%J  </directive>
+      <directive default="cesm.stderr" > -e {{ job_id }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
     </directives>
   </batch_system>
@@ -119,6 +122,8 @@
   <batch_system type="pbs" >
     <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
+    <batch_cancel>qdel</batch_cancel>
+    <batch_env>-v</batch_env>
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
@@ -134,7 +139,7 @@
     <directives>
       <directive> -N {{ job_id }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
-      <!-- <directive> -j oe {{ output_error_path }} </directive> -->
+      <!-- <directive> -j oe {{ job_id }} </directive> -->
       <directive> -j oe </directive>
       <directive> -V </directive>
     </directives>
@@ -142,6 +147,7 @@
 
   <batch_system type="slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_cancel>scancel</batch_cancel>
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> --dependency=afterok:jobid</depend_string>
@@ -158,7 +164,7 @@
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes={{ num_nodes }}</directive>
       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
-      <directive> --output={{ output_error_path }}   </directive>
+      <directive> --output={{ job_id }}   </directive>
       <directive> --exclusive                        </directive>
     </directives>
   </batch_system>
@@ -183,7 +189,7 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
+      <queue walltimemax="00:59:00" nodemin="1" nodemax="624" default="true">batch</queue>
     </queues>
   </batch_system>
 
@@ -195,7 +201,7 @@
     </directives>
     <queues>
       <queue walltimemax="24:00:00" default="true">regular</queue>
-      <queue walltimemax="00:30:00" jobmin="1" jobmax="512">debug</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="16">debug</queue>
     </queues>
   </batch_system>
 
@@ -236,8 +242,8 @@
       <directive>-S /bin/bash  </directive>
     </directives>
     <queues>
-      <queue walltimemax="01:00:00" jobmin="1" jobmax="860">debug</queue>
-      <queue walltimemax="24:00:00" jobmin="861" jobmax="99999" default="true">batch</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="35">debug</queue>
+      <queue walltimemax="24:00:00" nodemin="861" nodemax="4166" default="true">batch</queue>
     </queues>
   </batch_system>
 
@@ -248,11 +254,11 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemax="02:00:00" jobmin="1" jobmax="192" >short</queue>
-      <queue walltimemax="06:00:00" jobmin="1" jobmax="192" default="true">medium</queue>
-      <queue walltimemax="40:00:00" jobmin="1" jobmax="144" >long</queue>
-      <queue jobmax="768" jobmin="1" walltimemax="12:00:00">overnight</queue>
-      <queue jobmax="1536" jobmin="1" walltimemax="3000:00:">monster</queue>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="4" >short</queue>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="4" default="true">medium</queue>
+      <queue walltimemax="40:00:00" nodemin="1" nodemax="3" >long</queue>
+      <queue nodemax="16" nodemin="1" walltimemax="12:00:00">overnight</queue>
+      <queue nodemax="32" nodemin="1" walltimemax="3000:00:">monster</queue>
     </queues>
   </batch_system>
 
@@ -272,7 +278,7 @@
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
     <queues>
-      <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
+      <queue default="true" walltimemax="12:00" nodemin="1" nodemax="72">regular</queue>
     </queues>
   </batch_system>
 
@@ -282,26 +288,26 @@
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
     <queues>
-      <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
+      <queue default="true" walltimemax="12:00" nodemin="1" nodemax="72">regular</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="mira" type="cobalt">
     <queues>
-      <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="12288" default="true">default</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="theta" type="cobalt_theta">
     <queues>
-      <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
+      <queue walltimemax="00:60:00" nodemin="1" nodemax="50" default="true">default</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="olympus" type="slurm">
     <batch_submit>sbatch</batch_submit>
     <queues>
-      <queue walltimemin="0" walltimemax="00:59:00" jobmin="0" jobmax="9999" default="true">queue</queue>
+      <queue walltimemin="0" walltimemax="00:59:00" nodemin="0" nodemax="312" default="true">queue</queue>
     </queues>
   </batch_system>
 
@@ -314,7 +320,7 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
+      <queue walltimemin="" walltimemax="08:00:00" nodemin="0" nodemax="357" default="true">normal</queue>
     </queues>
   </batch_system>
 
@@ -326,7 +332,7 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
+      <queue walltimemin="" walltimemax="08:00:00" nodemin="0" nodemax="357" default="true">normal</queue>
     </queues>
   </batch_system>
 
@@ -338,7 +344,7 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
+      <queue walltimemin="" walltimemax="08:00:00" nodemin="0" nodemax="500" default="true">normal</queue>
     </queues>
   </batch_system>
 
@@ -350,14 +356,7 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
     <queues>
-      <queue walltimemin="" walltimemax="08:00:00" jobmin="0" jobmax="9999" default="true">normal</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="skybridge" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
-    <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue walltimemin="" walltimemax="08:00:00" nodemin="0" nodemax="624" default="true">normal</queue>
     </queues>
   </batch_system>
 
@@ -376,7 +375,7 @@
   <batch_system MACH="eastwind" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <queues>
-      <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+      <queue nodemin="1" nodemax="833" default="true">batch</queue>
     </queues>
   </batch_system>
 
@@ -386,8 +385,8 @@
       <directive>-C haswell </directive>
     </directives>
     <queues>
-      <queue walltimemax="06:00:00" jobmin="1" jobmax="45440">regular</queue>
-    <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="710">regular</queue>
+    <!--  <queue walltimemax="00:30:00" nodemin="1" nodemax="3072" default="true">debug</queue> -->
     </queues>
   </batch_system>
 
@@ -398,24 +397,24 @@
       <directive>-S 2 </directive>
     </directives>
     <queues>
-      <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>
-    <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="177">regular</queue>
+    <!--  <queue walltimemax="00:30:00" nodemin="1" nodemax="3072" default="true">debug</queue> -->
     </queues>
   </batch_system>
 
   <batch_system MACH="edison" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <queues>
-      <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
-      <queue walltimemax="00:30:00" jobmin="1" jobmax="12288" default="true">debug</queue>
+      <queue walltimemax="36:00:00" nodemin="1" nodemax="2712" >regular</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="256" default="true">debug</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="stampede" type="slurm" >
     <batch_submit>ssh stampede.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <queues>
-      <queue walltimemax="48:00:00" jobmin="1" jobmax="4096" >normal</queue>
-      <queue walltimemax="02:00:00" jobmin="1" jobmax="256" default="true">development</queue>
+      <queue walltimemax="48:00:00" nodemin="1" nodemax="256" >normal</queue>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="16" default="true">development</queue>
     </queues>
   </batch_system>
 
@@ -439,10 +438,10 @@
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
     <queues>
-      <queue walltimemax="24:00" jobmin="1" jobmax="8" >caldera</queue>
-      <queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
-      <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
-      <queue walltimemax="12:00" jobmin="1" jobmax="16384">premium</queue>
+      <queue walltimemax="24:00" nodemin="1" nodemax="1" >caldera</queue>
+      <queue walltimemax="12:00" nodemin="9" nodemax="546" default="true">regular</queue>
+      <queue walltimemax="12:00" nodemin="16385" nodemax="2184">capability</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="546">premium</queue>
     </queues>
   </batch_system>
 

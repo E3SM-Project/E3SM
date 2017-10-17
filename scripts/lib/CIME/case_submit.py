@@ -62,13 +62,13 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
     case.set_value("RUN_WITH_SUBMIT", True)
     case.flush()
 
-    logger.warn("submit_jobs {}".format(job))
+    logger.warning("submit_jobs {}".format(job))
     job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl,
                                mail_user=mail_user, mail_type=mail_type,
                                batch_args=batch_args)
 
     xml_jobids = []
-    for jobname, jobid in job_ids.iteritems():
+    for jobname, jobid in job_ids.items():
         logger.info("Submitted job {} with id {}".format(jobname, jobid))
         if jobid:
             xml_jobids.append("{}:{}".format(jobname, jobid))

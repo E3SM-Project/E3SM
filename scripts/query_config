@@ -92,7 +92,7 @@ def print_compset(name, files, all_components=False):
     elif config_file is None or not os.path.isfile(config_file):
         return
 
-    print "\nActive component: {}".format(name)
+    print("\nActive component: {}".format(name))
     # Now parse the compsets file and write out the compset alias and longname as well as the help text
     # determine component xml content
     compsets = Compsets(config_file)
@@ -144,7 +144,7 @@ def query_component(name, all_components=False):
         expect(config_exists,
                "Cannot find config_file {} on disk".format(config_file))
     elif all_components and not config_exists:
-        print "WARNING: Couldn't find config_file {} on disk".format(config_file)
+        print("WARNING: Couldn't find config_file {} on disk".format(config_file))
         return
     # If name is not a valid argument - exit with error
     expect(match_found,
@@ -285,36 +285,36 @@ class Machines(CIME.XML.machines.Machines):
         if single_machine and machine_name is None:
             files = Files()
             config_file = files.get_value("MACHINES_SPEC_FILE")
-            print "Machine is not listed in config file: {}".format(config_file)
+            print("Machine is not listed in config file: {}".format(config_file))
         else:  # write out machines
             machines = self.get_nodes(nodename="machine")
-            print  "Machine(s)"
+            print("Machine(s)")
             for machine in machines:
                 name = machine.get("MACH")
                 desc = machine.find("DESC")
                 os_  = machine.find("OS")
                 compilers = machine.find("COMPILERS")
                 max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-                pes_per_node = machine.find("PES_PER_NODE")
+                MAX_MPITASKS_PER_NODE = machine.find("MAX_MPITASKS_PER_NODE")
 
                 current_machine = self.probe_machine_name(warn=False)
                 if not single_machine:
                     name += " (current)" if current_machine and current_machine in name else ""
-                    print  "  {} : {} ".format(name, desc.text)
-                    print  "      os             ", os_.text
-                    print  "      compilers      ",compilers.text
-                    if pes_per_node is not None:
-                        print  "      pes/node       ",pes_per_node.text
+                    print("  {} : {} ".format(name, desc.text))
+                    print("      os             ", os_.text)
+                    print("      compilers      ",compilers.text)
+                    if MAX_MPITASKS_PER_NODE is not None:
+                        print("      pes/node       ",MAX_MPITASKS_PER_NODE.text)
                     if max_tasks_per_node is not None:
-                        print  "      max_tasks/node ",max_tasks_per_node.text
+                        print("      max_tasks/node ",max_tasks_per_node.text)
                 elif single_machine and machine_name in name:
-                    print  "  {} : {} ".format(name, desc.text)
-                    print  "      os             ", os_.text
-                    print  "      compilers      ",compilers.text
-                    if pes_per_node is not None:
-                        print  "      pes/node       ",pes_per_node.text
+                    print("  {} : {} ".format(name, desc.text))
+                    print("      os             ", os_.text)
+                    print("      compilers      ",compilers.text)
+                    if MAX_MPITASKS_PER_NODE is not None:
+                        print("      pes/node       ",MAX_MPITASKS_PER_NODE.text)
                     if max_tasks_per_node is not None:
-                        print  "      max_tasks/node ",max_tasks_per_node.text
+                        print("      max_tasks/node ",max_tasks_per_node.text)
 
 def _main_func(description):
     """

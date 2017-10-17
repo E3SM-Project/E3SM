@@ -157,4 +157,3 @@ class Testlist(GenericXML):
         else:
             logger.critical("Did not recognize testlist file version {} for file {}"
                              .format(self.get_version(), self.filename))
-

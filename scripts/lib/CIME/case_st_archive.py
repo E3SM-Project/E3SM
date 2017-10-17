@@ -165,8 +165,6 @@ def _get_ninst_info(case, compclass):
     for i in range(1,ninst+1):
         if ninst > 1:
             ninst_strings.append('_' + '{:04d}'.format(i))
-        else:
-            ninst_strings.append('')
 
     logger.debug("ninst and ninst_strings are: {} and {} for {}".format(ninst, ninst_strings, compclass))
     return ninst, ninst_strings
@@ -175,7 +173,7 @@ def _get_ninst_info(case, compclass):
 def _get_component_archive_entries(case, archive):
 ###############################################################################
     """
-    Each time this is generator function is called, it yields a tuple
+    Each time this generator function is called, it yields a tuple
     (archive_entry, compname, compclass) for one component in this
     case's compset components.
     """
@@ -214,9 +212,10 @@ def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restar
 
                 # put in a temporary setting for ninst_strings if they are empty
                 # in order to have just one loop over ninst_strings below
-                if rpointer_content is not 'unset':
+                if rpointer_content != 'unset':
                     if not ninst_strings:
                         ninst_strings = ["empty"]
+
                 for ninst_string in ninst_strings:
                     rpointer_file = temp_rpointer_file
                     rpointer_content = temp_rpointer_content
@@ -269,7 +268,7 @@ def _archive_history_files(case, archive, archive_entry,
 ###############################################################################
     """
     perform short term archiving on history files in rundir
-    
+
     Not doc-testable due to case and file system dependence
     """
 
@@ -289,15 +288,20 @@ def _archive_history_files(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
-            if compname == 'dart':
-                newsuffix = casename + suffix
-            elif compname.find('mpas') == 0:
-                newsuffix = compname + '.*' + suffix
-            else:
-                if ninst_string:
+            if ninst_string:
+                if compname.find('mpas') == 0:
+                    # Not correct, but MPAS' multi-instance name format is unknown.
+                    newsuffix = compname + '.*' + suffix
+                else:
                     newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+            else:
+                if compname.find('mpas') == 0:
+                    newsuffix = compname + '.*' + suffix
                 else:
                     newsuffix = casename + '.' + compname + ".*" + suffix
+
+            logger.debug("short term archiving suffix is {} ".format(newsuffix))
+
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             if histfiles:
@@ -447,10 +451,6 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                         pattern = suffix + datename_str
                         pfile = re.compile(pattern)
                         restfiles = [f for f in files if pfile.search(f)]
-                else:
-                    pattern = suffix
-                    pfile = re.compile(pattern)
-                    restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
@@ -480,21 +480,20 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                     srcfile = os.path.join(rundir, restfile)
                     destfile = os.path.join(archive_restdir, restfile)
                     last_restart_file_fn(srcfile, destfile)
-                    logger.info("{} \n{} to \n{}".format(
-                        last_restart_file_fn_msg, srcfile, destfile))
+                    logger.info("{} {} \n{} to \n{}".format(
+                        "datename_is_last", last_restart_file_fn_msg, srcfile, destfile))
                     for histfile in histfiles_for_restart:
                         srcfile = os.path.join(rundir, histfile)
                         destfile = os.path.join(archive_restdir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history restart file {} for last date does not exist ".format(srcfile))
                         shutil.copy(srcfile, destfile)
-                        logger.info("copying \n{} to \n{}".format(srcfile, destfile))
+                        logger.info("datename_is_last + histfiles_for_restart copying \n{} to \n{}".format(srcfile, destfile))
                 else:
                     # Only archive intermediate restarts if requested - otherwise remove them
                     if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
                         srcfile = os.path.join(rundir, restfile)
                         destfile = os.path.join(archive_restdir, restfile)
-                        logger.info("moving \n{} to \n{}".format(srcfile, destfile))
                         expect(os.path.isfile(srcfile),
                                "restart file {} does not exist ".format(srcfile))
                         archive_file_fn(srcfile, destfile)
@@ -516,9 +515,9 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                             try:
                                 os.remove(srcfile)
                             except OSError:
-                                logger.warn("unable to remove interim restart file {}".format(srcfile))
+                                logger.warning("unable to remove interim restart file {}".format(srcfile))
                         else:
-                            logger.warn("interim restart file {} does not exist".format(srcfile))
+                            logger.warning("interim restart file {} does not exist".format(srcfile))
 
     return histfiles_savein_rundir
 
@@ -648,7 +647,7 @@ def case_st_archive(case, last_date_str=None, archive_incomplete_logs=True, copy
         rest_n = case.get_value('REST_N')
         stop_n = case.get_value('STOP_N')
         if rest_n < stop_n:
-            logger.warn('Restart files from end of run will be saved'
+            logger.warning('Restart files from end of run will be saved'
                         'interim restart files will be deleted')
 
     logger.info("st_archive starting")
