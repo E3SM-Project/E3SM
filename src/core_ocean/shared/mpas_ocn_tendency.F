@@ -419,7 +419,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
-        tend_layerThickness, normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
+        normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
         relativeSlopeTapering, relativeSlopeTaperingCell, fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
         tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux
 
@@ -436,7 +436,6 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        activeTracerAdvectionTendency,                &
         activeTracerSurfaceFluxTendency,              &
         activeTracerNonLocalTendency
 
@@ -509,7 +508,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
-      call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -519,7 +517,6 @@ contains
       ! get diagnostic arrays for temperature/salinity budget
       !
       if (config_compute_active_tracer_budgets) then
-         call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
          call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
@@ -784,23 +781,13 @@ contains
                !
 
                ! Monotonoic Advection, or standard advection
-
-               ! store tendency
-               if (config_compute_active_tracer_budgets) then
-                  if (trim(groupItr % memberName) == 'activeTracers') then
-                     activeTracerAdvectionTendency(:,:,:) = tracerGroupTend(:,:,:)
-                  endif
-               endif
+               ! Tendency for tracer budget is stored within the tracer adv
+               ! routine
 
                call ocn_tracer_advection_tend(tracerGroup, normalThicknessFlux, vertAleTransportTop, layerThickness, &
-                                              layerThickness, dt, meshPool, scratchPool, tend_layerThickness, tracerGroupTend)
+                                              dt, meshPool, scratchPool, diagnosticsPool, tracerGroupTend, &
+                                              trim(groupItr % memberName))
 
-               ! difference tendency to get contribution due to advection
-               if (config_compute_active_tracer_budgets) then
-                  if (trim(groupItr % memberName) == 'activeTracers') then
-                     activeTracerAdvectionTendency(:,:,:)=tracerGroupTend(:,:,:)-activeTracerAdvectionTendency(:,:,:)
-                  endif
-               endif
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !

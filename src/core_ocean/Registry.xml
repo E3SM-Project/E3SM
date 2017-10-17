@@ -2122,12 +2122,20 @@
 			     description="salinity tendency due to kpp non-local flux"
 		      />
 		</var_array>
-		<var_array name="activeTracerAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureAdvectionTendency" array_group="activeTracerAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureAdvectionTendency"
-			     description="potential temperature tendency due to advection"
+		<var_array name="activeTracerHorizontalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+		      <var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
+			     description="potential temperature tendency due to horizontal advection"
 		      />
-		      <var name="salinityAdvectionTendency" array_group="activeTracerAdvTendGroup" units="PSU per second" name_in_code="salinityAdvectionTendency"
-			     description="salinity tendency due to advection"
+		      <var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionTendency"
+			     description="salinity tendency due to horizontal advection"
+		      />
+		</var_array>
+		<var_array name="activeTracerVerticalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+		      <var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
+			     description="potential temperature tendency due to vertical advection"
+		      />
+		      <var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTendency"
+			     description="salinity tendency due to vertical advection"
 		      />
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
@@ -3157,28 +3165,25 @@
 		<var name="du2TopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
 			 description="du2TopOfEdge"
 		/>
-		<var name="highOrderHorizFlux" persistence="scratch" type="real" dimensions="nVertLevels nEdges" units=""
-			 description="High order horizontal flux for advection"
+		<var name="tracerCur" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Current single tracer value for advection"
 		/>
-		<var name="tracerValue" time_levs="2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Single tracer value for advection"
-		/>
-		<var name="upwindTendency" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Upwind advective tendency"
-		/>
-		<var name="inverseLayerThickness" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="hNewInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Inverse layer thickness for advection"
 		/>
-		<var name="tracerMinHor" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="hProv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="provisional layer thickness for advection"
+		/>
+		<var name="hProvInv" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="m"
+			 description="inverse of provisional layer thickness for advection"
+		/>
+		<var name="workTendency" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="Advective tendency work array"
+		/>
+		<var name="tracerMin" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Min tracer value for monotonic advection"
 		/>
-		<var name="tracerMaxHor" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Max tracer value for monotonic advection"
-		/>
-		<var name="tracerMinVert" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="Min tracer value for monotonic advection"
-		/>
-		<var name="tracerMaxVert" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+		<var name="tracerMax" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Max tracer value for monotonic advection"
 		/>
 		<var name="fluxIncoming" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
@@ -3187,8 +3192,8 @@
 		<var name="fluxOutgoing" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Outgoing flux of a tracer for advection"
 		/>
-		<var name="highOrderVertFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells" units=""
-			 description="High order vertical flux for advection"
+		<var name="highOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
+			 description="High order flux scratch variable for both horizontal and vertical advection."
 		/>
 		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
 			 description="btrvel_temp"

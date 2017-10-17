@@ -10,8 +10,8 @@
 !  ocn_tracer_advection
 !
 !> \brief MPAS ocean tracer advection driver
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Mark Petersen, David Lee, Doug Jacobsen
+!> \date   October 2017
 !> \details
 !>  This module contains driver routine for tracer advection tendencys
 !>  as well as the routines for setting up advection coefficients and
@@ -50,32 +50,32 @@ module ocn_tracer_advection
 !  routine ocn_tracer_advection_tend
 !
 !> \brief MPAS ocean tracer advection tendency
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Mark Petersen, David Lee, Doug Jacobsen
+!> \date   October 2017
 !> \details
 !>  This routine is the driver routine for computing the tendency for
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, & !{{{
-                                        scratchPool, tend_layerThickness, tend)
+   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, dt, meshPool, & !{{{
+                                        scratchPool, diagnosticsPool, tend, tracerGroupName)
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input/Output: tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thickness weighted horizontal velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: w  !< Input: Vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness  !< Input: Thickness field
-      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch fields
-      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Thickness tendency information
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: pool for traceradvection budget term
 
       real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd
 
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nAdvCellsForEdge
       integer, dimension(:,:), pointer :: highOrderAdvectionMask, edgeSignOnCell, advCellsForEdge
 
+      character (len=*), intent(in) :: tracerGroupName ! variable to check for tracer budget
       if(.not. tracerAdvOn) return
 
       call mpas_timer_start("tracer adv")
@@ -92,12 +92,12 @@ module ocn_tracer_advection
       if(monotonicOn) then
          call ocn_tracer_advection_mono_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
-            highOrderAdvectionMask, edgeSignOnCell)
+            dt, meshPool, scratchPool, diagnosticsPool, tend, maxLevelCell, maxLevelEdgeTop, &
+            highOrderAdvectionMask, edgeSignOnCell, tracerGroupName)
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend, maxLevelCell, maxLevelEdgeTop, &
+            layerThickness, dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
             highOrderAdvectionMask, edgeSignOnCell)
       endif
 
@@ -109,8 +109,8 @@ module ocn_tracer_advection
 !  routine ocn_tracer_advection_init
 !
 !> \brief MPAS ocean tracer advection tendency
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Mark Petersen, David Lee, Doug Jacobsen
+!> \date   October 2017
 !> \details
 !>  This routine is the driver routine for initialization of
 !>  the tracer advection routines.

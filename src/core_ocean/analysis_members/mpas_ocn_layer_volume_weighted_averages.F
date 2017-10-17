@@ -187,7 +187,8 @@ contains
       real (kind=RKIND), dimension(:,:),   pointer :: vertVelocityTop
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVertMixTendency
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerAdvectionTendency
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerHorizontalAdvectionTendency
+      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVerticalAdvectionTendency
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerSurfaceFluxTendency
       real (kind=RKIND),dimension(:,:),pointer::temperatureShortWaveTendency
       real (kind=RKIND),dimension(:,:,:),pointer::activeTracerNonLocalTendency
@@ -320,7 +321,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          if ( computeActiveTracerBudgetsOn ) then
-           call mpas_pool_get_array(diagnosticsPool,'activeTracerAdvectionTendency',activeTracerAdvectionTendency)
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
+                   activeTracerHorizontalAdvectionTendency)
+           call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
+                   activeTracerVerticalAdvectionTendency)
            call mpas_pool_get_array(diagnosticsPool,'activeTracerVertMixTendency',activeTracerVertMixTendency)
            call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
            call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
@@ -359,22 +363,26 @@ contains
             workArray(14,:) = divergence(iLevel,:)
             workArray(15,:) = relativeVorticityCell(iLevel,:)*relativeVorticityCell(iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(16,:) = &
-               activeTracerAdvectionTendency(index_temperature,iLevel,:)
+               activeTracerHorizontalAdvectionTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(17,:) = &
-               activeTracerAdvectionTendency(index_salinity,iLevel,:)
+               activeTracerHorizontalAdvectionTendency(index_salinity,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(18,:) = &
-               activeTracerSurfaceFluxTendency(index_temperature,iLevel,:)
+               activeTracerVerticalAdvectionTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(19,:) = &
-               activeTracerSurfaceFluxTendency(index_salinity,iLevel,:)
+               activeTracerVerticalAdvectionTendency(index_salinity,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(20,:) = &
-               temperatureShortWaveTendency(iLevel,:)
+               activeTracerSurfaceFluxTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(21,:) = &
-               activeTracerNonLocalTendency(index_temperature,iLevel,:)
+               activeTracerSurfaceFluxTendency(index_salinity,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(22,:) = &
-               activeTracerNonLocalTendency(index_salinity,iLevel,:) 
+               temperatureShortWaveTendency(iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(23,:) = &
-               activeTracerVertMixTendency(index_temperature,iLevel,:)
+               activeTracerNonLocalTendency(index_temperature,iLevel,:)
             if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(24,:) = &
+               activeTracerNonLocalTendency(index_salinity,iLevel,:) 
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(25,:) = &
+               activeTracerVertMixTendency(index_temperature,iLevel,:)
+            if ( associated(activeTracers) .and. computeActiveTracerBudgetsOn ) workArray(26,:) = &
                activeTracerVertMixTendency(index_salinity,iLevel,:)
 
 

@@ -1,5 +1,5 @@
 	<dims>
-		<dim name="nLayerVolWeightedAvgFields" definition="28" units="unitless"
+		<dim name="nLayerVolWeightedAvgFields" definition="30" units="unitless"
 			 description="A number equal to or greater than the number of var arrays in the layerVolumeWeightedAverageAM var structure below."
 		/>
 		<dim name="nOceanRegionsTmp" definition="7" units="unitless"
@@ -78,11 +78,17 @@
 			<var name="minLayerRelativeEnstrophyCell" array_group="layerMins" units="s^{-2}"
 				 description="Minimum relative enstrophy within region layer"
 			/>
-			<var name="minLayerTemperatureAdv" array_group="layerMins" units="C s^{-1}"
-				description="Minimum temperature advection within region layer"
+			<var name="minLayerTemperatureHorAdv" array_group="layerMins" units="C s^{-1}"
+				description="Minimum horizontal temperature advection within region layer"
 			/>
-			<var name="minLayerSalinityAdv" array_group="layerMins" units="PSU s^{-1}"
-				description="Minimum salinity advection within region layer"
+			<var name="minLayerSalinityHorAdv" array_group="layerMins" units="PSU s^{-1}"
+				description="Minimum horizontal salinity advection within region layer"
+			/>
+			<var name="minLayerTemperatureVertAdv" array_group="layerMins" units="C s^{-1}"
+				description="Minimum vertical temperature advection within region layer"
+			/>
+			<var name="minLayerSalinityVertAdv" array_group="layerMins" units="PSU s^{-1}"
+				description="Minimum vertical salinity advection within region layer"
 			/>
 			<var name="minLayerTemperatureSfcFlux" array_group="layerMins" units="C s^{-1}"
 				description="Minimum temperature surface flux tend within region layer"
@@ -152,11 +158,17 @@
 			<var name="minVolumeRelativeEnstrophyCell" array_group="volumeMins" units="s^{-2}"
 				 description="Minimum relative enstrophy within region volume"
 			/>
-			<var name="minVolumeTemperatureAdv" array_group="volumeMins" units="C s^{-1}"
-				description="Minimum temperature advection within region volumeMins"
+			<var name="minVolumeTemperatureHorAdv" array_group="volumeMins" units="C s^{-1}"
+				description="Minimum horizontal temperature advection within region volumeMins"
 			/>
-			<var name="minVolumeSalinityAdv" array_group="volumeMins" units="PSU s^{-1}"
-				description="Minimum salinity advection within region volumeMins"
+			<var name="minVolumeSalinityHorAdv" array_group="volumeMins" units="PSU s^{-1}"
+				description="Minimum horizontal salinity advection within region volumeMins"
+			/>
+			<var name="minVolumeTemperatureVertAdv" array_group="volumeMins" units="C s^{-1}"
+				description="Minimum vertical temperature advection within region volumeMins"
+			/>
+			<var name="minVolumeSalinityVertAdv" array_group="volumeMins" units="PSU s^{-1}"
+				description="Minimum vertical salinity advection within region volumeMins"
 			/>
 			<var name="minVolumeTemperatureSfcFlux" array_group="volumeMins" units="C s^{-1}"
 				description="Minimum temperature surface flux tend within region volumeMins"
@@ -226,11 +238,17 @@
 			<var name="maxLayerRelativeEnstrophyCell" array_group="layerMaxs" units="s^{-2}"
 				 description="Maximum relative enstrophy within region layer"
 			/>
-			<var name="maxLayerTemperatureAdv" array_group="layerMaxs" units="C s^{-1}"
-				description="Maximum temperature advection within region layer"
+			<var name="maxLayerTemperatureHorAdv" array_group="layerMaxs" units="C s^{-1}"
+				description="Maximum horizontal temperature advection within region layer"
 			/>
-			<var name="maxLayerSalinityAdv" array_group="layerMaxs" units="PSU s^{-1}"
-				description="Maximum salinity advection within region layer"
+			<var name="maxLayerSalinityHorAdv" array_group="layerMaxs" units="PSU s^{-1}"
+				description="Maximum horizontal salinity advection within region layer"
+			/>
+			<var name="maxLayerTemperatureVertAdv" array_group="layerMaxs" units="C s^{-1}"
+				description="Maximum vertical temperature advection within region layer"
+			/>
+			<var name="maxLayerSalinityVertAdv" array_group="layerMaxs" units="PSU s^{-1}"
+				description="Maximum vertical salinity advection within region layer"
 			/>
 			<var name="maxLayerTemperatureSfcFlux" array_group="layerMaxs" units="C s^{-1}"
 				description="Maximum temperature surface flux tend within region layer"
@@ -300,11 +318,17 @@
 			<var name="maxVolumeRelativeEnstrophyCell" array_group="volumeMaxs" units="s^{-2}"
 				 description="Maximum relative enstrophy within region volume"
 			/>
-			<var name="maxVolumeTemperatureAdv" array_group="volumeMaxs" units="C s^{-1}"
-				description="Maximum temperature advection within region volume"
+			<var name="maxVolumeTemperatureHorAdv" array_group="volumeMaxs" units="C s^{-1}"
+				description="Maximum horizontal temperature advection within region volume"
 			/>
-			<var name="maxVolumeSalinityAdv" array_group="volumeMaxs" units="PSU s^{-1}"
-				description="Maximum salinity advection within region volume"
+			<var name="maxVolumeSalinityHorAdv" array_group="volumeMaxs" units="PSU s^{-1}"
+				description="Maximum horizontal salinity advection within region volume"
+			/>
+			<var name="maxVolumeTemperatureVertAdv" array_group="volumeMaxs" units="C s^{-1}"
+				description="Maximum vertical temperature advection within region volume"
+			/>
+			<var name="maxVolumeSalinityVertAdv" array_group="volumeMaxs" units="PSU s^{-1}"
+				description="Maximum vertical salinity advection within region volume"
 			/>
 			<var name="maxVolumeTemperatureSfcFlux" array_group="volumeMaxs" units="C s^{-1}"
 				description="Maximum temperature surface flux tend within region volume"
@@ -374,11 +398,17 @@
 			<var name="avgLayerRelativeEnstrophyCell" array_group="layerAvgs" units="s^{-2}"
 				 description="Average relative enstrophy within region layer"
 			/>
-			<var name="avgLayerTemperatureAdv" array_group="layerAvgs" units="C s^{-1}"
-				description="Average temperature advection within region layer"
+			<var name="avgLayerTemperatureHorAdv" array_group="layerAvgs" units="C s^{-1}"
+				description="Average horizontal temperature advection within region layer"
 			/>
-			<var name="avgLayerSalinityAdv" array_group="layerAvgs" units="PSU s^{-1}"
-				description="Average salinity advection within region layer"
+			<var name="avgLayerSalinityHorAdv" array_group="layerAvgs" units="PSU s^{-1}"
+				description="Average horizontal salinity advection within region layer"
+			/>
+			<var name="avgLayerTemperatureVertAdv" array_group="layerAvgs" units="C s^{-1}"
+				description="Average vertical temperature advection within region layer"
+			/>
+			<var name="avgLayerSalinityVertAdv" array_group="layerAvgs" units="PSU s^{-1}"
+				description="Average vertical salinity advection within region layer"
 			/>
 			<var name="avgLayerTemperatureSfcFlux" array_group="layerAvgs" units="C s^{-1}"
 				description="Average temperature surface flux tend within region layer"
@@ -448,11 +478,17 @@
 			<var name="avgVolumeRelativeEnstrophyCell" array_group="volumeAvgs" units="s^{-2}"
 				 description="Average relative enstrophy within region volume"
 			/>
-			<var name="avgVolumeTemperatureAdv" array_group="volumeAvgs" units="C s^{-1}"
-				description="Average temperature advection within region volume"
+			<var name="avgVolumeTemperatureHorAdv" array_group="volumeAvgs" units="C s^{-1}"
+				description="Average horizontal temperature advection within region volume"
 			/>
-			<var name="avgVolumeSalinityAdv" array_group="volumeAvgs" units="PSU s^{-1}"
-				description="Average salinity advection within region volume"
+			<var name="avgVolumeSalinityHorAdv" array_group="volumeAvgs" units="PSU s^{-1}"
+				description="Average horizontal salinity advection within region volume"
+			/>
+			<var name="avgVolumeTemperatureVertAdv" array_group="volumeAvgs" units="C s^{-1}"
+				description="Average vertical temperature advection within region volume"
+			/>
+			<var name="avgVolumeSalinityVertAdv" array_group="volumeAvgs" units="PSU s^{-1}"
+				description="Average vertical salinity advection within region volume"
 			/>
 			<var name="avgVolumeTemperatureSfcFlux" array_group="volumeAvgs" units="C s^{-1}"
 				description="Average temperature surface flux tend within region volume"
