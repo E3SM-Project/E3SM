@@ -188,8 +188,16 @@
       <value compset="_MPAS">1</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne60np4">96</value>
+      <value compset=".+" grid="a%ne60np4.pg3">96</value>
+      <value compset=".+" grid="a%ne60np4.pg4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
-      <value compset=".+" grid="a%ne240np4">96</value>
+      <value compset=".+" grid="a%ne120np4.pg2">96</value>
+      <value compset=".+" grid="a%ne120np4.pg3">96</value>
+      <value compset=".+" grid="a%ne120np4.pg4">96</value>
+      <value compset=".+" grid="a%ne240np4">144</value>
+      <value compset=".+" grid="a%ne240np4.pg2">144</value>
+      <value compset=".+" grid="a%ne240np4.pg3">144</value>
+      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
