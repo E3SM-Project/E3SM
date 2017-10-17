@@ -562,6 +562,9 @@ subroutine diag_init()
        call add_default ('SNOWHICE', 1, ' ')
     endif
 
+    call add_default ('OMEGA500', 1, ' ')
+    call add_default ('TH7001000', 1, ' ')
+
     if (history_vdiag) then
         call add_default ('PRECT   ', 2, ' ')
         call add_default ('PRECT   ', 3, ' ')

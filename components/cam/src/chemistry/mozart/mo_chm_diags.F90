@@ -343,7 +343,14 @@ contains
     use constituents, only : cnst_get_ind
     use phys_grid,    only : get_area_all_p, pcols
     use physics_buffer, only : physics_buffer_desc
+
+! here and below for the calculations of total aerosol mass mixing ratios for each aerosol class
+! are only enabled when MODAL aerosol is used (i.e., -DMODAL_AERO is set in macro)
+
+#ifdef MODAL_AERO
     use modal_aero_data,  only : cnst_name_cw, qqcw_get_field ! for calculate sum of aerosol masses
+#endif
+
     use phys_control, only: phys_getopts
     
     implicit none
@@ -493,6 +500,7 @@ contains
        if ( any( aer_species == m ) ) then
           call outfld( solsym(m), mmr(:ncol,:,m), ncol ,lchnk )
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
+#ifdef MODAL_AERO
           if (history_aerosol .and. .not. history_verbose) then
              select case (trim(solsym(m)))
              case ('bc_a1','bc_a3','bc_a4')
@@ -511,6 +519,7 @@ contains
                   mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
              end select
           endif
+#endif
        else
           call outfld( solsym(m), vmr(:ncol,:,m), ncol ,lchnk )
           call outfld( trim(solsym(m))//'_SRF', vmr(:ncol,pver,m), ncol ,lchnk )
@@ -538,8 +547,11 @@ contains
 
     enddo
 
+#ifdef MODAL_AERO
     ! diagnostics for cloud-borne aerosols, then add to corresponding mass accumulators
     if (history_aerosol .and. .not. history_verbose) then
+
+
        do n = 1,pcnst
           fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
           if(associated(fldcw)) then
@@ -569,6 +581,7 @@ contains
        call outfld( 'Mass_so4', mass_so4(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_soa', mass_soa(:ncol,:),ncol,lchnk)
     endif
+#endif
 
     call outfld( 'NOX',  vmr_nox(:ncol,:),  ncol, lchnk )
     call outfld( 'NOY',  vmr_noy(:ncol,:),  ncol, lchnk )
