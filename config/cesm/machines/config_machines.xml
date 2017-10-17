@@ -1638,6 +1638,104 @@
      </environment_variables>
   </machine>
 
+  <machine MACH="lbl-lr3">
+    <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
+    <NODENAME_REGEX>n0*.lr3.lbl.gov</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>rgknox and gbisht at lbl dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/Modules/python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">cmake</command>
+	<command name="load">perl xml-libxml switch python/2.7.11</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/2015.6.233</command>
+	<command name="load">mkl</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.0-intel-s</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial">
+	<command name="load">openmpi</command>
+	<command name="load">netcdf/4.4.0-intel-p</command>
+      </modules>
+    </module_system> 
+  </machine>
+
+  <machine MACH="lbl-lr2">
+    <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
+    <NODENAME_REGEX>n0*.lr2.lbl.gov</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>rgknox and gbisht at lbl dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/Modules/python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">cmake</command>
+	<command name="load">perl xml-libxml switch python/2.7.11</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/2015.6.233</command>
+	<command name="load">mkl</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.0-intel-s</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial">
+	<command name="load">openmpi</command>
+	<command name="load">netcdf/4.4.0-intel-p</command>
+      </modules>
+    </module_system> 
+  </machine>
+
   <machine MACH="theta">
     <DESC>ALCF Cray XC* KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
     <NODENAME_REGEX>theta.*</NODENAME_REGEX>

@@ -445,6 +445,30 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="lbl-lr3" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+       <directive>--qos=lr_normal</directive>
+       <directive>--partition=lr3</directive>
+       <directive>--account={{ project }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="lbl-lr2" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+       <directive>--qos=lr_normal</directive>
+       <directive>--partition=lr2</directive>
+       <directive>--account={{ project }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
+    </queues>
+  </batch_system>
+
   <batch_jobs>
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
