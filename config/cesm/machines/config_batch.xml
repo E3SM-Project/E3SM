@@ -453,7 +453,7 @@
        <directive>--account={{ project }}</directive>
     </directives>
     <queues>
-      <queue walltimemin="00:00:00" walltimemax="72:00:00" jobmin="1" jobmax="64" default="true">lr3</queue>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
     </queues>
   </batch_system>
 
@@ -465,7 +465,7 @@
        <directive>--account={{ project }}</directive>
     </directives>
     <queues>
-      <queue walltimemin="00:00:00" walltimemax="72:00:00" jobmin="1" jobmax="64" default="true">lr2</queue>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
     </queues>
   </batch_system>
 
