@@ -1401,7 +1401,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_prereq(self):
     ###########################################################################
-        testcase_name = 'Prereq_test'
+        testcase_name = 'prereq_test'
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
@@ -1410,16 +1410,20 @@ class K_TestCimeCase(TestCreateTestCommon):
                               from_dir=SCRIPT_DIR)
 
         with Case(testdir, read_only=False) as case:
-            case_setup(case, clean=False, test_mode=False, reset=False)
-            build.case_build(testdir, case=case, sharedlib_only=False, model_only=False)
-            submit_output = run_cmd_assert_result(self, "%s/case.submit" % (testdir), from_dir=testdir).split('\n')
-            submit_line_tag = 'Submitted job ids '
-            submit_line = [s for s in submit_output if submit_line_tag in s][0]
-            # Remove the tag used to identify the line, the brackets, and the quotations from the string-list
-            # This leaves us with a comma separated list of ids
-            submit_ids = submit_line.replace(submit_line_tag, '').replace('[', '').replace(']', '').replace('\'', '').split(',')
-            prereq_id = submit_ids[-1]
-            submit(case, prereq=prereq_id)
+            job_name = "case.run"
+            prereq_name = 'prereq_test'
+            batch_cmd = case.submit_jobs(prereq=prereq_name, job=job_name, skip_pnl=True, dry_run=True)[0][1].split()
+            jobid_ident = 'jobid'
+            dep_str = case.get_env('batch').get_value('depend_string', subgroup=None)[:-len(jobid_ident)]
+            found_dep_str = False
+            for arg in batch_cmd:
+                if dep_str in arg:
+                    found_dep_str = True
+                    dep_id_pos = arg.find(dep_str) + len(dep_str)
+                    dep_id = arg[dep_id_pos:]
+                    break
+            self.assertTrue(found_dep_str, "Dependency not added to batch command")
+            self.assertTrue(prereq_name in dep_id, "Dependencies added, but not the user specified one")
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
