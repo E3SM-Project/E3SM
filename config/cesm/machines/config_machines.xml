@@ -1582,7 +1582,7 @@
     <NODENAME_REGEX>n0*.lr3.lbl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1595,9 +1595,6 @@
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="mpi-serial">
-      <executable></executable>
-    </mpirun>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
     </mpirun>
@@ -1634,7 +1631,7 @@
     <NODENAME_REGEX>n0*.lr2.lbl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1647,9 +1644,6 @@
     <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="mpi-serial">
-      <executable></executable>
-    </mpirun>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
     </mpirun>
