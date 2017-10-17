@@ -363,8 +363,10 @@ contains
 
         do iCell=1,nCellsSolve
            deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
-           sumAreaDeltaS = sumAreaDeltaS + deltaS*areaCell(iCell)
-           sumArea = sumArea + areaCell(iCell)
+           if (deltaS .ne. 0.0_RKIND) then
+              sumAreaDeltaS = sumAreaDeltaS + deltaS*areaCell(iCell)
+              sumArea = sumArea + areaCell(iCell)
+           endif
         enddo
 
          block => block % next
@@ -378,6 +380,9 @@ contains
       sumAreaDeltaSGlobal = reductions(1)
       sumAreaGlobal       = reductions(2)
       avgDeltaS1 = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
+      !LPV: There is no guarantee that a global sum of deltaS is BFB across
+      !decompositions, the next line rounds each value to 10 decimal places to
+      !ensure BFB results
       avgDeltaS = float (int(avgDeltaS1 * 1.0E10_RKIND + 0.5_RKIND)) / 1.0E10_RKIND
       
       block => domain % blocklist
