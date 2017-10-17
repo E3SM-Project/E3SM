@@ -304,9 +304,9 @@ class Machines(GenericXML):
             print( "      os             ", os_.text)
             print( "      compilers      ",compilers.text)
             if MAX_MPITASKS_PER_NODE is not None:
-                print( "      pes/node       ",MAX_MPITASKS_PER_NODE.text)
+                print("      pes/node       ",MAX_MPITASKS_PER_NODE.text)
             if max_tasks_per_node is not None:
-                print( "      max_tasks/node ",max_tasks_per_node.text)
+                print("      max_tasks/node ",max_tasks_per_node.text)
 
     def return_all_values(self):
         # return a dictionary of machines
@@ -327,11 +327,10 @@ class Machines(GenericXML):
             if max_tasks_per_node is not None:
                 max_tasks_pn = max_tasks_per_node.text
 
-            mach_dict[name] = { 'description'    : desc.text, 
+            mach_dict[name] = { 'description'    : desc.text,
                                 'os'             : os_.text,
                                 'compilers'      : compilers.text,
                                 'pes/node'       : ppn,
                                 'max_tasks/node' : max_tasks_pn }
 
         return mach_dict
-

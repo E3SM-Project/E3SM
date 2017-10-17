@@ -1,6 +1,7 @@
 import CIME.utils
 from CIME.utils import expect, convert_to_seconds, parse_test_name
 from CIME.XML.machines import Machines
+import six
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
@@ -48,11 +49,11 @@ _TEST_SUITES = {
                              "ERP.f45_g37_rx1.A",
                              "SMS_D_Ln9.f19_g16_rx1.A",
                              "DAE.f19_f19.A",
-                             "PET_P32.f19_f19.A",
+                             "PET_P4.f19_f19.A",
                              "SMS.T42_T42.S",
                              "PRE.f19_f19.ADESP",
                              "PRE.f19_f19.ADESP_TEST",
-                             "MCC_P12.f19_g16_rx1.A")
+                             "MCC_P1.f19_g16_rx1.A")
                             ),
 
     #
@@ -183,27 +184,27 @@ def get_test_suite(suite, machine=None, compiler=None):
     tests = []
     for item in tests_raw:
         test_mod = None
-        if (isinstance(item, str)):
+        if (isinstance(item, six.string_types)):
             test_name = item
         else:
             expect(isinstance(item, tuple), "Bad item type for item '{}'".format(str(item)))
             expect(len(item) in [2, 3], "Expected two or three items in item '{}'".format(str(item)))
-            expect(isinstance(item[0], str), "Expected string in first field of item '{}'".format(str(item)))
-            expect(isinstance(item[1], str), "Expected string in second field of item '{}'".format(str(item)))
+            expect(isinstance(item[0], six.string_types), "Expected string in first field of item '{}'".format(str(item)))
+            expect(isinstance(item[1], six.string_types), "Expected string in second field of item '{}'".format(str(item)))
 
             test_name = item[0]
             if (len(item) == 2):
                 test_mod = item[1]
             else:
-                expect(type(item[2]) in [str, tuple], "Expected string or tuple for third field of item '{}'".format(str(item)))
-                test_mod_machines = [item[2]] if isinstance(item[2], str) else item[2]
+                expect(type(item[2]) in [six.string_types, tuple], "Expected string or tuple for third field of item '{}'".format(str(item)))
+                test_mod_machines = [item[2]] if isinstance(item[2], six.string_types) else item[2]
                 if (machine in test_mod_machines):
                     test_mod = item[1]
 
         tests.append(CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler, testmod=test_mod))
 
     if (inherits_from is not None):
-        inherits_from = [inherits_from] if isinstance(inherits_from, str) else inherits_from
+        inherits_from = [inherits_from] if isinstance(inherits_from, six.string_types) else inherits_from
         for inherits in inherits_from:
             inherited_tests = get_test_suite(inherits, machine, compiler)
 
@@ -216,7 +217,7 @@ def get_test_suite(suite, machine=None, compiler=None):
 ###############################################################################
 def get_test_suites():
 ###############################################################################
-    return _TEST_SUITES.keys()
+    return list(_TEST_SUITES.keys())
 
 ###############################################################################
 def infer_machine_name_from_tests(testargs):
@@ -322,14 +323,14 @@ def get_recommended_test_time(test_full_name):
         _, rec_time, tests_raw = _TEST_SUITES[suite]
         for item in tests_raw:
             test_mod = None
-            if (isinstance(item, str)):
+            if (isinstance(item, six.string_types)):
                 test_name = item
             else:
                 test_name = item[0]
                 if (len(item) == 2):
                     test_mod = item[1]
                 else:
-                    test_mod_machines = [item[2]] if isinstance(item[2], str) else item[2]
+                    test_mod_machines = [item[2]] if isinstance(item[2], six.string_types) else item[2]
                     if (machine in test_mod_machines):
                         test_mod = item[1]
 
@@ -355,11 +356,13 @@ def sort_by_time(test_one, test_two):
     """
     rec1, rec2 = get_recommended_test_time(test_one), get_recommended_test_time(test_two)
     if rec1 == rec2:
-        return cmp(test_one, test_two)
+        return (test_one > test_two) - (test_two < test_one)
     else:
         if rec2 is None:
             return -1
         elif rec1 is None:
             return 1
         else:
-            return cmp(convert_to_seconds(rec2), convert_to_seconds(rec1))
+            a = convert_to_seconds(rec2)
+            b = convert_to_seconds(rec1)
+            return (a < b) - (b < a)

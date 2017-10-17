@@ -54,7 +54,7 @@ class DAE(SystemTestsCompareTwo):
         self._case.set_value("DATA_ASSIMILATION_CYCLES", 2)
         stopn = self._case.get_value("STOP_N")
         expect((stopn % 2) == 0, "ERROR: DAE test requires that STOP_N be even")
-        stopn = stopn / 2
+        stopn = int(stopn / 2)
         self._case.set_value("STOP_N", stopn)
 
         self._case.flush()

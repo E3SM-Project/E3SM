@@ -248,6 +248,10 @@ class TestScheduler(object):
         # tests cases
 
     ###########################################################################
+    def get_testnames(self):
+        return list(self._tests.keys())
+
+    ###########################################################################
     def _log_output(self, test, output):
     ###########################################################################
         test_dir = self._get_test_dir(test)
@@ -364,9 +368,13 @@ class TestScheduler(object):
         _, case_opts, grid, compset,\
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
 
-        create_newcase_cmd = "{} --case {} --res {} --mach {} --compiler {} --compset {}"\
-                               " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
-                                                test_dir, grid, machine, compiler, compset)
+        create_newcase_cmd = "{} --case {} --res {} --compset {}"\
+                             " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
+                                              test_dir, grid, compset)
+        if machine is not None:
+            create_newcase_cmd += " --machine {}".format(machine)
+        if compiler is not None:
+            create_newcase_cmd += " --compiler {}".format(compiler)
         if self._project is not None:
             create_newcase_cmd += " --project {} ".format(self._project)
         if self._output_root is not None:
@@ -520,6 +528,9 @@ class TestScheduler(object):
                     envtest.set_test_parameter("STOP_N", opti)
                     logger.debug (" STOP_OPTION set to {}".format(stop_option[opt]))
                     logger.debug (" STOP_N      set to {}".format(opti))
+                elif opt.startswith('I'):
+                    # Marker to distinguish tests with same name - ignored
+                    continue
 
                 elif opt.startswith('M'):
                     # M option handled by create newcase
@@ -536,7 +547,7 @@ class TestScheduler(object):
                     # handled in create_newcase
                     continue
                 elif opt.startswith('IOP'):
-                    logger.warn("IOP test option not yet implemented")
+                    logger.warning("IOP test option not yet implemented")
                 else:
                     expect(False, "Could not parse option '{}' ".format(opt))
 
@@ -649,7 +660,7 @@ class TestScheduler(object):
         expect(len(threads_in_flight) <= self._parallel_jobs, "Oversubscribed?")
         finished_tests = []
         while not finished_tests:
-            for test, thread_info in threads_in_flight.iteritems():
+            for test, thread_info in threads_in_flight.items():
                 if not thread_info[0].is_alive():
                     finished_tests.append((test, thread_info[1]))
 

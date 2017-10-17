@@ -27,6 +27,7 @@
  * @param len the length of the attribute array.
  * @param op a pointer with the attribute data.
  * @return PIO_NOERR for success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
                     PIO_Offset len, nc_type memtype, const void *op)
@@ -233,6 +234,7 @@ int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
  * of type memtype.
  * @param ip a pointer that will get the attribute value.
  * @return PIO_NOERR for success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void *ip)
 {
@@ -479,6 +481,7 @@ int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void
  * will be used. Use special PIO_LONG_INTERNAL for _long() functions.
  * @param buf pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                      const PIO_Offset *stride, nc_type xtype, void *buf)
@@ -744,6 +747,7 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
  * @param xtype the netcdf type of the variable.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                      void *buf)
@@ -784,6 +788,7 @@ int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype
  * @param xtype the netcdf type of the variable.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
 {
@@ -872,6 +877,7 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
  * @param buf pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                      const PIO_Offset *stride, nc_type xtype, const void *buf)
@@ -1070,7 +1076,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
                     fake_stride = (PIO_Offset *)stride;
 
                 LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
-                vdesc = &file->varlist[varid];
+                /*vdesc = &file->varlist[varid];*/
+                if ((ierr = get_var_desc(varid, &file->varlist, &vdesc)))
+                    return pio_err(ios, file, ierr, __FILE__, __LINE__);
                 if (vdesc->nreqs % PIO_REQUEST_ALLOC_CHUNK == 0)
                     if (!(vdesc->request = realloc(vdesc->request,
                                                    sizeof(int) * (vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK))))
@@ -1227,6 +1235,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
  * @param op pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                      const void *op)
@@ -1277,6 +1286,7 @@ int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype
  * @param op pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
 {

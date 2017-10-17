@@ -88,3 +88,6 @@ install: lib
 	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
 	$(INSTALL) mpi.h -m 644 $(includedir)
 	$(INSTALL) mpif.h -m 644 $(includedir)
+
+
+

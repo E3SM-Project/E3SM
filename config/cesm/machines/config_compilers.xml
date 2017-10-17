@@ -722,6 +722,14 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="homebrew" COMPILER="gnu">
+  <LDFLAGS>
+    <!-- These LDFLAGS provide lapack and blas support on a Mac. This
+         may require installation of the Apple Developer Tools. -->
+    <append> -framework Accelerate </append>
+  </LDFLAGS>
+</compiler>
+
 <compiler MACH="juqueen" COMPILER="ibm">
   <MPICC> mpixlc_r </MPICC>
   <MPIFC> mpixlf2003_r </MPIFC>

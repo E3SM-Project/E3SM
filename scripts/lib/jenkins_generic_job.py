@@ -1,22 +1,25 @@
 import CIME.wait_for_tests
 from CIME.utils import expect
+from CIME.case import Case
 
 import os, shutil, glob, signal, logging
 
 ###############################################################################
-def cleanup_queue(set_of_jobs_we_created):
+def cleanup_queue(test_root, test_id):
 ###############################################################################
     """
     Delete all jobs left in the queue
     """
-    current_jobs = set(CIME.utils.get_my_queued_jobs())
-    jobs_to_delete = set_of_jobs_we_created & current_jobs
+    for teststatus_file in glob.iglob("{}/*{}*/TestStatus".format(test_root, test_id)):
+        case_dir = os.path.dirname(teststatus_file)
+        with Case(case_dir, read_only=True) as case:
+            jobmap = case.get_job_info()
+            jobkills = []
+            for jobname, jobid in jobmap.items():
+                logging.warning("Found leftover batch job {} ({}) that need to be deleted".format(jobid, jobname))
+                jobkills.append(jobid)
 
-    if (jobs_to_delete):
-        logging.warning("Found leftover batch jobs that need to be deleted: {}".format(", ".join(jobs_to_delete)))
-        success = CIME.utils.delete_jobs(jobs_to_delete)
-        if not success:
-            logging.warning("FAILED to clean up leftover jobs!")
+            case.cancel_batch_jobs(jobkills)
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
@@ -78,14 +81,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
             os.remove(old_file)
 
     #
-    # Make note of things already in the queue so we know not to delete
-    # them if we timeout
-    #
-    preexisting_queued_jobs = []
-    if (use_batch):
-        preexisting_queued_jobs = CIME.utils.get_my_queued_jobs()
-
-    #
     # Set up create_test command and run it
     #
 
@@ -118,16 +113,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
                "Create_test script FAILED with error code '{:d}'!".format(create_test_stat))
 
-    if (use_batch):
-        # This is not fullproof. Any jobs that happened to be
-        # submitted by this user while create_test was running will be
-        # potentially deleted. This is still a big improvement over the
-        # previous implementation which just assumed all queued jobs for this
-        # user came from create_test.
-        # TODO: change this to probe test_root for jobs ids
-        #
-        our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
-
     #
     # Wait for tests
     #
@@ -146,8 +131,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                                  cdash_build_name=cdash_build_name,
                                                  cdash_project=cdash_project,
                                                  cdash_build_group=cdash_build_group)
-    if (not tests_passed and use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED):
+    if use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED:
         # Cleanup
-        cleanup_queue(our_jobs)
+        cleanup_queue(test_root, test_id)
 
     return tests_passed

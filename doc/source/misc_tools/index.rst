@@ -23,7 +23,7 @@ Mapping Tools
 
 cprnc
 
-load-balancing-tool
+load-balancing-tool.rst
 
 Indices and tables
 ==================

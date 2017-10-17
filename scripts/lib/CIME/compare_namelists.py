@@ -353,7 +353,7 @@ def _compare_values(name, gold_value, comp_value, case):
                 comments += "  list variable '{}' has extra value {}\n".format(name, comp_value_list_item)
 
     elif (type(gold_value) is OrderedDict):
-        for key, gold_value_dict_item in gold_value.iteritems():
+        for key, gold_value_dict_item in gold_value.items():
             if (key in comp_value):
                 comments += _compare_values("{} dict item {}".format(name, key),
                                             gold_value_dict_item, comp_value[key], case)
@@ -425,7 +425,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     ...   val3 = .false.
     ... /'''
     >>> comments = _compare_namelists(_parse_namelists(teststr1.splitlines(), 'foo'), _parse_namelists(teststr2.splitlines(), 'bar'), None)
-    >>> print comments
+    >>> print(comments)
     Missing namelist: nml1
     Differences in namelist 'nml2':
       BASE: val21 = 'foo'
@@ -493,12 +493,12 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     ''
     """
     different_namelists = OrderedDict()
-    for namelist, gold_names in gold_namelists.iteritems():
+    for namelist, gold_names in gold_namelists.items():
         if (namelist not in comp_namelists):
             different_namelists[namelist] = ["Missing namelist: {}\n".format(namelist)]
         else:
             comp_names = comp_namelists[namelist]
-            for name, gold_value in gold_names.iteritems():
+            for name, gold_value in gold_names.items():
                 if (name not in comp_names):
                     different_namelists.setdefault(namelist, []).append("  missing variable: '{}'\n".format(name))
                 else:
@@ -516,7 +516,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
             different_namelists[namelist] = ["Found extra namelist: {}\n".format(namelist)]
 
     comments = ""
-    for namelist, nlcomment in different_namelists.iteritems():
+    for namelist, nlcomment in different_namelists.items():
         if len(nlcomment) == 1:
             comments += nlcomment[0]
         else:

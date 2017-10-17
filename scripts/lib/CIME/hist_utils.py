@@ -403,7 +403,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     # drop the date so that the name is generic
     newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
     if newestcpllogfile is None:
-        logger.warn("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+        logger.warning("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
     else:
         shutil.copyfile(newestcpllogfile,
                     os.path.join(basegen_dir, "cpl.log.gz"))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import io, glob, os, re, shutil, signal, sys, tempfile, \
-    threading, time, logging, unittest, getpass, string
+import glob, os, re, shutil, signal, sys, tempfile, \
+    threading, time, logging, unittest, getpass
 
 from xml.etree.ElementTree import ParseError
 
@@ -10,6 +10,8 @@ sys.path.append(LIB_DIR)
 # Remove all pyc files to ensure we're testing the right things
 import subprocess
 subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
+from six import assertRaisesRegex
+import six
 
 from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
 import update_acme_tests
@@ -80,7 +82,7 @@ class A_RunUnitTests(unittest.TestCase):
         #
         # This is analogous to running:
         #     python -m unittest discover -s CIME/tests -t .
-        # from cime/utils/python
+        # from cime/scripts/lib
         #
         # Yes, that means we have a bunch of unit tests run from this one unit
         # test.
@@ -239,8 +241,8 @@ class N_TestUnitTest(unittest.TestCase):
         teardown_root = True
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
-                print "Detected failed test or user request no teardown"
-                print "Leaving case directory : %s"%tfile
+                print("Detected failed test or user request no teardown")
+                print("Leaving case directory : %s"%tfile)
                 teardown_root = False
             elif do_teardown:
                 shutil.rmtree(tfile)
@@ -321,7 +323,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         prevtestdir = cls._testdirs[0]
-        cls._testdirs.append(testdir)
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test3")
 
         cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" \
@@ -341,7 +342,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./xmlchange USER=this_is_not_a_user",
                               from_dir=prevtestdir)
 
-        fakeoutputroot = string.replace(cls._testroot, os.environ.get("USER"), "this_is_not_a_user")
+        fakeoutputroot = cls._testroot.replace(os.environ.get("USER"), "this_is_not_a_user")
         run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT=%s"%fakeoutputroot,
                               from_dir=prevtestdir)
 
@@ -518,8 +519,8 @@ class J_TestCreateNewcase(unittest.TestCase):
 
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
-                print "Detected failed test or user request no teardown"
-                print "Leaving case directory : %s"%tfile
+                print("Detected failed test or user request no teardown")
+                print("Leaving case directory : %s"%tfile)
             elif do_teardown:
                 shutil.rmtree(tfile)
 
@@ -744,7 +745,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._machine           = MACHINE.get_machine_name()
         self._compiler          = MACHINE.get_default_compiler() if TEST_COMPILER is None else TEST_COMPILER
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
-        self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
+        self._baseline_area     = os.path.join(TEST_ROOT, "baselines")
         self._testroot          = TEST_ROOT
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
@@ -769,10 +770,10 @@ class TestCreateTestCommon(unittest.TestCase):
 
         do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
         if (not do_teardown):
-            print "Detected failed test or user request no teardown"
-            print "Leaving files:"
+            print("Detected failed test or user request no teardown")
+            print("Leaving files:")
             for file_to_clean in files_to_clean:
-                print " ", file_to_clean
+                print(" ", file_to_clean)
         else:
             # For batch machines need to avoid race condition as batch system
             # finishes I/O for the case.
@@ -790,6 +791,7 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
         test_id = CIME.utils.get_timestamp() if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
+        extra_args.append("--baseline-root {}".format(self._baseline_area))
         if NO_BATCH:
             extra_args.append("--no-batch")
         if TEST_COMPILER:
@@ -1175,11 +1177,11 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
 
         if CIME.utils.get_model() == "acme":
-            genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
-            compargs = ["-c", "-b", self._baseline_name, test_name]
+            genargs = ["-g", "-o", "-b", self._baseline_name, test_name, "--baseline-root", self._baseline_area]
+            compargs = ["-c", "-b", self._baseline_name, test_name, "--baseline-root", self._baseline_area]
         else:
-            genargs = ["-g", self._baseline_name, "-o", test_name]
-            compargs = ["-c", self._baseline_name, test_name]
+            genargs = ["-g", self._baseline_name, "-o", test_name, "--baseline-root", self._baseline_area]
+            compargs = ["-c", self._baseline_name, test_name, "--baseline-root", self._baseline_area]
 
         self._create_test(genargs)
 
@@ -1194,8 +1196,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         self._create_test(compargs, test_id=test_id, run_errors=True)
 
         # compare_test_results should detect the fail
-        cpr_cmd = "%s/compare_test_results --test-root %s -b %s -t %s 2>&1" \
-            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
+        cpr_cmd = "{}/compare_test_results --test-root {} -b {} -t {} --baseline-root {} 2>&1" \
+                  .format(TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id, self._baseline_area)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -1205,8 +1207,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("%s/bless_test_results --test-root %s --hist-only --force -b %s -t %s"\
-                            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id))
+        run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -b {} -t {} --baseline-root {}"
+                        .format(TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id,self._baseline_area))
 
         # Hist compare should now pass again
         self._create_test(compargs)
@@ -1217,11 +1219,15 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         # Generate some namelist baselines
         test_to_change = "TESTRUNPASS_P1.f19_g16_rx1.A"
         if CIME.utils.get_model() == "acme":
-            genargs = ["-n", "-g", "-o", "-b", self._baseline_name, "cime_test_only_pass"]
-            compargs = ["-n", "-c", "-b", self._baseline_name, "cime_test_only_pass"]
+            genargs = ["-n", "-g", "-o", "-b", self._baseline_name, "cime_test_only_pass",
+                       "--baseline-root", self._baseline_area]
+            compargs = ["-n", "-c", "-b", self._baseline_name, "cime_test_only_pass",
+                        "--baseline-root", self._baseline_area]
         else:
-            genargs = ["-n", "-g", self._baseline_name, "-o",  "cime_test_only_pass"]
-            compargs = ["-n", "-c", self._baseline_name, "cime_test_only_pass"]
+            genargs = ["-n", "-g", self._baseline_name, "-o",  "cime_test_only_pass",
+                       "--baseline-root", self._baseline_area]
+            compargs = ["-n", "-c", self._baseline_name, "cime_test_only_pass",
+                        "--baseline-root", self._baseline_area]
 
         self._create_test(genargs)
 
@@ -1232,11 +1238,12 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         # Check standalone case.cmpgen_namelists
         casedir = os.path.join(self._testroot,
                                "%s.C.%s" % (CIME.utils.get_full_test_name(test_to_change, machine=self._machine, compiler=self._compiler), test_id))
-        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir)
+        run_cmd_assert_result(self, "./case.cmpgen_namelists --baseline-root {}".format(self._baseline_area)
+                              , from_dir=casedir)
 
         # compare_test_results should pass
-        cpr_cmd = "%s/compare_test_results --test-root %s -n -b %s -t %s 2>&1" \
-            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
+        cpr_cmd = "{}/compare_test_results --test-root {} -n -b {} -t {} --baseline-root {} 2>&1" \
+            .format(TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id, self._baseline_area)
         output = run_cmd_assert_result(self, cpr_cmd)
 
         # use regex
@@ -1270,17 +1277,19 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         self._create_test(compargs, test_id=test_id, pre_run_errors=True)
         casedir = os.path.join(self._testroot,
                                "%s.C.%s" % (CIME.utils.get_full_test_name(test_to_change, machine=self._machine, compiler=self._compiler), test_id))
-        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
+        run_cmd_assert_result(self, "./case.cmpgen_namelists --baseline-root {}".format(self._baseline_area),
+                              from_dir=casedir, expected_stat=100)
 
         # preview namelists should work
         run_cmd_assert_result(self, "./preview_namelists", from_dir=casedir)
 
         # This should still fail
-        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
+        run_cmd_assert_result(self, "./case.cmpgen_namelists --baseline-root {}".format(self._baseline_area),
+                              from_dir=casedir, expected_stat=100)
 
         # compare_test_results should fail
-        cpr_cmd = "%s/compare_test_results --test-root %s -n -b %s -t %s 2>&1" \
-            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
+        cpr_cmd = "{}/compare_test_results --test-root {} -n -b {} -t {} --baseline-root {} 2>&1" \
+            .format(TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id, self._baseline_area)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -1290,8 +1299,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display passed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("%s/bless_test_results --test-root %s -n --force -b %s -t %s" \
-                            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id))
+        run_cmd_no_fail("{}/bless_test_results --test-root {} -n --force -b {} -t {} --baseline-root {}"
+                        .format(TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id, self._baseline_area))
 
         # Basic namelist compare should now pass again
         self._create_test(compargs)
@@ -1685,8 +1694,8 @@ def get_macros(macro_maker, build_xml, build_system):
     """
     # Build.write_macros expects file-like objects as input, so
     # we need to wrap the strings in StringIO objects.
-    xml = io.StringIO(unicode(build_xml))
-    output = io.StringIO()
+    xml = six.StringIO(str(build_xml))
+    output = six.StringIO()
     output_format = None
     if build_system == "Makefile":
         output_format = "make"
@@ -1917,21 +1926,21 @@ class G_TestMacrosBasic(unittest.TestCase):
     def test_script_is_callable(self):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
-        maker = Compilers(MockMachines("mymachine", "SomeOS"), version="2.0")
+        maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
         test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
         """The macro writer rejects input that's not valid XML."""
-        maker = Compilers(MockMachines("mymachine", "SomeOS"), version="2.0")
+        maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
         with self.assertRaises(ParseError):
             get_macros(maker, "This is not valid XML.", "Makefile")
 
     def test_script_rejects_bad_build_system(self):
         """The macro writer rejects a bad build system string."""
-        maker = Compilers(MockMachines("mymachine", "SomeOS"), version="2.0")
+        maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
         bad_string = "argle-bargle."
-        with self.assertRaisesRegexp(
+        with assertRaisesRegex(self,
                 SystemExit,
                 "Unrecognized build system provided to write_macros: " + bad_string):
             get_macros(maker, "This string is irrelevant.", bad_string)
@@ -1953,7 +1962,7 @@ class H_TestMakeMacros(unittest.TestCase):
     test_machine = "mymachine"
 
     def setUp(self):
-        self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version="2.0")
+        self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version=2.0)
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""
@@ -2033,7 +2042,7 @@ class H_TestMakeMacros(unittest.TestCase):
         """The macro writer dies if given many defaults."""
         xml1 = """<compiler><MPI_PATH>/path/to/default</MPI_PATH></compiler>"""
         xml2 = """<compiler><MPI_PATH>/path/to/other_default</MPI_PATH></compiler>"""
-        with self.assertRaisesRegexp(
+        with assertRaisesRegex(self,
                 SystemExit,
                 "Variable MPI_PATH is set ambiguously in config_build.xml."):
             self.xml_to_tester(xml1+xml2)
@@ -2042,7 +2051,7 @@ class H_TestMakeMacros(unittest.TestCase):
         """The macro writer dies if given many matches for a given configuration."""
         xml1 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich</MPI_PATH></compiler>"""
         xml2 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich2</MPI_PATH></compiler>"""
-        with self.assertRaisesRegexp(
+        with assertRaisesRegex(self,
                 SystemExit,
                 "Variable MPI_PATH is set ambiguously in config_build.xml."):
             self.xml_to_tester(xml1+xml2)
@@ -2051,7 +2060,7 @@ class H_TestMakeMacros(unittest.TestCase):
         """The macro writer dies if given an ambiguous set of matches."""
         xml1 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich</MPI_PATH></compiler>"""
         xml2 = """<compiler><MPI_PATH DEBUG="FALSE">/path/to/mpi-debug</MPI_PATH></compiler>"""
-        with self.assertRaisesRegexp(
+        with assertRaisesRegex(self,
                 SystemExit,
                 "Variable MPI_PATH is set ambiguously in config_build.xml."):
             self.xml_to_tester(xml1+xml2)
@@ -2183,7 +2192,7 @@ class H_TestMakeMacros(unittest.TestCase):
         tester.assert_variable_equals("FFLAGS", "-O2 -fast", env={"OPT_LEVEL": "2"})
         xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
         err_msg = "Nesting not allowed.*"
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1)
 
     def test_config_variable_insertion(self):
@@ -2213,12 +2222,12 @@ class H_TestMakeMacros(unittest.TestCase):
         # references.
         xml1 = """<MPI_LIB_NAME><var>MPI_LIB_NAME</var></MPI_LIB_NAME>"""
         err_msg = ".* has bad <var> references."
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
         xml1 = """<MPI_LIB_NAME>${MPI_LIB_NAME}</MPI_LIB_NAME>"""
         err_msg = ".* has bad <var> references."
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
     def test_config_reject_cyclical_references(self):
@@ -2226,12 +2235,12 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH>"""
         err_msg = ".* has bad <var> references."
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
         xml1 = """<MPI_LIB_NAME>${MPI_PATH}</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPI_LIB_NAME}</MPI_PATH>"""
         err_msg = ".* has bad <var> references."
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
     def test_variable_insertion_with_machine_specific_setting(self):
@@ -2240,14 +2249,14 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH></compiler>"""
         err_msg = ".* has bad <var> references."
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
         xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
         xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
         err_msg = ".* has bad <var> references."
-        with self.assertRaisesRegexp(SystemExit, err_msg):
+        with assertRaisesRegex(self,SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
 
@@ -2280,8 +2289,8 @@ class S_TestManageAndQuery(unittest.TestCase):
         files = Files()
         testlist_drv = files.get_value("TESTS_SPEC_FILE", {"component":"drv"})
 
-        run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s %s"%
-                              (SCRIPT_DIR, testlist_drv, extra_args))
+        run_cmd_assert_result(self, "{}/query_testlists --xml-testlist {} {}".format(
+            SCRIPT_DIR, testlist_drv, extra_args))
 
     def test_query_testlists_runs(self):
         """Make sure that query_testlists runs successfully
@@ -2291,6 +2300,10 @@ class S_TestManageAndQuery(unittest.TestCase):
         break query_testlists.
         """
         self._run_and_assert_query_testlist(extra_args="--show-options")
+
+    def test_query_testlists_define_testtypes_runs(self):
+        """Make sure that query_testlists runs successfully with the --define-testtypes argument"""
+        self._run_and_assert_query_testlist(extra_args="--define-testtypes")
 
     def test_query_testlists_count_runs(self):
         """Make sure that query_testlists runs successfully with the --count argument"""
@@ -2326,7 +2339,7 @@ def check_for_pylint():
         major = int(pylintver.group(1))
         minor = int(pylintver.group(2))
     if pylint is None or major < 1 or (major == 1 and minor < 5):
-        print "pylint version 1.5 or newer not found, pylint tests skipped"
+        print("pylint version 1.5 or newer not found, pylint tests skipped")
         return False
     return True
 
@@ -2422,12 +2435,11 @@ def _main_func():
 
     try:
         unittest.main(verbosity=2, catchbreak=True)
-    except SystemExit:
-        had_fails = sys.exc_info()[1].message
-        if had_fails:
-            print "Detected failures, leaving directory:", TEST_ROOT
+    except SystemExit as e:
+        if e.__str__() != "False":
+            print("Detected failures, leaving directory:", TEST_ROOT)
         else:
-            print "All pass, removing directory:", TEST_ROOT
+            print("All pass, removing directory:", TEST_ROOT)
             if os.path.exists(TEST_ROOT):
                 shutil.rmtree(TEST_ROOT)
 

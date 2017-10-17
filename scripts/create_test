@@ -184,10 +184,14 @@ OR
                         "The default is user-specified environment variable PROJECT")
 
     parser.add_argument("-t", "--test-id",
-                        help="Specify an 'id' for the test. This is simply a"
-                        "string that is appended to the end of a test name."
-                        "If no testid is specified, then a time stamp plus random number"
-                        "will be used.")
+                        help="Specify an 'id' for the test. This is simply a "
+                        "string that is appended to the end of a test name. "
+                        "If no test-id is specified, then a time stamp plus random "
+                        "string will be used (ensuring a high probability of uniqueness). "
+                        "If test-id is specified, it is the user's responsibility to ensure "
+                        "that each run of create_test uses a unique test-id. "
+                        "(All sorts of problems can occur if you use the same test-id twice "
+                        "on the same file system, even if the test lists are completely different.)")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
@@ -425,7 +429,6 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     with Case(first_case, read_only=False) as case:
         env_batch = case.get_env("batch")
 
-        directives = env_batch.get_batch_directives(case, "case.run", raw=True)
         submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
         submit_args = env_batch.get_submit_args(case, "case.run")
 
@@ -438,27 +441,23 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
         wall_time_bab = wall_time
 
     queue = env_batch.select_best_queue(proc_pool, num_nodes, wall_time_bab)
-    wall_time_max_bab = env_batch._get_queue_specs(queue)[5]
+    wall_time_max_bab = env_batch.get_queue_specs(queue)[3]
     if wall_time_max_bab is not None:
         wall_time_max = convert_to_seconds(wall_time_max_bab)
         if wall_time_max < wall_time:
             wall_time = wall_time_max
             wall_time_bab = convert_to_babylonian_time(wall_time)
 
-    job_id = "create_test_single_submit_%s" % test_id
-    directives = directives.replace("{{ job_id }}", job_id)
-    directives = directives.replace("{{ num_nodes }}", str(num_nodes))
-    directives = directives.replace("{{ tasks_per_node }}", str(tasks_per_node))
-    directives = directives.replace("{{ ptile }}", str(tasks_per_node))
-    directives = directives.replace("{{ totaltasks }}", str(tasks_per_node * num_nodes))
+    overrides = {
+        "job_id" : "create_test_single_submit_%s" % test_id,
+        "num_nodes" : num_nodes,
+        "tasks_per_node": tasks_per_node,
+        "totaltasks" : tasks_per_node * num_nodes,
+        "job_wallclock_time": wall_time_bab,
+        "job_queue": queue
+        }
 
-    directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
-    directives = directives.replace("{{ job_wallclock_time }}", wall_time_bab)
-    directives = directives.replace("{{ job_queue }}", queue)
-    if project is not None:
-        directives = directives.replace("{{ project }}", project)
-
-    expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
+    directives = env_batch.get_batch_directives(case, "case.run", overrides=overrides)
 
     #
     # Make simple submit script and submit
