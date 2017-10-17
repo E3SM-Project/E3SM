@@ -39,6 +39,10 @@
 			description="maximum allowable difference between surface salinity and climatology"
 			possible_values="any non-negative number"
 		/>
+		<nml_option name="config_salinity_restoring_under_sea_ice" type="logical" default_value=".false." units="NA"
+			description="flag to enable salinity restoring under sea ice"
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 	<packages>

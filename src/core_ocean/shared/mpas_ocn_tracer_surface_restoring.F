@@ -244,7 +244,7 @@ contains
 
         integer :: ierr
         logical, pointer :: &
-           config_do_restart
+           config_do_restart, config_salinity_restoring_under_sea_ice
 
         integer, parameter :: nSums = 2
         real (kind=RKIND), dimension(nSums) :: reductions, sums
@@ -296,6 +296,8 @@ contains
         call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
                                                           salinity_restoring_constant_piston_velocity)
 
+        call mpas_pool_get_config(domain%configs, 'config_salinity_restoring_under_sea_ice', &
+                                                   config_salinity_restoring_under_sea_ice)
         call mpas_set_timeInterval(timeStepSurfaceSalinity,timeString=config_dt)
         call mpas_get_timeInterval(timeStepSurfaceSalinity,dt=dt)
 
@@ -352,7 +354,8 @@ contains
            deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
            if (deltaS >  salinity_restoring_max_difference) deltaS =  salinity_restoring_max_difference
            if (deltaS < -salinity_restoring_max_difference) deltaS = -salinity_restoring_max_difference
-           if (iceFraction(iCell) > 1.e-10_RKIND) deltaS = 0.0_RKIND
+           if (iceFraction(iCell) > 1.e-10_RKIND .and. .not.   &
+                               config_salinity_restoring_under_sea_ice) deltaS = 0.0_RKIND
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) = deltaS
            activeTracersPistonVelocity(indexSalinityPistonVelocity,iCell) =  &
                    salinity_restoring_constant_piston_velocity
@@ -390,7 +393,8 @@ contains
                                                                          indexSalinitySurfaceRestoringValue)
        !$omp do schedule(runtime)
        do iCell = 1, nCells
-           if (iceFraction(iCell) <= 1.e-10_RKIND)  &
+           if (iceFraction(iCell) <= 1.e-10_RKIND .and. .not.  &
+                               config_salinity_restoring_under_sea_ice)  &
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
               activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) - avgDeltaS
         enddo
