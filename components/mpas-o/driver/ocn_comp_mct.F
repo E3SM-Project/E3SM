@@ -931,6 +931,38 @@ contains
          end do
          if (debugOn) call mpas_log_write('   Finished building forcing arrays')
 
+         ! Read forcing streams for next timestep
+         if (iam==0.and.debugOn) then
+            call mpas_log_write('   Reading forcing streams')
+         endif
+
+         ! read next time level data required for variable shortwave
+         call mpas_timer_start('io_shortwave',.false.)
+         call ocn_get_shortWaveData(domain % streamManager, domain, domain_ptr % clock, .false.)
+         call mpas_timer_stop('io_shortwave')
+
+         ! read next time level data required for ecosys forcing
+         call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+         if (config_use_ecosysTracers) then
+           call mpas_timer_start('io_ecosys',.false.)
+           call ocn_get_ecosysData(domain % streamManager, domain, domain_ptr % clock, .false.)
+           call mpas_timer_stop('io_ecosys')
+         endif
+
+         ! read next time level data required for monthly surface salinity restoring
+         call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                      config_use_activeTracers_surface_restoring)
+         call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                      config_use_surface_salinity_monthly_restoring)
+         if (config_use_activeTracers_surface_restoring .and.  config_use_surface_salinity_monthly_restoring) then
+           call mpas_timer_start('io_monthly_surface_salinity',.false.)
+           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain_ptr % clock, .false.)
+           call mpas_timer_stop('io_monthly_surface_salinity')
+         endif
+         if (iam==0.and.debugOn) then
+            call mpas_log_write('   Finished reading forcing streams')
+         endif
+
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
@@ -982,39 +1014,12 @@ contains
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished writing output streams')
-            call mpas_log_write('   Reading forcing streams')
-         endif
-
-         ! read next time level data required for variable shortwave
-         call mpas_timer_start('io_shortwave',.false.)
-         call ocn_get_shortWaveData(domain % streamManager, domain, domain_ptr % clock, .false.)
-         call mpas_timer_stop('io_shortwave')
-
-         ! read next time level data required for ecosys forcing
-         call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
-         if (config_use_ecosysTracers) then
-           call mpas_timer_start('io_ecosys',.false.)
-           call ocn_get_ecosysData(domain % streamManager, domain, domain_ptr % clock, .false.)
-           call mpas_timer_stop('io_ecosys')
-         endif
-
-         ! read next time level data required for monthly surface salinity restoring
-         call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
-                                                      config_use_activeTracers_surface_restoring)
-         call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
-                                                      config_use_surface_salinity_monthly_restoring)
-         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
-           call mpas_timer_start('io_monthly_surface_salinity',.false.)
-           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain_ptr % clock, .false.)
-           call mpas_timer_stop('io_monthly_surface_salinity')
-         endif
-         if (iam==0.and.debugOn) then
-            call mpas_log_write('   Finished reading forcing streams')
             call mpas_log_write('   Validating ocean state')
          endif
 
          call ocn_validate_state(domain, timeLevel=1)
          if (debugOn) call mpas_log_write('   Completed validating ocean state')
+
          if (debugOn) call mpas_log_write('Completed timestep '//trim(timeStamp))
       end do
 
