@@ -1,0 +1,9 @@
+&drydep_inparm
+/
+&megan_emis_nl
+/
+&fire_emis_nl
+  fire_emis_specifier = 'bc_a1 = BC','pom_a1 = 1.4*OC','SO2 = SO2'
+/
+&carma_inparm
+/
