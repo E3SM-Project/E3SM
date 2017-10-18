@@ -1380,8 +1380,9 @@ contains
       config_use_zaerosols,             &
       config_use_column_biogeochemistry
 
-   character(len=strKIND), pointer :: &
-      config_thermodynamics_type
+   character(len=strKIND), pointer ::   &
+      config_thermodynamics_type,       &
+      config_ocean_surface_type
 
    type (field1DReal), pointer ::       &
       seaSurfaceTemperatureField,       &
@@ -1488,6 +1489,7 @@ contains
 
       configs => block_ptr % configs
       call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
+      call mpas_pool_get_config(configs, "config_ocean_surface_type", config_ocean_surface_type)
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
       call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -1561,14 +1563,23 @@ contains
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
         seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
         seaSurfaceTiltV(i)             = x2i_i % rAttr(index_x2i_So_dhdy, n)
-        meltingPotential               = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
 
-        ! frazil calculation
-        frazilProduction               = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
-        call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
-                                config_thermodynamics_type)
-        freezingMeltingPotential(i)    = freezingPotential + meltingPotential
+        if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
         
+           meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
+
+           ! frazil calculation
+           frazilProduction            = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
+           call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
+                                   config_thermodynamics_type)
+           freezingMeltingPotential(i) = freezingPotential + meltingPotential
+
+        else ! non-free surface (SOM)
+
+           freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
+
+        endif
+
         airLevelHeight(i)              = x2i_i % rAttr(index_x2i_Sa_z, n)
         airPotentialTemperature(i)     = x2i_i % rAttr(index_x2i_Sa_ptem, n)
         airTemperature(i)              = x2i_i % rAttr(index_x2i_Sa_tbot, n)

@@ -53,6 +53,8 @@ OPTIONS
      -ic_mode              variable for initial condition file mode
                            Options are: spunup, cold_start
      -ice_bgc              variable for enabling sea ice BGC
+     -surface_mode         variable for surface mode
+                           Options are: free, non-free
 
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -84,36 +86,38 @@ if ($ProgDir) {
 
 # Process command-line options.
 
-my %opts = ( help        => 0,
-             test        => 0,
-             verbose     => 0,
-             preview     => 0,
-             caseroot    => undef,
-             casebuild   => undef,
-             cimeroot    => undef,
-             inst_string => undef,
-             ice_grid    => undef,
-             date_stamp  => undef,
-             ic_mode     => undef,
-             ice_bgc     => undef,
-             cfg_dir     => $cfgdir,
+my %opts = ( help         => 0,
+             test         => 0,
+             verbose      => 0,
+             preview      => 0,
+             caseroot     => undef,
+             casebuild    => undef,
+             cimeroot     => undef,
+             inst_string  => undef,
+             ice_grid     => undef,
+             date_stamp   => undef,
+             ic_mode      => undef,
+             ice_bgc      => undef,
+             surface_mode => undef,
+             cfg_dir      => $cfgdir,
            );
 
 GetOptions(
-    "h|help"        => \$opts{'help'},
-    "infile=s"      => \$opts{'infile'},
-    "namelist=s"    => \$opts{'namelist'},
-    "v|verbose"     => \$opts{'verbose'},
-    "caseroot=s"    => \$opts{'caseroot'},
-    "casebuild=s"   => \$opts{'casebuild'},
-    "cimeroot=s"    => \$opts{'cimeroot'},
-    "inst_string=s" => \$opts{'inst_string'},	   
-    "ice_grid=s"    => \$opts{'ice_grid'},
-    "date_stamp=s"  => \$opts{'date_stamp'},
-    "ic_mode=s"     => \$opts{'ic_mode'},
-    "ice_bgc=s"     => \$opts{'ice_bgc'},
-    "cfg_dir=s"     => \$opts{'cfg_dir'},
-    "preview"       => \$opts{'preview'},
+    "h|help"         => \$opts{'help'},
+    "infile=s"       => \$opts{'infile'},
+    "namelist=s"     => \$opts{'namelist'},
+    "v|verbose"      => \$opts{'verbose'},
+    "caseroot=s"     => \$opts{'caseroot'},
+    "casebuild=s"    => \$opts{'casebuild'},
+    "cimeroot=s"     => \$opts{'cimeroot'},
+    "inst_string=s"  => \$opts{'inst_string'},	   
+    "ice_grid=s"     => \$opts{'ice_grid'},
+    "date_stamp=s"   => \$opts{'date_stamp'},
+    "ic_mode=s"      => \$opts{'ic_mode'},
+    "ice_bgc=s"      => \$opts{'ice_bgc'},
+    "surface_mode=s" => \$opts{'surface_mode'},
+    "cfg_dir=s"      => \$opts{'cfg_dir'},
+    "preview"        => \$opts{'preview'},
 )  or usage();
 
 # Give usage message.
@@ -137,15 +141,16 @@ my $eol = "\n";
 
 if ($print>=2) { print "Setting MPAS-CICE configuration script directory to $cfgdir$eol"; }
 
-my $CASEROOT    = $opts{'caseroot'};
-my $CASEBUILD   = $opts{'casebuild'};
-my $CIMEROOT    = $opts{'cimeroot'};
-my $inst_string = $opts{'inst_string'};
-my $ICE_GRID    = $opts{'ice_grid'};
-my $date_stamp  = $opts{'date_stamp'};
-my $ic_mode     = $opts{'ic_mode'};
-my $ice_bgc     = $opts{'ice_bgc'};
-$cfgdir         = $opts{'cfg_dir'};
+my $CASEROOT     = $opts{'caseroot'};
+my $CASEBUILD    = $opts{'casebuild'};
+my $CIMEROOT     = $opts{'cimeroot'};
+my $inst_string  = $opts{'inst_string'};
+my $ICE_GRID     = $opts{'ice_grid'};
+my $date_stamp   = $opts{'date_stamp'};
+my $ic_mode      = $opts{'ic_mode'};
+my $ice_bgc      = $opts{'ice_bgc'};
+my $surface_mode = $opts{'surface_mode'};
+$cfgdir          = $opts{'cfg_dir'};
 
 my $CIMEROOT;     
 if ( defined $opts{'cimeroot'} ) {
@@ -442,7 +447,6 @@ add_default($nl, 'config_pio_stride');
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
-add_default($nl, 'config_full_abort_write');
 
 #################################
 # Namelist group: decomposition #
@@ -531,7 +535,6 @@ add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
 add_default($nl, 'config_use_test_ice_shelf');
-add_default($nl, 'config_testing_system_test');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -831,7 +834,11 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
-add_default($nl, 'config_ocean_surface_type');
+if ($surface_mode eq 'non-free') {
+        add_default($nl, 'config_ocean_surface_type', 'val'=>"non-free");
+} else {
+        add_default($nl, 'config_ocean_surface_type', 'val'=>"free");
+}
 
 ###############################
 # Namelist group: diagnostics #
