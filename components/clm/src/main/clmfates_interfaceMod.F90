@@ -48,6 +48,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_planthydro
    use clm_varctl        , only : use_fates_ed_st3
    use clm_varctl        , only : use_fates_ed_prescribed_phys
+   use clm_varctl        , only : use_fates_logging
    use clm_varctl        , only : use_fates_inventory_init
    use clm_varctl        , only : fates_inventory_ctrl_filename
    use clm_varcon        , only : tfrz
@@ -112,6 +113,7 @@ module CLMFatesInterfaceMod
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
    use EDInitMod             , only : zero_site
+   use EDInitMod             , only : init_site_vars
    use EDInitMod             , only : init_patches
    use EDInitMod             , only : set_site_properties
    use EDPftVarcon           , only : EDpftvarcon_inst
@@ -223,7 +225,7 @@ contains
       use FatesInterfaceMod, only : FatesInterfaceInit 
       use FatesInterfaceMod, only : FatesReportParameters
       use FatesParameterDerivedMod, only : param_derived
-      use FatesInterfaceMod, only : numpft_ed => numpft
+      use FatesInterfaceMod, only : numpft_fates => numpft
 
 
 
@@ -240,6 +242,7 @@ contains
       integer                                        :: pass_vertsoilc
       integer                                        :: pass_spitfire     
       integer                                        :: pass_ed_st3
+      integer                                        :: pass_logging
       integer                                        :: pass_ed_prescribed_phys
       integer                                        :: pass_planthydro
       integer                                        :: pass_inventory_init
@@ -258,7 +261,7 @@ contains
       ! This involves to stages
       ! 1) allocate the vectors
       ! 2) add the history variables defined in clm_inst to the history machinery
-      call param_derived%Init( numpft_ed )
+      call param_derived%Init( numpft_fates )
 
       verbose_output = .false.
       call FatesInterfaceInit(iulog, verbose_output)
@@ -320,6 +323,13 @@ contains
       end if
       call set_fates_ctrlparms('use_ed_st3',ival=pass_ed_st3)
       
+      if(use_fates_logging) then
+         pass_logging = 1
+      else
+         pass_logging = 0
+      end if
+      call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
       if(use_fates_ed_prescribed_phys) then
          pass_ed_prescribed_phys = 1
       else
@@ -1160,6 +1170,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
+              call init_site_vars(this%fates(nc)%sites(s))
               call zero_site(this%fates(nc)%sites(s))
            end do
            
@@ -2342,15 +2353,18 @@ contains
  subroutine hlm_bounds_to_fates_bounds(hlm, fates)
 
    use FatesIODimensionsMod, only : fates_bounds_type
-   use EDtypesMod, only : nlevsclass_ed, nlevage_ed
-   use EDtypesMod, only : nfsc, ncwd
-   use EDtypesMod, only : nlevleaf, nclmax
-   use clm_varpar, only : nlevgrnd
-   use FatesInterfaceMod, only : numpft_ed => numpft
+   use FatesInterfaceMod, only : nlevsclass_fates => nlevsclass
+   use FatesInterfaceMod, only : nlevage_fates    => nlevage
+   use EDtypesMod,        only : nfsc_fates       => nfsc
+   use EDtypesMod,        only : ncwd_fates       => ncwd
+   use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
+   use EDtypesMod,        only : nclmax_fates     => nclmax
+   use clm_varpar,        only : nlevgrnd
+   use FatesInterfaceMod, only : numpft_fates     => numpft
 
    implicit none
 
-   type(bounds_type), intent(in) :: hlm
+   type(bounds_type), intent(in)        :: hlm
    type(fates_bounds_type), intent(out) :: fates
 
    fates%cohort_begin = hlm%begcohort
@@ -2366,34 +2380,34 @@ contains
    fates%ground_end = nlevgrnd
    
    fates%sizepft_class_begin = 1
-   fates%sizepft_class_end = nlevsclass_ed * numpft_ed
+   fates%sizepft_class_end = nlevsclass_fates * numpft_fates
    
    fates%size_class_begin = 1
-   fates%size_class_end = nlevsclass_ed
+   fates%size_class_end = nlevsclass_fates
 
    fates%pft_class_begin = 1
-   fates%pft_class_end = numpft_ed
+   fates%pft_class_end = numpft_fates
 
    fates%age_class_begin = 1
-   fates%age_class_end = nlevage_ed
+   fates%age_class_end = nlevage_fates
 
    fates%sizeage_class_begin = 1
-   fates%sizeage_class_end   = nlevsclass_ed * nlevage_ed
+   fates%sizeage_class_end   = nlevsclass_fates * nlevage_fates
    
    fates%fuel_begin = 1
-   fates%fuel_end = nfsc
+   fates%fuel_end = nfsc_fates
    
    fates%cwdsc_begin = 1
-   fates%cwdsc_end = ncwd
+   fates%cwdsc_end = ncwd_fates
    
    fates%can_begin = 1
-   fates%can_end = nclmax
+   fates%can_end = nclmax_fates
    
    fates%cnlf_begin = 1
-   fates%cnlf_end = nlevleaf * nclmax
+   fates%cnlf_end = nlevleaf_fates * nclmax_fates
    
    fates%cnlfpft_begin = 1
-   fates%cnlfpft_end = nlevleaf * nclmax * numpft_ed
+   fates%cnlfpft_end = nlevleaf_fates * nclmax_fates * numpft_fates
    
  end subroutine hlm_bounds_to_fates_bounds
 

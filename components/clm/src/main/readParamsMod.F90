@@ -95,7 +95,6 @@ contains
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
     use tracer_varcon            , only : is_active_betr_bgc                                         
-    use CLMFatesParamInterfaceMod, only : FatesReadParameters
     
     !
     ! !ARGUMENTS:
@@ -171,11 +170,6 @@ contains
     !
     call ncd_pio_closefile(ncid)
 
-    ! FATES has its own file, therefore we close the exiting file
-    ! before continuing
-    if (use_ed) then
-       call FatesReadParameters()
-    end if
 
  end subroutine readPrivateParameters
 end module readParamsMod
