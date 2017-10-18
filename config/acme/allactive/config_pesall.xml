@@ -370,7 +370,7 @@
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>hires 675 nodes, 64x2, ~2sypd</comment>
-        <PES_PER_NODE>64</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>43200</ntasks_atm>
@@ -405,7 +405,7 @@
       </pes>
       <pes compset="any" pesize="S">
         <comment>hires 159 nodes, 68x2</comment>
-        <PES_PER_NODE>68</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>68</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>136</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>10800</ntasks_atm>
@@ -841,7 +841,7 @@
     <mach name="cori-knl">
       <pes compset="any" pesize="L">
         <comment>80 nodes, 68x1</comment>
-        <PES_PER_NODE>68</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>68</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>68</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -876,7 +876,7 @@
       </pes>
       <pes compset="any" pesize="any">
         <comment>40 nodes, 68x2</comment>
-        <PES_PER_NODE>68</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>68</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>136</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -911,7 +911,7 @@
       </pes>
       <pes compset="any" pesize="S">
         <comment>4 nodes, 68x2</comment>
-        <PES_PER_NODE>68</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>68</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>136</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>270</ntasks_atm>
@@ -1727,7 +1727,7 @@
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>2 nodes, 64x2</comment>
-        <PES_PER_NODE>64</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>128</ntasks_atm>
@@ -2025,7 +2025,7 @@
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>4 nodes, 64x2</comment>
-        <PES_PER_NODE>64</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>256</ntasks_atm>
@@ -2249,7 +2249,7 @@
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>1 node, 64x2</comment>
-        <PES_PER_NODE>64</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>64</ntasks_atm>
@@ -2547,7 +2547,7 @@
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>3 nodes, 68x2, 8 elem per MPI</comment>
-        <PES_PER_NODE>68</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>68</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>136</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>192</ntasks_atm>
@@ -6005,7 +6005,7 @@
     <mach name="edison">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>"PMC - 114 node F-compset gets around 10.5 SYPD"</comment>
-        <PES_PER_NODE>24</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
@@ -6155,7 +6155,7 @@
     <mach name="cori-knl">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>"101 nodes, 64x2, ~2sypd (kmod101)"</comment>
-        <PES_PER_NODE>64</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -6524,7 +6524,7 @@
       <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="S">
         <comment>ne120 F-compset on 512 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-        <PES_PER_NODE>8</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>3600</ntasks_atm>
           <ntasks_cpl>2048</ntasks_cpl>
@@ -6559,7 +6559,7 @@
       <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="M">
         <comment>ne120 F-compset on 1024 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-        <PES_PER_NODE>8</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>7200</ntasks_atm>
           <ntasks_cpl>7200</ntasks_cpl>
@@ -6594,7 +6594,7 @@
       <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="L">
         <comment>ne120 F-compset on 2048 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-        <PES_PER_NODE>8</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>14400</ntasks_atm>
           <ntasks_cpl>14400</ntasks_cpl>
