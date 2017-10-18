@@ -217,7 +217,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                     try:
                         shutil.copy(cprnc_log_file, casedir)
                     except OSError:
-                        logger.warn(False, "Could not copy {} to {}".format(cprnc_log_file, casedir))
+                        logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
 
