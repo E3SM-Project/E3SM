@@ -144,11 +144,13 @@ def _datetime_str_mpas(date):
     '0011-12-09_00435'
     """
 
-    format_string = "{year:04d}-{month:02d}-{day:02d}_{seconds:05d}"
+    format_string = "{year:04d}-{month:02d}-{day:02d}_{hours:02d}:{minutes:02d}:{seconds:02d}"
     return format_string.format(year = date.year,
                                 month = date.month,
                                 day = date.day,
-                                seconds = _get_day_second(date))
+                                hours = date.hour,
+                                minutes = date.minute,
+                                seconds = date.second)
 
 ###############################################################################
 def _get_ninst_info(case, compclass):
