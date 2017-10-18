@@ -113,8 +113,6 @@ use micro_mg_utils, only: &
      mi0, &
      rising_factorial
 
-use cam_logfile,     only: iulog
-
 implicit none
 private
 save
@@ -1725,19 +1723,6 @@ subroutine micro_mg_tend ( &
               prci(i,k) = prci(i,k)*ratio
               prai(i,k) = prai(i,k)*ratio
               ice_sublim(i,k) = ice_sublim(i,k)*ratio
-
-              if (qi(i,k) +deltat*(qitend(i,k)+ &
-                (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
-                prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
-                mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k)) <-1e-10) then
-
-                 write(iulog,1001) 'at conserv  ',i,k,qi(i,k),(qitend(i,k)+ &
-                (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
-                prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
-                mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k))
-              end if
-
-
            end if
 
         end do
@@ -1856,7 +1841,9 @@ subroutine micro_mg_tend ( &
               !---PMC bugfix
 
               ! modify rates if needed, divide by precip_frac to get local (in-precip) value
-              prds(i,k) = dum*dum2/deltat/precip_frac(i,k)
+              !+++PMC bugfix: don't allow prds to get bigger, which could create negatives
+              prds(i,k) = max(prds(i,k),dum*dum2/deltat/precip_frac(i,k)) !max b/c prds is neg.
+              !---PMC bugfix
 
               ! don't divide ice_sublim by cloud fraction since it is grid-averaged
               dum1 = (1._r8-dum1-dum2)
@@ -1865,20 +1852,6 @@ subroutine micro_mg_tend ( &
               ice_sublim(i,k) = max(ice_sublim(i,k),dum*dum1/deltat) !max b/c ice_sublim<0.
               !---PMC bugfix
               
-              if (qi(i,k) +deltat*(qitend(i,k)+ &
-                (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
-                prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
-                mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k)) <-1e-10) then
-
-                 write(iulog,1001) 'aft 2nd cons',i,k,qi(i,k),(qitend(i,k)+ &
-                      (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
-                      prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
-                      mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k))
-                 
-                 write(iulog,*) 'k,dum,dum1,deltat=',k,dum,dum1,deltat
-
-              end if
-
            end if
         end if
 
@@ -1916,11 +1889,6 @@ subroutine micro_mg_tend ( &
                 (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
                 prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
                 mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k)
-
-           if (qi(i,k) + qitend(i,k)*deltat <-1e-10_r8) then
-              write(iulog,1001) 'aft conserv ',i,k,qi(i,k),qitend(i,k)
-           end if
-
         end if
 
         qrtend(i,k) = qrtend(i,k)+ &
