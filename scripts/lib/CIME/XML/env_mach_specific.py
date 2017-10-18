@@ -205,12 +205,12 @@ class EnvMachSpecific(EnvBase):
 
     def _match(self, my_value, xml_value):
         if xml_value.startswith("!"):
-            result = my_value != xml_value[1:]
+            result = re.match(xml_value[1:],my_value) is None
         elif isinstance(my_value, bool):
             if my_value: result = xml_value == "TRUE"
             else: result = xml_value == "FALSE"
         else:
-            result = my_value == xml_value
+            result = re.match(xml_value,my_value) is not None
 
         logger.debug("(env_mach_specific) _match %s %s %s" % (my_value, xml_value, result))
         return result
