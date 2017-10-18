@@ -1,6 +1,7 @@
 module micro_mg2_sedimentation
   use micro_mg_utils, only: r8
   use cam_abortutils,    only: endrun
+  use cam_logfile,     only: iulog
 
   implicit none
   private
@@ -235,6 +236,39 @@ contains
         qvlat(i,k) = qvlat(i,k) - deltafluxQ_evap*deltat_sed/deltat
         qsevap(i,k) = qsevap(i,k) - deltafluxQ_evap*deltat_sed/deltat
         tlat(i,k) = tlat(i,k) + deltafluxQ_evap*xxl*deltat_sed/deltat
+      end if
+
+      if (q(i,k)+1e-10_r8<deltat_sed*deltafluxQ .and.mg_type==MG_RAIN) then
+         write(iulog,*) 'qr,dt,dflxQ = ',q(i,k),deltat_sed,deltafluxQ
+         write(iulog,*) 'forcing crash',log(q(i,k)-deltat_sed*deltafluxQ)
+      end if
+      if (n(i,k)+1e-10_r8<deltat_sed*deltafluxN .and.mg_type==MG_RAIN) then
+         write(iulog,*) 'nr,dt,dflxN = ',q(i,k),deltat_sed,deltafluxN
+         write(iulog,*) 'forcing crash',log(n(i,k)-deltat_sed*deltafluxN)
+      end if
+      if (q(i,k)+1e-10_r8<deltat_sed*deltafluxQ .and.mg_type==MG_LIQUID) then
+         write(iulog,*) 'qc,dt,dflxQ = ',q(i,k),deltat_sed,deltafluxQ
+         write(iulog,*) 'forcing crash',log(q(i,k)-deltat_sed*deltafluxQ)
+      end if
+      if (n(i,k)+1e-10_r8<deltat_sed*deltafluxN .and.mg_type==MG_LIQUID) then
+         write(iulog,*) 'nc,dt,dflxN = ',q(i,k),deltat_sed,deltafluxN
+         write(iulog,*) 'forcing crash',log(n(i,k)-deltat_sed*deltafluxN)
+      end if
+      if (q(i,k)+1e-10_r8<deltat_sed*deltafluxQ .and.mg_type==MG_ICE) then
+         write(iulog,*) 'qr,dt,dflxQ = ',q(i,k),deltat_sed,deltafluxQ
+         write(iulog,*) 'forcing crash',log(q(i,k)-deltat_sed*deltafluxQ)
+      end if
+      if (n(i,k)+1e-10_r8<deltat_sed*deltafluxN .and.mg_type==MG_ICE) then
+         write(iulog,*) 'nr,dt,dflxN = ',q(i,k),deltat_sed,deltafluxN
+         write(iulog,*) 'forcing crash',log(n(i,k)-deltat_sed*deltafluxN)
+      end if
+      if (q(i,k)+1e-10_r8<deltat_sed*deltafluxQ .and.mg_type==MG_SNOW) then
+         write(iulog,*) 'qs,dt,dflxQ = ',q(i,k),deltat_sed,deltafluxQ
+         write(iulog,*) 'forcing crash',log(q(i,k)-deltat_sed*deltafluxQ)
+      end if
+      if (n(i,k)+1e-10_r8<deltat_sed*deltafluxN .and.mg_type==MG_SNOW) then
+         write(iulog,*) 'ns,dt,dflxN = ',q(i,k),deltat_sed,deltafluxN
+         write(iulog,*) 'forcing crash',log(n(i,k)-deltat_sed*deltafluxN)
       end if
 
       q(i,k) = q(i,k) - deltat_sed*deltafluxQ

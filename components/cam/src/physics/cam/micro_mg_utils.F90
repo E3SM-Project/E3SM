@@ -346,6 +346,12 @@ pure function rising_factorial_integer(x, n) result(res)
 end function rising_factorial_integer
 
 ! Calculate correction due to latent heat for evaporation/sublimation
+! Author = Peter Caldwell
+! Basic idea: ql = qt - qs(T,p) ~ qt - qs(T0,p) - dqs/dT*dT 
+!                = qt - qs - L*qs/(Rv*T0^2)*(L/cp*ql)
+! => ql(1+L^2*qs/(cp*Rv*T0^2)) = qt - qs
+! => ql = (qt - qs)/(1+L^2*qs/(cp*Rv*T^2)). 
+! This function calculates the denominator of the above equation.
 elemental function calc_ab(t, qv, xxl) result(ab)
   real(r8), intent(in) :: t     ! Temperature
   real(r8), intent(in) :: qv    ! Saturation vapor pressure

@@ -113,6 +113,8 @@ use micro_mg_utils, only: &
      mi0, &
      rising_factorial
 
+use cam_logfile,     only: iulog
+
 implicit none
 private
 save
@@ -755,6 +757,7 @@ subroutine micro_mg_tend ( &
   real(r8) :: qvl(mgncol,nlev)    ! liquid
   real(r8) :: qvi(mgncol,nlev)    ! ice
   real(r8) :: qvn                 ! checking for RH after rain evap
+  real(r8) :: qvni                ! PMC bugfix: scalar qs_ice
 
   ! relative humidity
   real(r8) :: relhum(mgncol,nlev)
@@ -1722,6 +1725,19 @@ subroutine micro_mg_tend ( &
               prci(i,k) = prci(i,k)*ratio
               prai(i,k) = prai(i,k)*ratio
               ice_sublim(i,k) = ice_sublim(i,k)*ratio
+
+              if (qi(i,k) +deltat*(qitend(i,k)+ &
+                (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
+                prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
+                mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k)) <-1e-10) then
+
+                 write(iulog,1001) 'at conserv  ',i,k,qi(i,k),(qitend(i,k)+ &
+                (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
+                prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
+                mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k))
+              end if
+
+
            end if
 
         end do
@@ -1828,18 +1844,41 @@ subroutine micro_mg_tend ( &
               ! modify rates if needed, divide by precip_frac to get local (in-precip) value
               pre(i,k)=dum*dum1/deltat/precip_frac(i,k)
 
-              ! do separately using RHI for prds and ice_sublim
-              call qsat_ice(ttmp, p(i,k), esn, qvn)
+              !+++PMC bugfix - dum should take (qtmp-qvn) calculated for *liquid* 
+              !                divided by the correction computed for ice.
 
-              dum=(qtmp-qvn)/(1._r8 + xxls_squared*qvn/(cpp*rv*ttmp**2))
+              ! do separately using RHI for prds and ice_sublim
+              call qsat_ice(ttmp, p(i,k), esn, qvni)
+
+              dum=(qtmp-qvn)/(1._r8 + xxls_squared*qvni/(cpp*rv*ttmp**2))
               dum=min(dum,0._r8)
+
+              !---PMC bugfix
 
               ! modify rates if needed, divide by precip_frac to get local (in-precip) value
               prds(i,k) = dum*dum2/deltat/precip_frac(i,k)
 
               ! don't divide ice_sublim by cloud fraction since it is grid-averaged
               dum1 = (1._r8-dum1-dum2)
-              ice_sublim(i,k) = dum*dum1/deltat
+              !+++PMC bugfix: don't allow ice_sublim to *grow*, which could create negatives
+              !ice_sublim(i,k) = dum*dum1/deltat
+              ice_sublim(i,k) = max(ice_sublim(i,k),dum*dum1/deltat) !max b/c ice_sublim<0.
+              !---PMC bugfix
+              
+              if (qi(i,k) +deltat*(qitend(i,k)+ &
+                (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
+                prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
+                mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k)) <-1e-10) then
+
+                 write(iulog,1001) 'aft 2nd cons',i,k,qi(i,k),(qitend(i,k)+ &
+                      (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
+                      prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
+                      mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k))
+                 
+                 write(iulog,*) 'k,dum,dum1,deltat=',k,dum,dum1,deltat
+
+              end if
+
            end if
         end if
 
@@ -1877,6 +1916,11 @@ subroutine micro_mg_tend ( &
                 (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
                 prai(i,k))*icldm(i,k)+vap_dep(i,k)+berg(i,k)+ice_sublim(i,k)+ &
                 mnuccd(i,k)+mnuccri(i,k)*precip_frac(i,k)
+
+           if (qi(i,k) + qitend(i,k)*deltat <-1e-10_r8) then
+              write(iulog,1001) 'aft conserv ',i,k,qi(i,k),qitend(i,k)
+           end if
+
         end if
 
         qrtend(i,k) = qrtend(i,k)+ &
@@ -1974,6 +2018,8 @@ subroutine micro_mg_tend ( &
 
   end do micro_vert_loop ! end k loop
 
+1001 format ( a12,' qi(',i3,',',i3,') =',e12.3,' and qitend = ',e12.3)
+
   !-----------------------------------------------------
   ! convert rain/snow q and N for output to history, note,
   ! output is for gridbox average
@@ -2040,6 +2086,7 @@ subroutine micro_mg_tend ( &
 
      if (.not. precip_off) then
 
+        !PMC - why is this done in a k block instead of using a where statement?
         do k=1,nlev
 
            ! calculate sedimentation for cloud water and ice
