@@ -230,7 +230,8 @@ subroutine micro_mg_init( &
      do_nccons_in, do_nicons_in, ncnst_in, ninst_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
-     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
+     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, alpha_grad_in, &
+     beta_grad_in, errstring)
 
   use micro_mg_utils, only: micro_mg_utils_init
 
