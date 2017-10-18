@@ -622,9 +622,18 @@ class Case(object):
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
+            root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
+            comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
+            if comp_root_dir is not None:
+                # the set_value in files is needed for the archiver setup below
+                files.set_value(root_dir_node_name, comp_root_dir)
+                self.set_value(root_dir_node_name, comp_root_dir)
+                compatt = None
+            else:
+                compatt = {"component":comp_name}
             # Add the group and elements for the config_files.xml
-            comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
+            comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
@@ -854,7 +863,7 @@ class Case(object):
         infile = self.get_resolved_value(infile)
         logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
-        archive.setup(env_archive, self._components)
+        archive.setup(env_archive, self._components, files=files)
         self.schedule_rewrite(env_archive)
 
         self.set_value("COMPSET",self._compsetname)
