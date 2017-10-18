@@ -307,16 +307,16 @@
 	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="true">
 	<command name="load">esmf-7.0.0-defio-mpi-g</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="false">
 	<command name="load">esmf-7.0.0-defio-mpi-O</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial" debug="true">
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="true">
 	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial" debug="false">
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="false">
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
@@ -1798,16 +1798,16 @@
 	<command name="load">trilinos/11.10.2</command>
 	<command name="load">esmf</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="true">
 	<command name="load">esmf-7.0.0-ncdfio-mpi-g</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="false">
 	<command name="load">esmf-7.0.0-defio-mpi-O</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial" debug="true">
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="true">
 	<command name="load">esmf-7.0.0-ncdfio-uni-g</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial" debug="false">
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="false">
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="pgi">
@@ -1852,7 +1852,7 @@
       <env name="MP_STDOUTMODE">unordered</env>
       <env name="MP_RC_USE_LMC">yes</env>
     </environment_variables>
-    <environment_variables debug="true">
+    <environment_variables DEBUG="true">
       <env name="MP_EAGER_LIMIT">0</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
