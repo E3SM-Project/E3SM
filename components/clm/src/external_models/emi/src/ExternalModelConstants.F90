@@ -59,6 +59,8 @@ module ExternalModelConstants
 
   ! soilhydrology_type
   integer, parameter, public :: L2E_STATE_WTD                                    = 0201
+  integer, parameter, public :: L2E_STATE_QCHARGE                                = 0202
+  integer, parameter, public :: L2E_STATE_FRACICE                                = 0203
 
   ! IDs for states sent from External Model to ALM
 
@@ -68,7 +70,7 @@ module ExternalModelConstants
   integer, parameter, public :: E2L_STATE_VSFM_PROGNOSTIC_SOILP                  = 0303
 
   ! soilhydrology_type
-  integer, parameter, public :: E2L_STATE_WTD                                    = 0401
+  integer, parameter, public :: E2L_STATE_WTD                                    = 0401  
 
   ! soilstate_type
   integer, parameter, public :: E2L_STATE_SOIL_MATRIC_POTENTIAL                  = 0501

@@ -23,6 +23,8 @@ module ExternalModelInterfaceMod
   use EMI_WaterStateType_ExchangeMod        , only : EMI_Unpack_WaterStateType_at_Column_Level_from_EM
   use EMI_SoilStateType_ExchangeMod         , only : EMI_Pack_SoilStateType_at_Column_Level_for_EM
   use EMI_SoilStateType_ExchangeMod         , only : EMI_Unpack_SoilStateType_at_Column_Level_from_EM
+  use EMI_SoilHydrologyType_ExchangeMod     , only : EMI_Pack_SoilHydrologyType_at_Column_Level_for_EM
+  use EMI_SoilHydrologyType_ExchangeMod     , only : EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM
   !
   implicit none
   !
@@ -318,7 +320,7 @@ contains
                num_filter_col, filter_col, waterstate_vars)
           call EMID_Pack_WaterFlux_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, waterflux_vars)
-          call EMID_Pack_SoilHydrology_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_SoilHydrologyType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilhydrology_vars)
           call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilstate_vars)
@@ -370,7 +372,7 @@ contains
                num_e2l_filter_col, e2l_filter_col, waterstate_vars)
           call EMID_Unpack_WaterFlux_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, waterflux_vars)
-          call EMID_Unpack_SoilHydrology_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
+          call EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, soilhydrology_vars)
 
           ! Ensure all data sent by external model is unpacked
@@ -868,7 +870,7 @@ contains
          present(num_hydrologyc)     .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Unpack_SoilHydrology_Vars_for_EM(e2l_driver_list(iem), em_stage, &
+       call EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc, soilhydrology_vars)
     endif
 
@@ -1476,145 +1478,6 @@ contains
     enddo
 
   end subroutine EMID_Pack_Landunit_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_SoilHydrology_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, soilhydrology_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data from EM in ALM's soilhydrolgy_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_STATE_WTD
-    use SoilHydrologyType         , only : soilhydrology_type
-    !
-    implicit none
-    !
-    class(emi_data_list)     , intent(inout) :: data_list
-    integer                  , intent(in)    :: em_stage
-    integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
-    integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-    associate( &
-         zwt => soilhydrology_vars%zwt_col &
-    )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_STATE_WTD)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = zwt(c)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Pack_SoilHydrology_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Unpack_SoilHydrology_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, soilhydrology_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data from EM in ALM's soilhydrolgy_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : E2L_STATE_WTD
-    use ExternalModelConstants    , only : E2L_FLUX_AQUIFER_RECHARGE
-    use SoilHydrologyType         , only : soilhydrology_type
-    !
-    implicit none
-    !
-    class(emi_data_list)     , intent(in) :: data_list
-    integer                  , intent(in) :: em_stage
-    integer                  , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer                  , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(soilhydrology_type) , intent(in) :: soilhydrology_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_unpack
-    integer                           :: istage
-    integer                           :: count
-
-    associate( &
-         qcharge            =>    soilhydrology_vars%qcharge_col        , & ! Output:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)
-         zwt => soilhydrology_vars%zwt_col &
-    )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_unpack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_unpack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_unpack) then
-
-          select case (cur_data%id)
-
-          case (E2L_STATE_WTD)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                zwt(c) = cur_data%data_real_1d(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_FLUX_AQUIFER_RECHARGE)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                qcharge(c) = cur_data%data_real_1d(c)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Unpack_SoilHydrology_Vars_for_EM
 
 !-----------------------------------------------------------------------
   subroutine EMID_Pack_Atm2Land_Forcings_for_EM(data_list, em_stage, atm2lnd_vars)
