@@ -74,7 +74,7 @@
 	<xs:element ref="PROJECT" minOccurs="0" maxOccurs="1"/>
 	<!-- CHARGE_ACCOUNT: The name of the account to charge for batch jobs
 	  can be overridden in environment or $HOME/.cime/config -->
-	<xs:element ref="SUBPROJECT" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="CHARGE_ACCOUNT" minOccurs="0" maxOccurs="1"/>
 	<!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
 	<xs:element ref="SAVE_TIMING_DIR" minOccurs="0" maxOccurs="1"/>
 	<!-- CIME_OUTPUT_ROOT: Base directory for case output,

@@ -529,8 +529,8 @@ class TestScheduler(object):
                     opti = match.group(2)
                     envtest.set_test_parameter("STOP_N", opti)
 
-                    logger.debug (" STOP_OPTION set to %s" %stop_option[opt])
-                    logger.debug (" STOP_N      set to %s" %opti)
+                    logger.debug (" STOP_OPTION set to {}".format(stop_option[opt]))
+                    logger.debug (" STOP_N      set to {}".format(opti))
 
                 elif opt.startswith('R'):
                     # R option is for testing in PTS_MODE or Single Column Model
@@ -539,9 +539,6 @@ class TestScheduler(object):
 
                     # For PTS_MODE, compile with mpi-serial
                     envtest.set_test_parameter("MPILIB", "mpi-serial")
-                    comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
-                    for comp in comps:
-                        envtest.set_test_parameter("NTASKS_"+comp,"1")
 
                     # Set latitude and longitude for the appropriate case
                     # Below for ARM97, default SCM test case
