@@ -21,6 +21,8 @@ module ExternalModelInterfaceMod
   use EMI_TemperatureType_ExchangeMod       , only : EMI_Unpack_TemperatureType_at_Column_Level_from_EM
   use EMI_WaterStateType_ExchangeMod        , only : EMI_Pack_WaterStateType_at_Column_Level_for_EM
   use EMI_WaterStateType_ExchangeMod        , only : EMI_Unpack_WaterStateType_at_Column_Level_from_EM
+  use EMI_SoilStateType_ExchangeMod         , only : EMI_Pack_SoilStateType_at_Column_Level_for_EM
+  use EMI_SoilStateType_ExchangeMod         , only : EMI_Unpack_SoilStateType_at_Column_Level_from_EM
   !
   implicit none
   !
@@ -318,7 +320,7 @@ contains
                num_filter_col, filter_col, waterflux_vars)
           call EMID_Pack_SoilHydrology_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilhydrology_vars)
-          call EMID_Pack_SoilState_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilstate_vars)
           call EMID_Pack_Column_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col)
@@ -362,7 +364,7 @@ contains
           enddo
 
           ! Unpack all data sent from the external model
-          call EMID_Unpack_SoilState_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
+          call EMI_Unpack_SoilStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, soilstate_vars)
           call EMI_Unpack_WaterStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, waterstate_vars)
@@ -443,7 +445,7 @@ contains
           call EMID_Reset_Data_for_EM(l2e_init_list(clump_rank), em_stage)
 
           ! Pack all ALM data needed by the external model
-          call EMID_Pack_SoilState_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilstate_vars)
           call EMID_Pack_Column_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col)
@@ -858,7 +860,7 @@ contains
          present(num_hydrologyc) .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Unpack_SoilState_Vars_for_EM(e2l_driver_list(iem), em_stage, &
+       call EMI_Unpack_SoilStateType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc, soilstate_vars)
     endif
 
@@ -1613,219 +1615,6 @@ contains
     end associate
 
   end subroutine EMID_Unpack_SoilHydrology_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_SoilState_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, soilstate_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data from EM in ALM's soilstate_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_PARAMETER_WATSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_HKSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_BSWC
-    use ExternalModelConstants    , only : L2E_PARAMETER_SUCSATC
-    use ExternalModelConstants    , only : L2E_PARAMETER_EFFPOROSITYC
-    use ExternalModelConstants    , only : L2E_PARAMETER_CSOL
-    use ExternalModelConstants    , only : L2E_PARAMETER_TKMG
-    use ExternalModelConstants    , only : L2E_PARAMETER_TKDRY
-    use SoilStateType             , only : soilstate_type
-    use clm_varpar                , only : nlevsoi, nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(inout) :: data_list
-    integer              , intent(in)    :: em_stage
-    integer              , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
-    integer              , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
-    type(soilstate_type) , intent(in)    :: soilstate_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-    associate( &
-         watsat       => soilstate_vars%watsat_col,       &
-         hksat        => soilstate_vars%hksat_col,        &
-         bsw          => soilstate_vars%bsw_col,          &
-         sucsat       => soilstate_vars%sucsat_col,       &
-         eff_porosity => soilstate_vars%eff_porosity_col, &
-         csol         => soilstate_vars%csol_col,         &
-         tkmg         => soilstate_vars%tkmg_col,         &
-         tkdry        => soilstate_vars%tkdry_col         &
-    )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_PARAMETER_WATSATC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = watsat(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_HKSATC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = hksat(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_BSWC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = bsw(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_SUCSATC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = sucsat(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_EFFPOROSITYC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = eff_porosity(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_CSOL)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = csol(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_TKMG)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = tkmg(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_PARAMETER_TKDRY)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = tkdry(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Pack_SoilState_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Unpack_SoilState_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, soilstate_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data from EM in ALM's soilstate_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : E2L_STATE_SOIL_MATRIC_POTENTIAL
-    use SoilStateType             , only : soilstate_type
-    use clm_varpar                , only : nlevsoi, nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer              , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(soilstate_type) , intent(in) :: soilstate_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_unpack
-    integer                           :: istage
-    integer                           :: count
-
-    associate( &
-         smp_l        => soilstate_vars%smp_l_col &
-    )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_unpack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_unpack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_unpack) then
-
-          select case (cur_data%id)
-
-          case (E2L_STATE_SOIL_MATRIC_POTENTIAL)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   smp_l(c,j) = cur_data%data_real_2d(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Unpack_SoilState_Vars_for_EM
 
 !-----------------------------------------------------------------------
   subroutine EMID_Pack_Atm2Land_Forcings_for_EM(data_list, em_stage, atm2lnd_vars)
