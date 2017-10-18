@@ -239,7 +239,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
         q   (i,j,k,3)= 0 ! no initial rain
         q   (i,j,k,4)= 0 ! precip
 
-        call set_tracers(q(i,j,k,:),qsize_d,dp(i,j,k),i,j,k,lat,lon,elem(ie))
+        call set_tracers(q(i,j,k,:),qsize,dp(i,j,k),i,j,k,lat,lon,elem(ie))
 
       enddo; enddo
 

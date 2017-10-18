@@ -8,3 +8,4 @@ file(GLOB M_FILES        "*.m")                                         # get ma
 install(PROGRAMS ${NCL_SCRIPTS} ${SHELL_SCRIPTS} ${NAMELISTS} ${PYTHON_SCRIPTS} ${M_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(publish)
+add_subdirectory(movies)
