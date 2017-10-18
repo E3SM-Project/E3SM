@@ -1139,8 +1139,8 @@
 
     <domain name="ne16np4">
       <nx>13826</nx> <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne16_gx1v7.171003.nc</file>
-      <file grid="ocnice" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne16_gx1v7.171003.nc</file>
+      <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne16np4_gx3v7.120406.nc</file>
+      <file grid="ocnice" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne16np4_gx3v7.121113.nc</file>
       <desc>ne16np4 is Spectral Elem 2-deg grid:</desc>
       <support>For low resolution spectral element grid testing</support>
     </domain>
