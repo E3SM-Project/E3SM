@@ -510,24 +510,6 @@
     If TRUE, short term archiving will be turned on.</desc>
   </entry>
 
-  <entry id="DOUT_L_MS">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>If TRUE, perform long-term archiving on the output data.
-      logical to turn on long term archiving (if DOUT_S is also TRUE)</desc>
-  </entry>
-
-  <entry id="DOUT_L_HPSS_ACCNT">
-    <type>char</type>
-    <default_value>00000000</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc></desc>
-  </entry>
-
   <entry id="SYSLOG_N">
     <type>integer</type>
     <default_value>900</default_value>
@@ -1449,40 +1431,6 @@
     <desc>ocn2atm state mapping file decomp type</desc>
   </entry>
 
-  <entry id="OCN2GLC_FMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file</desc>
-  </entry>
-
-  <entry id="OCN2GLC_FMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file decomp type</desc>
-  </entry>
-
-  <entry id="OCN2GLC_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file</desc>
-  </entry>
-
-  <entry id="OCN2GLC_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file decomp type</desc>
-  </entry>
-
   <entry id="LND2ATM_FMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1668,40 +1616,6 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2lnd state mapping file decomp type</desc>
-  </entry>
-
-  <entry id="GLC2OCN_FMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn flux mapping file</desc>
-  </entry>
-
-  <entry id="GLC2OCN_FMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn flux mapping file decomp type</desc>
-  </entry>
-
-  <entry id="GLC2OCN_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn state mapping file</desc>
-  </entry>
-
-  <entry id="GLC2OCN_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn state mapping file decomp type</desc>
   </entry>
 
   <entry id="GLC2ICE_RMAPNAME">
