@@ -604,6 +604,8 @@ contains
     use EnergyFluxType         , only : energyflux_type
     use ExternalModelBETRMod   , only : EM_BETR_Solve
     use decompMod              , only : get_clump_bounds
+    use EMI_TemperatureType_ExchangeMod, only : EMI_Pack_TemperatureType_at_Column_Level_for_EM
+    use EMI_TemperatureType_ExchangeMod, only : EMI_Unpack_TemperatureType_at_Column_Level_from_EM
     !
     implicit none
     !
@@ -671,13 +673,13 @@ contains
          present(num_hydrologyc)   .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Pack_Temperature_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_TemperatureType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc, temperature_vars)
 
        elseif (present(num_nolakec_and_nourbanc)  .and. &
                present(filter_nolakec_and_nourbanc)) then
 
-       call EMID_Pack_Temperature_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_TemperatureType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, temperature_vars)
     endif
 
@@ -874,7 +876,7 @@ contains
          present(num_nolakec_and_nourbanc)     .and. &
          present(filter_nolakec_and_nourbanc)) then
 
-       call EMID_Unpack_Temperature_Vars_for_EM(e2l_driver_list(iem), em_stage, &
+       call EMI_Unpack_TemperatureType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, temperature_vars)
     endif
 
@@ -1840,180 +1842,6 @@ contains
     end associate
 
   end subroutine EMID_Unpack_WaterState_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_Temperature_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, temperature_vars)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's temperature_vars for EM
-    !
-    ! !USES:
-    use ExternalModelConstants , only : L2E_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants , only : L2E_STATE_TSNOW
-    use ExternalModelConstants , only : L2E_STATE_TH2OSFC
-    use TemperatureType        , only : temperature_type
-    use clm_varpar             , only : nlevgrnd, nlevsno
-    !
-    implicit none
-    !
-    class(emi_data_list)   , intent(in) :: data_list
-    integer                , intent(in) :: em_stage
-    integer                , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer                , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(temperature_type) , intent(in) :: temperature_vars
-    !
-    integer                             :: c,fc,j
-    class(emi_data), pointer            :: cur_data
-    logical                             :: need_to_pack
-    integer                             :: istage
-    integer                             :: count
-
-    associate(& 
-         t_soisno => temperature_vars%t_soisno_col, & ! Input: [real(r8) (:,:) ]  soil temperature (Kelvin)
-         t_h2osfc => temperature_vars%t_h2osfc_col  & ! Input: [real(r8) (:)   ]  surface water temperature
-         )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_STATE_TSOIL_NLEVGRND)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = t_soisno(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_TSNOW)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = -nlevsno+1, 0
-                   cur_data%data_real_2d(c,j) = t_soisno(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_TH2OSFC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = t_h2osfc(c)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Pack_Temperature_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Unpack_Temperature_Vars_for_EM(data_list, em_stage, &
-        num_filter, filter, temperature_vars)
-    !
-    ! !DESCRIPTION:
-    ! Unpack data from EM into ALM's temperature_vars
-    !
-    ! !USES:
-    use ExternalModelConstants , only : E2L_STATE_TSOIL_NLEVGRND
-    use ExternalModelConstants , only : E2L_STATE_TSNOW_NLEVSNOW
-    use ExternalModelConstants , only : E2L_STATE_TH2OSFC
-    use TemperatureType        , only : temperature_type
-    use clm_varpar             , only : nlevgrnd, nlevsno
-    !
-    implicit none
-    !
-    class(emi_data_list)   , intent(in) :: data_list
-    integer                , intent(in) :: em_stage
-    integer                , intent(in) :: num_filter
-    integer                , intent(in) :: filter(:)
-    type(temperature_type) , intent(in) :: temperature_vars
-    !
-    integer                             :: c,fc,j
-    class(emi_data), pointer            :: cur_data
-    logical                             :: need_to_unpack
-    integer                             :: istage
-    integer                             :: count
-
-    associate(& 
-         t_soisno => temperature_vars%t_soisno_col, & ! Input: [real(r8) (:,:) ]  soil temperature (Kelvin)
-         t_h2osfc => temperature_vars%t_h2osfc_col  & ! Input: [real(r8) (:)   ]  surface water temperature
-         )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_unpack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_unpack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_unpack) then
-
-          select case (cur_data%id)
-
-          case (E2L_STATE_TSOIL_NLEVGRND)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = 1, nlevgrnd
-                   t_soisno(c,j) = cur_data%data_real_2d(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_STATE_TSNOW_NLEVSNOW)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = -nlevsno+1, 0
-                   t_soisno(c,j) = cur_data%data_real_2d(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_STATE_TH2OSFC)
-             do fc = 1, num_filter
-                c = filter(fc)
-                t_h2osfc(c) = cur_data%data_real_1d(c)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Unpack_Temperature_Vars_for_EM
 
 !-----------------------------------------------------------------------
   subroutine EMID_Pack_SoilHydrology_Vars_for_EM(data_list, em_stage, &

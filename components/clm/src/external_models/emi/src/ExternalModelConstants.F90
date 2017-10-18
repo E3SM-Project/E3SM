@@ -32,6 +32,9 @@ module ExternalModelConstants
   integer, parameter, public :: L2E_STATE_TSOIL_NLEVGRND                         = 0001
   integer, parameter, public :: L2E_STATE_TSNOW                                  = 0002
   integer, parameter, public :: L2E_STATE_TH2OSFC                                = 0003
+  integer, parameter, public :: L2E_STATE_T_SOI10CM                              = 0004
+  integer, parameter, public :: L2E_STATE_T_SOIL_NLEVSOI                         = 0005
+  integer, parameter, public :: L2E_STATE_T_VEG                                  = 0006
 
   ! waterstate_type
   integer, parameter, public :: L2E_STATE_H2OSOI_LIQ_NLEVGRND                    = 0101
