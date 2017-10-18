@@ -133,11 +133,13 @@ module ExternalModelConstants
   integer, parameter, public :: L2E_COLUMN_Z                                     = 1306
   integer, parameter, public :: L2E_COLUMN_AREA                                  = 1307
   integer, parameter, public :: L2E_COLUMN_GRIDCELL_INDEX                        = 1308
-  integer, parameter, public :: L2E_COLUMN_PATCH_INDEX                           = 1309
-  integer, parameter, public :: L2E_COLUMN_NUM_SNOW_LAYERS                       = 1310
-  integer, parameter, public :: L2E_COLUMN_ZI_SNOW_AND_SOIL                      = 1311
-  integer, parameter, public :: L2E_COLUMN_DZ_SNOW_AND_SOIL                      = 1312
-  integer, parameter, public :: L2E_COLUMN_Z_SNOW_AND_SOIL                       = 1313
+  integer, parameter, public :: L2E_COLUMN_PATCH_INDEX_BEGIN                     = 1309
+  integer, parameter, public :: L2E_COLUMN_PATCH_INDEX_END                       = 1310
+  integer, parameter, public :: L2E_COLUMN_NUM_SNOW_LAYERS                       = 1311
+  integer, parameter, public :: L2E_COLUMN_ZI_SNOW_AND_SOIL                      = 1312
+  integer, parameter, public :: L2E_COLUMN_DZ_SNOW_AND_SOIL                      = 1313
+  integer, parameter, public :: L2E_COLUMN_Z_SNOW_AND_SOIL                       = 1314
+  integer, parameter, public :: L2E_COLUMN_NUM_PATCH                             = 1315
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! IDs for landunit-level attributes sent from ALM to External Model
@@ -159,5 +161,23 @@ module ExternalModelConstants
   integer, parameter, public :: L2E_PARAMETER_CSOL                               = 1506
   integer, parameter, public :: L2E_PARAMETER_TKMG                               = 1507
   integer, parameter, public :: L2E_PARAMETER_TKDRY                              = 1508
+  integer, parameter, public :: L2E_PARAMETER_CELLORG                            = 1509
+  integer, parameter, public :: L2E_PARAMETER_CELLCLAY                           = 1510
+  integer, parameter, public :: L2E_PARAMETER_CELLSAND                           = 1511
+  integer, parameter, public :: L2E_PARAMETER_BD                                 = 1512
+  integer, parameter, public :: L2E_PARAMETER_WATFC                              = 1513
+  integer, parameter, public :: L2E_PARAMETER_ROOTFR_PATCH                       = 1514
+
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  ! IDs for variable sent from ALM to External Model
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  integer, parameter, public :: L2E_VAR_MAX_PATCH_PER_COL                        = 1601
+
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  ! IDs for patch-level attributes sent from ALM to External Model
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  integer, parameter, public :: L2E_PATCH_ACTIVE                                 = 1701
+  integer, parameter, public :: L2E_PATCH_TYPE                                   = 1702
+  integer, parameter, public :: L2E_PATCH_WT_COL                                 = 1703
 
 end module ExternalModelConstants

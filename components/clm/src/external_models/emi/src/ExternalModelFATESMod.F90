@@ -43,7 +43,6 @@ contains
     use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIRECT_RADDIATION
     use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
     use ExternalModelConstants, only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants, only : L2E_COLUMN_PATCH_INDEX
     !
     implicit none
     !
@@ -91,7 +90,7 @@ contains
     use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIRECT_RADDIATION
     use ExternalModelConstants, only : L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
     use ExternalModelConstants, only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants, only : L2E_COLUMN_PATCH_INDEX
+    use ExternalModelConstants, only : L2E_COLUMN_PATCH_INDEX_BEGIN
     !
     implicit none
     !
@@ -122,7 +121,7 @@ contains
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_gridcell_index = index
 
-    id                                = L2E_COLUMN_PATCH_INDEX
+    id                                = L2E_COLUMN_PATCH_INDEX_BEGIN
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_col_patch_index    = index
 

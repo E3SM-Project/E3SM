@@ -1236,7 +1236,8 @@ contains
     use ExternalModelConstants    , only : L2E_COLUMN_Z
     use ExternalModelConstants    , only : L2E_COLUMN_AREA
     use ExternalModelConstants    , only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX
+    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_BEGIN
+    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_END
     use ExternalModelConstants    , only : L2E_COLUMN_NUM_SNOW_LAYERS
     use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
     use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
@@ -1337,7 +1338,7 @@ contains
              enddo
              cur_data%is_set = .true.
 
-          case (L2E_COLUMN_PATCH_INDEX)
+          case (L2E_COLUMN_PATCH_INDEX_BEGIN)
              do fc = 1, num_filter
                 c = filter(fc)
 #ifndef FATES_VIA_EMI
@@ -1345,6 +1346,13 @@ contains
 #else
                 cur_data%data_int_1d(c) = col_pp%patchi(c)
 #endif
+             enddo
+             cur_data%is_set = .true.
+
+          case (L2E_COLUMN_PATCH_INDEX_END)
+             do fc = 1, num_filter
+                c = filter(fc)
+                cur_data%data_int_1d(c) = col_pp%pftf(c)
              enddo
              cur_data%is_set = .true.
 

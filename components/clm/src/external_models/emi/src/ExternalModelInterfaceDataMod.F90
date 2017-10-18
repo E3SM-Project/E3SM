@@ -1104,7 +1104,8 @@ contains
     use ExternalModelConstants    , only : L2E_COLUMN_Z
     use ExternalModelConstants    , only : L2E_COLUMN_AREA
     use ExternalModelConstants    , only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX
+    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_BEGIN
+    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_END
     use ExternalModelConstants    , only : L2E_COLUMN_NUM_SNOW_LAYERS
     use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
     use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
@@ -1906,10 +1907,20 @@ contains
        dim1_beg_name = dimname_begc
        dim1_end_name = dimname_endc
 
-    case (L2E_COLUMN_PATCH_INDEX)
-       id_val        = L2E_COLUMN_PATCH_INDEX
-       name_val      = 'Column to patch index'
-       long_name_val = 'Column to patch index: ALM to External Model'
+    case (L2E_COLUMN_PATCH_INDEX_BEGIN)
+       id_val        = L2E_COLUMN_PATCH_INDEX_BEGIN
+       name_val      = 'Beginning column to patch index'
+       long_name_val = 'Beginning column to patch index: ALM to External Model'
+       units_val     = '[-]'
+       is_int_type   = .true.
+       ndim          = 1
+       dim1_beg_name = dimname_begc
+       dim1_end_name = dimname_endc
+
+    case (L2E_COLUMN_PATCH_INDEX_END)
+       id_val        = L2E_COLUMN_PATCH_INDEX_END
+       name_val      = 'Ending column to patch index'
+       long_name_val = 'Ending column to patch index: ALM to External Model'
        units_val     = '[-]'
        is_int_type   = .true.
        ndim          = 1
