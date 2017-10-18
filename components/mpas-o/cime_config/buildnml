@@ -325,7 +325,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file '		io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
         }
 	print $stream_file '		filename_template="mpaso.hist.$Y-$M-$D_$S.nc"' . "\n";
-	print $stream_file '		filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '		filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate"' . "\n";
 	print $stream_file '		reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '		output_interval="00-01-00_00:00:00">' . "\n";
@@ -550,7 +550,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-05_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -715,7 +715,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-03-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -825,7 +825,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '		type="none"' . "\n";
 	print $stream_file '		io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '		filename_template="mpaso.hist.forcing_variables.$Y-$M-$D_$S.nc"' . "\n";
-	print $stream_file '		filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '		filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '		clobber_mode="truncate">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '	<stream name="mesh"/>' . "\n";

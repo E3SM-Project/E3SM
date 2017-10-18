@@ -310,7 +310,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpascice.hist.$Y-$M-$D_$S.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00">' . "\n";
@@ -412,7 +412,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpascicehist.am.conservationCheck.$Y.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -456,7 +456,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpascice.hist.am.cice_loadBalance.$Y.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="00-00-00_01:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -471,7 +471,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpascice.hist.am.cice_maximumIcePresence.$Y.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
 	print $stream_file '        output_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
@@ -592,7 +592,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
         print $stream_file '        io_type="' . "$ICE_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpascice.hist.am.timeSeriesStatsClimatology.$Y.nc"' . "\n";
-	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
