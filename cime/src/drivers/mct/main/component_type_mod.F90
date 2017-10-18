@@ -86,6 +86,11 @@ module component_type_mod
      integer                         :: mpicom_compid
      integer                         :: mpicom_cplcompid
      integer                         :: mpicom_cplallcompid
+#ifdef HAVE_MOAB
+     !  moab component pid will uniquely identify the mesh
+     !    associated with this component; as opposed to
+     integer                         :: mbcpid
+#endif
      logical                         :: iamin_compid
      logical                         :: iamin_cplcompid
      logical                         :: iamin_cplallcompid

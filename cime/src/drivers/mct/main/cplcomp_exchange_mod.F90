@@ -32,7 +32,10 @@ module cplcomp_exchange_mod
   public :: seq_mctext_avInit
   public :: seq_mctext_gGridInit
   public :: seq_mctext_avExtend
-
+#ifdef HAVE_MOAB
+  public :: cplcomp_moab_Init       ! called to migrate MOAB mesh from
+                                    !   component pes to coupler pes
+#endif
 !--------------------------------------------------------------------------
 ! Private interfaces
 !--------------------------------------------------------------------------
@@ -311,16 +314,6 @@ contains
     type(mct_gsMap)          :: gsmap_old_join   ! gsmap_old on joined id, temporary
     character(len=*),parameter :: subname = "(seq_mctext_gsmapInit) "
 
-#ifdef HAVE_MOAB
-    integer                  :: mpigrp_cplid ! coupler pes
-    integer                  :: mpigrp_old   !  component group pes
-    integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
-    integer, external        :: iMOAB_WriteMesh 
-    integer                  :: ierr
-    character*32             :: appname, outfile, wopts
-    integer                  :: pid_target, pid_source
-    
-#endif
     !-----------------------------------------------------
 
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID)
@@ -348,29 +341,6 @@ contains
     call seq_mctext_gsmapCreate(gsmap_old_join, mpicom_join , gsmap_new     , mpicom_new , ID_new  )
 
     call mct_gsMap_clean(gsmap_old_join)
-#ifdef HAVE_MOAB
-    if (comp%oneletterid == 'a') then
-      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-      ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-        !  send mesh to coupler
-        pid_target = 0 !   TODO
-        ierr = iMOAB_SendMesh(MHID, mpicom_join, mpigrp_cplid, id_new);
-      endif
-      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_HM"//CHAR(0)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target) 
-        pid_source = 0
-        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
-        ! debug test
-        outfile = 'recMesh.h5m'//CHAR(0)
-        wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
-!      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
-      endif
-    endif !  only for atm for the time being
-#endif
 
   end subroutine seq_mctext_gsmapInit
 
@@ -999,5 +969,84 @@ contains
     seq_mctext_gsmapIdentical = identical
 
   end function seq_mctext_gsmapIdentical
+
+#ifdef HAVE_MOAB
+  !=======================================================================
+
+  subroutine cplcomp_moab_Init(comp)
+
+    ! This routine initializes an iMOAB app on the coupler pes,
+    !  corresponding to the component pes. It uses send/receive 
+    !  from iMOAB to replicate the mesh on coupler pes
+
+    !-----------------------------------------------------
+    !
+    ! Arguments
+    !
+    type(component_type), intent(inout) :: comp
+    !
+    ! Local Variables
+    !
+    integer                  :: mpicom_cplid
+    integer                  :: mpicom_old
+    integer                  :: mpicom_new
+    integer                  :: mpicom_join
+    integer                  :: ID_old
+    integer                  :: ID_new
+    integer                  :: ID_join
+
+    character(len=*),parameter :: subname = "(cplcomp_moab_Init) "
+
+    integer                  :: mpigrp_cplid ! coupler pes
+    integer                  :: mpigrp_old   !  component group pes
+    integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
+    integer, external        :: iMOAB_WriteMesh
+    integer                  :: ierr
+    character*32             :: appname, outfile, wopts
+    integer                  :: pid_target  ! it is out from this routine, should be saved as
+                                            !   moab pid
+
+    !-----------------------------------------------------
+
+    call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID)
+
+    id_new  = cplid
+    id_old  = comp%compid
+    id_join = comp%cplcompid
+
+    mpicom_new  = mpicom_cplid
+    mpicom_old  = comp%mpicom_compid
+    mpicom_join = comp%mpicom_cplcompid
+
+    call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
+    call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+
+    ! this works now for atmosphere only;
+    ! it should work for mpas ocean soon
+    if (comp%oneletterid == 'a') then
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+      ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+        !  send mesh to coupler
+        ierr = iMOAB_SendMesh(MHID, mpicom_join, mpigrp_cplid, id_new);
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_HM"//CHAR(0)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target)
+        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
+        ! debug test
+        outfile = 'recMesh.h5m'//CHAR(0)
+        wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+!      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
+      endif
+    endif !  only for atm for the time being
+
+
+  end subroutine cplcomp_moab_Init
+
+#endif
 
 end module cplcomp_exchange_mod

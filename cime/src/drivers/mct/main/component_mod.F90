@@ -298,6 +298,9 @@ contains
     use cplcomp_exchange_mod, only: seq_mctext_gsmapinit, seq_mctext_avInit
     use cplcomp_exchange_mod, only: seq_mctext_avExtend, seq_mctext_gGridInit
     use cplcomp_exchange_mod, only: seq_map_init_exchange, seq_map_map_exchange
+#ifdef HAVE_MOAB
+    use cplcomp_exchange_mod, only: cplcomp_moab_Init
+#endif
     use seq_domain_mct,       only: seq_domain_compare
     use mct_mod,              only: mct_ggrid_clean
     !
@@ -338,6 +341,9 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gsmapInit(comp(1))
+#ifdef HAVE_MOAB
+                call cplcomp_moab_Init(comp(1))
+#endif
              endif
 
              ! Create mapper_Cc2x and mapper_Cx2c
