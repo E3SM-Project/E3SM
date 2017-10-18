@@ -64,3 +64,8 @@ advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
 advance_wp2_wp3_module.o: advance_wp2_wp3_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
 ### end
+
+# lower -O flag for ne120-coupled cases
+ifneq (,$(and $(findstring a%ne120,$(shell $(CASEROOT)/xmlquery --value GRID --caseroot $(CASEROOT) )),$(findstring MPASO,$(shell $(CASEROOT)/xmlquery --value COMPSET --caseroot $(CASEROOT) ))))
+FFLAGS:=$(subst O3,O2,$(FFLAGS))
+endif
