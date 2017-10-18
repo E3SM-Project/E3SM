@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+"""
+Script to query key CIME shell commands (mpirun and batch submission).
+
+To force a certain mpirun command, use:
+./xmlchange MPI_RUN_COMMAND=$your_cmd
+
+Example:
+./xmlchange MPI_RUN_COMMAND='mpiexec -np 16 --some-flag'
+
+To force a certain qsub command, use:
+./xmlchange --subgroup=case.run BATCH_COMMAND_FLAGS=$your_flags
+
+Example:
+./xmlchange --subgroup=case.run BATCH_COMMAND_FLAGS='--some-flag --other-flag'
+"""
+
+from standard_script_setup import *
+
+from CIME.case import Case
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--verbose]
+OR
+{0} --help
+OR
+{0} --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run the tool \033[0m
+    > {0}
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = parser.parse_args(args[1:])
+
+    return args.caseroot
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot = parse_command_line(sys.argv, description)
+
+    logging.disable(logging.CRITICAL)
+
+    with Case(caseroot, read_only=False) as case:
+        print "BATCH SUBMIT:"
+        case.load_env()
+        job = "case.test" if case.get_value("TEST") else "case.run"
+        job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
+        for job_id, cmd in job_id_to_cmd:
+            print "   ", job_id, "->", case.get_resolved_value(cmd)
+        print
+        print "MPIRUN:", case.get_resolved_value(case.get_mpirun_cmd())
+
+if __name__ == "__main__":
+    _main_func(__doc__)
