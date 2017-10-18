@@ -4,19 +4,23 @@ module ExternalModelInterfaceMod
   ! !DESCRIPTION:
   ! This module provides an interface to couple ALM with external model
   !
-  use shr_kind_mod                         , only : r8 => shr_kind_r8
-  use spmdMod                              , only : masterproc, iam
-  use shr_log_mod                          , only : errMsg => shr_log_errMsg
-  use decompMod                            , only : bounds_type, get_proc_clumps
-  use abortutils                           , only : endrun
-  use clm_varctl                           , only : iulog
-  use ExternalModelInterfaceDataMod        , only : emi_data_list, emi_data
-  use ExternalModelIntefaceDataDimensionMod, only : emi_data_dimension_list_type
+  use shr_kind_mod                          , only : r8 => shr_kind_r8
+  use spmdMod                               , only : masterproc, iam
+  use shr_log_mod                           , only : errMsg => shr_log_errMsg
+  use decompMod                             , only : bounds_type, get_proc_clumps
+  use abortutils                            , only : endrun
+  use clm_varctl                            , only : iulog
+  use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
+  use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
 #ifdef USE_PETSC_LIB
-  use ExternalModelVSFMMod                 , only : em_vsfm_type
-  use ExternalModelPTMMod                  , only : em_ptm_type
+  use ExternalModelVSFMMod                  , only : em_vsfm_type
+  use ExternalModelPTMMod                   , only : em_ptm_type
 #endif
-  use ExternalModelFATESMod                , only : em_fates_type
+  use ExternalModelFATESMod                 , only : em_fates_type
+  use EMI_TemperatureType_ExchangeMod       , only : EMI_Pack_TemperatureType_at_Column_Level_for_EM
+  use EMI_TemperatureType_ExchangeMod       , only : EMI_Unpack_TemperatureType_at_Column_Level_from_EM
+  use EMI_WaterStateType_ExchangeMod        , only : EMI_Pack_WaterStateType_at_Column_Level_for_EM
+  use EMI_WaterStateType_ExchangeMod        , only : EMI_Unpack_WaterStateType_at_Column_Level_from_EM
   !
   implicit none
   !
@@ -308,7 +312,7 @@ contains
           call EMID_Reset_Data_for_EM(e2l_init_list(clump_rank), em_stage)
 
           ! Pack all ALM data needed by the external model
-          call EMID_Pack_WaterState_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_WaterStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, waterstate_vars)
           call EMID_Pack_WaterFlux_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, waterflux_vars)
@@ -360,7 +364,7 @@ contains
           ! Unpack all data sent from the external model
           call EMID_Unpack_SoilState_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, soilstate_vars)
-          call EMID_Unpack_WaterState_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
+          call EMI_Unpack_WaterStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, waterstate_vars)
           call EMID_Unpack_WaterFlux_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, waterflux_vars)
@@ -604,8 +608,6 @@ contains
     use EnergyFluxType         , only : energyflux_type
     use ExternalModelBETRMod   , only : EM_BETR_Solve
     use decompMod              , only : get_clump_bounds
-    use EMI_TemperatureType_ExchangeMod, only : EMI_Pack_TemperatureType_at_Column_Level_for_EM
-    use EMI_TemperatureType_ExchangeMod, only : EMI_Unpack_TemperatureType_at_Column_Level_from_EM
     !
     implicit none
     !
@@ -687,13 +689,13 @@ contains
        if (present(num_hydrologyc)  .and. &
            present(filter_hydrologyc)) then
 
-          call EMID_Pack_WaterState_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+          call EMI_Pack_WaterStateType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
                num_hydrologyc, filter_hydrologyc, waterstate_vars)
 
        elseif (present(num_nolakec_and_nourbanc)  .and. &
                present(filter_nolakec_and_nourbanc)) then
 
-          call EMID_Pack_WaterState_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+          call EMI_Pack_WaterStateType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
                num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, waterstate_vars)
        else
           ! GB_FIX_ME: Create a temporary filter
@@ -708,7 +710,7 @@ contains
              filter_col(ii) = bounds_clump%begc + ii - 1
           enddo
 
-          call EMID_Pack_WaterState_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+          call EMI_Pack_WaterStateType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
                num_filter_col, filter_col, waterstate_vars)
           deallocate(filter_col)
        endif
@@ -840,7 +842,7 @@ contains
          present(num_hydrologyc)  .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Unpack_WaterState_Vars_for_EM(e2l_driver_list(iem), em_stage, &
+       call EMI_Unpack_WaterStateType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc, waterstate_vars)
     endif
 
@@ -1472,376 +1474,6 @@ contains
     enddo
 
   end subroutine EMID_Pack_Landunit_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_WaterState_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, waterstate_vars)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's waterstate_vars for EM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVGRND
-    use ExternalModelConstants    , only : L2E_STATE_VSFM_PROGNOSTIC_SOILP
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_H2OSFC
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_INUNDATED
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_AIR_VOL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_RHO_VAP_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_RHVAP_SOI_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_SOIL_MATRIC_POTENTIAL_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVSOI
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_LIQ_NLEVSNOW
-    use ExternalModelConstants    , only : L2E_STATE_H2OSOI_ICE_NLEVSNOW
-    use ExternalModelConstants    , only : L2E_STATE_H2OSNOW
-    use ExternalModelConstants    , only : L2E_STATE_H2OSFC
-    use ExternalModelConstants    , only : L2E_STATE_FRAC_SNOW_EFFECTIVE
-    use WaterStateType            , only : waterstate_type
-    use clm_varpar                , only : nlevgrnd
-    use clm_varpar                , only : nlevsoi
-    use clm_varpar                , only : nlevsno
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer              , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(waterstate_type), intent(in) :: waterstate_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-#ifndef FATES_VIA_EMI
-    associate(&
-         h2osoi_ice    => waterstate_vars%h2osoi_ice_col    , & ! Input:  [real(r8) (:,:) ] ice water (kg/m2)
-         h2osoi_liq    => waterstate_vars%h2osoi_liq_col    , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)
-         soilp_col     => waterstate_vars%soilp_col         , & ! Input:  [real(r8) (:,:) ] soil water pressure (Pa)
-         frac_h2osfc   => waterstate_vars%frac_h2osfc_col   , & ! Input:  [real(r8) (:)   ] col fractional area of surface water (-)
-         finundated    => waterstate_vars%finundated_col    , & ! Input:  [real(r8) (:)   ] fraction of column that is inundated (-)
-         h2osoi_liqvol => waterstate_vars%h2osoi_liqvol_col , & ! Input:  [real(r8) (:,:) ] volumetric liquid water content (m3/m3)
-         h2osoi_icevol => waterstate_vars%h2osoi_icevol_col , & ! Input:  [real(r8) (:,:) ] volumetric ice content (m3/m3)
-         h2osoi_vol    => waterstate_vars%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ] volumetric soil water (m3/m3)
-         air_vol       => waterstate_vars%air_vol_col       , & ! Input:  [real(r8) (:,:) ] air filled porosity (m3/m3)
-         frac_sno_eff  => waterstate_vars%frac_sno_eff_col  , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
-         h2osno        => waterstate_vars%h2osno_col        , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
-         h2osfc        => waterstate_vars%h2osfc_col        , & ! Input:  [real(r8) (:)   ] surface water (mm)
-#ifdef BETR_VIA_EMI
-         rho_vap       => waterstate_vars%rho_vap_col       , & ! Input:  [real(r8) (:,:) ] water vapor pressure (Pa)
-         rhvap_soi     => waterstate_vars%rhvap_soi_col     , & ! Input:  [real(r8) (:,:) ] relative humidity (-)
-#endif
-         smp_l         => waterstate_vars%smp_l_col           & ! Input:  [real(r8) (:,:) ] soil matric potential (mm)
-         )
-#else
-    associate(&
-         h2osoi_ice =>    waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)
-         h2osoi_liq =>    waterstate_vars%h2osoi_liq_col   & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         )
-#endif
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_STATE_H2OSOI_LIQ_NLEVGRND)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = h2osoi_liq(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_ICE_NLEVGRND)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = h2osoi_ice(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-#ifndef FATES_VIA_EMI
-          case (L2E_STATE_VSFM_PROGNOSTIC_SOILP)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = soilp_col(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_FRAC_H2OSFC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = frac_h2osfc(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_FRAC_INUNDATED)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = finundated(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_LIQ_VOL_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = h2osoi_liqvol(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_ICE_VOL_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = h2osoi_icevol(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_VOL_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = h2osoi_vol(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_AIR_VOL_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = air_vol(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-#ifdef BETR_VIA_EMI
-          case (L2E_STATE_RHO_VAP_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = rho_vap(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_RHVAP_SOI_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = rhvap_soi(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-#endif
-
-          case (L2E_STATE_SOIL_MATRIC_POTENTIAL_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = smp_l(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_LIQ_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = h2osoi_liq(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_ICE_NLEVSOI)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = h2osoi_ice(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSNOW)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = h2osno(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSFC)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = h2osfc(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_FRAC_SNOW_EFFECTIVE)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = frac_sno_eff(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_LIQ_NLEVSNOW)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = -nlevsno+1,0
-                   cur_data%data_real_2d(c,j) = h2osoi_liq(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_STATE_H2OSOI_ICE_NLEVSNOW)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = -nlevsno+1,0
-                   cur_data%data_real_2d(c,j) = h2osoi_ice(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-#endif
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Pack_WaterState_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Unpack_WaterState_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, waterstate_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data from EM in ALM's waterflux_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : E2L_STATE_H2OSOI_LIQ
-    use ExternalModelConstants    , only : E2L_STATE_H2OSOI_ICE
-    use ExternalModelConstants    , only : E2L_STATE_VSFM_PROGNOSTIC_SOILP
-    use WaterStateType            , only : waterstate_type
-    use clm_varpar                , only : nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer              , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(waterstate_type), intent(in) :: waterstate_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_unpack
-    integer                           :: istage
-    integer                           :: count
-
-#ifndef FATES_VIA_EMI
-    associate(&
-         h2osoi_ice =>    waterstate_vars%h2osoi_ice_col , & ! Output:  [real(r8) (:,:) ]  ice water (kg/m2)
-         h2osoi_liq =>    waterstate_vars%h2osoi_liq_col , & ! Output:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         soilp_col  =>    waterstate_vars%soilp_col        & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
-         )
-#else
-    associate(&
-         h2osoi_ice =>    waterstate_vars%h2osoi_ice_col , & ! Output:  [real(r8) (:,:) ]  ice water (kg/m2)
-         h2osoi_liq =>    waterstate_vars%h2osoi_liq_col   & ! Output:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         )
-#endif
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_unpack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_unpack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_unpack) then
-
-          select case (cur_data%id)
-
-          case (E2L_STATE_H2OSOI_LIQ)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   h2osoi_liq(c,j) = cur_data%data_real_2d(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_STATE_H2OSOI_ICE)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   h2osoi_ice(c,j) = cur_data%data_real_2d(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-#ifndef FATES_VIA_EMI
-          case (E2L_STATE_VSFM_PROGNOSTIC_SOILP)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   soilp_col(c,j) = cur_data%data_real_2d(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-#endif
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Unpack_WaterState_Vars_for_EM
 
 !-----------------------------------------------------------------------
   subroutine EMID_Pack_SoilHydrology_Vars_for_EM(data_list, em_stage, &
