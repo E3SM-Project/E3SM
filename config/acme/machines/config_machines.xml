@@ -1303,6 +1303,7 @@
                <arg name="num_tasks">--np $TOTALPES</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
+               <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1320,9 +1321,16 @@
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
       <env name="BGQ_SMP_VARS"></env>
+      <env name="BGQ_STACKSIZE"></env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_STACKSIZE=64M OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="!16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
 </machine>
 
@@ -1531,6 +1539,7 @@
                <arg name="num_tasks">--np $TOTALPES</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
+               <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1548,9 +1557,16 @@
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
       <env name="BGQ_SMP_VARS"></env>
+      <env name="BGQ_STACKSIZE"></env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_STACKSIZE=64M OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="!16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
 </machine>
 
