@@ -99,10 +99,6 @@
   <xs:element name="env">
     <xs:complexType mixed="true">
       <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute ref="DEBUG"/>
-      <xs:attribute ref="mpilib"/>
-      <xs:attribute ref="compiler"/>
-      <xs:attribute ref="SMP_PRESENT"/>
     </xs:complexType>
   </xs:element>
 
