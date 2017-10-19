@@ -129,6 +129,7 @@
       <value compset="_CLM.*_BGC%BCRD">constant</value>
       <value compset="_CLM.*_BGC%BPRP">prognostic</value>
       <value compset="20TR.*_DATM"    >diagnostic</value>
+      <value compset="20TR.*_DATM.*_BGC%BCRD"    >constant</value>
       <value compset="RCP.*_DATM"     >diagnostic</value>
       <value compset="SSP.*_DATM"     >diagnostic</value>
     </values>

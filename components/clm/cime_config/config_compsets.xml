@@ -436,6 +436,11 @@
      <alias>I20TRCNPECACTCBC</alias>
      <lname>20TR_DATM%QIA_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
    </compset>
+   
+   <compset>
+     <alias>I20TRCNPECACTCBCBCRD</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNPECACTCBCBCRD_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
+   </compset>
 
    <compset>
      <alias>I20TRCNPECACNTBC</alias>
