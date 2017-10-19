@@ -1585,6 +1585,48 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertEqual(result, "slartibartfast")
 
     ###########################################################################
+    def test_cime_case_test_walltime_mgmt_6(self):
+    ###########################################################################
+        if not self._hasbatch:
+            self.skipTest("Skipping walltime test. Depends on batch system")
+
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        self._create_test(["--no-build", test_name], test_id=self._baseline_name,
+                          env_changes="unset CIME_GLOBAL_WALLTIME &&")
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        run_cmd_assert_result(self, "./xmlchange JOB_WALLCLOCK_TIME=421:32:11 --subgroup=case.test", from_dir=casedir)
+
+        run_cmd_assert_result(self, "./case.setup --reset", from_dir=casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "421:32:11")
+
+    ###########################################################################
+    def test_cime_case_test_walltime_mgmt_7(self):
+    ###########################################################################
+        if not self._hasbatch:
+            self.skipTest("Skipping walltime test. Depends on batch system")
+
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        self._create_test(["--no-build", "--walltime=01:00:00", test_name], test_id=self._baseline_name,
+                          env_changes="unset CIME_GLOBAL_WALLTIME &&")
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        run_cmd_assert_result(self, "./xmlchange JOB_WALLCLOCK_TIME=421:32:11 --subgroup=case.test", from_dir=casedir)
+
+        run_cmd_assert_result(self, "./case.setup --reset", from_dir=casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
+        self.assertEqual(result, "421:32:11")
+
+    ###########################################################################
     def test_create_test_longname(self):
     ###########################################################################
         self._create_test(["SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV", "--no-build"])
