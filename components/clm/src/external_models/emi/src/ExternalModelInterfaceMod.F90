@@ -29,6 +29,7 @@ module ExternalModelInterfaceMod
   use EMI_WaterFluxType_ExchangeMod         , only : EMI_Unpack_WaterFluxType_at_Column_Level_from_EM
   use EMI_EnergyFluxType_ExchangeMod        , only : EMI_Pack_EnergyFluxType_at_Column_Level_for_EM
   use EMI_CanopyStateType_ExchangeMod       , only : EMI_Unpack_CanopyStateType_at_Patch_Level_from_EM
+  use EMI_Atm2LndType_ExchangeMod           , only : EMI_Pack_Atm2LndType_at_Grid_Level_for_EM
   !
   implicit none
   !
@@ -647,8 +648,10 @@ contains
     type(bounds_type):: bounds_clump
     integer          :: num_filter_col
     integer          :: num_filter_patch
+    integer          :: num_filter_grid
     integer, pointer :: filter_col(:)
     integer, pointer :: filter_patch(:)
+    integer, pointer :: filter_grid(:)
     integer          :: ii
     integer          :: iem
 
@@ -784,7 +787,22 @@ contains
     endif
 
     if (present(atm2lnd_vars)) then
-       call EMID_Pack_Atm2Land_Forcings_for_EM(l2e_driver_list(iem), em_stage, atm2lnd_vars)
+       ! GB_FIX_ME: Create a temporary filter
+       if (present(clump_rank)) then
+          call get_clump_bounds(clump_rank, bounds_clump)
+       else
+          call get_clump_bounds(1, bounds_clump)
+       endif
+
+       num_filter_grid = bounds_clump%endg - bounds_clump%begg + 1
+
+       allocate(filter_col(num_filter_grid))
+       do ii = 1, num_filter_grid
+          filter_grid(ii) = bounds_clump%begg + ii - 1
+       enddo
+       call EMI_Pack_Atm2LndType_at_Grid_Level_for_EM(l2e_driver_list(iem), em_stage, &
+            num_filter_grid, filter_grid, atm2lnd_vars)
+       deallocate(filter_grid)
     endif
 
     ! GB_FIX_ME: Create a temporary filter
@@ -1288,73 +1306,5 @@ contains
     enddo
 
   end subroutine EMID_Pack_Landunit_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_Atm2Land_Forcings_for_EM(data_list, em_stage, atm2lnd_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data for EM from ALM's atmospheric forcing
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_FLUX_SOLAR_DIRECT_RADDIATION
-    use ExternalModelConstants    , only : L2E_FLUX_SOLAR_DIFFUSE_RADDIATION
-    use atm2lndType               , only : atm2lnd_type
-    use clm_varpar                , only : nlevsoi, nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list), intent(in) :: data_list
-    integer             , intent(in) :: em_stage
-    type(atm2lnd_type)  , intent(in) :: atm2lnd_vars
-    !
-    integer                           :: g
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-    associate( &
-         forc_solad => atm2lnd_vars%forc_solad_grc, &
-         forc_solai => atm2lnd_vars%forc_solai_grc  &
-    )
-
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_FLUX_SOLAR_DIRECT_RADDIATION)
-             do g = cur_data%dim1_beg, cur_data%dim1_end
-                cur_data%data_real_2d(g,1:2) = forc_solad(g,1:2)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SOLAR_DIFFUSE_RADDIATION)
-             do g = cur_data%dim1_beg, cur_data%dim1_end
-                cur_data%data_real_2d(g,1:2) = forc_solai(g,1:2)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Pack_Atm2Land_Forcings_for_EM
 
 end module ExternalModelInterfaceMod
