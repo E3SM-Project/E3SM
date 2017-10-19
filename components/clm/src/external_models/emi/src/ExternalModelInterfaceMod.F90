@@ -30,6 +30,9 @@ module ExternalModelInterfaceMod
   use EMI_EnergyFluxType_ExchangeMod        , only : EMI_Pack_EnergyFluxType_at_Column_Level_for_EM
   use EMI_CanopyStateType_ExchangeMod       , only : EMI_Unpack_CanopyStateType_at_Patch_Level_from_EM
   use EMI_Atm2LndType_ExchangeMod           , only : EMI_Pack_Atm2LndType_at_Grid_Level_for_EM
+  use EMI_ColumnType_Exchange               , only : EMI_Pack_ColumnType_for_EM
+  use EMI_Filter_Exchange                   , only : EMI_Pack_Filter_for_EM
+  use EMI_Landunit_Exchange                 , only : EMI_Pack_Landunit_for_EM
   !
   implicit none
   !
@@ -329,9 +332,9 @@ contains
                num_filter_col, filter_col, soilhydrology_vars)
           call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilstate_vars)
-          call EMID_Pack_Column_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_ColumnType_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col)
-          call EMID_Pack_Landunit_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_Landunit_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_lun, filter_lun)
 
           ! Ensure all data needed by external model is packed
@@ -454,9 +457,9 @@ contains
           ! Pack all ALM data needed by the external model
           call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilstate_vars)
-          call EMID_Pack_Column_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_ColumnType_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col)
-          call EMID_Pack_Landunit_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_Landunit_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_lun, filter_lun)
 
           ! Ensure all data needed by external model is packed
@@ -748,10 +751,10 @@ contains
     if ( present(num_hydrologyc) .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Pack_Filter_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_Filter_for_EM(l2e_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc)
 
-       call EMID_Pack_Column_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_ColumnType_for_EM(l2e_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc)
 
     endif
@@ -759,10 +762,10 @@ contains
     if ( present(num_nolakec) .and. &
          present(filter_nolakec)) then
 
-       call EMID_Pack_Filter_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_Filter_for_EM(l2e_driver_list(iem), em_stage, &
             num_nolakec, filter_nolakec)
 
-       call EMID_Pack_Column_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_ColumnType_for_EM(l2e_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc)
 
     endif
@@ -770,10 +773,10 @@ contains
     if ( present(num_nolakec_and_nourbanc) .and. &
          present(filter_nolakec_and_nourbanc)) then
 
-       call EMID_Pack_Filter_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_Filter_for_EM(l2e_driver_list(iem), em_stage, &
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc)
 
-       call EMID_Pack_Column_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_ColumnType_for_EM(l2e_driver_list(iem), em_stage, &
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc)
 
     endif
@@ -781,7 +784,7 @@ contains
     if ( present(num_filter_lun) .and. &
          present(filter_lun)) then
 
-       call EMID_Pack_Landunit_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_Landunit_for_EM(l2e_driver_list(iem), em_stage, &
             num_filter_lun, filter_lun)
 
     endif
@@ -818,7 +821,7 @@ contains
     do ii = 1, num_filter_col
        filter_col(ii) = bounds_clump%begc + ii - 1
     enddo
-    call EMID_Pack_Column_for_EM(l2e_driver_list(iem), em_stage, &
+    call EMI_Pack_ColumnType_for_EM(l2e_driver_list(iem), em_stage, &
             num_filter_col, filter_col)
     deallocate(filter_col)
 
@@ -992,319 +995,5 @@ contains
     enddo
 
   end subroutine EMID_Verify_All_Data_Is_Set
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_Filter_for_EM(data_list, em_stage, &
-        num_filter, filter)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's filter for EM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_FILTER_HYDROLOGYC
-    use ExternalModelConstants    , only : L2E_FILTER_NOLAKEC
-    use ExternalModelConstants    , only : L2E_FILTER_NOLAKEC_AND_NOURBANC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_HYDROLOGYC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_NOLAKEC
-    use ExternalModelConstants    , only : L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_filter ! number of column soil points in column filter
-    integer              , intent(in) :: filter(:)  ! column filter for soil points
-    !
-    integer                           :: i
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_FILTER_HYDROLOGYC, L2E_FILTER_NOLAKEC, L2E_FILTER_NOLAKEC_AND_NOURBANC)
-             do i = 1, num_filter
-                cur_data%data_int_1d(i) = filter(i)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FILTER_NUM_HYDROLOGYC, L2E_FILTER_NUM_NOLAKEC, L2E_FILTER_NUM_NOLAKEC_AND_NOURBANC)
-
-             cur_data%data_int_1d(1) = num_filter
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-  end subroutine EMID_Pack_Filter_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_Column_for_EM(data_list, em_stage, &
-        num_filter, filter)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's column type for EM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_COLUMN_ACTIVE
-    use ExternalModelConstants    , only : L2E_COLUMN_TYPE
-    use ExternalModelConstants    , only : L2E_COLUMN_LANDUNIT_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ
-    use ExternalModelConstants    , only : L2E_COLUMN_Z
-    use ExternalModelConstants    , only : L2E_COLUMN_AREA
-    use ExternalModelConstants    , only : L2E_COLUMN_GRIDCELL_INDEX
-    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_BEGIN
-    use ExternalModelConstants    , only : L2E_COLUMN_PATCH_INDEX_END
-    use ExternalModelConstants    , only : L2E_COLUMN_NUM_SNOW_LAYERS
-    use ExternalModelConstants    , only : L2E_COLUMN_ZI_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_DZ_SNOW_AND_SOIL
-    use ExternalModelConstants    , only : L2E_COLUMN_Z_SNOW_AND_SOIL
-    use ColumnType                , only : col_pp
-    use clm_varpar                , only : nlevgrnd, nlevsno
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_filter ! number of column soil points in column filter
-    integer              , intent(in) :: filter(:)  ! column filter for soil points
-    !
-    integer                           :: fc,c,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_COLUMN_ACTIVE)
-             do fc = 1, num_filter
-                c = filter(fc)
-                if (col_pp%active(c)) cur_data%data_int_1d(c) = 1
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_TYPE)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_int_1d(c) = col_pp%itype(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_LANDUNIT_INDEX)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_int_1d(c) = col_pp%landunit(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_ZI)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = 0, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col_pp%zi(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_DZ)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col_pp%dz(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_Z)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col_pp%z(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_AREA)
-             do fc = 1, num_filter
-                c = filter(fc)
-                !cur_data%data_real_1d(c) = col_pp%area(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_GRIDCELL_INDEX)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_int_1d(c) = col_pp%gridcell(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_PATCH_INDEX_BEGIN)
-             do fc = 1, num_filter
-                c = filter(fc)
-#ifndef FATES_VIA_EMI
-                cur_data%data_int_1d(c) = col_pp%pfti(c)
-#else
-                cur_data%data_int_1d(c) = col_pp%patchi(c)
-#endif
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_PATCH_INDEX_END)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_int_1d(c) = col_pp%pftf(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_NUM_SNOW_LAYERS)
-             do fc = 1, num_filter
-                c = filter(fc)
-                cur_data%data_int_1d(c) = col_pp%snl(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_ZI_SNOW_AND_SOIL)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = -nlevsno, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col_pp%zi(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_DZ_SNOW_AND_SOIL)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = -nlevsno+1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col_pp%dz(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_COLUMN_Z_SNOW_AND_SOIL)
-             do fc = 1, num_filter
-                c = filter(fc)
-                do j = -nlevsno+1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = col_pp%z(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-  end subroutine EMID_Pack_Column_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_Landunit_for_EM(data_list, em_stage, &
-        num_filter, filter)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's landunit type for EM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_LANDUNIT_TYPE
-    use ExternalModelConstants    , only : L2E_LANDUNIT_LAKEPOINT
-    use ExternalModelConstants    , only : L2E_LANDUNIT_URBANPOINT
-    use LandunitType              , only : lun_pp
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_filter ! number of column soil points in column filter
-    integer              , intent(in) :: filter(:)  ! column filter for soil points
-    !
-    integer                           :: fl,l
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_LANDUNIT_TYPE)
-             do fl = 1, num_filter
-                l = filter(fl)
-                cur_data%data_int_1d(l) = lun_pp%itype(l)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_LANDUNIT_LAKEPOINT)
-             do fl = 1, num_filter
-                l = filter(fl)
-                if (lun_pp%lakpoi(l)) cur_data%data_int_1d(l) = 1
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_LANDUNIT_URBANPOINT)
-             do fl = 1, num_filter
-                l = filter(fl)
-                if (lun_pp%urbpoi(l)) cur_data%data_int_1d(l) = 1
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-  end subroutine EMID_Pack_Landunit_for_EM
 
 end module ExternalModelInterfaceMod
