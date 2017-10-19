@@ -27,6 +27,8 @@ module ExternalModelInterfaceMod
   use EMI_SoilHydrologyType_ExchangeMod     , only : EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM
   use EMI_WaterFluxType_ExchangeMod         , only : EMI_Pack_WaterFluxType_at_Column_Level_for_EM
   use EMI_WaterFluxType_ExchangeMod         , only : EMI_Unpack_WaterFluxType_at_Column_Level_from_EM
+  use EMI_EnergyFluxType_ExchangeMod        , only : EMI_Pack_EnergyFluxType_at_Column_Level_for_EM
+  use EMI_CanopyStateType_ExchangeMod       , only : EMI_Unpack_CanopyStateType_at_Patch_Level_from_EM
   !
   implicit none
   !
@@ -644,7 +646,9 @@ contains
     integer          :: nstep
     type(bounds_type):: bounds_clump
     integer          :: num_filter_col
+    integer          :: num_filter_patch
     integer, pointer :: filter_col(:)
+    integer, pointer :: filter_patch(:)
     integer          :: ii
     integer          :: iem
 
@@ -733,7 +737,7 @@ contains
     if ( present(num_nolakec_and_nourbanc) .and. &
          present(filter_nolakec_and_nourbanc)) then
 
-       call EMID_Pack_EnergyFlux_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_EnergyFluxType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, energyflux_vars)
 
     endif
@@ -877,7 +881,20 @@ contains
     endif
 
     if (present(canopystate_vars)) then
-       call EMID_Unpack_CanopyState_Vars_for_EM(e2l_driver_list(iem), em_stage, canopystate_vars)
+          ! GB_FIX_ME: Create a temporary filter
+          if (present(clump_rank)) then
+             call get_clump_bounds(clump_rank, bounds_clump)
+          else
+             call get_clump_bounds(1, bounds_clump)
+          endif
+          num_filter_patch = bounds_clump%endp - bounds_clump%begp + 1
+          allocate(filter_patch(num_filter_patch))
+          do ii = 1, num_filter_patch
+             filter_patch(ii) = bounds_clump%begp + ii - 1
+          enddo
+          call EMI_Unpack_CanopyStateType_at_Patch_Level_from_EM(e2l_driver_list(iem), em_stage, &
+               num_filter_patch, filter_patch, canopystate_vars)
+          deallocate(filter_patch)
     endif
 
     if ( present(temperature_vars) .and. &
@@ -1339,190 +1356,5 @@ contains
     end associate
 
   end subroutine EMID_Pack_Atm2Land_Forcings_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Unpack_CanopyState_Vars_for_EM(data_list, em_stage, canopystate_vars)
-    !
-    ! !DESCRIPTION:
-    ! Save data for EM from ALM's canopyState_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : E2L_STATE_FSUN
-    use ExternalModelConstants    , only : E2L_STATE_LAISUN
-    use ExternalModelConstants    , only : E2L_STATE_LAISHA
-    use CanopyStateType           , only : canopystate_type
-    use clm_varpar                , only : nlevsoi, nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list), intent(in) :: data_list
-    integer             , intent(in) :: em_stage
-    type(canopystate_type), optional ,  intent(inout) :: canopystate_vars
-    !
-    integer                           :: p
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_unpack
-    integer                           :: istage
-
-    associate( &
-         fsun       => canopystate_vars%fsun_patch,   &
-         laisun     => canopystate_vars%laisun_patch, &
-         laisha     => canopystate_vars%laisha_patch  &
-    )
-
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-
-       need_to_unpack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_unpack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_unpack) then
-
-          select case (cur_data%id)
-
-          case (E2L_STATE_FSUN)
-             do p = cur_data%dim1_beg, cur_data%dim1_end
-                fsun(p) = cur_data%data_real_1d(p)
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_STATE_LAISUN)
-             do p = cur_data%dim1_beg, cur_data%dim1_end
-                laisun(p) = cur_data%data_real_1d(p)
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_STATE_LAISHA)
-             do p = cur_data%dim1_beg, cur_data%dim1_end
-                laisha(p) = cur_data%data_real_1d(p)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-
-  end subroutine EMID_Unpack_CanopyState_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_EnergyFlux_Vars_for_EM(data_list, em_stage, &
-        num_filter_col, filter_col, energyflux_vars)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's energyflux_vars for EM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_FLUX_ABSORBED_SOLAR_RADIATION
-    use ExternalModelConstants    , only : L2E_FLUX_SOIL_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_SNOW_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_H2OSFC_HEAT_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX
-    use EnergyFluxType            , only : energyflux_type
-    use clm_varpar                , only : nlevsno
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_filter_col       ! number of points in column filter
-    integer              , intent(in) :: filter_col(:)        ! column filter for soil points
-    type(energyflux_type), intent(in) :: energyflux_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-#ifdef USE_PETSC_LIB
-    associate(&
-         sabg_lyr    => energyflux_vars%eflx_sabg_lyr_col    , &
-         hs_soil     => energyflux_vars%eflx_hs_soil_col     , &
-         hs_top_snow => energyflux_vars%eflx_hs_top_snow_col , &
-         hs_h2osfc   => energyflux_vars%eflx_hs_h2osfc_col   , &
-         dhsdT       => energyflux_vars%eflx_dhsdT_col         &
-         )
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_FLUX_ABSORBED_SOLAR_RADIATION)
-
-             do fc = 1, num_filter_col
-                c = filter_col(fc)
-                do j = -nlevsno+1, 1
-                   cur_data%data_real_2d(c,j) = sabg_lyr(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SOIL_HEAT_FLUX)
-
-             do fc = 1, num_filter_col
-                c = filter_col(fc)
-                cur_data%data_real_1d(c) = hs_soil(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SNOW_HEAT_FLUX)
-
-             do fc = 1, num_filter_col
-                c = filter_col(fc)
-                cur_data%data_real_1d(c) = hs_top_snow(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_H2OSFC_HEAT_FLUX)
-
-             do fc = 1, num_filter_col
-                c = filter_col(fc)
-                cur_data%data_real_1d(c) = hs_h2osfc(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_DERIVATIVE_OF_HEAT_FLUX)
-
-             do fc = 1, num_filter_col
-                c = filter_col(fc)
-                cur_data%data_real_1d(c) = dhsdT(c)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-#endif
-
-  end subroutine EMID_Pack_EnergyFlux_Vars_for_EM
 
 end module ExternalModelInterfaceMod
