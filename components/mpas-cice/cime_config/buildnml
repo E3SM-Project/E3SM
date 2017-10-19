@@ -568,6 +568,12 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="meltPondAreaFinalArea"/>' . "\n";
 	print $stream_file '	<var name="meltPondDepthFinalArea"/>' . "\n";
 	print $stream_file '	<var name="meltPondLidThicknessFinalArea"/>' . "\n";
+	print $stream_file '	<var name="oceanHeatFlux"/>' . "\n";
+	print $stream_file '	<var name="oceanShortwaveFlux"/>' . "\n";
+	print $stream_file '	<var name="oceanFreshWaterFlux"/>' . "\n";
+	print $stream_file '	<var name="oceanSaltFlux"/>' . "\n";
+	print $stream_file '	<var name="uAirVelocity"/>' . "\n";
+	print $stream_file '	<var name="vAirVelocity"/>' . "\n";
         if ( $ICE_BGC eq 'ice_bgc' ) {
                 print $stream_file '    <var name="totalVerticalBiologyIce"/>' . "\n";
                 print $stream_file '    <var name="totalChlorophyll"/>' . "\n";
