@@ -25,6 +25,8 @@ module ExternalModelInterfaceMod
   use EMI_SoilStateType_ExchangeMod         , only : EMI_Unpack_SoilStateType_at_Column_Level_from_EM
   use EMI_SoilHydrologyType_ExchangeMod     , only : EMI_Pack_SoilHydrologyType_at_Column_Level_for_EM
   use EMI_SoilHydrologyType_ExchangeMod     , only : EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM
+  use EMI_WaterFluxType_ExchangeMod         , only : EMI_Pack_WaterFluxType_at_Column_Level_for_EM
+  use EMI_WaterFluxType_ExchangeMod         , only : EMI_Unpack_WaterFluxType_at_Column_Level_from_EM
   !
   implicit none
   !
@@ -318,7 +320,7 @@ contains
           ! Pack all ALM data needed by the external model
           call EMI_Pack_WaterStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, waterstate_vars)
-          call EMID_Pack_WaterFlux_Vars_for_EM(l2e_init_list(clump_rank), em_stage, &
+          call EMI_Pack_WaterFluxType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, waterflux_vars)
           call EMI_Pack_SoilHydrologyType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
                num_filter_col, filter_col, soilhydrology_vars)
@@ -370,7 +372,7 @@ contains
                num_e2l_filter_col, e2l_filter_col, soilstate_vars)
           call EMI_Unpack_WaterStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, waterstate_vars)
-          call EMID_Unpack_WaterFlux_Vars_for_EM(e2l_init_list(clump_rank), em_stage, &
+          call EMI_Unpack_WaterFluxType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, waterflux_vars)
           call EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
                num_e2l_filter_col, e2l_filter_col, soilhydrology_vars)
@@ -724,7 +726,7 @@ contains
          present(num_hydrologyc) .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Pack_WaterFlux_Vars_for_EM(l2e_driver_list(iem), em_stage, &
+       call EMI_Pack_WaterFluxType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc, waterflux_vars)
     endif
 
@@ -854,7 +856,7 @@ contains
          present(num_hydrologyc) .and. &
          present(filter_hydrologyc)) then
 
-       call EMID_Unpack_WaterFlux_Vars_for_EM(e2l_driver_list(iem), em_stage, &
+       call EMI_Unpack_WaterFluxType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
             num_hydrologyc, filter_hydrologyc, waterflux_vars)
     endif
 
@@ -955,215 +957,6 @@ contains
     enddo
 
   end subroutine EMID_Verify_All_Data_Is_Set
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Pack_WaterFlux_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, waterflux_vars)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from ALM's waterflux_vars for EM
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : L2E_FLUX_INFIL_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_VERTICAL_ET_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_DEW_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_SNOW_SUBLIMATION_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_RESTART_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use ExternalModelConstants    , only : L2E_FLUX_DRAINAGE_MASS_FLUX
-    use WaterFluxType             , only : waterflux_type
-    use clm_varpar                , only : nlevsoi, nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer              , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(waterflux_type) , intent(in) :: waterflux_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_pack
-    integer                           :: istage
-    integer                           :: count
-
-#ifdef USE_PETSC_LIB
-    associate(&
-         mflx_infl_col         => waterflux_vars%mflx_infl_col         , &
-         mflx_dew_col          => waterflux_vars%mflx_dew_col          , &
-         mflx_snowlyr_disp_col => waterflux_vars%mflx_snowlyr_disp_col , &
-         mflx_snowlyr_col      => waterflux_vars%mflx_snowlyr_col      , &
-         mflx_sub_snow_col     => waterflux_vars%mflx_sub_snow_col     , &
-         mflx_et_col           => waterflux_vars%mflx_et_col           , &
-         mflx_drain_col        => waterflux_vars%mflx_drain_col          &
-         )
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_pack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_pack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_pack) then
-
-          select case (cur_data%id)
-
-          case (L2E_FLUX_VERTICAL_ET_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevsoi
-                   cur_data%data_real_2d(c,j) = mflx_et_col(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_INFIL_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = mflx_infl_col(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_DEW_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = mflx_dew_col(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SNOW_SUBLIMATION_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = mflx_sub_snow_col(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = mflx_snowlyr_disp_col(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_RESTART_SNOW_LYR_DISAPPERANCE_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                cur_data%data_real_1d(c) = mflx_snowlyr_col(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (L2E_FLUX_DRAINAGE_MASS_FLUX)
-
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                do j = 1, nlevgrnd
-                   cur_data%data_real_2d(c,j) = mflx_drain_col(c,j)
-                enddo
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-#endif
-
-  end subroutine EMID_Pack_WaterFlux_Vars_for_EM
-
-!-----------------------------------------------------------------------
-  subroutine EMID_Unpack_WaterFlux_Vars_for_EM(data_list, em_stage, &
-        num_hydrologyc, filter_hydrologyc, waterflux_vars)
-    !
-    ! !DESCRIPTION:
-    ! Pack data from EM in ALM's waterflux_vars
-    !
-    ! !USES:
-    use ExternalModelConstants    , only : E2L_FLUX_AQUIFER_RECHARGE
-    use ExternalModelConstants    , only : E2L_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX
-    use WaterFluxType             , only : waterflux_type
-    use clm_varpar                , only : nlevsoi, nlevgrnd
-    !
-    implicit none
-    !
-    class(emi_data_list) , intent(in) :: data_list
-    integer              , intent(in) :: em_stage
-    integer              , intent(in) :: num_hydrologyc       ! number of column soil points in column filter
-    integer              , intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(waterflux_type) , intent(in) :: waterflux_vars
-    !
-    integer                           :: c,fc,j
-    class(emi_data), pointer          :: cur_data
-    logical                           :: need_to_unpack
-    integer                           :: istage
-    integer                           :: count
-
-#ifdef USE_PETSC_LIB
-    associate( &
-         mflx_recharge_col   => waterflux_vars%mflx_recharge_col, &
-         mflx_snowlyr_col    => waterflux_vars%mflx_snowlyr_col   &
-    )
-
-    count = 0
-    cur_data => data_list%first
-    do
-       if (.not.associated(cur_data)) exit
-       count = count + 1
-
-       need_to_unpack = .false.
-       do istage = 1, cur_data%num_em_stages
-          if (cur_data%em_stage_ids(istage) == em_stage) then
-             need_to_unpack = .true.
-             exit
-          endif
-       enddo
-
-       if (need_to_unpack) then
-
-          select case (cur_data%id)
-
-          case (E2L_FLUX_AQUIFER_RECHARGE)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                mflx_recharge_col(c) = cur_data%data_real_1d(c)
-             enddo
-             cur_data%is_set = .true.
-
-          case (E2L_FLUX_SNOW_LYR_DISAPPERANCE_MASS_FLUX)
-             do fc = 1, num_hydrologyc
-                c = filter_hydrologyc(fc)
-                mflx_snowlyr_col(c) = cur_data%data_real_1d(c)
-             enddo
-             cur_data%is_set = .true.
-
-          end select
-
-       endif
-
-       cur_data => cur_data%next
-    enddo
-
-    end associate
-#endif
-
-  end subroutine EMID_Unpack_WaterFlux_Vars_for_EM
 
 !-----------------------------------------------------------------------
   subroutine EMID_Pack_Filter_for_EM(data_list, em_stage, &
