@@ -195,7 +195,7 @@
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
 <config_use_cvmix_background>.true.</config_use_cvmix_background>
-<config_cvmix_background_diffusion>1.0e-5</config_cvmix_background_diffusion>
+<config_cvmix_background_diffusion>0.0</config_cvmix_background_diffusion>
 <config_cvmix_background_viscosity>1.0e-4</config_cvmix_background_viscosity>
 <config_use_cvmix_convection>.true.</config_use_cvmix_convection>
 <config_cvmix_convective_diffusion>1.0</config_cvmix_convective_diffusion>
