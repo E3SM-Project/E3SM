@@ -472,14 +472,14 @@ sub read_configure_definition {
 #-----------------------------------------------------------------------------------------------
 
 sub read_namelist_definition {
-  my ($drvblddir, $opts, $nl_flags, $physv) = @_;
+  my ($cfgdir, $opts, $nl_flags, $physv) = @_;
 
   # The namelist definition file contains entries for all namelist
   # variables that can be output by build-namelist.
   my $phys = $physv->as_filename( );
-  my @nl_definition_files = ( "$drvblddir/namelist_files/namelist_definition_drv.xml",
-                              "$drvblddir/namelist_files/namelist_definition_modio.xml",
-                              "$nl_flags->{'cfgdir'}/namelist_files/namelist_definition_$phys.xml" );
+  my @nl_definition_files = ( "$cfgdir/namelist_files/namelist_definition_drv.xml",
+                              "$cfgdir/namelist_files/namelist_definition_drv_flds.xml",
+                              "$cfgdir/namelist_files/namelist_definition_$phys.xml" );
   foreach my $nl_defin_file  ( @nl_definition_files ) {
     (-f "$nl_defin_file")  or  fatal_error("Cannot find namelist definition file \"$nl_defin_file\"\n");
 
@@ -4034,7 +4034,7 @@ sub main {
   $nl_flags{'cfgdir'} = dirname(abs_path($0));
 
   my %opts = process_commandline(\%nl_flags);
-
+  my $cfgdir = $nl_flags{'cfgdir'};
   version($nl_flags{'cfgdir'}) if $opts{'version'};
   set_print_level(\%opts);
 
@@ -4043,9 +4043,8 @@ sub main {
 
   my $physv = config_files::clm_phys_vers->new( $cfg->get('phys') );
   my $cesmroot   = abs_path( "$nl_flags{'cfgdir'}/../../../");
-  my $drvblddir  = "$cesmroot/cime/src/drivers/mct/bld";
-  my $definition = read_namelist_definition($drvblddir, \%opts, \%nl_flags, $physv);
-  my $defaults   = read_namelist_defaults($drvblddir, \%opts, \%nl_flags, $cfg, $physv);
+  my $definition = read_namelist_definition($cfgdir, \%opts, \%nl_flags, $physv);
+  my $defaults   = read_namelist_defaults($cfgdir, \%opts, \%nl_flags, $cfg, $physv);
 
   # List valid values if asked for
   list_options(\%opts, $definition, $defaults);
