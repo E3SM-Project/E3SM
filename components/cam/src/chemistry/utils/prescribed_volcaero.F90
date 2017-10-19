@@ -33,17 +33,36 @@ module prescribed_volcaero
   character(len=9), parameter :: volcmass_name = 'VOLC_MASS'
   character(len=11), parameter :: volcmass_column_name = 'VOLC_MASS_C'
 
+  ! Variables for CMIP6 style volcanic aerosols file
+  character(len=12), parameter :: volc_ext_sun_name     = 'VOLC_EXT_SUN'    !extinction coefficient of solar bands in 1/km BALLI- change units appropriately 
+  character(len=14), parameter :: volc_omega_sun_name   = 'VOLC_OMEGA_SUN'  !single scattering albedo of solar bands
+  character(len=10), parameter :: volc_g_sun_name       = 'VOLC_G_SUN'      !asymmetry factor of solar bands
+
+  character(len=14), parameter :: volc_ext_earth_name   = 'VOLC_EXT_EARTH'   !extinction coefficient of terrestrial bands in 1/km BALLI- change units appropriately
+  character(len=16), parameter :: volc_omega_earth_name = 'VOLC_OMEGA_EARTH' !single scattering albedo of terrestrial bands
+  character(len=12), parameter :: volc_g_earth_name     = 'VOLC_G_EARTH'     !asymmetry factor of terrestrial bands
+
   ! These variables are settable via the namelist (with longer names)
   character(len=16)  :: fld_name = 'MMRVOLC'
   character(len=256) :: filename = ''
   character(len=256) :: filelist = ''
   character(len=256) :: datapath = ''
   character(len=32)  :: data_type = 'SERIAL'
+  character(len=32)  :: file_type = 'VOLC_MIXING_RATIO'
   logical            :: rmv_file = .false.
   integer            :: cycle_yr  = 0
   integer            :: fixed_ymd = 0
   integer            :: fixed_tod = 0
   integer            :: radius_ndx
+
+  ! Variables settable via the namelist for CMIP6 style volcanic aerosols file
+  character(len=16)  :: ext_sun_name     = 'ext_sun'
+  character(len=16)  :: omega_sun_name   = 'omega_sun'
+  character(len=16)  :: g_sun_name       = 'g_sun'
+
+  character(len=16)  :: ext_earth_name   = 'ext_earth'
+  character(len=16)  :: omega_earth_name = 'omega_earth'
+  character(len=16)  :: g_earth_name     = 'g_sun'
 
 contains
 
@@ -66,21 +85,42 @@ subroutine prescribed_volcaero_readnl(nlfile)
    character(len=256) :: prescribed_volcaero_filelist
    character(len=256) :: prescribed_volcaero_datapath
    character(len=32)  :: prescribed_volcaero_type
+   character(len=32)  :: prescribed_volcaero_filetype
    logical            :: prescribed_volcaero_rmfile
    integer            :: prescribed_volcaero_cycle_yr
    integer            :: prescribed_volcaero_fixed_ymd
    integer            :: prescribed_volcaero_fixed_tod
+   
+   !local variables for CMIP6 style volcanic file
 
-   namelist /prescribed_volcaero_nl/ &
-      prescribed_volcaero_name,      &
-      prescribed_volcaero_file,      &
-      prescribed_volcaero_filelist,  &
-      prescribed_volcaero_datapath,  &
-      prescribed_volcaero_type,      &
-      prescribed_volcaero_rmfile,    &
-      prescribed_volcaero_cycle_yr,  &
-      prescribed_volcaero_fixed_ymd, &
-      prescribed_volcaero_fixed_tod      
+   character(len=16)  :: prescribed_volc_ext_sun_name   
+   character(len=16)  :: prescribed_volc_omega_sun_name 
+   character(len=16)  :: prescribed_volc_g_sun_name     
+   
+   character(len=16)  :: prescribed_volc_ext_earth_name  
+   character(len=16)  :: prescribed_volc_omega_earth_name
+   character(len=16)  :: prescribed_volc_g_earth_name    
+
+   
+
+   namelist /prescribed_volcaero_nl/    &
+      prescribed_volcaero_name,         &
+      prescribed_volcaero_file,         &
+      prescribed_volcaero_filelist,     &
+      prescribed_volcaero_datapath,     &
+      prescribed_volcaero_type,         &
+      prescribed_volcaero_rmfile,       &
+      prescribed_volcaero_cycle_yr,     &
+      prescribed_volcaero_fixed_ymd,    &
+      prescribed_volcaero_fixed_tod,    &
+      prescribed_volcaero_filetype,     &
+      prescribed_volc_ext_sun_name,     &
+      prescribed_volc_omega_sun_name,   &
+      prescribed_volc_g_sun_name,       &
+      prescribed_volc_ext_earth_name,   & 
+      prescribed_volc_omega_earth_name, &
+      prescribed_volc_g_earth_name
+
    !-----------------------------------------------------------------------------
 
    ! Initialize namelist variables from local module variables.
@@ -89,10 +129,19 @@ subroutine prescribed_volcaero_readnl(nlfile)
    prescribed_volcaero_filelist = filelist
    prescribed_volcaero_datapath = datapath
    prescribed_volcaero_type     = data_type
+   prescribed_volcaero_filetype = file_type
    prescribed_volcaero_rmfile   = rmv_file
    prescribed_volcaero_cycle_yr = cycle_yr
    prescribed_volcaero_fixed_ymd= fixed_ymd
    prescribed_volcaero_fixed_tod= fixed_tod
+
+   prescribed_volc_ext_sun_name     = ext_sun_name
+   prescribed_volc_omega_sun_name   = omega_sun_name
+   prescribed_volc_g_sun_name       = g_sun_name 
+   prescribed_volc_ext_earth_name   = ext_earth_name
+   prescribed_volc_omega_earth_name = omega_earth_name
+   prescribed_volc_g_earth_name     = g_earth_name
+
 
    ! Read namelist
    if (masterproc) then
@@ -116,10 +165,18 @@ subroutine prescribed_volcaero_readnl(nlfile)
    call mpibcast(prescribed_volcaero_filelist, len(prescribed_volcaero_filelist), mpichar, 0, mpicom)
    call mpibcast(prescribed_volcaero_datapath, len(prescribed_volcaero_datapath), mpichar, 0, mpicom)
    call mpibcast(prescribed_volcaero_type,     len(prescribed_volcaero_type),     mpichar, 0, mpicom)
+   call mpibcast(prescribed_volcaero_filetype, len(prescribed_volcaero_filetype), mpichar, 0, mpicom)
    call mpibcast(prescribed_volcaero_rmfile,   1, mpilog,  0, mpicom)
    call mpibcast(prescribed_volcaero_cycle_yr, 1, mpiint,  0, mpicom)
    call mpibcast(prescribed_volcaero_fixed_ymd,1, mpiint,  0, mpicom)
    call mpibcast(prescribed_volcaero_fixed_tod,1, mpiint,  0, mpicom)
+
+   call mpibcast(prescribed_volc_ext_sun_name,      len(prescribed_volc_ext_sun_name),     mpichar, 0, mpicom)
+   call mpibcast(prescribed_volc_omega_sun_name,    len(prescribed_volc_omega_sun_name),   mpichar, 0, mpicom)
+   call mpibcast(prescribed_volc_g_sun_name,        len(prescribed_volc_g_sun_name),       mpichar, 0, mpicom)
+   call mpibcast(prescribed_volc_ext_earth_name,    len(prescribed_volc_ext_earth_name),   mpichar, 0, mpicom)
+   call mpibcast(prescribed_volc_omega_earth_name,  len(prescribed_volc_omega_earth_name), mpichar, 0, mpicom)
+   call mpibcast(prescribed_volc_g_earth_name,      len(prescribed_volc_g_earth_name),     mpichar, 0, mpicom)
 #endif
 
    ! Update module variables with user settings.
@@ -128,10 +185,20 @@ subroutine prescribed_volcaero_readnl(nlfile)
    filelist   = prescribed_volcaero_filelist
    datapath   = prescribed_volcaero_datapath
    data_type  = prescribed_volcaero_type
+   file_type  = prescribed_volcaero_filetype
    rmv_file   = prescribed_volcaero_rmfile
    cycle_yr   = prescribed_volcaero_cycle_yr
    fixed_ymd  = prescribed_volcaero_fixed_ymd
    fixed_tod  = prescribed_volcaero_fixed_tod
+
+   ext_sun_name     = prescribed_volc_ext_sun_name
+   omega_sun_name   = prescribed_volc_omega_sun_name
+   g_sun_name       = prescribed_volc_g_sun_name
+   ext_earth_name   = prescribed_volc_ext_earth_name
+   omega_earth_name = prescribed_volc_omega_earth_name
+   g_earth_name     = prescribed_volc_g_earth_name
+
+
 
    ! Turn on prescribed volcanics if user has specified an input dataset.
    if (len_trim(filename) > 0 ) has_prescribed_volcaero = .true.
@@ -142,14 +209,26 @@ end subroutine prescribed_volcaero_readnl
 !-------------------------------------------------------------------
   subroutine prescribed_volcaero_register()
     use ppgrid,         only: pver,pcols
-    use physics_buffer, only : pbuf_add_field, dtype_r8
-
+    use physics_buffer, only: pbuf_add_field, dtype_r8
+    !use radconstants,   only: nswbands, nlwbands
     integer :: idx
 
     if (has_prescribed_volcaero) then
-       call pbuf_add_field(volcaero_name,'physpkg',dtype_r8,(/pcols,pver/),idx)
-       call pbuf_add_field(volcrad_name, 'physpkg',dtype_r8,(/pcols,pver/),idx)
+       !if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
+       call pbuf_add_field(volc_ext_sun_name,     'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx) !BALLI- change hardwired 14 16 etc...
+       call pbuf_add_field(volc_omega_sun_name,   'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+       call pbuf_add_field(volc_g_sun_name,       'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+       
+       call pbuf_add_field(volc_ext_earth_name,   'physpkg',dtype_r8,(/pcols,pver,nlwbands/),idx)
+       call pbuf_add_field(volc_omega_earth_name, 'physpkg',dtype_r8,(/pcols,pver,nlwbands/),idx)
+       call pbuf_add_field(volc_g_earth_name,     'physpkg',dtype_r8,(/pcols,pver,nlwbands/),idx)
 
+       !else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
+       call pbuf_add_field(volcaero_name,'physpkg',dtype_r8,(/pcols,pver/),idx) !BALLI- we have to initialize it for radiation codes....but why????
+       call pbuf_add_field(volcrad_name, 'physpkg',dtype_r8,(/pcols,pver/),idx)
+       !else 
+          !error message for else block
+       !endif
     endif
 
   endsubroutine prescribed_volcaero_register
@@ -170,7 +249,7 @@ end subroutine prescribed_volcaero_readnl
 
     integer :: ndx, istat
     integer :: errcode
-    character(len=32) :: specifier(1)
+    character(len=32),allocatable :: specifier(:)
     
     if ( has_prescribed_volcaero ) then
        if ( masterproc ) then
@@ -179,8 +258,21 @@ end subroutine prescribed_volcaero_readnl
     else
        return
     endif
-
-    specifier(1) = trim(volcaero_name)//':'//trim(fld_name)
+    
+    if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
+       allocate(specifier(6))
+       specifier(1) = trim(volc_ext_sun_name)//':'//trim(ext_sun_name)
+       specifier(2) = trim(volc_omega_sun_name)//':'//trim(omega_sun_name)
+       specifier(3) = trim(volc_g_sun_name)//':'//trim(g_sun_name)
+       specifier(4) = trim(volc_ext_earth_name)//':'//trim(ext_earth_name)
+       specifier(5) = trim(volc_omega_earth_name)//':'//trim(omega_earth_name)
+       specifier(6) = trim(volc_g_earth_name)//':'//trim(g_earth_name)
+    else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
+       allocate (specifier(1))
+       specifier(1) = trim(volcaero_name)//':'//trim(fld_name)
+    else
+       call endrun('prescribed_volcaero_init: Invalid volcanic file type')
+    endif
 
 
     allocate(file%in_pbuf(size(specifier)))
@@ -188,6 +280,7 @@ end subroutine prescribed_volcaero_readnl
     call trcdata_init( specifier, filename, filelist, datapath, fields, file, &
                        rmv_file, cycle_yr, fixed_ymd, fixed_tod, data_type)
 
+    deallocate(specifier)
 
     call addfld(volcaero_name, (/ 'lev' /), 'I','kg/kg', 'prescribed volcanic aerosol dry mass mixing ratio' )
     call addfld(volcrad_name, (/ 'lev' /), 'I','m', 'volcanic aerosol geometric-mean radius' )
