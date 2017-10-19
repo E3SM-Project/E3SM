@@ -168,7 +168,8 @@ contains
 !         col_begpb(c) = totpftp(c)
 !         col_begpb(c) = sminp(c)
 !         col_begpb(c) = totsomp(c)+totlitp(c)+cwdp(c)
-!        if(c==2284)then
+!        if(c==1596)then
+!          print*,'============================='
 !          print*,'begabgp=', phosphorusstate_vars%totabgp_col(c)
 !          print*,'begblgp=', phosphorusstate_vars%totblgp_col(c)
 !        endif
@@ -263,22 +264,22 @@ contains
          if (err_found) then
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            write(iulog,*)'input  =',col_cinputs*dt
-            write(iulog,*)'output =',col_coutputs*dt
-            write(iulog,*)'er     =',er(c)*dt
-            write(iulog,*)'hr     =',carbonflux_vars%hr_col(c)*dt
-            write(iulog,*)'fire   =',col_fire_closs(c)*dt
-            write(iulog,*)'dwt    =',dwt_closs(c)*dt
-            write(iulog,*)'product=',product_closs(c)*dt
-            write(iulog,*)'hrv    =',col_hrv_xsmrpool_to_atm(c)*dt
-            write(iulog,*)'leach  =',som_c_leached(c)*dt
-            write(iulog,*)'begcb       = ',col_begcb(c)
-            write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
-            write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
-            write(iulog,*)'abgc =',carbonstate_vars%totabgc_col(c)
-            write(iulog,*)'blgc=',carbonstate_vars%totblgc_col(c)
-            write(iulog,*)'plt2soi=',carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt
+            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+            write(iulog,*)'input                 = ',col_cinputs*dt
+            write(iulog,*)'output                = ',col_coutputs*dt
+            write(iulog,*)'er                    = ',er(c)*dt
+            write(iulog,*)'hr                    = ',carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+            write(iulog,*)'dwt                   = ',dwt_closs(c)*dt
+            write(iulog,*)'product               = ',product_closs(c)*dt
+            write(iulog,*)'hrv                   = ',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+            write(iulog,*)'begcb                 = ',col_begcb(c)
+            write(iulog,*)'endcb                 = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
+            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+            write(iulog,*)'abgc                  = ',carbonstate_vars%totabgc_col(c)
+            write(iulog,*)'blgc                  = ',carbonstate_vars%totblgc_col(c)
+            write(iulog,*)'plt2soi               = ',carbonflux_vars%cflx_plant_to_soilbgc_col(c)*dt
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if
@@ -470,14 +471,9 @@ contains
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begnb                 = ',col_begnb(c)
          write(iulog,*)'endnb                 = ',col_endnb(c)
-         write(iulog,*)'delta store           = ',col_endnb(c)-col_begnb(c)
-         write(iulog,*)'input mass            = ',col_ninputs(c)*dt
-         write(iulog,*)'output mass           = ',col_noutputs(c)*dt
-         write(iulog,*)'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
-         write(iulog,*)'denit                 = ',denit(c)*dt
-         write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
-         write(iulog,*)'no3 leach             = ', smin_no3_leached(c)*dt 
-         write(iulog,*)'no3 runof             = ', smin_no3_runoff(c)*dt
+         write(iulog,*)'delta_store           = ',col_endnb(c)-col_begnb(c)
+         write(iulog,*)'net_flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
+         write(iulog,*)'input_mass            = ',col_ninputs(c)*dt
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
          write(iulog,*)'nfix                  = ', nfix_to_sminn(c)*dt
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
@@ -486,14 +482,23 @@ contains
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
-         write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt 
+         write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt
          write(iulog,*)'prod                  = ',product_nloss(c)*dt
-
+         write(iulog,*)'output_mass           = ',col_noutputs(c)*dt
+         write(iulog,*)'denit                 = ',denit(c)*dt
+         write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
+         write(iulog,*)'no3_leach             = ', smin_no3_leached(c)*dt
+         write(iulog,*)'no3_runof             = ', smin_no3_runoff(c)*dt
+         write(iulog,*)'som_n_leach           = ', -som_n_leached(c)*dt
+         write(iulog,*)'decompfireloss        = ',nitrogenflux_vars%fire_decomp_nloss_col(c)*dt
+         write(iulog,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
+         write(iulog,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
+         write(iulog,*)'abgn                  = ',nitrogenstate_vars%totabgn_col(c)
+         write(iulog,*)'blgn                  = ',totcoln(c)-nitrogenstate_vars%totabgn_col(c)
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
          call endrun(msg=errMsg(__FILE__, __LINE__))
-
 
       end if
 
@@ -690,6 +695,7 @@ contains
 !         write(*,*)'woodpro loss   = ', product_ploss(c) * dt
 !         write(*,*)'plant2bgcp     = ', phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt
 !         write(*,*)'leached som_p  = ', -som_p_leached(c) * dt
+!         write(*,*)'soil2plant     = ', phosphorusflux_vars%sminp_to_plant_col(c)*dt
 !         write(*,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
 !         write(*,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)
 !         call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -699,8 +705,7 @@ contains
 
       if (err_found) then
          c = err_index
-         call endrun(msg=errMsg(__FILE__, __LINE__))
-         write(iulog,*)'column pbalance error = ', col_errpb(c), c, get_nstep()
+         write(iulog,*)'column pbalance error = ', col_errpb(c), c,  get_nstep()
          write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begpb          = ',col_begpb(c)
          write(iulog,*)'endpb          = ',col_endpb(c)
@@ -717,7 +722,9 @@ contains
          write(iulog,*)'woodpro loss   = ', product_ploss(c) * dt
          write(iulog,*)'plant2bgcp     = ', phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt
          write(iulog,*)'leached som_p  = ', -som_p_leached(c) * dt
+         write(iulog,*)'soil2plant     = ', phosphorusflux_vars%sminp_to_plant_col(c)*dt
          write(iulog,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
+         write(iulog,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

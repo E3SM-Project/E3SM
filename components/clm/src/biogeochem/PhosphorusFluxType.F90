@@ -2219,6 +2219,11 @@ contains
      integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
 
      integer :: fc, c, j
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+           this%sminp_to_plant_patch(bounds%begp:bounds%endp), &
+           this%sminp_to_plant_col(bounds%begc:bounds%endc))
+
      ! total column-level fire P losses
      do fc = 1,num_soilc
         c = filter_soilc(fc)

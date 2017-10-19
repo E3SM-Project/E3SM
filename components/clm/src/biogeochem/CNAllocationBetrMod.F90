@@ -1089,6 +1089,25 @@ contains
      leafp_xfer                   => phosphorusstate_vars%leafp_xfer_patch              &
   )
 
+  do fc=1,num_soilc
+    c = filter_soilc(fc)
+    do p = col_pp%pfti(c), col_pp%pftf(c)
+      if (veg_pp%active(p).and. (veg_pp%itype(p) /= noveg)) then
+        ! scaling factor based on  CN ratio flexibility
+        leaf_totc=leafc(p) + leafc_storage(p) + leafc_xfer(p)
+        leaf_totn=leafn(p) + leafn_storage(p) + leafn_xfer(p)
+        leaf_totp=leafp(p) + leafp_storage(p) + leafp_xfer(p)
+        cn_scalar(p) = min(max((leaf_totc/max(leaf_totn, 1.e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                (leafcn(ivt(p)) - leafcn(ivt(p))*(1._r8- cn_stoich_var)),0.0_r8),1.0_r8)
+
+        cp_scalar(p) = min(max((leaf_totc/max(leaf_totp, 1.e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
+           (leafcp(ivt(p)) - leafcp(ivt(p))*(1._r8- cp_stoich_var)),0.0_r8),1.0_r8)
+      else
+        cn_scalar(p) = 1._r8
+        cp_scalar(p) = 1._r8
+      endif
+    enddo
+  enddo 
   do j = 1, nlevdecomp
     do fc=1,num_soilc
       c = filter_soilc(fc)
@@ -1109,16 +1128,7 @@ contains
       decomp_eff_ncompet_b(c,j) = 0._r8
       decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
-        if (veg_pp%active(p).and. (veg_pp%itype(p) /= noveg)) then
-        ! scaling factor based on  CN ratio flexibility
-          leaf_totc=leafc(p) + leafc_storage(p) + leafc_xfer(p)
-          leaf_totn=leafn(p) + leafn_storage(p) + leafn_xfer(p)
-          leaf_totp=leafp(p) + leafp_storage(p) + leafp_xfer(p)
-          cn_scalar(p) = min(max((leaf_totc/max(leaf_totn, 1e-20_r8) - leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
-
-          cp_scalar(p) = min(max((leaf_totc/max(leaf_totp, 1e-20_r8) - leafcp(ivt(p))*(1- cp_stoich_var)) / &
-           (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+        if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
 
           plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
                              cn_scalar(p) * t_scalar(c,j)
@@ -1127,7 +1137,12 @@ contains
                              cn_scalar(p) * t_scalar(c,j)
           plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
                              cp_scalar(p) * t_scalar(c,j)
-
+!          if( plant_p_vmax_vr_patch(p,j)/=0._r8 .and. j==1 .and. c==4445)then
+!            print*,'ppp',p,cn_scalar(p),cp_scalar(p)
+!            print*,'scal0',frootc(p), froot_prof(p,j),t_scalar(c,j)
+!            print*,'vxss',vmax_plant_nh4(ivt(p)),vmax_plant_no3(ivt(p)),vmax_plant_p(ivt(p))
+!            print*,'mxx',plant_nh4_vmax_vr_patch(p,j),plant_no3_vmax_vr_patch(p,j),plant_p_vmax_vr_patch(p,j)
+!          endif
           plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))
           plant_no3_km_vr_patch(p,j) = km_plant_no3(ivt(p))
           plant_p_km_vr_patch(p,j) = km_plant_p(ivt(p))
