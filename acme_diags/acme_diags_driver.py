@@ -50,14 +50,13 @@ def run_diag(parameters):
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
         try:
             module = importlib.import_module(mod_str)
-        except ImportError as e:
-            print('Import error in {}: {}'.format(mod_str, e))
-            print('Set {} is not supported yet. Please give us time.'.format(set_name))
+            print('Starting to run ACME Diagnostics.')
+            single_result = module.run_diag(parameters)
+            results.append(single_result)
+        except Exception as e:
+            print('Error in {}: {}'.format(mod_str, e))
             continue
 
-        print('Starting to run ACME Diagnostics.')
-        single_result = module.run_diag(parameters)
-        results.append(single_result)
     return results
 
 
@@ -123,8 +122,11 @@ if __name__ == '__main__':
 
     parameters = _collaspse_results(parameters)
 
-    pth = os.path.join(parameters[0].results_dir, 'viewer')
-    if not os.path.exists(pth):
-        os.makedirs(pth)
+    if parameters:
+        pth = os.path.join(parameters[0].results_dir, 'viewer')
+        if not os.path.exists(pth):
+            os.makedirs(pth)
 
-    create_viewer(pth, parameters, parameters[0].output_format[0])
+        create_viewer(pth, parameters, parameters[0].output_format[0])
+    else:
+        print('There was not a single valid diagnostics run, no viewer created')
