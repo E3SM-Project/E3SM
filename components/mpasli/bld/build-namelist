@@ -417,6 +417,7 @@ add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
 add_default($nl, 'config_use_glp');
+add_default($nl, 'config_beta_use_effective_pressure');
 
 #############################
 # Namelist group: advection #
@@ -505,6 +506,7 @@ add_default($nl, 'config_pio_num_iotasks');
 add_default($nl, 'config_pio_stride');
 add_default($nl, 'config_year_digits');
 add_default($nl, 'config_output_external_velocity_solver_data');
+add_default($nl, 'config_write_albany_ascii_mesh');
 
 #################################
 # Namelist group: decomposition #
@@ -531,7 +533,6 @@ add_default($nl, 'config_print_velocity_cleanup_details');
 ####################################
 
 add_default($nl, 'config_SGH');
-add_default($nl, 'config_SGH_adaptive_timestep');
 add_default($nl, 'config_SGH_adaptive_timestep_fraction');
 add_default($nl, 'config_SGH_max_adaptive_timestep');
 add_default($nl, 'config_SGH_tangent_slope_calculation');
@@ -554,6 +555,7 @@ add_default($nl, 'config_SGH_chnl_creep_coefficient');
 add_default($nl, 'config_SGH_incipient_channel_width');
 add_default($nl, 'config_SGH_include_pressure_melt');
 add_default($nl, 'config_SGH_shmip_forcing');
+add_default($nl, 'config_SGH_basal_melt');
 
 ##################################
 # Namelist group: AM_globalStats #

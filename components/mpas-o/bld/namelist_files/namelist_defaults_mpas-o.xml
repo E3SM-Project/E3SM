@@ -241,7 +241,6 @@
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
 <config_jerlov_water_type>3</config_jerlov_water_type>
 <config_surface_buoyancy_depth>1</config_surface_buoyancy_depth>
-<config_forcing_restart_file>'Restart_forcing_time_stamp'</config_forcing_restart_file>
 
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>

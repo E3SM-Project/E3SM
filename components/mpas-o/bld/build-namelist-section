@@ -274,7 +274,6 @@ add_default($nl, 'config_ssh_grad_relax_timescale');
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
-add_default($nl, 'config_forcing_restart_file');
 
 ##############################
 # Namelist group: frazil_ice #

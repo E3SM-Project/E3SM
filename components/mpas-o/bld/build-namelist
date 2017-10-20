@@ -709,7 +709,6 @@ add_default($nl, 'config_ssh_grad_relax_timescale');
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
-add_default($nl, 'config_forcing_restart_file');
 
 ##############################
 # Namelist group: frazil_ice #
@@ -1325,8 +1324,8 @@ add_default($nl, 'config_isomip_plus_effective_density');
 add_default($nl, 'config_use_activeTracers');
 add_default($nl, 'config_use_activeTracers_surface_bulk_forcing');
 if ($OCN_FORCING eq 'core_forced_restoring') {
-	add_default($nl, 'config_use_activeTracers_surface_restoring', 'val'=>".false.");
-	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".false.");
+	add_default($nl, 'config_use_activeTracers_surface_restoring', 'val'=>".true.");
+	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
 } else {

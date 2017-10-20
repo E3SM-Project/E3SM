@@ -100,6 +100,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_beta_use_effective_pressure" type="logical"
+	category="velocity_solver" group="velocity_solver">
+If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
@@ -497,6 +505,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_write_albany_ascii_mesh" type="logical"
+	category="io" group="io">
+Logical flag determining if Albany ascii mesh files will be written.  If .true., model initializes, writes the mesh files, and then terminates.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- decomposition -->
 
@@ -589,14 +605,6 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_SGH" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
 activate subglacial hydrology model
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_SGH_adaptive_timestep" type="logical"
-	category="subglacial_hydro" group="subglacial_hydro">
-Use adaptive timestepping for subglacial hydrology model
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -775,6 +783,14 @@ Default: Defined in namelist_defaults.xml
 calculate time-varying forcing specified by SHMIP experiments C or D
 
 Valid values: 'none', 'C1'-'C4', 'D1'-'D5'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_basal_melt" type="char*1024"
+	category="subglacial_hydro" group="subglacial_hydro">
+source for the basalMeltInput term.  'file' takes whatever field was input and performs no calculation.  'thermal' uses the groundedBasalMassBal field calculated by the thermal model.  'basal_heat' calculates a melt rate assuming the entirety of the basal heat flux (basalFrictionFlux+basalHeatFlux) goes to melting ice at the bed.  This is calculated in the SGH module and is independent of any calculations in the thermal model.
+
+Valid values: 'file', 'thermal', 'basal_heat'
 Default: Defined in namelist_defaults.xml
 </entry>
 
