@@ -430,28 +430,46 @@ class Case(object):
         """
         science_support = []
         compset_alias = None
+
+
+
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
+        cpl_root_dir = files.get_value("COMP_ROOT_DIR_CPL", {"component":"drv"},resolved=False)
+        if cpl_root_dir is not None:
+            files.set_value("COMP_ROOT_DIR_CPL", cpl_root_dir)
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
+        expect(os.path.isfile(drv_config_file), "Could not find CONFIG_CPL_FILE {}".format(drv_config_file))
+        drv_comp = Component(drv_config_file, "CPL")
+        self.set_comp_classes(drv_comp.get_valid_model_components())
+
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
-        for component in components:
+        for comp_class in self._component_classes:
+            if comp_class == "CPL":
+                continue
+            comp_root_dir_var  = "COMP_ROOT_DIR_{}".format(comp_class)
+            for component in components:
+                comp_root_dir = files.get_value(comp_root_dir_var,{"component":component},
+                                                resolved=False)
+                if comp_root_dir is not None:
+                    files.set_value(comp_root_dir_var, comp_root_dir)
 
-            # Determine the compsets file for this component
-            compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
-
-            # If the file exists, read it and see if there is a match for the compset alias or longname
-            if (os.path.isfile(compsets_filename)):
-                compsets = Compsets(compsets_filename)
-                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
-                if match is not None:
-                    self._compsetsfile = compsets_filename
-                    self._compsetname = match
-                    self.set_lookup_value("COMPSETS_SPEC_FILE" ,
+                # Determine the compsets file for this component
+                compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
+                # If the file exists, read it and see if there is a match for the compset alias or longname
+                if (os.path.isfile(compsets_filename)):
+                    compsets = Compsets(compsets_filename)
+                    match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
+                    if match is not None:
+                        self._compsetsfile = compsets_filename
+                        self._compsetname = match
+                        self.set_lookup_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
-                    logger.info("Compset longname is {}".format(match))
-                    logger.info("Compset specification file is {}".format(compsets_filename))
-                    return compset_alias, science_support
+                        logger.info("Compset longname is {}".format(match))
+                        logger.info("Compset specification file is {}".format(compsets_filename))
+                        return compset_alias, science_support
 
         if compset_alias is None:
             logger.info("Did not find an alias or longname compset match for {} ".format(compset_name))
@@ -614,7 +632,7 @@ class Case(object):
         self.clean_up_lookups(allow_undefined=True)
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self.set_comp_classes(drv_comp.get_valid_model_components())
+        #        self.set_comp_classes(drv_comp.get_valid_model_components())
 
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
@@ -622,13 +640,13 @@ class Case(object):
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
-            root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
-            comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
+            root_dir_var  = "COMP_ROOT_DIR_{}".format(comp_class)
+            comp_root_dir = files.get_value(root_dir_var, {"component":comp_name}, resolved=False)
             if comp_root_dir is not None:
                 # the set_value in files is needed for the archiver setup below
-                files.set_value(root_dir_node_name, comp_root_dir)
-                self.set_value(root_dir_node_name, comp_root_dir)
+                files.set_value(root_dir_var, comp_root_dir)
+                self.set_value(root_dir_var, comp_root_dir)
                 compatt = None
             else:
                 compatt = {"component":comp_name}
