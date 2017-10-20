@@ -472,6 +472,27 @@ contains
          avgflag='A', long_name='fraction of potential immobilization of phosphorus', &
          ptr_col=this%fpi_p_vr_col)
 
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,1)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_1', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_2', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,2)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_2', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_2', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,3)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_3', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_3', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,9)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_9', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_9', &
+         ptr_col=data2dptr)
+    data2dptr => this%rf_decomp_cascade_col(begc:endc,:,10)
+    call hist_addfld_decomp (fname='rf_decomp_cascade_10', units='proportion', type2d='levdcmp', &
+         avgflag='A', long_name='CUE rf_decomp_cascade_10', &
+         ptr_col=data2dptr)
+
     this%fpg_col(begc:endc) = spval
     call hist_addfld1d (fname='FPG', units='proportion', &
          avgflag='A', long_name='fraction of potential gpp due to N limitation', &

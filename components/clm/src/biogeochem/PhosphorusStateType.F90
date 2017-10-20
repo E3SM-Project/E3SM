@@ -7,7 +7,7 @@ module PhosphorusStateType
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
-  use clm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi
+  use clm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop, istsoil 
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
   use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
@@ -106,6 +106,18 @@ module PhosphorusStateType
      real(r8), pointer :: begpb_col                    (:)     ! col phosphorus mass, beginning of time step (gP/m**2)
      real(r8), pointer :: endpb_col                    (:)     ! col phosphorus mass, end of time step (gP/m**2)
      real(r8), pointer :: errpb_col                    (:)     ! colphosphorus balance error for the timestep (gP/m**2)
+
+     logical :: RG_spinup = .false.
+     real(r8), pointer :: solutionp_vr_col_cur         (:,:)
+     real(r8), pointer :: solutionp_vr_col_prev        (:,:)
+     real(r8), pointer :: labilep_vr_col_cur           (:,:)
+     real(r8), pointer :: labilep_vr_col_prev          (:,:)
+     real(r8), pointer :: secondp_vr_col_cur           (:,:)
+     real(r8), pointer :: secondp_vr_col_prev          (:,:)
+     real(r8), pointer :: occlp_vr_col_cur             (:,:)
+     real(r8), pointer :: occlp_vr_col_prev            (:,:)
+     real(r8), pointer :: primp_vr_col_cur             (:,:)
+     real(r8), pointer :: primp_vr_col_prev            (:,:)
 
      ! debug
      real(r8), pointer :: totpftp_beg_col              (:)
@@ -253,6 +265,17 @@ contains
     allocate(this%endpb_col   (begc:endc));     this%endpb_col   (:) =nan
     allocate(this%errpb_patch (begp:endp));     this%errpb_patch (:) =nan
     allocate(this%errpb_col   (begc:endc));     this%errpb_col   (:) =nan 
+
+    allocate(this%solutionp_vr_col_cur   (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col_cur        (:,:) = nan
+    allocate(this%solutionp_vr_col_prev  (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col_prev       (:,:) = nan
+    allocate(this%labilep_vr_col_cur     (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_col_cur          (:,:) = nan
+    allocate(this%labilep_vr_col_prev    (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_col_prev         (:,:) = nan
+    allocate(this%secondp_vr_col_cur     (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr_col_cur          (:,:) = nan
+    allocate(this%secondp_vr_col_prev    (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr_col_prev         (:,:) = nan
+    allocate(this%occlp_vr_col_cur       (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_col_cur            (:,:) = nan
+    allocate(this%occlp_vr_col_prev      (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_col_prev           (:,:) = nan
+    allocate(this%primp_vr_col_cur       (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col_cur            (:,:) = nan
+    allocate(this%primp_vr_col_prev      (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col_prev           (:,:) = nan
 
     ! debug
     allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
@@ -415,7 +438,7 @@ contains
     this%ppool_patch(begp:endp) = spval
     call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
          avgflag='A', long_name='temporary plant P pool', &
-         ptr_patch=this%ppool_patch, default='inactive')
+         ptr_patch=this%ppool_patch, default='active')
 
     this%ptrunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
@@ -875,6 +898,9 @@ contains
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
     real(r8)           :: smax_c, ks_sorption_c
+    real(r8)           :: rootfr(1:nlevdecomp)
+    real(r8)           :: pinit_prof(1:nlevdecomp)
+    real(r8)           :: rootfr_tot
 
     !------------------------------------------------------------------------
 
@@ -882,7 +908,7 @@ contains
     ! patch phosphorus state variables
     !--------------------------------
     associate(&
-         isoilorder     => cnstate_vars%isoilorder &
+         isoilorder     => cnstate_vars%isoilorder  &
          )
 
 
@@ -1211,6 +1237,7 @@ contains
        if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
           if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools out of AD spinup mode'
           exit_spinup = .true.
+          this%RG_spinup = .true.
        else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
           if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools into AD spinup mode'
           enter_spinup = .true.
@@ -1254,6 +1281,18 @@ contains
               call endrun(msg='ERROR:: P pools are required on surface dataset'//&
               errMsg(__FILE__, __LINE__))
           end if
+
+          do j = 1, nlevdecomp
+             rootfr(j) = exp(-3.0* zsoi(j))
+          end do
+          rootfr_tot = 0._r8
+          do j = 1, nlevdecomp
+             rootfr_tot = rootfr_tot + rootfr(j)
+          end do
+          do j = 1, nlevdecomp
+             pinit_prof(j) = rootfr(j) / rootfr_tot / dzsoi_decomp(j) ! 1/m
+          end do
+
           do c = bounds%begc, bounds%endc
              if (use_vertsoilc) then
                 do j = 1, nlevdecomp
@@ -1263,22 +1302,30 @@ contains
                    ! assume soil below 50 cm has the same p pool concentration
                    ! divide 0.5m when convert p pools from g/m2 to g/m3
                    ! assume p pools evenly distributed at dif layers
+                   ! Prescribe P initial profile based on exponential rooting profile [need to improve]
                    if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
                       a = 1
                       b = VMAX_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) + &
-                          KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
-                      d = -1.0* cnstate_vars%labp_col(c)/0.5 * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+                          KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)*pinit_prof(j)
+                      d = -1.0* cnstate_vars%labp_col(c)*pinit_prof(j) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+
+                      this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
+                      this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)*pinit_prof(j) - this%solutionp_vr_col(c,j)
+                      this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)*pinit_prof(j)
+                      this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)*pinit_prof(j)
+                      this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)*pinit_prof(j)
                    else if (nu_com .eq. 'RD') then
                       a = 1
                       b = smax(cnstate_vars%isoilorder(c)) + &
                           ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
                       d = -1.0* cnstate_vars%labp_col(c)/0.5 * ks_sorption(cnstate_vars%isoilorder(c))
+
+                      this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
+                      this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5 - this%solutionp_vr_col(c,j)
+                      this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5
+                      this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5
+                      this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5
                    end if
-                   this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
-                   this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/0.5 - this%solutionp_vr_col(c,j)
-                   this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/0.5
-                   this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/0.5
-                   this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/0.5
 
                    if (nu_com .eq. 'RD') then 
                        smax_c = smax(isoilorder(c))
@@ -1296,19 +1343,26 @@ contains
                 if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
                    a = 1
                    b = VMAX_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) + &
-                       KM_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
-                   d = -1.0* cnstate_vars%labp_col(c)/0.5 * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+                       KM_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/zisoi(nlevdecomp)
+                   d = -1.0* cnstate_vars%labp_col(c)/zisoi(nlevdecomp) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+
+                   this%solutionp_vr_col(c,1) = (-b+(b**2-4*a*d)**0.5)/(2*a) * zisoi(nlevdecomp) ! convert to g/m2
+                   this%labilep_vr_col(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr_col(c,1)
+                   this%secondp_vr_col(c,1) = cnstate_vars%secp_col(c)
+                   this%occlp_vr_col(c,1) = cnstate_vars%occp_col(c)
+                   this%primp_vr_col(c,1) = cnstate_vars%prip_col(c)
                 else if (nu_com .eq. 'RD') then
                    a = 1
                    b = smax(cnstate_vars%isoilorder(c)) + &
                        ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5
                    d = -1.0* cnstate_vars%labp_col(c)/0.5 * ks_sorption(cnstate_vars%isoilorder(c))
+
+                   this%solutionp_vr_col(c,1) = (-b+(b**2-4*a*d)**0.5)/(2*a) * 0.5 ! convert to g/m2
+                   this%labilep_vr_col(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr_col(c,1)
+                   this%secondp_vr_col(c,1) = cnstate_vars%secp_col(c)
+                   this%occlp_vr_col(c,1) = cnstate_vars%occp_col(c)
+                   this%primp_vr_col(c,1) = cnstate_vars%prip_col(c)
                 end if
-                this%solutionp_vr_col(c,1) = (-b+(b**2-4*a*d)**0.5)/(2*a) * 0.5 ! convert to g/m2
-                this%labilep_vr_col(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr_col(c,1)
-                this%secondp_vr_col(c,1) = cnstate_vars%secp_col(c)
-                this%occlp_vr_col(c,1) = cnstate_vars%occp_col(c)
-                this%primp_vr_col(c,1) = cnstate_vars%prip_col(c)
              end if
           end do
        end if

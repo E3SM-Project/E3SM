@@ -659,18 +659,18 @@ contains
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             sop_tot = 0._r8
-            do l = 1,ndecomp_pools
+            do l = 5,ndecomp_pools
                 sop_tot = sop_tot + decomp_ppools_vr_col(c,j,l)
             end do
-            do l = 1,ndecomp_pools
+            do l = 5,ndecomp_pools
                 if (sop_tot > 1e-12) then 
                     sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
                 else
                     sop_profile(l) = 0._r8
                 end if
             end do
-            do l = 1,ndecomp_pools
-                biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)),0._r8)
+            do l = 5,ndecomp_pools
+                biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_vr(c,j) * sop_profile(l), decomp_ppools_vr_col(c,j,l)/dt),0._r8)
             end do
         end do
     end do
@@ -679,7 +679,7 @@ contains
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j)=0._r8
-            do l = 1, ndecomp_pools
+            do l = 5, ndecomp_pools
                biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
                                           biochem_pmin_ppools_vr_col(c,j,l)
             enddo
@@ -693,16 +693,3 @@ contains
   end subroutine PBiochemMin_balance
 
 end module PDynamicsMod
-               
-                
-     
-
-      
-
-
-
-
-
-
-
-
