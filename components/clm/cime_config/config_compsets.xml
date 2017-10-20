@@ -288,8 +288,8 @@
   </compset>
 
   <compset>
-    <alias>I1850CNPECACTCBCBCRD</alias>
-    <lname>1850_DATM%QIA_CLM45%CNPECACTCBCBCRD_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
+    <alias>I1850CNPECACTCBC-BCRD</alias>
+    <lname>1850_DATM%QIA_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
   </compset>
 
   <compset>
@@ -438,13 +438,18 @@
    </compset>
    
    <compset>
-     <alias>I20TRCNPECACTCBCBCRD</alias>
-     <lname>20TR_DATM%QIA_CLM45%CNPECACTCBCBCRD_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
+     <alias>I20TRCNPECACTCBC-BCRD</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNPECACTCBC_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
    </compset>
 
    <compset>
      <alias>I20TRCNPECACNTBC</alias>
      <lname>20TR_DATM%QIA_CLM45%CNPECACNTBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+   </compset>
+
+    <compset>
+     <alias>I20TRCNPECACNTBC-BCRD</alias>
+     <lname>20TR_DATM%QIA_CLM45%CNPECACNTBC_SICE_SOCN_RTM_SGLC_SWAV_BGC%BCRD</lname>
    </compset>
 
    <compset>

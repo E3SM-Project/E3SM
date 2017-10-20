@@ -24,7 +24,6 @@
       <value compset="_CLM45"                >-phys clm4_5</value>
       <value compset="_CLM50"                >-phys clm5_0</value>
       <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
-      <value compset="_CLM45%[^_]*BCBCRD" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
     </values>
     <group>build_component_clm</group>
     <file>env_build.xml</file>
@@ -103,7 +102,6 @@
       <value compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
       <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
       <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
-      <value compset="_CLM45%[^_]*CNPECACTCBCBCRD">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
 
       <value compset="_CLM45%[^_]*CNECACNTBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp century -methane -nitrif_denitrif </value>
       <value compset="_CLM45%[^_]*CNPECACNTBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane -nitrif_denitrif </value>
@@ -126,12 +124,16 @@
     <values>
       <value compset="_CAM.*_CLM"     >diagnostic</value>
       <value compset="_CLM.*_BGC%BDRD">diagnostic</value>
-      <value compset="_CLM.*_BGC%BCRD">constant</value>
       <value compset="_CLM.*_BGC%BPRP">prognostic</value>
       <value compset="20TR.*_DATM"    >diagnostic</value>
       <value compset="20TR.*_DATM.*_BGC%BCRD"    >constant</value>
+      <value compset="_CLM.*_BGC%BDRC">diagnostic</value>
+      <value compset="_CLM.*_BGC%BCRD">constant</value>
       <value compset="RCP.*_DATM"     >diagnostic</value>
       <value compset="SSP.*_DATM"     >diagnostic</value>
+      <value compset="_CLM.*_BGC%BCRC">constant</value>
+      <value compset="_CLM.*_BGC%BCRD">constant</value>
+      <value compset="_CLM.*_BGC%BDRC">diagnostic</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
