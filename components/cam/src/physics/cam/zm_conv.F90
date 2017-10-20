@@ -2270,7 +2270,9 @@ subroutine cldprp(lchnk   , &
 !2017-07-25 CRT: Set threshold to 0.00015_r8
 !2017-07-28 CRT: Set threshold to 0.0015_r8
 !2017-07-28 CRT: Set threshold to 0.003_r8
-   thresh = 0.015_r8
+!2017-10-20 CRT: Set threshold to 0.0015_r8 - originally had thought to do this
+!                But had changed to 0.015_r8
+   thresh = 0.0015_r8
 !2017-07-25 CRT
 !
 !------------------------------------------------------------------------------
