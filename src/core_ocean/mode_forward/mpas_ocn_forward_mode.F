@@ -587,10 +587,6 @@ module ocn_forward_mode
          call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
          call mpas_timer_stop('reset_io_alarms')
 
-         call mpas_timer_start('io_write')
-         call mpas_stream_mgr_write(domain % streamManager, streamID='restart', ierr=ierr)
-         call mpas_timer_stop('io_write')
-
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, &
                                              ierr=ierr) ) then
 #ifdef MPAS_DEBUG
@@ -610,6 +606,11 @@ module ocn_forward_mode
                call ocn_salinity_restoring_forcing_write_restart(domain)
 
          end if
+
+         call mpas_timer_start('io_write')
+         call mpas_stream_mgr_write(domain % streamManager, streamID='restart', ierr=ierr)
+         call mpas_timer_stop('io_write')
+
 
          call mpas_timer_start('reset_io_alarms')
          call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=ierr)

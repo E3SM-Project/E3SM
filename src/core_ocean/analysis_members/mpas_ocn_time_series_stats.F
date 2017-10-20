@@ -1343,7 +1343,8 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   ! local variables
   character (len=StrKIND), pointer :: config_results
   character (len=StrKIND) :: config, namelist_prefix
-  integer :: b, n
+  integer :: b
+  integer (kind=I8KIND) :: n
   logical :: ok
   type (mpas_timeinterval_type) :: rem, zero
 
@@ -1455,7 +1456,8 @@ subroutine set_alarms(domain, instance, series, alarms, err)
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  integer :: b, repeat_n, duration_n, reset_n
+  integer :: b
+  integer (kind=I8KIND) :: repeat_n, duration_n, reset_n
   character (len=StrKIND) :: buf_identifier, alarm_prefix
   type (mpas_time_type) :: current_time, when, &
     duration_time, repeat_time, reset_time

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="ocean" core_abbrev="ocn" version="5.1">
+<registry model="mpas" core="ocean" core_abbrev="ocn" version="5.2">
 
 	<dims>
 		<dim name="nCells" units="unitless"
@@ -90,6 +90,10 @@
 		/>
 		<dim name="maxEdgesInTransect" definition="1" units="unitless"
 			 description="Max number of edges in a transect for AM transectTransport"
+		/>
+		<dim name="nForcingGroupsMax"
+			description="Number of forcing groups"
+			definition="4"
 		/>
 	</dims>
 
@@ -704,9 +708,6 @@
 		<nml_option name="config_surface_buoyancy_depth" type="real" default_value="1" units="m"
 					description="Depth over which to apply penetrating SW to sfcBuoyancyFlux"
 					possible_values="Real Values greater than zero less than bottomDepth"
-		/>
-		<nml_option name="config_forcing_restart_file" type="character" default_value="Restart_forcing_time_stamp"
-					description="Filename for the restart timestamp in the forcing file"
 		/>
 	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
@@ -1478,6 +1479,8 @@
 			<var name="frazilSurfacePressure"/>
 			<var name="filteredSSHGradientZonal"/>
 			<var name="filteredSSHGradientMeridional"/>
+			<var name="forcingGroupNames"/>
+			<var name="forcingGroupRestartTimes"/>
 		</stream>
 
 		<stream name="output"
@@ -2675,7 +2678,10 @@
 			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
 			 packages="windStressBulkPKG"
 		/>
-
+		<var name="nForcingGroupCounter"		type="integer"	dimensions="Time"/>
+		<var name="forcingGroupNames"			type="text"	dimensions="nForcingGroupsMax Time"/>
+		<var name="forcingGroupRestartTimes"		type="text"	dimensions="nForcingGroupsMax Time"/>
+	
 		<!-- *********************************************************************
 
 				The fields listed below are constituent fields for coupling.
