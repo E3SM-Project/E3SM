@@ -430,9 +430,6 @@ class Case(object):
         """
         science_support = []
         compset_alias = None
-
-
-
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
@@ -632,7 +629,6 @@ class Case(object):
         self.clean_up_lookups(allow_undefined=True)
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        #        self.set_comp_classes(drv_comp.get_valid_model_components())
 
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
