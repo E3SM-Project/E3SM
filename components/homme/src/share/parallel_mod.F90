@@ -22,7 +22,7 @@ module parallel_mod
   integer, parameter, public :: HME_status_size = MPI_STATUS_SIZE
   integer,      public            :: MaxNumberFrames, numframes
   integer,      public            :: useframes 
-  logical,      public            :: PartitionForNodes,PartitionForFrames
+  logical,      public            :: PartitionForNodes
   integer,      public :: MPIreal_t,MPIinteger_t,MPIChar_t,MPILogical_t
   integer,      public :: iam
 
@@ -47,7 +47,8 @@ module parallel_mod
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
     integer :: intercomm(0:ncomponents-1) ! inter communicator list
-    logical :: masterproc                 
+    logical :: masterproc                
+    logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
 
 #ifdef CAM
@@ -104,20 +105,17 @@ contains
 !  environment, returns a parallel_t structure..
 ! ================================================
      
-  function initmp(npes_in) result(par)
+  function initmp(npes_in,npes_stride) result(par)
 #ifdef CAM
     use spmd_utils, only : mpicom
 #endif      
     integer, intent(in), optional ::  npes_in
+    integer, intent(in), optional ::  npes_stride
     type (parallel_t) par
 
 #ifdef _MPI
 
 #include <mpif.h>
-#ifdef _AIX
-    integer(kind=int_kind)                              :: ii         
-    character(len=2)                                    :: cfn
-#endif
 
     integer(kind=int_kind)                              :: ierr,tmp
     integer(kind=int_kind)                              :: FrameNumber
@@ -128,10 +126,12 @@ contains
     integer(kind=int_kind),allocatable                  :: tarray(:)
     integer(kind=int_kind)                              :: namelen,i
 #ifdef CAM
-    integer :: color
+    integer :: color = 1
     integer :: iam_cam, npes_cam
     integer :: npes_homme
+    integer :: max_stride
 #endif
+    integer :: npes_cam_stride = 1
     !================================================
     !     Basic MPI initialization
     ! ================================================
@@ -153,8 +153,14 @@ contains
        npes_homme=npes_cam
     end if
     call MPI_comm_rank(mpicom,iam_cam,ierr)
-    color = iam_cam/npes_homme
+    if (present(npes_stride)) npes_cam_stride = npes_stride
+    ! Determine maximum stride and make sure user defined stride is not too big.
+    max_stride = npes_cam/npes_homme
+    if ( npes_cam_stride == 0 .or. npes_cam_stride .gt. max_stride ) npes_cam_stride = max_stride
+    if (mod(iam_cam,npes_cam_stride).eq.0.and.iam_cam.lt.npes_homme*npes_cam_stride) color = 0
     call mpi_comm_split(mpicom, color, iam_cam, par%comm, ierr)
+    par%dynproc = .FALSE.
+    if (color == 0) par%dynproc = .TRUE.
 #else
     par%comm     = MPI_COMM_WORLD
 #endif
@@ -164,6 +170,7 @@ contains
     par%masterproc = .FALSE.
     if(par%rank .eq. par%root) par%masterproc = .TRUE.
     if (par%masterproc) write(iulog,*)'number of MPI processes: ',par%nprocs
+    if (par%masterproc) write(iulog,*)'MPI processors stride: ',npes_cam_stride
            
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION
@@ -219,69 +226,6 @@ contains
     endif
 
 
-#ifdef _AIX
-    PartitionForFrames=.FALSE.
-    if((my_name(1:2) .eq. 'bv') .or.  &   ! Bluvista
-       (my_name(1:2) .eq. 'bl') .or.  &    ! Blueice
-       (my_name(1:2) .eq. 'bh') .or.  &    ! Blue Horizon
-       (my_name(1:2) .eq. 'bs') .or.  &    ! BlueSky
-       (my_name(1:2) .eq. 's0')       &    ! Seaborg
-      ) then
-
-       ! ================================================================================
-       ! Note: the frame based optimization is only supported on blackforest or babyblue
-       ! ================================================================================
-       cfn = my_name(3:4)
-       read(cfn,'(i2)') FrameNumber
-
-       ! ======================================================
-       ! Make sure that the system does not have too may frames 
-       ! ======================================================
-       call MPI_Allreduce(FrameNumber,MaxNumberFrames,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
-       MaxNumberFrames=MaxNumberFrames+1
-       allocate(FrameCount(MaxNumberFrames))
-       allocate(tarray(MaxNumberFrames))
-
-       call MPI_Allreduce(useframes,tmp,1,MPIinteger_t,MPI_BAND,par%comm,ierr)
-       if(tmp .ne. useframes) then 
-          if (par%masterpoc) write(iulog,*) "initmp:  disagreement accross nodes for useframes"
-          PartitionForFrames=.FALSE.
-       endif
-
-       if(PartitionForFrames) then 
-         tarray(:) = 0
-         tarray(FrameNumber+1) = 1
-         call MPI_Allreduce(tarray,FrameCount,MaxNumberFrames,MPIinteger_t,MPI_SUM,par%comm,ierr)
-         if(par%masterproc)  write(iulog,*)'initmp: FrameCount : ',FrameCount
-           numFrames = COUNT(FrameCount .ne. 0)
-           allocate(FrameWeight(numFrames))
-           allocate(FrameIndex(numFrames))
-
-         ii=1
-         do i=1,MaxNumberFrames
-           if(FrameCount(i) .ne. 0) then 
-             FrameWeight(ii) = real(FrameCount(i),kind=4)/real(par%nprocs,kind=4)
-             FrameIndex(ii)  = i
-             ii=ii+1
-           endif
-         enddo
-       endif
-
-      FrameCount(:)=FrameCount(:)/nmpi_per_node
-      ! ==========================================
-      ! We are not running on more than one frame 
-      ! ==========================================
-      if(numFrames .eq. 1)  PartitionForFrames=.FALSE.
-
-    endif
-
-    write(iulog,*) 'initmp: mpi task ',par%rank,': ',nmpi_per_node,' task(s) on node ',my_name(1:namelen),  &
-                   'on frame # ',FrameNumber 
-#endif
-    if(PartitionForFrames) then 
-      if(par%masterproc) write(iulog,*)'initmp: FrameWeight: ',FrameWeight
-      if(par%masterproc) write(iulog,*)'initmp: FrameIndex: ',FrameIndex
-    endif
 
     deallocate(the_names)
  

@@ -100,7 +100,7 @@ CONTAINS
 
     end if
 
-    if( iam < par%nprocs) then
+    if( par%dynproc) then
 
        elem => dyn_out%elem
 
@@ -131,7 +131,7 @@ CONTAINS
        end if
        phis_tmp(:,:) = 0._r8
        Q_tmp(:,:,:,:) = 0._r8
-    endif !! iam .lt. par%nprocs
+    endif !! par%dynproc
 
     call t_startf('dpcopy')
     if (local_dp_map) then
@@ -182,7 +182,7 @@ CONTAINS
 
        allocate(bbuffer(tsize*block_buf_nrecs))
        allocate(cbuffer(tsize*chunk_buf_nrecs))
-       if(iam .lt. par%nprocs) then
+       if(par%dynproc) then
 !$omp parallel do private (ie, bpter, icol, ilyr, m)
           do ie=1,nelemd
 
@@ -331,7 +331,7 @@ CONTAINS
 
     real (kind=real_kind), allocatable, dimension(:) :: bbuffer, cbuffer ! transpose buffers
 
-    if (iam .lt. par%nprocs) then
+    if (par%dynproc) then
        elem => dyn_in%elem
     else
        nullify(elem)
@@ -407,7 +407,7 @@ CONTAINS
        call t_startf ('chunk_to_block')
        call transpose_chunk_to_block(tsize, cbuffer, bbuffer)
        call t_stopf  ('chunk_to_block')
-       if(iam < par%nprocs) then
+       if(par%dynproc) then
 !$omp parallel do private (ie, bpter, icol, ilyr, m)
           do ie=1,nelemd
 
@@ -436,7 +436,7 @@ CONTAINS
        
     end if
     call t_stopf('pd_copy')
-    if(iam < par%nprocs) then
+    if(par%dynproc) then
        call t_startf('putUniquePoints')
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
