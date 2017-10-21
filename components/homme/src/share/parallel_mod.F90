@@ -22,7 +22,7 @@ module parallel_mod
   integer, parameter, public :: HME_status_size = MPI_STATUS_SIZE
   integer,      public            :: MaxNumberFrames, numframes
   integer,      public            :: useframes 
-  logical,      public            :: PartitionForNodes,PartitionForFrames
+  logical,      public            :: PartitionForNodes
   integer,      public :: MPIreal_t,MPIinteger_t,MPIChar_t,MPILogical_t
   integer,      public :: iam
 
@@ -116,10 +116,6 @@ contains
 #ifdef _MPI
 
 #include <mpif.h>
-#ifdef _AIX
-    integer(kind=int_kind)                              :: ii         
-    character(len=2)                                    :: cfn
-#endif
 
     integer(kind=int_kind)                              :: ierr,tmp
     integer(kind=int_kind)                              :: FrameNumber
@@ -133,9 +129,9 @@ contains
     integer :: color = 1
     integer :: iam_cam, npes_cam
     integer :: npes_homme
-    integer :: npes_cam_stride = 1
     integer :: max_stride
 #endif
+    integer :: npes_cam_stride = 1
     !================================================
     !     Basic MPI initialization
     ! ================================================
@@ -230,69 +226,6 @@ contains
     endif
 
 
-#ifdef _AIX
-    PartitionForFrames=.FALSE.
-    if((my_name(1:2) .eq. 'bv') .or.  &   ! Bluvista
-       (my_name(1:2) .eq. 'bl') .or.  &    ! Blueice
-       (my_name(1:2) .eq. 'bh') .or.  &    ! Blue Horizon
-       (my_name(1:2) .eq. 'bs') .or.  &    ! BlueSky
-       (my_name(1:2) .eq. 's0')       &    ! Seaborg
-      ) then
-
-       ! ================================================================================
-       ! Note: the frame based optimization is only supported on blackforest or babyblue
-       ! ================================================================================
-       cfn = my_name(3:4)
-       read(cfn,'(i2)') FrameNumber
-
-       ! ======================================================
-       ! Make sure that the system does not have too may frames 
-       ! ======================================================
-       call MPI_Allreduce(FrameNumber,MaxNumberFrames,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
-       MaxNumberFrames=MaxNumberFrames+1
-       allocate(FrameCount(MaxNumberFrames))
-       allocate(tarray(MaxNumberFrames))
-
-       call MPI_Allreduce(useframes,tmp,1,MPIinteger_t,MPI_BAND,par%comm,ierr)
-       if(tmp .ne. useframes) then 
-          if (par%masterpoc) write(iulog,*) "initmp:  disagreement accross nodes for useframes"
-          PartitionForFrames=.FALSE.
-       endif
-
-       if(PartitionForFrames) then 
-         tarray(:) = 0
-         tarray(FrameNumber+1) = 1
-         call MPI_Allreduce(tarray,FrameCount,MaxNumberFrames,MPIinteger_t,MPI_SUM,par%comm,ierr)
-         if(par%masterproc)  write(iulog,*)'initmp: FrameCount : ',FrameCount
-           numFrames = COUNT(FrameCount .ne. 0)
-           allocate(FrameWeight(numFrames))
-           allocate(FrameIndex(numFrames))
-
-         ii=1
-         do i=1,MaxNumberFrames
-           if(FrameCount(i) .ne. 0) then 
-             FrameWeight(ii) = real(FrameCount(i),kind=4)/real(par%nprocs,kind=4)
-             FrameIndex(ii)  = i
-             ii=ii+1
-           endif
-         enddo
-       endif
-
-      FrameCount(:)=FrameCount(:)/nmpi_per_node
-      ! ==========================================
-      ! We are not running on more than one frame 
-      ! ==========================================
-      if(numFrames .eq. 1)  PartitionForFrames=.FALSE.
-
-    endif
-
-    write(iulog,*) 'initmp: mpi task ',par%rank,': ',nmpi_per_node,' task(s) on node ',my_name(1:namelen),  &
-                   'on frame # ',FrameNumber 
-#endif
-    if(PartitionForFrames) then 
-      if(par%masterproc) write(iulog,*)'initmp: FrameWeight: ',FrameWeight
-      if(par%masterproc) write(iulog,*)'initmp: FrameIndex: ',FrameIndex
-    endif
 
     deallocate(the_names)
  
