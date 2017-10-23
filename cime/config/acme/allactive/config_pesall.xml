@@ -3094,39 +3094,6 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>1024</ntasks_atm>
-          <ntasks_lnd>1024</ntasks_lnd>
-          <ntasks_rof>1024</ntasks_rof>
-          <ntasks_ice>1024</ntasks_ice>
-          <ntasks_ocn>1024</ntasks_ocn>
-          <ntasks_glc>1024</ntasks_glc>
-          <ntasks_wav>1024</ntasks_wav>
-          <ntasks_cpl>1024</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
     </mach>
   </grid>
   <grid name="a%4x5">
@@ -4671,10 +4638,10 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4_l%ne30np4_oi%gx1v6">
+  <grid name="a%ne30np4">
     <mach name="mira|cetus">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
+      <pes compset=".*CAM5.+MPAS.+" pesize="any">
+        <comment>ne30-wcycl case</comment>
         <ntasks>
           <ntasks_atm>1916</ntasks_atm>
           <ntasks_lnd>120</ntasks_lnd>
@@ -4701,39 +4668,6 @@
           <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>120</rootpe_ice>
           <rootpe_ocn>1916</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-      <pes compset="A" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>8</ntasks_atm>
-          <ntasks_lnd>8</ntasks_lnd>
-          <ntasks_rof>8</ntasks_rof>
-          <ntasks_ice>8</ntasks_ice>
-          <ntasks_ocn>8</ntasks_ocn>
-          <ntasks_glc>8</ntasks_glc>
-          <ntasks_wav>8</ntasks_wav>
-          <ntasks_cpl>8</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>16</nthrds_rof>
-          <nthrds_ice>16</nthrds_ice>
-          <nthrds_ocn>16</nthrds_ocn>
-          <nthrds_glc>16</nthrds_glc>
-          <nthrds_wav>16</nthrds_wav>
-          <nthrds_cpl>16</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
@@ -6443,82 +6377,107 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_l%ne120np4_oi%oRRS15to5_r%r0.+_m%oRRS15to5_g%null_w%null">
+  <grid name="a%ne120np4">
     <mach name="mira">
-      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>none</comment>
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="S">
+        <comment>ne120 coupled-compset on 1024 nodes</comment>
         <ntasks>
-          <ntasks_atm>7200</ntasks_atm>
-          <ntasks_lnd>256</ntasks_lnd>
-          <ntasks_rof>256</ntasks_rof>
-          <ntasks_ice>6688</ntasks_ice>
-          <ntasks_ocn>992</ntasks_ocn>
+          <ntasks_atm>2700</ntasks_atm>
+          <ntasks_lnd>300</ntasks_lnd>
+          <ntasks_rof>300</ntasks_rof>
+          <ntasks_ice>2400</ntasks_ice>
+          <ntasks_ocn>1396</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>7200</ntasks_cpl>
+          <ntasks_cpl>2400</ntasks_cpl>
         </ntasks>
         <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_atm>8</nthrds_atm>
+          <nthrds_lnd>8</nthrds_lnd>
+          <nthrds_rof>8</nthrds_rof>
+          <nthrds_ice>8</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
           <nthrds_glc>1</nthrds_glc>
           <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
+          <nthrds_cpl>8</nthrds_cpl>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>256</rootpe_rof>
-          <rootpe_ice>512</rootpe_ice>
-          <rootpe_ocn>7200</rootpe_ocn>
+          <rootpe_lnd>2400</rootpe_lnd>
+          <rootpe_rof>2400</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>2700</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-    </mach>
-  </grid>
-  <grid name="a%ne120np4_l%ne120np4_oi%oRRS18to6_r%r0.+_m%oRRS18to6_g%null_w%null">
-    <mach name="mira">
-      <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>none</comment>
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
+        <comment>ne120 coupled-compset on 2048 nodes</comment>
         <ntasks>
-          <ntasks_atm>7200</ntasks_atm>
-          <ntasks_lnd>256</ntasks_lnd>
-          <ntasks_rof>256</ntasks_rof>
-          <ntasks_ice>6688</ntasks_ice>
-          <ntasks_ocn>992</ntasks_ocn>
+          <ntasks_atm>5400</ntasks_atm>
+          <ntasks_lnd>2608</ntasks_lnd>
+          <ntasks_rof>2608</ntasks_rof>
+          <ntasks_ice>2792</ntasks_ice>
+          <ntasks_ocn>2792</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>7200</ntasks_cpl>
+          <ntasks_cpl>2792</ntasks_cpl>
         </ntasks>
         <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_atm>8</nthrds_atm>
+          <nthrds_lnd>8</nthrds_lnd>
+          <nthrds_rof>8</nthrds_rof>
+          <nthrds_ice>8</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
           <nthrds_glc>1</nthrds_glc>
           <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
+          <nthrds_cpl>8</nthrds_cpl>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>256</rootpe_rof>
-          <rootpe_ice>512</rootpe_ice>
-          <rootpe_ocn>7200</rootpe_ocn>
+          <rootpe_lnd>2792</rootpe_lnd>
+          <rootpe_rof>2792</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>5400</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-    </mach>
-  </grid>
-  <grid name="a%ne120np4_l%ne120np4_oi%ne120np4_r%r05.*">
-    <mach name="mira">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
+        <comment>ne120 coupled-compset on 4096 nodes</comment>
+        <ntasks>
+          <ntasks_atm>10800</ntasks_atm>
+          <ntasks_lnd>2608</ntasks_lnd>
+          <ntasks_rof>2608</ntasks_rof>
+          <ntasks_ice>8192</ntasks_ice>
+          <ntasks_ocn>5584</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+          <ntasks_cpl>8192</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>8</nthrds_atm>
+          <nthrds_lnd>8</nthrds_lnd>
+          <nthrds_rof>8</nthrds_rof>
+          <nthrds_ice>8</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>8</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>8192</rootpe_lnd>
+          <rootpe_rof>8192</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>10800</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
       <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="S">
         <comment>ne120 F-compset on 512 nodes</comment>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
@@ -6649,43 +6608,6 @@
           <nthrds_glc>4</nthrds_glc>
           <nthrds_wav>4</nthrds_wav>
           <nthrds_cpl>4</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%T62_l%T62_oi%oQU120_r%rx1.+">
-    <mach name="cetus">
-      <pes compset=".*MPAS.*" pesize="any">
-        <comment>T62_oQU120 grid for MPAS tests on 16 nodes pure-MPI</comment>
-        <ntasks>
-          <ntasks_atm>64</ntasks_atm>
-          <ntasks_lnd>64</ntasks_lnd>
-          <ntasks_rof>64</ntasks_rof>
-          <ntasks_ice>64</ntasks_ice>
-          <ntasks_ocn>64</ntasks_ocn>
-          <ntasks_glc>64</ntasks_glc>
-          <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>64</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
