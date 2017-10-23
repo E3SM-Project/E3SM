@@ -276,7 +276,7 @@
 			possible_values="bilinear_interpolation, nearest_neighbor"
 		/>
 		<nml_option name="config_global_ocean_windstress_conversion_factor" type="real" default_value="1" units="variable"
-			description="Factor to convert input windstress to N m^{-1}"
+			description="Factor to convert input windstress to $N$ $m^{-1}$"
 			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_global_ocean_ecosys_file" type="character" default_value="unknown" units="unitless"
