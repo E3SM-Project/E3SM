@@ -67,16 +67,7 @@ module glc_comp_mct
 
 ! !PRIVATE MODULE VARIABLES
 
-  logical :: ldiag_cpl = .false.
-
   integer, private :: my_task
-
-  integer, private ::   &
-      cpl_write_restart,   &! flag id for write restart
-      cpl_write_history,   &! flag id for write history
-      cpl_write_tavg,      &! flag id for write tavg
-      cpl_diag_global,     &! flag id for computing diagnostics
-      cpl_diag_transp       ! flag id for computing diagnostics
 
   integer  :: nsend, nrecv
 
