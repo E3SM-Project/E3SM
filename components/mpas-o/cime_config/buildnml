@@ -421,7 +421,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file 'the analysis data.' . "\n";
 	print $stream_file '-->' . "\n";
 	print $stream_file '' . "\n";
-        if ($OCN_FORCING eq 'core_forced_restoring') {
+	if ($OCN_FORCING eq 'core_forced_restoring') {
 		print $stream_file '<stream name="surface_salinity_monthly_data"' . "\n";
 		print $stream_file '       type="input"' . "\n";
 		print $stream_file "       filename_template=" . '"'
@@ -434,22 +434,22 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file '       <var name="surfaceSalinityMonthlyClimatologyValue"/>' . "\n";
 		print $stream_file '</stream>' . "\n";
 		print $stream_file '' . "\n";
-        }
+	}
 	print $stream_file '<stream name="transects"' . "\n";
 	print $stream_file '        type="input"' . "\n";
 	print $stream_file "        filename_template=" . '"'
 						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$moc_mask_file"
 						. '"' . "\n";
-	print $stream_file '		    input_interval="initial_only"' . "\n";
-	print $stream_file '         packages="mocStreamfunctionAMPKG">' . "\n";
+	print $stream_file '         input_interval="initial_only"' . "\n";
+	print $stream_file '         packages="mocStreamfunctionAMPKG"/>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="regionalMasksInput"' . "\n";
-	print $stream_file '	    type="input"' . "\n";
+	print $stream_file '        type="input"' . "\n";
 	print $stream_file "        filename_template=" . '"'
-				 		. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$moc_mask_file"
-			 			. '"' . "\n";
+						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$moc_mask_file"
+						. '"' . "\n";
 	print $stream_file '                input_interval="initial_only"' . "\n";
-	print $stream_file '         packages="mocStreamfunctionAMPKG">' . "\n";
+	print $stream_file '         packages="mocStreamfunctionAMPKG"/>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="mocStreamfunctionOutput"' . "\n";
 	print $stream_file '	    type="output"' . "\n";
