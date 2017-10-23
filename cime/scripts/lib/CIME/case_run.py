@@ -215,6 +215,9 @@ def resubmit_check(case):
         else:
             job = "case.run"
         submit(case, job=job, resubmit=True)
+    else:
+        cmd = "./run_stage.csh"
+        run_cmd(cmd,verbose=True)
 
 ###############################################################################
 def do_external(script_name, caseroot, rundir, lid, prefix):
