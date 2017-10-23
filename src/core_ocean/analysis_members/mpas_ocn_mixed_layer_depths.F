@@ -240,6 +240,9 @@ contains
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThresholdMLD)
             do iCell = 1,nCellsSolve
 
+               !Initialize RefIndex for cases of very shallow columns
+               refIndex = maxLevelCell(iCell)
+
                found_temp_mld = .false.
 
                do k=1, maxLevelCell(iCell)-1
@@ -281,6 +284,8 @@ contains
 
             do iCell = 1,nCellsSolve
 
+               !Initialize RefIndex for cases of very shallow columns
+               refIndex = maxLevelCell(iCell)
                found_den_mld = .false.
 
                do k=1, maxLevelCell(iCell)-1
