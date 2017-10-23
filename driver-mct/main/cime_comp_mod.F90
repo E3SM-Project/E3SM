@@ -3843,7 +3843,7 @@ end subroutine cime_init
               ice(ens1)%iamroot_compid .or. &
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
-            call shr_mem_getusage(msize,mrss)
+            call shr_mem_getusage(msize,mrss,.true.)
 
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                  ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
