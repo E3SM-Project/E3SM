@@ -2634,14 +2634,14 @@
 				They are interpolated in the init core from observations
 			********************************************************************** -->
 		<var name="chlorophyllData" type="real" dimensions="nCells Time" units="mg m^{-3}"
-			 description="the concentration of chlorophyll data in mg/m^-3"
+			 description="concentration of chlorophyll data"
 			 packages="variableShortwave"
 		/>
 		<var name="zenithAngle" type="real" dimensions="nCells Time"  units="none"
 			description="the cos of the solar zenith angle"
 			packages="variableShortwave"
 		/>
-		<var name="clearSkyRadiation" type="real" dimensions="nCells Time" units="%"
+		<var name="clearSkyRadiation" type="real" dimensions="nCells Time" units="percent"
 			description="the fractional cloudiness (between 0 and 1)"
 			packages="variableShortwave"
 		/>
