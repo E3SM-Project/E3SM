@@ -9,8 +9,8 @@
 
 
 PERFOBJS=\
-prim_advection_mod_base.o \
-vertremap_mod_base.o \
+prim_advection_base.o \
+vertremap_base.o \
 edge_mod_base.o \
 derivative_mod_base.o \
 bndry_mod_base.o \
