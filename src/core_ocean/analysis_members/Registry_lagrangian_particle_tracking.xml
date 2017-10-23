@@ -329,19 +329,19 @@
 			 description="flag to monitor if the particle was transfered"
 		/>
 		<var name="sumU" type="real" dimensions="nParticles Time" units="m s^{-1}"
-			 description="summed velocity: \sum_i U_i"
+			 description="summed velocity: $\sum_i U_i$"
 		/>
 		<var name="sumV" type="real" dimensions="nParticles Time" units="m s^{-1}"
-			 description="summed velocity: \sum_i V_i"
+			 description="summed velocity: $\sum_i V_i$"
 		/>
 		<var name="sumUU" type="real" dimensions="nParticles Time" units="m^2 s^{-2}"
-			 description="summed energy: \sum_i U*U"
+			 description="summed energy: $\sum_i U*U$"
 		/>
 		<var name="sumUV" type="real" dimensions="nParticles Time" units="m^2 s^{-2}"
-			 description="summed energy: \sum_i U*V"
+			 description="summed energy: $\sum_i U*V$"
 		/>
 		<var name="sumVV" type="real" dimensions="nParticles Time" units="m^2 s^{-2}"
-			 description="summed energy: \sum_i V*V"
+			 description="summed energy: $\sum_i V*V$"
 		/>
 		<var name="lonVel" type="real" dimensions="nParticles Time" units="m s^{-1}"
 			 description="u velocity of particle - zonal direction"
