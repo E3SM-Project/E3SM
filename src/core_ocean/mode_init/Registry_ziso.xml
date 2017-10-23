@@ -56,7 +56,7 @@
 		possible_values="Any real number."
 		/>
 	<nml_option name="config_ziso_wind_stress_max" type="real" default_value="0.2" units="N m^{2}"
-		description="Maximum zonal windstress value in $\tau(y) = \tau_0 \exp\left[-\left(\frac{y-L/2}{L/2}\right)^2\right]\cos\left(\frac{\pi}{2}\frac{y-L/2}{L/2}right)$."
+		description="Maximum zonal windstress value $\tau_0$."
 		possible_values="Any real number."
 		/>
 	<nml_option name="config_ziso_mean_restoring_temp" type="real" default_value="3.0" units="^{circ} C"

@@ -20,11 +20,11 @@
 			possible_values="Any real number"
 		/>
 		<nml_option name="config_sea_mount_density_gradient_linear" type="real" default_value="0.1" units="kg m^{-3}"
-			description="Density gradient for linear vertical stratification, \Delta_z \rho in Beckmann Haidvogel eqn 15"
+			description="Density gradient for linear vertical stratification, $\Delta_z \rho$ in Beckmann Haidvogel eqn 15"
 			possible_values="Any real number"
 		/>
 		<nml_option name="config_sea_mount_density_gradient_exp" type="real" default_value="3.0" units="kg m^{-3}"
-			description="Density gradient for exponential vertical stratification, \Delta_z \rho in Beckmann Haidvogel eqn 16"
+			description="Density gradient for exponential vertical stratification, $\Delta_z \rho$ in Beckmann Haidvogel eqn 16"
 			possible_values="Any real number"
 		/>
 		<nml_option name="config_sea_mount_density_depth_linear" type="real" default_value="4500" units="m"
