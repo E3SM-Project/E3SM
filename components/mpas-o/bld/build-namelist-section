@@ -896,6 +896,7 @@ add_default($nl, 'config_use_activeTracers_ttd_forcing');
 add_default($nl, 'config_use_surface_salinity_monthly_restoring');
 add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
 add_default($nl, 'config_salinity_restoring_max_difference');
+add_default($nl, 'config_salinity_restoring_under_sea_ice');
 
 ###############################################
 # Namelist group: tracer_forcing_debugTracers #

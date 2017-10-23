@@ -1185,7 +1185,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ssh_grad_relax_timescale" type="real"
 	category="coupling" group="coupling">
-Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 removes any relaxation and gives instantaneous response.
+Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1217,6 +1217,7 @@ Depth over which to apply penetrating SW to sfcBuoyancyFlux
 Valid values: Real Values greater than zero less than bottomDepth
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- frazil_ice -->
 
@@ -5154,6 +5155,14 @@ Default: Defined in namelist_defaults.xml
 maximum allowable difference between surface salinity and climatology
 
 Valid values: any non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_salinity_restoring_under_sea_ice" type="logical"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+flag to enable salinity restoring under sea ice
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
