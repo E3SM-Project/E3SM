@@ -125,6 +125,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
         if lnd_domain_file != "UNSET":
             full_domain_path = os.path.join(lnd_domain_path, lnd_domain_file)
             nmlgen.add_default("domainfile", value=full_domain_path)
+        else:
+            nmlgen.add_default("domainfile", "null")
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
