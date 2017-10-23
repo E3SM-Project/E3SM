@@ -23,7 +23,6 @@ requirements:
     - cdutil 2.12
     - genutil 2.12
     - cdtime 2.12
-    - output_viewer
     - numpy
     - matplotlib
     - cartopy

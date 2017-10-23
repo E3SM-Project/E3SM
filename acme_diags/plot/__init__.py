@@ -45,6 +45,7 @@ def plot(set_num, ref, test, diff, metrics_dict, parameter):
         except Exception as e:
             print('Exception {} while plotting {} with backend {}'.format(e, set_num, parameter.backend))
 
+
 def get_colormap(colormap, parameters):
     """Get the colormap (string, list for vcs, or mpl colormap obj), which can be
     loaded from a local file in the cwd, installed file, or a predefined mpl/vcs one."""

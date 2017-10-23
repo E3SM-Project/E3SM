@@ -26,9 +26,8 @@ requirements:
     - cdutil 2.12
     - genutil 2.12
     - cdtime 2.12
-    - output_viewer
     - numpy
-    - matplotlib
+    - matplotlib<=2.0.2
     - cartopy
     - beautifulsoup4
     - lxml
