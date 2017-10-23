@@ -246,8 +246,9 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
     $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
   endif
 
-  # Get the "PETSC_LIB" list an env var
-  include $(PETSC_PATH)/conf/variables
+  # Get the "PETSC_LIB" list an env var 
+  include $(PETSC_PATH)/lib/petsc/conf/variables
+  
 endif
 
 # Set Trilinos info if it is being used
@@ -283,6 +284,25 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 
   # get the "ALBANY_LINK_LIBS" list as an env var
   include $(ALBANY_PATH)/export_albany.in
+endif
+
+# Set MOAB info if it is being used
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  ifdef MOAB_PATH
+    CPPDEFS += -DHAVE_MOAB
+    ifndef INC_MOAB
+      INC_MOAB:=$(MOAB_PATH)/include
+    endif
+    ifndef LIB_MOAB
+      LIB_MOAB:=$(MOAB_PATH)/lib
+    endif
+  else
+    $(error MOAB_PATH must be defined when USE_MOAB is TRUE)
+  endif
+
+  # get the "IMESH_LIBS" list as an env var
+  include $(LIB_MOAB)/iMesh-Defs.inc
+
 endif
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
@@ -384,6 +404,9 @@ ifdef INC_TRILINOS
 endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
+endif
+ifdef INC_MOAB
+  INCLDIR += -I$(INC_MOAB)
 endif
 
 ifeq ($(MODEL),driver)
@@ -537,7 +560,7 @@ endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
-  SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
+  SLIBS += ${PETSC_LIB}
 endif
 
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
@@ -549,6 +572,11 @@ endif
 # Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
 ifeq ($(strip $(USE_ALBANY)), TRUE)
   SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
+# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  SLIBS += $(IMESH_LIBS)
 endif
 
 # Add libraries and flags that we need on the link line when C++ code is included
@@ -872,7 +900,7 @@ cleanrof:
 	$(RM) -fr $(EXEROOT)/rof/obj
 
 cleanlnd:
-	$(RM) -f $(LIBROOT)/liblnd.a
+	$(RM) -f $(LIBROOT)/$(LNDLIB)
 	$(RM) -fr $(EXEROOT)/lnd/obj
 
 cleancsmshare:

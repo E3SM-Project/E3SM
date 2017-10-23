@@ -492,6 +492,8 @@ class TestScheduler(object):
         envtest.set_value("GENERATE_BASELINE", self._baseline_gen_name is not None)
         envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
+        tput_tolerance = self._machobj.get_value("TEST_TPUT_TOLERANCE", resolved=False)
+        envtest.set_value("TEST_TPUT_TOLERANCE", 0.25 if tput_tolerance is None else tput_tolerance)
 
         # Add the test instructions from config_test to env_test in the case
         config_test = Tests()
@@ -526,8 +528,25 @@ class TestScheduler(object):
                     envtest.set_test_parameter("STOP_OPTION",stop_option[opt])
                     opti = match.group(2)
                     envtest.set_test_parameter("STOP_N", opti)
+
                     logger.debug (" STOP_OPTION set to {}".format(stop_option[opt]))
                     logger.debug (" STOP_N      set to {}".format(opti))
+
+                elif opt.startswith('R'):
+                    # R option is for testing in PTS_MODE or Single Column Model
+                    #  (SCM) mode
+                    envtest.set_test_parameter("PTS_MODE", "TRUE")
+
+                    # For PTS_MODE, compile with mpi-serial
+                    envtest.set_test_parameter("MPILIB", "mpi-serial")
+
+                    # TODO: IN NEXT MERGE, REMOVE THIS COMMENT AND MAKE THIS CHANGE IN components/cam/cime_config/config_compsets.xml
+                    # # Set latitude and longitude for the appropriate case
+                    # # Below for ARM97, default SCM test case
+                    # if 'A97' in test:
+                    #     envtest.set_test_parameter("PTS_LAT", "36.6")
+                    #     envtest.set_test_parameter("PTS_LON", "262.5")
+
                 elif opt.startswith('I'):
                     # Marker to distinguish tests with same name - ignored
                     continue

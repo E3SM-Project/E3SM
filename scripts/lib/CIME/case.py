@@ -10,8 +10,9 @@ from CIME.XML.standard_module_setup import *
 #pylint: disable=import-error,redefined-builtin
 from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_current_commit, check_name
+from CIME.utils                     import convert_to_type, get_model
+from CIME.utils                     import get_project, get_charge_account, check_name
+from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -147,6 +148,8 @@ class Case(object):
             "threaded" : self.get_build_threaded(),
             }
 
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
@@ -175,11 +178,8 @@ class Case(object):
         self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self):
-        if(len(self._env_files_that_need_rewrite)>0):
-            files = ""
-            for env_file in self._env_files_that_need_rewrite:
-                files += " "+env_file.filename
-            expect(False,"Object(s) {} seem to have newer data than the corresponding case file".format(files))
+        if self._env_files_that_need_rewrite:
+            expect(False, "Object(s) {} seem to have newer data than the corresponding case file".format(" ".join([env_file.filename for env_file in self._env_files_that_need_rewrite])))
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
@@ -799,7 +799,7 @@ class Case(object):
 
         self.get_compset_var_settings()
 
-        self.clean_up_lookups()
+        self.clean_up_lookups(allow_undefined=True)
 
         #--------------------------------------------
         # machine
@@ -886,6 +886,11 @@ class Case(object):
             self.set_value("PROJECT", project)
         elif machobj.get_value("PROJECT_REQUIRED"):
             expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
+            
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -1226,7 +1231,7 @@ class Case(object):
         executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if executable is not None and "aprun" in executable:
+        if executable is not None and "aprun" in executable and "titan" in self.get_value("MACH"):
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
@@ -1259,13 +1264,11 @@ class Case(object):
         else:
             logger.warning("WARNING: No {} Model version found.".format(model))
 
-    def load_env(self):
-        if not self._is_env_loaded:
-            compiler = self.get_value("COMPILER")
-            debug=self.get_value("DEBUG")
-            mpilib=self.get_value("MPILIB")
+    def load_env(self, reset=False):
+        if not self._is_env_loaded or reset:
+            os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
-            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            env_module.load_env(self)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
@@ -1273,7 +1276,8 @@ class Case(object):
         Returns True if current settings require a threaded build/run.
         """
         force_threaded = self.get_value("BUILD_THREADED")
-        return bool(force_threaded) or self.thread_count > 1
+        smp_present = bool(force_threaded) or self.thread_count > 1
+        return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
         """
@@ -1317,8 +1321,11 @@ class Case(object):
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
-        components = self.get_value("COMP_CLASSES")
+
+        self.flush(flushall=True)
+
         logger.warning("setting case file to {}".format(xmlfile))
+        components = self.get_value("COMP_CLASSES")
         new_env_file = None
         for env_file in self._env_entryid_files:
             if os.path.basename(env_file.filename) == ftype:

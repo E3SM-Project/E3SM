@@ -428,6 +428,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     clm_use_petsc       = case.get_value("CLM_USE_PETSC")
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mpasli_use_albany   = case.get_value("MPASLI_USE_ALBANY")
+    use_moab            = case.get_value("USE_MOAB")
     clm_config_opts     = case.get_value("CLM_CONFIG_OPTS")
     cam_config_opts     = case.get_value("CAM_CONFIG_OPTS")
     pio_config_opts     = case.get_value("PIO_CONFIG_OPTS")
@@ -459,6 +460,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)
     os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
     os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
+    os.environ["USE_MOAB"]             = stringify_bool(use_moab)
 
     if get_model() == "acme" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
@@ -518,11 +520,11 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
         logs.extend(_build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                                 lid, caseroot, cimeroot, compiler, buildlist))
 
-    if not sharedlib_only and not buildlist:
-        # in case component build scripts updated the xml files, update the case object
-        case.read_xml()
-        # Note, doing buildlists will never result in the system thinking the build is complete
-        post_build(case, logs)
+        if not buildlist:
+            # in case component build scripts updated the xml files, update the case object
+            case.read_xml()
+            # Note, doing buildlists will never result in the system thinking the build is complete
+            post_build(case, logs)
 
     t3 = time.time()
 

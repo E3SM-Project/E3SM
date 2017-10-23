@@ -150,6 +150,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()
+
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
+
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -166,6 +169,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("COST_PES", cost_pes)
 
             case.initialize_derived_attributes()
+
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files
             logger.info("Creating batch script case.run")
@@ -216,8 +221,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Record env information
         env_module = case.get_env("mach_specific")
-        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
-        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
+        env_module.make_env_mach_specific_file("sh", case)
+        env_module.make_env_mach_specific_file("csh", case)
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################

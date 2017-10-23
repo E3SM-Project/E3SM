@@ -27,9 +27,6 @@ class ERP(RestartTest):
                              run_one_description = 'initial',
                              run_two_description = 'restart')
 
-    def _common_setup(self):
-        self._case.set_value("BUILD_THREADED",True)
-
     def _case_two_setup(self):
         # halve the number of tasks and threads
         for comp in self._case.get_values("COMP_CLASSES"):
