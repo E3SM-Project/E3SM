@@ -766,7 +766,7 @@ class Case(object):
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
         if driver:
-            self.set_value("COMP_INTERFACE", driver)
+            self.set_lookup_value("COMP_INTERFACE", driver)
 
         #--------------------------------------------
         # compset, pesfile, and compset components
