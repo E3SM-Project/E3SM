@@ -30,17 +30,17 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     >>> machine = "titan"
     >>> run_exe = "acme.exe"
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, max_mpitasks_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
-    (' -S 4 -n 680 -N 8 -d 2 acme.exe : -S 2 -n 128 -N 4 -d 4 acme.exe ', 117)
+    (' -S 4 -n 680 -N 8 -d 2 acme.exe : -S 2 -n 128 -N 4 -d 4 acme.exe ', 117, 128, 4, 4)
     >>> compiler = "intel"
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, max_mpitasks_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
-    (' -S 4 -cc numa_node -n 680 -N 8 -d 2 acme.exe : -S 2 -cc numa_node -n 128 -N 4 -d 4 acme.exe ', 117)
+    (' -S 4 -cc numa_node -n 680 -N 8 -d 2 acme.exe : -S 2 -cc numa_node -n 128 -N 4 -d 4 acme.exe ', 117, 128, 4, 4)
 
     >>> ntasks = [64, 64, 64, 64, 64, 64, 64, 64, 1]
     >>> nthreads = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     >>> rootpes = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     >>> pstrids = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, max_mpitasks_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
-    (' -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4)
+    (' -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4, 64, 16, 1)
     """
     max_tasks_per_node = 1 if max_tasks_per_node < 1 else max_tasks_per_node
 
