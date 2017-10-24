@@ -443,7 +443,7 @@ contains
             call ocn_compute_kpp_rhs(tracers(:,:,iCell), rhs(:,:), dt, N, &
                              layerThickness(:,iCell), vertNonLocalFlux(:,:,iCell), &
                              tracerGroupSurfaceFlux(:,iCell))
-         else 
+         else
             rhs(:,:) = tracers(:,:,iCell)
          endif
 
@@ -591,7 +591,7 @@ contains
                   activeTracerVertMixTendency(:,:,:)=tracersGroup(:,:,:)
                endif
             endif
-             
+
             if ( associated(tracersGroup) ) then
                if (trim(groupItr % memberName) == 'activeTracers') then
                   call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', &
@@ -605,7 +605,7 @@ contains
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
-            end if 
+            end if
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
             if (trim(groupItr % memberName) == 'activeTracers') then
@@ -813,22 +813,22 @@ end subroutine tridiagonal_solve_mult!}}}
 !> \author  Luke Van Roekel
 !> \date    October 2017
 !> \details
-!>   Computes non local flux tendency from KPP when 
+!>   Computes non local flux tendency from KPP when
 !>   config_cvmix_kpp_nonlocal_with_implicit_mix = .true.
 !>   otherwise this term is computed in ocn_tend_tracer
 !
 !-----------------------------------------------------------------------
 
 subroutine ocn_compute_kpp_rhs(tracer, rhs, dt, maxLevelCell, &
-                         layerThickness, vertNonLocalFlux, tracerGroupSurfaceFlux) 
+                         layerThickness, vertNonLocalFlux, tracerGroupSurfaceFlux)
 
   real (kind=RKIND), intent(in) :: dt
   real (kind=RKIND), dimension(:,:), intent(in) :: vertNonLocalFlux, tracer
-  real (kind=RKIND), dimension(:), intent(in) :: layerThickness, tracerGroupSurfaceFlux                     
+  real (kind=RKIND), dimension(:), intent(in) :: layerThickness, tracerGroupSurfaceFlux
   real (kind=RKIND), dimension(:,:), intent(inout) :: rhs
   integer, intent(in) :: maxLevelCell
   integer :: itracer, ntracer, k
-  
+
   ntracer = size(tracerGroupSurfaceFlux, dim = 1)
   do k=2,maxLevelCell-1
      do itracer=1,ntracer
