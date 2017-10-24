@@ -1358,14 +1358,14 @@
 	   <cmd_path lang="sh">use</cmd_path>
 	   <cmd_path lang="csh">use</cmd_path>
 	   <modules compiler="pgi">
-	     <command name="q">pgi-14.3</command>
-	     <command name="q">mvapich2-pgi-1.7</command>
-	     <command name="q">netcdf-pgi-4.1.3</command>
+	     <command name="-q">pgi-14.3</command>
+	     <command name="-q">mvapich2-pgi-1.7</command>
+	     <command name="-q">netcdf-pgi-4.1.3</command>
 	   </modules>
 	   <modules compiler="intel">
-	     <command name="q">ic-17.0.174</command>
-	     <command name="q">mvapich2-intel-2.1</command>
-	     <command name="q">netcdf-intel-4.1.3</command>
+	     <command name="-q">ic-17.0.174</command>
+	     <command name="-q">mvapich2-intel-2.1</command>
+	     <command name="-q">netcdf-intel-4.1.3</command>
 	   </modules>
 	 </module_system>
 	 <environment_variables compiler="pgi">
@@ -1414,14 +1414,14 @@
 	   <cmd_path lang="sh">use</cmd_path>
 	   <cmd_path lang="csh">use</cmd_path>
 	   <modules compiler="pgi">
-	     <command name="q">pgi-14.3</command>
-	     <command name="q">mvapich2-pgi-1.7</command>
-	     <command name="q">netcdf-pgi-4.1.3</command>
+	     <command name="-q">pgi-14.3</command>
+	     <command name="-q">mvapich2-pgi-1.7</command>
+	     <command name="-q">netcdf-pgi-4.1.3</command>
 	   </modules>
 	   <modules compiler="intel">
-	     <command name="q">ic-17.0.174</command>
-	     <command name="q">mvapich2-intel-2.1</command>
-	     <command name="q">netcdf-intel-4.1.3</command>
+	     <command name="-q">ic-17.0.174</command>
+	     <command name="-q">mvapich2-intel-2.1</command>
+	     <command name="-q">netcdf-intel-4.1.3</command>
 	   </modules>
 	 </module_system>
 	 <environment_variables compiler="pgi">
