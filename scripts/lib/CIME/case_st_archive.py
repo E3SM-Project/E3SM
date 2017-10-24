@@ -216,25 +216,27 @@ def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restar
                     if not ninst_strings:
                         ninst_strings = ["empty"]
 
-                for ninst_string in ninst_strings:
-                    rpointer_file = temp_rpointer_file
-                    rpointer_content = temp_rpointer_content
-                    if ninst_string == 'empty':
-                        ninst_string = ""
-                    for key, value in [('$CASE', casename),
-                                       ('$DATENAME', _datetime_str(datename)),
-                                       ('$MPAS_DATENAME', _datetime_str_mpas(datename)),
-                                       ('$NINST_STRING', ninst_string)]:
-                        rpointer_file = rpointer_file.replace(key, value)
-                        rpointer_content = rpointer_content.replace(key, value)
+                    for ninst_string in ninst_strings:
+                        rpointer_file = temp_rpointer_file
+                        rpointer_content = temp_rpointer_content
+                        if ninst_string == 'empty':
+                            ninst_string = ""
+                        for key, value in [('$CASE', casename),
+                                           ('$DATENAME', _datetime_str(datename)),
+                                           ('$MPAS_DATENAME', _datetime_str_mpas(datename)),
+                                           ('$NINST_STRING', ninst_string)]:
+                            rpointer_file = rpointer_file.replace(key, value)
+                            rpointer_content = rpointer_content.replace(key, value)
 
-                    # write out the respect files with the correct contents
-                    rpointer_file = os.path.join(archive_restdir, rpointer_file)
-                    logger.info("writing rpointer_file {}".format(rpointer_file))
-                    f = open(rpointer_file, 'w')
-                    for output in rpointer_content.split(','):
-                        f.write("{} \n".format(output))
-                    f.close()
+                        # write out the respect files with the correct contents
+                        rpointer_file = os.path.join(archive_restdir, rpointer_file)
+                        logger.info("writing rpointer_file {}".format(rpointer_file))
+                        f = open(rpointer_file, 'w')
+                        for output in rpointer_content.split(','):
+                            f.write("{} \n".format(output))
+                        f.close()
+                else:
+                    logger.info("rpointer_content unset, not creating rpointer file {}".format(rpointer_file))
 
 ###############################################################################
 def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn):
