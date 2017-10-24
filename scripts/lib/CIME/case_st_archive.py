@@ -80,7 +80,7 @@ def _get_component_archive_entries(case, archive):
     case's compset components.
     """
     compset_comps = case.get_compset_components()
-    compset_comps.append('cpl')
+    compset_comps.append('drv')
     compset_comps.append('dart')
 
     for compname in compset_comps:
@@ -180,6 +180,8 @@ def _archive_history_files(case, archive, archive_entry,
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
         logger.debug("created directory {}".format(archive_histdir))
+    if compname == 'drv':
+        compname = 'cpl'
 
     # determine ninst and ninst_string
     ninst, ninst_string = _get_ninst_info(case, compclass)
@@ -319,6 +321,9 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
         last_restart_file_fn = shutil.copy
         last_restart_file_fn_msg = "copying"
 
+    if compname == 'drv':
+        compname = 'cpl'
+
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
@@ -337,7 +342,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                     pattern = suffix + datename
                 pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
-
+            logger.debug("Pattern is {} restfiles {}".format(pattern, restfiles))
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 

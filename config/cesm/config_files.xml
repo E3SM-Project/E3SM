@@ -255,7 +255,7 @@
     <type>char</type>
     <values>
       <value>$CIMEROOT/config/cesm/config_archive.xml</value>
-      <value component="cpl"      >$COMP_ROOT_DIR_CPL/cime_config/config_archive.xml</value>
+      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="datm">$COMP_ROOT_DIR_ATM/cime_config/config_archive.xml</value>
