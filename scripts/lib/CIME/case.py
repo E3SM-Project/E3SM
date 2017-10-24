@@ -761,9 +761,13 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None):
+                  input_dir=None, driver=None):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
+
+        if driver:
+            self.set_value("COMP_INTERFACE", driver)
+
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
@@ -1403,7 +1407,7 @@ class Case(object):
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None):
+               input_dir=None, driver=None):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1419,7 +1423,7 @@ class Case(object):
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir)
+                           input_dir=input_dir, driver=driver)
 
             self.create_caseroot()
 
