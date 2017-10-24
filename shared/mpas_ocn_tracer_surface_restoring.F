@@ -217,6 +217,7 @@ contains
 
         type (dm_info) :: dminfo
 
+        type (mpas_pool_type), pointer :: diagnosticsPool
         type (mpas_pool_type), pointer :: forcingPool
         type (mpas_pool_type), pointer :: meshPool
         type (mpas_pool_type), pointer :: statePool
@@ -227,7 +228,7 @@ contains
         real (kind=RKIND), pointer :: salinity_restoring_max_difference, salinity_restoring_constant_piston_velocity
 
         real (kind=RKIND), dimension(:), pointer :: &
-           surfaceSalinityMonthlyClimatologyValue, iceFraction, areaCell
+           surfaceSalinityMonthlyClimatologyValue, iceFraction, areaCell, salinitySurfaceRestoringTendency
 
         real (kind=RKIND), dimension(:,:), pointer :: &
            activeTracersPistonVelocity,  &
@@ -251,6 +252,8 @@ contains
 
 ! initialize monthly forcing to be read from file
 
+        call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+
         if (firstTimeStep) then
 
            currTime = mpas_get_clock_time( simulationClock, MPAS_NOW, ierr)
@@ -259,8 +262,6 @@ contains
           
            forcingIntervalMonthly = "0000-01-00_00:00:00"
            forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
-
-           call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
            call MPAS_forcing_init_group( surfaceSalinityForcingGroup,  &
                 "surfaceSalinityMonthlyClimatology", &
@@ -323,6 +324,7 @@ contains
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
 !maltrud make sure of timeLevel
@@ -392,6 +394,9 @@ contains
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
+        call mpas_pool_get_array(diagnosticsPool,'salinitySurfaceRestoringTendency',salinitySurfaceRestoringTendency)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
+           activeTracersPistonVelocity)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
            activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
@@ -402,6 +407,8 @@ contains
                                config_salinity_restoring_under_sea_ice)  &
            activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) =  &
               activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) - avgDeltaS
+           salinitySurfaceRestoringTendency(iCell) = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell) &
+                   * activeTracersPistonVelocity(indexSalinitySurfaceRestoringValue,iCell)
         enddo
         !$omp end do
         block => block % next
