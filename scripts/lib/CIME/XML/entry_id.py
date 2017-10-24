@@ -423,7 +423,7 @@ class EntryID(GenericXML):
         return xmldiffs
 
     def overwrite_existing_entries(self):
-        # if there
+        # if there exist two nodes with the same id delete the first one.
         for node in self.get_nodes("entry"):
             vid = node.get("id")
             samenodes = self.get_nodes_by_id(vid)
