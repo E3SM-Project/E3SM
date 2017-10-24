@@ -336,7 +336,7 @@ contains
       !
       ! velocity tendency: forcing and bottom drag
       !
-      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, & 
+      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, &
               surfaceStress, kineticEnergyCell, layerThicknessEdge, &
                                 tend_normalVelocity, err)
 
@@ -830,9 +830,9 @@ contains
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
                            layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
                endif
-               
+
                if (config_compute_active_tracer_budgets) then
-                  if ( trim(groupItr % memberName) == 'activeTracers' ) then     
+                  if ( trim(groupItr % memberName) == 'activeTracers' ) then
                     temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)- &
                                         temperatureShortWaveTendency(:,:)
                   endif
@@ -850,7 +850,7 @@ contains
                            activeTracerNonLocalTendency(:,:,:) = tracerGroupTend(:,:,:)
                         endif
                         call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
-                        if (config_compute_active_tracer_budgets) then  
+                        if (config_compute_active_tracer_budgets) then
                            activeTracerNonLocalTendency(:,:,:) = tracerGroupTend(:,:,:)-activeTracerNonLocalTendency(:,:,:)
                         endif
                      else
