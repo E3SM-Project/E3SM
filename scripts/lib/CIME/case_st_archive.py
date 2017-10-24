@@ -30,7 +30,7 @@ def _get_datenames(rundir, casename):
     """
     logger.info(rundir)
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
-    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl.r*.nc')))
+    files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl*.r*.nc')))
     if not files:
         expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
     datenames = []
@@ -228,7 +228,7 @@ def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restar
                             rpointer_file = rpointer_file.replace(key, value)
                             rpointer_content = rpointer_content.replace(key, value)
 
-                        # write out the respect files with the correct contents
+                        # write out the respective files with the correct contents
                         rpointer_file = os.path.join(archive_restdir, rpointer_file)
                         logger.info("writing rpointer_file {}".format(rpointer_file))
                         f = open(rpointer_file, 'w')
@@ -446,10 +446,9 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:
                     pattern = ninst_strings[i] + suffix + datename_str
-                    pfile = re.compile(pattern)
                 else:
                     pattern = suffix + datename_str
-                    pfile = re.compile(pattern)
+                pfile = re.compile(pattern)
                 restfiles = [f for f in files if pfile.search(f)]
 
             for restfile in restfiles:
