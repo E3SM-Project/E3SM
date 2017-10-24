@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 ###############################################################################
 def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
-                                 max_tasks_per_node, MAX_MPITASKS_PER_NODE,
+                                 max_tasks_per_node, max_mpitasks_per_node,
                                  pio_numtasks, pio_async_interface,
                                  compiler, machine, run_exe):
 ###############################################################################
@@ -23,23 +23,23 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     >>> rootpes = [0, 0, 512, 0, 680, 512, 512, 0, 0]
     >>> pstrids = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     >>> max_tasks_per_node = 16
-    >>> MAX_MPITASKS_PER_NODE = 16
+    >>> max_mpitasks_per_node = 16
     >>> pio_numtasks = -1
     >>> pio_async_interface = False
     >>> compiler = "pgi"
     >>> machine = "titan"
     >>> run_exe = "acme.exe"
-    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, MAX_MPITASKS_PER_NODE, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
+    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, max_mpitasks_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
     (' -S 4 -n 680 -N 8 -d 2 acme.exe : -S 2 -n 128 -N 4 -d 4 acme.exe ', 117)
     >>> compiler = "intel"
-    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, MAX_MPITASKS_PER_NODE, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
+    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, max_mpitasks_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
     (' -S 4 -cc numa_node -n 680 -N 8 -d 2 acme.exe : -S 2 -cc numa_node -n 128 -N 4 -d 4 acme.exe ', 117)
 
     >>> ntasks = [64, 64, 64, 64, 64, 64, 64, 64, 1]
     >>> nthreads = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     >>> rootpes = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     >>> pstrids = [1, 1, 1, 1, 1, 1, 1, 1, 1]
-    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, MAX_MPITASKS_PER_NODE, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
+    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, max_mpitasks_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
     (' -S 8 -cc numa_node -n 64 -N 16 -d 1 acme.exe ', 4)
     """
     max_tasks_per_node = 1 if max_tasks_per_node < 1 else max_tasks_per_node
@@ -51,7 +51,7 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     # Check if we need to add pio's tasks to the total task count
     if pio_async_interface:
-        total_tasks += pio_numtasks if pio_numtasks > 0 else MAX_MPITASKS_PER_NODE
+        total_tasks += pio_numtasks if pio_numtasks > 0 else max_mpitasks_per_node
 
     # Compute max threads for each mpi task
     maxt = [0] * total_tasks
@@ -74,7 +74,7 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
         0, 1, maxt[0], maxt[0], 0, ""
     for c1 in range(1, total_tasks):
         if maxt[c1] != thread_count:
-            tasks_per_node = min(MAX_MPITASKS_PER_NODE, int(max_tasks_per_node / thread_count))
+            tasks_per_node = min(max_mpitasks_per_node, int(max_tasks_per_node / thread_count))
 
             tasks_per_node = min(task_count, tasks_per_node)
 
@@ -98,8 +98,8 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
         else:
             task_count += 1
 
-    if MAX_MPITASKS_PER_NODE > 0:
-        tasks_per_node = min(MAX_MPITASKS_PER_NODE, int(max_tasks_per_node / thread_count))
+    if max_mpitasks_per_node > 0:
+        tasks_per_node = min(max_mpitasks_per_node, int(max_tasks_per_node / thread_count))
     else:
         tasks_per_node = max_tasks_per_node / thread_count
 
@@ -117,7 +117,7 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     aprun_args += " -n {:d} -N {:d} -d {:d} {} ".format(task_count, tasks_per_node, thread_count, run_exe)
 
-    return aprun_args, total_node_count
+    return aprun_args, total_node_count, task_count, tasks_per_node, thread_count
 
 ###############################################################################
 def get_aprun_cmd_for_case(case, run_exe):

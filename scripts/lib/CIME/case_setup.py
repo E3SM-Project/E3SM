@@ -160,16 +160,12 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             case.flush()
             check_lockedfiles(case)
-            env_mach_pes = case.get_env("mach_pes")
-            pestot = env_mach_pes.get_total_tasks(models)
-            logger.debug("at update TOTALPES = {}".format(pestot))
-            case.set_value("TOTALPES", pestot)
-            thread_count = env_mach_pes.get_max_thread_count(models)
-            cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
-            case.set_value("COST_PES", cost_pes)
 
             case.initialize_derived_attributes()
 
+            cost_per_node = 16 if case.get_value("MACH") == "yellowstone" else case.get_value("MAX_MPITASKS_PER_NODE")
+            case.set_value("COST_PES", (case.num_nodes - case.spare_nodes) * cost_per_node)
+            case.set_value("TOTALPES", case.total_tasks)
             case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files

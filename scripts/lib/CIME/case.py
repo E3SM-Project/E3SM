@@ -129,18 +129,9 @@ class Case(object):
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
-        MAX_MPITASKS_PER_NODE  = self.get_value("MAX_MPITASKS_PER_NODE")
-        self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+        max_mpitasks_per_node  = self.get_value("MAX_MPITASKS_PER_NODE")
+
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
-        self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
-        logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
-
-        self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
-        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / MAX_MPITASKS_PER_NODE))
-
-        threads_per_node = self.tasks_per_node * self.thread_count
-        threads_per_core = 1 if (threads_per_node <= MAX_MPITASKS_PER_NODE) else smt_factor
-        self.cores_per_task = self.thread_count / threads_per_core
 
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
@@ -148,16 +139,28 @@ class Case(object):
             "threaded" : self.get_build_threaded(),
             }
 
-        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
-
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
-            self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+            _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "acme.exe")
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
         else:
+            self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+            self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
+
             self.num_nodes, self.spare_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
             self.num_nodes += self.spare_nodes
+
+        logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
+
+        self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / max_mpitasks_per_node))
+
+        threads_per_node = self.tasks_per_node * self.thread_count
+        threads_per_core = 1 if (threads_per_node <= max_mpitasks_per_node) else smt_factor
+        self.cores_per_task = self.thread_count / threads_per_core
+
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -728,10 +731,10 @@ class Case(object):
             mach_pes_obj.set_value(rootpe_str, rootpe)
 
         pesize = 1
-        MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
+        max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
         for val in totaltasks:
             if val < 0:
-                val = -1*val*MAX_MPITASKS_PER_NODE
+                val = -1*val*max_mpitasks_per_node
             if val > pesize:
                 pesize = val
         if multi_driver:
@@ -890,7 +893,7 @@ class Case(object):
         charge_account = get_charge_account(machobj)
         if charge_account is not None:
             self.set_value("CHARGE_ACCOUNT", charge_account)
-            
+
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -1232,7 +1235,7 @@ class Case(object):
 
         # special case for aprun
         if executable is not None and "aprun" in executable and "titan" in self.get_value("MACH"):
-            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)[0:2]
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
 

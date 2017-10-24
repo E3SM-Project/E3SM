@@ -17,7 +17,7 @@ class EnvMachPes(EnvBase):
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
         EnvBase.__init__(self, case_root, infile, schema=schema)
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, MAX_MPITASKS_PER_NODE=None): # pylint: disable=arguments-differ
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, max_mpitasks_per_node=None): # pylint: disable=arguments-differ
         # Special variable NINST_MAX is used to determine the number of
         # drivers in multi-driver mode.
         if vid == "NINST_MAX":
@@ -30,10 +30,10 @@ class EnvMachPes(EnvBase):
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
 
         if "NTASKS" in vid or "ROOTPE" in vid:
-            if MAX_MPITASKS_PER_NODE is None:
-                MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
+            if max_mpitasks_per_node is None:
+                max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
-                value = -1*value*MAX_MPITASKS_PER_NODE
+                value = -1*value*max_mpitasks_per_node
 
         return value
 
@@ -64,21 +64,6 @@ class EnvMachPes(EnvBase):
             if threads > max_threads:
                 max_threads = threads
         return max_threads
-
-    def get_cost_pes(self, totaltasks, max_thread_count, machine=None):
-        """
-        figure out the value of COST_PES which is the pe value used to estimate model cost
-        """
-        expect(totaltasks > 0,"totaltasks > 0 expected totaltasks = {}".format(totaltasks))
-        pespn = self.get_value("MAX_MPITASKS_PER_NODE")
-        num_nodes, spare_nodes = self.get_total_nodes(totaltasks, max_thread_count)
-        num_nodes += spare_nodes
-        # This is hardcoded because on yellowstone by default we
-        # run with 15 pes per node
-        # but pay for 16 pes per node.  See github issue #518
-        if machine is not None and machine == "yellowstone":
-            pespn = 16
-        return num_nodes * pespn
 
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
