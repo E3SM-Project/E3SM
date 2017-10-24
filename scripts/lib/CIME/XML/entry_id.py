@@ -422,6 +422,16 @@ class EntryID(GenericXML):
                                                 xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
         return xmldiffs
 
+    def overwrite_existing_entries(self):
+        # if there
+        for node in self.get_nodes("entry"):
+            vid = node.get("id")
+            samenodes = self.get_nodes_by_id(vid)
+            if len(samenodes) > 1:
+                expect(len(samenodes) == 2, "Too many matchs for id {} in file {}".format(vid, self.filename))
+                logger.debug("Overwriting node {}".format(vid))
+                self.root.remove(samenodes[0])
+
     def __iter__(self):
         for node in self.get_nodes("entry"):
             vid = node.get("id")

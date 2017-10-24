@@ -180,6 +180,7 @@ def _archive_history_files(case, archive, archive_entry,
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
         logger.debug("created directory {}".format(archive_histdir))
+    # the compname is drv but the files are named cpl
     if compname == 'drv':
         compname = 'cpl'
 
@@ -321,6 +322,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
         last_restart_file_fn = shutil.copy
         last_restart_file_fn_msg = "copying"
 
+    # the compname is drv but the files are named cpl
     if compname == 'drv':
         compname = 'cpl'
 

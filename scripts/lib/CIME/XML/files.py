@@ -28,13 +28,7 @@ class Files(EntryID):
         # .config_file.xml at the top level may overwrite COMP_ROOT_DIR_ nodes in config_files
         if os.path.isfile(config_files_override):
             self.read(config_files_override)
-            for vid in ("COMP_ROOT_DIR_LND", "COMP_ROOT_DIR_ATM", "COMP_ROOT_DIR_ICE",
-                        "COMP_ROOT_DIR_OCN", "COMP_ROOT_DIR_GLC", "COMP_ROOT_DIR_RTM"):
-                nodes = self.get_nodes_by_id(vid)
-                if len(nodes) > 1:
-                    self.root.remove(nodes[0])
-
-
+            self.overwrite_existing_entries()
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         value = super(Files, self).get_value(vid, attribute=attribute, resolved=False, subgroup=subgroup)
