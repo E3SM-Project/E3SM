@@ -3,7 +3,7 @@ import logging
 import xml.etree.ElementTree as xmlet
 
 import CIME.utils
-from CIME.utils import expect, Timeout
+from CIME.utils import expect, Timeout, run_cmd_no_fail
 from CIME.XML.machines import Machines
 from CIME.test_status import *
 
@@ -49,7 +49,15 @@ def get_test_output(test_path):
 ###############################################################################
 def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
-    git_commit = CIME.utils.get_current_commit(repo=CIME.utils.get_cime_root())
+    # We assume all cases were created from the same code repo
+    first_result_case = os.path.dirname(results.iteritems().next()[1][0])
+    try:
+        srcroot = run_cmd_no_fail("./xmlquery --value SRCROOT", from_dir=first_result_case)
+    except:
+        # Use repo containing this script as last resort
+        srcroot = CIME.utils.get_cime_root()
+
+    git_commit = CIME.utils.get_current_commit(repo=srcroot)
 
     data_rel_path = os.path.join("Testing", utc_time)
 
@@ -157,7 +165,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                 baseline_status = ts.get_status(BASELINE_PHASE)
                 if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS or baseline_status == TEST_FAIL_STATUS):
                     param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
-                    log_src_dir = CIME.utils.run_cmd_no_fail("./xmlquery {} --value".format(param), from_dir=os.path.dirname(test_path))
+                    log_src_dir = run_cmd_no_fail("./xmlquery {} --value".format(param), from_dir=os.path.dirname(test_path))
 
                     log_dst_dir = os.path.join(log_dir, "{}_{}_logs".format(test_name, param))
                     os.makedirs(log_dst_dir)
@@ -174,8 +182,8 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (os.path.exists(tarball)):
                 os.remove(tarball)
 
-            CIME.utils.run_cmd_no_fail("tar -cf - {} | gzip -c".format(log_dir), arg_stdout=tarball)
-            base64 = CIME.utils.run_cmd_no_fail("base64 {}".format(tarball))
+            run_cmd_no_fail("tar -cf - {} | gzip -c".format(log_dir), arg_stdout=tarball)
+            base64 = run_cmd_no_fail("base64 {}".format(tarball))
 
             xml_text = \
 r"""<?xml version="1.0" encoding="UTF-8"?>
@@ -259,7 +267,7 @@ NightlyStartTime: {5} UTC
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
 
-    CIME.utils.run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
+    run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
 def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak):
@@ -354,7 +362,7 @@ def wait_for_tests(test_paths,
         logging.info("    Path: {}".format(test_path))
         all_pass &= test_status == TEST_PASS_STATUS
 
-    if (cdash_build_name):
+    if cdash_build_name:
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)
 
     return all_pass
