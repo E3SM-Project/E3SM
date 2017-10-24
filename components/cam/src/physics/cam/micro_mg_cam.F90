@@ -725,7 +725,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
               prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, &
-              micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta,
+              micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
               errstring)
       end select
    end select
