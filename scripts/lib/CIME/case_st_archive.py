@@ -442,17 +442,15 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             else:
                 pattern = r"{}\.{}\d*.*".format(casename, compname)
-                if "dart" not in pattern:
+                pfile = re.compile(pattern)
+                files = [f for f in os.listdir(rundir) if pfile.search(f)]
+                if ninst_strings:
+                    pattern = ninst_strings[i] + suffix + datename_str
                     pfile = re.compile(pattern)
-                    files = [f for f in os.listdir(rundir) if pfile.search(f)]
-                    if ninst_strings:
-                        pattern = ninst_strings[i] + suffix + datename_str
-                        pfile = re.compile(pattern)
-                        restfiles = [f for f in files if pfile.search(f)]
-                    else:
-                        pattern = suffix + datename_str
-                        pfile = re.compile(pattern)
-                        restfiles = [f for f in files if pfile.search(f)]
+                else:
+                    pattern = suffix + datename_str
+                    pfile = re.compile(pattern)
+                restfiles = [f for f in files if pfile.search(f)]
 
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
