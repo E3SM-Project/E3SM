@@ -2104,6 +2104,9 @@
 		/>
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
+	 	/>
+		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m PSU / s" packages="activeTracersSurfaceRestoringPKG"
+			 description="salinity tendency due to surface restoring"
 		/>
 		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 
