@@ -57,7 +57,7 @@ module ocn_vmix
              ocn_tracer_vmix_tend_implicit, &
              ocn_vmix_init, &
              ocn_vmix_implicit, &
-             ocn_compute_kpp_nonLocalFlux_tend
+             ocn_compute_kpp_rhs
 
    !--------------------------------------------------------------------
    !
@@ -341,7 +341,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracers, &
-                  vertNonLocalFlux, err)!{{{
+                  vertNonLocalFlux, tracerGroupSurfaceFlux, config_cvmix_kpp_nonlocal_with_implicit_mix, &
+                  err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -359,10 +360,13 @@ contains
          dt            !< Input: time step
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickness             !< Input: thickness at cell center
+         layerThickness, &             !< Input: thickness at cell center
+         tracerGroupSurfaceFlux        !< Input: surface flux for tracers nonlocal computation
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-                       vertNonLocalFlux             !non local flux at interfaces
+         vertNonLocalFlux             !non local flux at interfaces
+
+      logical, intent(in) :: config_cvmix_kpp_nonlocal_with_implicit_mix
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -393,7 +397,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND), dimension(:), allocatable :: A,B,C
-      real (kind=RKIND), dimension(:,:), allocatable :: tracersTemp
+      real (kind=RKIND), dimension(:,:), allocatable :: tracersTemp, rhs
 
       err = 0
 
@@ -406,6 +410,7 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
+      allocate(rhs(num_tracers,nVertLevels))
 
       nCells = nCellsArray( 1 )
 
@@ -434,7 +439,15 @@ contains
             B(k) = 1 - A(k) - C(k)
          enddo
 
-         call tridiagonal_solve_mult(A(2:N), B, C(1:N-1), vertNonLocalFlux(:,:,iCell) + tracers(:,:,iCell), &
+         if ( config_cvmix_kpp_nonlocal_with_implicit_mix ) then
+            call ocn_compute_kpp_rhs(tracers(:,:,iCell), rhs(:,:), dt, N, &
+                             layerThickness(:,iCell), vertNonLocalFlux(:,:,iCell), &
+                             tracerGroupSurfaceFlux(:,iCell))
+         else 
+            rhs(:,:) = tracers(:,:,iCell)
+         endif
+
+         call tridiagonal_solve_mult(A(2:N), B, C(1:N-1), rhs(:,:), &
               tracersTemp, N, nVertLevels, num_tracers)
 
          tracers(:,1:N,iCell) = tracersTemp(:,1:N)
@@ -443,7 +456,7 @@ contains
       !$omp end do
       call mpas_timer_stop('vmix tracers tend imp loop')
 
-      deallocate(A, B, C, tracersTemp)
+      deallocate(A, B, C, tracersTemp, rhs)
 
    !--------------------------------------------------------------------
 
@@ -588,16 +601,10 @@ contains
                   call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), &
                           tracerGroupSurfaceFlux)
                endif
-               ntracer = size(tracerGroupSurfaceFlux, dim = 1)
-               allocate(nonLocalFluxTend(ntracer, nVertLevels, nCells))
-               nonLocalFluxTend(:,:,:) = 0.0_RKIND
-               if ( config_cvmix_kpp_nonlocal_with_implicit_mix ) then
-                  call   ocn_compute_kpp_nonLocalFlux_tend(meshPool, nonLocalFluxTend, dt, &
-                          layerThickness, vertNonLocalFlux, tracerGroupSurfaceFlux)
-               endif
 
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
-                        nonLocalFluxTend, err)
+                        vertNonLocalFlux, tracerGroupSurfaceFlux,  &
+                        config_cvmix_kpp_nonlocal_with_implicit_mix, err)
             end if 
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
@@ -613,7 +620,6 @@ contains
       call mpas_timer_stop('vmix solve tracers')
 
       call mpas_timer_stop('vmix imp')
-      deallocate(nonLocalFluxTend)
 
    end subroutine ocn_vmix_implicit!}}}
 
@@ -801,7 +807,7 @@ end subroutine tridiagonal_solve_mult!}}}
 
 !***********************************************************************
 !
-!  subroutine ocn_compute_kpp_nonLocalFlux_tend
+!  subroutine ocn_compute_kpp_rhs
 !
 !> \brief   Computes the non local flux tendency for KPP
 !> \author  Luke Van Roekel
@@ -813,46 +819,37 @@ end subroutine tridiagonal_solve_mult!}}}
 !
 !-----------------------------------------------------------------------
 
-subroutine ocn_compute_kpp_nonLocalFlux_tend(meshPool, nonLocalFluxTend, dt, &
+subroutine ocn_compute_kpp_rhs(tracer, rhs, dt, maxLevelCell, &
                          layerThickness, vertNonLocalFlux, tracerGroupSurfaceFlux) 
 
-  type (mpas_pool_type), intent(in) :: meshPool 
   real (kind=RKIND), intent(in) :: dt
-  real (kind=RKIND), dimension(:,:,:), intent(in) :: vertNonLocalFlux
-  real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness, tracerGroupSurfaceFlux                     
-  real (kind=RKIND), dimension(:,:,:), intent(inout) :: nonLocalFluxTend  
-  integer :: itracer, ntracer, iCell, k, nCells
-  integer, dimension(:), pointer :: maxLevelCell, nCellsArray
-  integer, pointer :: nVertLevels
+  real (kind=RKIND), dimension(:,:), intent(in) :: vertNonLocalFlux, tracer
+  real (kind=RKIND), dimension(:), intent(in) :: layerThickness, tracerGroupSurfaceFlux                     
+  real (kind=RKIND), dimension(:,:), intent(inout) :: rhs
+  integer, intent(in) :: maxLevelCell
+  integer :: itracer, ntracer, k
   
-  call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-  call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray) 
-  call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-  nCells = nCellsArray(1)
   ntracer = size(tracerGroupSurfaceFlux, dim = 1)
-  do iCell = 1, nCells
-     do k=2,maxLevelCell(iCell)-1
-        do itracer=1,ntracer
-           nonLocalFluxTend(itracer, k, iCell) = dt * tracerGroupSurfaceFlux(itracer, iCell) *   &
-                        (vertNonLocalFlux(1,k,iCell) - vertNonLocalFlux(1,k+1,iCell)) / layerThickness(k, iCell)
-        enddo
-     enddo
-
-     k=1
+  do k=2,maxLevelCell-1
      do itracer=1,ntracer
-        nonLocalFluxTend(itracer, k, iCell) = dt * tracerGroupSurfaceFlux(itracer, iCell) *  &
-                                 (-vertNonLocalFlux(1,k+1,iCell) )/ layerThickness(k, iCell)
-     enddo
-
-     k=maxLevelCell(iCell)
-     do itracer=1,ntracer
-        nonLocalFluxTend(itracer,k,iCell) = dt * tracerGroupSurfaceFlux(itracer, iCell) * &
-                                        vertNonLocalFlux(1,k,iCell) / layerThickness(k, iCell)
+        rhs(itracer, k) = tracer(itracer,k) + dt * tracerGroupSurfaceFlux(itracer) *   &
+                     (vertNonLocalFlux(1,k) - vertNonLocalFlux(1,k+1)) / layerThickness(k)
      enddo
   enddo
 
-end subroutine ocn_compute_kpp_nonLocalFlux_tend!}}}
+  k=1
+  do itracer=1,ntracer
+     rhs(itracer, k) = tracer(itracer,k) + dt * tracerGroupSurfaceFlux(itracer) *  &
+                              (-vertNonLocalFlux(1,k+1) )/ layerThickness(k)
+  enddo
+
+  k=maxLevelCell
+  do itracer=1,ntracer
+     rhs(itracer,k) = tracer(itracer,k) + dt * tracerGroupSurfaceFlux(itracer) * &
+                                     vertNonLocalFlux(1,k) / layerThickness(k)
+  enddo
+
+end subroutine ocn_compute_kpp_rhs!}}}
 !***********************************************************************
 
 end module ocn_vmix
