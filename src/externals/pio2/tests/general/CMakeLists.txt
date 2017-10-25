@@ -50,7 +50,7 @@ endif ()
 #==============================================================================
 
 # Test Timeout (4 min = 240 sec)
-set (DEFAULT_TEST_TIMEOUT 240)
+set (DEFAULT_TEST_TIMEOUT 480)
 
 #===== pio_init_finalize =====
 add_executable (pio_init_finalize EXCLUDE_FROM_ALL

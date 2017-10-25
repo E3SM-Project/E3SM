@@ -65,8 +65,9 @@ def cs_status(test_paths, summary=False):
             test_id_output[test_id] = output
 
     for test_id in sorted(test_id_output):
-        print test_id
-        print test_id_output[test_id],
+        print(test_id)
+        print(test_id_output[test_id])
+        print(' ')
 
 ###############################################################################
 def _main_func(description):

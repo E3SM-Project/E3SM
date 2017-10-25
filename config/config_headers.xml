@@ -67,7 +67,7 @@
     to determine how those mpi tasks should be placed across the machine.
 
     The following values should not be set by the user since they'll be
-    overwritten by scripts: TOTALPES, MAX_TASKS_PER_NODE, PES_PER_NODE
+    overwritten by scripts: TOTALPES, NTASKS_PER_INST
     </header>
   </file>
 

@@ -1,13 +1,16 @@
 # cime
 Common Infrastructure for Modeling the Earth
 
-**cime** (pronounced: seem) represents the infrastructure code for the 
+CIME, pronounced “SEAM”, contains the support scripts (configure, build, run, test), data models, essential
+utility libraries, a “main” and other tools that are needed to build a single-executable coupled Earth System Model.
+CIME is available in a stand-alone package that can be compiled and tested without active prognostic components
+but is typically included in the source of a climate model. CIME does not contain: any active components,
+any intra-component coupling capability (such as atmosphere physics-dynamics coupling).
+
+*cime* (pronounced: seem) is currently used by the
 <a href="http://www2.cesm.ucar.edu">Community Earth System Model </a>
-     (CESM) and the <a href="https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy">
-Accelerated Climate Model for Energy </a> (ACME).
-*cime* providess scripts for configuration, build, and testing of
-models, as well as code for data and stub models for climate components,
-and a driver code for bringing all the climate components together in a single executable.
+     (CESM) and the <a href="https://climatemodeling.science.energy.gov/projects/energy-exascale-earth-system-model">
+Energy Exascale Earth System Model</a> (E3SM).
 
 # Documentation
 
@@ -15,34 +18,23 @@ See <a href="http://esmci.github.io/cime">esmci.github.io/cime</a>
 
 # Developers
 
-*cime* was initially extracted from CESM as a stand-alone capability in 2015
-by members of the CSEG group at NCAR, the software engineering team of
-the CESM model. The CSEG group had been developing this infrastrucure within
-CESM for a number of years using NSF and DOE funding. After version 4 was released,
-a joint development partnership was started with the software engineering group of
-ACME, a DOE-funded project, which had branched from CESM in 2014. 
-Starting with development of version 5, *cime* is cooperative effort with contributions
-and ownership from members of both teams. 
+## Lead Developers
+Case Control System: Jim Edwards (NCAR), Jim Foucar (SNL)
 
-The following table documents the developers who have contributed to *cime*,
-showing what versions of they contributed to, and with what source(s) of support.
+MCT-based Coupler/Driver:  Mariana Vertenstein (NCAR), Robert Jacob (ANL)
 
-Name     |     Institution  |  Versions  | Funding Source (for versions)
----------|------------------|----------|----------------------
-Mariana Vertenstein | NCAR  |  1 - D   |   NSF, DOE
-Jim Edwards |         NCAR  |  1 - D   |   NSF (1-D), DOE(1-2)
-Jim Foucar  |         SNL   |  5 - D   |   DOE
-Rob Jacob |      ANL  |  5 - D   |   DOE
-Bill Sacks |    NCAR |  1 - D  | NSF, DOE
-Andreas Wilke |  ANL  | 5 - D | DOE
-Jason Sarich | ANL | 5 - D | DOE
-Michael Deakin | SNL | 5 - D | DOE
-Erich Foster   | SNL | 5 - D | DOE
-Alice Bertini | NCAR | 1 - D | NSF
-Chris Fischer | NCAR | 5 - D | NSF
-Steve Goldhaber | NCAR | 1 - D | NSF, DOE
-Mike Levy | NCAR | 1 - D | NSF, DOE
-Sean Santos |         NCAR  |  1 - 4   |   NSF
+Data Models:  Mariana Vertenstein (NCAR)
 
-_Key: D = Current development version (i.e. still active on project)_
+## Also Developed by
+Alice Bertini (NCAR), Tony Craig (NCAR), Michael Deakin (SNL), Chris Fischer (NCAR), Steve Goldhaber (NCAR),
+Erich Foster (SNL), Mike Levy (NCAR), Bill Sacks (NCAR), Andrew Salinger (SNL), Sean Santos (NCAR), Jason Sarich (ANL),
+Andreas Wilke (ANL).
 
+# Acknowledgements
+
+CIME is jointly developed with support from the Earth System Modeling program of DOE's BER office and the CESM program
+of NSF's Division of Atmospheric and Geospace Sciences.
+
+# License
+
+CIME is free software made available under the BSD License. For details see the LICENSE file.

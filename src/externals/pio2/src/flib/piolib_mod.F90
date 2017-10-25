@@ -198,9 +198,9 @@ module piolib_mod
 !! @verbinclude errorhandle
 !<
   interface PIO_seterrorhandling
-     module procedure seterrorhandlingf
-     module procedure seterrorhandlingi
-     module procedure seterrorhandlingg
+     module procedure seterrorhandlingfile
+     module procedure seterrorhandlingiosystem
+     module procedure seterrorhandlingiosysid
   end interface
 
 !>
@@ -378,70 +378,55 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingf(file, method, oldmethod)
+  subroutine seterrorhandlingfile(file, method, oldmethod)
     type(file_desc_t), intent(inout) :: file
     integer, intent(in) :: method
     integer, intent(out), optional :: oldmethod
-    call seterrorhandlingi(file%iosystem, method, oldmethod)
-  end subroutine seterrorhandlingf
+    call seterrorhandlingiosysid(file%iosystem%iosysid, method, oldmethod)
+  end subroutine seterrorhandlingfile
 
 !>
 !! @ingroup PIO_seterrorhandling
 !! @public
-!! @brief set the pio error handling method for the iosystem
+!! @brief set the pio error handling method for a pio system
 !! @param iosystem : a defined pio system descriptor, see PIO_types
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingi(ios, method, oldmethod)
-    type(iosystem_desc_t), intent(inout) :: ios
+  subroutine seterrorhandlingiosystem(iosystem, method, oldmethod)
+    type(iosystem_desc_t), intent(inout) :: iosystem
+    integer, intent(in) :: method
+    integer, intent(out), optional :: oldmethod
+    call seterrorhandlingiosysid(iosystem%iosysid, method, oldmethod)
+  end subroutine seterrorhandlingiosystem
+
+!>
+!! @ingroup PIO_seterrorhandling
+!! @public
+!! @brief set the pio error handling method for a pio system or globally
+!! @param iosysid : a pio system ID (pass PIO_DEFAULT to change the global default error handling)
+!! @param method :
+!! @copydoc PIO_error_method
+!<
+  subroutine seterrorhandlingiosysid(iosysid, method, oldmethod)
+    integer, intent(in) :: iosysid
     integer, intent(in) :: method
     integer, intent(out), optional :: oldmethod
 
     interface
-       integer(c_int) function PIOc_Set_IOSystem_Error_Handling(ios, method) &
+       integer(c_int) function PIOc_Set_IOSystem_Error_Handling(iosysid, method) &
             bind(C,name="PIOc_Set_IOSystem_Error_Handling")
          use iso_c_binding
-         integer(c_int), value :: ios
+         integer(c_int), value :: iosysid
          integer(c_int), value :: method
        end function PIOc_Set_IOSystem_Error_Handling
     end interface
     integer(c_int) ::  loldmethod
 
-    loldmethod = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
+    loldmethod = PIOc_Set_IOSystem_Error_Handling(iosysid, method)
     if(present(oldmethod)) oldmethod = loldmethod
 
-
-  end subroutine seterrorhandlingi
-
-!>
-!! @ingroup PIO_seterrorhandling
-!! @public
-!! @brief set the pio error handling method for the iosystem
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param method :
-!! @copydoc PIO_error_method
-!<
-  subroutine seterrorhandlingg(global, method, oldmethod)
-    integer, intent(in) :: global
-    integer, intent(in) :: method
-    integer, intent(out), optional :: oldmethod
-
-    interface
-       integer(c_int) function PIOc_Set_IOSystem_Error_Handling(global, method) &
-            bind(C,name="PIOc_Set_IOSystem_Error_Handling")
-         use iso_c_binding
-         integer(c_int), value :: global
-         integer(c_int), value :: method
-       end function PIOc_Set_IOSystem_Error_Handling
-    end interface
-    integer(c_int) ::  loldmethod
-
-    loldmethod = PIOc_Set_IOSystem_Error_Handling(global, method)
-    if(present(oldmethod)) oldmethod = loldmethod
-
-
-  end subroutine seterrorhandlingg
+  end subroutine seterrorhandlingiosysid
 
 
 !>

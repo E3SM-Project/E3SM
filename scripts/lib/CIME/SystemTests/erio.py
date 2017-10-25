@@ -24,7 +24,7 @@ class ERIO(SystemTestsCommon):
         expect(self._stop_n > 0, "Bad STOP_N: {:d}".format(self._stop_n))
 
         # Move to config_tests.xml once that's ready
-        rest_n = self._stop_n/2 + 1
+        rest_n = int(self._stop_n/2) + 1
         self._case.set_value("REST_N", rest_n)
         self._case.set_value("REST_OPTION", stop_option)
         self._case.set_value("HIST_N", self._stop_n)
@@ -39,7 +39,7 @@ class ERIO(SystemTestsCommon):
     def _restart_run(self, pio_type, other_pio_type):
         stop_option = self._case.get_value("STOP_OPTION")
 
-        rest_n = self._stop_n/2 + 1
+        rest_n = int(self._stop_n/2) + 1
         stop_new = self._stop_n - rest_n
         expect(stop_new > 0, "ERROR: stop_n value {:d} too short {:d} {:d}".format(stop_new,self._stop_n,rest_n))
 

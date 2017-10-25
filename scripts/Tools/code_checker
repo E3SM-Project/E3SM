@@ -63,7 +63,7 @@ def _main_func(description):
     num_procs, files = parse_command_line(sys.argv, description)
 
     results = check_code(files, num_procs=num_procs, interactive=True)
-    for result in results.itervalues():
+    for result in results.values():
         if result != "":
             sys.exit(1)
 
