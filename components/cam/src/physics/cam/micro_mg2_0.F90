@@ -183,6 +183,9 @@ real(r8) :: icenuct     ! ice nucleation temperature: currently -5 degrees C
 real(r8) :: snowmelt    ! what temp to melt all snow: currently 2 degrees C
 real(r8) :: rainfrze    ! what temp to freeze all rain: currently -5 degrees C
 
+! Mass gradient method parameters.
+real(r8) :: alpha_grad, beta_grad
+
 ! additional constants to help speed up code
 real(r8) :: gamma_br_plus1
 real(r8) :: gamma_br_plus4
@@ -227,7 +230,8 @@ subroutine micro_mg_init( &
      do_nccons_in, do_nicons_in, ncnst_in, ninst_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
-     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
+     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, alpha_grad_in, &
+     beta_grad_in, errstring)
 
   use micro_mg_utils, only: micro_mg_utils_init
 
@@ -270,6 +274,11 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: prc_coef1_in,prc_exp_in,prc_exp1_in, cld_sed_in
   logical, intent(in)   :: mg_prc_coeff_fix_in
 
+  ! Magnitude of effect of precipitation mass gradient on precipitation
+  ! fraction.
+  real(r8), intent(in) :: alpha_grad_in ! When mass increases with height.
+  real(r8), intent(in) :: beta_grad_in  ! When mass decreases with height.
+
   real(r8), intent(in)  :: ncnst_in
   real(r8), intent(in)  :: ninst_in        
 
@@ -307,6 +316,8 @@ subroutine micro_mg_init( &
   micro_mg_precip_frac_method = micro_mg_precip_frac_method_in
   micro_mg_berg_eff_factor    = micro_mg_berg_eff_factor_in
   allow_sed_supersat          = allow_sed_supersat_in
+  alpha_grad = alpha_grad_in
+  beta_grad = beta_grad_in
 
   ! latent heats
 
@@ -810,6 +821,10 @@ subroutine micro_mg_tend ( &
   real(r8) :: dumns(mgncol,nlev)  ! snow number concentration
   ! Array dummy variable
   real(r8) :: dum_2D(mgncol,nlev)
+  ! Total precipitation fraction used in mass_gradient method.
+  real(r8) :: qt(mgncol,2)
+  ! Weighting used in mass_gradient method.
+  real(r8) :: weight(mgncol)
 
   ! loop array variables
   ! "i" and "k" are column/level iterators for internal (MG) variables
@@ -1264,6 +1279,22 @@ subroutine micro_mg_tend ( &
            end where
         end if
 
+     else if (trim(micro_mg_precip_frac_method) == 'mass_gradient') then
+        if (k /= 1) then
+           qt = qr(:,k-1:k) + qs(:,k-1:k)
+           where (precip_frac(:,k) < precip_frac(:,k-1))
+              where (qt(:,1) > qt(:,2))
+                 weight = (alpha_grad * qt(:,2) + (1. - alpha_grad) * qt(:,1) + qsmall) &
+                      / (qt(:,1) + qsmall)
+              elsewhere
+                 weight = (beta_grad * qt(:,1) + (1. - beta_grad) * qt(:,2) + qsmall) &
+                      / (qt(:,2) + qsmall)
+              end where
+              weight = max(weight, 0._r8)
+              precip_frac(:,k) = weight * precip_frac(:,k-1) + &
+                   (1._r8 - weight) * precip_frac(:,k)
+           end where
+        endif
      endif
 
      do i = 1, mgncol

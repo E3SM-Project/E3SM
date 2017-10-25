@@ -2190,9 +2190,28 @@ Default: 1
 </entry>
 
 <entry id="micro_mg_precip_frac_method" type="char*16" category="microphys"
-       group="micro_mg_nl" valid_values="max_overlap,in_cloud" >
+       group="micro_mg_nl" valid_values="max_overlap,in_cloud,mass_gradient" >
 Type of precipitation fraction.
 Default: max_overlap
+</entry>
+
+<entry id="micro_mg_mass_gradient_alpha" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Parameter controlling the rate at which precipitation fraction decreases when
+the precipitation mass is *decreasing* as it falls (e.g. decreasing rain
+fraction due to evaporation). This value should be positive.
+Used only if micro_mg_precip_frac_method is set to mass_gradient.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="micro_mg_mass_gradient_beta" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Parameter controlling the rate at which precipitation fraction decreases when
+the precipitation mass is *increasing* as it falls (e.g. when precipitation
+falling from above is negligible compared to production concentrated in a small
+area). This value should be non-negative.
+Used only if micro_mg_precip_frac_method is set to mass_gradient.
+Default: Set by build-namelist.
 </entry>
 
 <entry id="micro_mg_berg_eff_factor" type="real" category="microphys"

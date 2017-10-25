@@ -125,6 +125,8 @@ logical :: micro_mg_dcs_tdep  = .false.! if set to true, use temperature depende
 
 
 character(len=16) :: micro_mg_precip_frac_method = 'max_overlap' ! type of precipitation fraction method
+real(r8) :: micro_mg_mass_gradient_alpha = -1._r8                ! Parameters used in mass_gradient method.
+real(r8) :: micro_mg_mass_gradient_beta = -1._r8
 
 real(r8)          :: micro_mg_berg_eff_factor    = 1.0_r8        ! berg efficiency factor
 
@@ -286,8 +288,10 @@ subroutine micro_mg_cam_readnl(nlfile)
 !!== KZ_DCS
        micro_mg_dcs_tdep, & 
 !!== KZ_DCS
-       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
-       micro_do_nccons, micro_do_nicons, micro_nccons, micro_nicons
+       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, &
+       micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
+       micro_mg_berg_eff_factor, micro_do_nccons, micro_do_nicons, &
+       micro_nccons, micro_nicons
 
   !-----------------------------------------------------------------------------
 
@@ -338,7 +342,20 @@ subroutine micro_mg_cam_readnl(nlfile)
      end select
 
      if (micro_mg_dcs < 0._r8) call endrun( "micro_mg_cam_readnl: &
-              &micro_mg_dcs has not been set to a valid value.")
+          &micro_mg_dcs has not been set to a valid value.")
+
+     if (trim(micro_mg_precip_frac_method) == 'mass_gradient') then
+        if (micro_mg_version < 2) call endrun("micro_mg_cam_readnl: &
+             &mass_gradient precipitation fraction not available in MG1.")
+
+        ! Alpha must be positive, while beta should be non-negative.
+        if (micro_mg_mass_gradient_alpha <= 0._r8 .or. &
+             micro_mg_mass_gradient_beta < 0._r8) then
+           call endrun("micro_mg_cam_readnl: mass_gradient precipitation &
+                &fraction method requires alpha and beta to be set &
+                &to valid values")
+        end if
+     end if
   end if
 
 #ifdef SPMD
@@ -358,6 +375,8 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(nccons,                      1, mpir8,  0, mpicom)
   call mpibcast(nicons,                      1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
+  call mpibcast(micro_mg_mass_gradient_alpha, 1, mpir8, 0, mpicom)
+  call mpibcast(micro_mg_mass_gradient_beta, 1, mpir8,  0, mpicom)
 
 #endif
 
@@ -706,7 +725,9 @@ subroutine micro_mg_cam_init(pbuf2d)
 	      do_nccons, do_nicons, nccons, nicons, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
-              prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
+              prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, &
+              micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
+              errstring)
       end select
    end select
 
