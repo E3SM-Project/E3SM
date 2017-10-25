@@ -198,11 +198,13 @@ contains
 
     integer :: cnt_fq,cnt_fn,cnt_alphan,cnt_n
 
-    ! Compute flux
+    ! Compute flux. Note alphaq is defined on cell edges while q is defined
+    ! on cell centers. Using lower bdries of alphaq because precip is always 
+    ! falling.
     fq(0) = 0._r8
-    fq(1:nlev) = alphaq(:)*q(i,:)
+    fq(1:nlev) = alphaq(1:nlev)*q(i,1:nlev)
     fn(0) = 0._r8
-    fn(1:nlev) = alphan(:)*n(i,:)
+    fn(1:nlev) = alphan(1:nlev)*n(i,1:nlev)
 
 
     ! for cloud liquid and ice, if cloud fraction increases with height
