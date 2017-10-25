@@ -63,6 +63,8 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
+    sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
+
     caseroot, testname, reset = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         success = case_test(case, testname, reset)

@@ -1,7 +1,25 @@
 import CIME.wait_for_tests
 from CIME.utils import expect
+from CIME.case import Case
 
 import os, shutil, glob, signal, logging
+
+###############################################################################
+def cleanup_queue(test_root, test_id):
+###############################################################################
+    """
+    Delete all jobs left in the queue
+    """
+    for teststatus_file in glob.iglob("{}/*{}*/TestStatus".format(test_root, test_id)):
+        case_dir = os.path.dirname(teststatus_file)
+        with Case(case_dir, read_only=True) as case:
+            jobmap = case.get_job_info()
+            jobkills = []
+            for jobname, jobid in jobmap.items():
+                logging.warning("Found leftover batch job {} ({}) that need to be deleted".format(jobid, jobname))
+                jobkills.append(jobid)
+
+            case.cancel_batch_jobs(jobkills)
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
@@ -118,5 +136,9 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                                  cdash_build_name=cdash_build_name,
                                                  cdash_project=cdash_project,
                                                  cdash_build_group=cdash_build_group)
+
+    if use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED:
+        # Cleanup
+        cleanup_queue(test_root, test_id)
 
     return tests_passed

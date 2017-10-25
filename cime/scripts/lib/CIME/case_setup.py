@@ -49,7 +49,7 @@ def _build_usernl_files(case, model, comp):
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
         if ninst > 1:
-            for inst_counter in xrange(1, ninst+1):
+            for inst_counter in range(1, ninst+1):
                 inst_nlfile = "{}_{:04d}".format(nlfile, inst_counter)
                 if not os.path.exists(inst_nlfile):
                     # If there is a user_nl_foo in the case directory, copy it
@@ -129,19 +129,22 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         multi_driver = case.get_value("MULTI_DRIVER")
         for comp in models:
+            ntasks = case.get_value("NTASKS_{}".format(comp))
             if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_{}".format(comp))
-            ntasks = case.get_value("NTASKS_{}".format(comp))
-            if ninst > ntasks:
-                if ntasks == 1:
-                    case.set_value("NTASKS_{}".format(comp), ninst)
-                else:
-                    expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
-            # But the NINST_LAYOUT may only be concurrent in multi_driver mode
             if multi_driver:
                 expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
                        "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)
+            else:
+                if ninst > ntasks:
+                    if ntasks == 1:
+                        case.set_value("NTASKS_{}".format(comp), ninst)
+                        ntasks = ninst
+                    else:
+                        expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
 
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
@@ -157,33 +160,29 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             case.flush()
             check_lockedfiles(case)
-            env_mach_pes = case.get_env("mach_pes")
-            pestot = env_mach_pes.get_total_tasks(models)
-            logger.debug("at update TOTALPES = {}".format(pestot))
-            case.set_value("TOTALPES", pestot)
-            thread_count = env_mach_pes.get_max_thread_count(models)
-            cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
-            case.set_value("COST_PES", cost_pes)
-
-            # Make sure pio settings are consistent
-            tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
 
             case.initialize_derived_attributes()
 
+            cost_per_node = 16 if case.get_value("MACH") == "yellowstone" else case.get_value("MAX_MPITASKS_PER_NODE")
+            case.set_value("COST_PES", case.num_nodes * cost_per_node)
+            case.set_value("TOTALPES", case.total_tasks)
             case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
-            num_nodes = case.num_nodes
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
                     logger.info("Writing {} script".format(job))
-                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+                    env_batch.make_batch_script(input_batch_script, job, case)
                 elif job != "case.test":
                     logger.info("Writing {} script from input template {}".format(job, input_batch_script))
-                    env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+                    env_batch.make_batch_script(input_batch_script, job, case)
+
+            # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
+            env_batch.set_job_defaults([(("case.test" if case.get_value("TEST") else "case.run"), {})], case)
+            case.schedule_rewrite(env_batch)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked

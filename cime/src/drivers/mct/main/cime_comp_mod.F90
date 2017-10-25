@@ -3740,10 +3740,9 @@ end subroutine cime_init
       !----------------------------------------------------------
       if (esp_present .and. esprun_alarm) then
          ! Make sure that all couplers are here in multicoupler mode before running ESP component
-        if (num_inst_driver > 1) then
-         call mpi_barrier(global_comm, ierr)
-        endif
-
+         if (num_inst_driver > 1) then
+            call mpi_barrier(global_comm, ierr)
+         endif
          call component_run(Eclock_e, esp, esp_run, infodata, &
               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
               timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
