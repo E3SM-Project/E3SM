@@ -5,13 +5,8 @@ module shr_pio_mod
   use shr_log_mod,  only : shr_log_unit
   use shr_mpi_mod,  only : shr_mpi_bcast, shr_mpi_chkerr
   use shr_sys_mod,  only : shr_sys_abort
-#ifndef NO_MPIMOD
-  use mpi, only : mpi_comm_null, mpi_comm_world
-#endif
   implicit none
-#ifdef NO_MPIMOD
 #include <mpif.h>
-#endif
   private
   public :: shr_pio_init1
   public :: shr_pio_init2
