@@ -2,6 +2,57 @@
 
 Originator: Chris Fischer 
 Date: 10-25-2017
+Tag: cime5.4.0-alpha.06
+Answer Changes: None
+Tests: scripts_regression_tests.py
+       cesm F cases
+Dependencies:
+
+Brief Summary:
+    - Update mpt and pnetcdf on cheyenne.
+    - Fix several data component issues.
+    - Resolve compset issue.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+aac772f Merge pull request #1992 from jedwards4b/cheyenne_mpt_update
+4e7bd64 Merge pull request #1987 from ESMCI/mvertens/fix_datacomps
+dd2734a Merge pull request #1981 from jedwards4b/resolve_compset_issue
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_files.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/XML/archive.py
+M       scripts/lib/CIME/XML/entry_id.py
+M       scripts/lib/CIME/XML/files.py
+M       scripts/lib/CIME/case_st_archive.py
+M       src/build_scripts/buildlib.csm_share
+M       src/components/data_comps/datm/cime_config/buildnml
+M       src/components/data_comps/dice/cime_config/buildnml
+M       src/components/data_comps/dlnd/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/docn/docn_comp_mod.F90
+M       src/components/data_comps/drof/cime_config/buildnml
+D       src/components/data_comps/dshare/shr_dmodel_mod.F90
+D       src/components/data_comps/dshare/shr_strdata_mod.F90
+D       src/components/data_comps/dshare/shr_stream_mod.F90
+D       src/components/data_comps/dshare/shr_tInterp_mod.F90
+M       src/components/data_comps/dwav/cime_config/buildnml
+M       src/drivers/mct/cime_config/buildnml
+M       src/drivers/mct/cime_config/config_archive.xml
+A       src/share/streams/shr_dmodel_mod.F90
+A       src/share/streams/shr_strdata_mod.F90
+A       src/share/streams/shr_stream_mod.F90
+A       src/share/streams/shr_tInterp_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-25-2017
 Tag: cime5.4.0-alpha.05
 Answer Changes: None
 Tests: scripts_regression_tests
