@@ -1,3 +1,4 @@
+
 <?xml version="1.0"?>
 
 <?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
@@ -176,22 +177,22 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>null,copyall</valid_values>
+    <valid_values>NULL,COPYALL</valid_values>
     <desc>
       The wave data is associated with the wave model
       and is normally on a different grid than the ocean data.
-      datamode = "null"
-      null is always a valid option and means no data will be generated.
+      datamode = "NULL"
+      Is always a valid option and means no data will be generated.
       Turns off the data model as a provider of data to the coupler.
-      datamode = "copyall"
+      datamode = "COPYALL"
       Copies all fields directly from the input data streams Any required
       fields not found on an input stream will be set to zero.
       Set by the following xml variables in env_run.xml DWAV_MODE
       specifies values for wav mode: copyall,null
     </desc>
     <values>
-      <value>copyall</value>
-      <value dwav_mode="NULL">null</value>
+      <value>COPYALL</value>
+      <value dwav_mode="NULL">NULL</value>
     </values>
   </entry>
 

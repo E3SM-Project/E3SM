@@ -13,6 +13,7 @@ add_library (pioc topology.c pio_file.c pioc_support.c pio_lists.c
 
 # set up include-directories
 include_directories(
+  "${CMAKE_BINARY_DIR}"   
   "${PROJECT_SOURCE_DIR}"   # to find foo/foo.h
   "${PROJECT_BINARY_DIR}")  # to find foo/config.h
 

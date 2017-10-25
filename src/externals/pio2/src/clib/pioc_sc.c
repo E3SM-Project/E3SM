@@ -23,6 +23,7 @@ int blocksize = DEFAULT_BLOCKSIZE;
  * @param a
  * @param b
  * @returns greates common divisor.
+ * @author Jim Edwards
  */
 int gcd(int a, int b )
 {
@@ -38,6 +39,7 @@ int gcd(int a, int b )
  * @param a
  * @param b
  * @returns greates common divisor.
+ * @author Jim Edwards
  */
 long long lgcd(long long a, long long b)
 {
@@ -47,38 +49,12 @@ long long lgcd(long long a, long long b)
 }
 
 /**
- * Return the gcd of elements in an int array.
- *
- * @param nain length of the array
- * @param ain an array of length nain
- * @returns greatest common divisor.
- */
-int gcd_array(int nain, int *ain)
-{
-    int i;
-    int bsize = 1;
-
-    for (i = 0; i < nain; i++)
-        if (ain[i] <= 1)
-            return bsize;
-
-    bsize = ain[0];
-    i = 1;
-    while (i < nain && bsize > 1)
-    {
-        bsize = gcd(bsize, ain[i]);
-        i++;
-    }
-
-    return bsize;
-}
-
-/**
  * Return the greatest common devisor of array ain as int_64.
  *
  * @param nain number of elements in ain.
  * @param ain array of length nain.
  * @returns GCD of elements in ain.
+ * @author Jim Edwards
  */
 long long lgcd_array(int nain, long long *ain)
 {
@@ -109,6 +85,7 @@ long long lgcd_array(int nain, long long *ain)
  * @param rank IO rank of this task.
  * @param start pointer to PIO_Offset that will get the start value.
  * @param count pointer to PIO_Offset that will get the count value.
+ * @author Jim Edwards
  */
 void compute_one_dim(int gdim, int ioprocs, int rank, PIO_Offset *start,
                      PIO_Offset *count)
@@ -154,6 +131,7 @@ void compute_one_dim(int gdim, int ioprocs, int rank, PIO_Offset *start,
  * @param arrlen
  * @param arr_in
  * @returns the size of the block
+ * @author Jim Edwards
  */
 PIO_Offset GCDblocksize(int arrlen, const PIO_Offset *arr_in)
 {
@@ -247,7 +225,7 @@ PIO_Offset GCDblocksize(int arrlen, const PIO_Offset *arr_in)
         if (arr_in[0] > 0)
             bsize = lgcd(bsize, arr_in[0]);
     }
-    
+
     return bsize;
 }
 
@@ -265,11 +243,12 @@ PIO_Offset GCDblocksize(int arrlen, const PIO_Offset *arr_in)
  * @param count array of length ndims with data count values.
  * @param num_aiotasks the number of IO tasks used(?)
  * @returns 0 for success, error code otherwise.
+ * @author Jim Edwards
  */
 int CalcStartandCount(int pio_type, int ndims, const int *gdims, int num_io_procs,
                       int myiorank, PIO_Offset *start, PIO_Offset *count, int *num_aiotasks)
 {
-    int minbytes; 
+    int minbytes;
     int maxbytes;
     int minblocksize; /* Like minbytes, but in data elements. */
     int basesize;     /* Size in bytes of base data type. */
@@ -435,6 +414,6 @@ int CalcStartandCount(int pio_type, int ndims, const int *gdims, int num_io_proc
 
     /* Return the number of IO procs used to the caller. */
     *num_aiotasks = use_io_procs;
-    
+
     return PIO_NOERR;
 }

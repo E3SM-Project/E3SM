@@ -67,7 +67,7 @@ def _main_func(description):
     expect(success,
            "Namelist diff between files {} and {}\n{}".format(gold_file, compare_file, comments))
 
-    print "Files {} and {} MATCH".format(gold_file, compare_file)
+    print("Files {} and {} MATCH".format(gold_file, compare_file))
 
 ###############################################################################
 

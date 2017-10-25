@@ -58,6 +58,9 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_explicit_fval
     ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
     PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
 
+    ierr = PIO_put_att(pio_file, pio_var, '_FillValue', BUF_FILLVAL)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define fill value : " // trim(filename))
+
     ierr = PIO_enddef(pio_file)
     PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
 
@@ -157,6 +160,9 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
     ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
     PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
 
+    ierr = PIO_put_att(pio_file, pio_var, '_FillValue', BUF_FILLVAL)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define fill value : " // trim(filename))
+
     ierr = PIO_enddef(pio_file)
     PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
 
@@ -242,6 +248,9 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_explicit_fval
 
     ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
     PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_put_att(pio_file, pio_var, '_FillValue', BUF_FILLVAL)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define fill value : " // trim(filename))
 
     ierr = PIO_enddef(pio_file)
     PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))

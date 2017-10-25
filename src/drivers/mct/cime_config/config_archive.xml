@@ -1,5 +1,5 @@
 <components version="2.0">
-  <comp_archive_spec compname="cpl" compclass="cpl">
+  <comp_archive_spec compname="drv" compclass="cpl">
     <rest_file_extension>\.r\..*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
