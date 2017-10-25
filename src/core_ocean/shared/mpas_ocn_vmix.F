@@ -488,7 +488,6 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool, tracersSurfaceFluxPool
 
-      integer :: itracer, ntracer
       integer :: iCell, timeLevel, k, cell1, cell2, iEdge, nCells, nEdges
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, &
@@ -556,7 +555,7 @@ contains
          call mpas_timer_start('CVMix avg', .false.)
          !$omp do schedule(runtime) private(cell1, cell2, k)
          do iEdge=1,nEdges
-            vertViscTopOfEdge(:, iedge) = 0.0_RKIND
+            vertViscTopOfEdge(:, iEdge) = 0.0_RKIND
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             do k=1,maxLevelEdgeTop(iEdge)
@@ -819,33 +818,33 @@ end subroutine tridiagonal_solve_mult!}}}
 !
 !-----------------------------------------------------------------------
 
-subroutine ocn_compute_kpp_rhs(tracer, rhs, dt, maxLevelCell, &
+subroutine ocn_compute_kpp_rhs(tracers, rhs, dt, maxLevelCell, &
                          layerThickness, vertNonLocalFlux, tracerGroupSurfaceFlux)
 
   real (kind=RKIND), intent(in) :: dt
-  real (kind=RKIND), dimension(:,:), intent(in) :: vertNonLocalFlux, tracer
+  real (kind=RKIND), dimension(:,:), intent(in) :: vertNonLocalFlux, tracers
   real (kind=RKIND), dimension(:), intent(in) :: layerThickness, tracerGroupSurfaceFlux
   real (kind=RKIND), dimension(:,:), intent(inout) :: rhs
   integer, intent(in) :: maxLevelCell
-  integer :: itracer, ntracer, k
+  integer :: iTracer, nTracers, k
 
-  ntracer = size(tracerGroupSurfaceFlux, dim = 1)
+  nTracers = size(tracers, dim=1)
   do k=2,maxLevelCell-1
-     do itracer=1,ntracer
-        rhs(itracer, k) = tracer(itracer,k) + dt * tracerGroupSurfaceFlux(itracer) *   &
+     do iTracer=1,nTracers
+        rhs(iTracer, k) = tracers(iTracer,k) + dt * tracerGroupSurfaceFlux(iTracer) *   &
                      (vertNonLocalFlux(1,k) - vertNonLocalFlux(1,k+1)) / layerThickness(k)
      enddo
   enddo
 
   k=1
-  do itracer=1,ntracer
-     rhs(itracer, k) = tracer(itracer,k) + dt * tracerGroupSurfaceFlux(itracer) *  &
+  do iTracer=1,nTracers
+     rhs(iTracer, k) = tracers(iTracer,k) + dt * tracerGroupSurfaceFlux(iTracer) *  &
                               (-vertNonLocalFlux(1,k+1) )/ layerThickness(k)
   enddo
 
   k=maxLevelCell
-  do itracer=1,ntracer
-     rhs(itracer,k) = tracer(itracer,k) + dt * tracerGroupSurfaceFlux(itracer) * &
+  do iTracer=1,nTracers
+     rhs(iTracer,k) = tracers(iTracer,k) + dt * tracerGroupSurfaceFlux(iTracer) * &
                                      vertNonLocalFlux(1,k) / layerThickness(k)
   enddo
 
