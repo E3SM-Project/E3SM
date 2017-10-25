@@ -121,16 +121,11 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
             logger.info("   ....  Obtaining DROF model domain info from stream {}".format(streams[0]))
         nmlgen.add_default("domainfile", value=drof_cplhist_domain_file)
     else:
-        rof_domain_file = case.get_value("ROF_DOMAIN_FILE")
-        rof_domain_path = case.get_value("ROF_DOMAIN_PATH")
         if rof_domain_file != "UNSET":
             full_domain_path = os.path.join(rof_domain_path, rof_domain_file)
             nmlgen.add_default("domainfile", value=full_domain_path)
-
-    # set variables that are not per-stream
-    if rof_domain_file != "UNSET":
-        full_domain_path = os.path.join(rof_domain_path, rof_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
+        else:
+            nmlgen.add_default("domainfile", value="null")
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
