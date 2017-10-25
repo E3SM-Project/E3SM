@@ -1794,6 +1794,11 @@
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/128x256/map_0.5x0.5_nomask_to_128x256_nomask_aave_da_c110920.nc</map>
     </gridmap>
 
+    <gridmap lnd_grid="T42" rof_grid="r05">
+      <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/64x128/map_64x128_nomask_to_0.5x0.5_nomask_aave_da_c110920.nc</map>
+      <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/64x128/map_0.5x0.5_nomask_to_64x128_nomask_aave_da_c110920.nc</map>
+    </gridmap>
+
     <gridmap lnd_grid="T31" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/48x96/map_48x96_nomask_to_0.5x0.5_nomask_aave_da_c110822.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/48x96/map_0.5x0.5_nomask_to_48x96_nomask_aave_da_c110822.nc</map>
