@@ -4,7 +4,7 @@
 Script to query xml test lists, displaying all tests in human-readable form.
 
 Usage:
-   ./query_testlists [--show-options]
+   ./query_testlists [--show-options] [--define-testtypes]
       Display a list of tests
    ./query_testlists --count
       Count tests by category/machine/compiler
@@ -13,9 +13,10 @@ Usage:
 
    All of the above support the various --xml-* arguments for subsetting which tests are included.
 """
-from __future__ import print_function
+
 from Tools.standard_script_setup import *
 from CIME.test_utils import get_tests_from_xml, test_to_string
+from CIME.XML.tests import Tests
 from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,11 @@ def parse_command_line(args, description):
                         "(wallclock time, memory leak tolerance, etc.). "
                         "(Has no effect with --list or --count options.)")
 
+    parser.add_argument("--define-testtypes", action="store_true",
+                        help="At the top of the list of tests, define "
+                        "all of the possible test types. "
+                        "(Has no effect with --list or --count options.)")
+
     parser.add_argument("--xml-category",
                         help="Only include tests in this category; default is all categories")
 
@@ -61,13 +67,36 @@ def parse_command_line(args, description):
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    expect(not(args.count and args.list_type),
-           "Cannot specify both --count and --list arguments.")
+    _check_argument_compatibility(args)
 
     if args.list_type:
         _process_list_type(args)
 
     return args
+
+###############################################################################
+def _check_argument_compatibility(args):
+###############################################################################
+    """Ensures there are no incompatible arguments
+
+    If incompatible arguments are found, aborts with a helpful error
+    message.
+    """
+
+    expect(not(args.count and args.list_type),
+           "Cannot specify both --count and --list arguments.")
+
+    if args.count:
+        expect(not args.show_options,
+               "--show-options is incompatible with --count")
+        expect(not args.define_testtypes,
+               "--define-testtypes is incompatible with --count")
+
+    if args.list_type:
+        expect(not args.show_options,
+               "--show-options is incompatible with --list")
+        expect(not args.define_testtypes,
+               "--define-testtypes is incompatible with --list")
 
 ###############################################################################
 def _process_list_type(args):
@@ -87,7 +116,7 @@ def _process_list_type(args):
         args.list_type = 'compiler'
 
 ###############################################################################
-def print_test_data(test_data, show_options):
+def print_test_data(test_data, show_options, define_testtypes):
 ###############################################################################
     """
     Args:
@@ -95,6 +124,14 @@ def print_test_data(test_data, show_options):
             - name: full test name
             - category: test category
     """
+
+    if define_testtypes:
+        print("#"*72)
+        print("Test types")
+        print("----------")
+        test_definitions = Tests()
+        test_definitions.print_values(skip_infrastructure_tests=True)
+        print("#"*72)
 
     categories = sorted(set([item['category'] for item in test_data]))
     max_category_len = max([len(category) for category in categories])
@@ -178,7 +215,7 @@ def _main_func(description):
     elif args.list_type:
         list_test_data(test_data, args.list_type)
     else:
-        print_test_data(test_data, args.show_options)
+        print_test_data(test_data, args.show_options, args.define_testtypes)
 
 if __name__ == "__main__":
     _main_func(__doc__)

@@ -33,18 +33,18 @@ print $elm->get_attribute( 'attribute_name' );
 
 =head1 DESCRIPTION
 
-C<XML::Lite::Element> objects contain rudimentary methods for querying XML
-elements in an XML document as parsed by XML::Lite. Usually these objects
+C<XML::Lite::Element> objects contain rudimentary methods for querying XML 
+elements in an XML document as parsed by XML::Lite. Usually these objects 
 are returned by method calls in XML::Lite.
 
 =head1 METHODS
 
-The following methods are available. All methods like 'get_name' can be
+The following methods are available. All methods like 'get_name' can be 
 abbeviated as 'name.'
 
 =over 4
 
-=cut
+=cut 
 
 use strict;
 BEGIN {
@@ -63,8 +63,8 @@ use vars      qw();
 
 Creates a new XML::Lite::Element object from the XML::Lite object, C<$owner_document>.
 
-Currently, you must not call this manually. You can create an object with one of
-the 'factory' methods in XML::Lite, such as C<element_by_name> or C<root_element>
+Currently, you must not call this manually. You can create an object with one of 
+the 'factory' methods in XML::Lite, such as C<element_by_name> or C<root_element> 
 or with one of the XML::Lite::Element 'factory' methods below, like C<get_children>.
 
 =cut
@@ -77,15 +77,15 @@ sub new {
 	# The arguments are as follows:
 	#   $owner_document   is an XML::Lite object within which this element lives
 	#   \@pointers        is a two or four element array ref containing the offsets
-	#                     into the original document of the start and end points of
+	#                     into the original document of the start and end points of 
 	#                     the opening and closing (when it exists) tags for the element
-
+	
 	# Validate arguments
 	return undef unless @_ >= 2;
 	return undef unless ref($_[0]) && (ref($_[1]) eq 'ARRAY');
-
+	
 	# Load 'em up
-
+	
 	# The data structure for the ::Element object has these properties
 	#   doc               A reference to the containing XML::Lite object
 	#   node              A reference to an array of pointers to our element in the document
@@ -94,11 +94,11 @@ sub new {
 	#   name              The name on our tag
 	#   _attrs            A string of the attibutes in our tag (unparsed)
 	#  attrs              A hash ref of attributes in our tag
-
+	
 	$self->{doc} = $_[0];
 	$self->{node} = $_[1];
-
-	# Using the pointers, find out tag name, and attribute list from the
+	
+	# Using the pointers, find out tag name, and attribute list from the 
 	# opening tag (if there are any attributes).
 	my $tag = substr( $self->{doc}{doc}, $self->{node}[0], $self->{node}[1] - $self->{node}[0] + 1 );
 	if( $tag =~ m{^<\s*([^/>\s]+)\s+([^>]+)\s*/?\s*>$} ) {
@@ -111,7 +111,7 @@ sub new {
 		# Should have been caught in the parsing! maybe an assert?
 		$self->{doc}->_error( 'ELM_NOT_CLOSED', $self->{node}[0] + $self->{doc}->{doc_offset} );
 	} # end if
-
+	
 	# Good. Now returns it.
 	bless ($self, $class);
 	return $self;
@@ -142,16 +142,16 @@ sub content;
 sub get_content {
 	my $self = shift;
 
-	# If we don't have any content, then we should return
+	# If we don't have any content, then we should return 
 	# '' right away.
 	return '' unless defined $self->{node}[2];
-
+	
 	# Using our pointers, find everything between our tags
 	my $content = substr( $self->{doc}{doc}, $self->{node}[1] + 1, $self->{node}[2] - $self->{node}[1] - 1 );
-
+	
 	# Now, restore any CDATA chunks that may have been pulled out
 	$content =~ s/<!\[CDATA\[(\S+)\s*\]\]\/>/<![CDATA[$self->{doc}{_CDATA}[$1]]]>/g;
-
+	
 	# And return the content
 	return $content;
 } # end get_content
@@ -173,11 +173,11 @@ sub attributes;
 *attributes = \&get_attributes;
 sub get_attributes {
 	my $self = shift;
-
+	
 	# Parse the attribute string into a hash of name-value pairs
 	# unless we've already done that.
 	$self->_parse_attrs() unless defined $self->{attrs};
-
+	
 	# Just return a *copy* of the hash (this is read-only after all!)
        if ( defined($self->{attrs}) ) {
                 return %{$self->{attrs}};
@@ -202,10 +202,10 @@ sub attribute;
 sub get_attribute {
 	my $self = shift;
 	my( $name ) = @_;
-
+	
 	# If we haven't parsed the attribute string into a hash, then do that.
 	$self->_parse_attrs() unless defined $self->{attrs};
-
+	
 	# Now return the requested attribute. If it's not there
 	# then 'undef' is returned
 	return $self->{attrs}{$name};
@@ -233,9 +233,9 @@ sub get_name {
 
 =item my @children = $element->get_children()
 
-Returns a list of XML::Lite::Element objects for each element contained
-within the current element. This does not return any text or CDATA in
-the content of this element. You can parse that through the L<get_content>
+Returns a list of XML::Lite::Element objects for each element contained 
+within the current element. This does not return any text or CDATA in 
+the content of this element. You can parse that through the L<get_content> 
 method.
 
 If no child elements exist then an empty list is returned.
@@ -256,7 +256,7 @@ sub get_children {
 	my $self = shift;
 	my @children = ();
 
-	# If we don't have any content, then we should return an emtpty
+	# If we don't have any content, then we should return an emtpty 
 	# list right away -- we have no children.
 	return @children unless defined $self->{node}[2];
 
@@ -264,8 +264,8 @@ sub get_children {
 	# This will also load {children} and {parent} as well
 	$self->_find_self() unless defined $self->{self};
 
-	# Now that we know who we are (if this didn't fail) we can
-	# iterate through the sub nodes (our child list) and make
+	# Now that we know who we are (if this didn't fail) we can 
+	# iterate through the sub nodes (our child list) and make 
 	# XML::Lite::Elements objects for each child
 	if( defined $self->{children} ) {
 		my $i = 0;
@@ -276,7 +276,7 @@ sub get_children {
 			$node = $self->{children}[++$i];
 		} # end while
 	} # end if
-
+	
 	return @children;
 } # end get_children
 
@@ -304,14 +304,14 @@ sub get_text {
 	my $self = shift;
 	my $content = '';
 
-	# If we don't have any content, then we should return
+	# If we don't have any content, then we should return  
 	# $content right away -- we have no text
 	return $content unless defined $self->{node}[2];
 
 	# Otherwise get out content and children
 	my @children = $self->get_children;
 	my $orig_content = $self->get_content;
-
+	
 	# Then remove the child elements from our content
 	my $start = 0;
 	foreach( @children ) {
@@ -320,10 +320,10 @@ sub get_text {
 		$start = ($_->{node}[3] || $_->{node}[1]) - $self->{node}[1];
 	} # end foreach
 	$content .= substr( $orig_content, $start ) if $start < length($orig_content);
-
+	
 	# Remove the CDATA wrapper, preserving the content
 	$content =~ s/<!\[CDATA\[(.+?)]\]>/$1/g;
-
+	
 	# Return the left-over text
 	return $content;
 } # end get_text
@@ -352,7 +352,7 @@ sub get_text {
 # ----------------------------------------------------------
 sub _parse_attrs {
 	my $self = shift;
-
+	
 	my $attrs = $self->{_attrs};
 	if ( defined($attrs) ) {
 		$attrs =~ s/^\s+//;
@@ -364,7 +364,7 @@ sub _parse_attrs {
 			$attrs =~ s/^\s+//;
 		} # end while
 	}
-
+	
 	return 1;
 } # end _parse_atttrs
 
@@ -376,7 +376,7 @@ sub _parse_attrs {
 # Returns: A reference to our node or undef on error
 #
 # Description: Traverses the owner document's tree to find
-# the node that references the current element. Sets
+# the node that references the current element. Sets 
 # $self-{self} as a side-effect. Even if this is already set,
 # _find_self will traverse again, so don't call unless needed.
 # ----------------------------------------------------------
@@ -387,8 +387,8 @@ sub _parse_attrs {
 # ----------------------------------------------------------
 sub _find_self {
 	my $self = shift;
-
-	# We actually just call this recusively, so the first
+	
+	# We actually just call this recusively, so the first 
 	# argument can be a starting point to descend from
 	# but we don't doc that above
 	my $node = shift || $self->{doc}{tree};
@@ -405,10 +405,10 @@ sub _find_self {
 		# If this is our self, then we're done!
 		# 	NOTE: Since the list references are the same in the by-name hash
 		# 	and tree objects, we can just do a reference compare here.
-		# 	If objects are ever created with non-factory methods then we need to
+		# 	If objects are ever created with non-factory methods then we need to 
 		# 	use a _compare_lists call.
-# 		if( _compare_lists( $node->[$i], $self->{node} ) ) {
- 		if( $node->[$i] eq $self->{node} ) {
+# 		if( _compare_lists( $node->[$i], $self->{node} ) ) { 
+ 		if( $node->[$i] eq $self->{node} ) { 
 			$self->{parent} = $node;
 			$self->{self} = $node->[$i];
 			# If this list has children, then add a pointer to that list
@@ -453,16 +453,16 @@ sub _find_self {
 # ----------------------------------------------------------
 sub _compare_lists {
 	my( $rA, $rB ) = @_;
-
+	
 	# Lists are not equal unless same size
 	return 0 unless scalar(@$rA) == scalar(@$rB);
-
+	
 	# Now compare item by item.
 	my $i;
 	for( $i = 0; $i < scalar(@$rA); $i++ ) {
 		return 0 unless $rA->[$i] eq $rB->[$i];
 	} # end for
-
+	
 	return 1;
 } # end _compare_lists
 

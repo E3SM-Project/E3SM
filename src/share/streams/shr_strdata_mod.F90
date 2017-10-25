@@ -168,7 +168,7 @@ module shr_strdata_mod
 !===============================================================================
 
   subroutine shr_strdata_init(SDAT,mpicom,compid,name,scmmode,scmlon,scmlat, &
-                              gsmap,ggrid,nxg,nyg,nzg,calendar)
+                              gsmap,ggrid,nxg,nyg,nzg,calendar,reset_domain_mask)
 
   implicit none
 
@@ -185,6 +185,7 @@ module shr_strdata_mod
   integer(IN)           ,intent(in),optional :: nyg
   integer(IN)           ,intent(in),optional :: nzg
   character(len=*)      ,intent(in),optional :: calendar
+  logical               ,intent(in),optional :: reset_domain_mask
 
   integer(IN) :: n,m,k         ! generic index
   integer(IN) :: nu,nv         ! u,v index
@@ -209,7 +210,7 @@ module shr_strdata_mod
   integer(IN), pointer :: dof(:)
   type(mct_sMat):: sMati
   logical       :: lscmmode
-
+  integer       :: kmask, kfrac
   character(len=*),parameter :: subname = "(shr_strdata_init) "
   character(*),parameter ::   F00 = "('(shr_strdata_init) ',8a)"
 
@@ -319,7 +320,9 @@ module shr_strdata_mod
      call shr_mpi_bcast(areaName,mpicom)
      call shr_dmodel_readgrid(SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n), &
           fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName)
+
      SDAT%lsizeR(n) = mct_gsmap_lsize(SDAT%gsmapR(n),mpicom)
+
      call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
      if (SDAT%strnzg(n) <= 0) then
        call pio_initdecomp(SDAT%pio_subsystem, pio_double, &
@@ -382,6 +385,18 @@ module shr_strdata_mod
                  SDAT%domainfile, compid, mpicom, '2d1d', readfrac=.true.)
          endif
      endif
+
+     if (present(reset_domain_mask)) then
+        if (reset_domain_mask) then
+           write(logunit,F00) ' Resetting the component domain mask and frac to 1'
+           kmask = mct_aVect_indexRA(SDAT%grid%data,'mask')
+           SDAT%grid%data%rattr(kmask,:) = 1
+
+           kfrac = mct_aVect_indexRA(SDAT%grid%data,'frac')
+           SDAT%grid%data%rattr(kfrac,:) = 1.0_r8
+        end if
+     end if
+
   endif
   SDAT%lsize = mct_gsmap_lsize(SDAT%gsmap,mpicom)
 

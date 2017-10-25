@@ -43,7 +43,7 @@
          lnd.cplhist
          sno.cplhist
 
-    **** NOTE: in the value matches below, regular expressions are used **** 
+    **** NOTE: in the value matches below, regular expressions are used ****
          If two matches are equivalent, the FIRST one will be used
 
 	 As an example, say dlnd_mode=GLC_CPLHIST
@@ -51,7 +51,7 @@
          the following will results in the CORRECT set of streams for this dlnd_mode
              <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
              <value dlnd_mode="CPLHIST">COPYALL</value>
- 
+
          the following order would result in an INCORRECT setting of streams for this datm_mode
              <value dlnd_mode="CPLHIST">COPYALL</value>
              <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
@@ -205,10 +205,7 @@
       dataMode = "COPYALL"
       Copies all fields directly from the input data streams Any required
       fields not found on an input stream will be set to zero.
-
-      Set by the following xml variables in env_run.xml
-      DLND_MODE
-      default value: NULL
+      Set by the DLND_MODE xml variable in env_run.xml
     </desc>
     <values>
       <value dlnd_mode="NULL">NULL</value>

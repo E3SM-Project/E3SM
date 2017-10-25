@@ -3,8 +3,10 @@
  * to the box and subset rearranger, and the transfer of data betweeen
  * IO and computation tasks.
  *
- * Ed Hartnett, 3/9/17
+ * @author Ed Hartnett
+ * @date 3/9/17
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_tests.h>
 #include <pio_internal.h>
@@ -173,7 +175,6 @@ int test_create_mpi_datatypes()
         {
             if ((mpierr = MPI_Type_get_extent(mtype2[t], &lb, &extent)))
                 MPIERR(mpierr);
-            printf("t = %d lb = %ld extent = %ld\n", t, lb, extent);
             if (lb != 0 || extent != 4)
                 return ERR_WRONG;
         }
@@ -209,8 +210,6 @@ int test_idx_to_dim_list()
 
     /* According to function docs, we should get 2,0 */
     idx_to_dim_list(ndims2, gdims2, idx2, dim_list2);
-    printf("dim_list2[0] = %lld\n", dim_list2[0]);
-    printf("dim_list2[1] = %lld\n", dim_list2[1]);
 
     /* This is the correct result! */
     if (dim_list2[0] != 2 || dim_list2[1] != 0)
@@ -247,7 +246,6 @@ int test_coord_to_lindex()
     PIO_Offset lindex3;
 
     lindex3 = coord_to_lindex(ndims3, lcoord3, count3);
-    printf("lindex = %lld\n", lindex3);
     if (lindex3 != 3)
         return ERR_WRONG;
 
@@ -349,7 +347,6 @@ int test_compute_maxIObuffersize(MPI_Comm test_comm, int my_rank)
         /* Run the function. */
         if ((ret = compute_maxIObuffersize(test_comm, &iodesc)))
             return ret;
-        printf("iodesc.maxiobuflen = %d\n", iodesc.maxiobuflen);
         if (iodesc.maxiobuflen != 520)
             return ERR_WRONG;
 
@@ -456,7 +453,6 @@ int test_find_region()
     regionlen = find_region(ndims, gdimlen, maplen, map, start, count);
 
     /* Check results. */
-    printf("regionlen = %lld start[0] = %lld count[0] = %lld\n", regionlen, start[0], count[0]);
     if (regionlen != 1 || start[0] != 0 || count[0] != 1)
         return ERR_WRONG;
 
@@ -478,7 +474,6 @@ int test_expand_region()
     expand_region(dim, gdims, maplen, map, region_size, region_stride, max_size, count);
     if (count[0] != 1)
         return ERR_WRONG;
-    printf("max_size[0] = %d count[0] = %lld\n", max_size[0], count[0]);
 
     return 0;
 }
@@ -499,10 +494,11 @@ int test_define_iodesc_datatypes()
 
         /* Set up test for IO task with BOX rearranger to create one type. */
         ios.ioproc = 1; /* this is IO proc. */
+        ios.compproc = 1;
         ios.num_iotasks = 4; /* The number of IO tasks. */
         iodesc.rtype = NULL; /* Array of MPI types will be created here. */
         iodesc.nrecvs = 1; /* Number of types created. */
-        iodesc.basetype = MPI_INT;
+        iodesc.mpitype = MPI_INT;
         iodesc.stype = NULL; /* Array of MPI types will be created here. */
 
         /* Allocate space for arrays in iodesc that will be filled in
@@ -947,12 +943,12 @@ int test_rearrange_comp2io(MPI_Comm test_comm, int my_rank)
     ios->num_iotasks = TARGET_NTASKS;
     ios->num_uniontasks = TARGET_NTASKS;
     iodesc->rearranger = PIO_REARR_BOX;
-    iodesc->basetype = MPI_INT;
+    iodesc->mpitype = MPI_INT;
 
     /* Set up test for IO task with BOX rearranger to create one type. */
     iodesc->rtype = NULL; /* Array of MPI types will be created here. */
     iodesc->nrecvs = 1; /* Number of types created. */
-    iodesc->basetype = MPI_INT;
+    iodesc->mpitype = MPI_INT;
     iodesc->stype = NULL; /* Array of MPI types will be created here. */
 
     /* The two rearrangers create a different number of send types. */
@@ -998,7 +994,6 @@ int test_rearrange_comp2io(MPI_Comm test_comm, int my_rank)
     /* Run the function to test. */
     if ((ret = rearrange_comp2io(ios, iodesc, sbuf, rbuf, nvars)))
         return ret;
-    printf("returned from rearrange_comp2io\n");
 
     /* We created send types, so free them. */
     for (int st = 0; st < num_send_types; st++)
@@ -1070,14 +1065,14 @@ int test_rearrange_io2comp(MPI_Comm test_comm, int my_rank)
     ios->union_comm = test_comm;
     ios->num_iotasks = TARGET_NTASKS;
     iodesc->rearranger = PIO_REARR_BOX;
-    iodesc->basetype = MPI_INT;
+    iodesc->mpitype = MPI_INT;
 
     /* Set up test for IO task with BOX rearranger to create one type. */
     ios->ioproc = 1; /* this is IO proc. */
     ios->num_iotasks = 4; /* The number of IO tasks. */
     iodesc->rtype = NULL; /* Array of MPI types will be created here. */
     iodesc->nrecvs = 1; /* Number of types created. */
-    iodesc->basetype = MPI_INT;
+    iodesc->mpitype = MPI_INT;
     iodesc->stype = NULL; /* Array of MPI types will be created here. */
 
     /* The two rearrangers create a different number of send types. */
@@ -1127,7 +1122,6 @@ int test_rearrange_io2comp(MPI_Comm test_comm, int my_rank)
     /* Run the function to test. */
     if ((ret = rearrange_io2comp(ios, iodesc, sbuf, rbuf)))
         return ret;
-    printf("returned from rearrange_comp2io\n");
 
     /* We created send types, so free them. */
     for (int st = 0; st < num_send_types; st++)
@@ -1170,71 +1164,55 @@ int run_no_iosys_tests(int my_rank, MPI_Comm test_comm)
 {
     int ret;
 
-    printf("%d running idx_to_dim_list tests\n", my_rank);
     if ((ret = test_idx_to_dim_list()))
         return ret;
 
-    printf("%d running coord_to_lindex tests\n", my_rank);
     if ((ret = test_coord_to_lindex()))
         return ret;
 
-    printf("%d running compute_maxIObuffersize tests\n", my_rank);
     if ((ret = test_compute_maxIObuffersize(test_comm, my_rank)))
         return ret;
 
-    printf("%d running determine_fill\n", my_rank);
     if ((ret = test_determine_fill(test_comm)))
         return ret;
 
-    printf("%d running tests for expand_region()\n", my_rank);
     if ((ret = test_expand_region()))
         return ret;
 
-    printf("%d running tests for find_region()\n", my_rank);
     if ((ret = test_find_region()))
         return ret;
 
-    printf("%d running tests for get_regions()\n", my_rank);
     if ((ret = test_get_regions(my_rank)))
         return ret;
 
-    printf("%d running create_mpi_datatypes tests\n", my_rank);
     if ((ret = test_create_mpi_datatypes()))
         return ret;
 
-    printf("%d running define_iodesc_datatypes tests\n", my_rank);
     if ((ret = test_define_iodesc_datatypes()))
         return ret;
 
-    printf("%d running compare_offsets tests\n", my_rank);
     if ((ret = test_compare_offsets()))
         return ret;
 
-    printf("%d running compute_counts tests for box rearranger\n", my_rank);
     if ((ret = test_compute_counts(test_comm, my_rank)))
         return ret;
 
-    printf("%d running tests for box_rearrange_create\n", my_rank);
     if ((ret = test_box_rearrange_create(test_comm, my_rank)))
         return ret;
 
-    printf("%d running more tests for box_rearrange_create\n", my_rank);
     if ((ret = test_box_rearrange_create_2(test_comm, my_rank)))
         return ret;
 
-    printf("%d running tests for default_subset_partition\n", my_rank);
     if ((ret = test_default_subset_partition(test_comm, my_rank)))
         return ret;
 
-    printf("%d running tests for rearrange_comp2io\n", my_rank);
     if ((ret = test_rearrange_comp2io(test_comm, my_rank)))
         return ret;
 
-    printf("%d running tests for rearrange_io2comp\n", my_rank);
     if ((ret = test_rearrange_io2comp(test_comm, my_rank)))
         return ret;
 
-     return 0;
+    return 0;
 }
 
 /* Test scalar vars. */
@@ -1285,8 +1263,6 @@ int test_scalar(int numio, int iosysid, MPI_Comm test_comm, int my_rank,
             int varid;
             char filename[PIO_MAX_NAME + 1];
 
-            printf("test with t = %d\n", t);
-
             /* These iotypes only handle netCDF classic types. */
             if (t >= NUM_CLASSIC_TYPES &&
                 (flavor[fmt] == PIO_IOTYPE_PNETCDF || flavor[fmt] == PIO_IOTYPE_NETCDF))
@@ -1335,7 +1311,7 @@ int test_scalar(int numio, int iosysid, MPI_Comm test_comm, int my_rank,
                 if ((ret = PIOc_put_var_double(ncid, varid, &double_data)))
                     return ret;
                 break;
-#ifdef _NETCDF4                
+#ifdef _NETCDF4
             case PIO_UBYTE:
                 if ((ret = PIOc_put_var_uchar(ncid, varid, &ubyte_data)))
                     return ret;
@@ -1356,7 +1332,7 @@ int test_scalar(int numio, int iosysid, MPI_Comm test_comm, int my_rank,
                 if ((ret = PIOc_put_var_ulonglong(ncid, varid, &uint64_data)))
                     return ret;
                 break;
-#endif /* _NETCDF4 */                
+#endif /* _NETCDF4 */
             default:
                 return ERR_WRONG;
             }
@@ -1408,7 +1384,7 @@ int test_scalar(int numio, int iosysid, MPI_Comm test_comm, int my_rank,
                 if (double_data_in != double_data)
                     return ERR_WRONG;
                 break;
-#ifdef _NETCDF4                
+#ifdef _NETCDF4
             case PIO_UBYTE:
                 if ((ret = PIOc_get_var_uchar(ncid, varid, &ubyte_data_in)))
                     return ret;
@@ -1439,7 +1415,7 @@ int test_scalar(int numio, int iosysid, MPI_Comm test_comm, int my_rank,
                 if (uint64_data_in != uint64_data)
                     return ERR_WRONG;
                 break;
-#endif /* _NETCDF4 */                
+#endif /* _NETCDF4 */
             default:
                 return ERR_WRONG;
             }
@@ -1461,15 +1437,12 @@ int run_iosys_tests(int numio, int iosysid, int my_rank, MPI_Comm test_comm,
 {
     int ret;
 
-    printf("%d running rearranger opts tests 1\n", my_rank);
     if ((ret = test_rearranger_opts1(iosysid)))
         return ret;
 
-    printf("%d running test for init_decomp\n", my_rank);
     if ((ret = test_init_decomp(iosysid, test_comm, my_rank)))
         return ret;
 
-    printf("%d running test for init_decomp\n", my_rank);
     if ((ret = test_scalar(numio, iosysid, test_comm, my_rank, num_flavors, flavor)))
         return ret;
 
@@ -1488,7 +1461,7 @@ int main(int argc, char **argv)
 
     /* Initialize test. */
     if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, MIN_NTASKS,
-                              TARGET_NTASKS, 3, &test_comm)))
+                              TARGET_NTASKS, -1, &test_comm)))
         ERR(ERR_INIT);
     if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
         return ret;
@@ -1496,7 +1469,6 @@ int main(int argc, char **argv)
     /* Figure out iotypes. */
     if ((ret = get_iotypes(&num_flavors, flavor)))
         ERR(ret);
-    printf("Runnings tests for %d flavors\n", num_flavors);
 
     /* Test code runs on TARGET_NTASKS tasks. The left over tasks do
      * nothing. */
@@ -1532,7 +1504,6 @@ int main(int argc, char **argv)
     } /* endif my_rank < TARGET_NTASKS */
 
     /* Finalize the MPI library. */
-    printf("%d %s Finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
 

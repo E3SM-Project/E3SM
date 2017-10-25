@@ -117,7 +117,7 @@ Each ``<machine>`` tag requires the following input:
 - ``BATCH_SYSTEM``: batch system used on this machine (none is okay)
 - ``SUPPORTED_BY``: contact information for support for this system
 - ``MAX_TASKS_PER_NODE``: maximum number of threads/tasks per shared memory node on the machine
-- ``PES_PER_NODE``: number of physical PES per shared node on the machine. In practice the MPI tasks per node will not exceed this value.
+- ``MAX_MPITASKS_PER_NODE``: number of physical PES per shared node on the machine. In practice the MPI tasks per node will not exceed this value.
 - ``PROJECT_REQUIRED``: Does this machine require a project to be specified to the batch system?
 - ``mpirun``: The mpi exec to start a job on this machine.
   This is itself an element that has sub-elements that must be filled:
