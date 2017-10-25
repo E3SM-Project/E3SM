@@ -804,7 +804,11 @@ contains
                !
                if (config_compute_active_tracer_budgets) then
                   if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                     activeTracerSurfaceFluxTendency(:,:,:) = tracerGroupTend(:,:,:)
+                     !$omp do schedule(runtime)
+                     do iCell = 1, nCells
+                        activeTracerSurfaceFluxTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
+                     end do
+                     !$omp end do
                   endif
                endif
 
@@ -812,29 +816,31 @@ contains
                                                  tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff,  &
                                                  tracerGroupTend, err)
 
-               if (config_compute_active_tracer_budgets) then
-                  if (trim(groupItr % memberName) == 'activeTracers') then
-                     activeTracerSurfaceFluxTendency(:,:,:) = tracerGroupTend(:,:,:)-activeTracerSurfaceFluxTendency(:,:,:)
-                  endif
-               endif
                !
                ! Performing shortwave absorption
                !
-
-               if (config_compute_active_tracer_budgets) then
-                  if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                     temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)
-                  endif
-               endif
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
+
+                  if (config_compute_active_tracer_budgets) then
+                     !$omp do schedule(runtime)
+                     do iCell = 1, nCells
+                        activeTracerSurfaceFluxTendency(:,:,iCell) = tracerGroupTend(:,:,iCell) &
+                           - activeTracerSurfaceFluxTendency(:,:,iCell)
+                        temperatureShortWaveTendency(:,iCell) = tracerGroupTend(indexTemperature,:,iCell)
+                     end do
+                     !$omp end do
+                  endif
+
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
                            layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
-               endif
 
-               if (config_compute_active_tracer_budgets) then
-                  if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                    temperatureShortWaveTendency(:,:) = tracerGroupTend(indexTemperature,:,:)- &
-                                        temperatureShortWaveTendency(:,:)
+                  if (config_compute_active_tracer_budgets) then
+                     !$omp do schedule(runtime)
+                     do iCell = 1, nCells
+                        temperatureShortWaveTendency(:,iCell) = tracerGroupTend(indexTemperature,:,iCell) - &
+                                        temperatureShortWaveTendency(:,iCell)
+                     end do
+                     !$omp end do
                   endif
                endif
 
@@ -847,11 +853,19 @@ contains
                   if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
                      if( trim(groupItr % memberName) == 'activeTracers' ) then
                         if (config_compute_active_tracer_budgets) then
-                           activeTracerNonLocalTendency(:,:,:) = tracerGroupTend(:,:,:)
+                           !$omp do schedule(runtime)
+                           do iCell = 1, nCells
+                              activeTracerNonLocalTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
+                           end do
+                           !$omp end do
                         endif
                         call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
                         if (config_compute_active_tracer_budgets) then
-                           activeTracerNonLocalTendency(:,:,:) = tracerGroupTend(:,:,:)-activeTracerNonLocalTendency(:,:,:)
+                           !$omp do schedule(runtime)
+                           do iCell = 1, nCells
+                              activeTracerNonLocalTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)-activeTracerNonLocalTendency(:,:,iCell)
+                           end do
+                           !$omp end do
                         endif
                      else
                         call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)

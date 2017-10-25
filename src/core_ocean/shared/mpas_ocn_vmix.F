@@ -587,7 +587,11 @@ contains
             ! store tracers
             if (trim(groupItr % memberName) == 'activeTracers') then
                if (config_compute_active_tracer_budgets) then
-                  activeTracerVertMixTendency(:,:,:)=tracersGroup(:,:,:)
+                  !$omp do schedule(runtime)
+                  do iCell = 1, nCells
+                     activeTracerVertMixTendency(:,:,iCell)=tracersGroup(:,:,iCell)
+                  end do
+                  !$omp end do
                endif
             endif
 
@@ -609,8 +613,12 @@ contains
             ! difference tracers to compute influence of vertical mixing and divide by dt
             if (trim(groupItr % memberName) == 'activeTracers') then
                if (config_compute_active_tracer_budgets) then
-                  activeTracerVertMixTendency(:,:,:) = &
-                      (tracersGroup(:,:,:) - activeTracerVertMixTendency(:,:,:)) / dt
+                  !$omp do schedule(runtime)
+                  do iCell = 1, nCells
+                     activeTracerVertMixTendency(:,:,iCell) = &
+                        (tracersGroup(:,:,iCell) - activeTracerVertMixTendency(:,:,iCell)) / dt
+                  end do
+                  !$omp end do
                endif
             endif
 
