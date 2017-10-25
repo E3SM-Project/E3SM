@@ -194,7 +194,7 @@
   <machine MACH="centos7-linux">
     <DESC>
 	Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
-        using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules         
+        using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules
     </DESC>
     <NODENAME_REGEX>regex.expression.matching.your.machine</NODENAME_REGEX>
     <OS>LINUX</OS>
@@ -324,9 +324,9 @@
 	<command name="load">openblas/0.2.14</command>
       </modules>
       <modules mpilib="mpt">
-	<command name="load">mpt/2.15f</command>
+	<command name="load">mpt/2.16</command>
 	<command name="load">netcdf-mpi/4.4.1.1</command>
-	<command name="load">pnetcdf/1.8.0</command>
+	<command name="load">pnetcdf/1.8.1</command>
       </modules>
       <modules mpilib="openmpi">
 	<command name="load">openmpi/2.1.0</command>
@@ -1684,7 +1684,7 @@
 	<command name="load">openmpi</command>
 	<command name="load">netcdf/4.4.0-intel-p</command>
       </modules>
-    </module_system> 
+    </module_system>
   </machine>
 
   <machine MACH="lbl-lr2">
@@ -1733,7 +1733,7 @@
 	<command name="load">openmpi</command>
 	<command name="load">netcdf/4.4.0-intel-p</command>
       </modules>
-    </module_system> 
+    </module_system>
   </machine>
 
   <machine MACH="theta">
