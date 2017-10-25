@@ -3008,6 +3008,18 @@ Constant associated with the dissipation of the variance of vertical velocity
 Default: 1.0. See clubb/parameters_tunable.F90
 </entry>
 
+<entry id="clubb_C1b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skewness in C1 Skw. Function
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="clubb_C1c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Degree of Slope of C1 Skw. Function
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
 <entry id="clubb_C2rt" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant associated with the dissipation of the variance of total water
@@ -3036,6 +3048,24 @@ Default: 4.0
        group="clubb_param_nl" valid_values="" >
 High skewness of Newtonian damping of water flux
 Default: 6.0
+</entry>
+
+<entry id="clubb_C6rtc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Degree of Slope of C6rt Skw. Function
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thl" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low Skewness in C6thl Skw. Function
+Default: 4.0
+</entry>
+
+<entry id="clubb_C6thlc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Degree of Slope of C6thl Skw. Function
+Default: 1.0
 </entry>
 
 <entry id="clubb_C7" type="real" category="pblrad"
@@ -3088,8 +3118,14 @@ Default: 0.32
 
 <entry id="clubb_gamma_coefb" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
-High Skw. gamma coef. Skw. Fnct.
+High Skw. gamma coef. Skw. Function
 Default: 0.32 or clubb_gamma_coef if it is specified
+</entry>
+
+<entry id="clubb_gamma_coefc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Deg. Slope: gamma coef. Skw. Function
+Default: 5.0
 </entry>
 
 <entry id="clubb_mu" type="real" category="pblrad"
