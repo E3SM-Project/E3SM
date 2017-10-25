@@ -1,6 +1,141 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-25-2017
+Tag: cime5.4.0-alpha.05
+Answer Changes: None
+Tests: scripts_regression_tests
+       ne16_ne16_mg17 alias (compset QPC6)
+       ERS.f09_g17.B1850.cheyenne_intel.allactive-defaultio
+Dependencies:
+
+Brief Summary:
+    - Add mapping files for T42_T42_mg17.
+    - Remove empty proxy tag from anlworkstation.
+    - Updates for testreporter and remove AWAV from testlist.
+    - Bring in E3SM cime changes for past 3 months.
+    - Adjustments for new CAM-SE dycore.
+    - Make sure user changes to wallclock/queue are not lost.
+    - Minor cleanup of PEM test.
+    - Add COMP_ROOT_DIR_ variables so that a component can be moved with the
+      change of a single cime variable.
+    - Set correct domain files for ne16np4.
+    - Add LBL Machines.
+    - Data model documentation edits.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+299f1ab Merge pull request #1991 from ESMCI/fischer/T42_T42_mg17
+a8cd748 Merge pull request #1989 from ESMCI/dqwu/anlworkstation-remove-proxy-tag
+de4df65 Merge pull request #1984 from ESMCI/fischer/TestReporter
+0c1b306 Merge pull request #1970 from ESMCI/jgfouca/branch-for-acme-split-10-17-2017-pr
+4f201fe Merge pull request #1979 from gold2718/seUpdates
+3d509a2 Merge pull request #1978 from ESMCI/jgfouca/fix_custom_walltime
+14d71e9 Merge pull request #1976 from billsacks/pem_cleanup
+0e5cee1 Merge pull request #1968 from jedwards4b/add_comp_root_dir_vars
+a1a2c14 Merge pull request #1973 from gold2718/seDomainFiles
+48c6fa8 Merge pull request #1956 from ekluzek/addlblmachs
+a915609 Merge pull request #1969 from billsacks/data_model_edits
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_compsets.xml
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/config_archive.xml
+M	config/acme/config_files.xml
+M	config/acme/config_grids.xml
+D	config/acme/machines/Depends.corip1
+M	config/acme/machines/Depends.intel
+D	config/acme/machines/Depends.intel14
+D	config/acme/machines/Depends.intelmic
+D	config/acme/machines/Depends.intelmic14
+A	config/acme/machines/Depends.summitdev.ibm
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/template.st_archive
+A	config/acme/testmods_dirs/allactive/clm/bgcinterface/user_nl_clm
+A	config/acme/testmods_dirs/allactive/clm/rd/user_nl_clm
+A	config/acme/testmods_dirs/allactive/clm/vst/user_nl_clm
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.st_archive
+M	config/config_tests.xml
+M	config/xml_schemas/config_compilers_v2.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	config/xml_schemas/env_mach_specific.xsd
+M	doc/source/data_models/data-atm.rst
+M	doc/source/data_models/data-lnd.rst
+M	doc/source/data_models/data-model-science.rst
+M	doc/source/data_models/data-ocean.rst
+M	doc/source/data_models/data-river.rst
+M	doc/source/data_models/data-seaice.rst
+M	doc/source/data_models/data-wave.rst
+M	doc/source/data_models/design-details.rst
+M	doc/source/data_models/input-streams.rst
+M	doc/source/data_models/introduction.rst
+A	scripts/Tools/acme_cime_split
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/preview_run
+M	scripts/Tools/testreporter.py
+M	scripts/Tools/xmlchange
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/pem.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/pes.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+A	scripts/tests/run_acme_ctest/CMakeLists.txt
+A	scripts/tests/run_acme_ctest/CTestConfig.cmake
+A	scripts/tests/run_acme_ctest/runAcmeTest_template.sh
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_diag_mct.F90
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite.3
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite_Element.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/share/timing/GPTLget_memusage.c
+M	src/share/timing/GPTLprint_memusage.c
+M	src/share/util/shr_flux_mod.F90
+M	src/share/util/shr_mem_mod.F90
+M	src/share/util/shr_orb_mod.F90
+M	src/share/util/shr_reprosum_mod.F90
+M	utils/perl5lib/compilers_translation_tool.pl
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-16-2017
 Tag: cime5.4.0-alpha.04
 Answer Changes: None
