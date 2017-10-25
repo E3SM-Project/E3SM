@@ -28,7 +28,6 @@ def _get_datenames(rundir, casename):
     Note we are assuming that the coupler restart files exist and are consistent with other component datenames
     Not doc-testable due to filesystem dependence
     """
-    logger.info(rundir)
     expect(isdir(rundir), 'Cannot open directory {} '.format(rundir))
     files = sorted(glob.glob(os.path.join(rundir, casename + '.cpl*.r*.nc')))
     if not files:
@@ -352,7 +351,7 @@ def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile):
                     histfile = os.path.basename(histfile)
                     # append histfile to the list ONLY if it exists in rundir before the archiving
                     if histfile in histfiles:
-                        logger.info("WARNING, tried to add a duplicate file to histfiles")
+                        logger.warning("WARNING, tried to add a duplicate file to histfiles")
                     if os.path.isfile(os.path.join(rundir,histfile)):
                         histfiles.add(histfile)
     return histfiles
