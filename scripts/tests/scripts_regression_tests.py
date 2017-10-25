@@ -13,6 +13,8 @@ subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 from six import assertRaisesRegex
 import six
 
+import collections
+
 from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
 import update_acme_tests
 import CIME.test_scheduler, CIME.wait_for_tests
@@ -1393,6 +1395,47 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+
+    ###########################################################################
+    def test_cime_case_prereq(self):
+    ###########################################################################
+        testcase_name = 'prereq_test'
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self, ("%s/create_newcase --case %s --script-root %s --compset X --res f19_g16 --output-root %s"
+                                     % (SCRIPT_DIR, testcase_name, testdir, testdir)),
+                              from_dir=SCRIPT_DIR)
+
+        with Case(testdir, read_only=False) as case:
+            job_name = "case.run"
+            prereq_name = 'prereq_test'
+            batch_commands = case.submit_jobs(prereq=prereq_name, job=job_name, skip_pnl=True, dry_run=True)
+            self.assertTrue(isinstance(batch_commands, collections.Sequence), "case.submit_jobs did not return a sequence for a dry run")
+            self.assertTrue(len(batch_commands) > 0, "case.submit_jobs did not return any job submission string")
+            # The first element in the internal sequence should just be the job name
+            # The second one (batch_cmd_index) should be the actual batch submission command
+            batch_cmd_index = 1
+            # The prerequisite should be applied to all jobs, though we're only expecting one
+            for batch_cmd in batch_commands:
+                self.assertTrue(isinstance(batch_cmd, collections.Sequence), "case.submit_jobs did not return a sequence of sequences")
+                self.assertTrue(len(batch_cmd) > batch_cmd_index, "case.submit_jobs returned internal sequences with length <= {}".format(batch_cmd_index))
+                self.assertTrue(isinstance(batch_cmd[1], str), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
+                batch_cmd_args = batch_cmd[1]
+
+                jobid_ident = 'jobid'
+                dep_str_fmt = case.get_env('batch').get_value('depend_string', subgroup=None)
+                self.assertTrue(jobid_ident in dep_str_fmt, "dependency string doesn't include the jobid identifier {}".format(jobid_ident))
+                dep_str = dep_str_fmt[:-len(jobid_ident)]
+
+                while dep_str in batch_cmd_args:
+                    dep_id_pos = batch_cmd_args.find(dep_str) + len(dep_str)
+                    batch_cmd_args = batch_cmd_args[dep_id_pos:]
+                    prereq_substr = batch_cmd_args[:len(prereq_name)]
+                    if prereq_substr == prereq_name:
+                        break
+
+                self.assertTrue(prereq_name in prereq_substr, "Dependencies added, but not the user specified one")
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):

@@ -21,7 +21,6 @@ class EnvBatch(EnvBase):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
-        self._prereq_jobid = None
         self._batchtype = None
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
@@ -316,9 +315,9 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None, skip_pnl=False,
-                    mail_user=None, mail_type='never', batch_args=None,
-                    dry_run=False):
+    def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None,
+                    skip_pnl=False, mail_user=None, mail_type='never',
+                    batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -355,25 +354,16 @@ class EnvBatch(EnvBase):
                 deps = dependency.split()
             else:
                 deps = []
-            jobid = ""
-            if self._prereq_jobid is not None:
-                jobid = self._prereq_jobid
+            dep_jobs = []
+            if user_prereq is not None:
+                dep_jobs.append(user_prereq)
             for dep in deps:
-                if dep in depid and depid[dep] is not None:
-                    jobid += " " + str(depid[dep])
-#TODO: doubt these will be used
-#               elif dep == "and":
-#                   jobid += " && "
-#               elif dep == "or":
-#                   jobid += " || "
+                if dep in depid.keys() and depid[dep] is not None:
+                    dep_jobs.append(str(depid[dep]))
 
-
-            slen = len(jobid)
-            if slen == 0:
-                jobid = None
-
-            logger.warning("job is {}".format(job))
-            result = self._submit_single_job(case, job, jobid,
+            logger.warning("job {} depends on {}".format(job, dep_jobs))
+            result = self._submit_single_job(case, job,
+                                             dep_jobs=dep_jobs,
                                              no_batch=no_batch,
                                              skip_pnl=skip_pnl,
                                              mail_user=mail_user,
@@ -391,7 +381,7 @@ class EnvBatch(EnvBase):
         else:
             return depid
 
-    def _submit_single_job(self, case, job, depid=None, no_batch=False,
+    def _submit_single_job(self, case, job, dep_jobs=None, no_batch=False,
                            skip_pnl=False, mail_user=None, mail_type='never',
                            batch_args=None, dry_run=False):
         logger.warning("Submit job {}".format(job))
@@ -415,9 +405,15 @@ class EnvBatch(EnvBase):
         if args_override:
             submitargs = args_override
 
-        if depid is not None:
+        if dep_jobs is not None and len(dep_jobs) > 0:
+            logger.info("dependencies: {}".format(dep_jobs))
             dep_string = self.get_value("depend_string", subgroup=None)
-            dep_string = dep_string.replace("jobid",depid.strip()) # pylint: disable=maybe-no-member
+            separator_string = self.get_value("depend_separator", subgroup=None)
+            expect("jobid" in dep_string, "depend_string is missing jobid for prerequisite jobs")
+            dep_ids_str = str(dep_jobs[0])
+            for dep_id in dep_jobs[1:]:
+                dep_ids_str += separator_string + str(dep_id)
+            dep_string = dep_string.replace("jobid",dep_ids_str.strip()) # pylint: disable=maybe-no-member
             submitargs += " " + dep_string
 
         if batch_args is not None:
