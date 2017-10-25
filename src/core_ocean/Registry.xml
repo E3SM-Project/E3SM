@@ -671,6 +671,10 @@
 					description="Flag for use of enhanced diffusion at boundary layer base as in Large et al (1994)"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_cvmix_kpp_nonlocal_with_implicit_mix" type="logical" default_value=".false." units="none"
+					description="flag that moves the non-local computation and application of tendency to after main timestep loop"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="forcing" mode="init;forward">
 		<nml_option name="config_use_bulk_wind_stress" type="logical" default_value=".false." units="unitless"
