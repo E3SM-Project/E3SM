@@ -1,9 +1,10 @@
 package:
     name: acme_diags
-    version: 1.0.0
+    version: 1.0.1
 
 source:
     git_url: git://github.com/ACME-Climate/acme_diags
+    git_rev: v1.0.1
 
 build:
     script: python setup.py install
@@ -24,7 +25,7 @@ requirements:
     - genutil 2.12
     - cdtime 2.12
     - numpy
-    - matplotlib
+    - matplotlib <2.1.0
     - cartopy
     - beautifulsoup4
     - lxml
