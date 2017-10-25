@@ -273,8 +273,6 @@ def case_run(case, skip_pnl=False):
     # set up the LID
     lid = new_lid()
 
-    save_prerun_provenance(case)
-
     for cycle in range(data_assimilation_cycles):
         # After the first DA cycle, runs are restart runs
         if cycle > 0:
@@ -287,7 +285,9 @@ def case_run(case, skip_pnl=False):
                         lid, prefix="prerun")
             case.read_xml()
 
+        save_prerun_provenance(case)
         lid = run_model(case, lid, skip_pnl)
+
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
