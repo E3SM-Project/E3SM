@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp, get_model
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -102,7 +102,10 @@ def _run_model_impl(case, lid, skip_pnl=False):
 
     while loop:
         loop = False
-        stat = run_cmd(cmd, from_dir=rundir)[0]
+
+        run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
+        stat = run_and_log_case_status(run_func, "run {}.exe".format(get_model()), caseroot=case.get_value("CASEROOT"))
+
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
         if stat != 0:
