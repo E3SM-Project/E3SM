@@ -45,13 +45,8 @@ contains
 
     ! INITIALIZE ALPHA:
     !=======================
-    ! If qic==0 for entire col alphaq and alphan=0 => cfl=0 => deltat_sed blows up. 
-    ! Using a small val causes cfl to be small, causing large deltat_sed which gets
-    ! limited to a max of deltat. This is appropriate since if you have nothing to 
-    ! sediment you don't need a short timestep.
-    alphaq(:) = qsmall
-    alphan(:) = qsmall
-
+    alphaq(:) = 0._r8
+    alphan(:) = 0._r8
 
     ! CALCULATE IN-CLOUD QUANTITIES:
     !========================
@@ -174,7 +169,10 @@ contains
     !pdel is defined on cell centers. I'm using alpha(1:) here because the CFL number 
     !can be interpreted as the fraction of a timestep before advection flushes out the 
     !entire contents of the cell. Since all motion is downward, the lower edge is appropriate.
-    cfl = max(maxval(alphaq(1:nlev)*deltat/pdel(i,1:nlev)),maxval(alphan(1:nlev)*deltat/pdel(i,1:nlev)))
+    !Note that cfl is limited to be >=qsmall. If no condensate in column, cfl would otherwise be zero,
+    !causing deltat_sed -> inf in micro_mg2_0.F90 and crashing the code. Setting cfl=qsmall in this
+    !case causes deltat_sed=min(deltat, really big but finite number) = deltat.
+    cfl = max(maxval(alphaq(1:nlev)*deltat/pdel(i,1:nlev)),maxval(alphan(1:nlev)*deltat/pdel(i,1:nlev)),qsmall)
 
   end subroutine sed_CalcFallRate
 
