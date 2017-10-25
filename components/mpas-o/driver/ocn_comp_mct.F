@@ -307,12 +307,12 @@ contains
     ! Note: In following code, a file ocn_modelio.nml is queried to determine the log file name to use.
     ! This file is generated when a case is created.  The default file name in there is currently ocn.log.DATE-TIME.
     if (iam==0) then
-       inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
+    inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix), ocnLogUnit)
     endif
 
     ! Store shr log unit and level so we can reassign them later when OCN control is complete
-    call shr_file_getLogUnit(shrlogunit)
+    call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     ! Set the shr log unit to be the ocnLogUnit
     call shr_file_setLogUnit(ocnLogUnit)
@@ -773,6 +773,7 @@ contains
 !----------------------------------------------------------------------------
 !   Reset shr logging to original values
 !----------------------------------------------------------------------------
+
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
@@ -851,7 +852,7 @@ contains
 #ifdef MPAS_DEBUG
       debugOn = .true.
 #endif
- 
+
       domain_ptr => domain
 
       ! Set MPAS Log module instance
@@ -1084,7 +1085,7 @@ contains
       if (debugOn) call mpas_log_write('Exporting ocean state')
       call ocn_export_mct(o2x_o, ierr)
       if (debugOn) call mpas_log_write('Finished exporting ocean state')
-
+ 
       call check_clocks_sync(domain % clock, Eclock, ierr)
 
       ! Reset I/O logs
@@ -1756,8 +1757,10 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
-           if(iceRunoffFlux(n) < 0.0_RKIND) then
-               call shr_sys_abort ('Error: incoming rofi_F is negative')
+	   !write(shrlogunit, *) 'iceRunoffFlux(i)=',iceRunoffFlux(i) !Jer: also fixed bug
+           if(iceRunoffFlux(i) < 0.0_RKIND) then !Jer: also fixed bug here with wrong index for iceRunoffFlux
+	       iceRunoffFlux(i) = 0.0_RKIND !Jer: temporarily reset iceRunoffFlux to zero, so FW not actively removed from ocean
+               !call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
         end if
 
@@ -2087,7 +2090,7 @@ contains
                                                avgOceanSurfaceDOCr, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
- 
+
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
@@ -2236,7 +2239,7 @@ contains
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
-
+       
      end do
 
      block_ptr => block_ptr % next
