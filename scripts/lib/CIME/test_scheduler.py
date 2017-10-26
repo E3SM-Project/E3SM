@@ -540,13 +540,6 @@ class TestScheduler(object):
                     # For PTS_MODE, compile with mpi-serial
                     envtest.set_test_parameter("MPILIB", "mpi-serial")
 
-                    # TODO: IN NEXT MERGE, REMOVE THIS COMMENT AND MAKE THIS CHANGE IN components/cam/cime_config/config_compsets.xml
-                    # # Set latitude and longitude for the appropriate case
-                    # # Below for ARM97, default SCM test case
-                    # if 'A97' in test:
-                    #     envtest.set_test_parameter("PTS_LAT", "36.6")
-                    #     envtest.set_test_parameter("PTS_LON", "262.5")
-
                 elif opt.startswith('I'):
                     # Marker to distinguish tests with same name - ignored
                     continue
