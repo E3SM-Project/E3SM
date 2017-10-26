@@ -1953,11 +1953,13 @@ static inline int update_stats (Timer *ptr,
 
   if (wallstats.enabled) {
     delta = tp1 - ptr->wall.last;
-    ptr->wall.accum += delta;
 
     if (delta < 0.) {
       fprintf (stderr, "%s: negative delta=%g\n", thisfunc, delta);
+      delta = 0.0;
     }
+
+    ptr->wall.accum += delta;
 
     if (ptr->count == 1) {
       ptr->wall.max = delta;
