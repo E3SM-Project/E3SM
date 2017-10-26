@@ -3,43 +3,58 @@
 
 	<dims>
 		<dim name="nCells"
+			description="The number of polygons in the primary grid."
 		/>
 		<dim name="nEdges"
+			description="The number of edge midpoints in either the primary or dual grid."
 		/>
 		<dim name="maxEdges"
+			description="The largest number of edges any polygon within the grid has."
 		/>
 		<dim name="maxEdges2"
+			description="Two times the largest number of edges any polygon within the grid has."
 		/>
 		<dim name="nVertices"
+			description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
 		<dim name="ONE"
 			definition="1"
+			description="The number one as a dimension."
 		/>
 		<dim name="TWO"
 			definition="2"
+			description="The number two as a dimension."
 		/>
 		<dim name="R3"
 			definition="3"
+			description="The number three as a dimension."
 		/>
 		<dim name="FIFTEEN"
 			definition="15"
+			description="The number fifteen as a dimension."
 		/>
 		<dim name="TWENTYONE"
 			definition="21"
+			description="The number twenty one as a dimension."
 		/>
 		<dim name="vertexDegree"
+			description="The number of cells or edges touching each vertex."
 		/>
 		<dim name="nCategories"
 			definition="namelist:config_nCategories"
+			description="The number of ice thickness categories."
 		/>
 		<dim name="nIceLayers"
 			definition="namelist:config_nIceLayers"
+			description="The number of ice layers in the vertical direction."
 		/>
 		<dim name="nSnowLayers"
 			definition="namelist:config_nSnowLayers"
+			description="The number of snow layers in the vertical direction."
 		/>
 		<dim name="nHemispheres"
 			definition="3"
+			description="The number of hemispheres (global, north, south)."
 		/>
 		<dim name="nQuadPoints"
 			definition="6"
@@ -58,9 +73,11 @@
 		/>
 		<dim name="nIceLayersP1"
 			definition="nIceLayers+1"
+			description="The number of ice layers in the vertical direction plus one."
 		/>
 		<dim name="nCategoriesP1"
 			definition="nCategories+1"
+			description="The number of ice thickness categories plus one."
 		/>
 		<dim name="nAerosols"
 			definition="0"
@@ -202,6 +219,7 @@
 		/>
 		<dim name="nRegions"
 			definition="3"
+			description="The number of regions defined for analysis."
 		/>
 		<dim name="nPoints"
 			definition="1"
@@ -217,34 +235,77 @@
 		/>
 		<dim name="nForcingGroupsMax"
 			definition="4"
+			description="The maximum number of forcing groups defined in the core."
 		/>
 	</dims>
 
 	<nml_record name="cice_model" in_defaults="true">
-		<nml_option name="config_dt"				type="real"		default_value="3600.0"/>
-		<nml_option name="config_calendar_type"		type="character"	default_value="gregorian_noleap"/>
-		<nml_option name="config_start_time"			type="character"	default_value="2000-01-01_00:00:00"/>
-		<nml_option name="config_stop_time"			type="character"	default_value="none"/>
-		<nml_option name="config_run_duration"			type="character"	default_value="00-00-01_00:00:00"/>
-		<nml_option name="config_num_halos"			type="integer"		default_value="2"/>
+		<nml_option name="config_dt" type="real" default_value="3600.0" units="Seconds"
+			description="Length of model time-step."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
+			description="Selection of the type of calendar that should be used in the simulation."
+			possible_values="'gregorian', 'gregorian_noleap'"
+		/>
+		<nml_option name="config_start_time" type="character" default_value="2000-01-01_00:00:00" units="unitless"
+			description="Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp."
+			possible_values="'YYYY-MM-DD_HH:MM:SS' or 'file'"
+		/>
+		<nml_option name="config_stop_time" type="character" default_value="none" units="unitless"
+			description="Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration."
+			possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
+		/>
+		<nml_option name="config_run_duration" type="character" default_value="00-00-01_00:00:00" units="unitless"
+			description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
+			possible_values="'DDDD_HH:MM:SS' or 'none'"
+		/>
+		<nml_option name="config_num_halos" type="integer" default_value="2" units="unitless"
+			description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
+			possible_values="Any positive integer value."
+		/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
-		<nml_option name="config_pio_num_iotasks"		type="integer"		default_value="0"/>
-		<nml_option name="config_pio_stride"			type="integer"		default_value="1"/>
+		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
+			description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file."
+			possible_values="Any positive integer value greater than or equal to 0."
+		/>
+		<nml_option name="config_pio_stride" type="integer" default_value="1" units="unitless"
+			description="Integer specifying the stride of each IO task."
+			possible_values="Any positive integer value greater than 0."
+		/>
 		<nml_option name="config_write_output_on_startup"	type="logical"		default_value="false"/>
 		<nml_option name="config_test_case_diag"		type="logical"		default_value="false"/>
 		<nml_option name="config_test_case_diag_type"		type="character"	default_value="none"/>
 		<nml_option name="config_full_abort_write"		type="logical"		default_value="true"/>
 	</nml_record>
 	<nml_record name="decomposition" in_defaults="true">
-		<nml_option name="config_block_decomp_file_prefix"	type="character"	default_value="graphs/graph.info.part."/>
-		<nml_option name="config_number_of_blocks"		type="integer"		default_value="0"/>
-		<nml_option name="config_explicit_proc_decomp"		type="logical"		default_value="false"/>
-		<nml_option name="config_proc_decomp_file_prefix"	type="character"	default_value="graphs/graph.info.part."/>
+		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
+			description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
+			possible_values="Any path/prefix to a block decomposition file."
+		/>
+		<nml_option name="config_number_of_blocks" type="integer" default_value="0" units="unitless"
+			description="Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time."
+			possible_values="Any integer greater than or equal to 0."
+		/>
+		<nml_option name="config_explicit_proc_decomp" type="logical" default_value="false" units="unitless"
+			description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
+			description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
+			possible_values="Any path/prefix to a processor decomposition file."
+		/>
 	</nml_record>
 	<nml_record name="restart" in_defaults="true">
-		<nml_option name="config_do_restart"			type="logical"		default_value="false"/>
-		<nml_option name="config_restart_timestamp_name"	type="character"	default_value="restart_timestamp"/>
+		<nml_option name="config_do_restart" type="logical" default_value="false" units="unitless"
+			description="Determines if the initial conditions should be read from a restart file, or an input file."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+			description="Path to the filename for restart timestamps to be read and written from."
+			possible_values="Path to a file."
+		/>
 		<nml_option name="config_do_restart_hbrine"		type="logical"		default_value="false"/>
 		<nml_option name="config_do_restart_zsalinity"		type="logical"		default_value="false"/>
 		<nml_option name="config_do_restart_bgc"		type="logical"		default_value="false"/>
