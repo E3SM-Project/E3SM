@@ -275,7 +275,7 @@ def _archive_history_files(case, archive, archive_entry,
 
     # determine history archive directory (create if it does not exist)
     dout_s_root = case.get_value("DOUT_S_ROOT")
-    casename = case.get_value("CASE")
+    casename = re.escape(case.get_value("CASE"))
     archive_histdir = os.path.join(dout_s_root, compclass, 'hist')
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
@@ -437,7 +437,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     # the compname is drv but the files are named cpl
     if compname == 'drv':
         compname = 'cpl'
-
+    casename = re.escape(casename)
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
