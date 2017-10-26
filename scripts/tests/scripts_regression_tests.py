@@ -1399,6 +1399,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_prereq(self):
     ###########################################################################
+        if not MACHINE.has_batch_system() or NO_BATCH:
+            self.skipTest("Skipping testing user prerequisites without batch systems")
         testcase_name = 'prereq_test'
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
