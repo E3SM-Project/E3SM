@@ -182,8 +182,8 @@
        <directive>-N {{ num_nodes }}</directive>
        <directive>-n {{ total_tasks }}</directive>
        <directive>-t {{ job_wallclock_time }}</directive>
-       <directive>-o {{ output_error_path }}.out</directive>
-       <directive>-e {{ output_error_path }}.err</directive>
+       <directive>-o {{ job_id }}.out</directive>
+       <directive>-e {{ job_id }}.err</directive>
        <directive>--mail-type=all</directive>
       <directive> -A {{ project }} </directive>
      </directives>
@@ -213,7 +213,7 @@
     <directives>
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes={{ num_nodes }}</directive>
-      <directive> --output={{ output_error_path }}.%j </directive>
+      <directive> --output={{ job_id }}.%j </directive>
       <directive> --exclusive                        </directive>
     </directives>
   </batch_system>
