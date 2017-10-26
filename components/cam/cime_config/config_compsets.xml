@@ -658,6 +658,18 @@
       </values>
     </entry>
 
+    <entry id="PTS_LAT">
+      <values>
+        <value compset="AR9[57]_CAM">36.6</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_LON">
+      <values>
+        <value compset="AR9[57]_CAM">262.5</value>
+      </values>
+    </entry>
+
   </entries>
 
 </compsets>
