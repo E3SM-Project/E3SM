@@ -104,7 +104,7 @@ def _run_model_impl(case, lid, skip_pnl=False):
         loop = False
 
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
-        stat = run_and_log_case_status(run_func, "run {}.exe".format(get_model()), caseroot=case.get_value("CASEROOT"))
+        stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
 
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
