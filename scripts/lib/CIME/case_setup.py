@@ -122,7 +122,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
             for vid, value in case:
-                if vid.startswith("NTASKS_") and value != 1:
+                if vid.startswith("NTASKS") and value != 1:
                     case.set_value(vid, 1)
 
         # Check ninst.
