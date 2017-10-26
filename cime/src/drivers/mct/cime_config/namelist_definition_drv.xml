@@ -3167,6 +3167,37 @@
       <value bfbflag="on">X</value>
     </values>
   </entry>
+  
+  <entry id="ocn2rof_fmapname"    modify_via_xml="OCN2ROF_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2ROF_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_fmaptype"    modify_via_xml="OCN2ROF_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2ROF_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>  
+  
 
   <entry id="ocn2atm_smapname"    modify_via_xml="OCN2ATM_SMAPNAME">
     <type>char</type>

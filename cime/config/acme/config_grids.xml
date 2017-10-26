@@ -2330,6 +2330,7 @@
     <gridmap rof_grid="r05" ocn_grid="oEC60to30v3wLI" >
       <ROF2OCN_ICE_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30v3wLI_smoothed.r300e600.170802.nc</ROF2OCN_ICE_RMAPNAME>
       <ROF2OCN_LIQ_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30v3wLI_smoothed.r300e600.170802.nc</ROF2OCN_LIQ_RMAPNAME>
+      <OCN2ROF_FMAPNAME >cpl/gridmaps/map_oEC60to30v3wLI_nm_TO_r05_conserve.171026.nc</OCN2ROF_FMAPNAME>
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="oRRS30to10" >
