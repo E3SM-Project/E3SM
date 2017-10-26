@@ -422,6 +422,7 @@ module cime_comp_mod
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
    logical  :: output_perf = .false.  ! require timing data output for this pe
+   logical  :: in_first_day = .true.  ! currently simulating first day
 
    !--- history & budgets ---
    logical :: do_budgets              ! heat/water budgets on
@@ -3865,7 +3866,11 @@ end subroutine cime_init
 
       ! --- Write out performance data
       call t_startf  ('CPL:TPROF_WRITE')
-      if (tprof_alarm) then
+      if ((tprof_alarm) .or. ((tod == 0) .and. in_first_day)) then
+
+         if ((tod == 0) .and. in_first_day) then
+           in_first_day = .false.
+         endif
          call t_adj_detailf(+1)
 
          call t_startf("sync1_tprof")
