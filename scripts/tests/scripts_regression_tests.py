@@ -1420,7 +1420,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             for batch_cmd in batch_commands:
                 self.assertTrue(isinstance(batch_cmd, collections.Sequence), "case.submit_jobs did not return a sequence of sequences")
                 self.assertTrue(len(batch_cmd) > batch_cmd_index, "case.submit_jobs returned internal sequences with length <= {}".format(batch_cmd_index))
-                self.assertTrue(isinstance(batch_cmd[1], str), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
+                self.assertTrue(isinstance(batch_cmd[1], six.string_types), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
                 batch_cmd_args = batch_cmd[1]
 
                 jobid_ident = 'jobid'
