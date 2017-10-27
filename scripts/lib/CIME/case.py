@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy import deepcopy
-import glob, os, shutil, math
+import glob, os, shutil, math, six
 from CIME.XML.standard_module_setup import *
 #pylint: disable=import-error,redefined-builtin
 from six.moves import input
@@ -252,7 +252,7 @@ class Case(object):
                 vtype = env_file.get_type_info(item)
                 if resolved:
                     for result in results:
-                        if type(result) is str:
+                        if isinstance(result, six.string_types):
                             result = self.get_resolved_value(result)
                             new_results.append(convert_to_type(result, vtype, item))
                         else:
@@ -266,7 +266,7 @@ class Case(object):
             if len(results) > 0:
                 if resolved:
                     for result in results:
-                        if type(result) is str:
+                        if isinstance(result, six.string_types):
                             new_results.append(self.get_resolved_value(result))
                         else:
                             new_results.append(result)
@@ -283,7 +283,7 @@ class Case(object):
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
             if result is not None:
-                if resolved and type(result) is str:
+                if resolved and isinstance(result, six.string_types):
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
                     if vtype is not None:
@@ -295,7 +295,7 @@ class Case(object):
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
             if result is not None:
-                if resolved and type(result) is str:
+                if resolved and isinstance(result, six.string_types):
                     return self.get_resolved_value(result)
                 return result
 
@@ -578,7 +578,7 @@ class Case(object):
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
             for key, val in entryid_file:
-                if type(val) is str and '$' in val:
+                if isinstance(val, six.string_types) and '$' in val:
                     yield key, self.get_resolved_value(val)
                 else:
                     yield key, val
