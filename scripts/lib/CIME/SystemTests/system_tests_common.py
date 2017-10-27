@@ -424,7 +424,7 @@ class SystemTestsCommon(object):
                         if diff < tolerance and self._test_status.get_status(THROUGHPUT_PHASE) is None:
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
                         elif self._test_status.get_status(THROUGHPUT_PHASE) != TEST_FAIL_STATUS:
-                            comment = "Error: Computation time increase > %f pct from baseline" % tolerance*100
+                            comment = "Error: Computation time increase > {:d} pct from baseline".format(int(tolerance*100))
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
                             append_testlog(comment)
 
