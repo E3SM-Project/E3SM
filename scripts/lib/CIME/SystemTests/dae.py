@@ -7,6 +7,7 @@ which does not change the CAM input. Compares answers to non-DA run.
 import os.path
 import logging
 import glob
+import gzip
 
 import CIME.XML.standard_module_setup as sms
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
@@ -93,7 +94,7 @@ class DAE(SystemTestsCompareTwo):
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
-            with open(fname) as dfile:
+            with gzip.open(fname, "r") as dfile:
                 for line in dfile:
                     expect(line[0:5] != 'ERROR', "ERROR, error line found in {}".format(fname))
                     if line[0:8] == 'caseroot':
