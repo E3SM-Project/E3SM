@@ -966,46 +966,121 @@
 	</streams>
 
 	<var_struct name="mesh" time_levs="1">
-		<var name="latCell"			type="real"	dimensions="nCells"/>
-		<var name="lonCell"			type="real"	dimensions="nCells"/>
-		<var name="xCell"			type="real"	dimensions="nCells"/>
-		<var name="yCell"			type="real"	dimensions="nCells"/>
-		<var name="zCell"			type="real"	dimensions="nCells"/>
-		<var name="indexToCellID"		type="integer"	dimensions="nCells"/>
-		<var name="latEdge"			type="real"	dimensions="nEdges"/>
-		<var name="lonEdge"			type="real"	dimensions="nEdges"/>
-		<var name="xEdge"			type="real"	dimensions="nEdges"/>
-		<var name="yEdge"			type="real"	dimensions="nEdges"/>
-		<var name="zEdge"			type="real"	dimensions="nEdges"/>
-		<var name="indexToEdgeID"		type="integer"	dimensions="nEdges"/>
-		<var name="latVertex"			type="real"	dimensions="nVertices"/>
-		<var name="lonVertex"			type="real"	dimensions="nVertices"/>
-		<var name="xVertex"			type="real"	dimensions="nVertices"/>
-		<var name="yVertex"			type="real"	dimensions="nVertices"/>
-		<var name="zVertex"			type="real"	dimensions="nVertices"/>
-		<var name="indexToVertexID"		type="integer"	dimensions="nVertices"/>
-		<var name="cellsOnEdge"		type="integer"	dimensions="TWO nEdges"/>
-		<var name="nEdgesOnCell"		type="integer"	dimensions="nCells"/>
-		<var name="nEdgesOnEdge"		type="integer"	dimensions="nEdges"/>
-		<var name="edgesOnCell"		type="integer"	dimensions="maxEdges nCells"/>
-		<var name="edgesOnEdge"		type="integer"	dimensions="maxEdges2 nEdges"/>
-		<var name="weightsOnEdge"		type="real"	dimensions="maxEdges2 nEdges"/>
-		<var name="dvEdge"			type="real"	dimensions="nEdges"/>
-		<var name="dcEdge"			type="real"	dimensions="nEdges"/>
-		<var name="areaCell"			type="real"	dimensions="nCells"/>
-		<var name="areaTriangle"		type="real"	dimensions="nVertices"/>
-		<var name="edgeNormalVectors"		type="real"	dimensions="R3 nEdges"/>
-		<var name="localVerticalUnitVectors"	type="real"	dimensions="R3 nCells"/>
-		<var name="cellTangentPlane"		type="real"	dimensions="R3 TWO nCells"/>
-		<var name="cellsOnCell"		type="integer"	dimensions="maxEdges nCells"/>
-		<var name="verticesOnCell"		type="integer"	dimensions="maxEdges nCells"/>
-		<var name="verticesOnEdge"		type="integer"	dimensions="TWO nEdges"/>
-		<var name="edgesOnVertex"		type="integer"	dimensions="vertexDegree nVertices"/>
-		<var name="cellsOnVertex"		type="integer"	dimensions="vertexDegree nVertices"/>
-		<var name="kiteAreasOnVertex"		type="real"	dimensions="vertexDegree nVertices"/>
-		<var name="fVertex"			type="real"	dimensions="nVertices"/>
-		<var name="coeffs_reconstruct"		type="real"	dimensions="R3 maxEdges nCells"/>
-		<var name="itimestep"			type="integer"	dimensions="ONE"/>
+		<var name="latCell" type="real" dimensions="nCells" units="radians"
+			description="Latitude location of cell centers in radians."
+		/>
+		<var name="lonCell" type="real" dimensions="nCells" units="radians"
+			description="Longitude location of cell centers in radians."
+		/>
+		<var name="xCell" type="real" dimensions="nCells" units="unitless"
+			description="X Coordinate in cartesian space of cell centers."
+		/>
+		<var name="yCell" type="real" dimensions="nCells" units="unitless"
+			description="Y Coordinate in cartesian space of cell centers."
+		/>
+		<var name="zCell" type="real" dimensions="nCells" units="unitless"
+			description="Z Coordinate in cartesian space of cell centers."
+		/>
+		<var name="indexToCellID" type="integer" dimensions="nCells" units="unitless"
+			description="List of global cell IDs."
+		/>
+		<var name="latEdge" type="real" dimensions="nEdges" units="radians"
+			description="Latitude location of edge midpoints in radians."
+		/>
+		<var name="lonEdge" type="real" dimensions="nEdges" units="radians"
+			description="Longitude location of edge midpoints in radians."
+		/>
+		<var name="xEdge" type="real" dimensions="nEdges" units="unitless"
+			description="X Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="yEdge" type="real" dimensions="nEdges" units="unitless"
+			description="Y Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="zEdge" type="real" dimensions="nEdges" units="unitless"
+			description="Z Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="indexToEdgeID" type="integer" dimensions="nEdges" units="unitless"
+			description="List of global edge IDs."
+		/>
+		<var name="latVertex" type="real" dimensions="nVertices" units="radians"
+			description="Latitude location of vertices in radians."
+		/>
+		<var name="lonVertex" type="real" dimensions="nVertices" units="radians"
+			description="Longitude location of vertices in radians."
+		/>
+		<var name="xVertex" type="real" dimensions="nVertices" units="unitless"
+			description="X Coordinate in cartesian space of vertices."
+		/>
+		<var name="yVertex" type="real" dimensions="nVertices" units="unitless"
+			description="Y Coordinate in cartesian space of vertices."
+		/>
+		<var name="zVertex" type="real" dimensions="nVertices" units="unitless"
+			description="Z Coordinate in cartesian space of vertices."
+		/>
+		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
+			description="List of global vertex IDs."
+		/>
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+			description="List of cells that straddle each edge."
+		/>
+		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
+			description="Number of edges that border each cell."
+		/>
+		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
+			description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
+		/>
+		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			description="List of edges that border each cell."
+		/>
+		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
+			description="List of edges that border each of the cells that straddle each edge."
+		/>
+		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
+			description="Length of each edge, computed as the distance between verticesOnEdge."
+		/>
+		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
+			description="Length of each edge, computed as the distance between cellsOnEdge."
+		/>
+		<var name="areaCell" type="real" dimensions="nCells" units="m^2"
+			description="Area of each cell in the primary grid."
+		/>
+		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
+			description="Area of each cell (triangle) in the dual grid."
+		/>
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+			description="Normal unit vector defined at an edge."
+		/>
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
+			description="The two vectors that define a tangent plane at a cell center."
+		/>
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
+			 description="Unit surface normal vectors defined at cell centers."
+		/>
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			description="List of cells that neighbor each cell."
+		/>
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+			description="List of vertices that border each cell."
+		/>
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+			description="List of vertices that straddle each edge."
+		/>
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+			description="List of edges that share a vertex as an endpoint."
+		/>
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+			description="List of cells that share a vertex."
+		/>
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+			description="Area of the portions of each dual cell that are part of each cellsOnVertex."
+		/>
+		<var name="fVertex" type="real" dimensions="nVertices" units="s^{-1}"
+			description="Coriolis parameter at vertices."
+		/>
+		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
+			description="Coefficients to reconstruct velocity vectors at cells centers."
+		/>
+		<var name="itimestep" type="integer" dimensions="ONE"/>
 	</var_struct>
 
 	<packages>
