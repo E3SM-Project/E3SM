@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp, run_sub_or_cmd
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -237,20 +237,18 @@ def resubmit_check(case):
 ###############################################################################
 def do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
+    expect(os.path.isfile(script_name), "External script {} not found".format(script_name))
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
-    cmd = script_name + " 1> {} {} 2>&1".format(outfile, caseroot)
-    logger.info("running {}".format(script_name))
-    run_cmd_no_fail(cmd)
+    run_sub_or_cmd(script_name, [caseroot], script_name, [caseroot], logfile=outfile,combine_output=True)
 
 ###############################################################################
 def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 ###############################################################################
+    expect(os.path.isfile(da_script), "Data Assimilation script {} not found".format(da_script))
     filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    cmd = da_script + " 1> {} {} {:d} 2>&1".format(outfile, caseroot, cycle)
-    logger.info("running {}".format(da_script))
-    run_cmd_no_fail(cmd)
+    run_sub_or_cmd(da_script, [caseroot, cycle], da_script, [caseroot, cycle], logfile=outfile,combine_output=True)
 
 ###############################################################################
 def case_run(case, skip_pnl=False):
