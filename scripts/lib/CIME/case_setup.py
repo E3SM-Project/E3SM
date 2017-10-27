@@ -12,7 +12,7 @@ from CIME.BuildTools.configure import configure
 from CIME.utils             import get_cime_root, run_and_log_case_status, get_model
 from CIME.test_status       import *
 
-import shutil
+import shutil, six
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:
-        expect(not (type(value) is str and "USERDEFINED_required_build" in value),
+        expect(not (isinstance(value, six.string_types) and "USERDEFINED_required_build" in value),
                "Parameter '{}' must be defined".format(vid))
 
     # Remove batch scripts
