@@ -277,20 +277,19 @@ def case_run(case, skip_pnl=False):
 
     save_prerun_provenance(case)
 
+    if prerun_script:
+        case.flush()
+        do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                    lid, prefix="prerun")
+        case.read_xml()
+
     for cycle in range(data_assimilation_cycles):
         # After the first DA cycle, runs are restart runs
         if cycle > 0:
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        if prerun_script:
-            case.flush()
-            do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
-                        lid, prefix="prerun")
-            case.read_xml()
-
         lid = run_model(case, lid, skip_pnl, da_cycle=cycle)
-        save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
 
@@ -300,13 +299,17 @@ def case_run(case, skip_pnl=False):
                                  case.get_value("RUNDIR"))
             case.read_xml()
 
-        if postrun_script:
-            case.flush()
-            do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
-                        lid, prefix="postrun")
-            case.read_xml()
+        save_logs(case, lid)       # Copy log files back to caseroot
 
-        save_postrun_provenance(case)
+    if postrun_script:
+        case.flush()
+        do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                    lid, prefix="postrun")
+        case.read_xml()
+
+    save_logs(case, lid)       # Copy log files back to caseroot
+
+    save_postrun_provenance(case)
 
     logger.warning("check for resubmit")
     resubmit_check(case)
