@@ -209,7 +209,7 @@ class GenericXML(object):
         if item_data is None:
             return None
 
-        if type(item_data) is not str:
+        if not isinstance(item_data, six.string_types):
             return item_data
 
         for m in env_ref_re.finditer(item_data):

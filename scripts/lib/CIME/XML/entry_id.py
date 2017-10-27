@@ -8,6 +8,7 @@ from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.generic_xml import GenericXML
 
 from copy import deepcopy
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +230,7 @@ class EntryID(GenericXML):
     def get_valid_value_string(self, node, value,vid=None,  ignore_type=False):
         valid_values = self._get_valid_values(node)
         if ignore_type:
-            expect(type(value) is str, "Value must be type string if ignore_type is true")
+            expect(isinstance(value, six.string_types), "Value must be type string if ignore_type is true")
             str_value = value
             return str_value
         type_str = self._get_type_info(node)
