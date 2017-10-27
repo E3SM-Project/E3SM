@@ -722,21 +722,22 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="intel" MACH="redsky">
+<compiler COMPILER="intel" MACH="ghost">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <MPI_PATH MPILIB="openmpi">/opt/openmpi-1.8-intel</MPI_PATH>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="penn">

@@ -248,7 +248,8 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="512" default="true">ec</queue>
+      <queue jobmin="1" jobmax="512" default="true">short</queue>
+      <queue jobmin="1" jobmax="512">batch</queue>
     </queues>
     <walltimes>
       <walltime default="true">2:00:00</walltime>
@@ -257,12 +258,13 @@
     </walltimes>
   </batch_system>
 
-  <batch_system MACH="redsky" type="slurm" version="x.y">
+  <batch_system MACH="ghost" type="slurm" version="x.y">
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="512" default="true">ec</queue>
+      <queue jobmin="1" jobmax="512" default="true">short</queue>
+      <queue jobmin="1" jobmax="512">batch</queue>
     </queues>
     <walltimes>
       <walltime default="true">4:00:00</walltime>
