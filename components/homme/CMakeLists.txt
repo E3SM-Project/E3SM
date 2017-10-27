@@ -56,15 +56,14 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
+OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" OFF)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
+OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Cristoph's "standalone" executables
-OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-
 # swim and prim executables require C++ compiler
-IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM}) 
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
@@ -231,12 +230,16 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(src/preqx)
 ENDIF()
 
+IF(${BUILD_HOMME_THETA})
+  ADD_SUBDIRECTORY(src/theta)
+ENDIF()
+
 IF(${BUILD_HOMME_PREQX_ACC})
   ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
-IF(${BUILD_HOMME_FVM})
-  ADD_SUBDIRECTORY(src/fvm)
+IF(${BUILD_HOMME_PESE})
+  ADD_SUBDIRECTORY(src/pese)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})

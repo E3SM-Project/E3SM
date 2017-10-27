@@ -431,11 +431,11 @@ shr_scam_mod.o: shr_scam_mod.F90
 # on yellowstone in a CESM context.
 prim_advection_mod.o: prim_advection_mod.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
-edge_mod.o: edge_mod.F90
+edge_mod_base.o: edge_mod_base.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
-derivative_mod.o: derivative_mod.F90
+derivative_mod_base.o: derivative_mod_base.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
-bndry_mod.o: bndry_mod.F90
+bndry_mod_base.o: bndry_mod_base.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
 prim_advance_mod.o: prim_advance_mod.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
