@@ -105,6 +105,8 @@
       integer gptlstop_handle
       integer gptlstopf
       integer gptlstopf_handle
+      integer gptlstartstop_vals
+      integer gptlstartstop_valsf
       integer gptlstamp
       integer gptlpr_set_append
       integer gptlpr_query_append
@@ -142,6 +144,8 @@
       external gptlstop_handle
       external gptlstopf
       external gptlstopf_handle
+      external gptlstartstop_vals
+      external gptlstartstop_valsf
       external gptlstamp
       external gptlpr_set_append
       external gptlpr_query_append
