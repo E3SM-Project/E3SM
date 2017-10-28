@@ -693,6 +693,10 @@ contains
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr,                                                                       &
                alm_fates, glc2lnd_vars, crop_vars)
+          if(use_betr .and. is_active_betr_bgc)then
+            call ep_betr%SetBiophysForcing(bounds_proc, col_pp, veg_pp, phosphorusstate_vars=phosphorusstate_vars)
+            call ep_betr%SetSpinup(bounds_proc)
+          endif 
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then

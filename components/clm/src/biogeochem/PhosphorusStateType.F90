@@ -170,13 +170,11 @@ contains
     real(r8)          , intent(in)    :: decomp_cpools_1m_col (bounds%begc:, 1:)
 
     call this%InitAllocate (bounds )
-
     call this%InitHistory (bounds)
 
     call this%InitCold ( bounds, leafc_patch, leafc_storage_patch, &
          frootc_patch, frootc_storage_patch, deadstemc_patch, &
          decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
-
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -920,6 +918,7 @@ contains
     real(r8)           :: pinit_prof(1:nlevdecomp)
     real(r8)           :: rootfr_tot
 
+    real(r8)           :: zdep
     !------------------------------------------------------------------------
 
     !--------------------------------
@@ -1322,6 +1321,7 @@ contains
 
           do c = bounds%begc, bounds%endc
              if (use_vertsoilc) then
+                zdep=zisoi(nlevdecomp)
                 do j = 1, nlevdecomp
                    ! solve equilibrium between loosely adsorbed and solution
                    ! phosphorus

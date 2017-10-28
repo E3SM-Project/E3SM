@@ -168,10 +168,13 @@ contains
 !         col_begpb(c) = totpftp(c)
 !         col_begpb(c) = sminp(c)
 !         col_begpb(c) = totsomp(c)+totlitp(c)+cwdp(c)
-!        if(c==1596)then
+!        if(c==1)then
 !          print*,'============================='
-!          print*,'begabgp=', phosphorusstate_vars%totabgp_col(c)
-!          print*,'begblgp=', phosphorusstate_vars%totblgp_col(c)
+!          print*,'nstep,tbegp=',c,get_nstep()
+!          print*, 'occl p=', phosphorusstate_vars%occlp_col(c)
+!          print*,'begp   =', col_begpb(c)
+!          print*,'begabgp=', phosphorusstate_vars%totabgp_col(c),phosphorusstate_vars%occlp_col(c)
+!          print*,'begblgp=', phosphorusstate_vars%totblgp_col(c)+phosphorusstate_vars%occlp_col(c)
 !        endif
       end do
 
@@ -256,6 +259,7 @@ contains
          if (abs(col_errcb(c)) > 1e-8_r8) then
             err_found = .true.
             err_index = c
+            exit
          end if
       end do ! end of columns loop
       
@@ -428,6 +432,7 @@ contains
          if (abs(col_errnb(c)) > 1e-8_r8) then
             err_found = .true.
             err_index = c
+            exit
          end if
 
 !      if (err_found) then
@@ -675,13 +680,15 @@ contains
          if (abs(col_errpb(c)) > 1e-8_r8) then
             err_found = .true.
             err_index = c
+            exit
          end if
 !      if (err_found) then
 !         c = err_index
 !         write(*,*)'column pbalance error = ', col_errpb(c), c,  get_nstep()
 !         write(*,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-!         write(*,*)'begpb          = ',col_begpb(c)
-!         write(*,*)'endpb          = ',col_endpb(c)
+!         write(*,*)'occlu p        = ',phosphorusstate_vars%occlp_col(c)
+!         write(*,*)'begpb          = ',col_begpb(c)+phosphorusstate_vars%occlp_col(c)-secondp_to_occlp(c) * dt,col_begpb(c)
+!         write(*,*)'endpb          = ',col_endpb(c)+phosphorusstate_vars%occlp_col(c)
 !         write(*,*)'delta store    = ',col_endpb(c)-col_begpb(c)
 !         write(*,*)'input mass     = ',col_pinputs(c)*dt
 !         write(*,*)'output mass    = ',col_poutputs(c)*dt
@@ -697,7 +704,7 @@ contains
 !         write(*,*)'leached som_p  = ', -som_p_leached(c) * dt
 !         write(*,*)'soil2plant     = ', phosphorusflux_vars%sminp_to_plant_col(c)*dt
 !         write(*,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
-!         write(*,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)
+!         write(*,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)+phosphorusstate_vars%occlp_col(c)
 !         call endrun(msg=errMsg(__FILE__, __LINE__))
 !      end if
       end do ! end of columns loop
