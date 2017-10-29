@@ -105,7 +105,6 @@ def _run_model_impl(case, lid, skip_pnl=False):
 
         save_prerun_provenance(case)
         stat = run_cmd(cmd, from_dir=rundir)[0]
-        save_postrun_provenance(case)
 
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
@@ -306,6 +305,8 @@ def case_run(case, skip_pnl=False):
             do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
                         lid, prefix="postrun")
             case.read_xml()
+
+        save_postrun_provenance(case)
 
     logger.warn("check for resubmit")
     resubmit_check(case)
