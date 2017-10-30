@@ -55,6 +55,8 @@ def run_diag(parameters):
             results.append(single_result)
         except Exception as e:
             print('Error in {}: {}'.format(mod_str, e))
+            if parameters.debug:
+                sys.exit()
 
     return results
 

@@ -59,6 +59,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.distributed = False
         self.num_workers = 4
 
+        self.debug = False
+
     def check_values(self):
         if not hasattr(
                 self, 'reference_data_path') or self.reference_data_path == '':

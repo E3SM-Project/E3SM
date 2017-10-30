@@ -198,3 +198,11 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             action='store_const',
             const=True,
             required=False)
+
+        self.add_argument(
+            '--debug',
+            dest='debug',
+            help='Turns debugging on, allows code to prematurely break.',
+            action='store_const',
+            const=True,
+            required=False)
