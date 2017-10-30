@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+
 from acme_diags.driver.utils import get_output_dir, _chown
 from acme_diags.plot import get_colormap
 
@@ -54,12 +55,13 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     ax.set_global()
     cmap = get_colormap(cmap, parameters)
     p1 = ax.contourf(lon, lat, var,
-                     transform=ccrs.PlateCarree(),
+                     transform=proj,#ccrs.PlateCarree(),
                      norm=norm,
                      levels=levels,
                      cmap=cmap,
                      extend='both',
                      )
+    
     ax.set_aspect('auto')
     ax.coastlines(lw=0.3)
     if title[0] is not None:
