@@ -917,6 +917,10 @@ cat <<EOF >> user_nl_cam
  mfilt  = $records_per_atm_output_file
 EOF
 
+cat <<EOF >> user_nl_clm
+! finidat=''
+EOF
+
 ### NOTES ON COMMON NAMELIST OPTIONS ###
 
 ### ATMOSPHERE NAMELIST ###
