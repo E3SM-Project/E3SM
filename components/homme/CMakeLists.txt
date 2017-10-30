@@ -2,6 +2,16 @@
 PROJECT(HOMME C Fortran)
 
 ENABLE_LANGUAGE(Fortran) 
+
+# Print the sha of the last commit,
+# useful to double check which version was build in the build folder.
+EXECUTE_PROCESS (COMMAND git rev-parse HEAD
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
+
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
