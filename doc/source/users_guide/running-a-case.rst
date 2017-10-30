@@ -490,3 +490,19 @@ two arguments, the full path to that directory and the cycle number.
 If the script is written in python and contains a subroutine with the
 same name as the script, it will be called as a subroutine rather than
 as an external shell script.
+
+..: A simple example pre run script.
+
+::
+
+   #!/usr/bin/env python
+   import sys
+   from CIME.case import Case
+
+   def myprerun(caseroot):
+       with Case(caseroot) as case:
+            print ("rundir is ",case.get_value("RUNDIR"))
+
+    if __name__ == "__main__":
+      caseroot = sys.argv[1]
+      myprerun(caseroot)
