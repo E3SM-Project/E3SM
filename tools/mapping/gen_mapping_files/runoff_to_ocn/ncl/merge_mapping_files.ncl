@@ -146,12 +146,12 @@ begin
 
   print("determining map_ms vals where REGION_MASK<0")
   sign_REGION_MASK_ms = sign_matlab(REGION_MASK_1d(map_in_ms_row-1))
-  if (any(sign_REGION_MASK_ms .lt. 0)) then
-    ind_vals_ms = ind(sign_REGION_MASK_ms .lt. 0)
-    n_s_subset_ms = dimsizes(ind_vals_ms)
-  else
+  ind_vals_ms = ind(sign_REGION_MASK_ms .lt. 0)
+  if (all(ismissing(ind_vals_ms))) then
     print("No source points mapped to marginal seas: output will just contain points mapped to open ocean")
     n_s_subset_ms = 0
+  else
+    n_s_subset_ms = dimsizes(ind_vals_ms)
   end if
 
   n_s_out = n_s_subset_oo + n_s_subset_ms
