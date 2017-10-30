@@ -4051,15 +4051,15 @@ int GPTLget_wallclock (const char *timername,
 **
 ** Input arguments:
 **   name:  timer name
-**   value: value to add to the walltime accumulator
-**   count: value to add to the call counter
+**   add_time: value to add to the walltime accumulator
+**   add_count: value to add to the call counter
 **
 ** Return value: 0 (success) or -1 (failure)
 */
 
 int GPTLstartstop_vals (const char *name, /* timer name */
-                        double value,     /* walltime increment */
-                        int count)        /* call count increment */
+                        double add_time,  /* walltime increment */
+                        int add_count)    /* call count increment */
 {
   Timer *ptr;                /* linked list pointer */
   int t;                     /* thread number for this process */
@@ -4079,8 +4079,8 @@ int GPTLstartstop_vals (const char *name, /* timer name */
   if ( ! wallstats.enabled)
     return GPTLerror ("%s: wallstats must be enabled to call this function\n", thisfunc);
 
-  if (value < 0.)
-    return GPTLerror ("%s: Input value must not be negative\n", thisfunc);
+  if (add_time < 0.)
+    return GPTLerror ("%s: Input add_time must not be negative\n", thisfunc);
 
   /* getentry requires the thread number */
   if ((t = get_thread_num ()) < 0)
@@ -4091,18 +4091,17 @@ int GPTLstartstop_vals (const char *name, /* timer name */
 
   if (ptr) {
     /*
-    ** The timer already exists. If user-provided count is > 0, then bump the 
-    ** count manually and update the time stamp. Then let control jump to the 
-    ** point where wallclock settings are adjusted.
+    ** The timer already exists. If add_count is > 0, then increment the 
+    ** count and update the time stamp. Then let control jump to the point where
+    ** wallclock settings are adjusted.
     */
-    if (count > 0){
-      ptr->count += count;
+    if (add_count > 0){
+      ptr->count += add_count;
       ptr->wall.last = (*ptr2wtimefunc) ();
     }
   } else {
     /*
     ** Need to call start/stop to set up linked list and hash table.
-    ** "count" and "last" will also be set properly by the call to this pair.
     */
     if (GPTLstart (name) != 0)
       return GPTLerror ("%s: Error from GPTLstart\n", thisfunc);
@@ -4114,11 +4113,14 @@ int GPTLstartstop_vals (const char *name, /* timer name */
     if ( ! (ptr = getentry (hashtable[t], name, &indx)))
       return GPTLerror ("%s: Unexpected error from getentry\n", thisfunc);
 
-    ptr->wall.min = value; /* Since this is the first call, set min to user input */
+    ptr->wall.min = add_time; /* Since this is the first call, set min to user input */
 
-    /* If user-provided count > 1, update count manually to desired value */
-    if (count > 1){
-      ptr->count += (count - 1);
+    /* If add_count >= 0, then set count to desired value. */
+    /* Otherwise, assume add_count == 0 and set count to 0. */
+    if (add_count >= 0){
+      ptr->count = add_count;
+    }else{
+      ptr->count = 0;
     }
 
     /* 
@@ -4128,15 +4130,15 @@ int GPTLstartstop_vals (const char *name, /* timer name */
     ptr->wall.accum -= ptr->wall.latest;
   }
 
-  /* Overwrite the values with user input */
-  ptr->wall.accum += value;
-  ptr->wall.latest = value;
-  if (value > ptr->wall.max)
-    ptr->wall.max = value;
+  /* Update the values with user input */
+  ptr->wall.accum += add_time;
+  ptr->wall.latest = add_time;
+  if (add_time > ptr->wall.max)
+    ptr->wall.max = add_time;
 
   /* On first call this setting is unnecessary but avoid an "if" test for efficiency */
-  if (value < ptr->wall.min)
-    ptr->wall.min = value;
+  if (add_time < ptr->wall.min)
+    ptr->wall.min = add_time;
 
   return 0;
 }
@@ -4148,16 +4150,16 @@ int GPTLstartstop_vals (const char *name, /* timer name */
 ** Input arguments:
 **   name:  timer name
 **   namelen: number of characters in timer name
-**   value: value to add to the walltime accumulator
-**   count: value to add to the call counter
+**   add_time: value to add to the walltime accumulator
+**   add_count: value to add to the call counter
 **
 ** Return value: 0 (success) or -1 (failure)
 */
 
 int GPTLstartstop_valsf (const char *name,  /* timer name */
                          const int namelen, /* timer name length */
-                         double value,      /* walltime increment */
-                         int count)         /* call count increment */
+                         double add_time,   /* walltime increment */
+                         int add_count)     /* call count increment */
 {
   Timer *ptr;                /* linked list pointer */
   int t;                     /* thread number for this process */
@@ -4177,8 +4179,8 @@ int GPTLstartstop_valsf (const char *name,  /* timer name */
   if ( ! wallstats.enabled)
     return GPTLerror ("%s: wallstats must be enabled to call this function\n", thisfunc);
 
-  if (value < 0.)
-    return GPTLerror ("%s: Input value must not be negative\n", thisfunc);
+  if (add_time < 0.)
+    return GPTLerror ("%s: Input add_time must not be negative\n", thisfunc);
 
   /* getentry requires the thread number */
   if ((t = get_thread_num ()) < 0)
@@ -4189,18 +4191,17 @@ int GPTLstartstop_valsf (const char *name,  /* timer name */
 
   if (ptr) {
     /*
-    ** The timer already exists. If user-provided count is > 0, then bump the 
-    ** count manually and update the time stamp. Then let control jump to the 
-    ** point where wallclock settings are adjusted.
+    ** The timer already exists. If add_count is > 0, then increment the 
+    ** count and update the time stamp. Then let control jump to the point where
+    ** wallclock settings are adjusted.
     */
-    if (count > 0){
-      ptr->count += count;
+    if (add_count > 0){
+      ptr->count += add_count;
       ptr->wall.last = (*ptr2wtimefunc) ();
     }
   } else {
     /*
     ** Need to call start/stop to set up linked list and hash table.
-    ** "count" and "last" will also be set properly by the call to this pair.
     */
     if (GPTLstartf (name, namelen) != 0)
       return GPTLerror ("%s: Error from GPTLstart\n", thisfunc);
@@ -4212,11 +4213,14 @@ int GPTLstartstop_valsf (const char *name,  /* timer name */
     if ( ! (ptr = getentryf (hashtable[t], name, namelen, &indx)))
       return GPTLerror ("%s: Unexpected error from getentry\n", thisfunc);
 
-    ptr->wall.min = value; /* Since this is the first call, set min to user input */
+    ptr->wall.min = add_time; /* Since this is the first call, set min to user input */
 
-    /* If user-provided count > 1, update count manually to desired value */
-    if (count > 1){
-      ptr->count += (count - 1);
+    /* If add_count >= 0, then set count to desired value. */
+    /* Otherwise, assume add_count == 0 and set count to 0. */
+    if (add_count >= 0){
+      ptr->count = add_count;
+    }else{
+      ptr->count = 0;
     }
 
     /* 
@@ -4226,15 +4230,15 @@ int GPTLstartstop_valsf (const char *name,  /* timer name */
     ptr->wall.accum -= ptr->wall.latest;
   }
 
-  /* Overwrite the values with user input */
-  ptr->wall.accum += value;
-  ptr->wall.latest = value;
-  if (value > ptr->wall.max)
-    ptr->wall.max = value;
+  /* Update the values with user input */
+  ptr->wall.accum += add_time;
+  ptr->wall.latest = add_time;
+  if (add_time > ptr->wall.max)
+    ptr->wall.max = add_time;
 
   /* On first call this setting is unnecessary but avoid an "if" test for efficiency */
-  if (value < ptr->wall.min)
-    ptr->wall.min = value;
+  if (add_time < ptr->wall.min)
+    ptr->wall.min = add_time;
 
   return 0;
 }

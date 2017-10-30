@@ -97,7 +97,8 @@ program cime_driver
    cime_init_time_adjustment = cime_pre_init1_time  &
                              + ESMF_Initialize_time &
                              + cime_pre_init2_time
-   call t_startstop_valsf('CPL:INIT',  walltime=cime_init_time_adjustment)
+   call t_startstop_valsf('CPL:INIT',  walltime=cime_init_time_adjustment, &
+                                       callcount=0)
 
    call cime_run()
    call cime_final()

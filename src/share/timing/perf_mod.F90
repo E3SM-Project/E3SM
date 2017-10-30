@@ -851,8 +851,10 @@ contains
    ! performance timer event name
    character(len=*), intent(in) :: event
    ! walltime (seconds) associated with this start/stop pair
+   ! If not set, default is 0.0 . If < 0.0, set to 0.0 .
    real(shr_kind_r8), intent(in), optional :: walltime
    ! call count associated with this start/stop pair
+   ! If not set, default is 1. If < 0, set to 0.
    integer, intent(in), optional :: callcount
 !
 !---------------------------Input/Output arguments----------------------
@@ -881,10 +883,12 @@ contains
       endif
    endif
 
-   callcnt = 0   
+   callcnt = 1
    if ( present(callcount) ) then
-      if (callcount > 0.0) then
+      if (callcount > 0) then
          callcnt = callcount
+      else
+         callcnt = 0
       endif
    endif
 
