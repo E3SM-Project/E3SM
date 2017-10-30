@@ -22,7 +22,7 @@ set acme_tag       = master
 set tag_name       = default
 
 ### CUSTOM CASE_NAME
-set case_name = ${tag_name}.${job_name}.${resolution}
+set case_name = ${machine}.${tag_name}.${job_name}.${resolution}
 
 ### BUILD OPTIONS
 set debug_compile  = false
@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.15
+set script_ver = 3.0.16
 
 #===========================================
 # DEFINE ALIASES
@@ -803,7 +803,6 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #$xmlchange_exe --id CAM_CONFIG_OPTS --val "-phys cam5 -chem linoz_mam3"
 
 ## Chris Golaz: build with COSP
-#NOTE: xmlchange has a bug which requires append to be specified with quotes and a leading space.
 #NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
 
 if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
@@ -814,7 +813,7 @@ else
   acme_newline
   acme_print 'Configuring ACME to use the COSP simulator.'
   acme_newline
-  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val " -cosp"
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val "-cosp"
 endif
 
 #===========================
@@ -869,6 +868,7 @@ set run_root_dir = `cd $case_run_dir/..; pwd -P`
 acme_print 'Creating logical links to make navigating easier.'
 acme_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
 
+# Customizations from Chris Golaz
 # Link in this_script_dir case_dir
 set run_dir_link = $this_script_dir/$this_script_name=a_run_link
 
@@ -1156,18 +1156,18 @@ else if ( $model_start_type == 'branch' ) then
   acme_print '$restart_prevdate  = '$restart_prevdate
 
   acme_print 'Copying stuff for branch run'
-  cp ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.clm2.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
-  cp ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.cam.h0.${restart_prevdate}-*-00000.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir
-  cp ${restart_files_dir}/${restart_case_name}.clm2.h0.${restart_prevdate}.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.clm2.rh0.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/../../atm/hist/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
+  cp -s ${restart_files_dir}/../../rof/hist/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir
+  cp -s ${restart_files_dir}/../../lnd/hist/${restart_case_name}.clm2.h0.${restart_prevdate}.nc $case_run_dir
   cp ${restart_files_dir}/rpointer* $case_run_dir
 
   $xmlchange_exe --id RUN_TYPE --val "branch"
@@ -1347,6 +1347,7 @@ acme_newline
 #                        Update the machine check for cori to account for cori-knl (MD)
 # 3.0.14   2017-09-11    Add checks for blues and bebop when trying to use the debug queue. Mostly by Andy Salinger with assist from (MD)
 # 3.0.15   2017-09-18    Removes long term archiving settings, as they no longer exist in CIME (MD)
+# 3.0.16   2017-10-17    Brings in CGs changes to make branch runs faster and easier. Also adds the machine name to case_name
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
