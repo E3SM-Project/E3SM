@@ -179,19 +179,15 @@
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 24 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="intel18">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 24 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="!intel">
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-  </environment_variables>
-  <environment_variables compiler="intel" MAX_TASKS_PER_NODE="!48">
-    <env name="KMP_AFFINITY">granularity=core,scatter</env>
-  </environment_variables>
-  <environment_variables compiler="intel" MAX_TASKS_PER_NODE="48">
-    <env name="KMP_AFFINITY">granularity=thread,scatter</env>
   </environment_variables>
 </machine>
 
@@ -330,19 +326,15 @@
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 32 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="intel18">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 32 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="!intel">
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-  </environment_variables>
-  <environment_variables compiler="intel" MAX_TASKS_PER_NODE="!64">
-    <env name="KMP_AFFINITY">granularity=core,scatter</env>
-  </environment_variables>
-  <environment_variables compiler="intel" MAX_TASKS_PER_NODE="64">
-    <env name="KMP_AFFINITY">granularity=thread,scatter</env>
   </environment_variables>
 </machine>
 
@@ -497,20 +489,16 @@
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 68 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="intel18">
     <env name="MPICH_MEMORY_REPORT">1</env>
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 68 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="!intel">
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-  </environment_variables>
-  <environment_variables compiler="intel" MAX_TASKS_PER_NODE="64">
-    <env name="KMP_AFFINITY">granularity=core,scatter</env>
-  </environment_variables>
-  <environment_variables compiler="intel" MAX_TASKS_PER_NODE="!64">
-    <env name="KMP_AFFINITY">granularity=thread,scatter</env>
   </environment_variables>
 </machine>
 
