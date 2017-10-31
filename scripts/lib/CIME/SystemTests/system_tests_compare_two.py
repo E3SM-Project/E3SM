@@ -186,9 +186,11 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # to share the sharedlibroot area with case1 so we can reuse
             # pieces of the build from there.
             if get_model() != "acme":
+                # We need to turn off this change for ACME because it breaks
+                # the MPAS build system
                 self._case2.set_value("SHAREDLIBROOT",
                                       self._case1.get_value("SHAREDLIBROOT"))
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+                self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
@@ -301,7 +303,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # to this case. (If case2's CIME_OUTPUT_ROOT were in some
             # more generic location, then this would result in its bld
             # directory being inadvertently shared with other tests.)
-            case2_exeroot = os.path.join(self._get_output_root2(), self._case1.get_value("CASE"), "bld")
+            case2_exeroot = os.path.join(self._get_output_root2(), "bld")
         else:
             # Use default exeroot
             case2_exeroot = None
@@ -313,7 +315,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         """
         # Put the case2 run directory alongside its bld directory for
         # consistency. (See notes about EXEROOT in _get_case2_exeroot.)
-        case2_rundir = os.path.join(self._get_output_root2(), self._case1.get_value("CASE"), "run")
+        case2_rundir = os.path.join(self._get_output_root2(), "run")
         return case2_rundir
 
     def _setup_cases_if_not_yet_done(self):
