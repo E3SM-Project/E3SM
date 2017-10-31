@@ -39,6 +39,7 @@ from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case import Case
 from CIME.case_submit import check_case
 from CIME.case_st_archive import archive_last_restarts
+from CIME.utils import get_model
 
 import shutil, os, glob
 
@@ -184,8 +185,12 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # Although we're doing separate builds, it still makes sense
             # to share the sharedlibroot area with case1 so we can reuse
             # pieces of the build from there.
-            self._case2.set_value("SHAREDLIBROOT",
-                                  self._case1.get_value("SHAREDLIBROOT"))
+            if get_model() != "acme":
+                # We need to turn off this change for ACME because it breaks
+                # the MPAS build system
+                self._case2.set_value("SHAREDLIBROOT",
+                                      self._case1.get_value("SHAREDLIBROOT"))
+
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
