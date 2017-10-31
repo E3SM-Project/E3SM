@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.16
+set script_ver = 3.0.17
 
 #===========================================
 # DEFINE ALIASES
@@ -813,7 +813,7 @@ else
   acme_newline
   acme_print 'Configuring ACME to use the COSP simulator.'
   acme_newline
-  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val "-cosp"
+  $xmlchange_exe --id CAM_CONFIG_OPTS --append --val='-cosp'
 endif
 
 #===========================
@@ -1348,6 +1348,7 @@ acme_newline
 # 3.0.14   2017-09-11    Add checks for blues and bebop when trying to use the debug queue. Mostly by Andy Salinger with assist from (MD)
 # 3.0.15   2017-09-18    Removes long term archiving settings, as they no longer exist in CIME (MD)
 # 3.0.16   2017-10-17    Brings in CGs changes to make branch runs faster and easier. Also adds the machine name to case_name
+# 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
