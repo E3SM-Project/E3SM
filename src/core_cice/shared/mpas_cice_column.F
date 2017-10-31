@@ -3633,8 +3633,8 @@ contains
     use cice_constants, only: &
          cicePuny
 
-    use ice_constants_colpkg, only: &
-         rhofresh
+    use cice_constants, only: &
+         ciceDensityFreshwater
 
     type(domain_type) :: domain
 
@@ -3895,7 +3895,7 @@ contains
           !-------------------------------------------------------------------
 
           if (config_include_pond_freshwater_feedback) then
-             pondFreshWaterFlux(iCell)  = pondFreshWaterFlux(iCell) * rhofresh / config_dt
+             pondFreshWaterFlux(iCell)  = pondFreshWaterFlux(iCell) * ciceDensityFreshwater / config_dt
              oceanFreshWaterFlux(iCell) = oceanFreshWaterFlux(iCell) - pondFreshWaterFlux(iCell)
           endif
 
@@ -4322,8 +4322,8 @@ contains
          colpkg_atm_boundary, &
          colpkg_ocn_mixed_layer
 
-    use ice_constants_colpkg, only: &
-         albocn
+    use cice_constants, only: &
+         ciceOceanAlbedo
 
     type(domain_type) :: domain
 
@@ -4452,7 +4452,6 @@ contains
        call MPAS_pool_get_array(oceanAtmosphere, "evaporativeWaterFluxOcean", evaporativeWaterFluxOcean)
 
        do iCell = 1, nCellsSolve
-
           call colpkg_atm_boundary(&
                'ocn', &
                seaSurfaceTemperature(iCell), &
@@ -4474,10 +4473,10 @@ contains
                airDragCoefficient(iCell), &
                airOceanDragCoefficientRatio(iCell))
 
-          albedoVisibleDirectOcean(iCell)  = albocn
-          albedoIRDirectOcean(iCell)       = albocn
-          albedoVisibleDiffuseOcean(iCell) = albocn
-          albedoIRDiffuseOcean(iCell)      = albocn
+          albedoVisibleDirectOcean(iCell)  = ciceOceanAlbedo
+          albedoIRDirectOcean(iCell)       = ciceOceanAlbedo
+          albedoVisibleDiffuseOcean(iCell) = ciceOceanAlbedo
+          albedoIRDiffuseOcean(iCell)      = ciceOceanAlbedo
 
           call colpkg_ocn_mixed_layer(&
                albedoVisibleDirectOcean(iCell), &
@@ -10976,13 +10975,16 @@ contains
 
   function cice_column_initial_air_drag_coefficient() result(airDragCoefficient)
 
-    use ice_constants_colpkg, only: &
-         vonkar, zref, iceruf
+    use cice_constants, only: &
+         ciceVonKarmanConstant, &
+         ciceIceSurfaceRoughness, &
+         ciceStabilityReferenceHeight
 
     real(kind=RKIND) :: airDragCoefficient
 
-    airDragCoefficient = (vonkar/log(zref/iceruf)) &
-                       * (vonkar/log(zref/iceruf)) ! atmo drag for RASM
+    ! atmo drag for RASM
+    airDragCoefficient = (ciceVonKarmanConstant/log(ciceStabilityReferenceHeight/ciceIceSurfaceRoughness)) &
+                       * (ciceVonKarmanConstant/log(ciceStabilityReferenceHeight/ciceIceSurfaceRoughness))
 
   end function cice_column_initial_air_drag_coefficient
 
@@ -11987,8 +11989,8 @@ contains
 
   subroutine cice_column_reinitialize_diagnostics_thermodynamics(domain)
 
-    use ice_constants_colpkg, only: &
-         dragio
+    use cice_constants, only: &
+         ciceIceOceanDragCoefficient
 
     type(domain_type) :: domain
 
@@ -12167,7 +12169,7 @@ contains
           call MPAS_pool_get_array(dragPool, "oceanDragCoefficient", oceanDragCoefficient)
           call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
 
-          oceanDragCoefficient = dragio
+          oceanDragCoefficient = ciceIceOceanDragCoefficient
           airDragCoefficient   = cice_column_initial_air_drag_coefficient()
 
           call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)
@@ -12230,9 +12232,6 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_column_reinitialize_diagnostics_dynamics(domain)
-
-    use ice_constants_colpkg, only: &
-         dragio
 
     type(domain_type) :: domain
 
