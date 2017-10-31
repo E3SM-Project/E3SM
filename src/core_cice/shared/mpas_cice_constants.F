@@ -28,7 +28,12 @@ module cice_constants
        Lfresh, &
        Pstar, &
        Cstar, &
-       dragio
+       dragio, &
+       albocn, &
+       rhofresh, &
+       vonkar, &
+       iceruf, &
+       zref
 
   private
   save
@@ -56,18 +61,23 @@ module cice_constants
 
   ! physical constants
   real(kind=RKIND), parameter, public :: &
-       ciceDensityIce      = rhoi, & ! density of ice (kg/m^3)
-       ciceDensitySnow     = rhos, & ! density of snow (kg/m^3)
-       ciceDensitySeaWater = rhow    ! density of seawater (kg/m^3)
+       ciceDensityIce        = rhoi, & ! density of ice (kg/m^3)
+       ciceDensitySnow       = rhos, & ! density of snow (kg/m^3)
+       ciceDensitySeaWater   = rhow, & ! density of seawater (kg/m^3)
+       ciceDensityFreshwater = rhofresh ! density of freshwater (kg/m^3)
 
   ! thermodynamic constants
   real(kind=RKIND), parameter, public :: &
-       ciceStefanBoltzmann         = stefan_boltzmann, & ! J m-2 K-4 s-1
-       ciceIceSnowEmissivity       = emissivity, &       ! emissivity of snow and ice
-       ciceFreshWaterFreezingPoint = Tffresh, &          ! freezing temp of fresh ice (K)
-       ciceAirSpecificHeat         = cp_air, &           ! specific heat of air (J/kg/K)
-       ciceLatentHeatSublimation   = Lsub, &             ! latent heat, sublimation freshwater (J/kg)
-       ciceLatentHeatMelting       = Lfresh              ! latent heat of melting of fresh ice (J/kg)
+       ciceStefanBoltzmann          = stefan_boltzmann, & ! J m-2 K-4 s-1
+       ciceIceSnowEmissivity        = emissivity, &       ! emissivity of snow and ice
+       ciceFreshWaterFreezingPoint  = Tffresh, &          ! freezing temp of fresh ice (K)
+       ciceAirSpecificHeat          = cp_air, &           ! specific heat of air (J/kg/K)
+       ciceLatentHeatSublimation    = Lsub, &             ! latent heat, sublimation freshwater (J/kg)
+       ciceLatentHeatMelting        = Lfresh, &           ! latent heat of melting of fresh ice (J/kg)
+       ciceOceanAlbedo              = albocn, &           ! Ocean albedo
+       ciceVonKarmanConstant        = vonkar, &           ! Von Karman constant
+       ciceIceSurfaceRoughness      = iceruf, &           ! ice surface roughness (m)
+       ciceStabilityReferenceHeight = zref ! stability reference height (m)
 
   ! dynamics constants
   real(kind=RKIND), parameter, public :: &
