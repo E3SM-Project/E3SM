@@ -49,7 +49,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("{} {}".format(error_prefix, error_msg))
+        raise exc_type(error_prefix + " " + error_msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -342,9 +342,9 @@ def check_minimum_python_version(major, minor):
     >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
     >>>
     """
+    msg = "Python " + str(major) + ", minor version " + str(minor) + " is required, you have " + str(sys.version_info[0]) + "." + str(sys.version_info[1])
     expect(sys.version_info[0] > major or
-           (sys.version_info[0] == major and sys.version_info[1] >= minor),
-           "Python {:d}, minor version {:d}+ is required, you have {:d}.{:d}".format(major, minor, sys.version_info[0], sys.version_info[1]))
+           (sys.version_info[0] == major and sys.version_info[1] >= minor), msg)
 
 def normalize_case_id(case_id):
     """
