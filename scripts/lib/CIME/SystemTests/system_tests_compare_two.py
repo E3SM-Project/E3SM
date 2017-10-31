@@ -190,7 +190,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 # the MPAS build system
                 self._case2.set_value("SHAREDLIBROOT",
                                       self._case1.get_value("SHAREDLIBROOT"))
-                self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+
+            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
