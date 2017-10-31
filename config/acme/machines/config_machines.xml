@@ -1169,9 +1169,11 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
-      <env name="OMP_DISPLAY_ENV" DEBUG="TRUE">verbose</env>
-      <env name="KMP_AFFINITY" DEBUG="TRUE">verbose,scatter</env>
-      <env name="KMP_AFFINITY" DEBUG="FALSE">scatter</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" DEBUG="TRUE">
+      <env name="OMP_DISPLAY_ENV">verbose</env>
+      <env name="KMP_AFFINITY">verbose,scatter</env>
+      <env name="KMP_AFFINITY">scatter</env>
     </environment_variables>
     <environment_variables mpilib="mvapich">
       <env name="MV2_ENABLE_AFFINITY">1</env>
