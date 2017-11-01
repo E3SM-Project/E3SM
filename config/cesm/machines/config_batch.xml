@@ -19,6 +19,9 @@
  queues across machines.  The batch_system tag denotes the name for a particular
  batch system, these can either be shared between one or more machines, or can be
  defined for a specific machine if need be.
+
+ Machine specific entries take precidence over generic entries, directives are appended
+
  queues:
  one or more queues can be defined per batch_system. if the attribute default="true"
  is used, then that queue will be used by default. Alternatively, multiple queues can
@@ -196,6 +199,7 @@
 
   <!-- bluewaters is PBS -->
   <batch_system MACH="bluewaters" type="pbs" >
+    <jobid_pattern>(\d+.bw)$</jobid_pattern>
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
       <directive default="/bin/bash" > -S {{ shell }} </directive>

@@ -73,12 +73,14 @@ class EnvBatch(EnvBase):
         if subgroup is None:
             nodes = self.get_nodes(item, attribute)
             if len(nodes) == 1:
-                node = nodes[0]
+                node = nodes[-1]
                 value = node.text
                 if resolved:
                     value = self.get_resolved_value(value)
             elif not nodes:
                 value = EnvBase.get_value(self,item,attribute,resolved)
+            else:
+                expect(False, "Duplicate found in {}".format(item))
         else:
             value = EnvBase.get_value(self, item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
@@ -149,10 +151,20 @@ class EnvBatch(EnvBase):
     def set_batch_system(self, batchobj, batch_system_type=None):
         if batch_system_type is not None:
             self.set_batch_system_type(batch_system_type)
+        
+        if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
+            for node in batchobj.get_nodes('any', root=batchobj.machine_node, xpath='*'):
+                oldnode = batchobj.get_optional_node(node.tag, root=batchobj.batch_system_node)
+                if oldnode is not None and oldnode.tag != "directives":
+                    logger.debug( "Replacing {}".format(oldnode.tag))
+                    batchobj.batch_system_node.remove(oldnode)
+
         if batchobj.batch_system_node is not None:
             self.root.append(deepcopy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
             self.root.append(deepcopy(batchobj.machine_node))
+        
+
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
