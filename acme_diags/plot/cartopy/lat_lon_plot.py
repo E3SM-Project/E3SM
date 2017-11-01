@@ -55,7 +55,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     ax.set_global()
     cmap = get_colormap(cmap, parameters)
     p1 = ax.contourf(lon, lat, var,
-                     transform=proj,#ccrs.PlateCarree(),
+                     transform=ccrs.PlateCarree(),
                      norm=norm,
                      levels=levels,
                      cmap=cmap,
