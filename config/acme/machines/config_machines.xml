@@ -2848,16 +2848,26 @@
 	 <MAX_TASKS_PER_NODE>160</MAX_TASKS_PER_NODE>
 	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>csc249</PROJECT>
+	 <CHARGE_ACCOUNT>CSC249ADSE15</CHARGE_ACCOUNT>
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
 	 <mpirun mpilib="openmpi">
-	 <executable args="default">mpirun</executable>
+	 <executable args="default">jsrun</executable>
 	 <arguments>
-		 <arg name="num_tasks" > -np $TOTALPES</arg>
-		 <arg name="binding_core"> --map-by core:PE=$ENV{OMP_NUM_THREADS} --bind-to core </arg>
-		 <arg name="thread_count"> -x OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-		 <arg name="show-binding"> --report-bindings </arg>
-		 <arg name="show-processmap"> --display-map </arg>
+	     <!-- Useful jsrun options:
+		-n	(hyphen-hyphen)nrs	Number of resource sets
+		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set Avail Oct 17
+		-c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
+		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
+		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
+		 This will request nnodes resource sets (-n nnodes), each with p processes (-a p), and 1 resource set per node (-r 1).
+		 $ENV{NUM_NODES} -a $ENV{PES_PER_NODE} -r1 
+		 -->
+		 <arg name="num_tasks" > -n ALL_HOSTS -a $ENV{MAX_MPITASKS_PER_NODE} -c $ENV{OMP_NUM_THREADS} </arg>
+		 <arg name="thread_count"> -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+		 <!-- <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg> -->
+		 <!-- <arg name="show-binding"> report-bindings </arg> -->
+		 <!-- <arg name="show-processmap"> display-map </arg> -->
 		 <!--
 		 <arg name="tasks_per_node"> map-by ppr:$MAX_MPITASKS_PER_NODE:node</arg>
 		 -->
@@ -2892,12 +2902,14 @@
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi">
         <command name="rm">xl</command>
-        <command name="load">pgi/17.4</command>
+        <command name="load">pgi/17.9</command>
+        <command name="load">spectrum-mpi/10.1.0.4-20170915</command>
         <command name="ls"/>
       </modules>
       <modules compiler="ibm">
         <command name="rm">pgi</command>
-        <command name="load">xl/20161123</command>
+        <command name="load">xl/20170727-beta/</command>
+        <command name="load">spectrum-mpi/10.1.0.4-20170915</command>
         <command name="ls"/>
       </modules>
 
@@ -2906,12 +2918,18 @@
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
       </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">spectrum_mpi/10.1.0.2-20161221</command>
+	  <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
+      <modules compiler="ibm" mpilib="!mpi-serial">
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.7.0</command>
-        <command name="load">hdf5/1.10.0-patch1-parallel</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
+      </modules> 
+ 	  <modules compiler="pgi" mpilib="!mpi-serial">
+        <command name="load">netcdf/4.4.1</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="load">parallel-netcdf/1.7.0</command>
+        <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
       <!-- Default -->
       <environment_variables>
