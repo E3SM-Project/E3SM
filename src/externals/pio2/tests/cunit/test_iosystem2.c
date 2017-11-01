@@ -6,6 +6,7 @@
  *
  * Ed Hartnett
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_tests.h>
 
@@ -31,7 +32,6 @@ int create_file(MPI_Comm comm, int iosysid, int format, char *filename,
     /* Create the file. */
     if ((ret = PIOc_createfile(iosysid, &ncid, &format, filename, NC_CLOBBER)))
         return ret;
-    printf("%d file created ncid = %d\n", my_rank, ncid);
 
     /* Use the ncid to set the IO system error handler. This function
      * is deprecated. */
@@ -41,12 +41,10 @@ int create_file(MPI_Comm comm, int iosysid, int format, char *filename,
         return ERR_WRONG;
 
     /* Define a dimension. */
-    printf("%d defining dimension %s\n", my_rank, dimname);
     if ((ret = PIOc_def_dim(ncid, dimname, PIO_TF_MAX_STR_LEN, &dimid)))
         return ret;
 
     /* Define a 1-D variable. */
-    printf("%d defining variable %s\n", my_rank, attname);
     if ((ret = PIOc_def_var(ncid, attname, NC_CHAR, 1, &dimid, &varid)))
         return ret;
 
@@ -55,16 +53,12 @@ int create_file(MPI_Comm comm, int iosysid, int format, char *filename,
         return ret;
 
     /* End define mode. */
-    printf("%d ending define mode ncid = %d\n", my_rank, ncid);
     if ((ret = PIOc_enddef(ncid)))
         return ret;
-    printf("%d define mode ended ncid = %d\n", my_rank, ncid);
 
     /* Close the file. */
-    printf("%d closing file ncid = %d\n", my_rank, ncid);
     if ((ret = PIOc_closefile(ncid)))
         return ret;
-    printf("%d closed file ncid = %d\n", my_rank, ncid);
 
     return PIO_NOERR;
 }
@@ -79,7 +73,6 @@ int check_file(MPI_Comm comm, int iosysid, int format, int ncid, char *filename,
     /* Check the file. */
     if ((ret = PIOc_inq_dimid(ncid, dimname, &dimid)))
         return ret;
-    printf("%d dimid = %d\n", my_rank, dimid);
 
     return PIO_NOERR;
 }
@@ -120,8 +113,8 @@ int main(int argc, char **argv)
     MPI_Comm test_comm;
 
     /* Initialize test. */
-    if ((ret = pio_test_init(argc, argv, &my_rank, &ntasks, TARGET_NTASKS,
-                             &test_comm)))
+    if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, TARGET_NTASKS, TARGET_NTASKS,
+                              -1, &test_comm)))
         ERR(ERR_INIT);
 
     /* Test code runs on TARGET_NTASKS tasks. The left over tasks do
@@ -137,7 +130,6 @@ int main(int argc, char **argv)
         int even = my_rank % 2 ? 0 : 1;
         if ((ret = MPI_Comm_split(test_comm, even, 0, &newcomm)))
             MPIERR(ret);
-        printf("%d newcomm = %d even = %d\n", my_rank, newcomm, even);
 
         /* Get rank in new communicator and its size. */
         int new_rank, new_size;
@@ -145,8 +137,6 @@ int main(int argc, char **argv)
             MPIERR(ret);
         if ((ret = MPI_Comm_size(newcomm, &new_size)))
             MPIERR(ret);
-        printf("%d newcomm = %d new_rank = %d new_size = %d\n", my_rank, newcomm,
-               new_rank, new_size);
 
         /* Initialize PIO system. */
         if ((ret = PIOc_Init_Intracomm(newcomm, 2, 1, 0, 1, &iosysid)))
@@ -165,7 +155,6 @@ int main(int argc, char **argv)
             char fname0[] = "pio_iosys_test_file0.nc";
             char fname1[] = "pio_iosys_test_file1.nc";
             char fname2[] = "pio_iosys_test_file2.nc";
-            printf("\n\n%d i = %d\n", my_rank, i);
 
             if ((ret = create_file(test_comm, iosysid_world, iotypes[i], fname0, ATTNAME,
                                    DIMNAME, my_rank)))
@@ -191,7 +180,6 @@ int main(int argc, char **argv)
              * remaining files. */
             int ncid2;
             char *fname = even ? fname1 : fname2;
-            printf("\n***\n");
             if ((ret = open_and_check_file(newcomm, iosysid, iotypes[i], &ncid2, fname,
                                            ATTNAME, DIMNAME, 1, my_rank)))
                 ERR(ret);
@@ -216,7 +204,6 @@ int main(int argc, char **argv)
     } /* my_rank < TARGET_NTASKS */
 
     /* Finalize test. */
-    printf("%d %s finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
 

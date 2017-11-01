@@ -10,6 +10,7 @@ from CIME.BuildTools.macrowriterbase import write_macros_file_v1
 from CIME.BuildTools.makemacroswriter import MakeMacroWriter
 from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
 from CIME.BuildTools.macroconditiontree import merge_optional_trees
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +161,7 @@ class Compilers(GenericXML):
             else:
                 format_ = output_format
 
-            if isinstance(macros_file, basestring):
+            if isinstance(macros_file, six.string_types):
                 with open(macros_file, "w") as macros:
                     self._write_macros_file_v2(format_, macros)
             else:
@@ -205,7 +206,7 @@ class Compilers(GenericXML):
         while value_lists:
             # Variables that are ready to be written.
             ready_variables = [
-                var_name for var_name in value_lists.keys()
+                var_name for var_name in value_lists
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
@@ -254,7 +255,7 @@ def _add_to_macros(node, macros):
 
         else:
             cond_macros = macros["_COND_"]
-            for key, value2 in attrib.iteritems():
+            for key, value2 in attrib.items():
                 if key not in cond_macros:
                     cond_macros[key] = {}
                 if value2 not in cond_macros[key]:
