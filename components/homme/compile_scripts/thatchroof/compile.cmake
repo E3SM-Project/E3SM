@@ -1,7 +1,7 @@
 #!/bin/bash
 
-do_cmake=1
-do_clean=1
+do_cmake=0
+do_clean=0
 do_make=1
  
 HOMME_ROOT=/home/$USER/ACME/components/homme
@@ -22,7 +22,7 @@ cmake                                                                           
   -DCMAKE_Fortran_COMPILER=mpif90                                                \
   -DCMAKE_C_COMPILER=mpicc                                                       \
   -DOPT_FLAGS="-O3"                                                              \
-  -DOPENACC_Fortran_FLAGS="-ta=nvidia,cuda8.0,cc35,ptxinfo,pinned -Minfo=accel"  \
+  -DOPENACC_Fortran_FLAGS="-ta=tesla,cuda8.0,cc35 -Minfo=accel"  \
   -DDEBUG_FLAGS=" "                                                              \
   -DNETCDF_DIR=$NETCDF_DIR                                                       \
   -DPREQX_NP=4                                                                   \
@@ -33,7 +33,7 @@ cmake                                                                           
   -DBUILD_HOMME_PREQX_ACC=TRUE                                                   \
   -DENABLE_OPENMP=TRUE                                                           \
   -DCMAKE_EXE_LINKER_FLAGS="${NCLIBS}"                                           \
-  -DOPENACC_Linker_FLAGS="-ta=nvidia,cuda8.0,cc35,pinned"                        \
+  -DOPENACC_Linker_FLAGS="-ta=tesla,cuda8.0,cc35"                        \
   -DAPPEND_LIBRARIES="netcdff -lnetcdf -lhdf5_hl -lhdf5 -lsz -lz -ldl"           \
   $HOMME_ROOT                                                       || exit -1                                              
 fi
@@ -47,5 +47,5 @@ if [ $do_make -eq 1 ]; then
 make -j24 preqx_acc preqx                                           || exit -1
 mkdir -p $HOMME_ROOT/build/preqx
 cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc  || exit -1
-cp ./src/preqx/preqx         $HOMME_ROOT/build/preqx/preqx          || exit -1
+cp ./src/preqx/preqx         $HOMME_ROOT/build/preqx/preqx.cpu      || exit -1
 fi

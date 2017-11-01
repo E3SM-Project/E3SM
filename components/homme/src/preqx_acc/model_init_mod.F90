@@ -22,6 +22,9 @@ contains
   subroutine model_init2( elem , hybrid, deriv ,hvcoord,tl,nets,nete)
     use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use dimensions_mod, only: nelemd
+#ifdef _OPENACC
+    use openacc
+#endif
 
     implicit none
     type(element_t)   , intent(in) :: elem(:)
@@ -37,6 +40,10 @@ contains
     !$omp master
 
   
+#ifdef _OPENACC
+    call acc_set_device_num(0, acc_device_nvidia)
+    write(*,*) 'got here'
+#endif
     !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj)
     !$acc enter data pcopyin(elem(1:nelemd),deriv)
     do ie = 1 , nelemd

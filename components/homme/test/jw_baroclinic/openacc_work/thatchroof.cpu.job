@@ -14,7 +14,9 @@ set exedir = $HOMME/build/preqx
 set exe    = preqx.cpu
 
 source /usr/share/modules/init/tcsh
-module load pgi/15.9
+module purge
+module load pgi/17.4
+module load openmpi
 module load zlib
 module load szip
 module load hdf5
@@ -40,7 +42,7 @@ setenv OMP_STACKSIZE 64M
 
 
 
-set NCORES = 12
+set NCORES = 24
 setenv OMP_NUM_THREADS 1
 set NCPU = 1
 @ NCPU *= $NCORES
@@ -48,15 +50,15 @@ set NCPU = 1
 set NPER = $NCORES
 @ NPER /= $OMP_NUM_THREADS
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
-set mpirun = "mpirun -n $NCPU -ppn $NPER"
+set mpirun = "mpirun -n $NCPU"
 echo $mpirun
 echo `which mpirun`
 
 set u_perturb = 1
 set rotate = 0
 set ne    =  8     # horizontal resolution   4,16,30,60,120,240
-set nlev  = 64     # vertical resolution  26,30,60,64,96
-set qsize = 50     # number of passive tracers
+set nlev  = 72     # vertical resolution  26,30,60,64,96
+set qsize = 40     # number of passive tracers
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
                
 #  run each different resolution in a different directory

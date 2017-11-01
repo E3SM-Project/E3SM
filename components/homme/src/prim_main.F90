@@ -34,6 +34,9 @@ program prim_main
 #else
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
 #endif
+#if (defined _OPENACC)
+  use openacc
+#endif
 
   implicit none
 
@@ -141,6 +144,11 @@ program prim_main
 #if (defined HORIZ_OPENMP)
   !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
   call omp_set_num_threads(vthreads)
+#endif
+#if (defined _OPENACC)
+!  !$omp master
+!  call acc_set_device_num(0,acc_device_not_host)
+!  !$omp end master
 #endif
   ithr=omp_get_thread_num()
   hybrid = hybrid_create(par,ithr,nthreads)

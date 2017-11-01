@@ -6,22 +6,24 @@
 #  (2) CAM6, with 60 levels and 50 tracers
 
 #  set paths to source code, build directory and run directory
-set wdir   = /proj/imn/HOMME_ACME             # run directory
-set HOMME  = /home/imn/ACME/components/homme                # HOMME svn checkout     
-set input  = $HOMME/test/jw_baroclinic/openacc_work    # input files for test case
-set vdir   = $HOMME/test/vcoord            # vertical coordinate files
+set wdir   = /proj/imn/HOMME_ACME                     # run directory
+set HOMME  = /home/imn/ACME/components/homme          # HOMME svn checkout     
+set input  = $HOMME/test/jw_baroclinic/openacc_work   # input files for test case
+set vdir   = $HOMME/test/vcoord                       # vertical coordinate files
 set exedir = $HOMME/build/preqx
 set exe    = preqx.openacc
 
 source /usr/share/modules/init/tcsh
-module load pgi/15.9
+module purge
+module load pgi/17.4
+module load openmpi
 module load zlib
 module load szip
 module load hdf5
 module load netcdf
 module load parallel-netcdf
 module load cmake
-module load cuda/7.5
+module load cuda/8.0
 
 limit coredumpsize unlimited
 limit stacksize unlimited
@@ -40,25 +42,25 @@ setenv OMP_STACKSIZE 64M
 #export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_$i
 #nvidia-cuda-mps-control -d
 
-set NCORES = 12
-setenv OMP_NUM_THREADS 12
+set NCORES = 24
+setenv OMP_NUM_THREADS 4
 set NCPU = 1
 @ NCPU *= $NCORES
 @ NCPU /= $OMP_NUM_THREADS
 set NPER = $NCORES
 @ NPER /= $OMP_NUM_THREADS
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
-set mpirun = "mpirun -n $NCPU -ppn $NPER"
+set mpirun = "mpirun -n $NCPU"
 echo $mpirun
 echo `which mpirun`
 
 set u_perturb = 1
 set rotate = 0
 set ne    =  8     # horizontal resolution   4,16,30,60,120,240
-set nlev  = 64     # vertical resolution  26,30,60,64,96
-set qsize = 50     # number of passive tracers
+set nlev  = 72     # vertical resolution  26,30,60,64,96
+set qsize = 40     # number of passive tracers
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
-               
+
 #  run each different resolution in a different directory
 set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}-thread${OMP_NUM_THREADS}-nodes${1}
 set run = $wdir/$exe/$name
@@ -102,7 +104,7 @@ set sfreq = 8   # number of hours
 @ sfreq /= $tstep
 
 mkdir -p $run/movies
-cp ./cuda_config $run
+#cp ./cuda_config $run
 cd $run
 
 if ( $nlev == 26 ) then
