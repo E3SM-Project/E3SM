@@ -145,7 +145,7 @@ type MGPostProc
    procedure :: unpack_only => MGPostProc_unpack_only
    procedure :: finalize => MGPostProc_finalize
    procedure, private :: MGPostProc_copy
-   generic :: assignment(=) => MGPostProc_copy
+!   generic :: assignment(=) => MGPostProc_copy
 end type MGPostProc
 
 interface MGPostProc
