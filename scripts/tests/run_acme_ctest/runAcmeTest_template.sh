@@ -14,7 +14,7 @@ if [ ! -d "${SCRATCH}/ACME_simulations" ]; then
   mkdir ${SCRATCH}/ACME_simulations
 fi
 
-case_name="default.A_WCYCL1850_template.ne4np4_oQU240"
+case_name="default.default.A_WCYCL1850_template.ne4np4_oQU240"
 case_scratch="${SCRATCH}/ACME_simulations/${case_name}"
 case_dir="${case_scratch}/case_scripts"
 public_scratch="${SCRATCH}"
