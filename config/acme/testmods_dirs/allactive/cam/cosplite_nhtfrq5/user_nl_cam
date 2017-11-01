@@ -1,0 +1,3 @@
+cosp_lite = .true.
+nhtfrq    = 5
+mfilt     = 1
