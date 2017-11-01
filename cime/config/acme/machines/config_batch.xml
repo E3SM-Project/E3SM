@@ -476,10 +476,10 @@
      <queues>
        <queue walltimemax="01:00" nodemin="0" nodemax="54" default="true">batch</queue>
 	   <!--
-	   jobmax = 54nodes*20cores*16th = 8640
 	   Nodes	Max Walltime
 	   <=4		4 hours
 	   >4		1 hour
+	   jobmax = 54nodes*20cores*16th = 8640
 	   -->
      </queues>
    </batch_system>
