@@ -4,7 +4,7 @@
 module dwav_comp_mod
 
   ! !USES:
-  
+
   use esmf
   use mct_mod
   use perf_mod
@@ -20,7 +20,7 @@ module dwav_comp_mod
   use shr_dmodel_mod    , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
-  use dwav_shr_mod   , only: wav_mode       ! namelist input
+  use dwav_shr_mod   , only: datamode       ! namelist input
   use dwav_shr_mod   , only: decomp         ! namelist input
   use dwav_shr_mod   , only: rest_file      ! namelist input
   use dwav_shr_mod   , only: rest_file_strm ! namelist input
@@ -71,7 +71,7 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2w, w2x            ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDWAV               ! model 
+    type(shr_strdata_type) , intent(inout) :: SDWAV               ! model
     type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
     type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
     integer(IN)            , intent(in)    :: mpicom              ! mpi communicator
@@ -146,12 +146,12 @@ CONTAINS
     call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist 
+    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
     ! (which by default is "1d")
     call shr_dmodel_gsmapcreate(gsmap,SDWAV%nxg*SDWAV%nyg,compid,mpicom,decomp)
     lsize = mct_gsmap_lsize(gsmap,mpicom)
 
-    ! create a rearranger from the data model SDOCN%gsmap to gsmap 
+    ! create a rearranger from the data model SDOCN%gsmap to gsmap
     call mct_rearr_init(SDWAV%gsmap,gsmap,mpicom,rearr)
 
     write(logunit,*)'lsize= ',lsize
@@ -261,7 +261,7 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)       , intent(in)    :: EClock
     type(mct_aVect)        , intent(inout) :: x2w
-    type(mct_aVect)        , intent(inout) :: w2x        
+    type(mct_aVect)        , intent(inout) :: w2x
     type(shr_strdata_type) , intent(inout) :: SDWAV
     type(mct_gsMap)        , pointer       :: gsMap
     type(mct_gGrid)        , pointer       :: ggrid
@@ -326,8 +326,19 @@ CONTAINS
     enddo
     call t_stopf('dwav_scatter')
 
-    call t_startf('dwav_mode')
-    call t_stopf('dwav_mode')
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('datamode')
+    select case (trim(datamode))
+
+    case('COPYALL')
+       ! do nothing extra
+
+    end select
+
+    call t_stopf('datamode')
 
     !--------------------
     ! Write restart
@@ -393,9 +404,9 @@ CONTAINS
     call t_startf('DWAV_FINAL')
 
     if (my_task == master_task) then
-       write(logunit,F91) 
+       write(logunit,F91)
        write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91) 
+       write(logunit,F91)
     end if
 
     call t_stopf('DWAV_FINAL')

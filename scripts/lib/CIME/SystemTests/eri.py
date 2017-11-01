@@ -52,12 +52,12 @@ class ERI(SystemTestsCommon):
         stop_option = self._case.get_value("STOP_OPTION")
         run_startdate = self._case.get_value("RUN_STARTDATE")
 
-        stop_n1 = stop_n / 6
+        stop_n1 = int(stop_n / 6)
         rest_n1 = stop_n1
         start_1 = run_startdate
 
         stop_n2 = stop_n - stop_n1
-        rest_n2 = stop_n2 / 2 + 1
+        rest_n2 = int(stop_n2 / 2 + 1)
         hist_n  = stop_n2
 
         start_1_year, start_1_month, start_1_day = [int(item) for item in start_1.split("-")]
@@ -65,7 +65,7 @@ class ERI(SystemTestsCommon):
         start_2 = "{:04d}-{:02d}-{:02d}".format(start_2_year, start_1_month, start_1_day)
 
         stop_n3 = stop_n2 - rest_n2
-        rest_n3 = stop_n3 / 2 + 1
+        rest_n3 = int(stop_n3 / 2 + 1)
 
         stop_n4 = stop_n3 - rest_n3
 

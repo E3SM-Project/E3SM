@@ -32,7 +32,7 @@ module drof_shr_mod
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
   character(CL) , public :: rest_file_strm        ! restart filename for streams
-  character(CL) , public :: rof_mode              ! mode
+  character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -122,17 +122,17 @@ CONTAINS
 
     call shr_strdata_readnml(SDROF,trim(filename),mpicom=mpicom)
 
-    rof_mode = trim(SDROF%dataMode)
+    datamode = trim(SDROF%dataMode)
 
     ! Validate mode
 
-    if (trim(rof_mode) == 'NULL' .or. &
-        trim(rof_mode) == 'COPYALL') then
+    if (trim(datamode) == 'NULL' .or. &
+        trim(datamode) == 'COPYALL') then
         if (my_task == master_task) then
-           write(logunit,F00) 'rof mode = ',trim(rof_mode)
+           write(logunit,F00) 'drof datamode = ',trim(datamode)
         end if
     else
-      write(logunit,F00) ' ERROR illegal rof mode = ',trim(rof_mode)
+      write(logunit,F00) ' ERROR illegal drof datamode = ',trim(datamode)
       call shr_sys_abort()
    end if
 
@@ -148,7 +148,7 @@ CONTAINS
        rof_present    = .true.
        rof_prognostic = .true.
     endif
-    if (trim(rof_mode) /= 'NULL') then
+    if (trim(datamode) /= 'NULL') then
        rof_present = .true.
        rofice_present = .true.
     end if

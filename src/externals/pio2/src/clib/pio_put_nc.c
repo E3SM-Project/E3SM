@@ -30,6 +30,7 @@
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_text(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                        const PIO_Offset *stride, const char *op)
@@ -56,6 +57,7 @@ int PIOc_put_vars_text(int ncid, int varid, const PIO_Offset *start, const PIO_O
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_uchar(int ncid, int varid, const PIO_Offset *start,
                         const PIO_Offset *count, const PIO_Offset *stride,
@@ -83,6 +85,7 @@ int PIOc_put_vars_uchar(int ncid, int varid, const PIO_Offset *start,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                         const PIO_Offset *stride, const signed char *op)
@@ -110,6 +113,7 @@ int PIOc_put_vars_schar(int ncid, int varid, const PIO_Offset *start, const PIO_
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_ushort(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                          const PIO_Offset *stride, const unsigned short *op)
@@ -136,6 +140,7 @@ int PIOc_put_vars_ushort(int ncid, int varid, const PIO_Offset *start, const PIO
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_short(int ncid, int varid, const PIO_Offset *start,
                         const PIO_Offset *count, const PIO_Offset *stride, const short *op)
@@ -163,6 +168,7 @@ int PIOc_put_vars_short(int ncid, int varid, const PIO_Offset *start,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_uint(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                        const PIO_Offset *stride, const unsigned int *op)
@@ -189,6 +195,7 @@ int PIOc_put_vars_uint(int ncid, int varid, const PIO_Offset *start, const PIO_O
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_int(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                       const PIO_Offset *stride, const int *op)
@@ -215,6 +222,7 @@ int PIOc_put_vars_int(int ncid, int varid, const PIO_Offset *start, const PIO_Of
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_long(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                        const PIO_Offset *stride, const long *op)
@@ -241,6 +249,7 @@ int PIOc_put_vars_long(int ncid, int varid, const PIO_Offset *start, const PIO_O
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_float(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                         const PIO_Offset *stride, const float *op)
@@ -268,6 +277,7 @@ int PIOc_put_vars_float(int ncid, int varid, const PIO_Offset *start, const PIO_
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                            const PIO_Offset *stride, const long long *op)
@@ -295,6 +305,7 @@ int PIOc_put_vars_longlong(int ncid, int varid, const PIO_Offset *start, const P
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                          const PIO_Offset *stride, const double *op)
@@ -322,6 +333,7 @@ int PIOc_put_vars_double(int ncid, int varid, const PIO_Offset *start, const PIO
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars_ulonglong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                             const PIO_Offset *stride, const unsigned long long *op)
@@ -342,6 +354,7 @@ int PIOc_put_vars_ulonglong(int ncid, int varid, const PIO_Offset *start, const 
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_text(int ncid, int varid, const PIO_Offset *index, const char *op)
 {
@@ -361,6 +374,7 @@ int PIOc_put_var1_text(int ncid, int varid, const PIO_Offset *index, const char 
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_uchar(int ncid, int varid, const PIO_Offset *index,
                         const unsigned char *op)
@@ -381,6 +395,7 @@ int PIOc_put_var1_uchar(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_schar(int ncid, int varid, const PIO_Offset *index,
                         const signed char *op)
@@ -401,6 +416,7 @@ int PIOc_put_var1_schar(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_ushort(int ncid, int varid, const PIO_Offset *index,
                          const unsigned short *op)
@@ -421,6 +437,7 @@ int PIOc_put_var1_ushort(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_short(int ncid, int varid, const PIO_Offset *index,
                         const short *op)
@@ -441,6 +458,7 @@ int PIOc_put_var1_short(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_uint(int ncid, int varid, const PIO_Offset *index,
                        const unsigned int *op)
@@ -461,6 +479,7 @@ int PIOc_put_var1_uint(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_int(int ncid, int varid, const PIO_Offset *index, const int *op)
 {
@@ -480,6 +499,7 @@ int PIOc_put_var1_int(int ncid, int varid, const PIO_Offset *index, const int *o
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_float(int ncid, int varid, const PIO_Offset *index, const float *op)
 {
@@ -499,6 +519,7 @@ int PIOc_put_var1_float(int ncid, int varid, const PIO_Offset *index, const floa
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_long(int ncid, int varid, const PIO_Offset *index, const long *op)
 {
@@ -518,6 +539,7 @@ int PIOc_put_var1_long(int ncid, int varid, const PIO_Offset *index, const long 
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_double(int ncid, int varid, const PIO_Offset *index,
                          const double *op)
@@ -538,6 +560,7 @@ int PIOc_put_var1_double(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_ulonglong(int ncid, int varid, const PIO_Offset *index,
                             const unsigned long long *op)
@@ -558,6 +581,7 @@ int PIOc_put_var1_ulonglong(int ncid, int varid, const PIO_Offset *index,
  * used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1_longlong(int ncid, int varid, const PIO_Offset *index,
                            const long long *op)
@@ -581,6 +605,7 @@ int PIOc_put_var1_longlong(int ncid, int varid, const PIO_Offset *index,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_text(int ncid, int varid, const PIO_Offset *start,
                        const PIO_Offset *count, const char *op)
@@ -604,6 +629,7 @@ int PIOc_put_vara_text(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_uchar(int ncid, int varid, const PIO_Offset *start,
                         const PIO_Offset *count, const unsigned char *op)
@@ -627,6 +653,7 @@ int PIOc_put_vara_uchar(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_schar(int ncid, int varid, const PIO_Offset *start,
                         const PIO_Offset *count, const signed char *op)
@@ -650,6 +677,7 @@ int PIOc_put_vara_schar(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_ushort(int ncid, int varid, const PIO_Offset *start,
                          const PIO_Offset *count, const unsigned short *op)
@@ -673,6 +701,7 @@ int PIOc_put_vara_ushort(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_short(int ncid, int varid, const PIO_Offset *start,
                         const PIO_Offset *count, const short *op)
@@ -696,6 +725,7 @@ int PIOc_put_vara_short(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_uint(int ncid, int varid, const PIO_Offset *start,
                        const PIO_Offset *count, const unsigned int *op)
@@ -719,6 +749,7 @@ int PIOc_put_vara_uint(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_int(int ncid, int varid, const PIO_Offset *start,
                       const PIO_Offset *count, const int *op)
@@ -742,6 +773,7 @@ int PIOc_put_vara_int(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_long(int ncid, int varid, const PIO_Offset *start,
                        const PIO_Offset *count, const long *op)
@@ -765,6 +797,7 @@ int PIOc_put_vara_long(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_float(int ncid, int varid, const PIO_Offset *start,
                         const PIO_Offset *count, const float *op)
@@ -788,6 +821,7 @@ int PIOc_put_vara_float(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_ulonglong(int ncid, int varid, const PIO_Offset *start,
                             const PIO_Offset *count, const unsigned long long *op)
@@ -811,6 +845,7 @@ int PIOc_put_vara_ulonglong(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_longlong(int ncid, int varid, const PIO_Offset *start,
                            const PIO_Offset *count, const long long *op)
@@ -834,6 +869,7 @@ int PIOc_put_vara_longlong(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara_double(int ncid, int varid, const PIO_Offset *start,
                          const PIO_Offset *count, const double *op)
@@ -857,6 +893,7 @@ int PIOc_put_vara_double(int ncid, int varid, const PIO_Offset *start,
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_text(int ncid, int varid, const char *op)
 {
@@ -879,6 +916,7 @@ int PIOc_put_var_text(int ncid, int varid, const char *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_uchar(int ncid, int varid, const unsigned char *op)
 {
@@ -901,6 +939,7 @@ int PIOc_put_var_uchar(int ncid, int varid, const unsigned char *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_schar(int ncid, int varid, const signed char *op)
 {
@@ -923,6 +962,7 @@ int PIOc_put_var_schar(int ncid, int varid, const signed char *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_ushort(int ncid, int varid, const unsigned short *op)
 {
@@ -945,6 +985,7 @@ int PIOc_put_var_ushort(int ncid, int varid, const unsigned short *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_short(int ncid, int varid, const short *op)
 {
@@ -967,6 +1008,7 @@ int PIOc_put_var_short(int ncid, int varid, const short *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_uint(int ncid, int varid, const unsigned int *op)
 {
@@ -989,6 +1031,7 @@ int PIOc_put_var_uint(int ncid, int varid, const unsigned int *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_int(int ncid, int varid, const int *op)
 {
@@ -1011,6 +1054,7 @@ int PIOc_put_var_int(int ncid, int varid, const int *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_long(int ncid, int varid, const long *op)
 {
@@ -1033,6 +1077,7 @@ int PIOc_put_var_long(int ncid, int varid, const long *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_float(int ncid, int varid, const float *op)
 {
@@ -1055,6 +1100,7 @@ int PIOc_put_var_float(int ncid, int varid, const float *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_ulonglong(int ncid, int varid, const unsigned long long *op)
 {
@@ -1077,6 +1123,7 @@ int PIOc_put_var_ulonglong(int ncid, int varid, const unsigned long long *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_longlong(int ncid, int varid, const long long *op)
 {
@@ -1099,6 +1146,7 @@ int PIOc_put_var_longlong(int ncid, int varid, const long long *op)
  * the variable will be used.
  * @param op pointer to the data to be written.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var_double(int ncid, int varid, const double *op)
 {
@@ -1115,6 +1163,7 @@ int PIOc_put_var_double(int ncid, int varid, const double *op)
  * @param varid the variable ID number
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var(int ncid, int varid, const void *op)
 {
@@ -1134,6 +1183,7 @@ int PIOc_put_var(int ncid, int varid, const void *op)
  * used.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_var1(int ncid, int varid, const PIO_Offset *index, const void *op)
 {
@@ -1156,6 +1206,7 @@ int PIOc_put_var1(int ncid, int varid, const PIO_Offset *index, const void *op)
  * the variable will be used.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                   const void *op)
@@ -1182,6 +1233,7 @@ int PIOc_put_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
  * used.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
  */
 int PIOc_put_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
                   const PIO_Offset *stride, const void *op)

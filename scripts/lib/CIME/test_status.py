@@ -132,7 +132,7 @@ class TestStatus(object):
         self.flush()
 
     def __iter__(self):
-        for phase, data in self._phase_statuses.iteritems():
+        for phase, data in self._phase_statuses.items():
             yield phase, data[0]
 
     def get_name(self):
@@ -192,7 +192,7 @@ class TestStatus(object):
                 if subsequent_phase in self._phase_statuses:
                     del self._phase_statuses[subsequent_phase]
                 if subsequent_phase.startswith(COMPARE_PHASE):
-                    for stored_phase in self._phase_statuses.keys():
+                    for stored_phase in list(self._phase_statuses.keys()):
                         if stored_phase.startswith(COMPARE_PHASE):
                             del self._phase_statuses[stored_phase]
 
@@ -215,7 +215,7 @@ class TestStatus(object):
         """
         result = ""
         if self._phase_statuses:
-            for phase, data in self._phase_statuses.iteritems():
+            for phase, data in self._phase_statuses.items():
                 status, comments = data
                 if not comments:
                     result += "{}{} {} {}\n".format(prefix, status, self._test_name, phase)
@@ -314,7 +314,7 @@ class TestStatus(object):
         """
         rv = TEST_PASS_STATUS
         run_phase_found = False
-        for phase, data in self._phase_statuses.iteritems():
+        for phase, data in self._phase_statuses.items():
             status = data[0]
             if phase == RUN_PHASE:
                 run_phase_found = True
