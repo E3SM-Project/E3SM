@@ -68,8 +68,8 @@ profile_single_file		= .true.
 ! interp_nlon = 1024
  interp_gridtype=2
  
- output_timeunits=1,1
- output_frequency=1,1
+ output_timeunits=2,2
+ output_frequency=2,2
  output_start_time=0,0
  output_end_time=30000,30000
  output_varnames1='ps','zeta','dp3d'

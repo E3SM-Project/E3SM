@@ -2,7 +2,7 @@
 program diff
   use netcdf, only: nf90_open, nf90_inq_varid, nf90_get_var, NF90_NOWRITE, NF90_NOERR, nf90_strerror, nf90_close
   implicit none
-  integer, parameter :: nlev = 64, ntime = 2
+  integer, parameter :: nlev = 72, ntime = 5
   integer            :: nlon = 128, nlat = 64
   integer :: c_ncid, g_ncid, c_varid, g_varid
   double precision, dimension(:,:,:), allocatable :: c_dat, g_dat, res, nrm
@@ -21,7 +21,10 @@ program diff
   if (command_argument_count().ge.3) call get_command_argument(3,g_fname)
   if (command_argument_count().ge.4) call get_command_argument(4,opref)
 
-  if     (trim(grid) == 'ne8'  ) then
+  if     (trim(grid) == 'ne4'  ) then
+    nlon = 96
+    nlat = 48
+  elseif (trim(grid) == 'ne8'  ) then
     nlon = 128
     nlat = 64
   elseif (trim(grid) == 'ne15' ) then
