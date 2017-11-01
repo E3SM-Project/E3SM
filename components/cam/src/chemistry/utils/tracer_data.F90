@@ -43,7 +43,8 @@ module tracer_data
   public :: read_trc_restart
   public :: init_trc_restart
   public :: incr_filename
-
+  public :: open_trc_datafile, specify_fields, get_dimension
+  public :: LATDIM, LEVDIM, TIMDIM
 
   ! !PUBLIC MEMBERS
 
