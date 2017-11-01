@@ -79,17 +79,8 @@ module ocn_comp_mct
 !
 ! !PRIVATE MODULE VARIABLES
 
-  logical :: ldiag_cpl = .false.
-
   integer, private ::   &
-      cpl_write_restart,   &! flag id for write restart
-      cpl_write_history,   &! flag id for write history
-      cpl_write_tavg,      &! flag id for write tavg      
-      cpl_diag_global,     &! flag id for computing diagnostics
-      cpl_diag_transp,     &! flag id for computing diagnostics
       my_task
-
-   real (kind=RKIND) :: tlast_coupled
 
    integer  :: nsend, nrecv
 
