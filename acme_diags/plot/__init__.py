@@ -5,6 +5,7 @@ from __future__ import print_function, absolute_import
 import os
 import sys
 import importlib
+import traceback
 import numpy
 from matplotlib.colors import LinearSegmentedColormap
 from vcs.colors import matplotlib2vcs
@@ -22,12 +23,11 @@ def _get_plot_fcn(backend, set_num):
         module = importlib.import_module(mod_str)
         return module.plot
 
-    except ImportError as e:
-        print(e)
+    except ImportError:
         print(
             'Plotting for set {} with {} is not supported'.format(
                 set_num, backend))
-
+        traceback.print_exc()
 
 def plot(set_num, ref, test, diff, metrics_dict, parameter):
     """Based on set_num and parameter.backend,
@@ -43,7 +43,8 @@ def plot(set_num, ref, test, diff, metrics_dict, parameter):
         try:
             plot_fcn(ref, test, diff, metrics_dict, parameter)
         except Exception as e:
-            print('Exception {} while plotting {} with backend {}'.format(e, set_num, parameter.backend))
+            print('Error while plotting {} with backend {}'.format(set_num, parameter.backend))
+            traceback.print_exc()
             if parameter.debug:
                 sys.exit()
 
