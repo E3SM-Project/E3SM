@@ -57,7 +57,7 @@
     <xs:complexType>
       <xs:simpleContent>
         <xs:extension base="xs:NMTOKEN">
-          <xs:attribute name="component" use="required" type="xs:NCName"/>
+          <xs:attribute name="compclass" use="required" type="xs:NCName"/>
         </xs:extension>
       </xs:simpleContent>
     </xs:complexType>

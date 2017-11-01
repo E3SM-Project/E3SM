@@ -55,8 +55,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.debug("DOCN mode is %s", docn_mode)
-    logger.debug("DOCN grid is %s", ocn_grid)
+    logger.debug("DOCN mode is {}".format(docn_mode))
+    logger.debug("DOCN grid is {}".format(ocn_grid))
 
     #----------------------------------------------------
     # Clear out old data.
@@ -95,7 +95,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
             continue
 
         inst_stream = stream + inst_string
-        logger.debug("DOCN stream is %s", inst_stream)
+        logger.debug("DOCN stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "docn.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(),
                                         "user_docn.streams.txt." + inst_stream)
@@ -125,6 +125,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     if ocn_domain_file != "UNSET":
         full_domain_path = os.path.join(ocn_domain_path, ocn_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
+    else:
+        if "aqua" in docn_mode:
+            expect( ocn_domain_file != "UNSET",
+                    "in aquaplanet mode the xml variable OCN_DOMAIN_FILE cannot be equal to UNSET ")
+        else:
+            nmlgen.add_default("domainfile", value='null')
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
@@ -154,7 +160,7 @@ def buildnml(case, caseroot, compname):
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
     expect (os.path.isdir(user_xml_dir),
-            "user_xml_dir %s does not exist " %user_xml_dir)
+            "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
     files = Files()
@@ -164,7 +170,7 @@ def buildnml(case, caseroot, compname):
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
     for file_ in definition_file:
-        expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
+        expect(os.path.isfile(file_), "Namelist XML file {} not found!".format(file_))
 
     # Create the namelist generator object - independent of instance
     nmlgen = NamelistGenerator(case, definition_file, files=files)
@@ -176,7 +182,7 @@ def buildnml(case, caseroot, compname):
         # determine instance string
         inst_string = ""
         if ninst > 1:
-            inst_string = '_' + '%04d' % inst_counter
+            inst_string = '_' + "{:04d}".format(inst_counter)
 
         # If multi-instance case does not have restart file, use
         # single-case restart for each instance
@@ -193,7 +199,7 @@ def buildnml(case, caseroot, compname):
         # create namelist output infile using user_nl_file as input
         user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
         expect(os.path.isfile(user_nl_file),
-               "Missing required user_nl_file %s " %(user_nl_file))
+               "Missing required user_nl_file {} ".format(user_nl_file))
         infile = os.path.join(confdir, "namelist_infile")
         create_namelist_infile(case, user_nl_file, infile)
         namelist_infile = [infile]

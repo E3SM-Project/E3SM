@@ -722,6 +722,14 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="homebrew" COMPILER="gnu">
+  <LDFLAGS>
+    <!-- These LDFLAGS provide lapack and blas support on a Mac. This
+         may require installation of the Apple Developer Tools. -->
+    <append> -framework Accelerate </append>
+  </LDFLAGS>
+</compiler>
+
 <compiler MACH="juqueen" COMPILER="ibm">
   <MPICC> mpixlc_r </MPICC>
   <MPIFC> mpixlf2003_r </MPIFC>
@@ -1068,6 +1076,38 @@ using a fortran linker.
   </SLIBS>
   <SCC MPILIB="mpi-serial">pgcc</SCC>
   <SFC MPILIB="mpi-serial">pgfortran</SFC>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lbl-lr3">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl </append>
+  </SLIBS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </CFLAGS> 
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lbl-lr2">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl </append>
+  </SLIBS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </CFLAGS> 
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
 </compiler>
 
 </config_compilers>

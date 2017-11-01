@@ -67,7 +67,7 @@ If we have 2 io tasks the Box rearranger would give:
 While the subset rearranger would give:
 <pre>
 0: { 0  1  4  5  8  9  12 16 }
-1: { 2  3  6  7  10 11 13 14 17 18 19 }
+1: { 2  3  6  7  10 11 13 14 15 17 18 19 }
 </pre>
 
 Note that while the box rearranger gives a data layout which is well

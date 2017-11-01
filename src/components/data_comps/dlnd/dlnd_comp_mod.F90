@@ -22,7 +22,7 @@ module dlnd_comp_mod
   use seq_timemgr_mod   , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
   use glc_elevclass_mod , only: glc_get_num_elevation_classes, glc_elevclass_as_string
 
-  use dlnd_shr_mod   , only: lnd_mode       ! namelist input
+  use dlnd_shr_mod   , only: datamode       ! namelist input
   use dlnd_shr_mod   , only: decomp         ! namelist input
   use dlnd_shr_mod   , only: rest_file      ! namelist input
   use dlnd_shr_mod   , only: rest_file_strm ! namelist input
@@ -211,12 +211,12 @@ CONTAINS
     call shr_sys_flush(logunit)
 
     ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
+    ! NOTE: gsmap is initialized using the decomp read in from the dlnd_in namelist
     ! (which by default is "1d")
     call shr_dmodel_gsmapcreate(gsmap,SDLND%nxg*SDLND%nyg,compid,mpicom,decomp)
     lsize = mct_gsmap_lsize(gsmap,mpicom)
 
-    ! create a rearranger from the data model SDOCN%gsmap to gsmap
+    ! create a rearranger from the data model DLND%gsmap to gsmap
     call mct_rearr_init(SDLND%gsmap, gsmap, mpicom, rearr)
 
     call t_stopf('dlnd_initgsmaps')
@@ -384,6 +384,19 @@ CONTAINS
     call t_stopf('dlnd_scatter')
 
     call t_stopf('dlnd')
+
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('dlnd_datamode')
+    select case (trim(datamode))
+
+    case('COPYALL')
+       ! do nothing extra
+
+    end select
+    call t_stopf('dlnd_datamode')
 
     !--------------------
     ! Write restart

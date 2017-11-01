@@ -38,8 +38,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
-    atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
     datm_mode = case.get_value("DATM_MODE")
     datm_topo = case.get_value("DATM_TOPO")
     datm_presaero = case.get_value("DATM_PRESAERO")
@@ -62,10 +60,10 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.debug("DATM mode is %s", datm_mode)
-    logger.debug("DATM grid is %s", atm_grid)
-    logger.debug("DATM presaero mode is %s", datm_presaero)
-    logger.debug("DATM topo mode is %s", datm_topo)
+    logger.debug("DATM mode is {}".format(datm_mode))
+    logger.debug("DATM grid is {}".format(atm_grid))
+    logger.debug("DATM presaero mode is {}".format(datm_presaero))
+    logger.debug("DATM topo mode is {}".format(datm_topo))
 
     #----------------------------------------------------
     # Clear out old data.
@@ -101,13 +99,13 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #
     #pylint: disable=no-member
     if datm_presaero != "none":
-        streams.append("presaero.%s" % datm_presaero)
+        streams.append("presaero.{}".format(datm_presaero))
 
     if datm_topo != "none":
-        streams.append("topo.%s" % datm_topo)
+        streams.append("topo.{}".format(datm_topo))
 
     if datm_co2_tseries != "none":
-        streams.append("co2tseries.%s" % datm_co2_tseries)
+        streams.append("co2tseries.{}".format(datm_co2_tseries))
 
     # Add bias correction stream if given in namelist.
     bias_correct = nmlgen.get_value("bias_correct")
@@ -128,7 +126,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
             continue
 
         inst_stream = stream + inst_string
-        logger.debug("DATM stream is %s", inst_stream)
+        logger.debug("DATM stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "datm.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(), "user_datm.streams.txt." + inst_stream)
 
@@ -146,16 +144,22 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # set variables that are not per-stream
-    if datm_mode == 'CPLHISTForcingForOcnIce':
+    # Determine model domain filename (in datm_in)
+    if "CPLHIST" in datm_mode:
+        datm_cplhist_domain_file = case.get_value("DATM_CPLHIST_DOMAIN_FILE")
+        if datm_cplhist_domain_file == 'null':
+            logger.info("   ....  Obtaining DATM model domain info from first stream file: {}".format(streams[0]))
+        else:
+            logger.info("   ....  Obtaining DATM model domain info from stream {}".format(streams[0]))
+        nmlgen.add_default("domainfile", value=datm_cplhist_domain_file)
+    else:
+        atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
+        atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
         if atm_domain_file != "UNSET":
-            if case.get_value('ATM_DOMAIN_FILE') != 'UNSET':
-                nmlgen.add_default("domainfile", value=atm_domain_file, ignore_abs_path=True)
+            full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
+            nmlgen.add_default("domainfile", value=full_domain_path)
         else:
             nmlgen.add_default("domainfile", value='null')
-    else:
-        full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
@@ -185,7 +189,7 @@ def buildnml(case, caseroot, compname):
     # Determine directory for user modified namelist_definitions.xml and namelist_defaults.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
     expect (os.path.isdir(user_xml_dir),
-            "user_xml_dir %s does not exist " %user_xml_dir)
+            "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
     files = Files()
@@ -195,7 +199,7 @@ def buildnml(case, caseroot, compname):
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
     for file_ in definition_file:
-        expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
+        expect(os.path.isfile(file_), "Namelist XML file {} not found!".format(file_))
 
     # Create the namelist generator object - independent of instance
     nmlgen = NamelistGenerator(case, definition_file, files=files)
@@ -207,7 +211,7 @@ def buildnml(case, caseroot, compname):
         # determine instance string
         inst_string = ""
         if ninst > 1:
-            inst_string = '_' + '%04d' % inst_counter
+            inst_string = '_' + '{:04d}'.format(inst_counter)
 
         # If multi-instance case does not have restart file, use
         # single-case restart for each instance
@@ -224,7 +228,7 @@ def buildnml(case, caseroot, compname):
         # create namelist output infile using user_nl_file as input
         user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
         expect(os.path.isfile(user_nl_file),
-               "Missing required user_nl_file %s " %(user_nl_file))
+               "Missing required user_nl_file {} ".format(user_nl_file))
         infile = os.path.join(confdir, "namelist_infile")
         create_namelist_infile(case, user_nl_file, infile)
         namelist_infile = [infile]
