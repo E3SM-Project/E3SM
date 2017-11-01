@@ -32,3 +32,22 @@ class Tests(GenericXML):
         node = self.get_node("test",{"NAME":testname})
         logger.debug("Found {}".format(node.text))
         return node
+
+    def print_values(self, skip_infrastructure_tests=True):
+        """
+        Print each test type and its description.
+
+        If skip_infrastructure_tests is True, then this does not write
+        information for tests with the attribute
+        INFRASTRUCTURE_TEST="TRUE".
+        """
+        all_tests = self.get_nodes(nodename="test")
+        for one_test in all_tests:
+            if skip_infrastructure_tests:
+                infrastructure_test = one_test.get("INFRASTRUCTURE_TEST")
+                if (infrastructure_test is not None and
+                    infrastructure_test.upper() == "TRUE"):
+                    continue
+            name = one_test.get("NAME")
+            desc = one_test.find("DESC").text
+            print("{}: {}".format(name, desc))

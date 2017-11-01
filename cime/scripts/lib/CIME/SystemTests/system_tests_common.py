@@ -13,7 +13,7 @@ from CIME.hist_utils import *
 
 import CIME.build as build
 
-import shutil, glob, gzip, time, traceback
+import shutil, glob, gzip, time, traceback, six
 
 logger = logging.getLogger(__name__)
 
@@ -88,16 +88,15 @@ class SystemTestsCommon(object):
                 try:
                     self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
-                except:
+                except BaseException as e:
                     success = False
-                    msg = sys.exc_info()[1].message
-
+                    msg = e.__str__()
                     if "BUILD FAIL" in msg:
                         # Don't want to print stacktrace for a model failure since that
                         # is not a CIME/infrastructure problem.
                         excmsg = msg
                     else:
-                        excmsg = "Exception during build:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
+                        excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
 
                     logger.warning(excmsg)
                     append_testlog(excmsg)
@@ -155,15 +154,15 @@ class SystemTestsCommon(object):
 
             self._check_for_memleak()
 
-        except:
+        except BaseException as e:
             success = False
-            msg = sys.exc_info()[1].message
+            msg = e.__str__()
             if "RUN FAIL" in msg:
                 # Don't want to print stacktrace for a model failure since that
                 # is not a CIME/infrastructure problem.
                 excmsg = msg
             else:
-                excmsg = "Exception during run:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
+                excmsg = "Exception during run:\n{}\n{}".format(msg, traceback.format_exc())
             logger.warning(excmsg)
             append_testlog(excmsg)
 
@@ -241,10 +240,12 @@ class SystemTestsCommon(object):
         allgood = len(newestcpllogfiles)
         for cpllog in newestcpllogfiles:
             try:
-                if "SUCCESSFUL TERMINATION" in gzip.open(cpllog, 'rb').read():
+                if six.b("SUCCESSFUL TERMINATION") in gzip.open(cpllog, 'rb').read():
                     allgood = allgood - 1
-            except:
-                logger.info("{} is not compressed, assuming run failed".format(cpllog))
+            except BaseException as e:
+                msg = e.__str__()
+                    
+                logger.info("{} is not compressed, assuming run failed {}".format(cpllog, msg))
 
         return allgood==0
 
@@ -282,7 +283,7 @@ class SystemTestsCommon(object):
                 fopen = open
             with fopen(cpllog, "rb") as f:
                 for line in f:
-                    m = meminfo.match(line)
+                    m = meminfo.match(line.decode('utf-8'))
                     if m:
                         memlist.append((float(m.group(1)), float(m.group(2))))
         # Remove the last mem record, it's sometimes artificially high
@@ -297,7 +298,7 @@ class SystemTestsCommon(object):
         """
         if cpllog is not None and os.path.isfile(cpllog):
             with gzip.open(cpllog, "rb") as f:
-                cpltext = f.read()
+                cpltext = f.read().decode('utf-8')
                 m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext)
                 if m:
                     return float(m.group(1))
@@ -346,7 +347,7 @@ class SystemTestsCommon(object):
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:
-                logging.warn("  Resetting {} for test".format(key))
+                logging.warning("  Resetting {} for test".format(key))
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
                 print("WARNING: Found difference in test {}: case: {} original value {}".format(key, diffs[key][0], diffs[key][1]))
@@ -389,7 +390,8 @@ class SystemTestsCommon(object):
 
             # compare memory usage to baseline
             newestcpllogfiles = self._get_latest_cpl_logs()
-            memlist = self._get_mem_usage(newestcpllogfiles[0])
+            if len(newestcpllogfiles) > 0:
+                memlist = self._get_mem_usage(newestcpllogfiles[0])
             for cpllog in newestcpllogfiles:
                 m = re.search(r"/(cpl.*.log).*.gz",cpllog)
                 if m is not None:
@@ -468,7 +470,7 @@ class FakeTest(SystemTestsCommon):
                 f.write("#!/bin/bash\n")
                 f.write(self._script)
 
-            os.chmod(modelexe, 0755)
+            os.chmod(modelexe, 0o755)
 
             build.post_build(self._case, [])
 

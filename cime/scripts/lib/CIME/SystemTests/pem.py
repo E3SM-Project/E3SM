@@ -1,11 +1,11 @@
 """
-CIME PEM test.  This class inherits from SystemTestsCommon
+Implementation of the CIME PEM test: Tests bfb with different MPI
+processor counts
 
-This is a  modified pe counts mpi bfb test
 This is just like running a smoke test twice - but the pe-counts
-count are modified the second time.
-(1) Do an initial run with pes set up out of the box (suffix base)
-(2) Do an initial run with half the number of tasks (suffix modpes)
+are modified the second time.
+(1) Run with pes set up out of the box (suffix base)
+(2) Run with half the number of tasks (suffix modpes)
 """
 
 from CIME.XML.standard_module_setup import *
@@ -17,10 +17,11 @@ logger = logging.getLogger(__name__)
 class PEM(SystemTestsCompareTwo):
 
     def __init__(self, case):
-        """
-        initialize a test object
-        """
-        SystemTestsCompareTwo.__init__(self, case, True)
+        SystemTestsCompareTwo.__init__(self, case,
+                                       separate_builds = True,
+                                       run_two_suffix = 'modpes',
+                                       run_one_description = 'default pe counts',
+                                       run_two_description = 'halved pe counts')
 
     def _case_one_setup(self):
         pass

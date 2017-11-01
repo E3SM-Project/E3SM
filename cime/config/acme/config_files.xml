@@ -124,7 +124,7 @@
     <type>char</type>
     <values>
       <value>$CIMEROOT/config/acme/config_archive.xml</value>
-      <value component="cpl"      >$CIMEROOT/src/drivers/mct/cime_config/config_archive.xml</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/config_archive.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/config_archive.xml</value>
