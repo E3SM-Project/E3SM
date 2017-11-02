@@ -54,7 +54,7 @@ contains
     integer, parameter :: kchunk = 64
     call t_startf('edge_s_pack')
     if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
-    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk)
+    !$acc parallel loop gang collapse(2)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector
@@ -101,7 +101,7 @@ contains
     integer, parameter :: kchunk = 64
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_min')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
+    !$acc parallel loop gang collapse(2) private(vtmp) vector_length(kchunk)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -160,7 +160,7 @@ contains
     integer, parameter :: kchunk = 64
     real(kind=real_kind) :: vtmp(kchunk)
     call t_startf('edge_s_unpack_max')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
+    !$acc parallel loop gang collapse(2) private(vtmp) vector_length(kchunk)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -220,7 +220,7 @@ contains
     integer, parameter :: kchunk = 32
     call t_startf('edge_pack')
     if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
-    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np)
+    !$acc parallel loop gang collapse(2) vector_length(kchunk*np)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector collapse(2)
@@ -282,7 +282,7 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
+    !$acc parallel loop gang collapse(2) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -359,7 +359,7 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack_min')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
+    !$acc parallel loop gang collapse(2) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -436,7 +436,7 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack_max')
-    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
+    !$acc parallel loop gang collapse(2) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -497,4 +497,3 @@ contains
   end subroutine edgeVunpackMax_openacc
 
 end module edge_mod
-

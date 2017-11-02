@@ -55,7 +55,7 @@ contains
     ! local
     integer :: k,kptr,i,j,ie,ic,q
     logical :: var_coef1
-    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad)
     !so tensor is only used on second call to laplace_sphere_wk
     var_coef1 = .true.
     if(hypervis_scaling > 0) var_coef1 = .false.
@@ -70,15 +70,15 @@ contains
     call t_startf('biwksc_exch')
     call bndry_exchangeV(hybrid,edgeq)
     call t_stopf('biwksc_exch')
-    
+
     !$omp barrier
     !$omp master
     call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
     call t_stopf('biwksc_PEU')
-    !$acc parallel loop gang vector collapse(5) present(qtens,elem(:))
+    !$acc parallel loop gang vector collapse(5)
     do ie = nets , nete
       ! apply inverse mass matrix, then apply laplace again
-      do q = 1 , qsize      
+      do q = 1 , qsize
         do k = 1 , nlev    !  Potential loop inversion (AAM)
           do j = 1 , np
             do i = 1 , np
@@ -122,7 +122,7 @@ contains
     call t_startf('nmm_exch')
     call bndry_exchangeS(hybrid,edgeMinMax)
     call t_stopf('nmm_exch')
-       
+
     !$omp barrier
     !$omp master
     call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
@@ -133,4 +133,3 @@ contains
   end subroutine neighbor_minmax_openacc
 
 end module viscosity_mod
-

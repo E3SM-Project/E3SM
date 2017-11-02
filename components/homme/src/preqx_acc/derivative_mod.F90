@@ -14,7 +14,7 @@ module derivative_mod
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod, only : abortmp
   ! needed for spherical differential operators:
-  use physical_constants, only : rrearth 
+  use physical_constants, only : rrearth
   use element_mod, only : element_t
   use control_mod, only : hypervis_scaling, hypervis_power
   implicit none
@@ -50,7 +50,7 @@ contains
     ! Local
     real(kind=real_kind) :: oldgrads(2)
     call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl,tl)
-    !$acc parallel loop gang vector collapse(4) present(grads,elem(:)) private(oldgrads)
+    !$acc parallel loop gang vector collapse(4) private(oldgrads)
     do ie = nets , nete
       do k = 1 , len
         do j = 1 , np
@@ -71,7 +71,7 @@ contains
       enddo
     enddo
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
-    ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().  
+    ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().
     call divergence_sphere_wk_openacc(grads,deriv,elem(:),laplace,len,nets,nete,ntl,tl)
   end subroutine laplace_sphere_wk_openacc
 
@@ -81,9 +81,9 @@ contains
     implicit none
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  div(v)  spherical divergence of v, integrated by parts
-!   Computes  -< grad(psi) dot v > 
+!   Computes  -< grad(psi) dot v >
 !   (the integrated by parts version of < psi div(v) > )
-!   note: after DSS, divergence_sphere () and divergence_sphere_wk() 
+!   note: after DSS, divergence_sphere () and divergence_sphere_wk()
 !   are identical to roundoff, as theory predicts.
     real(kind=real_kind), intent(in) :: v(np,np,2,len,ntl,nelemd)  ! in lat-lon coordinates
     type (derivative_t) , intent(in) :: deriv
@@ -96,7 +96,7 @@ contains
     integer :: i,j,l,k,ie,kc,kk
     real(kind=real_kind) :: vtemp(np,np,2,kchunk), tmp, deriv_tmp(np,np)
     ! latlon- > contra
-    !$acc parallel loop gang collapse(2) present(v,elem(:),div,deriv) private(vtemp,deriv_tmp)
+    !$acc parallel loop gang collapse(2) private(vtemp,deriv_tmp)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(vtemp,deriv_tmp)
@@ -148,7 +148,7 @@ contains
     integer :: i, j, l, k, ie, kc, kk
     real(kind=real_kind) :: dsdx00, dsdy00
     real(kind=real_kind) :: stmp(np,np,kchunk), deriv_tmp(np,np)
-    !$acc parallel loop gang collapse(2) present(ds,elem(:),s,deriv%Dvv) private(stmp,deriv_tmp)
+    !$acc parallel loop gang collapse(2) private(stmp,deriv_tmp)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(stmp,deriv_tmp)
@@ -201,7 +201,7 @@ contains
     integer :: i, j, l, k, ie, kc, kk
     real(kind=real_kind) ::  dudx00, dvdy00, gv(np,np,kchunk,2), deriv_tmp(np,np)
     ! convert to contra variant form and multiply by g
-    !$acc parallel loop gang collapse(2) private(gv,deriv_tmp) present(v,deriv,div,elem(:))
+    !$acc parallel loop gang collapse(2) private(gv,deriv_tmp)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(gv,deriv_tmp)
@@ -218,7 +218,7 @@ contains
             enddo
           enddo
         enddo
-        ! compute d/dx and d/dy         
+        ! compute d/dx and d/dy
         !$acc loop vector collapse(3) private(dudx00,dvdy00,k)
         do kk = 1 , kchunk
           do j = 1 , np
@@ -241,4 +241,3 @@ contains
   end subroutine divergence_sphere_openacc
 
 end module derivative_mod
-

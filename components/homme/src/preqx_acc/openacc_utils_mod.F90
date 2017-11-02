@@ -72,7 +72,7 @@ contains
     real(kind=real_kind), intent(in   ) :: src (len)
     integer             , intent(in   ) :: len
     integer :: i
-    !$acc parallel loop gang vector present(src,dest)
+    !$acc parallel loop gang vector
     do i = 1 , len
       dest(i) = src(i)
     enddo
@@ -98,11 +98,10 @@ contains
     real(kind=real_kind) :: src (len)
     integer              :: len, id
     integer :: i
-    !$acc parallel loop gang vector present(dest,src) async(id)
+    !$acc parallel loop gang vector async(id)
     do i = 1 , len
       dest(i) = src(i)
     enddo
   end subroutine copy_ondev_async
 
 end module openacc_utils_mod
-

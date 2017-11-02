@@ -44,7 +44,7 @@ make clean                                                          || exit -1
 fi
 
 if [ $do_make -eq 1 ]; then
-make -j24 preqx_acc preqx                                           || exit -1
+make -j24 preqx_acc                                                 || exit -1
 mkdir -p $HOMME_ROOT/build/preqx
 cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc  || exit -1
 cp ./src/preqx/preqx         $HOMME_ROOT/build/preqx/preqx.cpu      || exit -1
