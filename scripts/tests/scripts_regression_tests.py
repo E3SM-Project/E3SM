@@ -31,7 +31,7 @@ TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
 TEST_COMPILER = None
 GLOBAL_TIMEOUT = None
 TEST_MPILIB = None
-MACHINE     = Machines()
+MACHINE     = None
 FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
@@ -2466,9 +2466,10 @@ def _main_func():
         midx = sys.argv.index("--machine")
         mach_name = sys.argv[midx + 1]
         MACHINE = Machines(machine=mach_name)
-        os.environ["CIME_MACHINE"] = mach_name
         del sys.argv[midx + 1]
         del sys.argv[midx]
+    else:
+        MACHINE = Machines()
 
     if "--compiler" in sys.argv:
         global TEST_COMPILER
