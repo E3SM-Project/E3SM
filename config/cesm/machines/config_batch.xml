@@ -205,8 +205,8 @@
       <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="24:00:00" default="true">normal</queue>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="16">debug</queue>
+      <queue walltimemax="24:00:00">normal</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="16" default="true">debug</queue>
     </queues>
   </batch_system>
 
