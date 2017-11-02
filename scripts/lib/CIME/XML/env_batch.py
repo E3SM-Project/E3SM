@@ -71,16 +71,13 @@ class EnvBatch(EnvBase):
 
         value = None
         if subgroup is None:
-            nodes = self.get_nodes(item, attribute)
-            if len(nodes) == 1:
-                node = nodes[-1]
+            node = self.get_optional_node(item, attribute)
+            if node is not None:
                 value = node.text
                 if resolved:
                     value = self.get_resolved_value(value)
-            elif not nodes:
-                value = EnvBase.get_value(self,item,attribute,resolved)
             else:
-                expect(False, "Duplicate found in {}".format(item))
+                value = EnvBase.get_value(self,item,attribute,resolved)
         else:
             value = EnvBase.get_value(self, item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
