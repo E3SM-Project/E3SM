@@ -1326,10 +1326,10 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="!16">
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="!16">
       <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="16">
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="16">
       <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
 </machine>
@@ -1562,10 +1562,10 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="!16">
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="!16">
       <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" PES_PER_NODE="16">
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="16">
       <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
 </machine>
