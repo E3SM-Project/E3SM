@@ -140,8 +140,8 @@
   </compset>
 
   <compset>
-    <alias>F1850C5-DECK</alias>
-    <lname>1850_CAM5%DECK_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+    <alias>F1850C5-CMIP6</alias>
+    <lname>1850_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
