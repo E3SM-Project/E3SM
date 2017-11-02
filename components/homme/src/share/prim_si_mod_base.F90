@@ -2,10 +2,10 @@
 #include "config.h"
 #endif
 
-module prim_si_mod
+module prim_si_mod_base
   implicit none
 contains
-	
+
 ! ==========================================================
 ! Implicit system for semi-implicit primitive equations.
 ! ==========================================================
@@ -16,7 +16,7 @@ contains
     use kinds,              only : real_kind
     use dimensions_mod,     only : nlev, np, nlevp
     implicit none
-    
+
     real (kind=real_kind), intent(in) :: T(np,np,nlev)
     real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
     real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
@@ -44,7 +44,7 @@ contains
     ! ===========================================================
 
        k=1
-       do i=1,np 
+       do i=1,np
           facp            = (0.5_real_kind*rpdel(i,j,k))*eta_dot_dp_deta(i,j,k+1)
           T_vadv(i,j,k)   = facp*(T(i,j,k+1)- T(i,j,k))
           v_vadv(i,j,1,k) = facp*(v(i,j,1,k+1)- v(i,j,1,k))
@@ -125,7 +125,7 @@ contains
     do nf=1,nfields
        T_vadv(:,:,k,nf)   = facp(:,:)*(T(:,:,k+1,nf)- T(:,:,k,nf))
     enddo
-    
+
     ! ===========================================================
     ! vertical advection
     !
@@ -144,7 +144,7 @@ contains
                facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
        enddo
     end do
-    
+
     ! ===========================================================
     ! vertical advection
     !
@@ -221,7 +221,7 @@ contains
           v_i(:,:,:,k)  = v(:,:,:,k)
        endif
 #endif
-    enddo ; enddo 
+    enddo ; enddo
     enddo
 
     ! finite difference
@@ -250,9 +250,9 @@ contains
                 ) / dp(:,:,k)
        enddo
     enddo
-    
 
-    end subroutine 
+
+    end subroutine
 
 
 
@@ -262,7 +262,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !
-!  compute omega/p using ps, modeled after CCM3 formulas 
+!  compute omega/p using ps, modeled after CCM3 formulas
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
   subroutine preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
@@ -282,7 +282,7 @@ contains
 
     !---------------------------Local workspace-----------------------------
     integer i,j,k                         ! longitude, level indices
-    real(kind=real_kind) term             ! one half of basic term in omega/p summation 
+    real(kind=real_kind) term             ! one half of basic term in omega/p summation
     real(kind=real_kind) Ckk,Ckl          ! diagonal term of energy conversion matrix
     real(kind=real_kind) suml(np,np)      ! partial sum over l = (1, k-1)
     !-----------------------------------------------------------------------
@@ -347,11 +347,11 @@ contains
 
 
     !------------------------------Arguments---------------------------------------------------------------
-    real(kind=real_kind), intent(out) :: phi(np,np,nlev)     
+    real(kind=real_kind), intent(out) :: phi(np,np,nlev)
     real(kind=real_kind), intent(in) :: phis(np,np)
     real(kind=real_kind), intent(in) :: T_v(np,np,nlev)
-    real(kind=real_kind), intent(in) :: p(np,np,nlev)   
-    real(kind=real_kind), intent(in) :: dp(np,np,nlev)  
+    real(kind=real_kind), intent(in) :: p(np,np,nlev)
+    real(kind=real_kind), intent(in) :: dp(np,np,nlev)
  !   type (hvcoord_t),     intent(in) :: hvcoord
     !------------------------------------------------------------------------------------------------------
 
@@ -370,7 +370,7 @@ contains
              hkk = dp(i,j,nlev)*0.5d0/p(i,j,nlev)
              hkl = 2*hkk
              phii(i,j,nlev)  = Rgas*T_v(i,j,nlev)*hkl
-             phi(i,j,nlev) = phis(i,j) + Rgas*T_v(i,j,nlev)*hkk 
+             phi(i,j,nlev) = phis(i,j) + Rgas*T_v(i,j,nlev)*hkk
           end do
 
           do k=nlev-1,2,-1
@@ -410,7 +410,7 @@ end subroutine preq_hydrostatic
 
 
     !------------------------------Arguments---------------------------------------------------------------
-    real(kind=real_kind), intent(out) :: phi(np,np,nlev)     
+    real(kind=real_kind), intent(out) :: phi(np,np,nlev)
     real(kind=real_kind), intent(in) :: phis(np,np)
     real(kind=real_kind), intent(in) :: integrand(np,np,nlev)
     !------------------------------------------------------------------------------------------------------
@@ -430,21 +430,21 @@ end subroutine preq_hydrostatic
           phii(i,j,nlev)  = integrand(i,j,nlev)
           phi(i,j,nlev) = phis(i,j) + integrand(i,j,nlev)/2
        end do
-       
+
        do k=nlev-1,2,-1
           do i=1,np
              phii(i,j,k) = phii(i,j,k+1) + integrand(i,j,k)
              phi(i,j,k) = phis(i,j) + phii(i,j,k+1) + integrand(i,j,k)/2
           end do
        end do
-       
+
        do i=1,np
           phi(i,j,1) = phis(i,j) + phii(i,j,2) + integrand(i,j,1)/2
        end do
-       
+
     end do
-    
-    
+
+
 end subroutine preq_hydrostatic_v2
 
 
@@ -457,10 +457,10 @@ end subroutine preq_hydrostatic_v2
 subroutine geopotential_t(                                 &
        pmid   , pdel   ,  tv      , rair   ,  zm)
 
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
-! Compute the geopotential height (above the surface) at the midpoints and 
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! Compute the geopotential height (above the surface) at the midpoints and
 ! interfaces using the input temperatures and pressures.
 !
 !-----------------------------------------------------------------------
@@ -504,7 +504,7 @@ subroutine geopotential_t(                                 &
        zi(i,nlevp) = 0.0_real_kind
     end do
 
-! Compute zi, zm from bottom up. 
+! Compute zi, zm from bottom up.
 ! Note, zi(i,k) is the interface above zm(i,k)
     do k = nlev, 1, -1
 ! First set hydrostatic elements consistent with dynamics
@@ -532,45 +532,45 @@ subroutine geopotential_t(                                 &
   use control_mod, only : initial_total_mass
   use physical_constants, only : g
   use element_mod, only : element_t
-  use time_mod, only : timelevel_t 
-  use hybvcoord_mod, only : hvcoord_t 
+  use time_mod, only : timelevel_t
+  use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
   use dimensions_mod, only : np
-  use global_norms_mod, only : global_integral 
+  use global_norms_mod, only : global_integral
 
   type (element_t), intent(inout) :: elem(:)
   type (TimeLevel_t), target, intent(in) :: tl
   type (hybrid_t),intent(in)     :: hybrid
   type (hvcoord_t), intent(in)   :: hvcoord
   integer,intent(in)             :: nets,nete
-  
-  ! local 
+
+  ! local
   real (kind=real_kind)  :: tmp(np,np,nets:nete)
   real (kind=real_kind)  :: scale,mass0
   integer :: n0,nm1,np1,ie
 
   if (initial_total_mass == 0) return;
-  
+
   n0=tl%n0
   nm1=tl%nm1
   np1=tl%np1
-  
+
   scale=1/g                                  ! assume code is using Pa
   if (hvcoord%ps0 <  2000 ) scale=100*scale  ! code is using mb
   ! after scaling, Energy is in J/m**2,  Mass kg/m**2
-  
+
   do ie=nets,nete
      tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
   enddo
   mass0 = global_integral(elem, tmp(:,:,nets:nete),hybrid,np,nets,nete)
-  mass0 = mass0*scale;  
-  
+  mass0 = mass0*scale;
+
   do ie=nets,nete
      elem(ie)%state%ps_v(:,:,n0)=elem(ie)%state%ps_v(:,:,n0)*(initial_total_mass/mass0)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,n0)
      elem(ie)%state%ps_v(:,:,nm1)=elem(ie)%state%ps_v(:,:,n0)
   enddo
-  if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+  if(hybrid%par%masterproc .and. hybrid%ithr==0) then
      write (*,'(a,e24.15)') "Initializing Total Mass (kg/m^2) = ",initial_total_mass
   endif
   end subroutine prim_set_mass
@@ -579,4 +579,4 @@ subroutine geopotential_t(                                 &
 
 
 
-end module prim_si_mod
+end module prim_si_mod_base

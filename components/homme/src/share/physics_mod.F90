@@ -5,7 +5,7 @@
 ! To remove the effect of moisture comment the following
 !#define _COMPUTE_MOISTURE_
 module physics_mod
-  
+
   ! =======================
   use kinds,              only : real_kind
   ! =======================
@@ -16,9 +16,9 @@ module physics_mod
   use dimensions_mod, only : np, nlev
   ! =======================
   implicit none
-  
+
   private
-  
+
   public :: Saturation_Vapor_Pressure
   public :: Specific_Humidity
   public :: Saturation_Specific_Humidity
@@ -31,23 +31,25 @@ module physics_mod
 
 
 contains
-  
+
   !===========================
   !
   ! For help or information:
-  ! 
+  !
   ! Amik St-Cyr
-  ! 
+  !
   ! e-mail: amik@ucar.edu
   !
   !===========================
- 
+
   !================================
-  ! For reference see Emanuel 1994 
+  ! For reference see Emanuel 1994
   !================================
-  
+
   function Virtual_Temperature(Tin,rin) result(Tv)
-    
+    implicit none
+    !$acc routine seq
+
     real (kind=real_kind),intent(in) :: Tin
     real (kind=real_kind),intent(in) :: rin
     real (kind=real_kind)            :: Tv
@@ -62,14 +64,16 @@ contains
 
 
   function Virtual_Specific_Heat(rin) result(Cp_star)
-    
+    implicit none
+    !$acc routine seq
+
     real (kind=real_kind),intent(in) :: rin
     real (kind=real_kind)            :: Cp_star
 
 !    Cp_star = Cp*(1_real_kind + rin/Cpd_on_Cpv)/(1_real_kind + rin)
- 
+
     Cp_star = Cp*(1.0_real_kind + (Cpwater_vapor/Cp - 1.0_real_kind)*rin)
-   
+
   end function Virtual_Specific_Heat
 
 
@@ -102,7 +106,7 @@ contains
     endif
 
 #else
-    
+
     estar = exp(53.67957_real_kind - 6743.769_real_kind/abs(Tin) &
 	- 4.8451_real_kind * log(ABS(Tin)))
 #endif
@@ -117,16 +121,16 @@ contains
   end function Saturation_Vapor_Pressure
 
   function Specific_Humidity(r) result(q)
-    
+
     real (kind=real_kind),intent(in) :: r
     real (kind=real_kind)            :: q
-    
+
     q = r/( r + 1_real_kind )
 
   end  function Specific_Humidity
-  
+
   function Saturation_Specific_Humidity(p,T) result(qstar)
- 
+
     real (kind=real_kind),intent(in) :: p,T
     real (kind=real_kind)            :: qstar,estar
 
@@ -134,14 +138,14 @@ contains
     qstar = Rd_on_Rv * estar / (p - estar * (1._real_kind - Rd_on_Rv))
   end function Saturation_Specific_Humidity
   !==================================
-  ! Fraction of humid air in dry air 
+  ! Fraction of humid air in dry air
   !==================================
   function Relative_Humidity(e,T) result(h)
-    
+
     real (kind=real_kind),intent(in) :: e,T
     real (kind=real_kind)            :: estar
     real (kind=real_kind)            :: h
-    
+
     estar = Saturation_Vapor_Pressure(T)
 
     h=e/estar
@@ -167,14 +171,14 @@ contains
   ! Mass of water vapor per unit mass of dry air
   !==============================================
   function Mixing_Ratio(ein,p) result(r)
-    
+
     real (kind=real_kind),intent(in) :: ein,p
-        
+
     real (kind=real_kind)            :: r
-    
+
     ! 4.1.2 p. 108 Emanuel
     ! p is supposed DRY
-    
+
     r = Rd_on_Rv*abs(ein/p)
 
   end function Mixing_Ratio
@@ -186,17 +190,17 @@ contains
   ! The latent heat is not computed here for now.
   !===============================================
   subroutine Prim_Condense(r,Tin,pin)
-    
+
     real (kind=real_kind),intent(inout)  :: r
     real (kind=real_kind),intent(in)     :: Tin,pin
 
     real (kind=real_kind)                :: estar,e_vapor
     real*8                               :: st,et
 
-    ! returns pressure in mb or Pa?  
-    estar   = Saturation_Vapor_Pressure(Tin)     
+    ! returns pressure in mb or Pa?
+    estar   = Saturation_Vapor_Pressure(Tin)
 
-    ! returns pressure in same units as pin. 
+    ! returns pressure in same units as pin.
     e_vapor = Vapor_Pressure(r,pin)
 
     if(e_vapor/estar>1_real_kind)then

@@ -12,10 +12,13 @@ module element_state
   integer, public, parameter :: timelevels = 3
 
 
-  real (kind=real_kind), allocatable, target, public :: state_Qdp                (:,:,:,:,:,:)    ! (np,np,nlev,qsize_d,2,nelemd)   
-  real (kind=real_kind), allocatable, target, public :: derived_vn0              (:,:,:,:,:)      ! (np,np,2,nlev,nelemd)                   velocity for SE tracer advection
-  real (kind=real_kind), allocatable, target, public :: derived_divdp            (:,:,:,:)        ! (np,np,nlev,nelemd)                     divergence of dp
-  real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)        ! (np,np,nlev,nelemd)                     DSSed divdp
+  real (kind=real_kind), allocatable, target, public :: state_v                  (:,:,:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: state_dp3d               (:,:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: state_phis               (:,:,:)
+  real (kind=real_kind), allocatable, target, public :: state_Qdp                (:,:,:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: derived_vn0              (:,:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: derived_divdp            (:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: derived_divdp_proj       (:,:,:,:)
 
 
   type, public :: elem_state_t
@@ -23,13 +26,13 @@ module element_state
     ! prognostics must match those in prim_restart_mod.F90
     ! vertically-lagrangian code advects dp3d instead of ps_v
     ! tracers Q, Qdp always use 2 level time scheme
-    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)            ! velocity                           1
+    real (kind=real_kind), pointer :: v   (:,:,:,:,:)                 ! velocity                           1 (np,np,2,nlev,timelevels)
     real (kind=real_kind) :: T   (np,np,nlev,timelevels)              ! temperature                        2
-    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)              ! delta p on levels                  8
+    real (kind=real_kind), pointer :: dp3d(:,:,:,:)                   ! delta p on levels                  8 (np,np,nlev,timelevels)
     real (kind=real_kind) :: ps_v(np,np,timelevels)                   ! surface pressure                   4
-    real (kind=real_kind) :: phis(np,np)                              ! surface geopotential (prescribed)  5
+    real (kind=real_kind), pointer :: phis(:,:)                       ! surface geopotential (prescribed)  5 (np,np)
     real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
-    real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)  ! Tracer mass                        7  (np,np,nlev,qsize,2)   
+    real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)  ! Tracer mass                        7  (np,np,nlev,qsize,2)
   end type elem_state_t
 
   type, public :: derived_state_t
@@ -43,14 +46,14 @@ module element_state
 
     ! diagnostics for explicit timestep
     real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential
-    real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)       
+    real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
     real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
 
     ! semi-implicit diagnostics: computed in explict-component, reused in Helmholtz-component.
-    real (kind=real_kind) :: grad_lnps(np,np,2)                       ! gradient of log surface pressure               
-    real (kind=real_kind) :: zeta(np,np,nlev)                         ! relative vorticity                             
-    real (kind=real_kind) :: div(np,np,nlev,timelevels)               ! divergence                          
+    real (kind=real_kind) :: grad_lnps(np,np,2)                       ! gradient of log surface pressure
+    real (kind=real_kind) :: zeta(np,np,nlev)                         ! relative vorticity
+    real (kind=real_kind) :: div(np,np,nlev,timelevels)               ! divergence
 
     ! tracer advection fields used for consistency and limiters
     real (kind=real_kind) :: dp(np,np,nlev)                           ! for dp_tracers at physics timestep
@@ -62,7 +65,7 @@ module element_state
     real (kind=real_kind) :: FM(np,np,2,nlev)                      ! momentum forcing
     real (kind=real_kind) :: FT(np,np,nlev)                        ! temperature forcing
     real (kind=real_kind) :: pecnd(np,np,nlev)                        ! pressure perturbation from condensate
-    real (kind=real_kind) :: FQps(np,np)                              ! forcing of FQ on ps_v 
+    real (kind=real_kind) :: FQps(np,np)                              ! forcing of FQ on ps_v
   end type derived_state_t
 
 
@@ -138,4 +141,4 @@ module element_state
 
 
 contains
-end module 
+end module

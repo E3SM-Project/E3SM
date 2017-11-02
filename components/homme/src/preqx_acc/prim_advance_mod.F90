@@ -828,7 +828,8 @@ contains
     ! "real_time", which should be the time of timelevel n0.
     ! ===================================
     use kinds,          only : real_kind
-    use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
+    use derivative_mod, only : derivative_t, divergence_sphere, divergence_sphere_openacc, gradient_sphere, &
+                               gradient_sphere_openacc, vorticity_sphere, vorticity_sphere_openacc
     use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
     use edge_mod,       only : edgevpack, edgevunpack, edgeDGVunpack
     use edgetype_mod,   only : edgedescriptor_t
@@ -839,6 +840,7 @@ contains
     use physics_mod,    only : virtual_specific_heat, virtual_temperature
     use prim_si_mod,    only : preq_vertadv, preq_omega_ps, preq_hydrostatic
     use viscosity_base, only: smooth_phis
+    use element_state, only: state_v, timelevels, state_dp3d, state_phis
     implicit none
     integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
     real*8, intent(in) :: dt2
@@ -867,6 +869,7 @@ contains
     !$omp barrier
     !$omp master
 
+    !$acc parallel loop gang vector collapse(3)
     do ie=1,nelemd
       ! dont thread this because of k-1 dependence:
       do j = 1 , np
@@ -879,55 +882,34 @@ contains
         enddo
       enddo
     enddo
-
+    call gradient_sphere_openacc(p,deriv,elem,grad_p,nlev,1,nelemd,1,1,1,1)
+    ! ============================
+    ! compute vgrad_lnps
+    ! ============================
+    !$acc parallel loop gang vector collapse(4)
     do ie=1,nelemd
       do k=1,nlev
-        grad_p(:,:,:,k,ie) = gradient_sphere(p(:,:,k,ie),deriv,elem(ie)%Dinv)
-      enddo
-    enddo
-    do ie=1,nelemd
-      do k=1,nlev
-        do j = 1 , np
-          do i = 1 , np
-            rdp(i,j,k,ie) = 1.0D0/elem(ie)%state%dp3d(i,j,k,n0)
-          enddo
-        enddo
-      enddo
-    enddo
-    do ie=1,nelemd
-      do k=1,nlev
-        ! ============================
-        ! compute vgrad_lnps
-        ! ============================
         do j=1,np
           do i=1,np
+            rdp(i,j,k,ie) = 1.0D0/elem(ie)%state%dp3d(i,j,k,n0)
             v1 = elem(ie)%state%v(i,j,1,k,n0)
             v2 = elem(ie)%state%v(i,j,2,k,n0)
             vgrad_p(i,j,k,ie) = (v1*grad_p(i,j,1,k,ie) + v2*grad_p(i,j,2,k,ie))
             vdp(i,j,1,k,ie) = v1*elem(ie)%state%dp3d(i,j,k,n0)
             vdp(i,j,2,k,ie) = v2*elem(ie)%state%dp3d(i,j,k,n0)
+            ! Accumulate mean Vel_rho flux in vn0
+            elem(ie)%derived%vn0(i,j,:,k)=elem(ie)%derived%vn0(i,j,:,k)+eta_ave_w*vdp(i,j,:,k,ie)
           enddo
         enddo
-        ! ================================
-        ! Accumulate mean Vel_rho flux in vn0
-        ! ================================
-        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vdp(:,:,:,k,ie)
       enddo
     enddo
     ! =========================================
     ! Compute relative vorticity and divergence
     ! =========================================
-    do ie=1,nelemd
-      do k=1,nlev
-        divdp(:,:,k,ie)=divergence_sphere(vdp(:,:,:,k,ie),deriv,elem(ie))
-      enddo
-    enddo
-    do ie=1,nelemd
-      do k=1,nlev
-        vort(:,:,k,ie)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
-      enddo
-    enddo
+    call divergence_sphere_openacc(vdp,deriv,elem,divdp,nlev,1,nelemd,1,1,1,1)
+    call vorticity_sphere_openacc(state_v,deriv,elem,vort,nlev,nets,nete,timelevels,n0,1,1)
 
+    !$acc parallel loop gang vector collapse(4) private(Qt)
     do ie=1,nelemd
       ! compute T_v for timelevel n0
       do k=1,nlev
@@ -954,7 +936,7 @@ contains
     ! Compute Hydrostatic equation, modeld after CCM-3
     ! ====================================================
     do ie=1,nelemd
-      call preq_hydrostatic(phi(:,:,:,ie),elem(ie)%state%phis,T_v(:,:,:,ie),p(:,:,:,ie),elem(ie)%state%dp3d(:,:,:,n0))
+      call preq_hydrostatic(phi(:,:,:,ie),state_phis(:,:,ie),T_v(:,:,:,ie),p(:,:,:,ie),state_dp3d(:,:,:,n0,ie))
     enddo
     ! ====================================================
     ! Compute omega_p according to CCM-3

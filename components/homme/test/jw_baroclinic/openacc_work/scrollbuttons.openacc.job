@@ -34,22 +34,29 @@ setenv OMP_STACKSIZE 64M
 #setenv CUDA_PROFILE_LOG "cuda_profile_%p.log"
 #setenv CUDA_PROFILE_CONFIG ./cuda_config
 
-#set i=0
-#mkdir -f /tmp/mps_$i
-#mkdir -f /tmp/mps_log_$i
-#setenv CUDA_VISIBLE_DEVICES $i
-#export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_$i
-#export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_$i
-#nvidia-cuda-mps-control -d
+set i=0
+mkdir -f /tmp/mps_$i
+mkdir -f /tmp/mps_log_$i
+setenv CUDA_VISIBLE_DEVICES $i
+export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_$i
+export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_$i
+nvidia-cuda-mps-control -d
+
+#setenv PGI_ACC_DEBUG 3
+#setenv PGI_ACC_NOTIFY 3
 
 set NCORES = 8
-setenv OMP_NUM_THREADS 4
+setenv OMP_NUM_THREADS 1
 set NCPU = 1
 @ NCPU *= $NCORES
 @ NCPU /= $OMP_NUM_THREADS
 set NPER = $NCORES
 @ NPER /= $OMP_NUM_THREADS
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+
+#set NCPU = 1
+#setenv OMP_NUM_THREADS 1
+
 set mpirun = "mpirun -n $NCPU"
 echo $mpirun
 echo `which mpirun`
@@ -145,4 +152,6 @@ cp $exedir/$exe .
 date
 $mpirun ./$exe < input.nl
 date
+
+echo quit | nvidia-cuda-mps-control
 

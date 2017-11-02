@@ -29,8 +29,61 @@ module derivative_mod
   public :: divergence_sphere_wk_openacc
   public :: gradient_sphere_openacc
   public :: divergence_sphere_openacc
+  public :: vorticity_sphere_openacc
 
 contains
+
+
+  subroutine vorticity_sphere_openacc(v,deriv,elem,vort,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out)
+    implicit none
+!   input:  v = velocity in lat-lon coordinates
+!   ouput:  spherical vorticity of v
+    type (derivative_t) , intent(in   ) :: deriv
+    type (element_t)    , intent(in   ) :: elem(:)
+    real(kind=real_kind), intent(in   ) :: v(np,np,2,len,ntl_in,nets:nete)
+    real(kind=real_kind), intent(  out) :: vort(np,np,len,ntl_out,nets:nete)
+    integer             , intent(in   ) :: len,nets,nete,ntl_in,tl_in,ntl_out,tl_out
+    integer, parameter :: kchunk = 8
+    integer :: i, j, l, k, ie, kc, kk
+    real(kind=real_kind) :: dvdx00,dudy00
+    real(kind=real_kind) :: vco(np,np,2,kchunk)
+    ! convert to covariant form
+    !$acc parallel loop gang collapse(2) private(vco) present(elem,v,vort,deriv)
+    do ie = nets , nete
+      do kc = 1 , len/kchunk+1
+        !$acc cache(vco)
+        !$acc loop vector collapse(3) private(k)
+        do kk = 1 , kchunk
+          do j = 1 , np
+            do i = 1 , np
+              k = (kc-1)*kchunk+kk
+              if (k <= len) then
+                vco(i,j,1,kk)=(elem(ie)%D(i,j,1,1)*v(i,j,1,k,tl_in,ie) + elem(ie)%D(i,j,2,1)*v(i,j,2,k,tl_in,ie))
+                vco(i,j,2,kk)=(elem(ie)%D(i,j,1,2)*v(i,j,1,k,tl_in,ie) + elem(ie)%D(i,j,2,2)*v(i,j,2,k,tl_in,ie))
+              endif
+            enddo
+          enddo
+        enddo
+        !$acc loop vector collapse(3) private(k,dudy00,dvdx00)
+        do kk = 1 , kchunk
+          do j = 1 , np
+            do i = 1 , np
+              k = (kc-1)*kchunk+kk
+              if (k <= len) then
+                dudy00=0.0d0
+                dvdx00=0.0d0
+                do l = 1 , np
+                  dvdx00 = dvdx00 + deriv%Dvv(l,i)*vco(l,j,2,kk)
+                  dudy00 = dudy00 + deriv%Dvv(l,j)*vco(i,l,1,kk)
+                enddo
+                vort(i,j,k,tl_out,ie)=(dvdx00-dudy00)*(elem(ie)%rmetdet(i,j)*rrearth)
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+    enddo
+  end subroutine vorticity_sphere_openacc
 
   subroutine laplace_sphere_wk_openacc(s,grads,deriv,elem,var_coef,laplace,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out)
     use element_mod, only: element_t
