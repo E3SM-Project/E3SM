@@ -214,10 +214,6 @@ if (step3) then
    ! map because, in the case where the nearest neighbor map uses a file_ocn_coastal_mask
    ! that is a subset of file_ocn, the nearest neighbor map has a too-limited mask_b and
    ! frac_b (containing only the coastal points).
-   !
-   ! It may be possible to simply use map_smooth in place of map_orig in the above
-   ! map_dup call (thus removing the need for these overrides), but that has not been
-   ! tested.
    map_new%mask_b = map_smooth%mask_b
    map_new%frac_b = map_smooth%frac_b
 
