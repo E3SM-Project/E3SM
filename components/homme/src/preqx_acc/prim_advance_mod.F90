@@ -784,7 +784,6 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
     ! local
-    real (kind=real_kind), pointer, dimension(:,:,:)   :: dp
     real (kind=real_kind), dimension(np,np,nlev)   :: phi
     real (kind=real_kind), dimension(np,np,nlev)   :: omega_p
     real (kind=real_kind), dimension(np,np,nlev)   :: T_v
@@ -816,15 +815,14 @@ contains
 
     call t_startf('compute_and_apply_rhs')
     do ie=nets,nete
-      dp => elem(ie)%state%dp3d(:,:,:,n0)
       ! dont thread this because of k-1 dependence:
-      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
+      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + elem(ie)%state%dp3d(:,:,1,n0)/2
       do k=2,nlev
-        p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+        p(:,:,k)=p(:,:,k-1) + elem(ie)%state%dp3d(:,:,k-1,n0)/2 + elem(ie)%state%dp3d(:,:,k,n0)/2
       enddo
       do k=1,nlev
         grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
-        rdp(:,:,k) = 1.0D0/dp(:,:,k)
+        rdp(:,:,k) = 1.0D0/elem(ie)%state%dp3d(:,:,k,n0)
         ! ============================
         ! compute vgrad_lnps
         ! ============================
@@ -833,8 +831,8 @@ contains
             v1 = elem(ie)%state%v(i,j,1,k,n0)
             v2 = elem(ie)%state%v(i,j,2,k,n0)
             vgrad_p(i,j,k) = (v1*grad_p(i,j,1,k) + v2*grad_p(i,j,2,k))
-            vdp(i,j,1,k) = v1*dp(i,j,k)
-            vdp(i,j,2,k) = v2*dp(i,j,k)
+            vdp(i,j,1,k) = v1*elem(ie)%state%dp3d(i,j,k,n0)
+            vdp(i,j,2,k) = v2*elem(ie)%state%dp3d(i,j,k,n0)
           end do
         end do
         ! ================================
@@ -863,7 +861,7 @@ contains
           do j=1,np
             do i=1,np
               ! Qt = elem(ie)%state%Q(i,j,k,1)
-              Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/dp(i,j,k)
+              Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/elem(ie)%state%dp3d(i,j,k,n0)
               T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
               if (use_cpstar==1) then
                 kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
@@ -877,7 +875,7 @@ contains
       ! ====================================================
       ! Compute Hydrostatic equation, modeld after CCM-3
       ! ====================================================
-      call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dp)
+      call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,elem(ie)%state%dp3d(:,:,:,n0))
       ! ====================================================
       ! Compute omega_p according to CCM-3
       ! ====================================================
