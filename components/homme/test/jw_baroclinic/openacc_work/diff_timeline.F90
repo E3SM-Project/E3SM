@@ -10,7 +10,8 @@ program diff
   character(len=256) :: c_fname = 'asp_baroclinic2.cpuref.nc'
   character(len=256) :: g_fname = '../../../../asp-baroclinic/HOMME-2-0-0-high-L26-nu1e14-sub4/movies/asp_baroclinic2.nc'
   character(len=32)  :: grid    = 'ne8'
-  character(len=16) :: vnames(5) = (/ 'Q' , 'Q2' , 'Q3' , 'Q4' , 'Q5' /)
+  integer, parameter :: nvars = 15
+  character(len=16) :: vnames(nvars) = (/ 'T','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','Q4','Q5','rho','zeta' /)
   character(len=256) :: opref = ''
   integer, dimension(4) :: dbeg, dend
   double precision, parameter :: pi = 3.1415926535897932385D0
@@ -52,7 +53,7 @@ program diff
 
   call nc_check_err( __LINE__ , nf90_open(trim(c_fname) , NF90_NOWRITE , c_ncid ) )
   call nc_check_err( __LINE__ , nf90_open(trim(g_fname) , NF90_NOWRITE , g_ncid ) )
-  do i = 1 , 5
+  do i = 1 , nvars
     call nc_check_err( __LINE__ , nf90_inq_varid( c_ncid , trim(vnames(i)) , c_varid ) )
     call nc_check_err( __LINE__ , nf90_inq_varid( g_ncid , trim(vnames(i)) , g_varid ) )
     open(unit=47,file=trim(opref)//'_'//trim(vnames(i))//'.dat',action='WRITE',status='REPLACE')

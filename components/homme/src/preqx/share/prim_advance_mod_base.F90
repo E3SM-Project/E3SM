@@ -6,7 +6,7 @@
 !#define _DBG_ !DBG
 !
 !
-module prim_advance_mod
+module prim_advance_mod_base
 
   use control_mod,    only: qsplit,rsplit, use_moisture
   use derivative_mod, only: derivative_t
@@ -19,15 +19,15 @@ module prim_advance_mod
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp, parallel_t, iam
   use time_mod,       only: timelevel_t
-
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
 
   type (EdgeBuffer_t) :: edge3p1
   real (kind=real_kind), allocatable :: ur_weights(:)
+
+  public :: prim_advance_exp, prim_advance_init1, &
+       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2, edge3p1, ur_weights, set_prescribed_wind
 
 contains
 
@@ -35,7 +35,7 @@ contains
   subroutine prim_advance_init1(par, elem,integration)
     use edge_mod, only : initEdgeBuffer
     implicit none
-    
+
     type (parallel_t) :: par
     type (element_t), intent(inout), target   :: elem(:)
     character(len=*), intent(in) :: integration
@@ -72,7 +72,7 @@ contains
 
   end subroutine vertical_mesh_init2
 
-    
+
 #ifndef CAM
   !_____________________________________________________________________
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
@@ -101,15 +101,15 @@ contains
 
     call set_test_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete)
     ! accumulate velocities and fluxes over timesteps
-    ! test code only dont bother to openmp thread                                                    
+    ! test code only dont bother to openmp thread
     do ie = nets,nete
        eta_dot_dpdn(:,:,:)=elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,:)
-       ! accumulate mean fluxes for advection                                                        
+       ! accumulate mean fluxes for advection
        if (rsplit==0) then
           elem(ie)%derived%eta_dot_dpdn(:,:,:) = &
                elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
        else
-          ! lagrangian case.  mean vertical velocity = 0                                             
+          ! lagrangian case.  mean vertical velocity = 0
           elem(ie)%derived%eta_dot_dpdn(:,:,:) = 0
           ! update position of floating levels
           do k=1,nlev
@@ -117,7 +117,7 @@ contains
                   + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
           enddo
        end if
-       ! accumulate U*dp 
+       ! accumulate U*dp
        do k=1,nlev
           elem(ie)%derived%vn0(:,:,1,k)=elem(ie)%derived%vn0(:,:,1,k)+&
                eta_ave_w*elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%state%dp3d(:,:,k,tl%n0)
@@ -456,7 +456,7 @@ contains
 			   end do
 		   end do
 	   end do
-       
+
 ! activate these lines to test infrastructure and still solve with explicit code
 !       ! RK2
 !       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
@@ -489,7 +489,7 @@ contains
 		  do k=1,nlev
 			  do j=1,np
 				  do i=1,np
-					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
+					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx)
 					  lx = lx+1
 				  end do
 			  end do
@@ -751,7 +751,7 @@ contains
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-!pw   call t_adj_detailf(+1) 
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis_dp')
 
 
@@ -871,9 +871,9 @@ contains
                  ttens(:,:,k,ie)  =(-nu_s*ttens(:,:,k,ie) + nu_scale_top*nu_top*lap_t(:,:) )
                  dptens(:,:,k,ie) =(-nu_p*dptens(:,:,k,ie) + nu_scale_top*nu_top*lap_dp(:,:) )
               else
-                 vtens(:,:,:,k,ie)=-nu*vtens(:,:,:,k,ie) 
-                 ttens(:,:,k,ie)  =-nu_s*ttens(:,:,k,ie) 
-                 dptens(:,:,k,ie) =-nu_p*dptens(:,:,k,ie) 
+                 vtens(:,:,:,k,ie)=-nu*vtens(:,:,:,k,ie)
+                 ttens(:,:,k,ie)  =-nu_s*ttens(:,:,k,ie)
+                 dptens(:,:,k,ie) =-nu_p*dptens(:,:,k,ie)
               endif
 
               if (nu_p==0) then
@@ -886,11 +886,11 @@ contains
                  ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/dpdn(:,:)
                  dptens(:,:,k,ie) = 0
               endif
-              
+
               ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
               elem(ie)%state%dp3d(:,:,k,nt) = elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%spheremp(:,:)&
                    + dt*dptens(:,:,k,ie)
-              
+
            enddo
 
 
@@ -925,7 +925,7 @@ contains
               vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
               vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
               ttens(:,:,k,ie)=dt*ttens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-              
+
               elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%rspheremp(:,:)
            enddo
 
@@ -977,7 +977,7 @@ contains
 
 
   !
-  ! phl notes: output is stored in first argument. Advances from 2nd argument using tendencies evaluated at 3rd rgument: 
+  ! phl notes: output is stored in first argument. Advances from 2nd argument using tendencies evaluated at 3rd rgument:
   ! phl: for offline winds use time at 3rd argument (same as rhs currently)
   !
   subroutine compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
@@ -1043,8 +1043,8 @@ contains
   real (kind=real_kind), dimension(np,np,nlev+1)   :: eta_dot_dpdn  ! half level vertical velocity on p-grid
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
-  real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !                            
-  real (kind=real_kind), dimension(np,np,2     ):: v         !                            
+  real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !
+  real (kind=real_kind), dimension(np,np,2     ):: v         !
   real (kind=real_kind), dimension(np,np)      :: vgrad_T    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
@@ -1468,7 +1468,7 @@ contains
         elem(ie)%state%dp3d(:,:,k,np1) = &
              elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
              dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
-        
+
      enddo
 
 
@@ -1508,7 +1508,7 @@ contains
 
      kptr=kptr+2*nlev
      call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
-     
+
      ! ====================================================
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
@@ -1539,5 +1539,4 @@ contains
   end subroutine compute_and_apply_rhs
 
 
-end module prim_advance_mod
-
+end module prim_advance_mod_base
