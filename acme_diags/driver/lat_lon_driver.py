@@ -6,34 +6,44 @@ from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
+from acme_diags.driver.utils import get_output_dir
 import os
 import sys
+import json
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """Creates the mean, max, min, rmse, corr in a dictionary"""
     metrics_dict = {}
     metrics_dict['ref'] = {
-        'min': min_cdms(ref),
-        'max': max_cdms(ref),
-        'mean': mean(ref)
+        'min': float(min_cdms(ref)),
+        'max': float(max_cdms(ref)),
+        'mean': float(mean(ref))
+    }
+    metrics_dict['ref_regrid'] = {
+        'min': float(min_cdms(ref_regrid)),
+        'max': float(max_cdms(ref_regrid)),
+        'mean': float(mean(ref_regrid))
     }
     metrics_dict['test'] = {
-        'min': min_cdms(test),
-        'max': max_cdms(test),
-        'mean': mean(test)
+        'min': float(min_cdms(test)),
+        'max': float(max_cdms(test)),
+        'mean': float(mean(test))
     }
-
+    metrics_dict['test_regrid'] = {
+        'min': float(min_cdms(test_regrid)),
+        'max': float(max_cdms(test_regrid)),
+        'mean': float(mean(test_regrid))
+    }
     metrics_dict['diff'] = {
-        'min': min_cdms(diff),
-        'max': max_cdms(diff),
-        'mean': mean(diff)
+        'min': float(min_cdms(diff)),
+        'max': float(max_cdms(diff)),
+        'mean': float(mean(diff))
     }
     metrics_dict['misc'] = {
-        'rmse': rmse(test_regrid, ref_regrid),
-        'corr': corr(test_regrid, ref_regrid)
+        'rmse': float(rmse(test_regrid, ref_regrid)),
+        'corr': float(corr(test_regrid, ref_regrid))
     }
-
     return metrics_dict
 
 
@@ -171,6 +181,12 @@ def run_diag(parameter):
                         metrics_dict = create_metrics(
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 
+                        fnm = os.path.join(get_output_dir(
+                            parameter.current_set, parameter), parameter.output_file)
+                        with open(fnm + '.json' , 'w') as outfile:
+                             json.dump(metrics_dict,outfile)
+                        print('Metrics saved in: ' + fnm + '.json')
+
                         parameter.var_region = region
                         plot(parameter.current_set, mv2_domain,
                              mv1_domain, diff, metrics_dict, parameter)
@@ -219,6 +235,13 @@ def run_diag(parameter):
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+
+                    fnm = os.path.join(get_output_dir(
+                        parameter.current_set, parameter), parameter.output_file)
+                    with open(fnm + '.json' , 'w') as outfile:
+                         json.dump(metrics_dict,outfile)
+                    print('Metrics saved in: ' + fnm + '.json')
+
                     parameter.var_region = region
                     plot(parameter.current_set, mv2_domain,
                          mv1_domain, diff, metrics_dict, parameter)
