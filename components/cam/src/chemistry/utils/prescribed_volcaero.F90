@@ -33,16 +33,8 @@ module prescribed_volcaero
   character(len=13), parameter :: volcrad_name = 'VOLC_RAD_GEOM'
   character(len=9), parameter :: volcmass_name = 'VOLC_MASS'
   character(len=11), parameter :: volcmass_column_name = 'VOLC_MASS_C'
-  character(len=32), allocatable :: specifier(:)
-  integer :: band_dim(6)
-  ! Variables for CMIP6 style volcanic aerosols file
-  character(len=12), parameter :: volc_ext_sun_name     = 'VOLC_EXT_SUN'    !extinction coefficient of solar bands in 1/km BALLI- change units appropriately 
-  character(len=14), parameter :: volc_omega_sun_name   = 'VOLC_OMEGA_SUN'  !single scattering albedo of solar bands
-  character(len=10), parameter :: volc_g_sun_name       = 'VOLC_G_SUN'      !asymmetry factor of solar bands
 
-  character(len=14), parameter :: volc_ext_earth_name   = 'VOLC_EXT_EARTH'   !extinction coefficient of terrestrial bands in 1/km BALLI- change units appropriately
-  character(len=16), parameter :: volc_omega_earth_name = 'VOLC_OMEGA_EARTH' !single scattering albedo of terrestrial bands
-  character(len=12), parameter :: volc_g_earth_name     = 'VOLC_G_EARTH'     !asymmetry factor of terrestrial bands
+  character(len=32) :: specifier_sw(3), specifier_lw(1)
 
   ! These variables are settable via the namelist (with longer names)
   character(len=16)  :: fld_name = 'MMRVOLC'
@@ -63,8 +55,6 @@ module prescribed_volcaero
   character(len=16)  :: g_sun_name       = 'g_sun'
 
   character(len=16)  :: ext_earth_name   = 'ext_earth'
-  character(len=16)  :: omega_earth_name = 'omega_earth'
-  character(len=16)  :: g_earth_name     = 'g_earth'
 
 contains
 
@@ -93,17 +83,6 @@ subroutine prescribed_volcaero_readnl(nlfile)
    integer            :: prescribed_volcaero_fixed_ymd
    integer            :: prescribed_volcaero_fixed_tod
    
-   !local variables for CMIP6 style volcanic file
-
-   character(len=16)  :: prescribed_volc_ext_sun_name   
-   character(len=16)  :: prescribed_volc_omega_sun_name 
-   character(len=16)  :: prescribed_volc_g_sun_name     
-   
-   character(len=16)  :: prescribed_volc_ext_earth_name  
-   character(len=16)  :: prescribed_volc_omega_earth_name
-   character(len=16)  :: prescribed_volc_g_earth_name    
-
-   
 
    namelist /prescribed_volcaero_nl/    &
       prescribed_volcaero_name,         &
@@ -115,13 +94,8 @@ subroutine prescribed_volcaero_readnl(nlfile)
       prescribed_volcaero_cycle_yr,     &
       prescribed_volcaero_fixed_ymd,    &
       prescribed_volcaero_fixed_tod,    &
-      prescribed_volcaero_filetype,     &
-      prescribed_volc_ext_sun_name,     &
-      prescribed_volc_omega_sun_name,   &
-      prescribed_volc_g_sun_name,       &
-      prescribed_volc_ext_earth_name,   & 
-      prescribed_volc_omega_earth_name, &
-      prescribed_volc_g_earth_name
+      prescribed_volcaero_filetype
+
 
    !-----------------------------------------------------------------------------
 
@@ -136,14 +110,6 @@ subroutine prescribed_volcaero_readnl(nlfile)
    prescribed_volcaero_cycle_yr = cycle_yr
    prescribed_volcaero_fixed_ymd= fixed_ymd
    prescribed_volcaero_fixed_tod= fixed_tod
-
-   prescribed_volc_ext_sun_name     = ext_sun_name
-   prescribed_volc_omega_sun_name   = omega_sun_name
-   prescribed_volc_g_sun_name       = g_sun_name 
-   prescribed_volc_ext_earth_name   = ext_earth_name
-   prescribed_volc_omega_earth_name = omega_earth_name
-   prescribed_volc_g_earth_name     = g_earth_name
-
 
    ! Read namelist
    if (masterproc) then
@@ -172,13 +138,6 @@ subroutine prescribed_volcaero_readnl(nlfile)
    call mpibcast(prescribed_volcaero_cycle_yr, 1, mpiint,  0, mpicom)
    call mpibcast(prescribed_volcaero_fixed_ymd,1, mpiint,  0, mpicom)
    call mpibcast(prescribed_volcaero_fixed_tod,1, mpiint,  0, mpicom)
-
-   call mpibcast(prescribed_volc_ext_sun_name,      len(prescribed_volc_ext_sun_name),     mpichar, 0, mpicom)
-   call mpibcast(prescribed_volc_omega_sun_name,    len(prescribed_volc_omega_sun_name),   mpichar, 0, mpicom)
-   call mpibcast(prescribed_volc_g_sun_name,        len(prescribed_volc_g_sun_name),       mpichar, 0, mpicom)
-   call mpibcast(prescribed_volc_ext_earth_name,    len(prescribed_volc_ext_earth_name),   mpichar, 0, mpicom)
-   call mpibcast(prescribed_volc_omega_earth_name,  len(prescribed_volc_omega_earth_name), mpichar, 0, mpicom)
-   call mpibcast(prescribed_volc_g_earth_name,      len(prescribed_volc_g_earth_name),     mpichar, 0, mpicom)
 #endif
 
    ! Update module variables with user settings.
@@ -193,15 +152,6 @@ subroutine prescribed_volcaero_readnl(nlfile)
    fixed_ymd  = prescribed_volcaero_fixed_ymd
    fixed_tod  = prescribed_volcaero_fixed_tod
 
-   ext_sun_name     = prescribed_volc_ext_sun_name
-   omega_sun_name   = prescribed_volc_omega_sun_name
-   g_sun_name       = prescribed_volc_g_sun_name
-   ext_earth_name   = prescribed_volc_ext_earth_name
-   omega_earth_name = prescribed_volc_omega_earth_name
-   g_earth_name     = prescribed_volc_g_earth_name
-
-
-
    ! Turn on prescribed volcanics if user has specified an input dataset.
    if (len_trim(filename) > 0 ) has_prescribed_volcaero = .true.
 
@@ -211,7 +161,7 @@ end subroutine prescribed_volcaero_readnl
 !-------------------------------------------------------------------
   subroutine prescribed_volcaero_register()
     use ppgrid,         only: pver,pcols
-    use physics_buffer, only: pbuf_add_field, dtype_r8
+    use physics_buffer, only : pbuf_add_field, dtype_r8
 
     integer :: idx
 
@@ -222,9 +172,6 @@ end subroutine prescribed_volcaero_readnl
           call pbuf_add_field(g_sun_name,       'physpkg',dtype_r8,(/nswbands,pcols,pver/),idx)
           
           call pbuf_add_field(ext_earth_name,   'physpkg',dtype_r8,(/nlwbands,pcols,pver/),idx)
-          call pbuf_add_field(omega_earth_name, 'physpkg',dtype_r8,(/nlwbands,pcols,pver/),idx)
-          call pbuf_add_field(g_earth_name,     'physpkg',dtype_r8,(/nlwbands,pcols,pver/),idx)
-          
        endif
 
        call pbuf_add_field(volcaero_name,'physpkg',dtype_r8,(/pcols,pver/),idx) !BALLI- we have to initialize it for radiation codes....but why????
@@ -238,18 +185,19 @@ end subroutine prescribed_volcaero_readnl
 !-------------------------------------------------------------------
   subroutine prescribed_volcaero_init()
 
-    use tracer_data,    only: trcdata_init
-    use cam_history,    only: addfld, horiz_only
-    use ppgrid,         only: pver
+    use tracer_data, only : trcdata_init
+    use cam_history, only : addfld, horiz_only
+    use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
     
-    use physics_buffer, only: physics_buffer_desc, pbuf_get_index
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_index
 
     implicit none
 
     integer :: ndx, istat
     integer :: errcode, ispf
+    character(len=32) :: specifier(1)
     
     if ( has_prescribed_volcaero ) then
        if ( masterproc ) then
@@ -258,36 +206,26 @@ end subroutine prescribed_volcaero_readnl
     else
        return
     endif
-    ispf = 1
+
     if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
-       allocate(specifier(6))
+
+       ispf = 1
+       specifier_sw(ispf) = trim(adjustl(ext_sun_name))
+       ispf = ispf + 1
+
+       specifier_sw(ispf) = trim(adjustl(omega_sun_name))
+       ispf = ispf + 1
+
+       specifier_sw(ispf) = trim(adjustl(g_sun_name))
        
-       specifier(ispf) = trim(adjustl(ext_sun_name))
-       band_dim(ispf)  = nswbands; ispf = ispf + 1
-
-       specifier(ispf) = trim(adjustl(omega_sun_name))
-       band_dim(ispf)  = nswbands; ispf = ispf + 1
-
-       specifier(ispf) = trim(adjustl(g_sun_name))
-       band_dim(ispf)  = nswbands; ispf = ispf + 1
-
-       specifier(ispf) = trim(adjustl(ext_earth_name))
-       band_dim(ispf)  = nlwbands; ispf = ispf + 1
-
-       specifier(ispf) = trim(adjustl(omega_earth_name))
-       band_dim(ispf)  = nlwbands; ispf = ispf + 1
-
-       specifier(ispf) = trim(adjustl(g_earth_name))
-       band_dim(ispf)  = nlwbands
-
+       ispf = 1
+       specifier_lw(ispf) = trim(adjustl(ext_earth_name))
        
        !BALLI-add comments!!
-       allocate(file%in_pbuf(size(specifier)))
-       file%in_pbuf(:) = .true.
-       call volc_rad_data_init(specifier, filename, datapath, band_dim, data_type)
+       call volc_rad_data_init(specifier_sw, specifier_lw, filename, datapath, data_type)
 
     else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
-       allocate(specifier(1))
+
        specifier(1) = trim(volcaero_name)//':'//trim(fld_name)
        
        allocate(file%in_pbuf(size(specifier)))
@@ -304,8 +242,6 @@ end subroutine prescribed_volcaero_readnl
     else
        call endrun('prescribed_volcaero_init: Invalid volcanic file type')
     endif
-
-
 
   end subroutine prescribed_volcaero_init
 
@@ -353,7 +289,9 @@ end subroutine prescribed_volcaero_readnl
     if( .not. has_prescribed_volcaero ) return
 
     if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
-       call advance_volc_rad_data (specifier, band_dim, state, pbuf2d)
+
+       call advance_volc_rad_data (specifier_sw, specifier_lw, state, pbuf2d)
+
     else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
 
        call advance_trcdata( fields, file, state, pbuf2d )

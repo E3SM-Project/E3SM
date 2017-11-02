@@ -22,11 +22,11 @@ module volc_rad_data
 
   character(len=shr_kind_cl) :: curr_filename         !name of the input file(to use in error messages)
 
-  integer, parameter :: ntslices = 2                  !number of time slices to use for time interpolation
+  integer, parameter :: ntslc = 2                  !number of time slices to use for time interpolation
 
-  integer :: mxnflds, nlats, nalts, nalts_int, ntimes !lengths of various fields of input file
-  integer :: cnt_sw(4), cnt_lw(4)                     !dimension of data to be read from input file for one time slice
-  integer, allocatable :: pbuf_idx(:)                 !buffer index of all the radiation fields in pbuf
+  integer :: mxnflds, mxnflds_sw, mxnflds_lw, nlats, nalts, nalts_int, ntimes !lengths of various fields of input file
+  integer :: cnt_sw(4), cnt_lw(4)                        !dimension of data to be read from input file for one time slice
+  integer, allocatable :: pbuf_idx_sw(:), pbuf_idx_lw(:) !buffer index of all the radiation fields in pbuf
 
   real(r8) :: neg_huge                                !largest possible negative number
 
@@ -34,7 +34,7 @@ module volc_rad_data
   
 contains
   
-  subroutine volc_rad_data_init (specifier, filename, datapath, band_dim, &
+  subroutine volc_rad_data_init (specifier_sw, specifier_lw, filename, datapath, &
        data_type)
 
     use mo_constants,    only: d2r
@@ -45,10 +45,9 @@ contains
 
     implicit none
     
-    character(len=*), intent(in) :: specifier(:)
+    character(len=*), intent(in) :: specifier_sw(:), specifier_lw(:)
     character(len=*), intent(in) :: filename
     character(len=*), intent(in) :: datapath
-    integer,          intent(in) :: band_dim(:)
     character(len=*), intent(in) :: data_type
 
     !Local variables
@@ -66,8 +65,9 @@ contains
     curr_filename = trim(filename)
     neg_huge = -1.0_r8* huge(1.0)
     
-    mxnflds = 0
-    mxnflds = size( specifier )
+    mxnflds_sw = size( specifier_sw )
+    mxnflds_lw = size( specifier_lw )
+    mxnflds = mxnflds_sw + mxnflds_lw
 
     if (mxnflds < 1) return
     
@@ -79,7 +79,7 @@ contains
 
     ! open file and get fileid 
 
-    !BALLI- assuming serail data type
+    !BALLI- assuming serial data type
     call getfil( filepath , filen, 0 )
     call cam_pio_openfile( piofile, filen, PIO_NOWRITE)
     if(masterproc) write(iulog,*)'open_volc_rad_datafile: ',trim(filen)
@@ -132,7 +132,10 @@ contains
     ierr = pio_inq_dimlen( piofile, old_dimid, nlwbnds_prscb)
 
     if(nswbands .ne. nswbnds_prscb .and. nlwbands .ne. nlwbnds_prscb) then
-       call endrun ("BALLI: bands are not okay!")
+       write(iulog,*)'Bands in volc input file do not match the model bands'
+       write(iulog,*)'Bands in volc input file:nswbands,nlwbands:',nswbnds_prscb,nlwbnds_prscb
+       write(iulog,*)'Bands in model:nswbands,nlwbands:',nswbands,nlwbands
+       call endrun ("volc_rad_data.F90: shortwave and longwave bands mismatch ")
     endif
 
     !compute times array
@@ -146,25 +149,28 @@ contains
     cnt_sw  = (/ 1, nalts, nlats, nswbands /) 
     cnt_lw  = (/ 1, nalts, nlats, nlwbands /) 
 
-    allocate(pbuf_idx(mxnflds))
+    allocate(pbuf_idx_sw(mxnflds_sw),pbuf_idx_lw(mxnflds_lw))
 
-    flds_loop: do ifld = 1,mxnflds
-       pbuf_idx(ifld) = pbuf_get_index(trim(specifier(ifld)),errcode)!BALLI handle error?
-    enddo flds_loop
+    do ifld = 1,mxnflds_sw
+       pbuf_idx_sw(ifld) = pbuf_get_index(trim(specifier_sw(ifld)),errcode)!BALLI handle error?
+    enddo 
+    do ifld = 1,mxnflds_lw
+       pbuf_idx_lw(ifld) = pbuf_get_index(trim(specifier_lw(ifld)),errcode)!BALLI handle error?
+    enddo
 
   end subroutine volc_rad_data_init
 
+  !------------------------------------------------------------------------------------------------
 
 
-  subroutine advance_volc_rad_data (specifier, band_dim, state, pbuf2d )
+  subroutine advance_volc_rad_data (specifier_sw, specifier_lw, state, pbuf2d )
     
     use physics_buffer,   only: physics_buffer_desc
     use physics_types,    only: physics_state
     use time_manager,     only: get_curr_date
 
     !Arguments    
-    character(len=*),    intent(in)    :: specifier(:)
-    integer,             intent(in)    :: band_dim(:)
+    character(len=*),    intent(in)    :: specifier_sw(:),specifier_lw(:)
     type(physics_state), intent(in)    :: state(begchunk:endchunk)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
@@ -178,7 +184,7 @@ contains
     real(r8) :: wrk_sw(2,nswbands,nlats,nalts)
     real(r8) :: wrk_lw(2,nlwbands,nlats,nalts)
 
-    !==========================================================
+  !------------------------------------------------------------------------------------------------
 
     !find time indices to read data for two consecutive time indices to interpolate in time
     !get current model date
@@ -195,35 +201,30 @@ contains
     !see if we need to read data (i.e. we are at a time where new data is needed)
     strt_t = (/ it, 1, 1, 1 /)
     strt_tp1 = (/ itp1, 1, 1, 1 /)
-    if(1) then ! read data for the next time stamp from the input file
-       flds_loop_adv: do ifld = 1,mxnflds
-          banddim = band_dim(ifld)
-          !Get netcdf variable id for the field
-          ierr = pio_inq_varid(piofile, trim(adjustl(specifier(ifld))),var_id) !get id of the variable to read from iput file
 
-          if (banddim == nswbands) then !for shortwave bands
 
-             ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, wrk_sw(1,:,:,:) )!BALLI: handle error?
-             ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, wrk_sw(2,:,:,:) )!BALLI: handle error?
-             !interpolate in lats, time and vertical
-             call interpolate_lats_time_vert(state, wrk_sw, banddim, ifld, fact1, fact2, pbuf2d )
-          else if (banddim == nlwbands) then
-             !Note that we have to reverse (compared with how they are mentioned in the netcdf file) the array dim sizes
-             ierr = pio_get_var( piofile, var_id, strt_t  , cnt_lw, wrk_lw(1,:,:,:) )!BALLI: handle error?
-             ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, wrk_lw(2,:,:,:) )!BALLI: handle error?
-             !interpolate in lats, time and vertical
-             call interpolate_lats_time_vert(state, wrk_lw, banddim, ifld, fact1, fact2, pbuf2d )
-          else
-             write(iulog,*)'volc_rad_data.F90: Invalid band dimension:',banddim,', valid values are:',nlwbands,' or ',nswbands
-             call endrun
-          endif
+    do ifld = 1,mxnflds_sw
+       !Get netcdf variable id for the field
+       ierr = pio_inq_varid(piofile, trim(adjustl(specifier_sw(ifld))),var_id) !get id of the variable to read from iput file
+       ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, wrk_sw(1,:,:,:) )!BALLI: handle error?
+       ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, wrk_sw(2,:,:,:) )!BALLI: handle error?
+       !interpolate in lats, time and vertical
+       call interpolate_lats_time_vert(state, wrk_sw, nswbands, pbuf_idx_sw(ifld), fact1, fact2, pbuf2d )
+    enddo
 
-       enddo flds_loop_adv
+    do ifld = 1,mxnflds_lw
+       !Note that we have to reverse (compared with how they are mentioned in the netcdf file) the array dim sizes
+       ierr = pio_inq_varid(piofile, trim(adjustl(specifier_lw(ifld))),var_id) !get id of the variable to read from iput file
+       ierr = pio_get_var( piofile, var_id, strt_t  , cnt_lw, wrk_lw(1,:,:,:) )!BALLI: handle error?
+       ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, wrk_lw(2,:,:,:) )!BALLI: handle error?
+       !interpolate in lats, time and vertical
+       call interpolate_lats_time_vert(state, wrk_lw, nlwbands, pbuf_idx_lw(ifld), fact1, fact2, pbuf2d )
+    enddo
     
-    endif
+        
   end subroutine advance_volc_rad_data
 
-
+  !------------------------------------------------------------------------------------------------
 
   subroutine find_times_to_interpolate(curr_mdl_time, times_found, datatimem, datatimep, it, itp1)
     
@@ -257,13 +258,13 @@ contains
        endif
        enddo find_times_loop
 
-       if(.not.times_found) call endrun ('BALLI: times not found!')
+       if(.not.times_found) call endrun ('volc_rad_data.F90: sub find_times_to_interpolate: times not found!')
 
   end subroutine find_times_to_interpolate
 
+  !------------------------------------------------------------------------------------------------
 
-
-  subroutine interpolate_lats_time_vert(state, wrk, banddim, ifld, fact1, fact2, pbuf2d)
+  subroutine interpolate_lats_time_vert(state, wrk, banddim, pbuf_idx, fact1, fact2, pbuf2d)
 
     use ppgrid,           only: pverp
     use physics_buffer,   only: pbuf_get_field, physics_buffer_desc
@@ -273,9 +274,9 @@ contains
 
     !Arguments
     !--intent(in)
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
-    integer,  intent(in) :: banddim, ifld
-    real(r8), intent(in) :: fact1, fact2, wrk(ntslices,banddim,nlats,nalts)
+    type(physics_state), intent(in) :: state(begchunk:endchunk)
+    integer,  intent(in) :: banddim, pbuf_idx
+    real(r8), intent(in) :: fact1, fact2, wrk(ntslc,banddim,nlats,nalts)
 
     !--intent (out)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -286,14 +287,14 @@ contains
 
     real(r8), parameter :: m2km  = 1.e-3_r8
 
-    real(r8) :: wrk_1d(ntslices,pcols), to_lats(pcols)
-    real(r8) :: loc_arr(ntslices,banddim,pcols,nalts), datain(banddim,pcols,nalts)
+    real(r8) :: wrk_1d(ntslc,pcols), to_lats(pcols)
+    real(r8) :: loc_arr(ntslc,banddim,pcols,nalts), datain(banddim,pcols,nalts)
     real(r8) :: model_z(pverp)
 
     real(r8), pointer :: data_out(:,:,:)    
 
     do ichnk = begchunk, endchunk
-       call pbuf_get_field(pbuf2d, ichnk, pbuf_idx(ifld), data_out)
+       call pbuf_get_field(pbuf2d, ichnk, pbuf_idx, data_out)
        ncols = get_ncols_p(ichnk)
        call get_rlat_all_p(ichnk, pcols, to_lats)
        call lininterp_init(lats, nlats, to_lats, ncols, 1, lat_wgts)
@@ -309,10 +310,10 @@ contains
           end do
        enddo       
        call lininterp_finish(lat_wgts)
-       !vertical interpolation                                                                                                                                                                                                
+       !vertical interpolation                                                                                                                                                                                 
        do icol = 1, ncols
           model_z(1:pverp) = m2km * state(ichnk)%zi(icol,pverp:1:-1)
-          do iband = 1 , banddim
+          do iband = 1, banddim
              call rebin( nalts, pver, alts_int, model_z, datain(iband,icol,:), data_out(iband,icol,:) )
           enddo
        enddo
