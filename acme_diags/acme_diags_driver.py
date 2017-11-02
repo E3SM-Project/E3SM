@@ -6,6 +6,7 @@ import sys
 import getpass
 import datetime
 import importlib
+import traceback
 import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
@@ -54,8 +55,10 @@ def run_diag(parameters):
             single_result = module.run_diag(parameters)
             results.append(single_result)
         except Exception as e:
-            print('Error in {}: {}'.format(mod_str, e))
-            continue
+            print('Error in {}'.format(mod_str))
+            traceback.print_exc()
+            if parameters.debug:
+                sys.exit()
 
     return results
 
