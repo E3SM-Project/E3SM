@@ -31,6 +31,10 @@
 			description="if true, apply monthly salinity restoring"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_surface_salinity_monthly_restoring_compute_interval" type="character" default_value="0000-00-01_00:00:00"
+			description="interval to compute salinity restoring tendency"
+			possible values="Any valid time stamp or 'dt'"
+		/>
 		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="1.585e-5" units="m/year"
 			description="maximum allowable difference between surface salinity and climatology"
 			possible_values="any non-negative number"
