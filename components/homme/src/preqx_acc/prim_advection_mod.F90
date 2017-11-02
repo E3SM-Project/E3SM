@@ -285,16 +285,27 @@ contains
     !$omp master
 
     !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens,data_pack,data_pack2)
-    !$acc enter data pcopyin(hvcoord%dp0)
-    !$acc enter data pcopyin(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
-    !$acc enter data pcopyin(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
-    !$acc enter data pcopyin(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
-    !$acc enter data pcopyin(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap,edgeAdv%putmap,edgeAdv_p1%putmap,edgeAdvQ2%putmap)
-    !$acc enter data pcopyin(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap,edgeAdv%getmap,edgeAdv_p1%getmap,edgeAdvQ2%getmap)
-    !$acc enter data pcopyin(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse,edgeAdv%reverse,edgeAdv_p1%reverse,edgeAdvQ2%reverse)
-    !$acc enter data pcopyin(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag,edgeAdv%tag,edgeAdv_p1%tag,edgeAdvQ2%tag)
-    !$acc enter data pcopyin(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
-    !$acc enter data pcopyin(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
+    !$acc enter data pcreate(hvcoord)
+    !$acc enter data pcreate(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
+    !$acc enter data pcreate(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
+    !$acc enter data pcreate(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
+    !$acc enter data pcreate(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap,edgeAdv%putmap,edgeAdv_p1%putmap,edgeAdvQ2%putmap)
+    !$acc enter data pcreate(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap,edgeAdv%getmap,edgeAdv_p1%getmap,edgeAdvQ2%getmap)
+    !$acc enter data pcreate(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse,edgeAdv%reverse,edgeAdv_p1%reverse,edgeAdvQ2%reverse)
+    !$acc enter data pcreate(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag,edgeAdv%tag,edgeAdv_p1%tag,edgeAdvQ2%tag)
+    !$acc enter data pcreate(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
+    !$acc enter data pcreate(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
+
+    !$acc update device(hvcoord)
+    !$acc update device(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
+    !$acc update device(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
+    !$acc update device(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
+    !$acc update device(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap,edgeAdv%putmap,edgeAdv_p1%putmap,edgeAdvQ2%putmap)
+    !$acc update device(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap,edgeAdv%getmap,edgeAdv_p1%getmap,edgeAdvQ2%getmap)
+    !$acc update device(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse,edgeAdv%reverse,edgeAdv_p1%reverse,edgeAdvQ2%reverse)
+    !$acc update device(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag,edgeAdv%tag,edgeAdv_p1%tag,edgeAdvQ2%tag)
+    !$acc update device(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
+    !$acc update device(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
 
     !$omp end master
     !$omp barrier
@@ -704,7 +715,7 @@ contains
       enddo
     enddo
   enddo
-  call divergence_sphere_openacc( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 )
+  call divergence_sphere_openacc( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 , 1 , 1 )
   !$acc parallel loop gang vector collapse(5)
   do ie = 1 , nelemd
     ! advance Qdp
@@ -943,7 +954,7 @@ contains
     !$omp barrier
     !$omp master
     !$acc update device(derived_vn0)
-    call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1)
+    call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1,1,1)
     call copy_ondev(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)))
     !$acc update host(derived_divdp,derived_divdp_proj)
     !$omp end master

@@ -61,7 +61,7 @@ contains
     if(hypervis_scaling > 0) var_coef1 = .false.
     !$omp barrier
     !$omp master
-    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
+    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1,1,1)
     call t_startf('biwksc_PEU')
     call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
     !$omp end master
@@ -88,7 +88,7 @@ contains
         enddo
       enddo
     enddo
-    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,.true.,qtens,nlev*qsize,nets,nete,1,1)
+    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,.true.,qtens,nlev*qsize,nets,nete,1,1,1,1)
     !$omp end master
     !$omp barrier
   end subroutine biharmonic_wk_scalar_openacc

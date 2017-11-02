@@ -866,17 +866,20 @@ contains
     call t_startf('compute_and_apply_rhs')
     !$omp barrier
     !$omp master
+
     do ie=1,nelemd
       ! dont thread this because of k-1 dependence:
       do j = 1 , np
         do i = 1 , np
           p(i,j,1,ie)=hvcoord%hyai(1)*hvcoord%ps0 + elem(ie)%state%dp3d(i,j,1,n0)/2
+          !$acc loop seq
           do k=2,nlev
             p(i,j,k,ie)=p(i,j,k-1,ie) + elem(ie)%state%dp3d(i,j,k-1,n0)/2 + elem(ie)%state%dp3d(i,j,k,n0)/2
           enddo
         enddo
       enddo
     enddo
+
     do ie=1,nelemd
       do k=1,nlev
         grad_p(:,:,:,k,ie) = gradient_sphere(p(:,:,k,ie),deriv,elem(ie)%Dinv)
