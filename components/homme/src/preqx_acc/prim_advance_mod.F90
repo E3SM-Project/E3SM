@@ -11,15 +11,81 @@ module prim_advance_mod
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp, parallel_t, iam
   use time_mod,       only: timelevel_t
-  use prim_advance_mod_base, only: prim_advance_init1, applyCAMforcing_dynamics, applyCAMforcing, &
+  use prim_advance_mod_base, only: applyCAMforcing_dynamics, applyCAMforcing, &
                                    vertical_mesh_init2, edge3p1, ur_weights, set_prescribed_wind
   implicit none
   public :: prim_advance_exp, prim_advance_init1, applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
 
+  real (kind=real_kind), allocatable :: p           (:,:,:,:)
+  real (kind=real_kind), allocatable :: grad_p      (:,:,:,:,:)
+  real (kind=real_kind), allocatable :: rdp         (:,:,:,:)
+  real (kind=real_kind), allocatable :: vgrad_p     (:,:,:,:)
+  real (kind=real_kind), allocatable :: vdp         (:,:,:,:,:)
+  real (kind=real_kind), allocatable :: divdp       (:,:,:,:)
+  real (kind=real_kind), allocatable :: vort        (:,:,:,:)
+  real (kind=real_kind), allocatable :: kappa_star  (:,:,:,:)
+  real (kind=real_kind), allocatable :: T_v         (:,:,:,:)
+  real (kind=real_kind), allocatable :: phi         (:,:,:,:)
+  real (kind=real_kind), allocatable :: omega_p     (:,:,:,:)
+  real (kind=real_kind), allocatable :: eta_dot_dpdn(:,:,:,:)
+  real (kind=real_kind), allocatable :: T_vadv      (:,:,:,:)
+  real (kind=real_kind), allocatable :: v_vadv      (:,:,:,:,:)
+  real (kind=real_kind), allocatable :: Ephi        (:,:,:,:)
+  real (kind=real_kind), allocatable :: vtemp1      (:,:,:,:,:)
+  real (kind=real_kind), allocatable :: vtemp2      (:,:,:,:,:)
+
 contains
 
 
-  !_____________________________________________________________________
+
+  subroutine prim_advance_init1(par, elem,integration)
+    use edge_mod, only : initEdgeBuffer
+    implicit none
+
+    type (parallel_t) :: par
+    type (element_t), intent(inout), target   :: elem(:)
+    character(len=*), intent(in) :: integration
+    integer :: i, ie
+
+    call initEdgeBuffer(par,edge3p1,elem,4*nlev)
+
+    ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
+    allocate(ur_weights(qsplit))
+    ur_weights(:)=0.0d0
+
+    if(mod(qsplit,2).NE.0)then
+       ur_weights(1)=1.0d0/qsplit
+       do i=3,qsplit,2
+         ur_weights(i)=2.0d0/qsplit
+       enddo
+    else
+       do i=2,qsplit,2
+         ur_weights(i)=2.0d0/qsplit
+       enddo
+    endif
+
+    allocate(p           (np,np  ,nlev  ,nelemd))
+    allocate(grad_p      (np,np,2,nlev  ,nelemd))
+    allocate(rdp         (np,np  ,nlev  ,nelemd))
+    allocate(vgrad_p     (np,np  ,nlev  ,nelemd))
+    allocate(vdp         (np,np,2,nlev  ,nelemd))
+    allocate(divdp       (np,np  ,nlev  ,nelemd))
+    allocate(vort        (np,np  ,nlev  ,nelemd))
+    allocate(kappa_star  (np,np  ,nlev  ,nelemd))
+    allocate(T_v         (np,np  ,nlev  ,nelemd))
+    allocate(phi         (np,np  ,nlev  ,nelemd))
+    allocate(omega_p     (np,np  ,nlev  ,nelemd))
+    allocate(eta_dot_dpdn(np,np  ,nlev+1,nelemd))
+    allocate(T_vadv      (np,np  ,nlev  ,nelemd))
+    allocate(v_vadv      (np,np,2,nlev  ,nelemd))
+    allocate(Ephi        (np,np  ,nlev  ,nelemd))
+    allocate(vtemp1      (np,np,2,nlev  ,nelemd))
+    allocate(vtemp2      (np,np,2,nlev  ,nelemd))
+
+    end subroutine prim_advance_init1
+
+
+
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
@@ -274,7 +340,7 @@ contains
        ! Fully implicit JFNK method (vertically langragian not active yet)
        if (rsplit > 0) then
        call abortmp('ERROR: full_imp integration not yet coded for vert lagrangian adv option')
-       end if
+       endif
 !      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
@@ -314,38 +380,38 @@ contains
 				   do i=1,np
 					   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
 					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
+				   enddo
+			   enddo
+		   enddo
+	   enddo
 	   do ie=nets,nete
 		   do k=1,nlev
 			   do j=1,np
 				   do i=1,np
 					   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
 					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
+				   enddo
+			   enddo
+		   enddo
+	   enddo
 	   do ie=nets,nete
 		   do k=1,nlev
 			   do j=1,np
 				   do i=1,np
 					   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
 					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
+				   enddo
+			   enddo
+		   enddo
+	   enddo
 	   do ie=nets,nete
 		   do j=1,np
 			   do i=1,np
 				   xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
 				   lx = lx+1
-			   end do
-		   end do
-	   end do
+			   enddo
+		   enddo
+	   enddo
 
 ! activate these lines to test infrastructure and still solve with explicit code
 !       ! RK2
@@ -371,38 +437,38 @@ contains
 				  do i=1,np
 					  elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
 					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
+				  enddo
+			  enddo
+		  enddo
+	  enddo
 	  do ie=nets,nete
 		  do k=1,nlev
 			  do j=1,np
 				  do i=1,np
 					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx)
 					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
+				  enddo
+			  enddo
+		  enddo
+	  enddo
 	  do ie=nets,nete
 		  do k=1,nlev
 			  do j=1,np
 				  do i=1,np
 					  elem(ie)%state%T(i,j,k,np1) = xstate(lx)
 					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
+				  enddo
+			  enddo
+		  enddo
+	  enddo
 	  do ie=nets,nete
 		  do j=1,np
 			  do i=1,np
 				  elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
 				  lx = lx+1
-			  end do
-		  end do
-	  end do
+			  enddo
+		  enddo
+	  enddo
       call t_stopf("JFNK_imp_timestep")
 #endif
 
@@ -784,45 +850,49 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
     ! local
-    real (kind=real_kind), dimension(np,np,nlev)   :: phi
-    real (kind=real_kind), dimension(np,np,nlev)   :: omega_p
-    real (kind=real_kind), dimension(np,np,nlev)   :: T_v
-    real (kind=real_kind), dimension(np,np,nlev)   :: divdp
-    real (kind=real_kind), dimension(np,np,nlev+1) :: eta_dot_dpdn  ! half level vertical velocity on p-grid
     real (kind=real_kind), dimension(np,np)        :: sdot_sum   ! temporary field
-    real (kind=real_kind), dimension(np,np,2)      :: vtemp     ! generic gradient storage
-    real (kind=real_kind), dimension(np,np,2,nlev) :: vdp       !
     real (kind=real_kind), dimension(np,np,2     ) :: v         !
-    real (kind=real_kind), dimension(np,np)        :: vgrad_T    ! v.grad(T)
-    real (kind=real_kind), dimension(np,np)        :: Ephi       ! kinetic energy + PHI term
-    real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
+    real (kind=real_kind) :: vgrad_T    ! v.grad(T)
     real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p_m_pmet  ! gradient(p - p_met)
-    real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
-    real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
-    real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
-    real (kind=real_kind), dimension(np,np,nlev)   :: T_vadv     ! temperature vertical advection
-    real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
     real (kind=real_kind), dimension(np,np,nlev+1) :: ph               ! half level pressures on p-grid
-    real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
-    real (kind=real_kind) :: kappa_star(np,np,nlev)
-    real (kind=real_kind) :: vtens1(np,np,nlev)
-    real (kind=real_kind) :: vtens2(np,np,nlev)
-    real (kind=real_kind) :: ttens(np,np,nlev)
+    real (kind=real_kind) :: vtens1
+    real (kind=real_kind) :: vtens2
+    real (kind=real_kind) :: ttens
     type (EdgeDescriptor_t) :: desc
     real (kind=real_kind) :: cp2,cp_ratio,E,de,Qt,v1,v2
     real (kind=real_kind) :: glnps1,glnps2,gpterm
     integer :: i,j,k,kptr,ie
 
     call t_startf('compute_and_apply_rhs')
-    do ie=nets,nete
+    !$omp barrier
+    !$omp master
+    do ie=1,nelemd
       ! dont thread this because of k-1 dependence:
-      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + elem(ie)%state%dp3d(:,:,1,n0)/2
-      do k=2,nlev
-        p(:,:,k)=p(:,:,k-1) + elem(ie)%state%dp3d(:,:,k-1,n0)/2 + elem(ie)%state%dp3d(:,:,k,n0)/2
+      do j = 1 , np
+        do i = 1 , np
+          p(i,j,1,ie)=hvcoord%hyai(1)*hvcoord%ps0 + elem(ie)%state%dp3d(i,j,1,n0)/2
+          do k=2,nlev
+            p(i,j,k,ie)=p(i,j,k-1,ie) + elem(ie)%state%dp3d(i,j,k-1,n0)/2 + elem(ie)%state%dp3d(i,j,k,n0)/2
+          enddo
+        enddo
       enddo
+    enddo
+    do ie=1,nelemd
       do k=1,nlev
-        grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
-        rdp(:,:,k) = 1.0D0/elem(ie)%state%dp3d(:,:,k,n0)
+        grad_p(:,:,:,k,ie) = gradient_sphere(p(:,:,k,ie),deriv,elem(ie)%Dinv)
+      enddo
+    enddo
+    do ie=1,nelemd
+      do k=1,nlev
+        do j = 1 , np
+          do i = 1 , np
+            rdp(i,j,k,ie) = 1.0D0/elem(ie)%state%dp3d(i,j,k,n0)
+          enddo
+        enddo
+      enddo
+    enddo
+    do ie=1,nelemd
+      do k=1,nlev
         ! ============================
         ! compute vgrad_lnps
         ! ============================
@@ -830,79 +900,91 @@ contains
           do i=1,np
             v1 = elem(ie)%state%v(i,j,1,k,n0)
             v2 = elem(ie)%state%v(i,j,2,k,n0)
-            vgrad_p(i,j,k) = (v1*grad_p(i,j,1,k) + v2*grad_p(i,j,2,k))
-            vdp(i,j,1,k) = v1*elem(ie)%state%dp3d(i,j,k,n0)
-            vdp(i,j,2,k) = v2*elem(ie)%state%dp3d(i,j,k,n0)
-          end do
-        end do
+            vgrad_p(i,j,k,ie) = (v1*grad_p(i,j,1,k,ie) + v2*grad_p(i,j,2,k,ie))
+            vdp(i,j,1,k,ie) = v1*elem(ie)%state%dp3d(i,j,k,n0)
+            vdp(i,j,2,k,ie) = v2*elem(ie)%state%dp3d(i,j,k,n0)
+          enddo
+        enddo
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
         ! ================================
-        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vdp(:,:,:,k)
-        ! =========================================
-        ! Compute relative vorticity and divergence
-        ! =========================================
-        divdp(:,:,k)=divergence_sphere(vdp(:,:,:,k),deriv,elem(ie))
-        vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
+        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vdp(:,:,:,k,ie)
       enddo
+    enddo
+    ! =========================================
+    ! Compute relative vorticity and divergence
+    ! =========================================
+    do ie=1,nelemd
+      do k=1,nlev
+        divdp(:,:,k,ie)=divergence_sphere(vdp(:,:,:,k,ie),deriv,elem(ie))
+      enddo
+    enddo
+    do ie=1,nelemd
+      do k=1,nlev
+        vort(:,:,k,ie)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
+      enddo
+    enddo
 
+    do ie=1,nelemd
       ! compute T_v for timelevel n0
-      if (.not. use_moisture ) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-              T_v(i,j,k) = elem(ie)%state%T(i,j,k,n0)
-              kappa_star(i,j,k) = kappa
-            end do
-          end do
-        end do
-      else
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
+      do k=1,nlev
+        do j=1,np
+          do i=1,np
+            if (.not. use_moisture ) then
+              T_v(i,j,k,ie) = elem(ie)%state%T(i,j,k,n0)
+              kappa_star(i,j,k,ie) = kappa
+            else
               ! Qt = elem(ie)%state%Q(i,j,k,1)
               Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/elem(ie)%state%dp3d(i,j,k,n0)
-              T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
+              T_v(i,j,k,ie) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
               if (use_cpstar==1) then
-                kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
+                kappa_star(i,j,k,ie) =  Rgas/Virtual_Specific_Heat(Qt)
               else
-                kappa_star(i,j,k) = kappa
+                kappa_star(i,j,k,ie) = kappa
               endif
-            end do
-          end do
-        end do
-      end if
-      ! ====================================================
-      ! Compute Hydrostatic equation, modeld after CCM-3
-      ! ====================================================
-      call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,elem(ie)%state%dp3d(:,:,:,n0))
-      ! ====================================================
-      ! Compute omega_p according to CCM-3
-      ! ====================================================
-      call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
-      ! ==================================================
-      ! zero partial sum for accumulating sum
-      !    (div(v_k) + v_k.grad(lnps))*dsigma_k = div( v dp )
-      ! used by eta_dot_dpdn and lnps tendency
-      ! ==================================================
-      sdot_sum=0
-      ! ==================================================
-      ! Compute eta_dot_dpdn
-      ! save sdot_sum as this is the -RHS of ps_v equation
-      ! ==================================================
-      if (rsplit>0) then
+            endif
+          enddo
+        enddo
+      enddo
+    enddo
+    ! ====================================================
+    ! Compute Hydrostatic equation, modeld after CCM-3
+    ! ====================================================
+    do ie=1,nelemd
+      call preq_hydrostatic(phi(:,:,:,ie),elem(ie)%state%phis,T_v(:,:,:,ie),p(:,:,:,ie),elem(ie)%state%dp3d(:,:,:,n0))
+    enddo
+    ! ====================================================
+    ! Compute omega_p according to CCM-3
+    ! ====================================================
+    do ie=1,nelemd
+      call preq_omega_ps(omega_p(:,:,:,ie),hvcoord,p(:,:,:,ie),vgrad_p(:,:,:,ie),divdp(:,:,:,ie))
+    enddo
+    ! ==================================================
+    ! Compute eta_dot_dpdn
+    ! save sdot_sum as this is the -RHS of ps_v equation
+    ! ==================================================
+    if (rsplit>0) then
+      do ie=1,nelemd
         ! VERTICALLY LAGRANGIAN:   no vertical motion
-        eta_dot_dpdn=0
-        T_vadv=0
-        v_vadv=0
-      else
+        eta_dot_dpdn(:,:,:  ,ie)=0
+        T_vadv      (:,:,:  ,ie)=0
+        v_vadv      (:,:,:,:,ie)=0
+      enddo
+    else
+      do ie=1,nelemd
+        ! ==================================================
+        ! zero partial sum for accumulating sum
+        !    (div(v_k) + v_k.grad(lnps))*dsigma_k = div( v dp )
+        ! used by eta_dot_dpdn and lnps tendency
+        ! ==================================================
+        sdot_sum=0
         do k=1,nlev
           ! ==================================================
           ! add this term to PS equation so we exactly conserve dry mass
           ! ==================================================
-          sdot_sum(:,:) = sdot_sum(:,:) + divdp(:,:,k)
-          eta_dot_dpdn(:,:,k+1) = sdot_sum(:,:)
-        end do
+          sdot_sum(:,:) = sdot_sum(:,:) + divdp(:,:,k,ie)
+          eta_dot_dpdn(:,:,k+1,ie) = sdot_sum(:,:)
+        enddo
         ! ===========================================================
         ! at this point, eta_dot_dpdn contains integral_etatop^eta[ divdp ]
         ! compute at interfaces:
@@ -911,90 +993,100 @@ contains
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
         do k=1,nlev-1
-          eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
-        end do
-        eta_dot_dpdn(:,:,1     ) = 0.0D0
-        eta_dot_dpdn(:,:,nlev+1) = 0.0D0
-        ! ===========================================================
-        ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
-        ! ==============================================
-        call preq_vertadv(elem(ie)%state%T(:,:,:,n0),elem(ie)%state%v(:,:,:,:,n0),eta_dot_dpdn,rdp,T_vadv,v_vadv)
-      endif
-
+          eta_dot_dpdn(:,:,k+1,ie) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1,ie)
+        enddo
+        eta_dot_dpdn(:,:,1     ,ie) = 0.0D0
+        eta_dot_dpdn(:,:,nlev+1,ie) = 0.0D0
+      enddo
+      ! ===========================================================
+      ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
+      ! ==============================================
+      do ie=1,nelemd
+        call preq_vertadv(elem(ie)%state%T(:,:,:,n0),elem(ie)%state%v(:,:,:,:,n0),eta_dot_dpdn(:,:,:,ie),rdp(:,:,:,ie),T_vadv(:,:,:,ie),v_vadv(:,:,:,:,ie))
+      enddo
+    endif
+    do ie=1,nelemd
       ! ================================
       ! accumulate mean vertical flux:
       ! ================================
       do k=1,nlev  !  Loop index added (AAM)
-        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
-        elem(ie)%derived%omega_p(:,:,k) = elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+        do j = 1 , np
+          do i = 1 , np
+            elem(ie)%derived%eta_dot_dpdn(i,j,k) = elem(ie)%derived%eta_dot_dpdn(i,j,k) + eta_ave_w*eta_dot_dpdn(i,j,k,ie)
+            elem(ie)%derived%omega_p(i,j,k) = elem(ie)%derived%omega_p(i,j,k) + eta_ave_w*omega_p(i,j,k,ie)
+          enddo
+        enddo
       enddo
-      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
-
+      do j = 1 , np
+        do i = 1 , np
+          elem(ie)%derived%eta_dot_dpdn(i,j,nlev+1) = elem(ie)%derived%eta_dot_dpdn(i,j,nlev+1) + eta_ave_w*eta_dot_dpdn(i,j,nlev+1,ie)
+        enddo
+      enddo
       ! ==============================================
       ! Compute phi + kinetic energy term: 10*nv*nv Flops
       ! ==============================================
       do k=1,nlev
         do j=1,np
           do i=1,np
-            v1     = elem(ie)%state%v(i,j,1,k,n0)
-            v2     = elem(ie)%state%v(i,j,2,k,n0)
+            v1 = elem(ie)%state%v(i,j,1,k,n0)
+            v2 = elem(ie)%state%v(i,j,2,k,n0)
             E = 0.5D0*( v1*v1 + v2*v2 )
-            Ephi(i,j)=E+phi(i,j,k)
-          end do
-        end do
-        ! ================================================
-        ! compute gradp term (ps/p)*(dp/dps)*T
-        ! ================================================
-        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
-        do j=1,np
-          do i=1,np
-            v1     = elem(ie)%state%v(i,j,1,k,n0)
-            v2     = elem(ie)%state%v(i,j,2,k,n0)
-            vgrad_T(i,j) =  v1*vtemp(i,j,1) + v2*vtemp(i,j,2)
-          end do
-        end do
-        ! vtemp = grad ( E + PHI )
-        vtemp = gradient_sphere(Ephi(:,:),deriv,elem(ie)%Dinv)
-        do j=1,np
-          do i=1,np
-            gpterm = T_v(i,j,k)/p(i,j,k)
-            glnps1 = Rgas*gpterm*grad_p(i,j,1,k)
-            glnps2 = Rgas*gpterm*grad_p(i,j,2,k)
-            v1     = elem(ie)%state%v(i,j,1,k,n0)
-            v2     = elem(ie)%state%v(i,j,2,k,n0)
-            vtens1(i,j,k) =   - v_vadv(i,j,1,k) + v2*(elem(ie)%fcor(i,j) + vort(i,j,k)) - vtemp(i,j,1) - glnps1
-            ! phl: add forcing term to zonal wind u
-            vtens2(i,j,k) =   - v_vadv(i,j,2,k) - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) - vtemp(i,j,2) - glnps2
-            ! phl: add forcing term to meridional wind v
-            ttens(i,j,k)  = - T_vadv(i,j,k) - vgrad_T(i,j) + kappa_star(i,j,k)*T_v(i,j,k)*omega_p(i,j,k)
-            ! phl: add forcing term to T
-          end do
-        end do
-      end do
-
-      ! =========================================================
-      ! local element timestep, store in np1.
-      ! note that we allow np1=n0 or nm1
-      ! apply mass matrix
-      ! =========================================================
-      do k=1,nlev
-        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
-        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
-        elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%T(:,:,k,nm1) + dt2*ttens(:,:,k))
-        elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
-                                         dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+            Ephi(i,j,k,ie)=E+phi(i,j,k,ie)
+          enddo
+        enddo
       enddo
+    enddo
+    ! ================================================
+    ! compute gradp term (ps/p)*(dp/dps)*T
+    ! ================================================
+    do ie=1,nelemd
+      do k=1,nlev
+        vtemp1(:,:,:,k,ie) = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
+        vtemp2(:,:,:,k,ie) = gradient_sphere(Ephi(:,:,k,ie)            ,deriv,elem(ie)%Dinv)
+      enddo
+    enddo
+    do ie=1,nelemd
+      do k=1,nlev
+        do j=1,np
+          do i=1,np
+            v1      = elem(ie)%state%v(i,j,1,k,n0)
+            v2      = elem(ie)%state%v(i,j,2,k,n0)
+            vgrad_T =  v1*vtemp1(i,j,1,k,ie) + v2*vtemp1(i,j,2,k,ie)
+            gpterm  = T_v(i,j,k,ie)/p(i,j,k,ie)
+            glnps1  = Rgas*gpterm*grad_p(i,j,1,k,ie)
+            glnps2  = Rgas*gpterm*grad_p(i,j,2,k,ie)
+            vtens1  = - v_vadv(i,j,1,k,ie) + v2*(elem(ie)%fcor(i,j) + vort(i,j,k,ie)) - vtemp2(i,j,1,k,ie) - glnps1
+            vtens2  = - v_vadv(i,j,2,k,ie) - v1*(elem(ie)%fcor(i,j) + vort(i,j,k,ie)) - vtemp2(i,j,2,k,ie) - glnps2
+            ttens   = - T_vadv(i,j  ,k,ie) - vgrad_T + kappa_star(i,j,k,ie)*T_v(i,j,k,ie)*omega_p(i,j,k,ie)
+            ! =========================================================
+            ! local element timestep, store in np1.
+            ! note that we allow np1=n0 or nm1
+            ! apply mass matrix
+            ! =========================================================
+            elem(ie)%state%v   (i,j,1,k,np1) = elem(ie)%spheremp(i,j)*( elem(ie)%state%v   (i,j,1,k,nm1) + dt2*vtens1 )
+            elem(ie)%state%v   (i,j,2,k,np1) = elem(ie)%spheremp(i,j)*( elem(ie)%state%v   (i,j,2,k,nm1) + dt2*vtens2 )
+            elem(ie)%state%T   (i,j  ,k,np1) = elem(ie)%spheremp(i,j)*( elem(ie)%state%T   (i,j  ,k,nm1) + dt2*ttens  )
+            elem(ie)%state%dp3d(i,j  ,k,np1) = elem(ie)%spheremp(i,j)*( elem(ie)%state%dp3d(i,j  ,k,nm1) - dt2* &
+                                                                        (divdp(i,j,k,ie) + eta_dot_dpdn(i,j,k+1,ie)-eta_dot_dpdn(i,j,k,ie)) &
+                                                                                                                      )
+          enddo
+        enddo
+      enddo
+    enddo
 
-      ! =========================================================
-      ! Pack ps(np1), T, and v tendencies into comm buffer
-      ! =========================================================
+    ! =========================================================
+    ! Pack ps(np1), T, and v tendencies into comm buffer
+    ! =========================================================
+    do ie=1,nelemd
       kptr=0
       call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
       kptr=kptr+nlev
       call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
       kptr=kptr+2*nlev
       call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
-    end do
+    enddo
+    !$omp end master
+    !$omp barrier
 
     ! =============================================================
     ! Insert communications here: for shared memory, just a single
@@ -1005,30 +1097,36 @@ contains
     call bndry_exchangeV(hybrid,edge3p1)
     call t_stopf('caar_bexchV')
 
-    do ie=nets,nete
-      ! ===========================================================
-      ! Unpack the edges for vgrad_T and v tendencies...
-      ! ===========================================================
+    !$omp barrier
+    !$omp master
+    ! ===========================================================
+    ! Unpack the edges for vgrad_T and v tendencies...
+    ! ===========================================================
+    do ie=1,nelemd
       kptr=0
       call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,:,np1), nlev, kptr, ie)
       kptr=kptr+nlev
       call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
       kptr=kptr+2*nlev
       call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
-      ! ====================================================
-      ! Scale tendencies by inverse mass matrix
-      ! ====================================================
+    enddo
+    ! ====================================================
+    ! Scale tendencies by inverse mass matrix
+    ! ====================================================
+    do ie=1,nelemd
       do k=1,nlev
-        elem(ie)%state%T(:,:,k,np1)   = elem(ie)%rspheremp(:,:)*elem(ie)%state%T(:,:,k,np1)
-        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
-        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
-      end do
-
-      ! vertically lagrangian: complete dp3d timestep:
-      do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,np1)= elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+        do j = 1 , np
+          do i = 1 , np
+            elem(ie)%state%T   (i,j  ,k,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%T   (i,j  ,k,np1)
+            elem(ie)%state%v   (i,j,1,k,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%v   (i,j,1,k,np1)
+            elem(ie)%state%v   (i,j,2,k,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%v   (i,j,2,k,np1)
+            elem(ie)%state%dp3d(i,j  ,k,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%dp3d(i,j  ,k,np1)
+          enddo
+        enddo
       enddo
-    end do
+    enddo
+    !$omp end master
+    !$omp barrier
     call t_stopf('compute_and_apply_rhs')
 
   end subroutine compute_and_apply_rhs
