@@ -2852,7 +2852,7 @@
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
 	 <mpirun mpilib="openmpi">
-	 <executable args="default">jsrun</executable>
+	 <executable>jsrun</executable>
 	 <arguments>
 	     <!-- Useful jsrun options:
 		-n	(hyphen-hyphen)nrs	Number of resource sets
@@ -2861,9 +2861,9 @@
 		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
 		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
 		 This will request nnodes resource sets (-n nnodes), each with p processes (-a p), and 1 resource set per node (-r 1).
-		 $ENV{NUM_NODES} -a $ENV{PES_PER_NODE} -r1 
+		 $ENV{NUM_NODES} -a p -r1 
 		 -->
-		 <arg name="num_tasks" > -n ALL_HOSTS -a $ENV{MAX_MPITASKS_PER_NODE} -c $ENV{OMP_NUM_THREADS} </arg>
+		 <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE -c $ENV{OMP_NUM_THREADS} </arg>
 		 <arg name="thread_count"> -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
 		 <!-- <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg> -->
 		 <!-- <arg name="show-binding"> report-bindings </arg> -->
@@ -2908,7 +2908,7 @@
       </modules>
       <modules compiler="ibm">
         <command name="rm">pgi</command>
-        <command name="load">xl/20170727-beta/</command>
+        <command name="load">xl/20170914-beta</command>
         <command name="load">spectrum-mpi/10.1.0.4-20170915</command>
         <command name="ls"/>
       </modules>
@@ -2922,15 +2922,16 @@
       <modules compiler="ibm" mpilib="!mpi-serial">
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.7.0</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules> 
  	  <modules compiler="pgi" mpilib="!mpi-serial">
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.7.0</command>
+        <command name="load">parallel-netcdf/1.8.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
+    </module_system>
       <!-- Default -->
       <environment_variables>
 		  <env name="COMPILER">$COMPILER</env>
@@ -2944,7 +2945,6 @@
       <environment_variables mpilib="!mpi-serial">
         <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       </environment_variables>
-    </module_system>
 </machine>
 
 <default_run_suffix>
