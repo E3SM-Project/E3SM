@@ -62,7 +62,9 @@ OR
                              help="clean all objects including sharedlibobjects that may be used by other builds")
 
     mutex_group.add_argument("--clean-depends", nargs="*", choices=allobjs,
-                             help="clean Depends and Srcfiles only - this allows new files to be added in SourceMods")
+                             help="clean Depends and Srcfiles only - "
+                             "this allows you to rebuild after adding new "
+                             "files in the source tree or in SourceMods")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
