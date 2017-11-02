@@ -653,12 +653,18 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
       rcode = nf_get_var_double(fid,vid     ,map%area_a)
       units = "" ! units needs to be emptied before reading from netCDF file
       rcode = nf_get_att_text(fid, vid, "units", units)
+      if (rcode.ne.0) then
+         write(6,*) "ERROR: No units attribute found for source grid_area variable"
+         write(6,*) "Please add a units attribute with value 'square radians' or 'square degrees'"
+         stop
+      end if
       if (trim(units).eq."square radians") then
          ! Nothing to do
       else if (trim(units).eq."square degrees") then
          map%area_a = map%area_a * DEGtoRAD * DEGtoRAD
       else
-         write(6,*) "ERROR: Unrecognized units for source grid_area: ", trim(units)
+         write(6,*) "ERROR: Unrecognized units for source grid_area variable: ", trim(units)
+         write(6,*) "Recognized units are 'square radians' or 'square degrees'"
          stop
       end if
 
