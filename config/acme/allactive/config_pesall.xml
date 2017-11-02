@@ -4642,7 +4642,7 @@
     <mach name="mira|cetus">
       <pes compset="any" pesize="any">
         <comment>ne30 grid on 128x16x4 PEs</comment>
-        <PES_PER_NODE>16</PES_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>176</ntasks_lnd>
