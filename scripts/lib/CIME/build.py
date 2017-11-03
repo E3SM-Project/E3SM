@@ -311,11 +311,11 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
     logger.info("{} built in {:f} seconds".format(compname, (t2 - t1)))
 
 ###############################################################################
-def _clean_impl(case, cleanlist, clean_all):
+def _clean_impl(case, cleanlist, clean_all, clean_depends):
 ###############################################################################
+    exeroot = os.path.abspath(case.get_value("EXEROOT"))
     if clean_all:
         # If cleanlist is empty just remove the bld directory
-        exeroot = os.path.abspath(case.get_value("EXEROOT"))
         expect(exeroot is not None,"No EXEROOT defined in case")
         if os.path.isdir(exeroot):
             logging.info("cleaning directory {}".format(exeroot))
@@ -327,7 +327,8 @@ def _clean_impl(case, cleanlist, clean_all):
             logging.warning("cleaning directory {}".format(sharedlibroot))
             shutil.rmtree(sharedlibroot)
     else:
-        expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
+        expect((cleanlist is not None and len(cleanlist) > 0) or
+               (clean_depends is not None and len(clean_depends)),"Empty cleanlist not expected")
         debug           = case.get_value("DEBUG")
         use_esmf_lib    = case.get_value("USE_ESMF_LIB")
         build_threaded  = case.get_build_threaded()
@@ -345,10 +346,16 @@ def _clean_impl(case, cleanlist, clean_all):
         os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
 
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
-        for item in cleanlist:
-            tcmd = cmd + " clean" + item
-            logger.info("calling {} ".format(tcmd))
-            run_cmd_no_fail(tcmd)
+        if cleanlist is not None:
+            for item in cleanlist:
+                tcmd = cmd + " clean" + item
+                logger.info("calling {} ".format(tcmd))
+                run_cmd_no_fail(tcmd)
+        else:
+            for item in clean_depends:
+                tcmd = cmd + " clean_depends" + item
+                logger.info("calling {} ".format(tcmd))
+                run_cmd_no_fail(tcmd)
 
     # unlink Locked files directory
     unlock_file("env_build.xml")
@@ -574,7 +581,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################
-def clean(case, cleanlist=None, clean_all=False):
+def clean(case, cleanlist=None, clean_all=False, clean_depends=None):
 ###############################################################################
-    functor = lambda: _clean_impl(case, cleanlist, clean_all)
+    functor = lambda: _clean_impl(case, cleanlist, clean_all, clean_depends)
     return run_and_log_case_status(functor, "build.clean", caseroot=case.get_value("CASEROOT"))
