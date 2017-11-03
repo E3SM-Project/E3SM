@@ -61,7 +61,7 @@ OR
     mutex_group.add_argument("--clean-all", action="store_true",
                              help="clean all objects including sharedlibobjects that may be used by other builds")
 
-    mutex_group.add_argument("--clean-depends", nargs="*", choices=allobjs,
+    mutex_group.add_argument("--clean-depends", nargs="*", choices=comps+["csmshare"],
                              help="clean Depends and Srcfiles only - "
                              "this allows you to rebuild after adding new "
                              "files in the source tree or in SourceMods")
