@@ -222,7 +222,7 @@ end subroutine prescribed_volcaero_readnl
        specifier_lw(ispf) = trim(adjustl(ext_earth_name))
        
        !BALLI-add comments!!
-       call volc_rad_data_init(specifier_sw, specifier_lw, filename, datapath, data_type)
+       call volc_rad_data_init(specifier_sw, specifier_lw, filename, datapath, data_type, cycle_yr)
 
     else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
 

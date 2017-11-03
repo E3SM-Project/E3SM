@@ -21,21 +21,22 @@ module volc_rad_data
   type(file_desc_t)  :: piofile                       !input file handle
 
   character(len=shr_kind_cl) :: curr_filename         !name of the input file(to use in error messages)
-
+  logical :: iscyclic
   integer, parameter :: ntslc = 2                  !number of time slices to use for time interpolation
 
   integer :: mxnflds, mxnflds_sw, mxnflds_lw, nlats, nalts, nalts_int, ntimes !lengths of various fields of input file
   integer :: cnt_sw(4), cnt_lw(4)                        !dimension of data to be read from input file for one time slice
+  integer :: cyc_ndx_beg, cyc_ndx_end, cyc_tsize, cyc_yr_in
   integer, allocatable :: pbuf_idx_sw(:), pbuf_idx_lw(:) !buffer index of all the radiation fields in pbuf
 
-  real(r8) :: neg_huge                                !largest possible negative number
+  real(r8) :: neg_huge                                   !largest possible negative number
 
   real(r8), allocatable :: lats(:), alts(:), alts_int(:), times(:) !input file dimension values
   
 contains
   
   subroutine volc_rad_data_init (specifier_sw, specifier_lw, filename, datapath, &
-       data_type)
+       data_type, cyc_yr)
 
     use mo_constants,    only: d2r
     use spmd_utils,      only: masterproc
@@ -49,20 +50,34 @@ contains
     character(len=*), intent(in) :: filename
     character(len=*), intent(in) :: datapath
     character(len=*), intent(in) :: data_type
+    integer,          intent(in) :: cyc_yr
 
     !Local variables
     character(len=shr_kind_cl) :: filen, filepath
+    logical :: need_first_ndx
+
     integer :: ierr, ifld, errcode
     integer :: lat_dimid, lev_dimid, tim_dimid, alt_dimid, alt_int_dimid, sw_dimid, lw_dimid, old_dimid
     integer :: itimes
-    integer :: nswbnds_prscb, nlwbnds_prscb, year, month, day 
+    integer :: nswbnds_prscb, nlwbnds_prscb, year, month, day, idates
 
     integer, allocatable :: dates(:)
 
 
-    !BALLI-add comments
-    
+    !BALLI- add comment
+
+    !Currently only handles cyclic or serial data types
+    iscyclic = .false.
+    if (trim(data_type).ne. 'SERIAL' .and. trim(data_type).ne. 'CYCLICAL') then
+       call endrun ('volc_rad_data.F90:Only SERIAL or CYCLICAL data types supported, current data type is:'//trim(data_type))
+    endif
+    if (trim(data_type).eq. 'CYCLICAL') then
+       iscyclic = .true.
+    endif
+       
+        
     curr_filename = trim(filename)
+    cyc_yr_in     = cyc_yr
     neg_huge = -1.0_r8* huge(1.0)
     
     mxnflds_sw = size( specifier_sw )
@@ -78,8 +93,6 @@ contains
     end if
 
     ! open file and get fileid 
-
-    !BALLI- assuming serial data type
     call getfil( filepath , filen, 0 )
     call cam_pio_openfile( piofile, filen, PIO_NOWRITE)
     if(masterproc) write(iulog,*)'open_volc_rad_datafile: ',trim(filen)
@@ -95,6 +108,34 @@ contains
 
     ierr = pio_inq_varid( piofile, 'month', old_dimid )
     ierr = pio_get_var( piofile, old_dimid, dates )
+    
+    !compute times array
+    need_first_ndx = .true. !for cyclic year only
+    
+    do itimes = 1, ntimes
+       idates = dates(itimes)
+       year   = idates / 10000
+       month  = mod(idates, 10000)/100
+       day    = mod(idates, 100)
+       call set_time_float_from_date( times(itimes), year, month, day, 0 )
+       if (iscyclic) then
+          if ( year == cyc_yr ) then
+             if ( need_first_ndx ) then
+                cyc_ndx_beg = itimes
+                need_first_ndx = .false.
+             endif
+             cyc_ndx_end = itimes     
+          endif
+       endif
+    enddo
+    
+    if (cyc_ndx_beg < 0) then
+       write(iulog,*) 'volc_rad_data.F90: subr volc_rad_data_init: cycle year not found : ' , cyc_yr
+       call endrun('volc_rad_data_init:: cycle year not found')
+    endif
+
+    cyc_tsize = cyc_ndx_end - cyc_ndx_beg + 1 
+
 
     !Polulate lats from the volc file
     ierr = pio_inq_dimid( piofile, 'latitude', old_dimid)
@@ -138,13 +179,6 @@ contains
        call endrun ("volc_rad_data.F90: shortwave and longwave bands mismatch ")
     endif
 
-    !compute times array
-    do itimes=1,ntimes
-       year = dates(itimes) / 10000
-       month = mod(dates(itimes),10000)/100
-       day = mod(dates(itimes),100)
-       call set_time_float_from_date( times(itimes), year, month, day, 0 )
-    enddo
 
     cnt_sw  = (/ 1, nalts, nlats, nswbands /) 
     cnt_lw  = (/ 1, nalts, nlats, nlwbands /) 
@@ -175,8 +209,6 @@ contains
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
     !Local variables
-    logical :: times_found
-    
     integer :: strt_t(4), strt_tp1(4), ifld, ierr, var_id
     integer :: errcode, yr, mon, day, ncsec, it, itp1, banddim
 
@@ -189,10 +221,11 @@ contains
     !find time indices to read data for two consecutive time indices to interpolate in time
     !get current model date
     call get_curr_date(yr, mon, day, ncsec)
-
+    if(iscyclic)yr = cyc_yr_in
+ 
     call set_time_float_from_date( curr_mdl_time, yr, mon, day, ncsec )
     
-    call find_times_to_interpolate(curr_mdl_time, times_found, datatimem, datatimep, it, itp1)
+    call find_times_to_interpolate(curr_mdl_time, datatimem, datatimep, it, itp1)
 
     deltat = datatimep - datatimem
     fact1 = (datatimep - curr_mdl_time)/deltat
@@ -226,39 +259,57 @@ contains
 
   !------------------------------------------------------------------------------------------------
 
-  subroutine find_times_to_interpolate(curr_mdl_time, times_found, datatimem, datatimep, it, itp1)
+  subroutine find_times_to_interpolate(curr_mdl_time, datatimem, datatimep, it, itp1)
     
     !Arguments
     real(r8), intent(in)  :: curr_mdl_time
 
-    logical,  intent(out) :: times_found
     integer,  intent(out) :: it, itp1
     real(r8), intent(out) :: datatimem, datatimep
-
-
-
-    if ( all( times(:) > curr_mdl_time ) ) then
-       write(iulog,*) 'FIND_TIMES: ALL data times are after ', curr_mdl_time
-       write(iulog,*) 'FIND_TIMES: data times: ',times(:)
-       write(iulog,*) 'FIND_TIMES: time: ',curr_mdl_time
-       call endrun('find_times: all(times(:) > curr_mdl_time) '// trim(curr_filename) )
-    endif
+    
+    !Local variables
+    logical :: times_found
+    integer :: n_out, np1
 
     datatimem = neg_huge
     datatimep = neg_huge
 
     times_found = .false.
-    find_times_loop : do it=1, ntimes-1
-       itp1 = it + 1
-       datatimem = times(it)   
-       datatimep = times(itp1) 
-       if ( (curr_mdl_time .ge. datatimem) .and. (curr_mdl_time .lt. datatimep) ) then
-          times_found = .true.
-          exit find_times_loop
-       endif
-       enddo find_times_loop
 
-       if(.not.times_found) call endrun ('volc_rad_data.F90: sub find_times_to_interpolate: times not found!')
+    if(.not. iscyclic) then
+       if ( all( times(:) > curr_mdl_time ) ) then
+          write(iulog,*) 'FIND_TIMES: ALL data times are after ', curr_mdl_time
+          write(iulog,*) 'FIND_TIMES: data times: ',times(:)
+          write(iulog,*) 'FIND_TIMES: time: ',curr_mdl_time
+          call endrun('find_times: all(times(:) > curr_mdl_time) '// trim(curr_filename) )
+       endif
+       find_times_loop : do it=1, ntimes-1
+          itp1 = it + 1
+          datatimem = times(it)
+          datatimep = times(itp1)
+          if ( (curr_mdl_time .ge. datatimem) .and. (curr_mdl_time .lt. datatimep) ) then
+             times_found = .true.
+             exit find_times_loop
+          endif
+       enddo find_times_loop
+    else !if cyclic
+       if ( cyc_tsize > 1 ) then
+          call findplb(times(cyc_ndx_beg:cyc_ndx_end),cyc_tsize, curr_mdl_time, n_out )
+          if (n_out == cyc_tsize) then
+             np1 = 1
+          else
+             np1 = n_out+1
+          endif
+
+          it   = n_out + cyc_ndx_beg-1
+          itp1 = np1   + cyc_ndx_beg-1          
+          datatimem = times(it)
+          datatimep = times(itp1)
+          times_found = .true.
+       endif
+    endif
+       
+    if(.not.times_found) call endrun ('volc_rad_data.F90: sub find_times_to_interpolate: times not found!')
 
   end subroutine find_times_to_interpolate
 
