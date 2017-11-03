@@ -2468,8 +2468,13 @@ def _main_func():
         MACHINE = Machines(machine=mach_name)
         del sys.argv[midx + 1]
         del sys.argv[midx]
+        os.environ["CIME_MACHINE"] = mach_name
+    elif "CIME_MACHINE" in os.environ:
+        mach_name = os.environ["CIME_MACHINE"]
+        MACHINE = Machines(machine=mach_name)
     else:
         MACHINE = Machines()
+        
 
     if "--compiler" in sys.argv:
         global TEST_COMPILER
