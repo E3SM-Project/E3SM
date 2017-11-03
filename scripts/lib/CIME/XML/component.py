@@ -212,11 +212,11 @@ class Component(EntryID):
 
         >>> obj = Component('testingonly', 'ATM')
         >>> obj._get_description_match("1850_DATM%CRU_FRED",set(["DATM"]), set(["DATM","CRU","HSI"]), "*")
-        True
+        (True, ['DATM', 'CRU'])
         >>> obj._get_description_match("1850_DATM%FRED_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "*")
-        False
+        (False, None)
         >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "?")
-        True
+        (True, ['DATM'])
         >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
         Traceback (most recent call last):
         ...
@@ -226,15 +226,15 @@ class Component(EntryID):
         ...
         SystemExit: ERROR: Expected exactly one modifer found 2 in ['DATM', 'CRU', 'HSI']
         >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
-        True
+        (True, ['CAM50', 'WCCM', 'RCO2'])
 
         # The following is not allowed because the required WCCM field is missing
         >>> obj._get_description_match("1850_CAM50%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
-        False
+        (False, None)
         >>> obj._get_description_match("1850_CAM50_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "+")
-        False
+        (False, None)
         >>> obj._get_description_match("1850_CAM50%WCCM_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "+")
-        True
+        (True, ['CAM50', 'WCCM'])
         """
         match = False
         comparts = compsetname.split('_')
