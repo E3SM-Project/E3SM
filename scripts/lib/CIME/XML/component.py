@@ -162,7 +162,6 @@ class Component(EntryID):
             modifier_mode = '*'
         expect(modifier_mode in ('*','1','?','+'),
                "Invalid modifier_mode {} in file {}".format(modifier_mode, self.filename))
-
         optiondesc = {}
         if comp_class == "forcing":
             for node in desc_nodes:
@@ -176,25 +175,31 @@ class Component(EntryID):
                 desc = compsetname.split('_')[0]
             return desc
 
+
         # first pass just make a hash of the option descriptions
         for node in desc_nodes:
             option = node.get('option')
             if option is not None:
                 optiondesc[option] = node.text
+
         #second pass find a comp_class match
+        desc = ""
         for node in desc_nodes:
             compdesc = node.get(comp_class)
 
-            if compdesc is None:
-                continue
-            opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
-            parts = opt_parts.pop(0).split("%")
+            if compdesc is not None:
+                opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
+                parts = opt_parts.pop(0).split("%")
+                reqset = set(parts)
+                fullset = set(parts+opt_parts)
+                match, complist =  self._get_description_match(compsetname, reqset, fullset, modifier_mode)
+                if match:
+                    desc = node.text
+                    for opt in complist:
+                        if opt in optiondesc:
+                            desc += optiondesc[opt]
 
-            reqset = set(parts)
-            fullset = set(parts+opt_parts)
-            if self._get_description_match(compsetname, reqset, fullset, modifier_mode):
-                desc = node.text
-                break
+
         # cpl and esp components may not have a description
         if comp_class not in ['cpl','esp']:
             expect(len(desc) > 0,
@@ -233,6 +238,8 @@ class Component(EntryID):
         """
         match = False
         comparts = compsetname.split('_')
+        matchcomplist = None
+
         for comp in comparts:
             complist = comp.split('%')
             cset = set(complist)
@@ -248,9 +255,10 @@ class Component(EntryID):
                            "Expected 0 or one modifers found {} in {}".format(len(complist)-1, complist))
                 expect(not match,"Found multiple matches in file {} for {}".format(self.filename,comp))
                 match = True
+                matchcomplist = complist
                 # found a match
 
-        return match
+        return match, matchcomplist
 
 
 
