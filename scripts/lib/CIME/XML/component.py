@@ -198,8 +198,8 @@ class Component(EntryID):
         # cpl and esp components may not have a description
         if comp_class not in ['cpl','esp']:
             expect(len(desc) > 0,
-                   "No description found for comp_class {} matching compsetname {} in file {}"\
-                       .format(comp_class,compsetname, self.filename))
+                   "No description found for comp_class {} matching compsetname {} in file {}, expected match in {} % {}"\
+                       .format(comp_class,compsetname, self.filename, list(reqset), list(opt_parts)))
         return desc
 
     def _get_description_match(self, compsetname, reqset, fullset, modifier_mode):
@@ -239,13 +239,13 @@ class Component(EntryID):
             if cset == reqset or (cset > reqset and cset <= fullset):
                 if modifier_mode == '1':
                     expect(len(complist) == 2,
-                           "Expected exactly one modifer found {}".format(len(complist)-1))
+                           "Expected exactly one modifer found {} in {}".format(len(complist)-1,complist))
                 elif modifier_mode == '+':
                     expect(len(complist) >= 2,
-                           "Expected one or more modifers found {}".format(len(complist)-1))
+                           "Expected one or more modifers found {} in {}".format(len(complist)-1, list(reqset)))
                 elif modifier_mode == '?':
                     expect(len(complist) <= 2,
-                           "Expected 0 or one modifers found {}".format(len(complist)-1))
+                           "Expected 0 or one modifers found {} in {}".format(len(complist)-1, complist))
                 expect(not match,"Found multiple matches in file {} for {}".format(self.filename,comp))
                 match = True
                 # found a match
