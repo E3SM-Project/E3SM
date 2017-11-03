@@ -182,6 +182,14 @@ MODULE seq_infodata_mod
       logical                 :: reprosum_recompute  ! recompute reprosum with nonscalable algorithm
                                                      ! if reprosum_diffmax is exceeded
 
+      logical :: data_assimilation_atm
+      logical :: data_assimilation_ocn
+      logical :: data_assimilation_wav
+      logical :: data_assimilation_glc
+      logical :: data_assimilation_ice
+      logical :: data_assimilation_rof
+      logical :: data_assimilation_lnd
+
       !--- set via namelist and may be time varying ---
       integer(SHR_KIND_IN)    :: info_debug      ! debug level
       logical                 :: bfbflag         ! turn on bfb option
@@ -416,6 +424,14 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
     logical                :: mct_usevector      ! flag for mct vector
     real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
 
+    logical :: data_assimilation_atm
+    logical :: data_assimilation_ocn
+    logical :: data_assimilation_wav
+    logical :: data_assimilation_glc
+    logical :: data_assimilation_ice
+    logical :: data_assimilation_rof
+    logical :: data_assimilation_lnd
+
     namelist /seq_infodata_inparm/  &
          cime_model, case_desc, case_name, start_type, tchkpt_dir,     &
          model_version, username, hostname, timing_dir,    &
@@ -446,7 +462,11 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
          eps_oarea, esmf_map_flag,                         &
          reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute, &
-         mct_usealltoall, mct_usevector, max_cplstep_time
+         mct_usealltoall, mct_usevector, max_cplstep_time, &
+         data_assimilation_atm, data_assimilation_ocn, &
+         data_assimilation_wav, data_assimilation_glc, &
+         data_assimilation_ice, data_assimilation_rof, &
+         data_assimilation_lnd
 
 !-------------------------------------------------------------------------------
 
@@ -554,6 +574,15 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        mct_usealltoall       = .false.
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
+
+       data_assimilation_atm = .false.
+       data_assimilation_ocn = .false.
+       data_assimilation_wav = .false.
+       data_assimilation_glc = .false.
+       data_assimilation_ice = .false.
+       data_assimilation_rof = .false.
+       data_assimilation_lnd = .false.
+
 
        !---------------------------------------------------------------------------
        ! Read in namelist
@@ -699,6 +728,15 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        infodata%ocnrof_prognostic = .false.
        infodata%ice_prognostic = .false.
        infodata%glc_prognostic = .false.
+
+       infodata%data_assimilation_atm = data_assimilation_atm
+       infodata%data_assimilation_ocn = data_assimilation_ocn
+       infodata%data_assimilation_wav = data_assimilation_wav
+       infodata%data_assimilation_glc =  data_assimilation_glc
+       infodata%data_assimilation_ice =  data_assimilation_ice
+       infodata%data_assimilation_rof =  data_assimilation_rof
+       infodata%data_assimilation_lnd = data_assimilation_lnd
+
        ! It's safest to assume glc_coupled_fluxes = .true. if it's not set elsewhere,
        ! because this is needed for conservation in some cases. Note that it is ignored
        ! if glc_present is .false., so it's okay to just start out assuming it's .true.
@@ -961,7 +999,11 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
            atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
            glc_resume, rof_resume, wav_resume, cpl_resume,                    &
-           mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
+           mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input, &
+           data_assimilation_atm, data_assimilation_ocn, &
+           data_assimilation_wav, data_assimilation_glc, &
+           data_assimilation_ice, data_assimilation_rof, &
+           data_assimilation_lnd)
 
 
    implicit none
@@ -1132,6 +1174,14 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    character(SHR_KIND_CL), optional, intent(OUT) :: rof_resume(:) ! rof read resume state
    character(SHR_KIND_CL), optional, intent(OUT) :: wav_resume(:) ! wav read resume state
    character(SHR_KIND_CL), optional, intent(OUT) :: cpl_resume ! cpl read resume state
+
+   logical, optional, intent(OUT) :: data_assimilation_atm
+   logical, optional, intent(OUT) :: data_assimilation_ocn
+   logical, optional, intent(OUT) :: data_assimilation_wav
+   logical, optional, intent(OUT) :: data_assimilation_glc
+   logical, optional, intent(OUT) :: data_assimilation_ice
+   logical, optional, intent(OUT) :: data_assimilation_rof
+   logical, optional, intent(OUT) :: data_assimilation_lnd
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_GetData_explicit) '
@@ -1363,6 +1413,14 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     end if
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
     if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
+
+    if ( present(data_assimilation_atm)) data_assimilation_atm = infodata%data_assimilation_atm
+    if ( present(data_assimilation_ocn)) data_assimilation_ocn = infodata%data_assimilation_ocn
+    if ( present(data_assimilation_wav)) data_assimilation_wav = infodata%data_assimilation_wav
+    if ( present(data_assimilation_glc)) data_assimilation_glc = infodata%data_assimilation_glc
+    if ( present(data_assimilation_ice)) data_assimilation_ice = infodata%data_assimilation_ice
+    if ( present(data_assimilation_rof)) data_assimilation_rof = infodata%data_assimilation_rof
+    if ( present(data_assimilation_lnd)) data_assimilation_lnd = infodata%data_assimilation_lnd
 
 END SUBROUTINE seq_infodata_GetData_explicit
 
@@ -2275,6 +2333,14 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
 
+    call shr_mpi_bcast(infodata%data_assimilation_atm, mpicom)
+    call shr_mpi_bcast(infodata%data_assimilation_ocn, mpicom)
+    call shr_mpi_bcast(infodata%data_assimilation_wav, mpicom)
+    call shr_mpi_bcast(infodata%data_assimilation_glc, mpicom)
+    call shr_mpi_bcast(infodata%data_assimilation_ice, mpicom)
+    call shr_mpi_bcast(infodata%data_assimilation_rof, mpicom)
+    call shr_mpi_bcast(infodata%data_assimilation_lnd, mpicom)
+
     call seq_infodata_pauseresume_bcast(infodata,        mpicom)
 
 end subroutine seq_infodata_bcast
@@ -2944,6 +3010,14 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0S) subname,'glc_phase                = ', infodata%glc_phase
        write(logunit,F0S) subname,'rof_phase                = ', infodata%rof_phase
        write(logunit,F0S) subname,'wav_phase                = ', infodata%wav_phase
+
+       write(logunit,F0L) subname,'data_assimilation_atm = ', infodata%data_assimilation_atm
+       write(logunit,F0L) subname,'data_assimilation_ocn = ', infodata%data_assimilation_ocn
+       write(logunit,F0L) subname,'data_assimilation_wav = ', infodata%data_assimilation_wav
+       write(logunit,F0L) subname,'data_assimilation_glc = ', infodata%data_assimilation_glc
+       write(logunit,F0L) subname,'data_assimilation_rof = ', infodata%data_assimilation_rof
+       write(logunit,F0L) subname,'data_assimilation_ice = ', infodata%data_assimilation_ice
+       write(logunit,F0L) subname,'data_assimilation_lnd = ', infodata%data_assimilation_lnd
 
        write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
        if (associated(infodata%pause_resume)) then
