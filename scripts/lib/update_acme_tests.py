@@ -112,7 +112,7 @@ _TEST_SUITES = {
     #atmopheric tests for hi-res
     "acme_atm_hi_res" : (None, "01:30:00",
                          (
-                          "SMS.ne120_ne120.FC5AV1C-L",
+                          "SMS.ne120_ne120.FC5AV1C-H01A",
                          )),
     #atmopheric tests to mimic low res production runs
     "acme_atm_prod" : (None, None,
