@@ -100,49 +100,64 @@ contains
       case (MG_RAIN)
         !GET LAMBDA:
         !------------
-        !Note: could make lamPbr a scalar by merging lambda and fallspeed 
-        !calculation, but this would be harder to read/understand.
-        if (brDeff_dim .eq. -1._r8) then
-           brDeff_dim = br/mg_rain_props%eff_dim
-           eff_dimDbr = mg_rain_props%eff_dim/br
-           oneDshape_coeff = 1._r8/mg_rain_props%shape_coef
-           lamPbr_bounds(1) = mg_rain_props%lambda_bounds(1)**br
-           lamPbr_bounds(2) = mg_rain_props%lambda_bounds(2)**br
-        end if
-
-        do k=1,nlev
-          if (qic(k) > qsmall) then
-
-            ! add upper limit to in-cloud number concentration to prevent
-            ! numerical error
-            if (limiter_is_on(mg_rain_props%min_mean_mass)) then
-              nic(k) = min(nic(k), qic(k) / mg_rain_props%min_mean_mass)
-            end if
-
-            ! lambda^b = (c nic/qic)^(b/d)
-            lamPbr(k) = (mg_rain_props%shape_coef * nic(k)/qic(k))**brDeff_dim
-            ! check for slope
-            ! adjust vars
-            if (lamPbr(k) < lamPbr_bounds(1)) then
-              lamPbr(k) = lamPbr_bounds(1)
-              nic(k) = lamPbr(k)**eff_dimDbr * qic(k)*oneDshape_coeff
-            else if (lamPbr(k) > lamPbr_bounds(2)) then
-              lamPbr(k) = lamPbr_bounds(2)
-              nic(k) = lamPbr(k)**eff_dimDbr * qic(k)*oneDshape_coeff
-            end if
-         end if
-        end do
-
+        call size_dist_param_basic(mg_rain_props,qic(:),nic(:),lam(:))
+         
         !GET FALL SPEED:
         !------------
         do k=1,nlev
-          if (qic(k) > qsmall) then
+          if (qic(k) > qsmall) then !diff from orig: was lam>qsmall
             cq = g*rho(i,k)*an(i,k)*gamma_b_plus4/6._r8
             cn = g*rho(i,k)*an(i,k)*gamma_b_plus1
-            alphaq(k) = min(cq/lamPbr(k), 9.1_r8*g*rho(i,k)*rhof(i,k))
-            alphan(k) = min(cn/lamPbr(k), 9.1_r8*g*rho(i,k)*rhof(i,k))
+            alphaq(k) = min(cq/lamPbr(k)**br, 9.1_r8*g*rho(i,k)*rhof(i,k))
+            alphan(k) = min(cn/lamPbr(k)**br, 9.1_r8*g*rho(i,k)*rhof(i,k))
           end if
         end do
+
+! STUFF BELOW IS OLD VOGL VERSION WHICH HAS A BUG IN '**br' LOCATION AND 
+! SEEMS UNNECESSARILY COMPLICATED.
+!!$        !Note: could make lamPbr a scalar by merging lambda and fallspeed 
+!!$        !calculation, but this would be harder to read/understand.
+!!$        if (brDeff_dim .eq. -1._r8) then
+!!$           brDeff_dim = br/mg_rain_props%eff_dim
+!!$           eff_dimDbr = mg_rain_props%eff_dim/br
+!!$           oneDshape_coeff = 1._r8/mg_rain_props%shape_coef
+!!$           lamPbr_bounds(1) = mg_rain_props%lambda_bounds(1)**br
+!!$           lamPbr_bounds(2) = mg_rain_props%lambda_bounds(2)**br
+!!$        end if
+!!$
+!!$        do k=1,nlev
+!!$          if (qic(k) > qsmall) then
+!!$
+!!$            ! add upper limit to in-cloud number concentration to prevent
+!!$            ! numerical error
+!!$            if (limiter_is_on(mg_rain_props%min_mean_mass)) then
+!!$              nic(k) = min(nic(k), qic(k) / mg_rain_props%min_mean_mass)
+!!$            end if
+!!$
+!!$            ! lambda^b = (c nic/qic)^(b/d)
+!!$            lamPbr(k) = (mg_rain_props%shape_coef * nic(k)/qic(k))**brDeff_dim
+!!$            ! check for slope
+!!$            ! adjust vars
+!!$            if (lamPbr(k) < lamPbr_bounds(1)) then
+!!$              lamPbr(k) = lamPbr_bounds(1)
+!!$              nic(k) = lamPbr(k)**eff_dimDbr * qic(k)*oneDshape_coeff
+!!$            else if (lamPbr(k) > lamPbr_bounds(2)) then
+!!$              lamPbr(k) = lamPbr_bounds(2)
+!!$              nic(k) = lamPbr(k)**eff_dimDbr * qic(k)*oneDshape_coeff
+!!$            end if
+!!$         end if
+!!$        end do
+!!$
+!!$        !GET FALL SPEED:
+!!$        !------------
+!!$        do k=1,nlev
+!!$          if (qic(k) > qsmall) then
+!!$            cq = g*rho(i,k)*an(i,k)*gamma_b_plus4/6._r8
+!!$            cn = g*rho(i,k)*an(i,k)*gamma_b_plus1
+!!$            alphaq(k) = min(cq/lamPbr(k), 9.1_r8*g*rho(i,k)*rhof(i,k))
+!!$            alphan(k) = min(cn/lamPbr(k), 9.1_r8*g*rho(i,k)*rhof(i,k))
+!!$          end if
+!!$        end do
 
       case (MG_SNOW)
         !GET LAMBDA:
@@ -204,16 +219,25 @@ contains
     fn(0) = 0._r8
     fn(1:nlev) = alphan(1:nlev)*n(i,1:nlev)
 
-
-    ! for cloud liquid and ice, if cloud fraction increases with height
-    ! then add flux from above to both vapor and cloud water of current level
-    ! this means that flux entering clear portion of cell from above evaporates
-    ! instantly
-    ! note: this is not an issue with precip, since we assume max overlap
+    ! Condensate falling from the cell above is assumed to evaporate/sublimate
+    ! instantly if it falls outside cloud or precipitating area in the cell of
+    ! interest. This is handled by computing ratio=(cldfrac in this layer)/(cldfrac 
+    ! of the level above) and passing ratio*q(i,k-1) to this layer as condensate, 
+    ! with the remaining (1-ratio)*q(i,k-1) returned to vapor phase (with corresponding
+    ! evaporative cooling effect). This effect is ignored for rain and snow because 
+    ! precip_area_frac is assumed to be max(cldfrac of layers above) which can never 
+    ! decrease as you move lower in the column. This "max" precip-area fraction assumption
+    ! was used in earlier versions of the model but is no longer necessarily true. As 
+    ! a result, qr and qs should be handled identically to qc and qi with cld_frac replaced
+    ! by precip_area_frac. Not doing so is a BUG. Note also that ratio is calculated 
+    ! assuming maximum overlap between adjoining layers, which is not necessarily the 
+    ! assumption used elsewhere in the code (e.g. in radiation). Comment by P. Caldwell 
+10  ! /2/17.
 
     if (mg_type == MG_ICE .or. mg_type == MG_LIQUID) then
       ratio(1) = 1._r8
       ratio(2:nlev) = cloud_frac(i,2:nlev)/cloud_frac(i,1:(nlev-1))
+      !PMC - the default version of the code has min(1._r8,ratio) here!!!
     else
       ratio = 1._r8
     end if
