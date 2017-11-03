@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- definition of simple elements -->
+  <xs:element name="mach" type="xs:string"/>
+  <xs:element name="compiler" type="xs:string"/>
+  <xs:element name="mpilib" type="xs:string"/>
+  <xs:element name="testroot" type="xs:string"/>
+  <xs:element name="testtype" type="xs:string"/>
+  <xs:element name="tagname" type="xs:string"/>
+  <xs:element name="baselinetag" type="xs:string"/>
+
+  <!-- definition of attributes -->
+  <xs:attribute name="name" type="xs:string"/>
+  <xs:attribute name="status" type="xs:string"/>
+
+  <!-- definition of complex elements -->
+  <xs:element name="key">
+    <xs:complexType>
+      <xs:simpleContent>
+	<xs:extension base="xs:string">
+	  <xs:attribute ref="name" use="required"/>
+	</xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="section">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="key" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="test">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="section" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+      <xs:attribute ref="status" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="testrecord">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="mach" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="compiler" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="mpilib" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="testroot" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="testtype" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="tagname" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="baselinetag" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="test" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
