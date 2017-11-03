@@ -326,17 +326,9 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         if sharedlibroot != exeroot and os.path.isdir(sharedlibroot):
             logging.warning("cleaning directory {}".format(sharedlibroot))
             shutil.rmtree(sharedlibroot)
-    elif len(clean_depends):
-        # This will look for all files name Srcfiles in path exeroot/comp/obj and remove them
-        # removing Srcfiles is enough since the Makefile will rebuild Depends
-        for comp in clean_depends:
-            for root, _, filenames in os.walk(os.path.join(exeroot, comp)):
-                if "Srcfiles" in filenames:
-                    dfile = os.path.join(root, "Srcfiles")
-                    logger.info("Removing file {}".format(dfile))
-                    os.remove(dfile)
     else:
-        expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
+        expect((cleanlist is not None and len(cleanlist) > 0) or
+               (clean_depends is not None and len(clean_depends)),"Empty cleanlist not expected")
         debug           = case.get_value("DEBUG")
         use_esmf_lib    = case.get_value("USE_ESMF_LIB")
         build_threaded  = case.get_build_threaded()
@@ -354,10 +346,16 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
 
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
-        for item in cleanlist:
-            tcmd = cmd + " clean" + item
-            logger.info("calling {} ".format(tcmd))
-            run_cmd_no_fail(tcmd)
+        if cleanlist is not None:
+            for item in cleanlist:
+                tcmd = cmd + " clean" + item
+                logger.info("calling {} ".format(tcmd))
+                run_cmd_no_fail(tcmd)
+        else:
+            for item in clean_depends:
+                tcmd = cmd + " clean_depends" + item
+                logger.info("calling {} ".format(tcmd))
+                run_cmd_no_fail(tcmd)
 
     # unlink Locked files directory
     unlock_file("env_build.xml")
