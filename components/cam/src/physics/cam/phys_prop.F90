@@ -408,7 +408,9 @@ subroutine aerosol_optics_init(phys_prop, nc_id)
    ierr = pio_inq_varid(nc_id, 'opticsmethod', op_type_id)
    ierr = pio_get_var(nc_id, op_type_id,phys_prop%opticsmethod )
 
-   select case (phys_prop%opticsmethod)
+   opticstype_str = trim(adjustl(phys_prop%opticsmethod))
+
+   select case (trim(opticstype_str(1:15)))
    case ('zero')
       call zero_optics_init(phys_prop, nc_id)
 
@@ -429,6 +431,9 @@ subroutine aerosol_optics_init(phys_prop, nc_id)
 
    case ('volcanic')
       call volcanic_optics_init(phys_prop, nc_id)
+
+   case ('volcanic_cmip')
+      !nothing to be done here as of now
         
    case ('modal')
       call modal_optics_init(phys_prop, nc_id)
