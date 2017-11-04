@@ -461,13 +461,17 @@ feasible for CIME to support all the possible archival schemes available.
 Data Assimilation and other External Processing
 ============================
 
-Users may desire to run a pre or post run task on compute nodes or a data assimilation mechanism.
+CIME provides a capability to run a task on the compute nodes either
+before or after the model run.  CIME also provides a data assimilation
+capability which will cycle the model and then a user defined task for
+a user determined number of cycles.
+
 
 ---------------------
 Pre and Post run scripts
 ---------------------
 
-Variables ``PRERUN_SCRIPT`` and ``POSTRUN_SCRIPT`` can be used to name
+Variables ``PRERUN_SCRIPT`` and ``POSTRUN_SCRIPT`` can each be used to name
 a script which should be exectuted immediately prior starting or
 following completion of the CESM executable within the batch
 environment.  The script is expected to be found in the case directory
