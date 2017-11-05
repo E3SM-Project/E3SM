@@ -240,7 +240,7 @@ def do_external(script_name, caseroot, rundir, lid, prefix):
     expect(os.path.isfile(script_name), "External script {} not found".format(script_name))
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(script_name, [caseroot], script_name, [caseroot], logfile=outfile,combine_output=True)
+    run_sub_or_cmd(script_name, [caseroot], os.path.basename(script_name), [caseroot], logfile=outfile,combine_output=True)
 
 ###############################################################################
 def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
@@ -248,7 +248,7 @@ def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     expect(os.path.isfile(da_script), "Data Assimilation script {} not found".format(da_script))
     filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(da_script, [caseroot, cycle], da_script, [caseroot, cycle], logfile=outfile,combine_output=True)
+    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile,combine_output=True)
 
 ###############################################################################
 def case_run(case, skip_pnl=False):
