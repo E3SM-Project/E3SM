@@ -228,7 +228,11 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
-        output = run_cmd_no_fail("{} {}".format(cmd, cmdargs), combine_output=combine_output,
+        fullcmd = cmd
+        for arg in cmdargs:
+            fullcmd += " " + str(arg)
+        output = run_cmd_no_fail("{} 1> {} 2>&1".format(fullcmd, logfile),
+                                 combine_output=combine_output,
                                  from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file

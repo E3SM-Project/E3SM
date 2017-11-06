@@ -23,6 +23,11 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
         else:
             job = "case.run"
 
+    rundir = case.get_value("RUNDIR")
+    continue_run = case.get_value("CONTINUE_RUN")
+    expect(os.path.isdir(rundir) or not continue_run,
+           " CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
+
     if resubmit:
         resub = case.get_value("RESUBMIT")
         logger.info("Submitting job '{}', resubmit={:d}".format(job, resub))

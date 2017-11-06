@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp, run_sub_or_cmd
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -237,20 +237,18 @@ def resubmit_check(case):
 ###############################################################################
 def do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
+    expect(os.path.isfile(script_name), "External script {} not found".format(script_name))
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
-    cmd = script_name + " 1> {} {} 2>&1".format(outfile, caseroot)
-    logger.info("running {}".format(script_name))
-    run_cmd_no_fail(cmd)
+    run_sub_or_cmd(script_name, [caseroot], os.path.basename(script_name), [caseroot], logfile=outfile,combine_output=True)
 
 ###############################################################################
 def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 ###############################################################################
+    expect(os.path.isfile(da_script), "Data Assimilation script {} not found".format(da_script))
     filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    cmd = da_script + " 1> {} {} {:d} 2>&1".format(outfile, caseroot, cycle)
-    logger.info("running {}".format(da_script))
-    run_cmd_no_fail(cmd)
+    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile,combine_output=True)
 
 ###############################################################################
 def case_run(case, skip_pnl=False):
@@ -279,20 +277,19 @@ def case_run(case, skip_pnl=False):
 
     save_prerun_provenance(case)
 
+    if prerun_script:
+        case.flush()
+        do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                    lid, prefix="prerun")
+        case.read_xml()
+
     for cycle in range(data_assimilation_cycles):
         # After the first DA cycle, runs are restart runs
         if cycle > 0:
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        if prerun_script:
-            case.flush()
-            do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
-                        lid, prefix="prerun")
-            case.read_xml()
-
         lid = run_model(case, lid, skip_pnl, da_cycle=cycle)
-        save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
 
@@ -302,13 +299,17 @@ def case_run(case, skip_pnl=False):
                                  case.get_value("RUNDIR"))
             case.read_xml()
 
-        if postrun_script:
-            case.flush()
-            do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
-                        lid, prefix="postrun")
-            case.read_xml()
+        save_logs(case, lid)       # Copy log files back to caseroot
 
-        save_postrun_provenance(case)
+    if postrun_script:
+        case.flush()
+        do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                    lid, prefix="postrun")
+        case.read_xml()
+
+    save_logs(case, lid)       # Copy log files back to caseroot
+
+    save_postrun_provenance(case)
 
     logger.warning("check for resubmit")
     resubmit_check(case)
