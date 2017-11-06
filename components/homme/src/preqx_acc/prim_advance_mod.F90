@@ -115,6 +115,7 @@ contains
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
     use time_mod,       only: timelevel_qdp
+    use element_state,  only: state_v, state_T, state_dp3d
     implicit none
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -222,17 +223,13 @@ contains
       call compute_and_apply_rhs(np1,np1,np1,qn0,dt/2,elem,hvcoord,hybrid,&
       deriv,nets,nete,.false.,eta_ave_w/3)
       ! unew = u/3 +2*u3/3  = u + 1/3 (RHS(u) + RHS(u1) + RHS(u2))
-      !$acc parallel loop gang vector collapse(4)
-      do ie = 1 , nelemd
-        do k = 1 , nlev
-          do j = 1 , np
-            do i = 1 , np
-              elem(ie)%state%v(i,j,:,k,np1)= elem(ie)%state%v(i,j,:,k,n0)/3 + 2*elem(ie)%state%v(i,j,:,k,np1)/3
-              elem(ie)%state%T(i,j,k,np1)= elem(ie)%state%T(i,j,k,n0)/3 + 2*elem(ie)%state%T(i,j,k,np1)/3
-              elem(ie)%state%dp3d(i,j,k,np1)= elem(ie)%state%dp3d(i,j,k,n0)/3 + 2*elem(ie)%state%dp3d(i,j,k,np1)/3
-            enddo
-          enddo
-        enddo
+      do ie=nets,nete
+        elem(ie)%state%v(:,:,:,:,np1)= elem(ie)%state%v(:,:,:,:,n0)/3 &
+        + 2*elem(ie)%state%v(:,:,:,:,np1)/3
+        elem(ie)%state%T(:,:,:,np1)= elem(ie)%state%T(:,:,:,n0)/3 &
+        + 2*elem(ie)%state%T(:,:,:,np1)/3
+        elem(ie)%state%dp3d(:,:,:,np1)= elem(ie)%state%dp3d(:,:,:,n0)/3 &
+        + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
       enddo
       call t_stopf("RK2-SSP3_timestep")
     else if (method==3) then
@@ -286,9 +283,9 @@ contains
         do k = 1 , nlev
           do j = 1 , np
             do i = 1 , np
-              elem(ie)%state%v(i,j,:,k,nm1)= (5*elem(ie)%state%v(i,j,:,k,nm1) - elem(ie)%state%v(i,j,:,k,n0) ) /4
-              elem(ie)%state%T(i,j,k,nm1)= (5*elem(ie)%state%T(i,j,k,nm1) - elem(ie)%state%T(i,j,k,n0) )/4
-              elem(ie)%state%dp3d(i,j,k,nm1)= (5*elem(ie)%state%dp3d(i,j,k,nm1) - elem(ie)%state%dp3d(i,j,k,n0) )/4
+              state_v   (i,j,:,k,nm1,ie)= (5*state_v   (i,j,:,k,nm1,ie) - state_v   (i,j,:,k,n0,ie) ) /4
+              state_T   (i,j  ,k,nm1,ie)= (5*state_T   (i,j  ,k,nm1,ie) - state_T   (i,j  ,k,n0,ie) )/4
+              state_dp3d(i,j  ,k,nm1,ie)= (5*state_dp3d(i,j  ,k,nm1,ie) - state_dp3d(i,j  ,k,n0,ie) )/4
             enddo
           enddo
         enddo
