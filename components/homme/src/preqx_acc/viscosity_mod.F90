@@ -14,7 +14,7 @@ module viscosity_mod
   use parallel_mod, only : parallel_t
   use element_mod, only : element_t
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-  use bndry_mod, only : bndry_exchangev => bndry_exchangeV_simple_overlap, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
+  use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
   use control_mod, only : hypervis_scaling, nu, nu_div
   use perf_mod, only: t_startf, t_stopf
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
@@ -148,7 +148,7 @@ contains
     use perf_mod              , only: t_startf, t_stopf
     use derivative_mod, only: laplace_sphere_wk_openacc
     use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
-    use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use bndry_mod     , only: bndry_exchangeV
     implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! compute weak biharmonic operator

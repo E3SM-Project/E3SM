@@ -576,7 +576,7 @@ contains
     use edge_mod,       only : edgevpack, edgevunpack, edgeVpack_openacc, edgeVunpack_openacc
     use edgetype_mod,   only : edgedescriptor_t
     !use bndry_mod,      only : bndry_exchangev
-    use bndry_mod    , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use bndry_mod    , only: bndry_exchangeV
     use control_mod,    only : moisture, qsplit, use_cpstar, rsplit, swest
     use hybvcoord_mod,  only : hvcoord_t
     use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
