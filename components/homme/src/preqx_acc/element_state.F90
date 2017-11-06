@@ -13,6 +13,7 @@ module element_state
 
 
   real (kind=real_kind), allocatable, target, public :: state_v                  (:,:,:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: state_T                  (:,:,:,:,:)
   real (kind=real_kind), allocatable, target, public :: state_dp3d               (:,:,:,:,:)
   real (kind=real_kind), allocatable, target, public :: state_phis               (:,:,:)
   real (kind=real_kind), allocatable, target, public :: state_Qdp                (:,:,:,:,:,:)
@@ -27,7 +28,7 @@ module element_state
     ! vertically-lagrangian code advects dp3d instead of ps_v
     ! tracers Q, Qdp always use 2 level time scheme
     real (kind=real_kind), pointer :: v   (:,:,:,:,:)                 ! velocity                           1 (np,np,2,nlev,timelevels)
-    real (kind=real_kind) :: T   (np,np,nlev,timelevels)              ! temperature                        2
+    real (kind=real_kind), pointer :: T   (:,:,:,:)                   ! temperature                        2 (np,np,nlev,timelevels)
     real (kind=real_kind), pointer :: dp3d(:,:,:,:)                   ! delta p on levels                  8 (np,np,nlev,timelevels)
     real (kind=real_kind) :: ps_v(np,np,timelevels)                   ! surface pressure                   4
     real (kind=real_kind), pointer :: phis(:,:)                       ! surface geopotential (prescribed)  5 (np,np)

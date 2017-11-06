@@ -24,7 +24,7 @@ module bndry_mod_base
   end interface
 
   interface bndry_exchangeS
-     module procedure bndry_exchangeS_threaded 
+     module procedure bndry_exchangeS_threaded
      module procedure bndry_exchangeS_nonthreaded
      module procedure bndry_exchangeS_core
   end interface
@@ -41,7 +41,7 @@ module bndry_mod_base
      module procedure bndry_exchangeS_core_start
   end interface
 
-contains 
+contains
 
   subroutine bndry_exchangeV_core(par,ithr,buffer)
     use kinds, only : log_kind
@@ -98,7 +98,7 @@ contains
     end do    ! icycle
 
     !==================================================
-    !  Post the Receives 
+    !  Post the Receives
     !==================================================
     do icycle=1,nRecvCycles
        pCycle         => pSchedule%RecvCycle(icycle)
@@ -116,7 +116,7 @@ contains
           print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
        endif
     end do    ! icycle
-    
+
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
        print *,'size of moveptr: ',size(buffer%moveptr)
        print *,'active omp threads:  ',omp_get_num_threads()
@@ -192,7 +192,7 @@ contains
     end do    ! icycle
 
     !==================================================
-    !  Post the Receives 
+    !  Post the Receives
     !==================================================
     do icycle=1,nRecvCycles
        pCycle         => pSchedule%RecvCycle(icycle)
@@ -210,7 +210,7 @@ contains
           print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
        endif
     end do    ! icycle
-    
+
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
        call abortmp('edgebuffer threads does not match number of active threads')
     endif
@@ -224,7 +224,7 @@ contains
     ! buffer
     iptr   = buffer%moveptr(ithr+1)
     length = buffer%moveLength(ithr+1)
-    if(length>0) then 
+    if(length>0) then
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
 
@@ -284,7 +284,7 @@ contains
     end do    ! icycle
 
     !==================================================
-    !  Post the Receives 
+    !  Post the Receives
     !==================================================
     do icycle=1,nRecvCycles
        pCycle         => pSchedule%RecvCycle(icycle)
@@ -303,7 +303,7 @@ contains
        endif
     end do    ! icycle
     !$OMP END MASTER
-    
+
   end subroutine bndry_exchangeS_core_start
 
   subroutine bndry_exchangeS_core_finish(par,ithr,buffer)
@@ -350,7 +350,7 @@ contains
     ! buffer
     iptr   = buffer%moveptr(ithr+1)
     length = buffer%moveLength(ithr+1)
-    if(length>0) then 
+    if(length>0) then
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
 
@@ -416,7 +416,7 @@ contains
     end do    ! icycle
 
     !==================================================
-    !  Post the Receives 
+    !  Post the Receives
     !==================================================
     do icycle=1,nRecvCycles
        pCycle         => pSchedule%RecvCycle(icycle)
@@ -673,7 +673,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    if(ithr == 0) then 
+    if(ithr == 0) then
 
 
 #ifdef _MPI
@@ -703,7 +703,7 @@ contains
        end do    ! icycle
 
        !==================================================
-       !  Post the Receives 
+       !  Post the Receives
        !==================================================
        do icycle=1,nRecvCycles
           pCycle         => pSchedule%RecvCycle(icycle)
@@ -808,8 +808,8 @@ contains
      call ghostVunpackfull(ghostbuf_cv, cout(:,:,:,ie), nc1,nc2,nc,nlev, kptr, elem(ie)%desc)
   enddo
 
-!       nc +--------+ 
-!        ^ | nw  ne |    
+!       nc +--------+
+!        ^ | nw  ne |
 !     j  | |        |
 !        1 | sw  se |
 !          +--------+
@@ -882,13 +882,13 @@ contains
   subroutine sort_neighbor_buffer_mapping(par,elem,nets,nete)
 !
 !  gather global ID's of all neighbor elements.  Then create sorted (in global ID numbering)
-!  mapping between edge buffer for each neighbor and a local map.  
+!  mapping between edge buffer for each neighbor and a local map.
 !
 !  this routine can NOT be called in a threaded region because then each thread
 !  will have its on ghostbuffer.   initghostbufer3D() should detect this and abort.
 !
 !  also return num_neigh(ie) = number of neighbors (including onself) for element ie
-!  
+!
 !
   use kinds, only : real_kind
   use dimensions_mod, only: nelemd, np, max_neigh_edges
@@ -906,14 +906,14 @@ contains
 
   real (kind=real_kind) :: cin(2,2,4,nets:nete)                    ! 1x1 element input data
   real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1,nets:nete)   ! 1x1 element output data
-  real (kind=real_kind) :: u   (2,2,4)   
+  real (kind=real_kind) :: u   (2,2,4)
   integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,patch_size,l,l2,sum1,sum2,m
   logical :: fail,fail1,fail2
   real (kind=real_kind) :: tol=.1
 
 
-  if (par%masterproc) print *,'creating sorted ghost cell neigbor map...' 
-  if (par%masterproc) print *,'checking ghost cell neighbor buffer sorting...' 
+  if (par%masterproc) print *,'creating sorted ghost cell neigbor map...'
+  if (par%masterproc) print *,'checking ghost cell neighbor buffer sorting...'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! first test on the Gauss Grid with same number of ghost cells:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -945,7 +945,7 @@ contains
      call ghostVpack_unoriented(ghostbuf_cv, cin(:,:,:,ie),nc,nlev,kptr,elem(ie)%desc)
   end do
 
-  ! check for array out of bouds overwriting 
+  ! check for array out of bouds overwriting
   if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
      call abortmp('ghost excchange unoriented failure ob1')
   endif
@@ -993,9 +993,9 @@ contains
         write(*,'(a,99i5)') 'ghost=',int(cout(1,1,nlev,1:patch_size,ie))
         write(*,'(a,99i5)') 'desc =',elem(ie)%desc%globalID(:)
 
-        print *,'cout sum of all neighbor global ids:',sum1 
-        print *,'desc sum of all neighbor global ids:',sum2  
-        call abortmp( 'ghost exchange unoriented failure 3')        
+        print *,'cout sum of all neighbor global ids:',sum1
+        print *,'desc sum of all neighbor global ids:',sum2
+        call abortmp( 'ghost exchange unoriented failure 3')
      endif
 
      ALLOCATE(elem(ie)%desc%neigh_corners(4,patch_size))
@@ -1005,9 +1005,9 @@ contains
         do i=1,nc
         do j=1,nc
            k=k+1
-           elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,l,ie) 
-           elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,l,ie) 
-           elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l,ie) 
+           elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,l,ie)
+           elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,l,ie)
+           elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l,ie)
         enddo
         enddo
      enddo

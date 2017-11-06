@@ -15,8 +15,8 @@ set exe    = preqx.cpu
 
 source /usr/share/modules/init/tcsh
 module purge
-module load pgi/17.4
-module load openmpi
+module load pgi/17.10
+module load openmpi/pgi_2.1.2
 module load zlib
 module load szip
 module load hdf5

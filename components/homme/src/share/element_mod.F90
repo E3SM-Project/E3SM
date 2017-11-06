@@ -272,13 +272,14 @@ contains
   subroutine setup_element_pointers(elem)
     use dimensions_mod, only: nelemd, qsize
 #if USE_OPENACC
-    use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj, state_v, state_dp3d, state_phis, timelevels
+    use element_state, only : state_Qdp, derived_vn0, state_T, derived_divdp, derived_divdp_proj, state_v, state_dp3d, state_phis, timelevels
 #endif
     implicit none
     type(element_t), intent(inout) :: elem(:)
     integer :: ie
 #if USE_OPENACC
     allocate( state_v                  (np,np,2,nlev,timelevels,nelemd)       )
+    allocate( state_T                  (np,np,nlev,timelevels,nelemd)         )
     allocate( state_dp3d               (np,np,nlev,timelevels,nelemd)         )
     allocate( state_phis               (np,np,nelemd)                         )
     allocate( state_Qdp                (np,np,nlev,qsize,2,nelemd)            )
@@ -287,6 +288,7 @@ contains
     allocate( derived_divdp_proj       (np,np,nlev,nelemd)                    )
     do ie = 1 , nelemd
       elem(ie)%state%v                   => state_v                  (:,:,:,:,:,ie)
+      elem(ie)%state%T                   => state_T                  (:,:,:,:,ie)
       elem(ie)%state%dp3d                => state_dp3d               (:,:,:,:,ie)
       elem(ie)%state%phis                => state_phis               (:,:,ie)
       elem(ie)%state%Qdp                 => state_Qdp                (:,:,:,:,:,ie)

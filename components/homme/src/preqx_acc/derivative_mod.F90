@@ -30,8 +30,119 @@ module derivative_mod
   public :: gradient_sphere_openacc
   public :: divergence_sphere_openacc
   public :: vorticity_sphere_openacc
+  public :: vlaplace_sphere_wk_openacc
 
 contains
+
+
+  subroutine vlaplace_sphere_wk_openacc(v,vor,div,deriv,elem,var_coef,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out,laplace,nu_ratio)
+    !   input:  v = vector in lat-lon coordinates
+    !   ouput:  weak laplacian of v, in lat-lon coordinates
+    !   logic:
+    !      tensorHV:     requires cartesian
+    !      nu_div/=nu:   requires contra formulatino
+    !   One combination NOT supported:  tensorHV and nu_div/=nu then abort
+    implicit none
+    real(kind=real_kind), intent(in   ) :: v(np,np,2,len,ntl_in,nets:nete)
+    real(kind=real_kind), intent(  out) :: vor(np,np,len,nets:nete)
+    real(kind=real_kind), intent(  out) :: div(np,np,len,nets:nete)
+    logical             , intent(in   ) :: var_coef
+    type (derivative_t) , intent(in   ) :: deriv
+    type (element_t)    , intent(in   ) :: elem(:)
+    real(kind=real_kind), intent(in   ) :: nu_ratio
+    integer             , intent(in   ) :: len,nets,nete,ntl_in,tl_in,ntl_out,tl_out
+    real(kind=real_kind), intent(  out) :: laplace(np,np,2,len,ntl_out,nets:nete)
+    if (hypervis_scaling/=0 .and. var_coef) then
+      call abortmp('hypervis_scaling/=0 .and. var_coef not supported in OpenACC!')
+    else
+      ! all other cases, use contra formulation:
+      call vlaplace_sphere_wk_contra(v,vor,div,deriv,elem,var_coef,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out,laplace,nu_ratio)
+    endif
+  end subroutine vlaplace_sphere_wk_openacc
+
+  subroutine vlaplace_sphere_wk_contra(v,vor,div,deriv,elem,var_coef,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out,laplace,nu_ratio)
+    !   input:  v = vector in lat-lon coordinates
+    !   ouput:  weak laplacian of v, in lat-lon coordinates
+    implicit none
+    real(kind=real_kind), intent(in   ) :: v(np,np,2,len,ntl_in,nets:nete)
+    real(kind=real_kind), intent(  out) :: vor(np,np,len,nets:nete)
+    real(kind=real_kind), intent(  out) :: div(np,np,len,nets:nete)
+    logical             , intent(in   ) :: var_coef
+    type (derivative_t) , intent(in   ) :: deriv
+    type (element_t)    , intent(in   ) :: elem(:)
+    real(kind=real_kind), intent(in   ) :: nu_ratio
+    integer             , intent(in   ) :: len,nets,nete,ntl_in,tl_in,ntl_out,tl_out
+    real(kind=real_kind), intent(  out) :: laplace(np,np,2,len,ntl_out,nets:nete)
+    ! Local
+    integer :: i,j,l,m,n,k,ie
+    call divergence_sphere_openacc(v,deriv,elem,div,len,nets,nete,ntl_in,tl_in,1,1)
+    call vorticity_sphere_openacc (v,deriv,elem,vor,len,nets,nete,ntl_in,tl_in,1,1)
+    !$acc parallel loop gang vector collapse(4) present(div,vor,elem)
+    do ie = nets , nete
+      do k = 1 , len
+        do j = 1 , np
+          do i = 1 , np
+            if (var_coef .and. hypervis_power/=0 ) then
+              ! scalar viscosity with variable coefficient
+              div(i,j,k,ie) = div(i,j,k,ie)*elem(ie)%variable_hyperviscosity(i,j)
+              vor(i,j,k,ie) = vor(i,j,k,ie)*elem(ie)%variable_hyperviscosity(i,j)
+            endif
+            div(i,j,k,ie) = nu_ratio*div(i,j,k,ie)
+          enddo
+        enddo
+      enddo
+    enddo
+    call gradient_minus_curl_sphere_wk_testcov_openacc(div,vor,deriv,elem,len,nets,nete,1,1,ntl_out,tl_out,laplace)
+    !$acc parallel loop gang vector collapse(4) present(laplace,elem,v)
+    do ie = nets , nete
+      do k = 1 , len
+        do n=1,np
+          do m=1,np
+            ! add in correction so we dont damp rigid rotation
+            laplace(m,n,1,k,tl_out,ie)=laplace(m,n,1,k,tl_out,ie) + 2*elem(ie)%spheremp(m,n)*v(m,n,1,k,tl_in,ie)*(rrearth**2)
+            laplace(m,n,2,k,tl_out,ie)=laplace(m,n,2,k,tl_out,ie) + 2*elem(ie)%spheremp(m,n)*v(m,n,2,k,tl_in,ie)*(rrearth**2)
+          enddo
+        enddo
+      enddo
+    enddo
+  end subroutine vlaplace_sphere_wk_contra
+
+  !TODO: make this efficient with shared memory!
+  subroutine gradient_minus_curl_sphere_wk_testcov_openacc(s1,s2,deriv,elem,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out,ds)
+    !   integrated-by-parts gradient, w.r.t. COVARIANT test functions
+    !   input s:  scalar
+    !   output  ds: weak gradient, lat/lon coordinates
+    implicit none
+    type (derivative_t) , intent(in   ) :: deriv
+    type (element_t)    , intent(in   ) :: elem(:)
+    real(kind=real_kind), intent(in   ) :: s1(np,np  ,len,ntl_in ,nets:nete)
+    real(kind=real_kind), intent(in   ) :: s2(np,np  ,len,ntl_in ,nets:nete)
+    real(kind=real_kind), intent(  out) :: ds(np,np,2,len,ntl_out,nets:nete)
+    integer             , intent(in   ) :: len,nets,nete,ntl_in,tl_in,ntl_out,tl_out
+    integer :: i,j,l,k,ie
+    real(kind=real_kind) :: dscontra1, dscontra2
+    !$acc parallel loop gang vector collapse(4) private(dscontra1, dscontra2) present(elem,deriv,s1,s2,ds)
+    do ie=nets,nete
+      do k=1,len
+        do j=1,np
+          do i=1,np
+            dscontra1 = 0
+            dscontra2 = 0
+            do l=1,np
+              dscontra1=dscontra1-( (elem(ie)%mp(l,j)*elem(ie)%metinv(i,j,1,1)*elem(ie)%metdet(i,j)*s1(l,j,k,tl_in,ie)*deriv%Dvv(i,l)) + &
+                                    (elem(ie)%mp(i,l)*elem(ie)%metinv(i,j,2,1)*elem(ie)%metdet(i,j)*s1(i,l,k,tl_in,ie)*deriv%Dvv(j,l)) - &
+                                    (elem(ie)%mp(i,l)*s2(i,l,k,tl_in,ie)*deriv%Dvv(j,l)) ) *rrearth
+              dscontra2=dscontra2-( (elem(ie)%mp(l,j)*elem(ie)%metinv(i,j,1,2)*elem(ie)%metdet(i,j)*s1(l,j,k,tl_in,ie)*deriv%Dvv(i,l)) + &
+                                    (elem(ie)%mp(i,l)*elem(ie)%metinv(i,j,2,2)*elem(ie)%metdet(i,j)*s1(i,l,k,tl_in,ie)*deriv%Dvv(j,l)) + &
+                                    (elem(ie)%mp(l,j)*s2(l,j,k,tl_in,ie)*deriv%Dvv(i,l)) ) *rrearth
+            enddo
+            ds(i,j,1,k,tl_out,ie)=(elem(ie)%D(i,j,1,1)*dscontra1 + elem(ie)%D(i,j,1,2)*dscontra2)
+            ds(i,j,2,k,tl_out,ie)=(elem(ie)%D(i,j,2,1)*dscontra1 + elem(ie)%D(i,j,2,2)*dscontra2)
+          enddo
+        enddo
+      enddo
+    enddo
+  end subroutine gradient_minus_curl_sphere_wk_testcov_openacc
 
 
   subroutine vorticity_sphere_openacc(v,deriv,elem,vort,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out)
@@ -93,7 +204,7 @@ contains
     !ouput:  -< grad(PHI), grad(s) >   = weak divergence of grad(s)
     !note: for this form of the operator, grad(s) does not need to be made C0
     real(kind=real_kind) , intent(in   ) :: s(np,np,len,ntl_in,nelemd)
-    real(kind=real_kind) , intent(inout) :: grads(np,np,2,len,nelemd)
+    real(kind=real_kind) , intent(  out) :: grads(np,np,2,len,nelemd)
     type (derivative_t)  , intent(in   ) :: deriv
     type (element_t)     , intent(in   ) :: elem(:)
     logical              , intent(in   ) :: var_coef
@@ -102,7 +213,7 @@ contains
     integer :: i,j,k,ie
     ! Local
     real(kind=real_kind) :: oldgrads(2)
-    call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out)
+    call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl_in,tl_in,1,1)
     !$acc parallel loop gang vector collapse(4) private(oldgrads)
     do ie = nets , nete
       do k = 1 , len
@@ -125,19 +236,19 @@ contains
     enddo
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
     ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().
-    call divergence_sphere_wk_openacc(grads,deriv,elem(:),laplace,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out)
+    call divergence_sphere_wk_openacc(grads,deriv,elem(:),laplace,len,nets,nete,1,1,ntl_out,tl_out)
   end subroutine laplace_sphere_wk_openacc
 
   subroutine divergence_sphere_wk_openacc(v,deriv,elem,div,len,nets,nete,ntl_in,tl_in,ntl_out,tl_out)
     use element_mod, only: element_t
     use physical_constants, only: rrearth
     implicit none
-!   input:  v = velocity in lat-lon coordinates
-!   ouput:  div(v)  spherical divergence of v, integrated by parts
-!   Computes  -< grad(psi) dot v >
-!   (the integrated by parts version of < psi div(v) > )
-!   note: after DSS, divergence_sphere () and divergence_sphere_wk()
-!   are identical to roundoff, as theory predicts.
+    !   input:  v = velocity in lat-lon coordinates
+    !   ouput:  div(v)  spherical divergence of v, integrated by parts
+    !   Computes  -< grad(psi) dot v >
+    !   (the integrated by parts version of < psi div(v) > )
+    !   note: after DSS, divergence_sphere () and divergence_sphere_wk()
+    !   are identical to roundoff, as theory predicts.
     real(kind=real_kind), intent(in) :: v(np,np,2,len,ntl_in,nelemd)  ! in lat-lon coordinates
     type (derivative_t) , intent(in) :: deriv
     type (element_t)    , intent(in) :: elem(:)
