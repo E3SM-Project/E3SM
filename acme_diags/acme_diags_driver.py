@@ -11,6 +11,75 @@ import cdp.cdp_run
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
 from acme_diags.driver.utils import get_set_name
+import json
+import collections
+import csv
+
+
+def create_lat_lon_metrics_table(root_dir, parameters):
+
+    metrics_info = collections.OrderedDict()
+    for parameter in parameters:
+        for set_num in parameter.sets:
+            set_num =  get_set_name(set_num)
+            print(set_num)
+            if set_num in ['lat_lon','5']:
+                
+                # ref_name-variable-season-region
+                # or
+                # ref_name-variable-plev'mb'-season-region
+                ref_name = parameter.ref_name
+
+                ## Save data in .cvs as a table
+                #header = ['Variables','Model mean','Obs mean','Mean Bias','RMSE','correlation']
+                #table_data = np.empty([len(parameter.variables), 6])
+                
+                for var in parameter.variables:
+                    for season in parameter.seasons:
+                        for region in parameter.regions:
+                            # because some parameters have plevs, there might be
+                            # more than one row_name, fnm pair
+                            row_name_and_fnm = []
+    
+                            if parameter.plevs == []:  # 2d variables
+                                row_name = '{} {} {}'.format(var, region, ref_name)
+                                fnm = '{}-{}-{}-{}'.format(ref_name,
+                                                           var, season, region)
+                                row_name_and_fnm.append((row_name, fnm))
+                            else:  # 3d variables
+                                for plev in parameter.plevs:
+                                    row_name = '{} {} {} {}'.format(
+                                        var, str(int(plev)) + ' mb', region, ref_name)
+                                    fnm = '{}-{}-{}-{}-{}'.format(
+                                        ref_name, var, int(plev), season, region)
+                                    row_name_and_fnm.append((row_name, fnm))
+                            print(row_name_and_fnm)
+                            metrics_path = os.path.join(
+                                #'..', '{}'.format(set_num), parameter.case_id, fnm)
+                               parameter.results_dir, '{}'.format(set_num), parameter.case_id, fnm)
+                            metrics_dic = json.load(open(metrics_path + '.json'))
+                     
+                        if season not in metrics_info:
+                            metrics_info[season] = collections.OrderedDict()
+                        if row_name not in metrics_info[season]:
+                            metrics_info[season][row_name] = collections.OrderedDict()
+                        metrics_info[season][row_name]['metrics'] = metrics_dic
+
+                # save metrics information in .csv table
+                header = ['Variables','Model mean','Obs mean','Mean Bias','RMSE','correlation']
+                for season in parameter.seasons:
+                    table_path = os.path.abspath(os.path.join(
+                                #'..', '{}'.format(set_num), parameter.case_id, fnm)
+                               parameter.results_dir, '{}'.format(set_num)))
+                    print(table_path)
+                    with open(table_path + '/' + season + '_metrics_table.csv','w') as f1:
+                        writer=csv.writer(f1, delimiter=',',lineterminator='\n', quoting=csv.QUOTE_NONE)
+                        writer.writerow(header)
+                        for key, metrics_dic in metrics_info[season].items():
+                            metrics = metrics_dic['metrics']
+                            row = [key, round(metrics['test_regrid']['mean'],3),round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
+                            writer.writerow(row)
+                    
 
 
 def _get_default_diags(set_num, dataset):
@@ -129,6 +198,8 @@ if __name__ == '__main__':
         pth = os.path.join(parameters[0].results_dir, 'viewer')
         if not os.path.exists(pth):
             os.makedirs(pth)
+
+        create_lat_lon_metrics_table(pth, parameters)
 
         create_viewer(pth, parameters, parameters[0].output_format[0])
     else:

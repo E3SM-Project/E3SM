@@ -207,6 +207,7 @@ def create_viewer(root_dir, parameters, ext):
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
 
+                        print(ROW_INFO)
                         for row_name, fnm in row_name_and_fnm:
                             if parameter.case_id not in ROW_INFO[set_num]:
                                 ROW_INFO[set_num][parameter.case_id] = collections.OrderedDict(
