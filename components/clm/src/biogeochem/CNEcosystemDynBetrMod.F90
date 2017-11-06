@@ -213,7 +213,7 @@ module CNEcosystemDynBetrMod
        call t_startf('CNAllocation - phase-1')
        call SetPlantMicNPDemand (bounds                                     , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp,temperature_vars, &
-                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
+                photosyns_vars, crop_vars, canopystate_vars,soilstate_vars,cnstate_vars   , &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars      , &
                 c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars  , &
                 phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)

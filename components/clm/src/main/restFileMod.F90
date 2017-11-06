@@ -1039,7 +1039,6 @@ contains
     !-----------------------------------------------------------------------
 
     ! Get relevant sizes
-
     if ( .not. single_column .or. nsrest /= nsrStartup )then
        call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
        call check_dim(ncid, nameg, numg)
