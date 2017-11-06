@@ -26,9 +26,9 @@ module CNAllocationBeTRMod
   use PhotosynthesisType  , only : photosyns_type
   use CropType            , only : crop_type
   use VegetationPropertiesType, only : veg_vp
-  use LandunitType        , only : lun_pp                
-  use ColumnType          , only : col_pp                
-  use VegetationType      , only : veg_pp                
+  use LandunitType        , only : lun_pp
+  use ColumnType          , only : col_pp
+  use VegetationType      , only : veg_pp
   ! bgc interface & pflotran module switches
   use clm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
@@ -43,7 +43,7 @@ module CNAllocationBeTRMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public  :: CNAllocationBeTRInit         ! Initialization
   private :: calc_plantN_kineticpar
-  private :: compute_t_scalar
+  private :: compute_tw_scalar
   !!-----------------------------------------------------------------------------------------------------
   !! CNAllocation is divided into 3 subroutines/phases:
   private :: CNAllocation1_PlantNPDemand     !!Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
@@ -186,9 +186,9 @@ contains
   end subroutine CNAllocationBeTRInit
 !!-------------------------------------------------------------------------------------------------
   subroutine SetPlantMicNPDemand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       temperature_vars, photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
+       temperature_vars, photosyns_vars, crop_vars, canopystate_vars, soilstate_vars, cnstate_vars,   &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
-       nitrogenstate_vars, nitrogenflux_vars,&
+       nitrogenstate_vars, nitrogenflux_vars,  &
        phosphorusstate_vars,phosphorusflux_vars, PlantMicKinetics_vars)
 
   use TemperatureType           , only : temperature_type
@@ -205,6 +205,7 @@ contains
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(crop_type)          , intent(in)    :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
+    type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(in)    :: carbonstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
@@ -226,7 +227,7 @@ contains
        phosphorusstate_vars,phosphorusflux_vars)
 
    !compute temperature scalar
-   call compute_t_scalar(bounds, num_soilc, filter_soilc, temperature_vars, carbonflux_vars)
+   call compute_tw_scalar(bounds, num_soilc, filter_soilc, temperature_vars, soilstate_vars, carbonflux_vars)
 
    !extract the kinetic parameters
    call calc_plantN_kineticpar(bounds, num_soilc, filter_soilc               , &
@@ -642,242 +643,6 @@ contains
 
          ! carbon return of leaf C investment
          benefit_pgpp_pleafc(p) = max(gpp(p)  / max(leafc(p),1e-20_r8), 0.0_r8)
-         ! get the time step total maintenance respiration
-         ! These fluxes should already be in gC/m2/s
-
-!         mr = leaf_mr(p) + froot_mr(p)
-!         if (woody(ivt(p)) == 1.0_r8) then
-!            mr = mr + livestem_mr(p) + livecroot_mr(p)
-!         else if (ivt(p) >= npcropmin) then
-!            if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
-!         end if
-
-         ! carbon flux available for allocation
-!         availc(p) = gpp(p) - mr
-
-         ! new code added for isotope calculations, 7/1/05, PET
-         ! If mr > gpp, then some mr comes from gpp, the rest comes from
-         ! cpool (xsmr)
-!         if (mr > 0._r8 .and. availc(p) < 0._r8) then
-!            curmr = gpp(p)
-!            curmr_ratio = curmr / mr
-!         else
-!            curmr_ratio = 1._r8
-!         end if
-
-!         leaf_curmr(p) = leaf_mr(p) * curmr_ratio
-!         leaf_xsmr(p) = leaf_mr(p) - leaf_curmr(p)
-!         froot_curmr(p) = froot_mr(p) * curmr_ratio
-!         froot_xsmr(p) = froot_mr(p) - froot_curmr(p)
-!         livestem_curmr(p) = livestem_mr(p) * curmr_ratio
-!         livestem_xsmr(p) = livestem_mr(p) - livestem_curmr(p)
-!         livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
-!         livecroot_xsmr(p) = livecroot_mr(p) - livecroot_curmr(p)
-!         grain_curmr(p) = grain_mr(p) * curmr_ratio
-!         grain_xsmr(p) = grain_mr(p) - grain_curmr(p)
-
-!         ! no allocation when available c is negative
-!         availc(p) = max(availc(p),0.0_r8)
-
-!         ! test for an xsmrpool deficit
-!         if (xsmrpool(p) < 0.0_r8) then
-            ! Running a deficit in the xsmrpool, so the first priority is to let
-            ! some availc from this timestep accumulate in xsmrpool.
-            ! Determine rate of recovery for xsmrpool deficit
-!            xsmrpool_recover(p) = -xsmrpool(p)/(dayscrecover*secspday)
-!            if (xsmrpool_recover(p) < availc(p)) then
-               ! available carbon reduced by amount for xsmrpool recovery
-!               availc(p) = availc(p) - xsmrpool_recover(p)
-!            else
-               ! all of the available carbon goes to xsmrpool recovery
-!               xsmrpool_recover(p) = availc(p)
-!               availc(p) = 0.0_r8
-!            end if
-!            cpool_to_xsmrpool(p) = xsmrpool_recover(p)
-!         end if
-
-!         f1 = froot_leaf(ivt(p))
-!         f2 = croot_stem(ivt(p))
-
-         ! modified wood allocation to be 2.2 at npp=800 gC/m2/yr, 0.2 at npp=0,
-         ! constrained so that it does not go lower than 0.2 (under negative annsum_npp)
-         ! This variable allocation is only for trees. Shrubs have a constant
-         ! allocation as specified in the pft-physiology file.  The value is also used
-         ! as a trigger here: -1.0 means to use the dynamic allocation (trees).
-
-!         if (stem_leaf(ivt(p)) == -1._r8) then
-!            f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
-!         else
-!            f3 = stem_leaf(ivt(p))
-!         end if
-
-!         f4   = flivewd(ivt(p))
-!         g1   = grperc(ivt(p))
-!         g2   = grpnow(ivt(p))
-!         cnl  = leafcn(ivt(p))
-!         cnfr = frootcn(ivt(p))
-!         cnlw = livewdcn(ivt(p))
-!         cndw = deadwdcn(ivt(p))
-
-!         cpl = leafcp(ivt(p))
-!         cpfr = frootcp(ivt(p))
-!         cplw = livewdcp(ivt(p))
-!         cpdw = deadwdcp(ivt(p))
-
-
-         ! calculate f1 to f5 for prog crops following AgroIBIS subr phenocrop
-
-!         f5 = 0._r8 ! continued intializations from above
-
-!         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-
-!            if (croplive(p)) then
-               ! same phases appear in subroutine CropPhenology
-
-               ! Phase 1 completed:
-               ! ==================
-               ! if hui is less than the number of gdd needed for filling of grain
-               ! leaf emergence also has to have taken place for lai changes to occur
-               ! and carbon assimilation
-               ! Next phase: leaf emergence to start of leaf decline
-
-!               if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p)) then
-
-                  ! allocation rules for crops based on maturity and linear decrease
-                  ! of amount allocated to roots over course of the growing season
-
-!                  if (peaklai(p) == 1) then ! lai at maximum allowed
-!                     arepr(p) = 0._r8
-!                     aleaf(p) = 1.e-5_r8
-!                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
-!                          (arooti(ivt(p)) - arootf(ivt(p))) *  &
-!                          min(1._r8, hui(p)/gddmaturity(p))))
-!                     astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
-!                  else
-!                     arepr(p) = 0._r8
-!                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
-!                          (arooti(ivt(p)) - arootf(ivt(p))) *  &
-!                          min(1._r8, hui(p)/gddmaturity(p))))
-!                     fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
-!                          exp(-bfact(ivt(p))*hui(p)/huigrain(p))) / &
-!                          (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
-!                     aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
-!                     astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
-!                  end if
-
-                  ! AgroIBIS included here an immediate adjustment to aleaf & astem if the
-                  ! predicted lai from the above allocation coefficients exceeded laimx.
-                  ! We have decided to live with lais slightly higher than laimx by
-                  ! enforcing the cap in the following tstep through the peaklai logic above.
-
-!                  astemi(p) = astem(p) ! save for use by equations after shift
-!                  aleafi(p) = aleaf(p) ! to reproductive phenology stage begins
-!                  grain_flag(p) = 0._r8 ! setting to 0 while in phase 2
-
-                  ! Phase 2 completed:
-                  ! ==================
-                  ! shift allocation either when enough gdd are accumulated or maximum number
-                  ! of days has elapsed since planting
-
-!               else if (hui(p) >= huigrain(p)) then
-
-!                  aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) - &
-!                       (arooti(ivt(p)) - arootf(ivt(p))) * min(1._r8, hui(p)/gddmaturity(p))))
-!                  if (astemi(p) > astemf(ivt(p))) then
-!                     astem(p) = max(0._r8, max(astemf(ivt(p)), astem(p) * &
-!                          (1._r8 - min((hui(p)-                 &
-!                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
-!                          huigrain(p)),1._r8)**allconss(ivt(p)) )))
-!                  end if
-!                  if (aleafi(p) > aleaff(ivt(p))) then
-!                     aleaf(p) = max(1.e-5_r8, max(aleaff(ivt(p)), aleaf(p) * &
-!                          (1._r8 - min((hui(p)-                    &
-!                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
-!                          huigrain(p)),1._r8)**allconsl(ivt(p)) )))
-!                  end if
-
-                  !Beth's retranslocation of leafn, stemn, rootn to organ
-                  !Filter excess plant N to retransn pool for organ N
-                  !Only do one time then hold grain_flag till onset next season
-
-                  ! slevis: Will astem ever = astemf exactly?
-                  ! Beth's response: ...looks like astem can equal astemf under the right circumstances.
-                  !It might be worth a rewrite to capture what I was trying to do, but the retranslocation for
-                  !corn and wheat begins at the beginning of the grain fill stage, but for soybean I was holding it
-                  !until after the leaf and stem decline were complete. Looking at how astem is calculated, once the
-                  !stem decline is near complete, astem should (usually) be set to astemf. The reason for holding off
-                  !on soybean is that the retranslocation scheme begins at the beginning of the grain phase, when the
-                  !leaf and stem are still growing, but declining. Since carbon is still getting allocated and now
-                  !there is more nitrogen available, the nitrogen can be diverted from grain. For corn and wheat
-                  !the impact was probably enough to boost productivity, but for soybean the nitrogen was better off
-                  !fulfilling the grain fill. It seems that if the peak lai is reached for soybean though that this
-                  !would be bypassed altogether, not the intended outcome. I checked several of my output files and
-                  !they all seemed to be going through the retranslocation loop for soybean - good news.
-
-!                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p)) .or. peaklai(p) == 1._r8) then
-!                     if (grain_flag(p) == 0._r8) then
-!                        t1 = 1 / dt
-!                        leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
-!                             fleafcn(ivt(p))))
-!                        livestemn_to_retransn(p) = t1 * ((livestemc(p) / livewdcn(ivt(p))) - (livestemc(p) / &
-!                             fstemcn(ivt(p))))
-!                        frootn_to_retransn(p) = 0._r8
-!                        if (ffrootcn(ivt(p)) > 0._r8) then
-!                           frootn_to_retransn(p) = t1 * ((frootc(p) / frootcn(ivt(p))) - (frootc(p) / &
-!                                ffrootcn(ivt(p))))
-!                        end if
-!                        grain_flag(p) = 1._r8
-!                     end if
-!                  end if
-
-!                  arepr(p) = 1._r8 - aroot(p) - astem(p) - aleaf(p)
-
-!               else                   ! pre emergence
-!                  aleaf(p) = 1.e-5_r8 ! allocation coefficients should be irrelevant
-!                  astem(p) = 0._r8    ! because crops have no live carbon pools;
-!                  aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
-!                  arepr(p) = 0._r8    ! a few lines down
-!               end if
-
-!               f1 = aroot(p) / aleaf(p)
-!               f3 = astem(p) / aleaf(p)
-!               f5 = arepr(p) / aleaf(p)
-!               g1 = 0.25_r8
-
-!            else   ! .not croplive
-!               f1 = 0._r8
-!               f3 = 0._r8
-!               f5 = 0._r8
-!               g1 = 0.25_r8
-!            end if
-!         end if
-
-         ! based on available C, use constant allometric relationships to
-         ! determine N requirements
-
-!         if (woody(ivt(p)) == 1.0_r8) then
-!            c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3*(1._r8+f2))
-!            n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
-!                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
-!            p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
-!                 (f3*(1._r8-f4)*(1._r8+f2))/cpdw
-
-!         else if (ivt(p) >= npcropmin) then ! skip generic crops
-!            cng = graincn(ivt(p))
-!            cpg = graincp(ivt(p))
-!            c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
-!            n_allometry(p) = 1._r8/cnl + f1/cnfr + f5/cng + (f3*f4*(1._r8+f2))/cnlw + &
-!                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
-!            p_allometry(p) = 1._r8/cpl + f1/cpfr + f5/cpg + (f3*f4*(1._r8+f2))/cplw + &
-!                 (f3*(1._r8-f4)*(1._r8+f2))/cpdw
-
-!         else
-!            c_allometry(p) = 1._r8+g1+f1+f1*g1
-!            n_allometry(p) = 1._r8/cnl + f1/cnfr
-!            p_allometry(p) = 1._r8/cpl + f1/cpfr
-!         end if
-!         plant_ndemand(p) = availc(p)*(n_allometry(p)/c_allometry(p))
-!         plant_pdemand(p) = availc(p)*(p_allometry(p)/c_allometry(p))
 
          ! retranslocated N deployment depends on seasonal cycle of potential GPP
          ! (requires one year run to accumulate demand)
@@ -888,44 +653,6 @@ contains
          tempmax_retransn(p) = max(tempmax_retransn(p),retransn(p))
          tempmax_retransp(p) = max(tempmax_retransp(p),retransp(p))   !! phosphorus
 
-         ! Beth's code: crops pull from retransn pool only during grain fill;
-         !              retransn pool has N from leaves, stems, and roots for
-         !              retranslocation
-
-!         if (ivt(p) >= npcropmin .and. grain_flag(p) == 1._r8) then
-!            avail_retransn(p) = plant_ndemand(p)
-!            avail_retransp(p) = plant_pdemand(p)
-!         else if (ivt(p) < npcropmin .and. annsum_potential_gpp(p) > 0._r8) then
-!            avail_retransn(p) = (annmax_retransn(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
-!            avail_retransp(p) = (annmax_retransp(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
-!         else
-!            avail_retransn(p) = 0.0_r8
-!            avail_retransp(p) = 0.0_r8
-!         end if
-
-!         ! make sure available retrans N doesn't exceed storage
-!         avail_retransn(p) = min(avail_retransn(p), retransn(p)/dt)
-!         avail_retransp(p) = min(avail_retransp(p), retransp(p)/dt)    !! phosphorus
-
-         ! modify plant N demand according to the availability of
-         ! retranslocated N
-         ! take from retransn pool at most the flux required to meet
-         ! plant ndemand
-
-!         if (plant_ndemand(p) > avail_retransn(p)) then
-!            retransn_to_npool(p) = avail_retransn(p)
-!         else
-!            retransn_to_npool(p) = plant_ndemand(p)
-!         end if
-
-
-!         if (plant_pdemand(p) > avail_retransp(p)) then
-!            retransp_to_ppool(p) = avail_retransp(p)
-!         else
-!            retransp_to_ppool(p) = plant_pdemand(p)
-!         end if
-
-
       end do ! end pft loop
 
     end associate
@@ -933,7 +660,7 @@ contains
  end subroutine CNAllocation1_PlantNPDemand
 
 !--------------------------------------------------------------------------------------------------
-  subroutine compute_t_scalar(bounds, num_soilc, filter_soilc, temperature_vars, carbonflux_vars)
+  subroutine compute_tw_scalar(bounds, num_soilc, filter_soilc, temperature_vars, soilstate_vars, carbonflux_vars)
 
   !DESCRIPTION
   ! compute temperature scaling factor for kinetic parameter calculation
@@ -945,6 +672,7 @@ contains
   type(bounds_type)      , intent(in)    :: bounds
   integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
   integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+  type(soilstate_type)   , intent(in)    :: soilstate_vars
   type(temperature_type) , intent(in)    :: temperature_vars
   type(carbonflux_type)  , intent(inout) :: carbonflux_vars
 
@@ -953,15 +681,19 @@ contains
   real(r8) :: catanf
   real(r8) :: t1
   real(r8) :: q10, froz_q10
+  real(r8) :: minpsi, maxpsi,psi
   real(r8), parameter :: normalization_tref = 15._r8            ! reference temperature for normalizaion (degrees C)
   integer :: j, fc, c
 
   !----- CENTURY T response function
   catanf(t1) = 11.75_r8 +(29.7_r8 / SHR_CONST_PI) * atan( SHR_CONST_PI * 0.031_r8  * ( t1 - 15.4_r8 ))
 
-  associate(                                   &
-     t_scalar => carbonflux_vars%t_scalar_col, &
-     t_soisno => temperature_vars%t_soisno_col &
+  associate(                                     &
+     t_scalar => carbonflux_vars%t_scalar_col  , &
+     w_scalar => carbonflux_vars%w_scalar_col  , &
+     t_soisno => temperature_vars%t_soisno_col , &
+     sucsat   => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)                              
+     soilpsi  => soilstate_vars%soilpsi_col      & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa) 
   )
   q10 = CNParamsShareInst%q10
   froz_q10 = CNParamsShareInst%froz_q10
@@ -977,6 +709,7 @@ contains
     enddo
   enddo
 
+  minpsi = -10.0_r8;
   catanf_30 = catanf(30._r8)
    ! scale all decomposition rates by a constant to compensate for offset between original CENTURY temp func and Q10
    normalization_factor = (catanf(normalization_tref)/catanf_30) / (q10**((normalization_tref-25._r8)/10._r8))
@@ -984,10 +717,26 @@ contains
     do fc = 1,num_soilc
       c = filter_soilc(fc)
       t_scalar(c,j) = t_scalar(c,j) * normalization_factor
+
+      !compute w scalar
+      maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+      psi = min(soilpsi(c,j),maxpsi)
+      ! decomp only if soilpsi is higher than minpsi
+      if (psi > minpsi) then
+        w_scalar(c,j) = (log(minpsi/psi)/log(minpsi/maxpsi))
+      else
+        w_scalar(c,j) = 0._r8
+      end if
+!      if (use_lch4) then
+!        if (anoxia_wtsat .and. t_soisno(c,j) > SHR_CONST_TKFRZ) then ! wet area will have w_scalar of 1 if unfrozen
+!           w_scalar(c,j) = w_scalar(c,j)*(1._r8 - finundated(c)) + finundated(c)
+!        end if
+!      end if
     end do
   end do
+
   end associate
-  end subroutine compute_t_scalar
+  end subroutine compute_tw_scalar
 !------------------------------------------------------------------------------
   subroutine calc_plantN_kineticpar(bounds, num_soilc, filter_soilc         , &
                             num_soilp, filter_soilp                         , &
@@ -1068,10 +817,11 @@ contains
      plant_eff_pcompet_b          => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch  , &
      decomp_eff_ncompet_b         => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
      decomp_eff_pcompet_b         => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
-     den_eff_ncompet_b            => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
-     nit_eff_ncompet_b            => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
-     minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col, &
-     minsurf_nh4_compet             => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col, &
+     den_eff_ncompet_b            => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col   , &
+     nit_eff_ncompet_b            => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col   , &
+     minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col    , &
+     minsurf_nh4_compet           => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col  , &
+     km_minsurf_nh4_vr_col        => PlantMicKinetics_vars%km_minsurf_nh4_vr_col      , &
      isoilorder                   => cnstate_vars%isoilorder                          , &
      cn_scalar                    => cnstate_vars%cn_scalar                           , &
      cp_scalar                    => cnstate_vars%cp_scalar                           , &
@@ -1107,16 +857,27 @@ contains
         cp_scalar(p) = 1._r8
       endif
     enddo
-  enddo 
+  enddo
   do j = 1, nlevdecomp
     do fc=1,num_soilc
       c = filter_soilc(fc)
       if(isoilorder(c)==16)then
         vmax_minsurf_p_vr_col(c,j) = 0._r8
         km_minsurf_p_vr_col(c,j) = 1.e+20_r8
+        km_minsurf_nh4_vr_col(c,j)=1.e+20_r8
+        minsurf_p_compet(c,j) = 0._r8
+        minsurf_nh4_compet(c,j) = 0._r8
       else
-        vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
+        vmax_minsurf_p_vr_col(c,j) = 1.e-7_r8
         km_minsurf_p_vr_col(c,j) = km_minsurf_p_vr(isoilorder(c),j)
+        km_minsurf_nh4_vr_col(c,j)=2.e-3_r8 ! mol/m3, this is a rough guess
+        ! effective p competing mineral surfaces, this needs update as a function of soil texture,
+        ! anion exchange capacity, pH?. Note the definition of vmax_minsurf_p_vr in eca-cnp is
+        ! actually maximum sorption capacity. For simplicity, I also assume the sorption capacity
+        ! for nh4 same as for P. In soil, the sorption mechanisms for nh4 and phoshpate are different.
+        ! Nh4 is associated anions and P is associated with cations
+        minsurf_p_compet(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)/31._r8  !convert in mol/m3
+        minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)
       endif
       !the following is temporary set using alm, in the future, it will be
       !set through the betr_alm interface
@@ -1151,8 +912,6 @@ contains
           plant_eff_pcompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
 
         else
-          cn_scalar(p) = 1._r8
-          cp_scalar(p) = 1._r8
           plant_nh4_km_vr_patch(p,j) = spval
           plant_no3_km_vr_patch(p,j) = spval
           plant_p_km_vr_patch(p,j) = spval
@@ -1170,9 +929,7 @@ contains
               e_decomp_scalar*decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
       end do
 
-      !effective p competing mineral surfaces, this needs update as a function of soil texture, anion exchange capacity, pH?.
-      minsurf_p_compet(c,j) = 0._r8
-      minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)
+
       !lines below are a crude approximation
       den_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
       nit_eff_ncompet_b(c,j) = decomp_eff_ncompet_b(c,j)
@@ -1549,6 +1306,9 @@ contains
              curmr_ratio = curmr / mr
              xsmr_ratio = 1 - curmr_ratio
              availc(p) = gpp(p)
+           else
+             curmr_ratio = 0._r8
+             xsmr_ratio = 0._r8
            end if
          else
            if (mr > 0._r8 .and.  gpp(p) <= mr) then
@@ -1561,12 +1321,12 @@ contains
              curmr_ratio = curmr / mr
              xsmr_ratio = 0._r8
              availc(p) = gpp(p) - mr
+           else
+             curmr_ratio = 0._r8
+             xsmr_ratio = 0._r8
            end if
          end if
-         if(mr==0._r8)then
-           curmr_ratio= 1._r8
-           xsmr_ratio = 0._r8
-         endif
+
          ! carbon flux available for allocation
          leaf_curmr(p) = leaf_mr(p) * curmr_ratio
          leaf_xsmr(p) = leaf_mr(p) * xsmr_ratio
@@ -2145,8 +1905,8 @@ contains
     ! adjustment under extreme nutrient/light limitation condition
     if (alloc_leaf < allocmin_leaf) then
        alloc_leaf = allocmin_leaf
-       alloc_froot = alloc_froot * (1-allocmin_leaf) / (alloc_froot + alloc_stem)
-       alloc_stem = 1.0 - alloc_leaf - alloc_froot
+       alloc_froot = alloc_froot * (1._r8-allocmin_leaf) / (alloc_froot + alloc_stem)
+       alloc_stem = 1.0_r8 - alloc_leaf - alloc_froot
     end if
 
     ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem or fine root
