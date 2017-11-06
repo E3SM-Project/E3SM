@@ -551,13 +551,13 @@ contains
       !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
       use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
       use hybvcoord_mod, only : hvcoord_t
-      use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-      use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
+      use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, laplace_sphere_wk_openacc, vlaplace_sphere_wk_openacc
+      use edge_mod, only : edgevpack, edgevunpack, edgeVpack_openacc, edgeVunpack_openacc
       use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
       use bndry_mod, only : bndry_exchangev
       use viscosity_mod, only : biharmonic_wk_dp3d, biharmonic_wk_dp3d_openacc
       use physical_constants, only: Cp
-      use element_state, only: state_T, state_v, state_dp3d
+      use element_state, only: state_T, state_v, state_dp3d, timelevels
       implicit none
       type (hybrid_t)      , intent(in   ) :: hybrid
       type (element_t)     , intent(inout), target :: elem(:)
@@ -570,7 +570,7 @@ contains
       real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
       real (kind=real_kind) :: nu_scale_top
       integer :: k,kptr,i,j,ie,ic,nt
-      real (kind=real_kind), dimension(np,np)      :: dpdn
+      real (kind=real_kind) :: dpdn
       real (kind=real_kind) :: v1,v2,dt,heating
 
       if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
@@ -641,87 +641,103 @@ contains
       if (hypervis_order == 2) then
         do ic=1,hypervis_subcycle
           call biharmonic_wk_dp3d_openacc(elem,dptens,ttens,vtens,deriv,edge3,hybrid,vtemp1,vort,divdp,nt,1,nelemd)
-          do ie=nets,nete
+          !$omp barrier
+          !$omp master
+          if (nu_p>0) then
             ! comptue mean flux
-            if (nu_p>0) then
-              elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%derived%dpdiss_ave(:,:,:)+eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)/hypervis_subcycle
-              elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
-            endif
-            do k=1,nlev
-              ! advace in time.
-              ! note: DSS commutes with time stepping, so we can time advance and then DSS.
-              ! note: weak operators alreayd have mass matrix "included"
-              ! add regular diffusion in top 3 layers:
-              if (nu_top>0 .and. k<=3) then
-                lap_t (:,:  ,k,ie)= laplace_sphere_wk(state_T   (:,:  ,k,nt,ie),deriv,elem(ie),var_coef=.false.)
-                lap_dp(:,:  ,k,ie)= laplace_sphere_wk(state_dp3d(:,:  ,k,nt,ie),deriv,elem(ie),var_coef=.false.)
-                lap_v (:,:,:,k,ie)=vlaplace_sphere_wk(state_v   (:,:,:,k,nt,ie),deriv,elem(ie),var_coef=.false.)
-              endif
-              nu_scale_top = 1
-              if (k==1) nu_scale_top=4
-              if (k==2) nu_scale_top=2
-
-              ! biharmonic terms need a negative sign:
-              if (nu_top>0 .and. k<=3) then
-                vtens(:,:,:,k,ie)=(-nu*vtens(:,:,:,k,ie) + nu_scale_top*nu_top*lap_v(:,:,:,k,ie))
-                ttens(:,:,k,ie)  =(-nu_s*ttens(:,:,k,ie) + nu_scale_top*nu_top*lap_t(:,:,k,ie) )
-                dptens(:,:,k,ie) =(-nu_p*dptens(:,:,k,ie) + nu_scale_top*nu_top*lap_dp(:,:,k,ie) )
-              else
-                vtens(:,:,:,k,ie)=-nu*vtens(:,:,:,k,ie)
-                ttens(:,:,k,ie)  =-nu_s*ttens(:,:,k,ie)
-                dptens(:,:,k,ie) =-nu_p*dptens(:,:,k,ie)
-              endif
-
-              if (nu_p==0) then
-                ! nu_p==0 is only for certain regression tests, so perfromance is not an issue
-                ! normalize so as to conserve IE
-                ! scale by 1/rho (normalized to be O(1))
-                ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
-                dpdn(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-                ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/dpdn(:,:)
-                dptens(:,:,k,ie) = 0
-              endif
-
-              ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
-              elem(ie)%state%dp3d(:,:,k,nt) = elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%spheremp(:,:) + dt*dptens(:,:,k,ie)
-
+            !$acc parallel loop gang vector collapse(4)
+            do ie = 1 , nelemd
+              do k = 1 , nlev
+                do j = 1 , np
+                  do i = 1 , np
+                    elem(ie)%derived%dpdiss_ave       (i,j,k)=elem(ie)%derived%dpdiss_ave       (i,j,k)+eta_ave_w*state_dp3d(i,j,k,nt,ie)/hypervis_subcycle
+                    elem(ie)%derived%dpdiss_biharmonic(i,j,k)=elem(ie)%derived%dpdiss_biharmonic(i,j,k)+eta_ave_w*dptens    (i,j,k   ,ie)/hypervis_subcycle
+                  enddo
+                enddo
+              enddo
             enddo
-            kptr=0
-            call edgeVpack(edge3, ttens(:,:,:,ie),nlev,kptr,ie)
-            kptr=nlev
-            call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
-            kptr=3*nlev
-            call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
+          endif
+          if (nu_top>0) then
+            ! advace in time.
+            ! note: DSS commutes with time stepping, so we can time advance and then DSS.
+            ! note: weak operators alreayd have mass matrix "included"
+            ! add regular diffusion in top 3 layers:
+            call laplace_sphere_wk_openacc (state_T   ,vtemp1    ,deriv,elem,.false.,lap_t ,nlev,1,nelemd,timelevels,nt,1,1  ,klim_in=3)
+            call laplace_sphere_wk_openacc (state_dp3d,vtemp1    ,deriv,elem,.false.,lap_dp,nlev,1,nelemd,timelevels,nt,1,1  ,klim_in=3)
+            call vlaplace_sphere_wk_openacc(state_v   ,vort,divdp,deriv,elem,.false.,nlev,1,nelemd,timelevels,nt,1,1,lap_v,1._real_kind,klim_in=3)
+          endif
+          !$acc parallel loop gang vector collapse(4)
+          do ie=1,nelemd
+            do k=1,nlev
+              do j = 1 , np
+                do i = 1 , np
+                  nu_scale_top = 1
+                  if (k==1) nu_scale_top=4
+                  if (k==2) nu_scale_top=2
+                  ! biharmonic terms need a negative sign:
+                  if (nu_top>0 .and. k<=3) then
+                    vtens(i,j,:,k,ie)=(-nu*vtens(i,j,:,k,ie) + nu_scale_top*nu_top*lap_v(i,j,:,k,ie))
+                    ttens(i,j,k,ie)  =(-nu_s*ttens(i,j,k,ie) + nu_scale_top*nu_top*lap_t(i,j,k,ie) )
+                    dptens(i,j,k,ie) =(-nu_p*dptens(i,j,k,ie) + nu_scale_top*nu_top*lap_dp(i,j,k,ie) )
+                  else
+                    vtens(i,j,:,k,ie)=-nu*vtens(i,j,:,k,ie)
+                    ttens(i,j,k,ie)  =-nu_s*ttens(i,j,k,ie)
+                    dptens(i,j,k,ie) =-nu_p*dptens(i,j,k,ie)
+                  endif
+                  if (nu_p==0) then
+                    ! nu_p==0 is only for certain regression tests, so perfromance is not an issue
+                    ! normalize so as to conserve IE
+                    ! scale by 1/rho (normalized to be O(1))
+                    ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
+                    dpdn = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,nt)
+                    ttens(i,j,k,ie) = ttens(i,j,k,ie) * hvcoord%dp0(k)/dpdn
+                    dptens(i,j,k,ie) = 0
+                  endif
+                  ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
+                  elem(ie)%state%dp3d(i,j,k,nt) = elem(ie)%state%dp3d(i,j,k,nt)*elem(ie)%spheremp(i,j) + dt*dptens(i,j,k,ie)
+                enddo
+              enddo
+            enddo
           enddo
+          kptr = 0     ; call edgeVpack_openacc(edge3,ttens     ,  nlev,kptr,elem,1,nelemd,1,1)
+          kptr = nlev  ; call edgeVpack_openacc(edge3,vtens     ,2*nlev,kptr,elem,1,nelemd,1,1)
+          kptr = 3*nlev; call edgeVpack_openacc(edge3,state_dp3d,  nlev,kptr,elem,1,nelemd,timelevels,nt)
+          !$omp end master
+          !$omp barrier
+          ! do ie=nets,nete
+          !   kptr=0
+          !   call edgeVpack(edge3, ttens(:,:,:,ie),nlev,kptr,ie)
+          !   kptr=nlev
+          !   call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+          !   kptr=3*nlev
+          !   call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
+          ! enddo
 
           call t_startf('ahdp_bexchV2')
           call bndry_exchangeV(hybrid,edge3)
           call t_stopf('ahdp_bexchV2')
 
-          do ie=nets,nete
-            kptr=0
-            call edgeVunpack(edge3, ttens(:,:,:,ie), nlev, kptr, ie)
-            kptr=nlev
-            call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
-            kptr=3*nlev
-            call edgeVunpack(edge3, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
-            ! apply inverse mass matrix, accumulate tendencies
+          !$omp barrier
+          !$omp master
+          kptr = 0     ; call edgeVunpack_openacc(edge3,ttens     ,  nlev,kptr,elem,1,nelemd,1,1)
+          kptr = nlev  ; call edgeVunpack_openacc(edge3,vtens     ,2*nlev,kptr,elem,1,nelemd,1,1)
+          kptr = 3*nlev; call edgeVunpack_openacc(edge3,state_dp3d,  nlev,kptr,elem,1,nelemd,timelevels,nt)
+          !$acc parallel loop gang vector collapse(4)
+          do ie = 1 , nelemd
             do k=1,nlev
-              vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
-              vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
-              ttens(:,:,k,ie)=dt*ttens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-              elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%rspheremp(:,:)
-            enddo
-
-            ! apply hypervis to u -> u+utens:
-            ! E0 = dpdn * .5*u dot u + dpdn * T  + dpdn*PHIS
-            ! E1 = dpdn * .5*(u+utens) dot (u+utens) + dpdn * (T-X) + dpdn*PHIS
-            ! E1-E0:   dpdn (u dot utens) + dpdn .5 utens dot utens   - dpdn X
-            !      X = (u dot utens) + .5 utens dot utens
-            !  alt:  (u+utens) dot utens
-            do k=1,nlev
-              do j=1,np
-                do i=1,np
+              do j = 1 , np
+                do i = 1 , np
+                  ! apply inverse mass matrix, accumulate tendencies
+                  vtens     (i,j,1,k   ,ie) = dt*vtens  (i,j,1,k   ,ie)*elem(ie)%rspheremp(i,j)
+                  vtens     (i,j,2,k   ,ie) = dt*vtens  (i,j,2,k   ,ie)*elem(ie)%rspheremp(i,j)
+                  ttens     (i,j  ,k   ,ie) = dt*ttens  (i,j  ,k   ,ie)*elem(ie)%rspheremp(i,j)
+                  state_dp3d(i,j  ,k,nt,ie) = state_dp3d(i,j  ,k,nt,ie)*elem(ie)%rspheremp(i,j)
+                  ! apply hypervis to u -> u+utens:
+                  ! E0 = dpdn * .5*u dot u + dpdn * T  + dpdn*PHIS
+                  ! E1 = dpdn * .5*(u+utens) dot (u+utens) + dpdn * (T-X) + dpdn*PHIS
+                  ! E1-E0:   dpdn (u dot utens) + dpdn .5 utens dot utens   - dpdn X
+                  !      X = (u dot utens) + .5 utens dot utens
+                  !  alt:  (u+utens) dot utens
                   ! update v first (gives better results than updating v after heating)
                   elem(ie)%state%v(i,j,:,k,nt)=elem(ie)%state%v(i,j,:,k,nt) + vtens(i,j,:,k,ie)
                   v1=elem(ie)%state%v(i,j,1,k,nt)
@@ -732,6 +748,8 @@ contains
               enddo
             enddo
           enddo
+          !$omp end master
+          !$omp barrier
         enddo
       endif
 

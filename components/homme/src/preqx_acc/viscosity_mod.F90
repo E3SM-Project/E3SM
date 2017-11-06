@@ -119,16 +119,19 @@ contains
         enddo
       enddo
     enddo
-    ! call laplace_sphere_wk_openacc (ptens ,grads  ,deriv,elem,.true.,ptens ,nlev,nets,nete,1,1,1,1)
-    ! call laplace_sphere_wk_openacc (dptens,grads  ,deriv,elem,.true.,dptens,nlev,nets,nete,1,1,1,1)
-    ! call vlaplace_sphere_wk_openacc(vtens ,vor,div,deriv,elem,.true.,nlev,nets,nete,1,1,1,1,vtens,nu_ratio2)
+    call laplace_sphere_wk_openacc (ptens ,grads  ,deriv,elem,.true.,ptens ,nlev,nets,nete,1,1,1,1)
+    call laplace_sphere_wk_openacc (dptens,grads  ,deriv,elem,.true.,dptens,nlev,nets,nete,1,1,1,1)
+    !$acc parallel loop gang vector collapse(4)
     do ie=nets,nete
       do k=1,nlev
-        ptens(:,:,k,ie)=laplace_sphere_wk(ptens(:,:,k,ie),deriv,elem(ie),var_coef=.true.)
-        dptens(:,:,k,ie)=laplace_sphere_wk(dptens(:,:,k,ie),deriv,elem(ie),var_coef=.true.)
-        vtens(:,:,:,k,ie)=vlaplace_sphere_wk(vtens(:,:,:,k,ie),deriv,elem(ie),var_coef=.true.,nu_ratio=nu_ratio2)
+        do j = 1 , np
+          do i = 1 , np
+            grads(i,j,:,k,ie) = vtens(i,j,:,k,ie)
+          enddo
+        enddo
       enddo
     enddo
+    call vlaplace_sphere_wk_openacc(grads,vor,div,deriv,elem,.true.,nlev,nets,nete,1,1,1,1,vtens,nu_ratio2)
 
     !$omp end master
     !$omp barrier
