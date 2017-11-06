@@ -107,6 +107,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     while loop:
         loop = False
 
+        save_prerun_provenance(case)
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
 
@@ -280,8 +281,6 @@ def case_run(case, skip_pnl=False):
     # set up the LID
     lid = new_lid()
 
-    save_prerun_provenance(case)
-
     for cycle in range(data_assimilation_cycles):
         # After the first DA cycle, runs are restart runs
         if cycle > 0:
@@ -295,6 +294,7 @@ def case_run(case, skip_pnl=False):
             case.read_xml()
 
         lid = run_model(case, lid, skip_pnl, da_cycle=cycle)
+
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
