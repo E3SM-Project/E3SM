@@ -50,7 +50,8 @@ if (HOSTNAME MATCHES "^yslogin" OR
     set (HOSTNAME_ID "nwsc")
 # New UCAR/NWSC SGI Machines
 elseif (HOSTNAME MATCHES "^laramie" OR
-        HOSTNAME MATCHES "^chadmin")
+        HOSTNAME MATCHES "^chadmin" OR
+	HOSTNAME MATCHES "^cheyenne")
    set (HOSTNAME_ID "nwscla")
 # ALCF/Argonne Machines
 elseif (HOSTNAME MATCHES "^mira" OR
@@ -159,7 +160,7 @@ set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 ctest_update ()
 
 ## -- Configure
-message (" -- Configure build - ${CTEST_BUILD_NAME} --")
+message (" -- Configure build - ${CTEST_BUILD_NAME} -- with options ${CTEST_CONFIGURE_OPTIONS}")
 include (CTestEnvironment-${HOSTNAME_ID})
 set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
 ctest_configure ()

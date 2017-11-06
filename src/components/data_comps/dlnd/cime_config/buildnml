@@ -38,11 +38,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    lnd_domain_file = case.get_value("LND_DOMAIN_FILE")
-    lnd_domain_path = case.get_value("LND_DOMAIN_PATH")
     dlnd_mode = case.get_value("DLND_MODE")
     lnd_grid = case.get_value("LND_GRID")
-
     glc_nec = case.get_value("GLC_NEC")
 
     #----------------------------------------------------
@@ -56,9 +53,9 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.debug("DLND mode is %s", dlnd_mode)
-    logger.debug("DLND grid is %s", lnd_grid)
-    logger.debug("DLND glc_nec is %s", glc_nec)
+    logger.debug("DLND mode is {}".format(dlnd_mode))
+    logger.debug("DLND grid is {}".format(lnd_grid))
+    logger.debug("DLND glc_nec is {}".format(glc_nec))
 
     #----------------------------------------------------
     # Clear out old data.
@@ -84,6 +81,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     # Construct the list of streams.
     #----------------------------------------------------
     streams = nmlgen.get_streams()
+
     #----------------------------------------------------
     # For each stream, create stream text file and update
     # shr_strdata_nml group and input data list.
@@ -94,7 +92,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
             continue
 
         inst_stream = stream + inst_string
-        logger.debug("DLND stream is %s", inst_stream)
+        logger.debug("DLND stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "dlnd.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(),
                                         "user_dlnd.streams.txt." + inst_stream)
@@ -113,10 +111,22 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # set variables that are not per-stream
-    if lnd_domain_file != "UNSET":
-        full_domain_path = os.path.join(lnd_domain_path, lnd_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
+    # Determine model domain filename (in dlnd_in)
+    if "CPLHIST" in dlnd_mode:
+        dlnd_cplhist_domain_file = case.get_value("DLND_CPLHIST_DOMAIN_FILE")
+        if dlnd_cplhist_domain_file == 'null':
+            logger.info("   ....  Obtaining DLND model domain info from first stream file: {}".format(streams[0]))
+        else:
+            logger.info("   ....  Obtaining DLND model domain info from stream {}".format(streams[0]))
+        nmlgen.add_default("domainfile", value=dlnd_cplhist_domain_file)
+    else:
+        lnd_domain_file = case.get_value("LND_DOMAIN_FILE")
+        lnd_domain_path = case.get_value("LND_DOMAIN_PATH")
+        if lnd_domain_file != "UNSET":
+            full_domain_path = os.path.join(lnd_domain_path, lnd_domain_file)
+            nmlgen.add_default("domainfile", value=full_domain_path)
+        else:
+            nmlgen.add_default("domainfile", "null")
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
@@ -146,7 +156,7 @@ def buildnml(case, caseroot, compname):
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
     expect (os.path.isdir(user_xml_dir),
-            "user_xml_dir %s does not exist " %user_xml_dir)
+            "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
     files = Files()
@@ -156,7 +166,7 @@ def buildnml(case, caseroot, compname):
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
     for file_ in definition_file:
-        expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
+        expect(os.path.isfile(file_), "Namelist XML file {} not found!".format(file_))
 
     # Create the namelist generator object - independent of instance
     nmlgen = NamelistGenerator(case, definition_file, files=files)
@@ -167,7 +177,7 @@ def buildnml(case, caseroot, compname):
         # determine instance string
         inst_string = ""
         if ninst > 1:
-            inst_string = '_' + '%04d' % inst_counter
+            inst_string = '_' + "{:04d}".format(inst_counter)
 
         # If multi-instance case does not have restart file, use
         # single-case restart for each instance
@@ -184,7 +194,7 @@ def buildnml(case, caseroot, compname):
         # create namelist output infile using user_nl_file as input
         user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
         expect(os.path.isfile(user_nl_file),
-               "Missing required user_nl_file %s " %(user_nl_file))
+               "Missing required user_nl_file {} ".format(user_nl_file))
         infile = os.path.join(confdir, "namelist_infile")
         create_namelist_infile(case, user_nl_file, infile)
         namelist_infile = [infile]

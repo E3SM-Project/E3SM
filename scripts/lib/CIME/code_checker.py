@@ -16,7 +16,9 @@ def _run_pylint(on_file, interactive):
 ###############################################################################
     pylint = find_executable("pylint")
 
-    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import,fixme,broad-except,bare-except,eval-used,exec-used,global-statement,logging-format-interpolation"
+    cmd_options = " --disable=I,C,R,logging-not-lazy,wildcard-import,unused-wildcard-import"
+    cmd_options += ",fixme,broad-except,bare-except,eval-used,exec-used,global-statement"
+    cmd_options += ",logging-format-interpolation,no-name-in-module"
     cimeroot = get_cime_root()
 
     if "scripts/Tools" in on_file:
@@ -57,6 +59,8 @@ def _should_pylint_skip(filepath):
     list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "doc")
     for dir_to_skip in list_of_directories_to_ignore:
         if dir_to_skip + "/" in filepath:
+            return True
+        if filepath == "scripts/lib/six.py":
             return True
 
     return False
@@ -99,6 +103,10 @@ def check_code(files, num_procs=10, interactive=False):
     else:
         # Check every python file
         files_to_check = get_all_checkable_files()
+
+    if "scripts/lib/six.py" in files_to_check:
+        files_to_check.remove("scripts/lib/six.py")
+        logger.info("Not checking contributed file six.py")
 
     expect(len(files_to_check) > 0, "No matching files found")
 

@@ -63,21 +63,17 @@ The component processor layout is determined by the following settings:
 
 The entries in **env_mach_pes.xml** have the following meanings:
 
-   ================== ================================================================================================
-   MAX_TASKS_PER_MODE The total number of (MPI tasks) * (OpenMP threads) allowed on a node.
-                         This is defined in **config_machines.xml** and therefore given a default setting, but
-                         can be user modified.
-   PES_PER_NODE       The maximum number of MPI tasks per node.
-                         This is defined in **config_machines.xml** and therefore given a default setting, but
-                         can be user modified.
-   NTASKS             Total number of MPI tasks.
-                          A negative value indicates nodes rather than tasks, where
-                          PES_PER_NODE * -NTASKS equals the number of MPI tasks.
-   NTHRDS             Number of OpenMP threads per MPI task.
-   ROOTPE             The global MPI task of the component root task; if negative, indicates nodes rather than tasks.
-   PSTRID             The stride of MPI tasks across the global set of pes (for now set to 1).
-   NINST              The number of component instances, which are spread evenly across NTASKS.
-   ================== ================================================================================================
+.. csv-table:: "Entries in env_mach_pes.xml"
+   :header: "xml variable", "description"
+   :widths: 25, 75
+
+   "MAX_TASKS_PER_MODE",  "The total number of (MPI tasks) * (OpenMP threads) allowed on a node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified."
+   "MAX_MPITASKS_PER_NODE", "The maximum number of MPI tasks per node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified."
+   "NTASKS", "Total number of MPI tasks. A negative value indicates nodes rather than tasks, where MAX_MPITASKS_PER_NODE * -NTASKS equals the number of MPI tasks."
+   "NTHRDS", "Number of OpenMP threads per MPI task."
+   "ROOTPE", "The global MPI task of the component root task; if negative, indicates nodes rather than tasks."
+   "PSTRID", "The stride of MPI tasks across the global set of pes (for now set to 1)."
+   "NINST", "The number of component instances, which are spread evenly across NTASKS."
 
 ----------------
 **Example 1**
@@ -117,9 +113,9 @@ If you had set ``ROOTPE_OCN`` to 64 in this example, a total of 176 processors w
 **Example 2**
 ----------------
 
-If a component has **NTASKS=-2**, **NTHRDS=4** and **ROOTPE=0**, **PES_PER_NODE=4**, **MAX_TASKS_PER_NODE=4**, it will run on (8 MPI tasks * 4 threads) = 32 hardware processors on 8 nodes.
+If a component has **NTASKS=-2**, **NTHRDS=4** and **ROOTPE=0**, **MAX_MPITASKS_PER_NODE=4**, **MAX_TASKS_PER_NODE=4**, it will run on (8 MPI tasks * 4 threads) = 32 hardware processors on 8 nodes.
 
-If you intended 2 nodes INSTEAD of 8 nodes, then you would change **PES_PER_NODE=1** (using **xmlchange**).
+If you intended 2 nodes INSTEAD of 8 nodes, then you would change **MAX_MPITASKS_PER_NODE=1** (using **xmlchange**).
 
 
 **Note**: **env_mach_pes.xml** *cannot* be modified after **case.setup** has been invoked without first running the following:

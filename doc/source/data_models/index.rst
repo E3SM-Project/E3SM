@@ -12,8 +12,9 @@
 .. toctree::
    :maxdepth: 3
    :numbered:
-      
+
    introduction.rst
+   input-namelists.rst
    input-streams.rst
    design-details.rst
    data-model-science.rst
@@ -30,4 +31,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

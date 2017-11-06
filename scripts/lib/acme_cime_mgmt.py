@@ -177,7 +177,7 @@ def acme_cime_merge(resume):
 
     else:
         old_merge_tag, new_merge_tag = get_merge_tag(expected_num=2)
-        pr_branch = get_branch_from_tag(new_merge_tag)
+        pr_branch = "{}-pr".format(get_branch_from_tag(new_merge_tag))
 
     try:
         run_cmd_no_fail("git push origin {}".format(pr_branch))

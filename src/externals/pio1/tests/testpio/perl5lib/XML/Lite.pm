@@ -35,12 +35,12 @@ my $xml = new XML::Lite( xml => 'a_file.xml' );
 
 =head1 DESCRIPTION
 
-XML::Lite is a lightweight XML parser, with basic element traversing
-methods. It is entirely self-contained, pure Perl (i.e. I<not> based on
-expat). It provides useful methods for reading most XML files, including
-traversing and finding elements, reading attributes and such. It is
-designed to take advantage of Perl-isms (Attribute lists are returned as
-hashes, rather than, say, lists of objects). It provides only methods
+XML::Lite is a lightweight XML parser, with basic element traversing 
+methods. It is entirely self-contained, pure Perl (i.e. I<not> based on 
+expat). It provides useful methods for reading most XML files, including 
+traversing and finding elements, reading attributes and such. It is 
+designed to take advantage of Perl-isms (Attribute lists are returned as 
+hashes, rather than, say, lists of objects). It provides only methods 
 for reading a file, currently.
 
 =head1 METHODS
@@ -50,7 +50,7 @@ The following methods are available:
 =over 4
 
 =cut
-
+ 
 use XML::Lite::Element;
 BEGIN {
 	use vars       qw( $VERSION @ISA );
@@ -75,17 +75,17 @@ use vars      qw( %ERRORS );
 =item my $xml = new XML::Lite( xml => $source[, ...] );
 
 Creates a new XML::Lite object. The XML::Lite object acts as the document
-object for the $source that is sent to it to parse. This means that you
-create a new object for each document (or document sub-section). As the
+object for the $source that is sent to it to parse. This means that you 
+create a new object for each document (or document sub-section). As the 
 objects are lightweight this should not be a performance consideration.
 
 The object constructor can take several named parameters. Parameter names
-may begin with a '-' (as in the example above) but are not required to. The
+may begin with a '-' (as in the example above) but are not required to. The 
 following parameters are recognized.
 
-  xml      The source XML to parse. This can be a filename, a scalar that
+  xml      The source XML to parse. This can be a filename, a scalar that 
            contains the document (or document fragment), or an IO handle.
-
+  
 
 As a convenince, if only on parameter is given, it is assumed to be the source.
 So you can use this, if you wish:
@@ -99,7 +99,7 @@ sub new {
 	my $proto = shift;
 	my %parms;
 	my $class = ref($proto) || $proto;
-
+	
 	# Parse parameters
 	$self->{settings} = {};
 	if( @_ > 1 ) {
@@ -109,7 +109,7 @@ sub new {
 		while( ($k, $v) = each %parms ) {
 			$k =~ s/^-//;		# Removed leading '-' if it exists. (Why do Perl programmers use this?)
 			$self->{settings}{$k} = $v;
-		} # end while
+		} # end while 
 	} else {
 		$self->{settings}{xml} = $_[0];
 	} # end if;
@@ -121,10 +121,10 @@ sub new {
 	$self->{doc} = '';
 	$self->{_CDATA} = [];
 	$self->{handlers} = {};
-
+	
 	# Refer to global error messages
 	$self->{ERRORS} = $self->{settings}{error_messages} || \%ERRORS;
-
+	
 	# Now parse the XML document and build look-up tables
 	return undef unless $self->_parse_it();
 
@@ -181,8 +181,8 @@ sub root_element {
 Returns a list of all elements that match C<$name>.
 C<@list> is a list of L<XML::Lite::Element> objects
 If called in a scalar context, this will return the
-first element found that matches (it's more efficient
-to call in a scalar context than assign the results
+first element found that matches (it's more efficient 
+to call in a scalar context than assign the results 
 to a list of one scalar).
 
 If no matching elements are found then returns C<undef>
@@ -201,7 +201,7 @@ sub element_by_name;
 sub elements_by_name {
 	my $self = shift;
 	my( $name ) = @_;
-
+	
 	if( wantarray ) {
 		my @list = ();
 		foreach( @{$self->{elements}{$name}} ) {
@@ -241,7 +241,7 @@ sub elements_by_name {
 # ----------------------------------------------------------
 sub _parse_it {
 	my $self = shift;
-
+	
 	# Get the xml content
 	if( $self->{settings}{xml} =~ /^\s*</ ) {
 		$self->{doc} = $self->{settings}{xml};
@@ -268,26 +268,26 @@ sub _parse_it {
 		$self->{doc_offset} = length $1;		# Store the number of removed chars for messages
 	} # end if
 	$self->{doc} =~ s/\s+$//;
-
-
+	
+	
 	# Build lookup tables
 	$self->{elements} = {};
 	$self->{tree} = [];
 	# - These are used in the building process
 	my $element_list = [];
 	my $current_element = $self->{tree};
-
+	
 	# Call init handler if defined
 	&{$self->{handlers}{init}}($self) if defined $self->{handlers}{init};
-
+	
 	# Make a table of offsets to each element start and end point
 	# Table is a hash of element names to lists of offsets:
 	# [start_tag_start, start_tag_end, end_tag_start, end_tag_end]
 	# where tags include the '<' and '>'
-
-	# Also make a tree of linked lists. List contains root element
+	
+	# Also make a tree of linked lists. List contains root element 
 	# and other nodes. Each node consits of a list ref (the position list)
-	# and a following list containing the child element. Text nodes are
+	# and a following list containing the child element. Text nodes are 
 	# a list ref (with just two positions).
 
 	# Find the opening and closing of the XML, giving errors if not well-formed
@@ -297,22 +297,22 @@ sub _parse_it {
 	$self->_error( 'ROOT_NOT_CLOSED', $start_pos + $self->{doc_offset} ) if $end_pos == -1;
 	my $doc_end = rindex( $self->{doc}, '>' );
 	$self->_error( 'ROOT_NOT_CLOSED' ) if $doc_end == -1;
-
+	
 	# Now walk through the document, one tag at a time, building up our
 	# lookup tables
 	while( $end_pos <= $doc_end ) {
-
+		
 		# Get a tag
 		my $tag = substr( $self->{doc}, $start_pos, $end_pos - $start_pos + 1 );
 
 		# Get the tag name and see if it's an end tag (starts with </)
 		my( $end, $name ) = $tag =~ m{^<\s*(/?)\s*([^/>\s]+)};
-
+		
 		if( $end ) {
 			# If there is no start tag for this end tag then throw an error
 			$self->_error( 'NO_START', $start_pos + $self->{doc_offset}, $tag ) unless defined $self->{elements}{$name};
-
-			# Otherwise, add the end point to the array for the last element in
+			
+			# Otherwise, add the end point to the array for the last element in 
 			# the by-name lookup hash
 			my( $x, $found ) = (@{$self->{elements}{$name}} - 1, 0);
 			while( $x >= 0 ) {
@@ -329,24 +329,24 @@ sub _parse_it {
 
 			# If we didn't find an open element then throw an error
 			$self->_error( 'NO_START', $start_pos + $self->{doc_offset}, $tag ) unless $found;
-
+			
 			# Call an end-tag handler if defined (not yet exposed)
 			&{$self->{handlers}{end}}($self, $name) if defined $self->{handlers}{end};
-
+			
 			# Close element in linked list (tree)
 			$current_element = pop @$element_list;
-
+			
 		} else {
-			# Make a new list in the by-name lookup hash if none found by this name yet
+			# Make a new list in the by-name lookup hash if none found by this name yet 
 			$self->{elements}{$name} = [] unless defined $self->{elements}{$name};
-
+			
 			# Add start points to the array of positions and push it on the hash
 			my $pos_list = [$start_pos, $end_pos];
 			push @{$self->{elements}{$name}}, $pos_list;
-
+			
 			# Call start-tag handler if defined (not yet exposed)
 			&{$self->{handlers}{start}}($self, $name) if defined $self->{handlers}{start};
-
+			
 			# If this is a single-tag element (e.g. <.../>) then close it immediately
 			if( $tag =~ m{/\s*>$} ) {
 				push @$current_element, $pos_list;
@@ -364,7 +364,7 @@ sub _parse_it {
 			} # end if
 
 		} # end if
-
+		
 		# Move the start pointer to beginning of next element
 		$start_pos = index( $self->{doc}, '<', $start_pos + 1 );
 		last if $start_pos == -1 || $end_pos == $doc_end;
@@ -372,16 +372,16 @@ sub _parse_it {
 		# Now $end_pos is end of old tag and $start_pos is start of new
 		# So do things on the data between the tags as needed
 		if( $start_pos - $end_pos > 1 ) {
-			# Call any character data handler
+			# Call any character data handler 
 			&{$self->{handlers}{char}}($self, substr($self->{doc}, $end_pos + 1, $start_pos - $end_pos - 1)) if defined $self->{handlers}{char};
 
 			# Inserting the text into the linked list as well
 #			push @$current_element, [$end_pos + 1, $start_pos - 1];
 		} # end if
-
+		
 		# Now finish by incrementing the parser to the next element
 		$end_pos = index( $self->{doc}, '>', $start_pos + 1 );
-
+		
 		# If there is no next element, and we're not at the end of the document,
 		# then throw an error
 		$self->_error( 'ELM_NOT_CLOSED', $start_pos + $self->{doc_offset} ) if $end_pos == -1;
@@ -401,7 +401,7 @@ sub _parse_it {
 #
 # Returns: Scalar content of $file, undef on error
 #
-# Description: Reads from $file and returns the content.
+# Description: Reads from $file and returns the content. 
 # $file may be either a filename or an IO handle
 # ----------------------------------------------------------
 # Date      Modification                              Author
@@ -412,7 +412,7 @@ sub _get_a_file {
 	my $self = shift;
 	my $file = shift;
 	my $content = undef;
-
+	
 	# If it's a ref and a handle, then read that
 	if( ref($file) ) {
 		$content = join '', <$file>;
@@ -422,12 +422,12 @@ sub _get_a_file {
 		open( XML, $file ) || return undef;
 		$content = join '', <XML>;
 		close XML || return undef;
-	}
+	} 
 	# Don't know how to handle this type of parameter
 	else {
 		return undef;
 	} # end if
-
+	
 	return $content;
 } # end _get_a_file
 
@@ -448,10 +448,10 @@ sub _error {
 	my $self = shift;
 	my( $code, @args ) = @_;
 	my $msg = $self->{ERRORS}{$code};
-
+	
 	# Handle replacement codes
 	$msg =~ s/\%(\d+)/$args[$1]/g;
-
+	
 	# Throw exception
 	die ref($self) . ":$msg\n";
 } # end _error
@@ -462,7 +462,7 @@ sub _error {
 #
 # Args: $content
 #
-# Returns: A reference to the CDATA element, padded to
+# Returns: A reference to the CDATA element, padded to 
 # original size.
 #
 # Description: Stores the CDATA element in the internal
@@ -498,13 +498,13 @@ sub _store_cdata {
 sub _dump_tree {
 	my $self = shift;
 	my $node = shift || $self->{tree};
-
+	
 	my $tree = '';
 	for( my $i = 0; $i < scalar(@$node) && defined $node->[$i]; $i++ ) {
 		if( (scalar(@{$node->[$i]}) == 4) && (defined $node->[$i][2]) ) {
 			$tree .= '[' . join( ',', @{$node->[$i]} ) . "] "
-					. substr($self->{doc}, $node->[$i][0], $node->[$i][1] - $node->[$i][0] + 1)
-					. "..."
+					. substr($self->{doc}, $node->[$i][0], $node->[$i][1] - $node->[$i][0] + 1) 
+					. "..." 
 					. substr($self->{doc}, $node->[$i][2], $node->[$i][3] - $node->[$i][2] + 1) . " (child $i)\n";
 			# Do child list
 			$i++;
@@ -530,7 +530,7 @@ END { }
 =head1 BUGS
 
 Lots. This 'parser' (Matt Sergeant takes umbrance to my us of that word) will handle some XML
-documents, but not all.
+documents, but not all. 
 
 =head1 VERSION
 

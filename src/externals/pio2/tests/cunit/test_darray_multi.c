@@ -2,8 +2,10 @@
  * Tests for PIO distributed arrays. This program tests the
  * PIOc_write_darray_multi() function with more than one variable.
  *
- * Ed Hartnett, 3/7/17
+ * @author Ed Hartnett
+ * @date 3/7/17
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 #include <pio_tests.h>
@@ -57,7 +59,7 @@ char var_name[NVAR][PIO_MAX_NAME + 1] = {"Larry", "Curly", "Moe"};
 /* Length of the dimensions in the sample data. */
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
-/** 
+/**
  * Test the darray functionality. Create a netCDF file with 3
  * dimensions and 3 variable, and use PIOc_write_darray_multi() to
  * write one record of data to all three vars at once.
@@ -69,7 +71,7 @@ int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
  * @param my_rank rank of this task.
  * @param pio_type the type of the data.
  * @returns 0 for success, error code otherwise.
-*/
+ */
 int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank,
                 int pio_type)
 {
@@ -81,11 +83,13 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
     int ncid;              /* The ncid of the netCDF file. */
     int ncid2;             /* The ncid of the re-opened netCDF file. */
     int varid[NVAR];       /* The IDs of the netCDF varables. */
-    int ret;               /* Return code. */
+    int other_varid;       /* The IDs of a var of different type. */
+    int wrong_varid[NVAR]; /* These will not work. */
     PIO_Offset arraylen = 4; /* Amount of data from each task. */
     void *fillvalue;       /* Pointer to fill value. */
     void *test_data;       /* Pointer to test data we will write. */
     void *test_data_in;    /* Pointer to buffer we will read into. */
+    int ret;               /* Return code. */
 
     /* Default fill value array for each type. */
     signed char byte_fill[NVAR] = {NC_FILL_BYTE, NC_FILL_BYTE, NC_FILL_BYTE};
@@ -239,13 +243,10 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 }
 
                 /* Create the netCDF output file. */
-                printf("rank: %d Creating sample file %s with format %d type %d\n", my_rank, filename,
-                       flavor[fmt], pio_type);
                 if ((ret = PIOc_createfile(iosysid, &ncid, &flavor[fmt], filename, PIO_CLOBBER)))
                     ERR(ret);
 
                 /* Define netCDF dimensions and variable. */
-                printf("%d Defining netCDF metadata...\n", my_rank);
                 for (int d = 0; d < NDIM; d++)
                     if ((ret = PIOc_def_dim(ncid, dim_name[d], (PIO_Offset)dim_len[d], &dimids[d])))
                         ERR(ret);
@@ -254,6 +255,11 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 for (int v = 0; v < NVAR; v++)
                     if ((ret = PIOc_def_var(ncid, var_name[v], pio_type, NDIM, dimids, &varid[v])))
                         ERR(ret);
+
+                /* Define a variable of a different type, to test error handling. */
+                int other_pio_type = pio_type < 5 ? pio_type + 1 : PIO_INT;
+                if ((ret = PIOc_def_var(ncid, "OTHER_VAR", other_pio_type, NDIM, dimids, &other_varid)))
+                    ERR(ret);
 
                 /* Leave a note. */
                 if ((ret = PIOc_put_att_text(ncid, NC_GLOBAL, NOTE_NAME, strlen(NOTE), NOTE)))
@@ -273,6 +279,14 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 int frame[NVAR] = {0, 0, 0};
                 int flushtodisk = test_multi;
 
+                /* This will not work, because we mix var types. */
+                wrong_varid[0] = varid[0];
+                wrong_varid[1] = varid[1];
+                wrong_varid[0] = other_varid;
+                if (PIOc_write_darray_multi(ncid, wrong_varid, ioid, NVAR, arraylen, test_data, frame,
+                                            fillvalue, flushtodisk) != PIO_EINVAL)
+                    ERR(ERR_WRONG);
+
                 /* Write the data with the _multi function. */
                 if ((ret = PIOc_write_darray_multi(ncid, varid, ioid, NVAR, arraylen, test_data, frame,
                                                    fillvalue, flushtodisk)))
@@ -290,10 +304,14 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                  * sure we get correct data. */
                 for (int v = 0; v < NVAR; v++)
                 {
+                    /* Set the value of the record dimension. */
+                    if ((ret = PIOc_setframe(ncid2, varid[v], 0)))
+                        ERR(ret);
+
                     /* Read the data. */
                     if ((ret = PIOc_read_darray(ncid2, varid[v], ioid, arraylen, test_data_in)))
                         ERR(ret);
-                    
+
                     /* Check the results. */
                     for (int f = 0; f < arraylen; f++)
                     {
@@ -352,7 +370,6 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 }
 
                 /* Close the netCDF file. */
-                printf("%d Closing the sample data file...\n", my_rank);
                 if ((ret = PIOc_closefile(ncid2)))
                     ERR(ret);
             } /* next fillvalue test case */
@@ -363,14 +380,14 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
 }
 
 /**
- * Run all the tests. 
+ * Run all the tests.
  *
  * @param iosysid the IO system ID.
  * @param num_flavors number of available iotypes in the build.
  * @param flavor pointer to array of the available iotypes.
  * @param my_rank rank of this task.
  * @param test_comm the communicator the test is running on.
- * @returns 0 for success, error code otherwise. 
+ * @returns 0 for success, error code otherwise.
  */
 int test_all_darray(int iosysid, int num_flavors, int *flavor, int my_rank,
                     MPI_Comm test_comm)
@@ -389,7 +406,7 @@ int test_all_darray(int iosysid, int num_flavors, int *flavor, int my_rank,
     int ret; /* Return code. */
 
     for (int t = 0; t < NUM_TYPES_TO_TEST; t++)
-    {        
+    {
         /* This will be our file name for writing out decompositions. */
         sprintf(filename, "%s_decomp_rank_%d_flavor_%d_type_%d.nc", TEST_NAME, my_rank,
                 *flavor, pio_type[t]);
@@ -397,12 +414,12 @@ int test_all_darray(int iosysid, int num_flavors, int *flavor, int my_rank,
         /* Decompose the data over the tasks. */
         if ((ret = create_decomposition_2d(TARGET_NTASKS, my_rank, iosysid, dim_len_2d,
                                            &ioid, pio_type[t])))
-        return ret;
+            return ret;
 
         /* Run a simple darray test. */
         if ((ret = test_darray(iosysid, ioid, num_flavors, flavor, my_rank, pio_type[t])))
             return ret;
-    
+
         /* Free the PIO decomposition. */
         if ((ret = PIOc_freedecomp(iosysid, ioid)))
             ERR(ret);
@@ -425,7 +442,7 @@ int main(int argc, char **argv)
 
     /* Initialize test. */
     if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, MIN_NTASKS,
-                              MIN_NTASKS, 3, &test_comm)))
+                              MIN_NTASKS, -1, &test_comm)))
         ERR(ERR_INIT);
 
     if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
@@ -438,33 +455,30 @@ int main(int argc, char **argv)
         int ioproc_stride = 1;    /* Stride in the mpi rank between io tasks. */
         int ioproc_start = 0;     /* Zero based rank of first processor to be used for I/O. */
         int ret;      /* Return code. */
-        
+
         /* Figure out iotypes. */
         if ((ret = get_iotypes(&num_flavors, flavor)))
             ERR(ret);
-        printf("Runnings tests for %d flavors\n", num_flavors);
 
         for (int r = 0; r < NUM_REARRANGERS_TO_TEST; r++)
         {
-        /* Initialize the PIO IO system. This specifies how
-         * many and which processors are involved in I/O. */
-        if ((ret = PIOc_Init_Intracomm(test_comm, TARGET_NTASKS, ioproc_stride,
-                                       ioproc_start, rearranger[r], &iosysid)))
-            return ret;
+            /* Initialize the PIO IO system. This specifies how
+             * many and which processors are involved in I/O. */
+            if ((ret = PIOc_Init_Intracomm(test_comm, TARGET_NTASKS, ioproc_stride,
+                                           ioproc_start, rearranger[r], &iosysid)))
+                return ret;
 
-        /* Run tests. */
-        printf("%d Running tests...\n", my_rank);
-        if ((ret = test_all_darray(iosysid, num_flavors, flavor, my_rank, test_comm)))
-            return ret;
+            /* Run tests. */
+            if ((ret = test_all_darray(iosysid, num_flavors, flavor, my_rank, test_comm)))
+                return ret;
 
-        /* Finalize PIO system. */
-        if ((ret = PIOc_finalize(iosysid)))
-            return ret;
+            /* Finalize PIO system. */
+            if ((ret = PIOc_finalize(iosysid)))
+                return ret;
         } /* next rearranger */
     } /* endif my_rank < TARGET_NTASKS */
 
     /* Finalize the MPI library. */
-    printf("%d %s Finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
 

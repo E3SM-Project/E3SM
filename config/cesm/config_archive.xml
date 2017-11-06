@@ -85,6 +85,10 @@
       <rpointer_file>rpointer.ocn$NINST_STRING.ovf</rpointer_file>
       <rpointer_content>./$CASE.pop$NINST_STRING.ro.$DATENAME</rpointer_content>
     </rpointer>
+    <rpointer>
+      <rpointer_file>rpointer.ocn$NINST_STRING.tavg</rpointer_file>
+      <rpointer_content>./$CASE.pop$NINST_STRING.rh.$DATENAME.nc</rpointer_content>
+    </rpointer>
   </comp_archive_spec>
 
   <comp_archive_spec compname="cism" compclass="glc">

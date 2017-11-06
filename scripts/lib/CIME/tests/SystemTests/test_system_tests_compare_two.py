@@ -73,6 +73,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
                  case1,
                  run_one_suffix = 'base',
                  run_two_suffix = 'test',
+                 separate_builds = False,
                  multisubmit = False,
                  case2setup_raises_exception = False,
                  run_one_should_pass = True,
@@ -88,6 +89,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
             run_one_suffix (str, optional): Suffix used for first run. Defaults
                 to 'base'. Currently MUST be 'base'.
             run_two_suffix (str, optional): Suffix used for the second run. Defaults to 'test'.
+            separate_builds (bool, optional): Passed to SystemTestsCompareTwo.__init__
             multisubmit (bool, optional): Passed to SystemTestsCompareTwo.__init__
             case2setup_raises_exception (bool, optional): If True, then the call
                 to _case_two_setup will raise an exception. Default is False.
@@ -110,7 +112,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         SystemTestsCompareTwo.__init__(
             self,
             case1,
-            separate_builds = False,
+            separate_builds = separate_builds,
             run_two_suffix = run_two_suffix,
             multisubmit = multisubmit)
 
@@ -299,6 +301,23 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
                          mytest._case1.get_value('var_set_in_setup'))
         self.assertEqual('case2val',
                          mytest._case2.get_value('var_set_in_setup'))
+
+    def test_setup_separate_builds_sharedlibroot(self):
+        # If we're using separate_builds, the two cases should still use
+        # the same sharedlibroot
+
+        # Setup
+        case1root, _ = self.get_caseroots()
+        case1 = CaseFake(case1root)
+        case1.set_value("SHAREDLIBROOT", os.path.join(case1root, "sharedlibroot"))
+
+        # Exercise
+        mytest = SystemTestsCompareTwoFake(case1,
+                                           separate_builds = True)
+
+        # Verify
+        self.assertEqual(case1.get_value("SHAREDLIBROOT"),
+                         mytest._case2.get_value("SHAREDLIBROOT"))
 
     def test_setup_case2_exists(self):
         # If case2 already exists, then setup code should not be called
