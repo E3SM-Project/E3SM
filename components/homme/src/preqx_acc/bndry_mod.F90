@@ -11,29 +11,11 @@ module bndry_mod
   implicit none
   private
   integer, parameter, private :: maxCycles = 20
-  integer, parameter, private :: maxChunks = 64
-  real(kind=real_kind), parameter, private :: chunk_denom = 1.e5
-
-  type send_stager_t
-    integer :: nUpdateHost, nSendComp
-    logical :: updateHost(maxchunks), sendComp(maxchunks)
-    integer :: beg(maxchunks), end(maxchunks), len(maxchunks), asyncid(maxchunks), tag(maxchunks), req(maxchunks)
-  end type send_stager_t
-
-  type recv_stager_t
-    integer :: nRecvComp, nUpdateDev
-    logical :: recvComp(maxchunks), updateDev(maxchunks)
-    integer :: beg(maxchunks), end(maxchunks), len(maxchunks), asyncid(maxchunks), tag(maxchunks), req(maxchunks)
-  end type recv_stager_t
-
-  type(send_stager_t), private :: stg_send(maxCycles)
-  type(recv_stager_t), private :: stg_recv(maxCycles)
 
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
   public :: bndry_exchangeS_simple_overlap
   public :: bndry_exchangeV_timing
   public :: bndry_exchangeV_simple_overlap
-  public :: bndry_exchangeV_finer_overlap
 
 contains
 
@@ -61,7 +43,7 @@ contains
     logical :: updateHost(maxCycles), sendComp(maxCycles), recvComp(maxCycles)
     logical :: mpiflag
     !$OMP BARRIER
-    if(hybrid%ithr == 0) then 
+    if(hybrid%ithr == 0) then
       !$acc wait
       pSchedule => Schedule(1)
       nlyr = buffer%nlyr
@@ -80,7 +62,7 @@ contains
       buffer%Srequest(:) = MPI_REQUEST_NULL
       buffer%Rrequest(:) = MPI_REQUEST_NULL
       !==================================================
-      !  Post the Receives 
+      !  Post the Receives
       !==================================================
       do icycle=1,nRecvCycles
         pCycle => pSchedule%RecvCycle(icycle)
@@ -189,7 +171,7 @@ contains
     logical :: mpiflag
     integer :: ithr
     !$OMP BARRIER
-    if(hybrid%ithr == 0) then 
+    if(hybrid%ithr == 0) then
       !$acc wait
       call t_startf('bndry_timing')
       pSchedule => Schedule(1)
@@ -211,7 +193,7 @@ contains
       Srequest(:) = MPI_REQUEST_NULL
       Rrequest(:) = MPI_REQUEST_NULL
       !==================================================
-      !  Post the Receives 
+      !  Post the Receives
       !==================================================
       do icycle=1,nRecvCycles
         pCycle => pSchedule%RecvCycle(icycle)
@@ -299,7 +281,7 @@ contains
     logical :: mpiflag
     integer :: ithr
     !$OMP BARRIER
-    if(hybrid%ithr == 0) then 
+    if(hybrid%ithr == 0) then
       !$acc wait
       pSchedule => Schedule(1)
       nlyr = buffer%nlyr
@@ -320,7 +302,7 @@ contains
       Srequest(:) = MPI_REQUEST_NULL
       Rrequest(:) = MPI_REQUEST_NULL
       !==================================================
-      !  Post the Receives 
+      !  Post the Receives
       !==================================================
       do icycle=1,nRecvCycles
         pCycle => pSchedule%RecvCycle(icycle)
@@ -401,241 +383,4 @@ contains
     !$OMP BARRIER
   end subroutine bndry_exchangeV_simple_overlap
 
-  subroutine bndry_exchangeV_finer_overlap(hybrid,buffer)
-    use hybrid_mod       , only : hybrid_t
-    use kinds            , only : log_kind
-    use edgetype_mod     , only : Edgebuffer_t
-    use schedtype_mod    , only : schedule_t, cycle_t, schedule
-    use parallel_mod     , only : abortmp, status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
-    use mpi              , only : MPI_REQUEST_NULL
-    implicit none
-    type (hybrid_t)           :: hybrid
-    type (EdgeBuffer_t)       :: buffer
-    type (Schedule_t),pointer :: pSchedule
-    type (Cycle_t),pointer    :: pCycle
-    integer                   :: dest,length,tag
-    integer                   :: icycle,ierr
-    integer                   :: iptr,source,nlyr
-    integer                   :: nSendCycles,nRecvCycles
-    integer                   :: errorcode,errorlen
-    character*(80) errorstring
-    integer        :: i
-    integer :: nSendComp, nRecvComp
-    logical :: sendComp(maxCycles), recvComp(maxCycles)
-    logical :: dummy
-    integer :: nchunks
-    
-    !$OMP BARRIER
-    if(hybrid%ithr == 0) then 
-      !$acc wait
-      pSchedule => Schedule(1)
-      nlyr = buffer%nlyr
-      nSendCycles = pSchedule%nSendCycles
-      nRecvCycles = pSchedule%nRecvCycles
-      if (max(nRecvCycles,nSendCycles) > maxCycles) then
-        write(*,*) 'ERROR: Must increase maxCycles'
-        stop
-      endif
-      nSendComp   = 0
-      nRecvComp   = 0
-      sendComp  (1:nSendCycles) = .false.
-      recvComp  (1:nRecvCycles) = .false.
-
-      !  Post the Receives 
-      do icycle=1,nRecvCycles
-        pCycle => pSchedule%RecvCycle(icycle)
-        source =  pCycle%source - 1
-        length =  nlyr * pCycle%lengthP
-        tag    =  pCycle%tag
-        iptr   =  pCycle%ptrP
-        nchunks = int(ceiling(length/chunk_denom))
-        dummy = mpi_irecv_openacc_stage(buffer%receive(1+nlyr*(iptr-1)), length, source, tag, hybrid%par%comm, ierr, nchunks, maxCycles+icycle, .true. , icycle , .false. , buffer%buf(1+nlyr*(iptr-1)) )
-      enddo    ! icycle
-
-      !Launch PCI-e copies
-      do icycle = 1 , nSendCycles
-        pCycle => pSchedule%SendCycle(icycle)
-        iptr   =  pCycle%ptrP
-        length =  nlyr * pCycle%lengthP
-        dest   =  pCycle%dest - 1
-        tag    =  pCycle%tag
-        nchunks = int(ceiling(length/chunk_denom))
-        dummy = mpi_isend_openacc_stage(buffer%buf(1+nlyr*(iptr-1)), length, dest, tag, hybrid%par%comm, ierr, nchunks, icycle, .true. , icycle)
-      enddo
-
-      !Initiate polling loop for MPI_Isend and PCI-e returns after data is received
-      do while (nRecvComp < nRecvCycles .or. nSendComp < nSendCycles)
-        !If there are mpi_isend's still pending, test to see if each cycle is completed. This is for bookkeeping. I cannot copy from receive to buf until all sends are completed
-        if (nSendComp < nSendCycles) then
-          do icycle = 1 , nSendCycles
-            if (.not. sendComp(icycle)) then
-              pCycle => pSchedule%SendCycle(icycle)
-              iptr   =  pCycle%ptrP
-              length =  nlyr * pCycle%lengthP
-              dest   =  pCycle%dest - 1
-              tag    =  pCycle%tag
-              nchunks = int(ceiling(length/chunk_denom))
-              if (mpi_isend_openacc_stage(buffer%buf(1+nlyr*(iptr-1)), length, dest, tag, hybrid%par%comm, ierr, nchunks, icycle, .false. , icycle )) then
-                sendComp(icycle) = .true.
-                nSendComp = nSendComp + 1
-              endif
-            endif
-          enddo
-        endif
-        !if there are mpi_irecv's still pending, test to see if each cycle is completed. If it is, the send receive buffer to device
-        if (nRecvComp < nRecvCycles) then
-          do icycle = 1 , nRecvCycles
-            if (.not. recvComp(icycle)) then
-              pCycle => pSchedule%RecvCycle(icycle)
-              source =  pCycle%source - 1
-              length =  nlyr * pCycle%lengthP
-              tag    =  pCycle%tag
-              iptr   =  pCycle%ptrP
-              nchunks = int(ceiling(length/chunk_denom))
-              if (mpi_irecv_openacc_stage(buffer%receive(1+nlyr*(iptr-1)), length, source, tag, hybrid%par%comm, ierr, nchunks, maxCycles+icycle, .false. , icycle , &
-                                        & nSendComp == nSendCycles , buffer%buf(1+nlyr*(iptr-1)) )) then
-                recvComp(icycle) = .true.
-                nRecvComp = nRecvComp + 1
-              endif
-            endif
-          enddo
-        endif
-      enddo
-      !$acc wait
-    endif  ! if (hybrid%ithr == 0)
-    !$OMP BARRIER
-  end subroutine bndry_exchangeV_finer_overlap
-
-  !Consider this to be the inside of a polling loop for sending something over MPI that currently resides on-device in OpenACC
-  !You'll call this function over and over and over again until it returns .true.
-  !On the first call, set reset=.true., and it will treat it as the first call and perform the
-  !PCI-e update host calls. After that, use reset=.false. and make sure all input variables are the same
-  !If an error occurs, I'll try to pass it along with ierror.
-  !When the isends are completed, the function will return .true. Until then, it will return .false.
-  function mpi_isend_openacc_stage(buf, count, dest, tag_root, comm, ierror, nchunks, async_root, reset, myid)   result(finished)
-    use mpi              , only: MPI_REQUEST_NULL, MPI_STATUS_SIZE, mpi_test
-    use parallel_mod     , only: mpireal_t
-    use openacc_utils_mod, only: update_host_async, acc_async_test_wrap
-    implicit none
-    integer             , intent(in   ) :: count        !number of elements in buffer
-    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer from which to send data
-    integer             , intent(in   ) :: dest         !the MPI rank I'm sending data to
-    integer             , intent(in   ) :: tag_root     !tag of the original send (I'll alter this for internal mpi_isend calls)
-    integer             , intent(in   ) :: comm         !Communicator to use
-    integer             , intent(  out) :: ierror       !Try to return errors to the user
-    integer             , intent(in   ) :: nchunks      !Number of chunks to break data into (number of mpi_isend calls)
-    integer             , intent(in   ) :: async_root   !Root asyncid to use
-    logical             , intent(in   ) :: reset        !First call in a given mpi_isend should always be a reset
-    integer             , intent(in   ) :: myid         !the unique id for this series of mpi_isend's
-    logical                             :: finished     !Return: Let user know if the mpi_isend's are all completed.
-    integer :: i
-    logical :: mpiflag
-    integer :: status(MPI_STATUS_SIZE)
-    if (reset) then
-      stg_send(myid)%nUpdateHost = 0
-      stg_send(myid)%nSendComp = 0
-      do i = 1 , nchunks
-        stg_send(myid)%updateHost(i) = .false.
-        stg_send(myid)%sendComp(i) = .false.
-        stg_send(myid)%req(i) = MPI_REQUEST_NULL
-        stg_send(myid)%beg(i) = count*(i-1)/nchunks+1
-        stg_send(myid)%end(i) = count*(i  )/nchunks
-        stg_send(myid)%len(i) = stg_send(myid)%end(i) - stg_send(myid)%beg(i) + 1
-        stg_send(myid)%asyncid(i) = async_root*maxchunks+i
-        stg_send(myid)%tag(i) = tag_root*maxchunks+i
-        call update_host_async( buf( stg_send(myid)%beg(i) ) , stg_send(myid)%len(i) , stg_send(myid)%asyncid(i) )
-      enddo
-    endif
-    !If there are host updates yet pending, test to see if each chunk is done. If achunke is done, do the mpi_isend
-    if (stg_send(myid)%nUpdateHost < nchunks) then
-      do i = 1 , nchunks
-        if (.not. stg_send(myid)%updateHost(i)) then
-          if (acc_async_test_wrap(stg_send(myid)%asyncid(i))) then
-            call MPI_Isend(buf(stg_send(myid)%beg(i)),stg_send(myid)%len(i),MPIreal_t,dest,stg_send(myid)%tag(i),comm,stg_send(myid)%req(i),ierror)
-            stg_send(myid)%updateHost(i) = .true.
-            stg_send(myid)%nUpdateHost = stg_send(myid)%nUpdateHost + 1
-          endif
-        endif
-      enddo
-    endif
-    !If there are mpi_isend's still pending, test to see if each chunk is completed.
-    if (stg_send(myid)%nSendComp < nchunks) then
-      do i = 1 , nchunks
-        if ( stg_send(myid)%updateHost(i) .and. (.not. stg_send(myid)%sendComp(i)) ) then
-          call MPI_Test(stg_send(myid)%req(i),mpiflag,status,ierror)
-          if (mpiflag) then
-            stg_send(myid)%sendComp(i) = .true.
-            stg_send(myid)%nSendComp = stg_send(myid)%nSendComp + 1
-          endif
-        endif
-      enddo
-    endif
-    finished = .false.
-    if (stg_send(myid)%nSendComp == nchunks) finished = .true.
-  end function mpi_isend_openacc_stage
-
-  function mpi_irecv_openacc_stage(buf, count, source, tag_root, comm, ierror, nchunks, async_root, reset, myid, sends_done, sendbuf)   result(finished)
-    use mpi              , only: MPI_REQUEST_NULL, MPI_STATUS_SIZE, mpi_test
-    use parallel_mod     , only: mpireal_t
-    use openacc_utils_mod, only: update_device_async, copy_ondev_async
-    implicit none
-    integer             , intent(in   ) :: count        !number of elements in buffer
-    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer in which to receive data
-    integer             , intent(in   ) :: source       !the MPI rank I'm receiving data from
-    integer             , intent(in   ) :: tag_root     !tag of the original send (I'll alter this for internal mpi_isend calls)
-    integer             , intent(in   ) :: comm         !Communicator to use
-    integer             , intent(  out) :: ierror       !Try to return errors to the user
-    integer             , intent(in   ) :: nchunks      !Number of chunks to break data into (number of mpi_isend calls)
-    integer             , intent(in   ) :: async_root   !Root asyncid to use
-    logical             , intent(in   ) :: reset        !First call in a given mpi_isend should always be a reset
-    integer             , intent(in   ) :: myid         !the unique id for this series of mpi_irecv's
-    logical             , intent(in   ) :: sends_done   !the unique id for this series of mpi_irecv's
-    real(kind=real_kind), intent(inout) :: sendbuf(count)   !buffer from which to send data
-    logical                             :: finished     !Return: Let user know if the mpi_isend's are all completed.
-    integer :: i
-    logical :: mpiflag
-    integer :: status(MPI_STATUS_SIZE)
-    if (reset) then
-      stg_recv(myid)%nRecvComp = 0
-      stg_recv(myid)%nUpdateDev = 0
-      do i = 1 , nchunks
-        stg_recv(myid)%recvComp(i) = .false.
-        stg_recv(myid)%updateDev(i) = .false.
-        stg_recv(myid)%req(i) = MPI_REQUEST_NULL
-        stg_recv(myid)%beg(i) = count*(i-1)/nchunks+1
-        stg_recv(myid)%end(i) = count*(i  )/nchunks
-        stg_recv(myid)%len(i) = stg_recv(myid)%end(i) - stg_recv(myid)%beg(i) + 1
-        stg_recv(myid)%asyncid(i) = async_root*maxchunks+i
-        stg_recv(myid)%tag(i) = tag_root*maxchunks+i
-        call MPI_Irecv(buf(stg_recv(myid)%beg(i)),stg_recv(myid)%len(i),MPIreal_t,source,stg_recv(myid)%tag(i),comm,stg_recv(myid)%req(i),ierror)
-      enddo
-    endif
-    !if there are mpi_irecv's still pending, test to see if each cycle is completed. If it is, the send receive buffer to device
-    if (stg_recv(myid)%nRecvComp < nchunks) then
-      do i = 1 , nchunks
-        if (.not. stg_recv(myid)%recvComp(i)) then
-          call MPI_Test(stg_recv(myid)%req(i),mpiflag,status,ierror)
-          if (mpiflag) then
-            call update_device_async(buf(stg_recv(myid)%beg(i)),stg_recv(myid)%len(i),stg_recv(myid)%asyncid(i))
-            stg_recv(myid)%recvComp(i) = .true.
-            stg_recv(myid)%nRecvComp = stg_recv(myid)%nRecvComp + 1
-          endif
-        endif
-      enddo
-    endif
-    !if all sends are completed,
-    if (sends_done) then
-      do i = 1 , nchunks
-        if ( stg_recv(myid)%recvComp(i) .and. ( .not. stg_recv(myid)%updateDev(i) ) ) then
-          call copy_ondev_async(sendbuf(stg_recv(myid)%beg(i)),buf(stg_recv(myid)%beg(i)),stg_recv(myid)%len(i),stg_recv(myid)%asyncid(i))
-          stg_recv(myid)%updateDev(i) = .true.
-          stg_recv(myid)%nUpdateDev = stg_recv(myid)%nUpdateDev + 1
-        endif
-      enddo
-    endif
-    finished = .false.
-    if (stg_recv(myid)%nUpdateDev == nchunks) finished = .true.
-  end function mpi_irecv_openacc_stage
-
 end module bndry_mod
-
