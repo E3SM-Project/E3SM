@@ -29,10 +29,6 @@ def create_lat_lon_metrics_table(root_dir, parameters):
                 # or
                 # ref_name-variable-plev'mb'-season-region
                 ref_name = parameter.ref_name
-
-                ## Save data in .cvs as a table
-                #header = ['Variables','Model mean','Obs mean','Mean Bias','RMSE','correlation']
-                #table_data = np.empty([len(parameter.variables), 6])
                 
                 for var in parameter.variables:
                     for season in parameter.seasons:
@@ -57,13 +53,19 @@ def create_lat_lon_metrics_table(root_dir, parameters):
                             metrics_path = os.path.join(
                                 #'..', '{}'.format(set_num), parameter.case_id, fnm)
                                parameter.results_dir, '{}'.format(set_num), parameter.case_id, fnm)
-                            metrics_dic = json.load(open(metrics_path + '.json'))
+                            try:
+                                metrics_dic = json.load(open(metrics_path + '.json'))
+                            except Exception as e:
+                                print(e)
+                                continue
                      
                         if season not in metrics_info:
                             metrics_info[season] = collections.OrderedDict()
                         if row_name not in metrics_info[season]:
                             metrics_info[season][row_name] = collections.OrderedDict()
                         metrics_info[season][row_name]['metrics'] = metrics_dic
+                            
+                            
 
                 # save metrics information in .csv table
                 header = ['Variables','Model mean','Obs mean','Mean Bias','RMSE','correlation']
