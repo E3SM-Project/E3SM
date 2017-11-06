@@ -2118,11 +2118,9 @@ contains
     integer, intent(in) :: nelemd
     type (quadrature_t), intent(in)   :: gp
 
-    real(kind=real_kind), allocatable :: aratio(:,:)
+    real(kind=real_kind) :: aratio(nelemd,1)
     real(kind=real_kind) :: area(1)
     integer :: ie, i, j
-
-    allocate(aratio(nelemd,1))
 
     if ( topology == "cube" ) then
        area = 0.0d0
@@ -2141,7 +2139,6 @@ contains
           call cube_init_atomic(elem(ie),gp%points,area(1))
        enddo
     endif ! end of topology == 'cube'
-    deallocate(aratio)
 
   end subroutine set_area_correction_map0
 
@@ -2171,12 +2168,10 @@ contains
     integer, intent(in) :: nelemd
     type (quadrature_t), intent(in)   :: gp
 
-    real(kind=real_kind), allocatable :: aratio(:,:)
+    real(kind=real_kind) :: aratio(nelemd,1)
     real(kind=real_kind) :: area(1), area_sphere, area_num, area_dummy,sum_w, delta
     integer :: ie, i, j
     real(kind=real_kind) :: tol_local = 1e-15
-
-    allocate(aratio(nelemd,1))
 
     if ( topology == "cube" ) then
        do ie=1,nelemd
@@ -2229,7 +2224,6 @@ contains
              write(iulog,'(a,f20.17)') "Epsilon bubble correction: Corrected area - 4\pi ",area(1) - 4.0d0*dd_pi
 
        endif ! end of topology == 'cube'
-    deallocate(aratio)
 
   end subroutine set_area_correction_map2
 

@@ -46,7 +46,6 @@ module parallel_mod
     integer :: root                       ! local root
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
-    integer :: intercomm(0:ncomponents-1) ! inter communicator list
     logical :: masterproc                
     logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
@@ -92,7 +91,6 @@ contains
     par2%root       = par1%root
     par2%nprocs     = par1%nprocs
     par2%comm       = par1%comm
-    par2%intercomm  = par1%intercomm
     par2%masterproc = par1%masterproc
 
   end subroutine copy_par
@@ -141,7 +139,6 @@ contains
     end if
 
     par%root     = 0
-    par%intercomm = 0
     
 #ifdef CAM
     call MPI_comm_size(mpicom,npes_cam,ierr)
@@ -232,7 +229,6 @@ contains
     par%rank          =  0
     par%nprocs        =  1
     par%comm          = -1
-    par%intercomm     = -1
     par%masterproc    = .TRUE.
     nmpi_per_node     =  2
     PartitionForNodes = .TRUE.

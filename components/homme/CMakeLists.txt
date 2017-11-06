@@ -96,10 +96,6 @@ ENDIF ()
 INCLUDE(SetCompilerFlags)
 
 
-OPTION(ENABLE_PERSISTENT_MPI "Enable persistent MPI" OFF)
-IF (${ENABLE_PERSISTENT_MPI})
-  SET(MPI_PERSISTENT TRUE)
-ENDIF ()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(${HOMME_USE_MKL})
@@ -225,6 +221,7 @@ IF (CPRNC_DIR)
   ENDIF ()
 ELSE ()
   # compile CPRNC from CIME source code. Requires CIME support for machine
+  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
