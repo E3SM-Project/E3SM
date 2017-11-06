@@ -57,14 +57,14 @@ def _main_func(description):
     logging.disable(logging.CRITICAL)
 
     with Case(caseroot, read_only=False) as case:
-        print "BATCH SUBMIT:"
+        print("BATCH SUBMIT:")
         case.load_env()
         job = "case.test" if case.get_value("TEST") else "case.run"
         job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
         for job_id, cmd in job_id_to_cmd:
-            print "   ", job_id, "->", case.get_resolved_value(cmd)
-        print
-        print "MPIRUN:", case.get_resolved_value(case.get_mpirun_cmd())
+            print("   ", job_id, "->", case.get_resolved_value(cmd))
+        print()
+        print("MPIRUN:", case.get_resolved_value(case.get_mpirun_cmd()))
 
 if __name__ == "__main__":
     _main_func(__doc__)

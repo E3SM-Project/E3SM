@@ -72,6 +72,10 @@ group.
 process.
 <li>Document in complete sentences.
 <li>Use C (not C++) comment delimiters.
+<li>Use the author tag to indicate which programmers have worked on
+each function. When adding or changing a function in a non-trivial
+way, programmers should add their name to the end of the list of
+authors for that function.
 </ul>
 
 ## Emacs ##

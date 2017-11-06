@@ -125,75 +125,77 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
                 test_status['BASELINE']=line[0:4]
             if "TPUTCOMP" in line:
                 test_status['TPUTCOMP']=line[0:4]
+                if "FAIL PFS" in line:
+                    test_status['STATUS']="FAIL"
             if "INIT" in line:
                 test_status['INIT']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['STATUS']="SFAIL"
                     test_status['COMMENT']+="INIT fail! "
                     break
             if "CREATE_NEWCASE" in line:
                 test_status['CREATE_NEWCASE']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['STATUS']="SFAIL"
                     test_status['COMMENT']+="CREATE_NEWCASE fail! "
                     break
             if "XML" in line:
                 test_status['XML']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['STATUS']="SFAIL"
                     test_status['COMMENT']+="XML fail! "
                     break
             if "SETUP" in line:
                 test_status['SETUP']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['STATUS']="SFAIL"
                     test_status['COMMENT']+="SETUP fail! "
                     break
             if "SHAREDLIB_BUILD" in line:
                 test_status['SHAREDLIB_BUILD']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['STATUS']="CFAIL"
                     test_status['COMMENT']+="SHAREDLIB_BUILD fail! "
                     break
             if "MODEL_BUILD" in line:
                 test_status['MODEL_BUILD']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['STATUS']="CFAIL"
                     test_status['COMMENT']+="MODEL_BUILD fail! "
                     break
             if "SUBMIT" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="SUBMIT fail! "
                     break
             if "RUN" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="RUN fail! "
                     break
             if "COMPARE_base_rest" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="Restart fail! "
                     break
             if "COMPARE_base_hybrid" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="Hybrid fail! "
                     break
             if "COMPARE_base_multiinst" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="Multi instance fail! "
                     break
             if "COMPARE_base_test" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="Base test fail! "
                     break
             if "COMPARE_base_single_thread" in line:
                 test_status['STATUS']=line[0:4]
-                if line[0:4] == "FAIL":
+                if line[0:4] in ("FAIL","PEND"):
                     test_status['COMMENT']+="Thread test fail! "
                     break
 

@@ -3,9 +3,9 @@ common utilities for buildlib
 """
 
 from CIME.XML.standard_module_setup import *
+from CIME.case import Case
 from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
 import sys, os, argparse, doctest
-
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -30,6 +30,14 @@ def parse_input(argv):
                         help="root for building library")
 
     args = parse_args_and_handle_standard_logging_options(argv, parser)
+
+    # Some compilers have trouble with long include paths, setting
+    # EXEROOT to the relative path from bldroot solves the problem
+    # doing it in the environment means we don't need to change all of
+    # the component buildlib scripts
+    with Case(args.caseroot) as case:
+        os.environ["EXEROOT"] = os.path.relpath(case.get_value("EXEROOT"), args.bldroot)
+
 
     return args.caseroot, args.libroot, args.bldroot
 
@@ -77,7 +85,4 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
-    rc, out, err = run_cmd(cmd)
-    expect(rc == 0, "Command {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, err))
-
-    print "Command {} completed with output {}\nerr {}".format(cmd, out, err)
+    run_cmd_no_fail(cmd, combine_output=True)

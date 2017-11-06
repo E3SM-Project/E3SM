@@ -11,6 +11,8 @@ if ($#ARGV < 2) {
 }
 my ($sharedlibroot, $installroot, $CASEROOT) = @ARGV;
 
+print "$sharedlibroot <> $installroot <> $CASEROOT\n";
+
 chdir "${CASEROOT}" or die "Could not cd to \"$CASEROOT\"";
 
 my $CIMEROOT		= `./xmlquery CIMEROOT		--value`;
@@ -51,13 +53,14 @@ $useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
 
 my $libdir = "$sharedlibroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}/csm_share";
 my $installdir = "$installroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}";
+print "installdir is $installdir\nlibdir is $libdir\n";
 mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 my @filepath = ( "$CASEROOT/SourceMods/src.share",
 		 "$CIMEROOT/src/drivers/mct/shr",
 		 "$CIMEROOT/src/components/xcpl_models/xshare",
-		 "$CIMEROOT/src/components/data_comps/dshare",
+		 "$CIMEROOT/src/share/streams",
 		 "$CIMEROOT/src/share/util",
 		 "$CIMEROOT/src/share/RandNum/src",
 		 "$CIMEROOT/src/share/RandNum/src/dsfmt_f03",
@@ -96,7 +99,7 @@ $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_WAV=$NINST_WAV";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ROF=$NINST_ROF";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ESP=$NINST_ESP";
 
-my $bld = "$GMAKE  complib -j $GMAKE_J MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $CASETOOLS/Makefile ";
+my $bld = "$GMAKE complib -j $GMAKE_J MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $CASETOOLS/Makefile ";
 
 my $rc = system($bld);
 if ($rc==0xff00){
@@ -113,8 +116,11 @@ if ($rc==0xff00){
     die "signal $rc\n";
 }
 if ( ! -d "$installdir/lib"){
+    print "Creating installdir in $installdir\n";
     mkpath("$installdir/lib");
     mkpath("$installdir/include");
 }
+print "Copying libcsm_share.a to $installdir/lib\n";
 system("cp -p -f libcsm_share.a $installdir/lib/");
+print "Copying modules to $installdir/include\n";
 system("cp -p -f *.mod $installdir/include/");

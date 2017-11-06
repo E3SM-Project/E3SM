@@ -32,7 +32,7 @@ module docn_shr_mod
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
   character(CL) , public :: rest_file_strm        ! restart filename for streams
-  character(CL) , public :: ocn_mode              ! mode
+  character(CL) , public :: datamode              ! mode
   integer(IN)   , public :: aquap_option
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,37 +122,37 @@ CONTAINS
 
     call shr_strdata_readnml(SDOCN,trim(filename),mpicom=mpicom)
 
-    ocn_mode = trim(SDOCN%dataMode)
+    datamode = trim(SDOCN%dataMode)
 
     ! Special logic for prescribed aquaplanet
 
-    if (ocn_mode(1:9) == 'SST_AQUAP' .and. trim(ocn_mode) /= 'SST_AQUAPFILE') then
+    if (datamode(1:9) == 'SST_AQUAP' .and. trim(datamode) /= 'SST_AQUAPFILE') then
        ! First determine the prescribed aquaplanet option
-       if (len_trim(ocn_mode) == 10) then
-          read(ocn_mode(10:10),'(i1)') aquap_option
-       else if (len_trim(ocn_mode) == 11) then
-          read(ocn_mode(10:11),'(i2)') aquap_option
+       if (len_trim(datamode) == 10) then
+          read(datamode(10:10),'(i1)') aquap_option
+       else if (len_trim(datamode) == 11) then
+          read(datamode(10:11),'(i2)') aquap_option
        end if
-       ! Now remove the index from the ocn_mode value, to have a generic setting
+       ! Now remove the index from the datamode value, to have a generic setting
        ! for use below
-       ocn_mode = "SST_AQUAPANAL"
+       datamode = "SST_AQUAPANAL"
     end if
 
     ! Validate mode
 
-    if (trim(ocn_mode) == 'NULL'          .or. &
-        trim(ocn_mode) == 'SSTDATA'       .or. &
-        trim(ocn_mode) == 'SST_AQUAPANAL' .or. &
-        trim(ocn_mode) == 'SST_AQUAPFILE' .or. &
-        trim(ocn_mode) == 'COPYALL'       .or. &
-        trim(ocn_mode) == 'IAF'           .or. &
-        trim(ocn_mode) == 'SOM'           .or. &
-        trim(ocn_mode) == 'SOM_AQUAP') then
+    if (trim(datamode) == 'NULL'          .or. &
+        trim(datamode) == 'SSTDATA'       .or. &
+        trim(datamode) == 'SST_AQUAPANAL' .or. &
+        trim(datamode) == 'SST_AQUAPFILE' .or. &
+        trim(datamode) == 'COPYALL'       .or. &
+        trim(datamode) == 'IAF'           .or. &
+        trim(datamode) == 'SOM'           .or. &
+        trim(datamode) == 'SOM_AQUAP') then
       if (my_task == master_task) then
-         write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
+         write(logunit,F00) ' docn datamode = ',trim(datamode)
       end if
     else
-      write(logunit,F00) ' ERROR illegal ocn mode = ',trim(ocn_mode)
+      write(logunit,F00) ' ERROR illegal docn datamode = ',trim(datamode)
       call shr_sys_abort()
     endif
 
@@ -168,19 +168,16 @@ CONTAINS
        ocn_prognostic = .true.
        ocnrof_prognostic = .true.
     endif
-    if (trim(ocn_mode) /= 'NULL') then
+    if (trim(datamode) /= 'NULL') then
        ocn_present = .true.
     end if
-    if (trim(ocn_mode) == 'IAF') then
+    if (trim(datamode) == 'IAF') then
        ocn_prognostic = .true.
        ocnrof_prognostic = .true.
     endif
-    if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
+    if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
        ocn_prognostic = .true.
     endif
-    write(6,*)'DEBUG: ocn_present is ',ocn_present
-    write(6,*)'DEBUG: ocn_prognostic is ',ocn_prognostic
-
 
   end subroutine docn_shr_read_namelists
 

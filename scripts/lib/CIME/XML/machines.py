@@ -298,15 +298,15 @@ class Machines(GenericXML):
             os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            pes_per_node = machine.find("PES_PER_NODE")
+            max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
 
             print( "  {} : {} ".format(name , desc.text))
             print( "      os             ", os_.text)
             print( "      compilers      ",compilers.text)
-            if pes_per_node is not None:
-                print( "      pes/node       ",pes_per_node.text)
+            if max_mpitasks_per_node is not None:
+                print("      pes/node       ",max_mpitasks_per_node.text)
             if max_tasks_per_node is not None:
-                print( "      max_tasks/node ",max_tasks_per_node.text)
+                print("      max_tasks/node ",max_tasks_per_node.text)
 
     def return_all_values(self):
         # return a dictionary of machines
@@ -318,20 +318,19 @@ class Machines(GenericXML):
             os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            pes_per_node = machine.find("PES_PER_NODE")
+            max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
             ppn = ''
-            if pes_per_node is not None:
-                ppn = pes_per_node.text
+            if max_mpitasks_per_node is not None:
+                ppn = max_mpitasks_per_node.text
 
             max_tasks_pn = ''
             if max_tasks_per_node is not None:
                 max_tasks_pn = max_tasks_per_node.text
 
-            mach_dict[name] = { 'description'    : desc.text, 
+            mach_dict[name] = { 'description'    : desc.text,
                                 'os'             : os_.text,
                                 'compilers'      : compilers.text,
                                 'pes/node'       : ppn,
                                 'max_tasks/node' : max_tasks_pn }
 
         return mach_dict
-

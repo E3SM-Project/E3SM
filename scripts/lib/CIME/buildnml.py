@@ -98,7 +98,7 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
         with open(user_nl_file, "r") as file_usernl:
             lines_input = file_usernl.readlines()
     else:
-        logger.warn("WARNING: No file {} found in case directory".format(user_nl_file))
+        logger.warning("WARNING: No file {} found in case directory".format(user_nl_file))
 
     lines_output = []
     lines_output.append("&comp_inparm \n")
