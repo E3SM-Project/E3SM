@@ -119,13 +119,16 @@ module ocn_forward_mode
       character (len=StrKIND), pointer :: xtime, simulationStartTime
       real (kind=RKIND), pointer :: daysSinceStartOfSim
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
-      type (MPAS_Time_Type) :: startTime
+      type (MPAS_Time_Type) :: startTime, alarmTime
       type (MPAS_TimeInterval_type) :: timeStep
+      type (MPAS_TimeInterval_type) :: alarmTimeStep
 
       logical, pointer :: config_do_restart, config_read_nearest_restart, config_filter_btr_mode, config_conduct_tests
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
-      real (kind=RKIND), pointer :: config_maxMeshDensity
+      character (len=StrKIND), pointer :: config_surface_salinity_monthly_restoring_compute_interval
 
+      real (kind=RKIND), pointer :: config_maxMeshDensity
+      logical, pointer :: config_use_surface_salinity_monthly_restoring
       ierr = 0
 
       !
@@ -145,7 +148,10 @@ module ocn_forward_mode
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
       call mpas_pool_get_config(domain % configs, 'config_maxMeshDensity', config_maxMeshDensity)
       call mpas_pool_get_config(domain % configs, 'config_conduct_tests', config_conduct_tests)
-
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring', &
+                                config_use_surface_salinity_monthly_restoring)
+      call mpas_pool_get_config(domain % configs, 'config_surface_salinity_monthly_restoring_compute_interval', &
+              config_surface_salinity_monthly_restoring_compute_interval)
       !
       ! Read input data for model
       !
@@ -343,10 +349,27 @@ module ocn_forward_mode
 
       call ocn_analysis_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
-
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing ' &
                // 'the analysis members in the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
+      endif
+
+      if (config_use_surface_salinity_monthly_restoring) then
+      !initialize the alarm for reading salinity data for restoring
+      if ( config_surface_salinity_monthly_restoring_compute_interval == 'dt') then
+         alarmTimeStep = mpas_get_clock_timestep(domain % clock, err_tmp)
+         call mpas_get_timeInterval(alarmTimeStep, timeString= &
+                      config_surface_salinity_monthly_restoring_compute_interval, ierr=err_tmp)
+      endif
+      alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err_tmp)
+
+      call mpas_set_timeInterval(alarmTimeStep, timeString= &
+              config_surface_salinity_monthly_restoring_compute_interval, ierr=err_tmp)
+
+      call mpas_add_clock_alarm(domain % clock, 'salinityDataReadAlarm', alarmTime, &
+                alarmTimeInterval=alarmTimeStep, ierr=err_tmp)
+      call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp)
+
       endif
 
    end function ocn_forward_mode_init!}}}
@@ -439,7 +462,7 @@ module ocn_forward_mode
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
-      integer :: ierr
+      integer :: ierr, err_tmp
 
       type (mpas_pool_type), pointer :: averagePool
       type (mpas_pool_type), pointer :: meshPool
@@ -499,6 +522,7 @@ module ocn_forward_mode
       endif
 
       ! read initial data required for monthly surface salinity restoring
+      ! always execute this call as initial data needed regardless of alarm
       if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
         call mpas_timer_start('io_monthly_surface_salinity',.false.)
         call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .true.)
@@ -637,9 +661,12 @@ module ocn_forward_mode
 
          ! read next time level data required for monthly surface salinity restoring
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
-           call mpas_timer_start('io_monthly_surface_salinity',.false.)
-           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
-           call mpas_timer_stop('io_monthly_surface_salinity')
+           if ( mpas_is_alarm_ringing(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp) ) then
+              call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp)
+              call mpas_timer_start('io_monthly_surface_salinity',.false.)
+              call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
+              call mpas_timer_stop('io_monthly_surface_salinity')
+           endif
          endif
 
          ! Validate that the state is OK to run with for the next timestep.
