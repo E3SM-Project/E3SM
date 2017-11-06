@@ -14,18 +14,20 @@
 #
 #SBATCH --job-name baro
 #SBATCH --account=FY150001
-#SBATCH -N 20
+#SBATCH -N 12
 #SBATCH --time=0:30:00
+#SBATCH -p ec
 #
 #  set paths to source code, build directory and run directory
 #
 set wdir =  ~/scratch1/preqx             # run directory
-set HOMME = ~/codes/acme/components/homme                # HOMME svn checkout     
+set HOMME = `pwd`/../..                  # HOMME svn checkout     
 set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
-set MACH = $HOMME/cmake/machineFiles/sandia-srn-sems.cmake
+#set MACH = $HOMME/cmake/machineFiles/sandia-srn-sems.cmake
+set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -35,7 +37,7 @@ setenv CRAY_CUDA_PROXY 1
 #
 #  mpi run command
 #
-set NCPU = 40
+set NCPU = 1
 #setenv OMP_NUM_THREADS 4
 setenv OMP_NUM_THREADS 1
 
@@ -221,4 +223,6 @@ sed s/qsize.\*/"qsize = $qsize"/  > input.nl
 date
 $mpirun $exe  < input.nl
 date
+
+ncl $input/zeta.ncl
 

@@ -175,7 +175,7 @@ sub process_cprnc_output {
    }  # foreach test_dir
 
    if ($num_files == 0) {
-      die "ERROR: no base.cprnc.out files found\n";
+      die "ERROR: no cprnc.out files found\n";
    }
 
    return \%diffs;

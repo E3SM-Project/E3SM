@@ -2,11 +2,8 @@
 02/2016 MT
 10/2016 DMH
 
-Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
-https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
-
 The CMAKE build system supports a number of user-configurable targets:
-sweqx, preqx, preqx_acc, swim, prim
+sweqx, preqx, preqx_acc, pese, swim, prim
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:
@@ -48,11 +45,18 @@ The CMAKE code could use some cleanup.
 - user configured variables should not need to be prefixed by the exectuable name
   (i.e. -DNP=4, instead of -DPREQX_NP=4).  This will make the cmake code a lot simpler
   to maintain.
+- the test cases are created after all the test executables are created. In keeping
+  with cmake's tree-like directory approach, the tests should be associated with their
+  test executable
 
 
 ************************************************************************************************
 
 ***OBSOLETE***
+
+Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
+https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
+
 
 03/2013 CGB and KJE and JER
 

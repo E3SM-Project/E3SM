@@ -4,10 +4,6 @@
 
 module prim_si_mod
   implicit none
-  private
-  public :: preq_omega_ps
-  public :: preq_hydrostatic, geopotential_t
-  public :: preq_vertadv
 contains
 	
 ! ==========================================================
@@ -91,6 +87,172 @@ contains
     end do
 
   end subroutine preq_vertadv
+
+
+
+
+
+
+  subroutine preq_vertadv_v(v,T,nfields,eta_dot_dp_deta, dp,v_vadv,T_vadv)
+    use kinds,              only : real_kind
+    use dimensions_mod,     only : nlev, np, nlevp
+    implicit none
+
+    integer, intent(in) :: nfields
+    real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
+    real (kind=real_kind), intent(in) :: T(np,np,nlev,nfields)
+    real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
+    real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+    real (kind=real_kind), intent(out) :: v_vadv(np,np,2,nlev)
+    real (kind=real_kind), intent(out) :: T_vadv(np,np,nlev,nfields)
+
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    integer :: k,nf
+    real (kind=real_kind) :: facp(np,np), facm(np,np)
+
+    ! ===========================================================
+    ! Compute vertical advection of T and v from eq. (3.b.1)
+    !
+    ! k = 1 case:
+    ! ===========================================================
+    k=1
+    facp            = 0.5_real_kind*eta_dot_dp_deta(:,:,k+1)/dp(:,:,k)
+    v_vadv(:,:,1,k)   = facp(:,:)*(v(:,:,1,k+1)- v(:,:,1,k))
+    v_vadv(:,:,2,k)   = facp(:,:)*(v(:,:,2,k+1)- v(:,:,2,k))
+    do nf=1,nfields
+       T_vadv(:,:,k,nf)   = facp(:,:)*(T(:,:,k+1,nf)- T(:,:,k,nf))
+    enddo
+    
+    ! ===========================================================
+    ! vertical advection
+    !
+    ! 1 < k < nlev case:
+    ! ===========================================================
+#if (defined COLUMN_OPENMP)
+    !$omp parallel do private(k,nf,facp,facm)
+#endif
+    do k=2,nlev-1
+       facp(:,:)   = 0.5_real_kind*eta_dot_dp_deta(:,:,k+1)/dp(:,:,k)
+       facm(:,:)   = 0.5_real_kind*eta_dot_dp_deta(:,:,k)/dp(:,:,k)
+       v_vadv(:,:,1,k)=facp*(v(:,:,1,k+1)- v(:,:,1,k)) + facm*(v(:,:,1,k)- v(:,:,1,k-1))
+       v_vadv(:,:,2,k)=facp*(v(:,:,2,k+1)- v(:,:,2,k)) + facm*(v(:,:,2,k)- v(:,:,2,k-1))
+       do nf=1,nfields
+          T_vadv(:,:,k,nf)   = facp*(T(:,:,k+1,nf)- T(:,:,k,nf)) + &
+               facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
+       enddo
+    end do
+    
+    ! ===========================================================
+    ! vertical advection
+    !
+    ! k = nlev case:
+    ! ===========================================================
+    k=nlev
+    facm            = 0.5_real_kind*eta_dot_dp_deta(:,:,k)/dp(:,:,k)
+    v_vadv(:,:,1,k)   = facm*(v(:,:,1,k)- v(:,:,1,k-1))
+    v_vadv(:,:,2,k)   = facm*(v(:,:,2,k)- v(:,:,2,k-1))
+    do nf=1,nfields
+       T_vadv(:,:,k,nf)   = facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
+    end do
+    end subroutine preq_vertadv_v
+
+
+
+
+
+
+  subroutine preq_vertadv_upwind(v,T,nfields,eta_dot_dp_deta, dp,v_vadv,T_vadv)
+    use kinds,              only : real_kind
+    use dimensions_mod,     only : nlev, np, nlevp
+    implicit none
+
+    integer, intent(in) :: nfields
+    real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
+    real (kind=real_kind), intent(in) :: T(np,np,nlev,nfields)
+    real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
+    real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+    real (kind=real_kind), intent(out) :: v_vadv(np,np,2,nlev)
+    real (kind=real_kind), intent(out) :: T_vadv(np,np,nlev,nfields)
+
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    integer :: i,j,k,nf
+    real (kind=real_kind) :: deta_m(np,np)
+
+    real (kind=real_kind) :: v_i(np,np,2,nlevp)
+    real (kind=real_kind) :: T_i(np,np,nlevp,nfields)
+
+    ! old mass:  T*dp
+    ! new mass:  T*dp + [eta_i(k+1)*dp*T_i(k+1) - eta_i(k)*dp*T_i(k) ]
+    ! Tnew = 1/dp [eta_i(k+1)*dp*T_i(k+1) - eta_i(k)*dp*T_i(k) ]
+
+    ! Compute upwind values on interfaces
+    ! at top and bottom, eta_dot = 0 so values dont matter
+    v_i(:,:,:,1)=0
+    T_i(:,:,1,:)=0
+    v_i(:,:,:,nlevp)=0
+    T_i(:,:,nlevp,:)=0
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,j,i)
+#endif
+    do k=2,nlev
+    do j=1,np; do i=1,np
+#if 0
+       ! centered version, for debugging. identical to preq_vertadv_v() above
+       do nf=1,nfields
+          T_i(:,:,k,nf) = (T(:,:,k,nf) + T(:,:,k-1,nf) ) /2
+       enddo
+       v_i(:,:,:,k)  = (v(:,:,:,k) + v(:,:,:,k-1) ) /2
+#else
+       if (eta_dot_dp_deta(i,j,k) > 0 ) then
+          do nf=1,nfields
+             T_i(:,:,k,nf) = T(:,:,k-1,nf)
+          enddo
+          v_i(:,:,:,k)  = v(:,:,:,k-1)
+       else
+          do nf=1,nfields
+             T_i(:,:,k,nf) = T(:,:,k,nf)
+          enddo
+          v_i(:,:,:,k)  = v(:,:,:,k)
+       endif
+#endif
+    enddo ; enddo 
+    enddo
+
+    ! finite difference
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,deta_m)
+#endif
+    do k=1,nlev
+       deta_m(:,:) = eta_dot_dp_deta(:,:,k+1)-eta_dot_dp_deta(:,:,k)
+       v_vadv(:,:,1,k) = (&
+            eta_dot_dp_deta(:,:,k+1)*v_i(:,:,1,k+1) &
+            -eta_dot_dp_deta(:,:,k)*v_i(:,:,1,k) &
+            -v(:,:,1,k)*deta_m(:,:)  &
+            ) / dp(:,:,k)
+
+       v_vadv(:,:,2,k) = (&
+            eta_dot_dp_deta(:,:,k+1)*v_i(:,:,2,k+1) &
+            -eta_dot_dp_deta(:,:,k)*v_i(:,:,2,k) &
+            -v(:,:,2,k)*deta_m(:,:) &
+            ) / dp(:,:,k)
+
+       do nf=1,nfields
+          T_vadv(:,:,k,nf) = (&
+                eta_dot_dp_deta(:,:,k+1)*T_i(:,:,k+1,nf)  &
+                -eta_dot_dp_deta(:,:,k)*T_i(:,:,k,nf) &
+                -T(:,:,k,nf)*deta_m(:,:) &
+                ) / dp(:,:,k)
+       enddo
+    enddo
+    
+
+    end subroutine 
 
 
 
@@ -233,6 +395,59 @@ contains
 end subroutine preq_hydrostatic
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+!
+!  same as above, but takes a single argument
+!  same as above, with integrand = R*T_v*dp/p
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+  subroutine preq_hydrostatic_v2(phi,phis,integrand)
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, nlev
+    use physical_constants, only : rgas
+!    use hybvcoord_mod, only : hvcoord_t
+    implicit none
+
+
+    !------------------------------Arguments---------------------------------------------------------------
+    real(kind=real_kind), intent(out) :: phi(np,np,nlev)     
+    real(kind=real_kind), intent(in) :: phis(np,np)
+    real(kind=real_kind), intent(in) :: integrand(np,np,nlev)
+    !------------------------------------------------------------------------------------------------------
+
+    !---------------------------Local workspace-----------------------------
+    integer i,j,k                         ! longitude, level indices
+    real(kind=real_kind) Hkk,Hkl          ! diagonal term of energy conversion matrix
+    real(kind=real_kind), dimension(np,np,nlev) :: phii       ! Geopotential at interfaces
+    !-----------------------------------------------------------------------
+
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,j,i)
+#endif
+    do j=1,np   !   Loop inversion (AAM)
+
+       do i=1,np
+          phii(i,j,nlev)  = integrand(i,j,nlev)
+          phi(i,j,nlev) = phis(i,j) + integrand(i,j,nlev)/2
+       end do
+       
+       do k=nlev-1,2,-1
+          do i=1,np
+             phii(i,j,k) = phii(i,j,k+1) + integrand(i,j,k)
+             phi(i,j,k) = phis(i,j) + phii(i,j,k+1) + integrand(i,j,k)/2
+          end do
+       end do
+       
+       do i=1,np
+          phi(i,j,1) = phis(i,j) + phii(i,j,2) + integrand(i,j,1)/2
+       end do
+       
+    end do
+    
+    
+end subroutine preq_hydrostatic_v2
+
+
 
 !
 !  The hydrostatic routine from CAM physics.
@@ -309,6 +524,57 @@ subroutine geopotential_t(                                 &
 
     return
   end subroutine geopotential_t
+
+
+
+  subroutine prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
+  use kinds, only : real_kind
+  use control_mod, only : initial_total_mass
+  use physical_constants, only : g
+  use element_mod, only : element_t
+  use time_mod, only : timelevel_t 
+  use hybvcoord_mod, only : hvcoord_t 
+  use hybrid_mod, only : hybrid_t
+  use dimensions_mod, only : np
+  use global_norms_mod, only : global_integral 
+
+  type (element_t), intent(inout) :: elem(:)
+  type (TimeLevel_t), target, intent(in) :: tl
+  type (hybrid_t),intent(in)     :: hybrid
+  type (hvcoord_t), intent(in)   :: hvcoord
+  integer,intent(in)             :: nets,nete
+  
+  ! local 
+  real (kind=real_kind)  :: tmp(np,np,nets:nete)
+  real (kind=real_kind)  :: scale,mass0
+  integer :: n0,nm1,np1,ie
+
+  if (initial_total_mass == 0) return;
+  
+  n0=tl%n0
+  nm1=tl%nm1
+  np1=tl%np1
+  
+  scale=1/g                                  ! assume code is using Pa
+  if (hvcoord%ps0 <  2000 ) scale=100*scale  ! code is using mb
+  ! after scaling, Energy is in J/m**2,  Mass kg/m**2
+  
+  do ie=nets,nete
+     tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+  enddo
+  mass0 = global_integral(elem, tmp(:,:,nets:nete),hybrid,np,nets,nete)
+  mass0 = mass0*scale;  
+  
+  do ie=nets,nete
+     elem(ie)%state%ps_v(:,:,n0)=elem(ie)%state%ps_v(:,:,n0)*(initial_total_mass/mass0)
+     elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,n0)
+     elem(ie)%state%ps_v(:,:,nm1)=elem(ie)%state%ps_v(:,:,n0)
+  enddo
+  if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+     write (*,'(a,e24.15)') "Initializing Total Mass (kg/m^2) = ",initial_total_mass
+  endif
+  end subroutine prim_set_mass
+
 
 
 

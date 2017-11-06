@@ -15,7 +15,6 @@ module atm_comp_mct
   use shr_file_mod    , only: shr_file_freeunit
   use datm_comp_mod   , only: datm_comp_init, datm_comp_run, datm_comp_final
   use datm_shr_mod    , only: datm_shr_read_namelists
-  use datm_shr_mod    , only: atm_mode
   use datm_shr_mod    , only: presaero
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
 

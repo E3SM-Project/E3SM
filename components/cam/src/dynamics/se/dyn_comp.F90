@@ -4,7 +4,7 @@ Module dyn_comp
   use domain_mod, only : domain1d_t
   use element_mod, only : element_t
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
-  use hybvcoord_mod, only : hvcoord_t
+  use hybvcoord_mod, only : hvcoord_t, set_layer_locations
   use hybrid_mod, only : hybrid_t
   use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
@@ -245,7 +245,7 @@ CONTAINS
   subroutine dyn_init2(dyn_in)
     use dimensions_mod,   only: nlev, nelemd
     use prim_driver_mod,  only: prim_init2
-    use prim_si_ref_mod,  only: prim_set_mass
+    use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
     use hycoef,           only: hyam, hybm, hyai, hybi, ps0
     use parallel_mod,     only: par
@@ -273,9 +273,9 @@ CONTAINS
     hvcoord%hybm=hybm
     hvcoord%hybi=hybi
     hvcoord%ps0=dyn_ps0  
-    do k=1,nlev
-       hvcoord%hybd(k) = hvcoord%hybi(k+1) - hvcoord%hybi(k)
-    end do
+
+    call set_layer_locations(hvcoord,.false.,par%masterproc)
+
     if(par%dynproc) then
 
 #ifdef HORIZ_OPENMP
@@ -298,7 +298,7 @@ CONTAINS
           if(runtype == 0) then
              do ie=nets,nete
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
-                elem(ie)%derived%fq(:,:,:,:,:)=0.0_r8
+                elem(ie)%derived%fq(:,:,:,:)=0.0_r8
              end do
           end if
        else if(ideal_phys) then

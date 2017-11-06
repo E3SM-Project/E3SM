@@ -22,8 +22,8 @@ module docn_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
-  use docn_shr_mod   , only: ocn_mode       ! namelist input
-  use docn_shr_mod   , only: aquap_option   ! derived from ocn_mode namelist input
+  use docn_shr_mod   , only: datamode       ! namelist input
+  use docn_shr_mod   , only: aquap_option   ! derived from datamode namelist input
   use docn_shr_mod   , only: decomp         ! namelist input
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
@@ -94,6 +94,8 @@ module docn_comp_mod
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   !===============================================================================
   subroutine docn_comp_init(Eclock, x2o, o2x, &
        seq_flds_x2o_fields, seq_flds_o2x_fields, &
@@ -176,7 +178,12 @@ CONTAINS
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
             scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
     else
-       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
+       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+          ! Special logic for either prescribed or som aquaplanet - overwrite and
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
+       else
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
+       end if
     endif
 
     if (my_task == master_task) then
@@ -212,18 +219,6 @@ CONTAINS
     call shr_sys_flush(logunit)
 
     call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
-
-    ! Special logic for either prescribed or som aquaplanet - overwrite and
-    ! set mask/frac to 1
-    if (ocn_mode == 'SST_AQUAPANAL' .or. ocn_mode == 'SST_AQUAPFILE' .or. ocn_mode == 'SOM_AQUAP') then
-       kmask = mct_aVect_indexRA(ggrid%data,'mask')
-       ggrid%data%rattr(kmask,:) = 1
-
-       kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-       ggrid%data%rattr(kfrac,:) = 1.0_r8
-
-       write(logunit,F00) ' Resetting the data ocean mask and frac to 1 for aquaplanet'
-    end if
 
     call t_stopf('docn_initmctdom')
 
@@ -315,7 +310,7 @@ CONTAINS
           endif
        endif
        call shr_mpi_bcast(exists,mpicom,'exists')
-       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
+       if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
           call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
                trim(rest_file), mpicom, gsmap=gsmap, rf1=somtp, rf1n='somtp', io_format=SDOCN%io_format)
@@ -438,10 +433,12 @@ CONTAINS
     enddo
     call t_stopf('docn_scatter')
 
-    ! --- handle the docn modes
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
 
-    call t_startf('docn_mode')
-    select case (trim(ocn_mode))
+    call t_startf('docn_datamode')
+    select case (trim(datamode))
 
     case('COPYALL')
        ! do nothing extra
@@ -570,7 +567,7 @@ CONTAINS
 
     end select
 
-    call t_stopf('docn_mode')
+    call t_stopf('docn_datamode')
 
     !--------------------
     ! Write restart
@@ -592,7 +589,7 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       if (trim(ocn_mode) == 'SOM' .or. trim(ocn_mode) == 'SOM_AQUAP') then
+       if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
           if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
           call shr_pcdf_readwrite('write', SDOCN%pio_subsystem, SDOCN%io_type,&
                trim(rest_file), mpicom, gsmap, clobber=.true., rf1=somtp,rf1n='somtp')

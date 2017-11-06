@@ -38,6 +38,7 @@ private
   public :: allocate_subcell_integration_matrix
 
   public :: derivinit
+  public :: get_deriv
 
   public :: gradient
   public :: gradient_wk
@@ -78,6 +79,8 @@ private
   public  :: divergence_sphere_wk
   public  :: laplace_sphere_wk
   public  :: vlaplace_sphere_wk
+!  public  :: laplace_eta
+  public  :: laplace_z
   public  :: element_boundary_integral
   public  :: edge_flux_u_cg
   public  :: limiter_optim_iter_full
@@ -148,6 +151,20 @@ contains
 
   end subroutine derivinit
 
+
+  ! initialize and store a deriv structure for easy access
+  subroutine get_deriv(deriv)
+    type (derivative_t), intent(inout) :: deriv
+    type (derivative_t), save :: the_deriv
+    logical :: initialized = .false.
+
+    if(.not. initialized) then
+      call derivinit(the_deriv)
+      initialized = .true.
+    endif
+
+    deriv = the_deriv
+  end subroutine
 
 ! =======================================
 ! dvvinit:
@@ -1329,6 +1346,79 @@ contains
        enddo
     enddo
   end function vlaplace_sphere_wk_contra
+
+
+
+#if 0
+  subroutine laplace_eta(v,laplace,ncomp,etam) 
+!
+!   input:  v = scalar 
+!   ouput:  vertical laplace operator in z coordinates
+!   u'(i+1/2) = u(i+1) - u(i) / deta(i+.5)      no flux b.c.  u(0)=u(1), u(nlev+1)=u(nlev)
+!   u''(i) = u'(i+1/2) - u'(i-1/2) / deta(i)
+!   
+!   NOTE: some variables in HOMME (dp3d, eta_dot_dpdn) have been scaled by deta(i) and so we remove
+!   the second deta(i) factor below.  But if this routine is used for
+!   variables like u or theta and not multiplied by eta_dot_dpdn, this will need some work
+!
+    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(in) :: etam(nlev)
+    integer :: ncomp
+
+    ! local
+    integer k,n
+    real(kind=real_kind) :: u_eta(np,np,nlev+1)
+
+    ! no flux b.c.
+    u_eta(:,:,1)=0
+    u_eta(:,:,nlev+1)=0
+    do n=1,ncomp
+       do k=2,nlev
+          u_eta(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / ( etam(k)-etam(k-1) )
+       enddo
+       do k=1,nlev
+          laplace(:,:,n,k) = u_eta(:,:,k+1) - u_eta(:,:,k)
+       enddo
+    enddo
+    end subroutine
+#endif
+
+
+  subroutine laplace_z(v,laplace,ncomp,dz) 
+!
+!   input:  v = scalar 
+!   ouput:  vertical laplace operator in z coordinates
+!   u'(i+1/2) = u(i+1) - u(i) / dz(i+.5)      no flux b.c.  u(0)=u(1), u(nlev+1)=u(nlev)
+!   u''(i) = u'(i+1/2) - u'(i-1/2) / dz(i)
+!   
+!   This routine is currently only used for the supercell test, which uses equally spaced
+!   levels ( dz=20km/nlev ) so currently only a constant dz is supported
+!
+    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
+    real(kind=real_kind), intent(in) :: dz
+    integer :: ncomp
+
+    ! local
+    real(kind=real_kind) :: u_z(np,np,nlev+1)
+    integer :: k,n
+
+    ! no flux b.c.
+    u_z(:,:,1)=0
+    u_z(:,:,nlev+1)=0
+    do n=1,ncomp
+       do k=2,nlev
+          u_z(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / dz        ! dz(k-.5)  
+       enddo
+       do k=1,nlev
+          laplace(:,:,n,k) =( u_z(:,:,k+1) - u_z(:,:,k) )/dz    ! dz(k)
+       enddo
+    enddo
+    end subroutine
+
+
+
 
 
   function subcell_dss_fluxes(dss, p, n, metdet, C) result(fluxes)

@@ -36,7 +36,7 @@ module dice_shr_mod
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
   character(CL) , public :: rest_file_strm        ! restart filename for streams
-  character(CL) , public :: ice_mode              ! mode
+  character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -139,14 +139,15 @@ CONTAINS
 
     ! Validate mode
 
-    ice_mode = trim(SDICE%dataMode)
-    if (trim(ice_mode) == 'NULL' .or. &
-         trim(ice_mode) == 'SSTDATA' .or. &
-         trim(ice_mode) == 'COPYALL') then
-       if (my_task == master_task) &
-            write(logunit,F00) ' ice mode = ',trim(ice_mode)
+    datamode = trim(SDICE%dataMode)
+    if (trim(datamode) == 'NULL' .or. &
+        trim(datamode) == 'SSTDATA' .or. &
+        trim(datamode) == 'COPYALL') then
+       if (my_task == master_task) then
+          write(logunit,F00) ' dice datamode = ',trim(datamode)
+       end if
     else
-       write(logunit,F00) ' ERROR illegal ice mode = ',trim(ice_mode)
+       write(logunit,F00) ' ERROR illegal dice datamode = ',trim(datamode)
        call shr_sys_abort()
     endif
 
@@ -160,10 +161,10 @@ CONTAINS
        ice_present    = .true.
        ice_prognostic = .true.
     endif
-    if (trim(ice_mode) /= 'NULL') then
+    if (trim(datamode) /= 'NULL') then
        ice_present = .true.
     end if
-    if (trim(ice_mode) == 'SSTDATA' .or. trim(ice_mode) == 'COPYALL') then
+    if (trim(datamode) == 'SSTDATA' .or. trim(datamode) == 'COPYALL') then
        ice_prognostic = .true.
     endif
 

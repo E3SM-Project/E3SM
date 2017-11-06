@@ -2,6 +2,16 @@
 PROJECT(HOMME C Fortran)
 
 ENABLE_LANGUAGE(Fortran) 
+
+# Print the sha of the last commit,
+# useful to double check which version was build in the build folder.
+EXECUTE_PROCESS (COMMAND git rev-parse HEAD
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
+
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
@@ -56,15 +66,14 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
+OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
+OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Cristoph's "standalone" executables
-OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-
 # swim and prim executables require C++ compiler
-IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM}) 
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
 ELSE ()
@@ -231,12 +240,16 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(src/preqx)
 ENDIF()
 
+IF(${BUILD_HOMME_THETA})
+  ADD_SUBDIRECTORY(src/theta)
+ENDIF()
+
 IF(${BUILD_HOMME_PREQX_ACC})
   ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
-IF(${BUILD_HOMME_FVM})
-  ADD_SUBDIRECTORY(src/fvm)
+IF(${BUILD_HOMME_PESE})
+  ADD_SUBDIRECTORY(src/pese)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})

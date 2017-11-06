@@ -37,21 +37,6 @@ my @groups = qw(run_modes
                 testing
                 debug
                 constrain_haney_number
-                baroclinic_channel
-                lock_exchange
-                internal_waves
-                overflow
-                global_ocean
-                cvmix_wswsbf
-                iso
-                soma
-                ziso
-                sub_ice_shelf_2d
-                periodic_planar
-                ecosys_column
-                sea_mount
-                isomip
-                isomip_plus
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

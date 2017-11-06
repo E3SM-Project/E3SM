@@ -42,7 +42,7 @@ The queue support code is currently not maintained and is most likley broken.
 
 
 Instructions to create a new test:
-Determine executable (sweqx or preqx)
+Determine executable (sweqx, preqx, theta, etc...)
 Create new executable configuration (if needed).
    i.e. homme/test_exec/swtcA
 Create cmake description of test and namelist:
@@ -301,7 +301,55 @@ baroCamMoist.cmake
               one of the subroutines.  Changing to NE=2 for 1 day until this is fixed.
 
 
+======================================================================================
+Theta Model Tests
+======================================================================================
 
+thetah-test22.cmake
+              DCMIP 2012 test 2-2 for 20 levels and hydrostatic theta target. 
+              The test was made short, with only 500 timesteps and 20 vertical levels.
+
+thetanh-test22.cmake
+              DCMIP 2012 test 2-2 for 20 levels and nonhydrostatic theta target.
+              The test was made short, with only 500 timesteps and 20 vertical levels.
+
+thetah-TC.cmake
+              DCMIP 2016 Tropical Cyclone test, run at low-res for 1 day
+              Hydrostatic code, with moisture, RK5 timestepping, Eulerian vertical
+              dry, with nu_top=0
+              Should also verify Q4 remains 1.0 to 11-12 digits
+
+thetanh-TC.cmake
+              DCMIP 2016 Tropical Cyclone test, run at low-res for 1 day
+              Nonhydrostatic code, with moisture, IMEX timestepping, Vertically lagrangian
+              dry, with nu_top=0
+              Should also verify Q4 remains 1.0 to 11-12 digits
+
+thetanhwet-TC.cmake
+              DCMIP 2016 Tropical Cyclone test, run at low-res for 1 day
+              Nonhydrostatic code, with moisture, IMEX timestepping, Vertically lagrangian
+              with moisture and nu_top, so Q4=1 is not preserved and we run 3 tracers
+
+
+The above tests are mostly to detect non-BFB changes and are not suitable
+for verifying non-BFB changes are ok.  For roundoff level changes, the first
+two theta test, since they are close to linear, should have differences close
+to roundoff levels.  For the TC tests, how big are the differences when we introduce
+roundoff level changes?  (CHECK THIS AND DOCUMENT HERE)
+
+For greater than roundoff level changes, a more thorough analysis is needed.
+Run the suite of dcmip2012 and dcmip2016 tests and the standard resolutions,
+make plots with the provided NCL scripts. Then verify solution still looks as good 
+or better and energy budgets are still correct.
+Mass conservation and tracer consistency can be verified via 2 of the cases above.
+
+Things to verify via the log files:
+1. tdiag=1 at time 0 for NH tests 
+2. q4=1 is preserved to 11 digits for dry tests with nu_top=0
+3. dry air and tracer mass is conserved
+
+
+[NEED MORE DOCUMENTATION HERE]
 
 
 ======================================================================================
