@@ -19,6 +19,7 @@
 /** The number of possible output netCDF output flavors available to
  * the ParallelIO library. */
 #define NUM_FLAVORS 4
+#define NUM_IOTYPES 4
 
 /** Number of netCDF types. */
 #define NUM_NETCDF_TYPES 12
@@ -45,6 +46,19 @@
 
 /** The meaning of life, the universe, and everything. */
 #define TEST_VAL_42 42
+
+/* Dimension lengths used in some C tests. */
+#define DIM_LEN2 2
+#define DIM_LEN3 3
+
+/* Number of dims in test file. */
+#define NDIM2 2
+#define NDIM3 3
+#ifdef _NETCDF4
+#define NUM_PIO_TYPES_TO_TEST 11
+#else
+#define NUM_PIO_TYPES_TO_TEST 6
+#endif /* _NETCDF4 */
 
 /** Handle MPI errors. This should only be used with MPI library
  * function calls. */
@@ -73,7 +87,6 @@ char err_buffer[MPI_MAX_ERROR_STRING];
 int resultlen;
 
 /* Function prototypes. */
-int pio_test_init(int argc, char **argv, int *my_rank, int *ntasks, int target_ntasks, MPI_Comm *test_comm);
 int pio_test_init2(int argc, char **argv, int *my_rank, int *ntasks, int min_ntasks,
                    int max_ntasks, int log_level, MPI_Comm *test_comm);
 int create_nc_sample(int sample, int iosysid, int format, char *filename, int my_rank, int *ncid);
@@ -84,6 +97,15 @@ int create_nc_sample_1(int iosysid, int format, char *filename, int my_rank, int
 int check_nc_sample_1(int iosysid, int format, char *filename, int my_rank, int *ncid);
 int create_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *ncid);
 int check_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *ncid);
+int create_nc_sample_3(int iosysid, int iotype, int my_rank, int my_comp_idx,
+                       char *filename, char *test_name, int verbose, int use_darray,
+                       int ioid);
+int check_nc_sample_3(int iosysid, int iotype, int my_rank, int my_comp_idx,
+                      const char *filename, int verbose, int use_darray, int ioid);
+int create_nc_sample_4(int iosysid, int iotype, int my_rank, int my_comp_idx,
+                       char *filename, char *test_name, int verbose, int num_types);
+int check_nc_sample_4(int iosysid, int iotype, int my_rank, int my_comp_idx,
+                      const char *filename, int verbose, int num_types);
 int get_iotypes(int *num_flavors, int *flavors);
 int get_iotype_name(int iotype, char *name);
 int pio_test_finalize(MPI_Comm *test_comm);

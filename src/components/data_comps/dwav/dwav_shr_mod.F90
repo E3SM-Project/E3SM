@@ -1,13 +1,13 @@
 module dwav_shr_mod
 
   ! !USES:
-  
-  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8 
+
+  use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
   use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
   use shr_strdata_mod, only : shr_strdata_type, shr_strdata_readnml
-  use shr_mpi_mod    , only : shr_mpi_bcast 
+  use shr_mpi_mod    , only : shr_mpi_bcast
 
   ! !PUBLIC TYPES:
   implicit none
@@ -32,7 +32,7 @@ module dwav_shr_mod
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
   character(CL) , public :: rest_file_strm        ! restart filename for streams
-  character(CL) , public :: wav_mode              ! mode
+  character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -121,18 +121,18 @@ CONTAINS
     call shr_strdata_readnml(SDWAV,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
-    ! Determine and validate wav_mode
+    ! Determine and validate datamode
     !----------------------------------------------------------------------------
 
-    wav_mode = trim(SDWAV%dataMode)
+    datamode = trim(SDWAV%dataMode)
 
-    if (trim(wav_mode) == 'null' .or. &
-        trim(wav_mode) == 'copyall') then
+    if (trim(datamode) == 'NULL' .or. &
+        trim(datamode) == 'COPYALL') then
         if (my_task == master_task) then
-           write(logunit,F00) 'wav mode = ',trim(wav_mode)
+           write(logunit,F00) 'dwav datamode = ',trim(datamode)
         end if
     else
-      write(logunit,F00) ' ERROR illegal wav mode = ',trim(wav_mode)
+      write(logunit,F00) ' ERROR illegal dwav datamode = ',trim(datamode)
       call shr_sys_abort()
    end if
 
@@ -146,7 +146,7 @@ CONTAINS
        wav_present    = .true.
        wav_prognostic = .true.
     endif
-    if (trim(wav_mode) /= 'NULL') then
+    if (trim(datamode) /= 'NULL') then
        wav_present = .true.
     end if
 

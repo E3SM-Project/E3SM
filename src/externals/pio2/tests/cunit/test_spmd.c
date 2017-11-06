@@ -1,9 +1,10 @@
 /*
  * This program tests some internal functions in the PIO library.
  *
- * Jim Edwards
- * Ed Hartnett, 11/23/16
+ * @author Jim Edwards, Ed Hartnett
+ * @date 11/23/16
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_tests.h>
 #include <pio_internal.h>
@@ -78,22 +79,14 @@ int run_spmd_tests(MPI_Comm test_comm)
      * with msg_cnt = 1!). */
     for (int msg_cnt = 0; msg_cnt < TARGET_NTASKS; msg_cnt = msg_cnt ? msg_cnt * 2 : 4)
     {
-        if (!my_rank)
-            printf("message count %d\n",msg_cnt);
-
         for (int itest = 0; itest < NUM_TEST_CASES; itest++)
         {
-            rearr_comm_fc_opt_t fc;            
+            rearr_comm_fc_opt_t fc;
             fc.hs = false;
             fc.isend = false;
 
             /* Wait for all tasks. */
             MPI_Barrier(test_comm);
-
-            /* Print results. */
-            if (!my_rank)
-                for (int e = 0; e < num_elem; e++)
-                    printf("sbuf[%d] = %d\n", e, sbuf[e]);
 
             /* Set the parameters different for each test case. */
             if (itest == 1)
@@ -140,9 +133,9 @@ int run_spmd_tests(MPI_Comm test_comm)
     return 0;
 }
 
-/* Test some of the functions in the file pioc_sc.c. 
+/* Test some of the functions in the file pioc_sc.c.
  *
- * @param test_comm the MPI communicator that the test code is running on. 
+ * @param test_comm the MPI communicator that the test code is running on.
  * @returns 0 for success, error code otherwise.
  */
 int run_sc_tests(MPI_Comm test_comm)
@@ -151,10 +144,10 @@ int run_sc_tests(MPI_Comm test_comm)
     int my_rank;  /* 0-based rank in test_comm. */
     int ntasks;   /* Number of tasks in test_comm. */
     int mpierr;   /* Return value from MPI calls. */
-    int array1[SC_ARRAY_LEN] = {7, 42, 14};
-    int array2[SC_ARRAY_LEN] = {2, 3, 7};
-    int array3[SC_ARRAY_LEN] = {90, 180, 270};
-    int array4[SC_ARRAY_LEN] = {1, 180, 270};
+    long long larray1[SC_ARRAY_LEN] = {7, 42, 14};
+    long long larray2[SC_ARRAY_LEN] = {2, 3, 7};
+    long long larray3[SC_ARRAY_LEN] = {90, 180, 270};
+    long long larray4[SC_ARRAY_LEN] = {1, 180, 270};
 
     /* Learn rank and size. */
     if ((mpierr = MPI_Comm_size(test_comm, &ntasks)))
@@ -179,13 +172,13 @@ int run_sc_tests(MPI_Comm test_comm)
         return ERR_WRONG;
 
     /* Test the gcd_array() function. */
-    if (gcd_array(SC_ARRAY_LEN, array1) != 7)
+    if (lgcd_array(SC_ARRAY_LEN, larray1) != 7)
         return ERR_WRONG;
-    if (gcd_array(SC_ARRAY_LEN, array2) != 1)
+    if (lgcd_array(SC_ARRAY_LEN, larray2) != 1)
         return ERR_WRONG;
-    if (gcd_array(SC_ARRAY_LEN, array3) != 90)
+    if (lgcd_array(SC_ARRAY_LEN, larray3) != 90)
         return ERR_WRONG;
-    if (gcd_array(SC_ARRAY_LEN, array4) != 1)
+    if (lgcd_array(SC_ARRAY_LEN, larray4) != 1)
         return ERR_WRONG;
 
     /* Test compute_one_dim. */
@@ -200,15 +193,14 @@ int run_sc_tests(MPI_Comm test_comm)
     compute_one_dim(5, 4, my_rank, &start, &count);
     if (start != my_rank || count != (my_rank == 3 ? 2 : 1))
         return ERR_WRONG;
-    printf("my_rank = %d start = %lld count = %lld\n", my_rank, start, count);
     return 0;
 }
 
-/* Tesst some list stuff. */
+/* Test some list stuff. */
 int test_lists()
 {
     file_desc_t *fdesc;
-    
+
     /* Test that bad input is correctly rejected. */
     if (pio_delete_iodesc_from_list(42) != PIO_EBADID)
         return ERR_WRONG;
@@ -220,6 +212,278 @@ int test_lists()
         return ERR_WRONG;
     if (pio_get_file(42, &fdesc) != PIO_EBADID)
         return ERR_WRONG;
+    return 0;
+}
+
+/* Test some list stuff. */
+int test_determine_procs()
+{
+#define ONE_COMPONENT 1
+#define TWO_COMPONENTS 2
+#define THREE_PROCS 3
+    int ret;
+    
+    {
+        int num_io_procs = 1;
+        int component_count = ONE_COMPONENT;
+        int num_procs_per_comp[ONE_COMPONENT] = {1};
+        int *my_proc_list[ONE_COMPONENT];
+        
+        if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp, NULL,
+                                   my_proc_list)))
+            return ret;
+
+        /* Check results and free resources. */
+        for (int c = 0; c < ONE_COMPONENT; c++)
+        {
+            if (my_proc_list[c][0] != 1)
+                return ERR_WRONG;
+            free(my_proc_list[c]);
+        }
+    }
+    
+    {
+        int num_io_procs = 3;
+        int component_count = TWO_COMPONENTS;
+        int num_procs_per_comp[TWO_COMPONENTS] = {1, 1};
+        int *my_proc_list[TWO_COMPONENTS];
+        
+        if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp, NULL,
+                                   my_proc_list)))
+            return ret;
+        
+        /* Check results and free resources. */
+        for (int c = 0; c < TWO_COMPONENTS; c++)
+        {
+            if (my_proc_list[c][0] != c + 3)
+                return ERR_WRONG;
+            free(my_proc_list[c]);
+        }
+    }
+    
+    {
+        int num_io_procs = 3;
+        int component_count = TWO_COMPONENTS;
+        int num_procs_per_comp[TWO_COMPONENTS] = {THREE_PROCS, THREE_PROCS};
+        int *my_proc_list[TWO_COMPONENTS];
+        
+        if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp, NULL,
+                                   my_proc_list)))
+            return ret;
+        
+        /* Check results and free resources. */
+        for (int c = 0; c < TWO_COMPONENTS; c++)
+        {
+            for (int p = 0; p < THREE_PROCS; p++)
+                if (my_proc_list[c][p] != 3 + c * THREE_PROCS + p)
+                    return ERR_WRONG;
+            free(my_proc_list[c]);
+        }
+    }
+    
+    {
+        int num_io_procs = 3;
+        int component_count = TWO_COMPONENTS;
+        int num_procs_per_comp[TWO_COMPONENTS] = {THREE_PROCS, THREE_PROCS};
+        int proc_list_1[THREE_PROCS] = {8, 9, 10};
+        int proc_list_2[THREE_PROCS] = {11, 12, 13};
+        int *proc_list[TWO_COMPONENTS] = {proc_list_1, proc_list_2};
+        int *my_proc_list[TWO_COMPONENTS];
+        
+        if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp,
+                                   (int **)proc_list, my_proc_list)))
+            return ret;
+        
+        /* Check results and free resources. */
+        for (int c = 0; c < TWO_COMPONENTS; c++)
+        {
+            for (int p = 0; p < THREE_PROCS; p++)
+                if (my_proc_list[c][p] != proc_list[c][p])
+                    return ERR_WRONG;
+            free(my_proc_list[c]);
+        }
+    }
+    
+    return PIO_NOERR;
+}
+
+/*
+ * Test some list stuff for varlists.
+ *
+ * @author Ed Hartnett
+ */
+int test_varlists()
+{
+    var_desc_t *varlist = NULL;
+    var_desc_t *var_desc;
+    int ret;
+
+    /* Try to delete a non-existing var. */
+    if (delete_var_desc(2, &varlist) != PIO_ENOTVAR)
+        return ERR_WRONG;
+
+    /* Add a var to the list. */
+    if ((ret = add_to_varlist(0, 1, PIO_INT, 4, MPI_INT, 4, &varlist)))
+        return ret;
+
+    /* Find that var_desc_t. */
+    if ((ret = get_var_desc(0, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 0 || !var_desc->rec_var || var_desc->pio_type != PIO_INT ||
+        var_desc->pio_type_size != 4 || var_desc->mpi_type != MPI_INT || var_desc->mpi_type_size != 4)
+        return ERR_WRONG;
+
+    /* Try to delete a non-existing var - should fail. */
+    if (delete_var_desc(2, &varlist) != PIO_ENOTVAR)
+        return ERR_WRONG;
+
+    /* Delete it. */
+    if ((ret = delete_var_desc(0, &varlist)))
+        return ret;
+
+    /* Make sure it is gone. */
+    if (get_var_desc(0, &varlist, &var_desc) != PIO_ENOTVAR)
+        return ERR_WRONG;
+
+    return 0;
+}
+
+/*
+ * Test some more list stuff for varlists.
+ *
+ * @author Ed Hartnett
+ */
+int test_varlists2()
+{
+    var_desc_t *varlist = NULL;
+    var_desc_t *var_desc;
+    int ret;
+
+    /* Add some vars to the list. */
+    if ((ret = add_to_varlist(0, 1, PIO_INT, 4, MPI_INT, 4, &varlist)))
+        return ret;
+    if ((ret = add_to_varlist(1, 0, PIO_DOUBLE, 8, MPI_DOUBLE, 8, &varlist)))
+        return ret;
+    if ((ret = add_to_varlist(2, 1, PIO_BYTE, 1, MPI_CHAR, 1, &varlist)))
+        return ret;
+
+    /* Find those var_desc_t. */
+    if ((ret = get_var_desc(0, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 0 || !var_desc->rec_var || var_desc->pio_type != PIO_INT ||
+        var_desc->pio_type_size != 4 || var_desc->mpi_type != MPI_INT)
+        return ERR_WRONG;
+
+    if ((ret = get_var_desc(1, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 1 || var_desc->rec_var || var_desc->pio_type != PIO_DOUBLE ||
+        var_desc->pio_type_size != 8)
+        return ERR_WRONG;
+
+    if ((ret = get_var_desc(2, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 2 || !var_desc->rec_var || var_desc->pio_type != PIO_BYTE ||
+        var_desc->pio_type_size != 1)
+        return ERR_WRONG;
+
+    /* Try to delete a non-existing var - should fail. */
+    if (delete_var_desc(3, &varlist) != PIO_ENOTVAR)
+        return ERR_WRONG;
+
+    /* Delete one of the vars. */
+    if ((ret = delete_var_desc(0, &varlist)))
+        return ret;
+
+    /* Make sure it is gone. */
+    if (get_var_desc(0, &varlist, &var_desc) != PIO_ENOTVAR)
+        return ERR_WRONG;
+
+    /* Make sure the others are still there. */
+    var_desc = NULL;
+    if ((ret = get_var_desc(1, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 1 || var_desc->rec_var)
+        return ERR_WRONG;
+
+    var_desc = NULL;
+    if ((ret = get_var_desc(2, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 2 || !var_desc->rec_var)
+        return ERR_WRONG;
+
+    /* Delete the other two vars from the varlist. */
+    if ((ret = delete_var_desc(1, &varlist)))
+        return ret;
+    if ((ret = delete_var_desc(2, &varlist)))
+        return ret;
+
+    return 0;
+}
+
+/*
+ * Test even more list stuff for varlists.
+ *
+ * @author Ed Hartnett
+ */
+int test_varlists3()
+{
+    var_desc_t *varlist = NULL;
+    var_desc_t *var_desc;
+    int ret;
+
+    /* Add some vars to the list. */
+    if ((ret = add_to_varlist(0, 1, PIO_INT, 4, MPI_INT, 4, &varlist)))
+        return ret;
+    if ((ret = add_to_varlist(1, 0, PIO_INT, 4, MPI_INT, 4, &varlist)))
+        return ret;
+    if ((ret = add_to_varlist(2, 1, PIO_INT, 4, MPI_INT, 4, &varlist)))
+        return ret;
+    if ((ret = add_to_varlist(3, 0, PIO_INT, 4, MPI_INT, 4, &varlist)))
+        return ret;
+
+    /* Delete one of the vars. */
+    if ((ret = delete_var_desc(1, &varlist)))
+        return ret;
+
+    /* Make sure it is gone. */
+    if (get_var_desc(1, &varlist, &var_desc) != PIO_ENOTVAR)
+        return ERR_WRONG;
+
+    /* Make sure the others are still there. */
+    var_desc = NULL;
+    if ((ret = get_var_desc(0, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 0 || !var_desc->rec_var)
+        return ERR_WRONG;
+
+    var_desc = NULL;
+    if ((ret = get_var_desc(2, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 2 || !var_desc->rec_var)
+        return ERR_WRONG;
+
+    var_desc = NULL;
+    if ((ret = get_var_desc(3, &varlist, &var_desc)))
+        return ret;
+    if (var_desc->varid != 3 || var_desc->rec_var)
+        return ERR_WRONG;
+
+    /* Delete the other vars from the varlist. */
+    if ((ret = delete_var_desc(0, &varlist)))
+        return ret;
+    if ((ret = delete_var_desc(2, &varlist)))
+        return ret;
+    if ((ret = delete_var_desc(3, &varlist)))
+        return ret;
+
+    /* Make sure they are gone. */
+    if (get_var_desc(0, &varlist, &var_desc) != PIO_ENOTVAR)
+        return ERR_WRONG;
+    if (get_var_desc(2, &varlist, &var_desc) != PIO_ENOTVAR)
+        return ERR_WRONG;
+    if (get_var_desc(3, &varlist, &var_desc) != PIO_ENOTVAR)
+        return ERR_WRONG;
+    
     return 0;
 }
 
@@ -245,7 +509,7 @@ int test_ceil2_pair()
         return ERR_WRONG;
     if (pair(4, 2, 2) != 1)
         return ERR_WRONG;
-    
+
     return 0;
 }
 
@@ -374,9 +638,6 @@ int test_CalcStartandCount()
             if ((ret = CalcStartandCount(PIO_DOUBLE, ndims, gdims, num_io_procs, iorank,
                                          start, kount, &numaiotasks)))
                 return ret;
-            if (iorank < numaiotasks)
-                printf("iorank %d start %lld %lld count %lld %lld\n", iorank, start[0],
-                       start[1], kount[0], kount[1]);
 
             if (numaiotasks < 0)
                 return numaiotasks;
@@ -395,7 +656,6 @@ int test_CalcStartandCount()
             converged = true;
         else
         {
-            printf("Failed to converge %ld %ld %d\n", tpsize, pgdims, num_io_procs);
             tpsize = 0;
             num_io_procs--;
         }
@@ -411,7 +671,7 @@ int run_GDCblocksize_tests(MPI_Comm test_comm)
         int arrlen = 1;
         PIO_Offset arr_in[1] = {0};
         PIO_Offset blocksize;
-        
+
         blocksize = GCDblocksize(arrlen, arr_in);
         if (blocksize != 1)
             return ERR_WRONG;
@@ -421,12 +681,12 @@ int run_GDCblocksize_tests(MPI_Comm test_comm)
         int arrlen = 4;
         PIO_Offset arr_in[4] = {0, 1, 2, 3};
         PIO_Offset blocksize;
-        
+
         blocksize = GCDblocksize(arrlen, arr_in);
         if (blocksize != 4)
             return ERR_WRONG;
     }
-    
+
     {
         int arrlen = 4;
         PIO_Offset arr_in[4] = {0, 2, 3, 4};
@@ -436,7 +696,7 @@ int run_GDCblocksize_tests(MPI_Comm test_comm)
         if (blocksize != 1)
             return ERR_WRONG;
     }
-    
+
     {
         int arrlen = 4;
         PIO_Offset arr_in[4] = {0, 1, 3, 4};
@@ -446,7 +706,7 @@ int run_GDCblocksize_tests(MPI_Comm test_comm)
         if (blocksize != 1)
             return ERR_WRONG;
     }
-    
+
     {
         int arrlen = 4;
         PIO_Offset arr_in[4] = {0, 1, 2, 4};
@@ -456,7 +716,7 @@ int run_GDCblocksize_tests(MPI_Comm test_comm)
         if (blocksize != 1)
             return ERR_WRONG;
     }
-    
+
     return 0;
 }
 
@@ -470,7 +730,7 @@ int main(int argc, char **argv)
 
     /* Initialize test. */
     if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, MIN_NTASKS,
-                              TARGET_NTASKS, 3, &test_comm)))
+                              TARGET_NTASKS, -1, &test_comm)))
         ERR(ERR_INIT);
 
     /* Test code runs on TARGET_NTASKS tasks. The left over tasks do
@@ -483,35 +743,39 @@ int main(int argc, char **argv)
         if ((ret = PIOc_Init_Intracomm(test_comm, TARGET_NTASKS, 1, 0, PIO_REARR_BOX, &iosysid)))
             return ret;
 
-        printf("%d running tests for functions in pioc_sc.c\n", my_rank);
         if ((ret = run_sc_tests(test_comm)))
             return ret;
 
-        printf("%d running tests for GCDblocksize()\n", my_rank);
         if ((ret = run_GDCblocksize_tests(test_comm)))
             return ret;
 
-        printf("%d running spmd test code\n", my_rank);
         if ((ret = run_spmd_tests(test_comm)))
             return ret;
-        
-        printf("%d running CalcStartandCount test code\n", my_rank);
+
         if ((ret = test_CalcStartandCount()))
             return ret;
 
-        printf("%d running list tests\n", my_rank);
         if ((ret = test_lists()))
             return ret;
 
-        printf("%d running ceil2/pair tests\n", my_rank);
+        if ((ret = test_determine_procs()))
+            return ret;
+
+        if ((ret = test_varlists()))
+            return ret;
+
+        if ((ret = test_varlists2()))
+            return ret;
+
+        if ((ret = test_varlists3()))
+            return ret;
+
         if ((ret = test_ceil2_pair()))
             return ret;
 
-        printf("%d running find_mpi_type tests\n", my_rank);
         if ((ret = test_find_mpi_type()))
             return ret;
 
-        printf("%d running misc tests\n", my_rank);
         if ((ret = test_misc()))
             return ret;
 
@@ -522,7 +786,6 @@ int main(int argc, char **argv)
     } /* endif my_rank < TARGET_NTASKS */
 
     /* Finalize the MPI library. */
-    printf("%d %s Finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
 

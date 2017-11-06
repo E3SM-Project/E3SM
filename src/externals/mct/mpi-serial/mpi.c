@@ -323,7 +323,21 @@ int MPI_Get_library_version(char *version, int *resultlen)
   return(MPI_SUCCESS);
 }
 
+/**********/
+void FC_FUNC( mpi_get_version, MPI_GET_VERSION )(int *mpi_vers, int *mpi_subvers, int *ierror)
+{
+  MPI_Get_Version(mpi_vers, mpi_subvers);
 
+  *ierror=MPI_SUCCESS;
+}
+
+int MPI_Get_Version(int *mpi_vers, int *mpi_subvers)
+{
+  *mpi_vers = 1;
+  *mpi_subvers = 0;
+
+  return (MPI_SUCCESS);
+}
 
 /**********/
 

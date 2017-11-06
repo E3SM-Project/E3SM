@@ -21,6 +21,7 @@
 \author Jim Edwards
 \author John M. Dennis
 \author Mariana Vertenstein
+\author Edward Hartnett
 
 The Parallel I/O (PIO) library has been developed over several years
 to improve the ability of component models of the Community Earth

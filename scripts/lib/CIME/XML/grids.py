@@ -601,7 +601,7 @@ class Grids(GenericXML):
                         domain_list.append({'domain':child.tag, 'text':child.text})
 
             grid_info.update({'domains': domain_list})
-                        
+
             # add mapping files
             grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \
                           ("rof_grid", component_grids[3]), ("glc_grid", component_grids[5]), ("wav_grid", component_grids[6]) ]
@@ -682,16 +682,16 @@ class Grids(GenericXML):
             gridnames = []
             for grid_node in grid_nodes:
                 gridnames.append(grid_node.text)
-                grids += grid_node.get("name") + ":" + grid_node.text + "  " 
+                grids += grid_node.get("name") + ":" + grid_node.text + "  "
             grids = "       non-default grids are: %s" %grids
 
             mask = ""
             mask_nodes = self.get_nodes("mask", root=model_grid_node)
             for mask_node in mask_nodes:
                 mask += "\n       mask is: %s" %(mask_node.text)
-            
-            grids_dict[alias] = {'aliases':aliases, 
-                                 'grids':grids, 
+
+            grids_dict[alias] = {'aliases':aliases,
+                                 'grids':grids,
                                  'mask':mask }
 
             gridnames = set(gridnames)
@@ -712,4 +712,3 @@ class Grids(GenericXML):
             (default_comp_grids, all_grids) = self._get_all_values_v2()
 
         return help_text, default_comp_grids, all_grids
-

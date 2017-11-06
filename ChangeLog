@@ -1,6 +1,1503 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-25-2017
+Tag: cime5.4.0-alpha.06
+Answer Changes: None
+Tests: scripts_regression_tests.py
+       cesm F cases
+Dependencies:
+
+Brief Summary:
+    - Update mpt and pnetcdf on cheyenne.
+    - Fix several data component issues.
+    - Resolve compset issue.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+aac772f Merge pull request #1992 from jedwards4b/cheyenne_mpt_update
+4e7bd64 Merge pull request #1987 from ESMCI/mvertens/fix_datacomps
+dd2734a Merge pull request #1981 from jedwards4b/resolve_compset_issue
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_files.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/XML/archive.py
+M       scripts/lib/CIME/XML/entry_id.py
+M       scripts/lib/CIME/XML/files.py
+M       scripts/lib/CIME/case_st_archive.py
+M       src/build_scripts/buildlib.csm_share
+M       src/components/data_comps/datm/cime_config/buildnml
+M       src/components/data_comps/dice/cime_config/buildnml
+M       src/components/data_comps/dlnd/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/docn/docn_comp_mod.F90
+M       src/components/data_comps/drof/cime_config/buildnml
+D       src/components/data_comps/dshare/shr_dmodel_mod.F90
+D       src/components/data_comps/dshare/shr_strdata_mod.F90
+D       src/components/data_comps/dshare/shr_stream_mod.F90
+D       src/components/data_comps/dshare/shr_tInterp_mod.F90
+M       src/components/data_comps/dwav/cime_config/buildnml
+M       src/drivers/mct/cime_config/buildnml
+M       src/drivers/mct/cime_config/config_archive.xml
+A       src/share/streams/shr_dmodel_mod.F90
+A       src/share/streams/shr_strdata_mod.F90
+A       src/share/streams/shr_stream_mod.F90
+A       src/share/streams/shr_tInterp_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-25-2017
+Tag: cime5.4.0-alpha.05
+Answer Changes: None
+Tests: scripts_regression_tests
+       ne16_ne16_mg17 alias (compset QPC6)
+       ERS.f09_g17.B1850.cheyenne_intel.allactive-defaultio
+Dependencies:
+
+Brief Summary:
+    - Add mapping files for T42_T42_mg17.
+    - Remove empty proxy tag from anlworkstation.
+    - Updates for testreporter and remove AWAV from testlist.
+    - Bring in E3SM cime changes for past 3 months.
+    - Adjustments for new CAM-SE dycore.
+    - Make sure user changes to wallclock/queue are not lost.
+    - Minor cleanup of PEM test.
+    - Add COMP_ROOT_DIR_ variables so that a component can be moved with the
+      change of a single cime variable.
+    - Set correct domain files for ne16np4.
+    - Add LBL Machines.
+    - Data model documentation edits.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+299f1ab Merge pull request #1991 from ESMCI/fischer/T42_T42_mg17
+a8cd748 Merge pull request #1989 from ESMCI/dqwu/anlworkstation-remove-proxy-tag
+de4df65 Merge pull request #1984 from ESMCI/fischer/TestReporter
+0c1b306 Merge pull request #1970 from ESMCI/jgfouca/branch-for-acme-split-10-17-2017-pr
+4f201fe Merge pull request #1979 from gold2718/seUpdates
+3d509a2 Merge pull request #1978 from ESMCI/jgfouca/fix_custom_walltime
+14d71e9 Merge pull request #1976 from billsacks/pem_cleanup
+0e5cee1 Merge pull request #1968 from jedwards4b/add_comp_root_dir_vars
+a1a2c14 Merge pull request #1973 from gold2718/seDomainFiles
+48c6fa8 Merge pull request #1956 from ekluzek/addlblmachs
+a915609 Merge pull request #1969 from billsacks/data_model_edits
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_compsets.xml
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/config_archive.xml
+M	config/acme/config_files.xml
+M	config/acme/config_grids.xml
+D	config/acme/machines/Depends.corip1
+M	config/acme/machines/Depends.intel
+D	config/acme/machines/Depends.intel14
+D	config/acme/machines/Depends.intelmic
+D	config/acme/machines/Depends.intelmic14
+A	config/acme/machines/Depends.summitdev.ibm
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/template.st_archive
+A	config/acme/testmods_dirs/allactive/clm/bgcinterface/user_nl_clm
+A	config/acme/testmods_dirs/allactive/clm/rd/user_nl_clm
+A	config/acme/testmods_dirs/allactive/clm/vst/user_nl_clm
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.st_archive
+M	config/config_tests.xml
+M	config/xml_schemas/config_compilers_v2.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	config/xml_schemas/env_mach_specific.xsd
+M	doc/source/data_models/data-atm.rst
+M	doc/source/data_models/data-lnd.rst
+M	doc/source/data_models/data-model-science.rst
+M	doc/source/data_models/data-ocean.rst
+M	doc/source/data_models/data-river.rst
+M	doc/source/data_models/data-seaice.rst
+M	doc/source/data_models/data-wave.rst
+M	doc/source/data_models/design-details.rst
+M	doc/source/data_models/input-streams.rst
+M	doc/source/data_models/introduction.rst
+A	scripts/Tools/acme_cime_split
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/preview_run
+M	scripts/Tools/testreporter.py
+M	scripts/Tools/xmlchange
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/pem.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/pes.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+A	scripts/tests/run_acme_ctest/CMakeLists.txt
+A	scripts/tests/run_acme_ctest/CTestConfig.cmake
+A	scripts/tests/run_acme_ctest/runAcmeTest_template.sh
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_diag_mct.F90
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite.3
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite_Element.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/share/timing/GPTLget_memusage.c
+M	src/share/timing/GPTLprint_memusage.c
+M	src/share/util/shr_flux_mod.F90
+M	src/share/util/shr_mem_mod.F90
+M	src/share/util/shr_orb_mod.F90
+M	src/share/util/shr_reprosum_mod.F90
+M	utils/perl5lib/compilers_translation_tool.pl
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-16-2017
+Tag: cime5.4.0-alpha.04
+Answer Changes: None
+Tests: scripts_regression_tests.py code_checker
+Dependencies:
+
+Brief Summary:
+    - Cleanup of the compvar implementation.
+    - Refactor CPLHIST mode and add DATM CPLHIST topo capability.
+    - Fix py3 for erio test.
+    - Fix some issues found in type conversion.
+    - Port to python3 while maintaining compatibility with python 2.7
+    - Remove developers table on README.md.
+    - Load balancing tool mods.
+    - Add auto-normalization to case_diff.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+af429bd Merge pull request #1965 from jedwards4b/iscompvar_cleanup
+16adad1 Merge pull request #1950 from ESMCI/mvertens/cplhist_topo
+02cc2fd Fix py3 for erio test
+116e6e7 Merge pull request #1962 from jedwards4b/convert_to_string_fix
+c5cf2af PR #1949 jedwards4b/py3_port_branch
+c6cf37e Merge pull request #1926 from ESMCI/rljacob/update-readme
+128625f Merge pull request #1942 from jedwards4b/load-balancing-tool-mods
+6f43f73 Merge pull request #1958 from ESMCI/jgfouca/case_diff_auto_normalize
+
+
+Modified files: git diff --name-status [previous_tag]
+M	CMakeLists.txt
+M	LICENSE.TXT
+D	README
+M	README.md
+D	README.unit_testing
+M	config/acme/allactive/config_compsets.xml
+D	config/acme/allactive/config_compsets.xml.cime2
+D	config/acme/allactive/config_pes.xml
+D	config/acme/allactive/config_pes.xml.cime2
+M	config/acme/allactive/config_pesall.xml
+D	config/acme/allactive/testmods_dirs/cam/outfrq9s/shell_commands
+D	config/acme/allactive/testmods_dirs/force_netcdf_pio/shell_commands
+M	config/acme/config_archive.xml
+M	config/acme/config_files.xml
+M	config/acme/config_grids.xml
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_batch.xsd
+M	config/acme/machines/config_compilers.xml
+D	config/acme/machines/config_lt_archive.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+A	config/acme/machines/syslog.anvil
+M	config/acme/machines/syslog.cetus
+M	config/acme/machines/syslog.cori-haswell
+M	config/acme/machines/syslog.cori-knl
+M	config/acme/machines/syslog.edison
+M	config/acme/machines/syslog.mira
+M	config/acme/machines/syslog.titan
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+D	config/acme/machines/template.lt_archive
+M	config/acme/machines/template.st_archive
+M	config/acme/machines/userdefined_laptop_template/config_compilers.xml
+M	config/acme/machines/userdefined_laptop_template/config_machines.xml
+A	config/acme/testmods_dirs/allactive/cam/cosplite/user_nl_cam
+A	config/acme/testmods_dirs/allactive/cam/cosplite/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/cam/cosplite_nhtfrq5/user_nl_cam
+A	config/acme/testmods_dirs/allactive/cam/cosplite_nhtfrq5/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/cam/outfrq9s/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/cam/rtm_null/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/clm/betr/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/clm/eca/user_nl_clm
+A	config/acme/testmods_dirs/allactive/clm/fates/user_nl_clm
+A	config/acme/testmods_dirs/allactive/force_netcdf_pio/shell_commands
+A	config/acme/testmods_dirs/allactive/force_netcdf_pio/xmlchange_cmnds
+M	config/cesm/config_archive.xml
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+D	config/cesm/machines/Depends.goldbach
+M	config/cesm/machines/Makefile
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+D	config/cesm/machines/config_lt_archive.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+D	config/cesm/machines/template.lt_archive
+M	config/cesm/machines/template.st_archive
+M	config/cesm/machines/userdefined_laptop_template/README.md
+M	config/cesm/machines/userdefined_laptop_template/config_compilers.xml
+M	config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M	config/config_headers.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/config_compsets.xsd
+M	config/xml_schemas/config_grids_v2.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	config/xml_schemas/config_pes.xsd
+M	config/xml_schemas/entry_id_base.xsd
+A	config/xml_schemas/entry_id_base_version3.xsd
+A	config/xml_schemas/entry_id_version3.xsd
+A	config/xml_schemas/env_batch.xsd
+A	config/xml_schemas/env_mach_pes.xsd
+A	config/xml_schemas/env_mach_specific.xsd
+A	doc/.gitignore
+A	doc/Makefile
+A	doc/README
+A	doc/source/README
+A	doc/source/Tools_user/index.rst.template
+A	doc/source/_static
+A	doc/source/build_cpl/adding-components.rst
+A	doc/source/build_cpl/index.rst
+A	doc/source/build_cpl/introduction.rst
+A	doc/source/conf.py
+A	doc/source/data_models/data-atm.rst
+A	doc/source/data_models/data-lnd.rst
+A	doc/source/data_models/data-model-science.rst
+A	doc/source/data_models/data-ocean.rst
+A	doc/source/data_models/data-river.rst
+A	doc/source/data_models/data-seaice.rst
+A	doc/source/data_models/data-wave.rst
+A	doc/source/data_models/design-details.rst
+A	doc/source/data_models/index.rst
+A	doc/source/data_models/input-namelists.rst
+A	doc/source/data_models/input-streams.rst
+A	doc/source/data_models/introduction.rst
+A	doc/source/driver_cpl/bit-for-bit-flag.rst
+A	doc/source/driver_cpl/budgets.rst
+A	doc/source/driver_cpl/cplug-02.1-figx1.jpg
+A	doc/source/driver_cpl/design.rst
+A	doc/source/driver_cpl/driver_threading_control.rst
+A	doc/source/driver_cpl/grids.rst
+A	doc/source/driver_cpl/history-and-restarts.rst
+A	doc/source/driver_cpl/implementation.rst
+A	doc/source/driver_cpl/index.rst
+A	doc/source/driver_cpl/initialization-and-restart.rst
+A	doc/source/driver_cpl/introduction.rst
+A	doc/source/driver_cpl/multi-instance.rst
+A	doc/source/driver_cpl/namelist-overview.rst
+A	doc/source/driver_cpl/time-management.rst
+A	doc/source/glossary/index.rst
+A	doc/source/index.rst
+A	doc/source/misc_tools/index.rst
+A	doc/source/misc_tools/load-balancing-tool.rst
+A	doc/source/users_guide/adding-cases.rst
+A	doc/source/users_guide/building-a-case.rst
+A	doc/source/users_guide/case-basics.rst
+A	doc/source/users_guide/cime-internals.rst
+A	doc/source/users_guide/cloning-a-case.rst
+A	doc/source/users_guide/create-a-case.rst
+A	doc/source/users_guide/customizing-a-case.rst
+A	doc/source/users_guide/index.rst
+A	doc/source/users_guide/introduction-and-overview.rst
+A	doc/source/users_guide/multi-instance.rst
+A	doc/source/users_guide/optimizing-processor-layout.rst
+A	doc/source/users_guide/porting-cime.rst
+A	doc/source/users_guide/running-a-case.rst
+A	doc/source/users_guide/setting-up-a-case.rst
+A	doc/source/users_guide/testing.rst
+A	doc/source/users_guide/troubleshooting.rst
+A	doc/source/users_guide/unit_testing.rst
+A	doc/source/users_guide/use_cases/basics-a-basic-example.rst
+A	doc/source/users_guide/use_cases/basics-mpi-example.rst
+A	doc/source/users_guide/use_cases/basics-setting-up-a-branch-or-hybrid-run.rst
+A	doc/source/users_guide/use_cases/use-cases.rst
+A	doc/source/what_cime/index.rst
+A	doc/source/xml_files/acme.rst
+A	doc/source/xml_files/atmosphere.rst
+A	doc/source/xml_files/cesm.rst
+A	doc/source/xml_files/common.rst
+A	doc/source/xml_files/components.rst
+A	doc/source/xml_files/drivers.rst
+A	doc/source/xml_files/esp.rst
+A	doc/source/xml_files/index.rst
+A	doc/source/xml_files/land.rst
+A	doc/source/xml_files/landice.rst
+A	doc/source/xml_files/ocean.rst
+A	doc/source/xml_files/river.rst
+A	doc/source/xml_files/seaice.rst
+A	doc/source/xml_files/wave.rst
+A	doc/tools_autodoc.cfg
+A	doc/tools_autodoc.py
+A	index.html
+D	scripts/Tools/README.post_process
+M	scripts/Tools/acme_check_env
+D	scripts/Tools/archive_metadata.sh
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+A	scripts/Tools/case.qstatus
+M	scripts/Tools/case.setup
+M	scripts/Tools/case.submit
+M	scripts/Tools/case_diff
+M	scripts/Tools/check_case
+D	scripts/Tools/check_exactrestart.pl
+M	scripts/Tools/check_input_data
+M	scripts/Tools/check_lockedfiles
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/cimeteststatus
+M	scripts/Tools/code_checker
+M	scripts/Tools/compare_namelists
+M	scripts/Tools/compare_test_results
+M	scripts/Tools/component_compare_baseline
+M	scripts/Tools/component_compare_copy
+M	scripts/Tools/component_compare_test
+M	scripts/Tools/component_generate_baseline
+D	scripts/Tools/create_train
+D	scripts/Tools/cron_script
+A	scripts/Tools/cs.status
+D	scripts/Tools/cs_status
+M	scripts/Tools/getTiming
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/jenkins_script
+M	scripts/Tools/list_acme_tests
+D	scripts/Tools/load.awk
+D	scripts/Tools/lt_archive.sh
+D	scripts/Tools/mdiag_reduce.csh
+D	scripts/Tools/mdiag_reduce.pl
+M	scripts/Tools/normalize_cases
+M	scripts/Tools/pelayout
+M	scripts/Tools/pointclm/makepointdata.py
+M	scripts/Tools/pointclm/post_process.py
+M	scripts/Tools/pointclm/site_fullrun.py
+M	scripts/Tools/preview_namelists
+A	scripts/Tools/preview_run
+M	scripts/Tools/save_provenance
+M	scripts/Tools/simple_compare
+A	scripts/Tools/testreporter.py
+M	scripts/Tools/update_acme_tests
+M	scripts/Tools/wait_for_tests
+M	scripts/Tools/xmlchange
+M	scripts/Tools/xmlconvertors/config_pes_converter.py
+M	scripts/Tools/xmlconvertors/grid_xml_converter.py
+M	scripts/Tools/xmlquery
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/create_test
+A	scripts/fortran_unit_testing/Examples/circle_area/src/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/circle_area/src/circle.F90
+A	scripts/fortran_unit_testing/Examples/circle_area/tests/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/circle_area/tests/CTest/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/circle_area/tests/CTest/test_driver.F90
+A	scripts/fortran_unit_testing/Examples/circle_area/tests/pFUnit/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/circle_area/tests/pFUnit/test_circle.pf
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/src/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/src/interpolate_1d.F90
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/tests/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/tests/CTest/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/tests/CTest/test_driver.F90
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/tests/pFUnit/CMakeLists.txt
+A	scripts/fortran_unit_testing/Examples/interpolate_1d/tests/pFUnit/test_interpolate_point.pf
+A	scripts/fortran_unit_testing/Examples/test_list.xml
+A	scripts/fortran_unit_testing/README
+A	scripts/fortran_unit_testing/python/.gitignore
+A	scripts/fortran_unit_testing/python/printer.py
+A	scripts/fortran_unit_testing/python/test_xml_test_list.py
+A	scripts/fortran_unit_testing/python/xml_test_list.py
+A	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/cmakemacroswriter.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/erio.py
+M	scripts/lib/CIME/SystemTests/erp.py
+M	scripts/lib/CIME/SystemTests/err.py
+A	scripts/lib/CIME/SystemTests/erri.py
+M	scripts/lib/CIME/SystemTests/ers.py
+A	scripts/lib/CIME/SystemTests/ers2.py
+M	scripts/lib/CIME/SystemTests/homme.py
+A	scripts/lib/CIME/SystemTests/irt.py
+D	scripts/lib/CIME/SystemTests/lii.py
+A	scripts/lib/CIME/SystemTests/mcc.py
+M	scripts/lib/CIME/SystemTests/nck.py
+M	scripts/lib/CIME/SystemTests/ncr.py
+A	scripts/lib/CIME/SystemTests/nodefail.py
+M	scripts/lib/CIME/SystemTests/pea.py
+M	scripts/lib/CIME/SystemTests/pem.py
+M	scripts/lib/CIME/SystemTests/pet.py
+M	scripts/lib/CIME/SystemTests/pre.py
+A	scripts/lib/CIME/SystemTests/restart_tests.py
+M	scripts/lib/CIME/SystemTests/seq.py
+D	scripts/lib/CIME/SystemTests/ssp.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/archive.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/component.py
+M	scripts/lib/CIME/XML/compsets.py
+M	scripts/lib/CIME/XML/entry_id.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/env_run.py
+M	scripts/lib/CIME/XML/env_test.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+D	scripts/lib/CIME/XML/lt_archive.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/XML/namelist_definition.py
+M	scripts/lib/CIME/XML/pes.py
+A	scripts/lib/CIME/XML/test_reporter.py
+M	scripts/lib/CIME/XML/testlist.py
+M	scripts/lib/CIME/XML/tests.py
+M	scripts/lib/CIME/XML/testspec.py
+A	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case.py
+A	scripts/lib/CIME/case_clone.py
+M	scripts/lib/CIME/case_cmpgen_namelists.py
+D	scripts/lib/CIME/case_lt_archive.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/case_test.py
+M	scripts/lib/CIME/check_input_data.py
+M	scripts/lib/CIME/check_lockedfiles.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/compare_test_results.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/preview_namelists.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/simple_compare.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/test_utils.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two_link_to_case2_output.py
+M	scripts/lib/CIME/tests/SystemTests/test_utils/test_user_nl_utils.py
+M	scripts/lib/CIME/tests/case_fake.py
+A	scripts/lib/CIME/tests/test_user_mod_support.py
+M	scripts/lib/CIME/user_mod_support.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/cs.status.template
+M	scripts/lib/jenkins_generic_job.py
+A	scripts/lib/six.py
+A	scripts/lib/testreporter.template
+M	scripts/lib/update_acme_tests.py
+D	scripts/manage_case
+M	scripts/manage_pes
+A	scripts/query_config
+M	scripts/query_testlists
+M	scripts/tests/CMakeLists.txt
+M	scripts/tests/CTestConfig.cmake
+M	scripts/tests/list_tests
+M	scripts/tests/scripts_regression_tests.py
+A	scripts/tests/user_mods_test3/shell_commands
+A	src/CMake/.gitignore
+A	src/CMake/CESM_utils.cmake
+A	src/CMake/CIME_initial_setup.cmake
+A	src/CMake/CIME_utils.cmake
+A	src/CMake/ChangeLog
+A	src/CMake/Compilers.cmake
+A	src/CMake/FindpFUnit.cmake
+A	src/CMake/LICENSE
+A	src/CMake/README.md
+A	src/CMake/Sourcelist_utils.cmake
+A	src/CMake/TryCSizeOf.f90
+A	src/CMake/TryMPIIO.f90
+A	src/CMake/TryMPIMod.f90
+A	src/CMake/TryMPISERIAL.f90
+A	src/CMake/TryPnetcdf_inc.f90
+A	src/CMake/TryPnetcdf_mod.f90
+A	src/CMake/genf90_utils.cmake
+A	src/CMake/mpiexec.cmake
+A	src/CMake/pFUnit_utils.cmake
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+A	src/build_scripts/buildlib.internal_components
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+M	src/build_scripts/buildlib.pio
+D	src/components/data_comps/datm/atm_comp_mct.F90
+T	src/components/data_comps/datm/cime_config/buildlib
+M	src/components/data_comps/datm/cime_config/buildnml
+M	src/components/data_comps/datm/cime_config/config_archive.xml
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/datm/datm_shr_mod.F90
+A	src/components/data_comps/datm/mct/atm_comp_mct.F90
+T	src/components/data_comps/desp/cime_config/buildlib
+M	src/components/data_comps/desp/cime_config/buildnml
+M	src/components/data_comps/desp/cime_config/config_component.xml
+M	src/components/data_comps/desp/cime_config/namelist_definition_desp.xml
+M	src/components/data_comps/desp/desp_comp_mod.F90
+D	src/components/data_comps/desp/esp_comp_mct.F90
+M	src/components/data_comps/desp/esp_utils.F90
+A	src/components/data_comps/desp/mct/esp_comp_mct.F90
+T	src/components/data_comps/dice/cime_config/buildlib
+M	src/components/data_comps/dice/cime_config/buildnml
+M	src/components/data_comps/dice/cime_config/config_archive.xml
+M	src/components/data_comps/dice/cime_config/config_component.xml
+M	src/components/data_comps/dice/cime_config/namelist_definition_dice.xml
+M	src/components/data_comps/dice/dice_comp_mod.F90
+A	src/components/data_comps/dice/dice_shr_mod.F90
+D	src/components/data_comps/dice/ice_comp_mct.F90
+A	src/components/data_comps/dice/mct/ice_comp_mct.F90
+T	src/components/data_comps/dlnd/cime_config/buildlib
+M	src/components/data_comps/dlnd/cime_config/buildnml
+M	src/components/data_comps/dlnd/cime_config/config_archive.xml
+M	src/components/data_comps/dlnd/cime_config/config_component.xml
+M	src/components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml
+M	src/components/data_comps/dlnd/dlnd_comp_mod.F90
+A	src/components/data_comps/dlnd/dlnd_shr_mod.F90
+D	src/components/data_comps/dlnd/lnd_comp_mct.F90
+A	src/components/data_comps/dlnd/mct/lnd_comp_mct.F90
+T	src/components/data_comps/docn/cime_config/buildlib
+M	src/components/data_comps/docn/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/config_archive.xml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M	src/components/data_comps/docn/docn_comp_mod.F90
+A	src/components/data_comps/docn/docn_shr_mod.F90
+A	src/components/data_comps/docn/mct/ocn_comp_mct.F90
+D	src/components/data_comps/docn/ocn_comp_mct.F90
+T	src/components/data_comps/drof/cime_config/buildlib
+M	src/components/data_comps/drof/cime_config/buildnml
+M	src/components/data_comps/drof/cime_config/config_archive.xml
+M	src/components/data_comps/drof/cime_config/config_component.xml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/components/data_comps/drof/drof_comp_mod.F90
+A	src/components/data_comps/drof/drof_shr_mod.F90
+A	src/components/data_comps/drof/mct/rof_comp_mct.F90
+D	src/components/data_comps/drof/rof_comp_mct.F90
+A	src/components/data_comps/dshare/shr_dmodel_mod.F90
+A	src/components/data_comps/dshare/shr_strdata_mod.F90
+A	src/components/data_comps/dshare/shr_stream_mod.F90
+A	src/components/data_comps/dshare/shr_tInterp_mod.F90
+T	src/components/data_comps/dwav/cime_config/buildlib
+M	src/components/data_comps/dwav/cime_config/buildnml
+M	src/components/data_comps/dwav/cime_config/config_archive.xml
+M	src/components/data_comps/dwav/cime_config/config_component.xml
+M	src/components/data_comps/dwav/cime_config/namelist_definition_dwav.xml
+M	src/components/data_comps/dwav/dwav_comp_mod.F90
+A	src/components/data_comps/dwav/dwav_shr_mod.F90
+A	src/components/data_comps/dwav/mct/wav_comp_mct.F90
+D	src/components/data_comps/dwav/wav_comp_mct.F90
+T	src/components/stub_comps/satm/cime_config/buildlib
+M	src/components/stub_comps/satm/cime_config/buildnml
+M	src/components/stub_comps/satm/cime_config/config_component.xml
+T	src/components/stub_comps/sesp/cime_config/buildlib
+M	src/components/stub_comps/sesp/cime_config/buildnml
+M	src/components/stub_comps/sesp/cime_config/config_component.xml
+T	src/components/stub_comps/sglc/cime_config/buildlib
+M	src/components/stub_comps/sglc/cime_config/buildnml
+M	src/components/stub_comps/sglc/cime_config/config_component.xml
+T	src/components/stub_comps/sice/cime_config/buildlib
+M	src/components/stub_comps/sice/cime_config/buildnml
+M	src/components/stub_comps/sice/cime_config/config_component.xml
+T	src/components/stub_comps/slnd/cime_config/buildlib
+M	src/components/stub_comps/slnd/cime_config/buildnml
+M	src/components/stub_comps/slnd/cime_config/config_component.xml
+T	src/components/stub_comps/socn/cime_config/buildlib
+M	src/components/stub_comps/socn/cime_config/buildnml
+M	src/components/stub_comps/socn/cime_config/config_component.xml
+T	src/components/stub_comps/srof/cime_config/buildlib
+M	src/components/stub_comps/srof/cime_config/buildnml
+M	src/components/stub_comps/srof/cime_config/config_component.xml
+T	src/components/stub_comps/swav/cime_config/buildlib
+M	src/components/stub_comps/swav/cime_config/buildnml
+M	src/components/stub_comps/swav/cime_config/config_component.xml
+T	src/components/xcpl_comps/xatm/cime_config/buildlib
+M	src/components/xcpl_comps/xatm/cime_config/config_component.xml
+T	src/components/xcpl_comps/xglc/cime_config/buildlib
+M	src/components/xcpl_comps/xglc/cime_config/config_component.xml
+T	src/components/xcpl_comps/xice/cime_config/buildlib
+M	src/components/xcpl_comps/xice/cime_config/config_component.xml
+T	src/components/xcpl_comps/xlnd/cime_config/buildlib
+M	src/components/xcpl_comps/xlnd/cime_config/config_component.xml
+T	src/components/xcpl_comps/xocn/cime_config/buildlib
+M	src/components/xcpl_comps/xocn/cime_config/config_component.xml
+T	src/components/xcpl_comps/xrof/cime_config/buildlib
+M	src/components/xcpl_comps/xrof/cime_config/config_component.xml
+M	src/components/xcpl_comps/xshare/dead_mct_mod.F90
+M	src/components/xcpl_comps/xshare/dead_mod.F90
+T	src/components/xcpl_comps/xwav/cime_config/buildlib
+M	src/components/xcpl_comps/xwav/cime_config/config_component.xml
+D	src/drivers/mct/bld/namelist_files/namelist_defaults_drv.xml
+D	src/drivers/mct/bld/namelist_files/namelist_definition_drv.xml
+D	src/drivers/mct/bld/namelist_files/namelist_definition_drv_flds.xml
+D	src/drivers/mct/bld/namelist_files/namelist_definition_modio.xml
+D	src/drivers/mct/bld/testdir/Buildconf/camconf/drv_flds_in
+D	src/drivers/mct/bld/testdir/Buildconf/clmconf/drv_flds_in
+D	src/drivers/mct/bld/testdir/env_build.xml
+D	src/drivers/mct/bld/testdir/env_case.xml
+D	src/drivers/mct/bld/testdir/env_mach_pes.xml
+D	src/drivers/mct/bld/testdir/env_run.xml
+D	src/drivers/mct/bld/testdir/runtest
+D	src/drivers/mct/bld/testdir/user_nl_cpl
+M	src/drivers/mct/cime_config/buildexe
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_compsets.xml
+M	src/drivers/mct/cime_config/config_pes.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+A	src/drivers/mct/cime_config/namelist_definition_drv_flds.xml
+M	src/drivers/mct/cime_config/namelist_definition_modelio.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/default/shell_commands
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/som/shell_commands
+D	src/drivers/mct/doc/bookinfo.xml
+D	src/drivers/mct/doc/chap1.xml
+D	src/drivers/mct/doc/chap2.xml
+D	src/drivers/mct/doc/figx1.jpg
+D	src/drivers/mct/doc/namelist.xml
+D	src/drivers/mct/doc/rundocbook.csh
+D	src/drivers/mct/doc/stylesheet.dsl
+D	src/drivers/mct/doc/ug.xml
+M	src/drivers/mct/main/CMakeLists.txt
+D	src/drivers/mct/main/cesm_comp_mod.F90
+D	src/drivers/mct/main/cesm_driver.F90
+A	src/drivers/mct/main/cime_comp_mod.F90
+A	src/drivers/mct/main/cime_driver.F90
+M	src/drivers/mct/main/component_mod.F90
+M	src/drivers/mct/main/component_type_mod.F90
+M	src/drivers/mct/main/map_glc2lnd_mod.F90
+M	src/drivers/mct/main/map_lnd2glc_mod.F90
+M	src/drivers/mct/main/mrg_mod.F90
+M	src/drivers/mct/main/prep_aoflux_mod.F90
+M	src/drivers/mct/main/prep_atm_mod.F90
+M	src/drivers/mct/main/prep_glc_mod.F90
+M	src/drivers/mct/main/prep_ice_mod.F90
+M	src/drivers/mct/main/prep_lnd_mod.F90
+M	src/drivers/mct/main/prep_ocn_mod.F90
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/main/seq_domain_mct.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_io_mod.F90
+M	src/drivers/mct/main/seq_rest_mod.F90
+D	src/drivers/mct/main/vertical_gradient_calculator_2nd_order.F90
+D	src/drivers/mct/main/vertical_gradient_calculator_base.F90
+D	src/drivers/mct/main/vertical_gradient_calculator_factory.F90
+M	src/drivers/mct/shr/CMakeLists.txt
+M	src/drivers/mct/shr/glc_elevclass_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_drydep_mod.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+A	src/drivers/mct/shr/shr_ndep_mod.F90
+M	src/drivers/mct/unit_test/CMakeLists.txt
+A	src/drivers/mct/unit_test/check_fields_test/CMakeLists.txt
+A	src/drivers/mct/unit_test/check_fields_test/test_check_fields.pf
+M	src/drivers/mct/unit_test/glc_elevclass_test/test_glc_elevclass.pf
+D	src/drivers/mct/unit_test/map_lnd2glc_test/CMakeLists.txt
+D	src/drivers/mct/unit_test/map_lnd2glc_test/test_map_lnd2glc.pf
+M	src/drivers/mct/unit_test/stubs/CMakeLists.txt
+A	src/drivers/mct/unit_test/stubs/seq_timemgr_mod.F90
+D	src/drivers/mct/unit_test/stubs/vertical_gradient_calculator_constant.F90
+M	src/drivers/mct/unit_test/utils/create_mapper_mod.F90
+M	src/drivers/mct/unit_test/utils/mct_wrapper_mod.F90
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/CMakeLists.txt
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/README
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/gradient_example.txt
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/plot_gradient
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/test_vertical_gradient_calculator_2nd_order.pf
+D	src/drivers/mct/unit_test/vertical_gradient_calculator_test/test_vertical_gradient_calculator_factory.pf
+D	src/externals/CMake/.gitignore
+D	src/externals/CMake/CESM_utils.cmake
+D	src/externals/CMake/CIME_utils.cmake
+D	src/externals/CMake/ChangeLog
+D	src/externals/CMake/Compilers.cmake
+D	src/externals/CMake/FindpFUnit.cmake
+D	src/externals/CMake/LICENSE
+D	src/externals/CMake/README.md
+D	src/externals/CMake/Sourcelist_utils.cmake
+D	src/externals/CMake/TryCSizeOf.f90
+D	src/externals/CMake/TryMPIIO.f90
+D	src/externals/CMake/TryMPIMod.f90
+D	src/externals/CMake/TryMPISERIAL.f90
+D	src/externals/CMake/TryPnetcdf_inc.f90
+D	src/externals/CMake/TryPnetcdf_mod.f90
+D	src/externals/CMake/genf90_utils.cmake
+D	src/externals/CMake/mpiexec.cmake
+D	src/externals/CMake/pFUnit_utils.cmake
+M	src/externals/mct/mct/Makefile
+M	src/externals/mct/mct/m_AttrVect.F90
+M	src/externals/mct/mct/m_GlobalSegMap.F90
+M	src/externals/mct/mct/m_MCTWorld.F90
+M	src/externals/mct/mct/m_MatAttrVectMul.F90
+M	src/externals/mct/mct/m_Rearranger.F90
+M	src/externals/mct/mct/m_Router.F90
+A	src/externals/mct/mct/m_SPMDutils.F90
+M	src/externals/mct/mpeu/m_FcComms.F90
+M	src/externals/mct/mpi-serial/Makefile
+D	src/externals/mct/mpi-serial/NOTES
+M	src/externals/mct/mpi-serial/README
+M	src/externals/mct/mpi-serial/collective.c
+A	src/externals/mct/mpi-serial/error.c
+A	src/externals/mct/mpi-serial/ic_merge.c
+M	src/externals/mct/mpi-serial/mpi.c
+M	src/externals/mct/mpi-serial/mpi.h
+M	src/externals/mct/mpi-serial/mpif.h
+M	src/externals/mct/mpi-serial/tests/ftest.F90
+M	src/externals/mct/mpi-serial/tests/ftest_old.F90
+M	src/externals/mct/mpi-serial/type.c
+M	src/externals/mct/testsystem/testall/ReadSparseMatrixAsc.F90
+M	src/externals/mct/testsystem/testall/cpl.F90
+M	src/externals/pio1/pio/CMakeLists.txt
+M	src/externals/pio1/pio/pio.F90
+M	src/externals/pio1/pio/pio_types.F90
+M	src/externals/pio1/pio/piolib_mod.F90
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/externals/pio1/tests/testpio/perl5lib/ChangeLog
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Changes
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Lite.pm
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Lite/Element.pm
+M	src/externals/pio1/tests/testpio/perl5lib/XML/README
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML::Lite.3
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML::Lite::Element.3
+A	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/externals/pio2/.gitignore
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/CTestScript.cmake
+A	src/externals/pio2/Makefile.am
+A	src/externals/pio2/cmake_config.h.in
+A	src/externals/pio2/configure.ac
+M	src/externals/pio2/ctest/CTestEnvironment-anlworkstation.cmake
+M	src/externals/pio2/ctest/CTestEnvironment-cgd.cmake
+M	src/externals/pio2/ctest/CTestEnvironment-nwsc.cmake
+A	src/externals/pio2/ctest/runcdash-cgd-gnu-openmpi.sh
+M	src/externals/pio2/ctest/runcdash-cgd-nag.sh
+M	src/externals/pio2/ctest/runcdash-nwsc-intel-mpiserial.sh
+M	src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+M	src/externals/pio2/ctest/runctest-cgd.sh
+M	src/externals/pio2/ctest/runctest-nwscla.sh
+M	src/externals/pio2/doc/source/Decomp.txt
+M	src/externals/pio2/doc/source/base.txt
+M	src/externals/pio2/doc/source/contributing_code.txt
+M	src/externals/pio2/doc/source/mach_walkthrough.txt
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML::Lite.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML::Lite::Element.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/externals/pio2/examples/c/CMakeLists.txt
+A	src/externals/pio2/examples/c/darray_async.c
+A	src/externals/pio2/examples/c/darray_no_async.c
+M	src/externals/pio2/examples/c/example1.c
+M	src/externals/pio2/scripts/prune_decomps.pl
+A	src/externals/pio2/src/Makefile.am
+M	src/externals/pio2/src/clib/CMakeLists.txt
+A	src/externals/pio2/src/clib/Makefile.am
+M	src/externals/pio2/src/clib/bget.c
+D	src/externals/pio2/src/clib/config.h.in
+D	src/externals/pio2/src/clib/dtypes.h
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_get_nc.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/clib/pio_put_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+M	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/flib/piolib_mod.F90
+A	src/externals/pio2/tests/Makefile.am
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+A	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/pio_tests.h
+A	src/externals/pio2/tests/cunit/run_tests.sh
+D	src/externals/pio2/tests/cunit/test_async_2comp.c
+M	src/externals/pio2/tests/cunit/test_async_3proc.c
+M	src/externals/pio2/tests/cunit/test_async_4proc.c
+A	src/externals/pio2/tests/cunit/test_async_manyproc.c
+A	src/externals/pio2/tests/cunit/test_async_mpi.c
+A	src/externals/pio2/tests/cunit/test_async_multi2.c
+A	src/externals/pio2/tests/cunit/test_async_multicomp.c
+M	src/externals/pio2/tests/cunit/test_async_simple.c
+M	src/externals/pio2/tests/cunit/test_common.c
+M	src/externals/pio2/tests/cunit/test_darray.c
+M	src/externals/pio2/tests/cunit/test_darray_1d.c
+A	src/externals/pio2/tests/cunit/test_darray_2sync.c
+M	src/externals/pio2/tests/cunit/test_darray_3d.c
+A	src/externals/pio2/tests/cunit/test_darray_async.c
+A	src/externals/pio2/tests/cunit/test_darray_async_many.c
+A	src/externals/pio2/tests/cunit/test_darray_async_simple.c
+A	src/externals/pio2/tests/cunit/test_darray_frame.c
+A	src/externals/pio2/tests/cunit/test_darray_multi.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar.c
+A	src/externals/pio2/tests/cunit/test_darray_multivar2.c
+A	src/externals/pio2/tests/cunit/test_darray_multivar3.c
+A	src/externals/pio2/tests/cunit/test_decomp_uneven.c
+M	src/externals/pio2/tests/cunit/test_decomps.c
+M	src/externals/pio2/tests/cunit/test_intercomm2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple2.c
+M	src/externals/pio2/tests/cunit/test_iosystem3.c
+M	src/externals/pio2/tests/cunit/test_iosystem3_simple.c
+M	src/externals/pio2/tests/cunit/test_iosystem3_simple2.c
+M	src/externals/pio2/tests/cunit/test_pioc.c
+M	src/externals/pio2/tests/cunit/test_pioc_fill.c
+M	src/externals/pio2/tests/cunit/test_pioc_putget.c
+M	src/externals/pio2/tests/cunit/test_pioc_unlim.c
+A	src/externals/pio2/tests/cunit/test_rearr.c
+M	src/externals/pio2/tests/cunit/test_shared.c
+M	src/externals/pio2/tests/cunit/test_spmd.c
+M	src/externals/pio2/tests/general/CMakeLists.txt
+M	src/externals/pio2/tests/general/ncdf_get_put.F90.in
+M	src/externals/pio2/tests/general/ncdf_simple_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_fillval.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_frame_tests.F90.in
+M	src/share/esmf_wrf_timemgr/ESMF_Stubs.F90
+M	src/share/test/unit/CMakeLists.txt
+A	src/share/test/unit/mock/README
+M	src/share/test/unit/mock/shr_sys_mod.nompi_abortthrows.F90
+A	src/share/test/unit/shr_abort_test/CMakeLists.txt
+A	src/share/test/unit/shr_abort_test/README
+A	src/share/test/unit/shr_abort_test/test_shr_abort.pf
+M	src/share/test/unit/shr_assert_test/CMakeLists.txt
+M	src/share/test/unit/shr_infnan_test/CMakeLists.txt
+M	src/share/test/unit/shr_infnan_test/test_infnan.F90
+M	src/share/test/unit/shr_spfn_test/CMakeLists.txt
+M	src/share/test/unit/shr_string_test/CMakeLists.txt
+M	src/share/test/unit/shr_string_test/test_shr_string.pf
+M	src/share/timing/COPYING
+M	src/share/unit_test_stubs/README
+M	src/share/unit_test_stubs/pio/pio.F90.in
+A	src/share/unit_test_stubs/util/CMakeLists.txt
+A	src/share/unit_test_stubs/util/README
+A	src/share/unit_test_stubs/util/shr_abort_mod.abortthrows.F90
+M	src/share/util/CMakeLists.txt
+M	src/share/util/mct_mod.F90
+A	src/share/util/shr_abort_mod.F90
+D	src/share/util/shr_dmodel_mod.F90
+M	src/share/util/shr_mct_mod.F90
+M	src/share/util/shr_pcdf_mod.F90
+M	src/share/util/shr_pio_mod.F90
+D	src/share/util/shr_strdata_mod.F90
+D	src/share/util/shr_stream_mod.F90
+M	src/share/util/shr_string_mod.F90
+M	src/share/util/shr_sys_mod.F90
+D	src/share/util/shr_tInterp_mod.F90
+M	tools/Readme.configure
+M	tools/configure
+M	tools/cprnc/CMakeLists.txt
+M	tools/cprnc/README
+M	tools/cprnc/summarize_cprnc_diffs
+M	tools/load_balancing_tool/README
+D	tools/load_balancing_tool/code/cesm_scaling.gplot
+D	tools/load_balancing_tool/code/create_dataFile.pl
+D	tools/load_balancing_tool/code/f02_peList.txt
+D	tools/load_balancing_tool/code/f05_peList.txt
+D	tools/load_balancing_tool/code/f09_peList.txt
+D	tools/load_balancing_tool/code/f19_peList.txt
+D	tools/load_balancing_tool/code/fv_model.mod
+D	tools/load_balancing_tool/code/fv_model.run
+D	tools/load_balancing_tool/code/fv_second_pass.pl
+D	tools/load_balancing_tool/code/get_cesm_times.pl
+D	tools/load_balancing_tool/code/load_balance.pl
+D	tools/load_balancing_tool/code/merge.py
+D	tools/load_balancing_tool/code/model.data
+D	tools/load_balancing_tool/code/model.mod
+D	tools/load_balancing_tool/code/model.run
+D	tools/load_balancing_tool/code/neos.py
+D	tools/load_balancing_tool/global_variables.csh
+A	tools/load_balancing_tool/layouts.py
+A	tools/load_balancing_tool/load_balancing_solve.py
+A	tools/load_balancing_tool/load_balancing_submit.py
+A	tools/load_balancing_tool/optimize_model.py
+D	tools/load_balancing_tool/run_first.csh
+D	tools/load_balancing_tool/run_second.csh
+A	tools/load_balancing_tool/tests/__init__.py
+A	tools/load_balancing_tool/tests/atm_lnd.py
+A	tools/load_balancing_tool/tests/example.json
+A	tools/load_balancing_tool/tests/load_balancing_test.py
+A	tools/load_balancing_tool/tests/test.xml
+A	tools/load_balancing_tool/tests/timing/timing_1
+A	tools/load_balancing_tool/tests/timing/timing_2
+A	tools/load_balancing_tool/tests/timing/timing_3
+M	tools/mapping/check_maps/.gitignore
+M	tools/mapping/check_maps/README
+M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
+M	tools/mapping/check_maps/src/Makefile
+M	tools/mapping/gen_domain_files/INSTALL
+M	tools/mapping/gen_domain_files/src/Makefile
+M	tools/mapping/gen_mapping_files/README
+A	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/.gitignore
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/README
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/INSTALL
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/README
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_r05_to_gx1v6_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_r05_to_gx1v7_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_r05_to_gx3v7_nnsm_e1000r500.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_rx1_to_gx1v6_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_rx1_to_gx1v7_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_rx1_to_gx3v7_nnsm_e1000r500.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_wr50a_to_ar9v4_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/map_wr50a_to_gx3v7_nnsm_e1000r300.nml
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/maps/.gitignore
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/ncl/merge_mapping_files.ncl
+A	tools/mapping/gen_mapping_files/runoff_to_ocn/run_merge_mapping_files.sh
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_r05_gx3v7.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_rx1_gx1v6.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_tx01.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_wr50a_ar9v4.nml
+D	tools/mapping/gen_mapping_files/runoff_to_ocn/runoff_map_wr50a_gx3v7.nml
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/Makefile
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/fixroff_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/kind_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/main.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/mapsort_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/shr_kind_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/shr_sys_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/shr_timer_mod.F90
+M	tools/mapping/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90
+M	tools/mapping/map_field/INSTALL
+M	tools/mapping/map_field/src/Makefile
+M	tools/mapping/map_field/src/map_field.F90
+A	tools/statistical_ensemble_test/README
+M	tools/statistical_ensemble_test/ensemble.sh
+D	tools/statistical_ensemble_test/ncl_library/Zscore.ncl
+D	tools/statistical_ensemble_test/ncl_library/area_avg.ncl
+D	tools/statistical_ensemble_test/ncl_library/create_ensemble.ncl
+D	tools/statistical_ensemble_test/ncl_library/global.ncl
+D	tools/statistical_ensemble_test/ncl_library/plot_rmsz.ncl
+D	tools/statistical_ensemble_test/ncl_library/print.ncl
+D	tools/statistical_ensemble_test/ncl_library/rmsz.ncl
+D	tools/statistical_ensemble_test/ncl_library/vinterp.ncl
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+M	tools/statistical_ensemble_test/single_run.sh
+D	tools/statistical_ensemble_test/test_run_against_ensemble.ncl
+D	tools/statistical_ensemble_test/validation_test.sh
+D	tools/unit_testing/Examples/circle_area/src/CMakeLists.txt
+D	tools/unit_testing/Examples/circle_area/src/circle.F90
+D	tools/unit_testing/Examples/circle_area/tests/CMakeLists.txt
+D	tools/unit_testing/Examples/circle_area/tests/CTest/CMakeLists.txt
+D	tools/unit_testing/Examples/circle_area/tests/CTest/test_driver.F90
+D	tools/unit_testing/Examples/circle_area/tests/pFUnit/CMakeLists.txt
+D	tools/unit_testing/Examples/circle_area/tests/pFUnit/test_circle.pf
+D	tools/unit_testing/Examples/interpolate_1d/src/CMakeLists.txt
+D	tools/unit_testing/Examples/interpolate_1d/src/interpolate_1d.F90
+D	tools/unit_testing/Examples/interpolate_1d/tests/CMakeLists.txt
+D	tools/unit_testing/Examples/interpolate_1d/tests/CTest/CMakeLists.txt
+D	tools/unit_testing/Examples/interpolate_1d/tests/CTest/test_driver.F90
+D	tools/unit_testing/Examples/interpolate_1d/tests/pFUnit/CMakeLists.txt
+D	tools/unit_testing/Examples/interpolate_1d/tests/pFUnit/test_interpolate_point.pf
+D	tools/unit_testing/Examples/test_list.xml
+D	tools/unit_testing/README
+D	tools/unit_testing/python/.gitignore
+D	tools/unit_testing/python/comparable.py
+D	tools/unit_testing/python/environment.py
+D	tools/unit_testing/python/machine_setup.py
+D	tools/unit_testing/python/printer.py
+D	tools/unit_testing/python/test_environment.py
+D	tools/unit_testing/python/test_xml_test_list.py
+D	tools/unit_testing/python/test_xml_utils.py
+D	tools/unit_testing/python/xml_test_list.py
+D	tools/unit_testing/python/xml_utils.py
+D	tools/unit_testing/run_tests.py
+M	tools/utils/find_circular_dependency.py
+M	utils/perl5lib/Build/Namelist.pm
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-9-2017
+Tag: cime5.4.0-alpha.03
+Answer Changes: None
+Tests: scripts_regression_tests.pr
+       manual test of create_clone
+Dependencies:
+
+Brief Summary:
+    - Fix SE domain files.
+    - Use keyword-value pairs for create_clone call.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+55d2dbe Merge pull request #1957 from billsacks/create_clone_args
+443312c Merge pull request #1951 from gold2718/seDomainFiles
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       scripts/create_clone
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-6-2017
+Tag: cime5.4.0-alpha.02
+Answer Changes: None
+Tests: scripts_regression_tests.py SMS_Ln9.f19_f19_mg17.F2000_DEV.yellowstone_intel.cam-cosp 
+       IRT_Ld7.T31_g37.B1850C5L45BGCR.cheyenne_intel
+       hand testing tools/load_balancing_tool/test/test_load_balancing_tool.py
+       load_balancing_test.py
+Dependencies:
+
+Brief Summary:
+    - Fix cosp build instructions.
+    - Pio update branch.
+    - Refactor args to submit scripts.
+    - Archive pop tavg rpointer file.
+    - Add option to define test types in query_testlists.
+    - Fix tests for small systems.
+    - Only run driver build namelist after first day cycle.
+    - Load balancing tool mods.
+    - Use local baseline directory for testing. 
+    - Add ability to cancel batch jobs to the system.
+    - A port to a generic Linux workstation.
+    - Fix pylint issue.
+    - Fix st_archive.
+    - Document uniqueness requirement for test-id.
+    - Add Argonne copyright statement.
+    - Rewrite of the load balancing tool.
+    - Imported mpi-serial changes from MCSclimate/mpi-serial.
+
+User interface changes: 
+    - New batch_env optional entry in config_batch.
+    - Add --baseline-root argument to case.cmpgen_baselines.
+    - new batch_cancel field in config_batch.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+a2f0979 Merge pull request #1947 from jedwards4b/cosp_build_fix
+1655800 Merge pull request #1948 from jedwards4b/pio_update_branch
+d590c55 Merge pull request #1945 from ESMCI/jgfouca/refactor_args_to_submit_scripts
+7f44f80 Merge pull request #1944 from jedwards4b/pop_tavg_archive
+c7cf4eb Merge pull request #1930 from billsacks/query_testtypes
+0742931 Merge pull request #1943 from jedwards4b/small_systems
+34522a3 Merge pull request #1941 from jedwards4b/da_optimization
+be3bf2e Merge pull request #1923 from jedwards4b/load-balancing-tool-mods
+2d2ab96 Merge pull request #1939 from jedwards4b/srt_baselines
+4e0e02e Merge pull request #1932 from ESMCI/jgfouca/add_job_cancel
+d3a2da4 Merge pull request #1936 from jedwards4b/centos7_linux
+bc35e32 fix pylint issue
+874dc10 Merge pull request #1916 from ESMCI/kdraeder/fix_st_archive
+7672387 Merge pull request #1934 from billsacks/document_testids
+202e9a0 Merge pull request #1925 from ESMCI/rljacob/add-anl-copyright
+b8b9f9e Merge pull request #1902 from ESMCI/sarich/tools/load-balancing-tool
+4489a90 Merge pull request #1922 from gold2718/mpiserial_update
+
+
+
+Modified files: git diff --name-status [previous_tag]
+M	LICENSE.TXT
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+M	config/cesm/config_archive.xml
+M	config/cesm/machines/Makefile
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	doc/source/misc_tools/index.rst
+A	doc/source/misc_tools/load-balancing-tool.rst
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/create_test
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/tests.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/query_testlists
+M	scripts/tests/scripts_regression_tests.py
+M	src/externals/mct/mpi-serial/Makefile
+M	src/externals/mct/mpi-serial/mpi.c
+M	src/externals/mct/mpi-serial/mpif.h
+M	src/externals/mct/mpi-serial/tests/ftest.F90
+M	src/externals/mct/mpi-serial/tests/ftest_old.F90
+M	src/externals/mct/mpi-serial/type.c
+M	src/externals/pio1/pio/CMakeLists.txt
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/externals/pio1/tests/testpio/perl5lib/ChangeLog
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Changes
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Lite.pm
+M	src/externals/pio1/tests/testpio/perl5lib/XML/Lite/Element.pm
+M	src/externals/pio1/tests/testpio/perl5lib/XML/README
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML::Lite.3
+D	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML::Lite::Element.3
+A	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio1/tests/testpio/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/externals/pio1/timing/COPYING
+M	src/externals/pio2/.gitignore
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/CTestScript.cmake
+A	src/externals/pio2/Makefile.am
+A	src/externals/pio2/cmake_config.h.in
+A	src/externals/pio2/configure.ac
+M	src/externals/pio2/ctest/CTestEnvironment-cgd.cmake
+M	src/externals/pio2/ctest/runcdash-cgd-gnu-openmpi.sh
+M	src/externals/pio2/doc/source/Decomp.txt
+M	src/externals/pio2/doc/source/base.txt
+M	src/externals/pio2/doc/source/contributing_code.txt
+M	src/externals/pio2/doc/source/mach_walkthrough.txt
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML::Lite.3
+D	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML::Lite::Element.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite_Element.3
+M	src/externals/pio2/examples/c/CMakeLists.txt
+M	src/externals/pio2/scripts/prune_decomps.pl
+A	src/externals/pio2/src/Makefile.am
+M	src/externals/pio2/src/clib/CMakeLists.txt
+A	src/externals/pio2/src/clib/Makefile.am
+D	src/externals/pio2/src/clib/config.h.in
+D	src/externals/pio2/src/clib/dtypes.h
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_get_nc.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/clib/pio_put_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+M	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/flib/piolib_mod.F90
+M	src/externals/pio2/src/gptl/COPYING
+A	src/externals/pio2/tests/Makefile.am
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+A	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/pio_tests.h
+A	src/externals/pio2/tests/cunit/run_tests.sh
+M	src/externals/pio2/tests/cunit/test_async_3proc.c
+M	src/externals/pio2/tests/cunit/test_async_4proc.c
+A	src/externals/pio2/tests/cunit/test_async_manyproc.c
+A	src/externals/pio2/tests/cunit/test_async_mpi.c
+A	src/externals/pio2/tests/cunit/test_async_multi2.c
+A	src/externals/pio2/tests/cunit/test_async_multicomp.c
+M	src/externals/pio2/tests/cunit/test_async_simple.c
+M	src/externals/pio2/tests/cunit/test_common.c
+M	src/externals/pio2/tests/cunit/test_darray.c
+M	src/externals/pio2/tests/cunit/test_darray_1d.c
+A	src/externals/pio2/tests/cunit/test_darray_2sync.c
+M	src/externals/pio2/tests/cunit/test_darray_3d.c
+A	src/externals/pio2/tests/cunit/test_darray_async.c
+A	src/externals/pio2/tests/cunit/test_darray_async_many.c
+A	src/externals/pio2/tests/cunit/test_darray_async_simple.c
+A	src/externals/pio2/tests/cunit/test_darray_frame.c
+M	src/externals/pio2/tests/cunit/test_darray_multi.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar2.c
+A	src/externals/pio2/tests/cunit/test_darray_multivar3.c
+M	src/externals/pio2/tests/cunit/test_decomp_uneven.c
+M	src/externals/pio2/tests/cunit/test_decomps.c
+M	src/externals/pio2/tests/cunit/test_intercomm2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple.c
+M	src/externals/pio2/tests/cunit/test_iosystem2_simple2.c
+M	src/externals/pio2/tests/cunit/test_iosystem3.c
+M	src/externals/pio2/tests/cunit/test_iosystem3_simple.c
+M	src/externals/pio2/tests/cunit/test_iosystem3_simple2.c
+M	src/externals/pio2/tests/cunit/test_pioc.c
+M	src/externals/pio2/tests/cunit/test_pioc_fill.c
+M	src/externals/pio2/tests/cunit/test_pioc_putget.c
+M	src/externals/pio2/tests/cunit/test_pioc_unlim.c
+M	src/externals/pio2/tests/cunit/test_rearr.c
+M	src/externals/pio2/tests/cunit/test_shared.c
+M	src/externals/pio2/tests/cunit/test_spmd.c
+M	src/externals/pio2/tests/general/CMakeLists.txt
+M	src/externals/pio2/tests/general/ncdf_simple_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_fillval.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_frame_tests.F90.in
+M	src/externals/pio2/tests/general/util/pio_tutil.F90
+M	tools/load_balancing_tool/README
+D	tools/load_balancing_tool/code/cesm_scaling.gplot
+D	tools/load_balancing_tool/code/create_dataFile.pl
+D	tools/load_balancing_tool/code/f02_peList.txt
+D	tools/load_balancing_tool/code/f05_peList.txt
+D	tools/load_balancing_tool/code/f09_peList.txt
+D	tools/load_balancing_tool/code/f19_peList.txt
+D	tools/load_balancing_tool/code/fv_model.mod
+D	tools/load_balancing_tool/code/fv_model.run
+D	tools/load_balancing_tool/code/fv_second_pass.pl
+D	tools/load_balancing_tool/code/get_cesm_times.pl
+D	tools/load_balancing_tool/code/load_balance.pl
+D	tools/load_balancing_tool/code/merge.py
+D	tools/load_balancing_tool/code/model.data
+D	tools/load_balancing_tool/code/model.mod
+D	tools/load_balancing_tool/code/model.run
+D	tools/load_balancing_tool/code/neos.py
+D	tools/load_balancing_tool/global_variables.csh
+A	tools/load_balancing_tool/layouts.py
+A	tools/load_balancing_tool/load_balancing_solve.py
+A	tools/load_balancing_tool/load_balancing_submit.py
+A	tools/load_balancing_tool/optimize_model.py
+D	tools/load_balancing_tool/run_first.csh
+D	tools/load_balancing_tool/run_second.csh
+A	tools/load_balancing_tool/tests/__init__.py
+A	tools/load_balancing_tool/tests/atm_lnd.py
+A	tools/load_balancing_tool/tests/example.json
+A	tools/load_balancing_tool/tests/load_balancing_test.py
+A	tools/load_balancing_tool/tests/test.xml
+A	tools/load_balancing_tool/tests/timing/timing_1
+A	tools/load_balancing_tool/tests/timing/timing_2
+A	tools/load_balancing_tool/tests/timing/timing_3
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-25-2017
+Tag: cime5.4.0-alpha.01
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Update version to cime5.3.0-alpha.01
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+
+Modified files: git diff --name-status [previous_tag]
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-25-2017
+Tag: cime5.3.0-alpha.36
+Answer Changes: None
+Tests:  scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Big refactor to queue selection.
+    - Shorter paths for case2 using system_tests_compare_two.
+    - Update atm coupling frequency for high-resolution grids.
+    - Add '-framework Accelerate' to LDFLAGS on a mac.
+    - Fix E3SM idmap check.
+    - Fix pylint issues.
+    - ERR test rework.
+    - New error trap if invalid "idmap" file is present in seq_maps.rc.
+    - Yellowstone tasps per node correction.
+    - Added new CAM-SE FVM grids and removed incorrect aliases.
+    - Fix generate and compare baseline functions.
+    - Add a derived variable NTASKS_PER_INST_COMP where COMP is the component
+      name (ATM, LND, etc)
+    - Don't check_if_comp_var to return a new vid if it's not a comp var.
+
+User interface changes: 
+    - jobmin and jobmax gone from config_batch.xml
+    - All CAM-SE grid aliases for data ocean models require a mask.
+
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6049c79 Merge pull request #1918 from ESMCI/jgfouca/queue_selection_refactor_2
+56d71c5 Merge pull request #1919 from billsacks/compare_two_shorter_path
+e1b549d Merge pull request #1921 from gold2718/atm_ncpl_mods
+f5ac341 Merge pull request #1906 from billsacks/mac_lapack
+c15c0ad Merge pull request #1917 from ESMCI/mvertens/fix_acme_idmapcheck
+f722595 fix pylint issues
+19922e1 Merge pull request #1912 from jedwards4b/err_test_rework
+b1d1b9b Merge pull request #1893 from ESMCI/mvertens/trip_invalid_idmap
+c330b46 Merge pull request #1911 from jedwards4b/yellowstone_tpn_correction
+0136051 Merge pull request #1896 from gold2718/fix_camse_grids
+e036093 Merge pull request #1904 from jedwards4b/fix_gen_and_comp
+f0522a6 Merge pull request #1900 from jedwards4b/NTASKS_PER_INST_XXX
+f5aafff Merge pull request #1901 from ESMCI/jgfouca/xmlquery_minor_fix
+2daf8aa Minor pylint fix, make get_queue_specs public
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/config_batch.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_headers.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/env_batch.xsd
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/err.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_clone.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-19-2017
+Tag: cime5.3.0-alpha.35
+Answer Changes: None
+Tests: scripts_regression_tests.py, PEM_Ln9.f19_g16_rx1.A.yellowstone_intel
+Dependencies:
+
+Brief Summary:
+    - Test fixes.
+    - Can test single-submit on chama in addition to skybridge.
+    - Fix single submit option to create_test.
+    - Rename PES_PER_NODE to MAX_MPITASKS_PER_NODE.
+    - New git pelayout doc.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+e1e5e79 Merge pull request #1895 from jedwards4b/test_fixes
+a3349ed Merge pull request #1899 from ESMCI/jgfouca/fix_single_submit
+40e4b7b Merge pull request #1898 from ESMCI/jgfouca/fix_single_submit
+5ba192b Merge pull request #1891 from jedwards4b/rename_pes_per_node
+eb59169 Merge pull request #1888 from ESMCI/mvertens/new_pelayout_doc
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+M	config/acme/machines/userdefined_laptop_template/config_machines.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M	config/config_headers.xml
+M	config/config_tests.xml
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	config/xml_schemas/config_pes.xsd
+M	doc/source/users_guide/customizing-a-case.rst
+M	doc/source/users_guide/porting-cime.rst
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/docn/docn_shr_mod.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-13-2017
 Tag: cime5.3.0-alpha.34
 Answer Changes: None

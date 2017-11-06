@@ -614,15 +614,6 @@
       </machine>
     </machines>
   </test>
-  <test name="SMS_Ld3" grid="ww3a_ww3a" compset="AWAV">
-    <machines>
-      <machine name="hobart" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
   <test name="PRE" grid="f09_f09" compset="ADESP">
     <machines>
       <machine name="hobart" compiler="nag" category="pauseresume"/>
