@@ -1,5 +1,5 @@
 ! ------------------------------------------------------------------------------------------------
-! prim_driver_mod: 
+! prim_driver_mod:
 !
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 !
@@ -303,7 +303,7 @@ contains
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
 
     nelemd = LocalElemCount(MetaVertex(1))
-    if(par%masterproc .and. Debug) then 
+    if(par%masterproc .and. Debug) then
         call PrintMetaVertex(MetaVertex(1))
     endif
 
@@ -519,7 +519,7 @@ contains
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
 
 #ifndef CAM
-    use control_mod,          only: pertlim                     
+    use control_mod,          only: pertlim
 #endif
 
 #ifdef TRILINOS
@@ -605,8 +605,8 @@ contains
     end if
 
     ! should we assume Q(:,:,:,1) has water vapor:
-    use_moisture = ( moisture /= "dry") 
-    if (qsize<1) use_moisture = .false.  
+    use_moisture = ( moisture /= "dry")
+    if (qsize<1) use_moisture = .false.
 
 
     ! compute most restrictive dt*nu for use by variable res viscosity:
@@ -617,7 +617,7 @@ contains
        dt_dyn_vis = 2*tstep
     endif
     dt_tracer_vis=tstep*qsplit
-    
+
     ! compute most restrictive condition:
     ! note: dtnu ignores subcycling
     dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
@@ -748,10 +748,10 @@ contains
                    do j=1,np
                       dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-                      
+
                       elem(ie)%state%Qdp(i,j,k,q,1)=elem(ie)%state%Q(i,j,k,q)*dp
                       elem(ie)%state%Qdp(i,j,k,q,2)=elem(ie)%state%Q(i,j,k,q)*dp
-                      
+
                    enddo
                 enddo
              enddo
@@ -843,10 +843,6 @@ contains
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-#if USE_OPENACC
-    use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
-#endif
-
     type (element_t) ,    intent(inout) :: elem(:)
     type (hybrid_t),      intent(in)    :: hybrid                       ! distributed parallel structure (shared)
     type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
@@ -933,14 +929,6 @@ contains
        enddo
     enddo
 
-
-#if (USE_OPENACC)
-!    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-    call t_startf("copy_qdp_h2d")
-    call copy_qdp_h2d( elem , n0_qdp )
-    call t_stopf("copy_qdp_h2d")
-#endif
-
     ! Loop over rsplit vertically lagrangian timesteps
     call t_startf("prim_step_rX")
     call prim_step(elem, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
@@ -955,12 +943,6 @@ contains
     ! defer final timelevel update until after remap and diagnostics
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-
-#if (USE_OPENACC)
-    call t_startf("copy_qdp_h2d")
-    call copy_qdp_d2h( elem , np1_qdp )
-    call t_stopf("copy_qdp_h2d")
-#endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  apply vertical remap
@@ -1012,7 +994,7 @@ contains
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
     ! now we have:
-    !   u(nm1)   dynamics at  t+dt_remap - dt       
+    !   u(nm1)   dynamics at  t+dt_remap - dt
     !   u(n0)    dynamics at  t+dt_remap
     !   u(np1)   undefined
 
@@ -1069,7 +1051,7 @@ contains
     logical :: compute_diagnostics
 
     dt_q = dt*qsplit
- 
+
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
@@ -1109,14 +1091,14 @@ contains
     ! rsplit=0
     !        state%v(:,:,:,np1)      = velocity on reference levels
     ! rsplit>0
-    !        state%v(:,:,:,np1)      = velocity on lagrangian levels 
-    !        
-    ! Tracer Advection.  
+    !        state%v(:,:,:,np1)      = velocity on lagrangian levels
+    !
+    ! Tracer Advection.
     ! in addition, this routine will apply the DSS to:
     !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap below)
     !        derived%omega           =
-    ! Tracers are always vertically lagrangian.  
-    ! For rsplit=0: 
+    ! Tracers are always vertically lagrangian.
+    ! For rsplit=0:
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     call t_startf("prim_step_advec")
@@ -1187,6 +1169,3 @@ contains
     end subroutine smooth_topo_datasets
 
 end module prim_driver_base
-
-
-

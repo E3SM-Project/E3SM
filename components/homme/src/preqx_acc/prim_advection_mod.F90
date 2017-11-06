@@ -46,78 +46,6 @@ module prim_advection_mod
 
 contains
 
-  subroutine copy_qdp1_h2d( elem , tl , nets , nete )
-    use element_mod, only: element_t
-    use element_state, only: state_qdp
-    use perf_mod, only: t_startf, t_stopf
-    implicit none
-    type(element_t), intent(in) :: elem(:)
-    integer        , intent(in) :: tl, nets , nete
-    integer :: ie, k, j, i
-    call t_startf('qdp1_pcie')
-#   if USE_OPENACC
-      do ie = nets , nete
-        data_pack(:,:,:,ie) = state_qdp(:,:,:,1,tl,ie)
-      enddo
-      !$omp barrier
-      !$omp master
-!     do ie = 1 , nelemd
-!       !$acc update device(state_qdp(:,:,:,1,tl,ie))
-!     enddo
-      !$acc update device(data_pack) async(1)
-      !$acc parallel loop gang vector collapse(4) async(1)
-      do ie = 1 , nelemd
-        do k = 1 , nlev
-          do j = 1 , np
-            do i = 1 , np
-              state_qdp(i,j,k,1,tl,ie) = data_pack(i,j,k,ie)
-            enddo
-          enddo
-        enddo
-      enddo
-      !$acc wait(1)
-      !$omp end master
-      !$omp barrier
-#   endif
-    call t_stopf('qdp1_pcie')
-  end subroutine copy_qdp1_h2d
-
-  subroutine copy_qdp1_d2h( elem , tl , nets , nete )
-    use element_mod, only: element_t
-    use element_state, only: state_qdp
-    use perf_mod, only: t_startf, t_stopf
-    implicit none
-    type(element_t), intent(in) :: elem(:)
-    integer        , intent(in) :: tl, nets , nete
-    integer :: ie, k, j, i
-    call t_startf('qdp1_pcie')
-#   if USE_OPENACC
-      !$omp barrier
-      !$omp master
-      !$acc parallel loop gang vector collapse(4) async(1)
-      do ie = 1 , nelemd
-        do k = 1 , nlev
-          do j = 1 , np
-            do i = 1 , np
-              data_pack(i,j,k,ie) = state_qdp(i,j,k,1,tl,ie)
-            enddo
-          enddo
-        enddo
-      enddo
-      !$acc update host(data_pack) async(1)
-      !$acc wait(1)
-!     do ie = 1 , nelemd
-!       !$acc update host(state_qdp(:,:,:,1,tl,ie))
-!     enddo
-      !$omp end master
-      !$omp barrier
-      do ie = nets , nete
-        state_qdp(:,:,:,1,tl,ie) = data_pack(:,:,:,ie)
-      enddo
-#   endif
-    call t_stopf('qdp1_pcie')
-  end subroutine copy_qdp1_d2h
-
   subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
     use element_mod   , only: element_t
@@ -296,17 +224,6 @@ contains
     !$acc enter data pcreate(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
     !$acc enter data pcreate(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
 
-    !$acc update device(hvcoord)
-    !$acc update device(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
-    !$acc update device(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
-    !$acc update device(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
-    !$acc update device(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap,edgeAdv%putmap,edgeAdv_p1%putmap,edgeAdvQ2%putmap)
-    !$acc update device(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap,edgeAdv%getmap,edgeAdv_p1%getmap,edgeAdvQ2%getmap)
-    !$acc update device(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse,edgeAdv%reverse,edgeAdv_p1%reverse,edgeAdvQ2%reverse)
-    !$acc update device(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag,edgeAdv%tag,edgeAdv_p1%tag,edgeAdvQ2%tag)
-    !$acc update device(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
-    !$acc update device(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
-
     !$omp end master
     !$omp barrier
   end subroutine prim_advec_init2
@@ -435,7 +352,6 @@ contains
       !$omp end master
       !$omp barrier
     enddo
-    call copy_qdp1_d2h( elem , nt_qdp , nets , nete )
     call t_stopf('advance_hypervis_scalar')
   end subroutine advance_hypervis_scalar
 
@@ -463,7 +379,6 @@ contains
     enddo
     !$omp end master
     !$omp barrier
-    if (limiter_option == 8) call copy_qdp1_d2h( elem , np1_qdp , nets , nete )
 
   end subroutine qdp_time_avg
 
@@ -516,9 +431,7 @@ contains
   enddo
   !$omp barrier
   !$omp master
-  !$acc update device(data_pack,data_pack2) async(1)
-  !$acc update device(derived_divdp_proj,derived_vn0) async(2)
-  !$acc parallel loop gang vector collapse(4) async(1)
+  !$acc parallel loop gang vector collapse(4)
   do ie = 1 , nelemd
     do k = 1 , nlev
       do j = 1 , np
@@ -529,7 +442,6 @@ contains
       enddo
     enddo
   enddo
-  !$acc wait
   !$omp end master
   !$omp barrier
 
@@ -668,8 +580,7 @@ contains
     enddo
     !$omp barrier
     !$omp master
-    !$acc update device(data_pack) async(1)
-    !$acc parallel loop gang vector collapse(4) async(1)
+    !$acc parallel loop gang vector collapse(4)
     do ie = 1 , nelemd
       do k = 1 , nlev
         do j = 1 , np
@@ -679,16 +590,12 @@ contains
         enddo
       enddo
     enddo
-    !$acc wait(1)
     !$omp end master
     !$omp barrier
   endif
 
   !$omp barrier
   !$omp master
-  if (limiter_option == 8) then
-    !$acc update device(derived_divdp)
-  endif
   !$acc parallel loop gang vector collapse(4) private(dp,vstar)
   do ie = 1 , nelemd
     do k = 1 , nlev    !  Loop index added (AAM)
@@ -950,13 +857,10 @@ contains
     integer              , intent(in   ) :: nets , nete , n0_qdp
     integer :: ie , k
     real(kind=real_kind), pointer, dimension(:,:,:) :: DSSvar
-    call copy_qdp1_h2d(elem,n0_qdp,nets,nete)
     !$omp barrier
     !$omp master
-    !$acc update device(derived_vn0)
     call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1,1,1)
     call copy_ondev(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)))
-    !$acc update host(derived_divdp,derived_divdp_proj)
     !$omp end master
     !$omp barrier
     call t_startf('derived PEU')
