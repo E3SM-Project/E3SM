@@ -510,24 +510,6 @@
     If TRUE, short term archiving will be turned on.</desc>
   </entry>
 
-  <entry id="DOUT_L_MS">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>If TRUE, perform long-term archiving on the output data.
-      logical to turn on long term archiving (if DOUT_S is also TRUE)</desc>
-  </entry>
-
-  <entry id="DOUT_L_HPSS_ACCNT">
-    <type>char</type>
-    <default_value>00000000</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc></desc>
-  </entry>
-
   <entry id="SYSLOG_N">
     <type>integer</type>
     <default_value>900</default_value>
