@@ -1,0 +1,252 @@
+! Create a file with a global attribute (filename)
+SUBROUTINE create_file(comm, iosys, iotype, fname, attname, dimname, ret)
+    use pio_tutil
+    implicit none
+
+    integer, intent(in) :: comm
+    type(iosystem_desc_t), intent(inout) :: iosys
+    integer, intent(in) :: iotype
+    character(len=*), intent(in) :: fname
+    character(len=*), intent(in) :: attname
+    character(len=*), intent(in) :: dimname
+    integer, intent(inout) :: ret
+
+    type(file_desc_t) :: pio_file
+    integer :: pio_dim
+    type(var_desc_t) :: pio_var
+
+    ret = PIO_createfile(iosys, pio_file, iotype, fname, PIO_CLOBBER)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to create dummy file :" // trim(fname))
+
+    ret = PIO_def_dim(pio_file, dimname, PIO_TF_MAX_STR_LEN, pio_dim)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to define dim "// trim(dimname) // "in file :" // trim(fname))
+
+    ret = PIO_def_var(pio_file, attname, PIO_char, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to define var " // trim(attname) // " in file :" // trim(fname))
+
+    ret = PIO_put_att(pio_file, pio_var, attname, fname)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to put att " // trim(attname) // " in file :" // trim(fname))
+
+    ret = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to enddef, file :" // trim(fname))
+
+    call PIO_closefile(pio_file)
+END SUBROUTINE create_file
+
+! Open a file and perform read and write
+SUBROUTINE open_and_check_rdwr(comm, iosys, iotype, pio_file, fname, ret)
+    use pio_tutil
+    implicit none
+
+    integer, intent(in) :: comm
+    type(iosystem_desc_t), intent(inout) :: iosys
+    integer, intent(in) :: iotype
+    type(file_desc_t), intent(inout) :: pio_file
+    character(len=*), intent(in) :: fname
+    integer, intent(inout) :: ret
+
+    integer, parameter :: VEC_LOCAL_SZ = 3
+    character(len=PIO_TF_MAX_STR_LEN) :: var_name = "test_1d_var"
+    character(len=PIO_TF_MAX_STR_LEN) :: dim_name = "test_dim_1d_var"
+    type(var_desc_t) :: pio_var
+    type(io_desc_t) :: iodesc
+    integer, dimension(VEC_LOCAL_SZ) :: compdof, compdof_rel_disps
+    integer :: start_compdof
+    real, dimension(VEC_LOCAL_SZ) :: wbuf
+    real, dimension(:), allocatable :: rbuf
+    integer, dimension(1) :: dims
+    integer :: pio_dim
+    integer :: comm_rank, comm_sz
+    integer :: i
+
+    call MPI_Comm_size(comm, comm_sz, ret)
+    call MPI_Comm_rank(comm, comm_rank, ret)
+
+    dims(1) = VEC_LOCAL_SZ * comm_sz
+
+    ret = PIO_openfile(iosys, pio_file, iotype, fname, PIO_write)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to open:" // fname)
+
+    ret = pio_inq_dimid(pio_file, dim_name, pio_dim)
+    if(ret /= PIO_NOERR) then
+      ! Define the required dim/var
+      ret = PIO_redef(pio_file)
+      PIO_TF_CHECK_ERR(ret, comm, "Failed to redef:" // fname)
+
+      ret = PIO_def_dim(pio_file, dim_name, dims(1), pio_dim)
+      PIO_TF_CHECK_ERR(ret, comm, "Failed to define dim:" // fname)
+
+      ! Assume var is not defined either
+      ret = PIO_def_var(pio_file, var_name, pio_real, (/pio_dim/), pio_var)
+      PIO_TF_CHECK_ERR(ret, comm, "Failed to define var:" // fname)
+
+      ret = PIO_enddef(pio_file)
+      PIO_TF_CHECK_ERR(ret, comm, "Failed to enddef:" // fname)
+    else
+      ! Assume var was also defined
+      ret = PIO_inq_varid(pio_file, var_name, pio_var)
+      PIO_TF_CHECK_ERR(ret, comm, "Failed to inq var:" // fname)
+    end if
+
+    ! Compdof is a simple reverse (of chunks of VEC_LOCAL_SZ) of the file offsets
+    ! e.g. VEC_LOCAL_SZ = 3, with 2 procs
+    ! [4 5 6] [1 2 3]
+    start_compdof = (comm_sz - comm_rank - 1) * VEC_LOCAL_SZ
+    do i=1,VEC_LOCAL_SZ
+      compdof_rel_disps(i) = i
+    end do
+
+    compdof = start_compdof + compdof_rel_disps
+    wbuf = compdof
+    allocate(rbuf(size(wbuf)))
+    rbuf = 0
+
+    call PIO_initdecomp(iosys, pio_real, dims, compdof, iodesc)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to init decomp:" // fname)
+
+    ! Write and read back the data
+    call PIO_write_darray(pio_file, pio_var, iodesc, wbuf, ret)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to write darray: " // fname)
+
+    call PIO_syncfile(pio_file)
+
+    call PIO_read_darray(pio_file, pio_var, iodesc, rbuf, ret)
+    PIO_TF_CHECK_ERR(ret, comm, "Failed to read darray: " // fname)
+
+    PIO_TF_CHECK_VAL((rbuf, wbuf), "Got wrong val")
+
+    deallocate(rbuf)
+
+    call PIO_freedecomp(iosys, iodesc)
+
+    call PIO_closefile(pio_file)
+END SUBROUTINE open_and_check_rdwr
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_rearrs_base
+  implicit none
+
+  character(len=PIO_TF_MAX_STR_LEN), target :: fname = "pio_test_rearrs_base.nc"
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: attname = "filename"
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: dimname = "filename_dim"
+  integer, parameter :: NUM_REARRANGERS = 2
+  integer :: rearrs(NUM_REARRANGERS) = (/pio_rearr_subset,pio_rearr_box/)
+  character(len=PIO_TF_MAX_STR_LEN) :: rearrs_info(NUM_REARRANGERS) = (/"PIO_REARR_SUBSET","PIO_REARR_BOX   "/)
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: i, j, k, num_iotypes = 0
+  type(file_desc_t) :: pio_file
+
+  type(iosystem_desc_t) :: dup_iosys
+  integer :: dup_comm
+  integer :: dup_comm_rank, dup_comm_sz, dup_iosys_base
+  integer :: ret
+
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing iotype: ", iotype_descs(i)
+    call create_file(pio_tf_comm_, pio_tf_iosystem_, iotypes(i), &
+                      fname, attname, dimname, ret)
+    PIO_TF_CHECK_ERR(ret, pio_tf_comm_, "Failed to create file :" // fname)
+
+    call MPI_Comm_dup(pio_tf_comm_, dup_comm, ret)
+    call MPI_Comm_rank(dup_comm, dup_comm_rank, ret)
+    call MPI_Comm_size(dup_comm, dup_comm_sz, ret)
+    do j=1, NUM_REARRANGERS
+      PIO_TF_LOG(0,*) "Testing rearr : ", rearrs_info(j)
+      do k=1, dup_comm_sz
+        dup_iosys_base = k-1
+        PIO_TF_LOG(0,*) "Base = ", dup_iosys_base
+        call PIO_init(pio_tf_world_rank_, dup_comm, pio_tf_world_sz_, &
+                      1, &! Num aggregators
+                      1, &! Stride
+                      rearrs(j), dup_iosys, base=dup_iosys_base)
+        call PIO_seterrorhandling(dup_iosys, PIO_BCAST_ERROR)
+
+        call open_and_check_rdwr(dup_comm, dup_iosys, iotypes(i), &
+                        pio_file, fname, ret)
+        PIO_TF_CHECK_ERR(ret, dup_comm, "Checking rd+wr on file failed :" // fname)
+
+        call PIO_finalize(dup_iosys, ret)
+      end do
+    end do
+    call PIO_deletefile(pio_tf_iosystem_, fname)
+    call MPI_Comm_free(dup_comm, ret)
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+PIO_TF_AUTO_TEST_SUB_END test_rearrs_base
+
+! Test different combinations of the rearrangers to test the compatibility
+! between different rearrangers
+! init/rd+wr/finalize with one rearranger followed by another and try
+! all combinations ((subset,box),(box_subset),(box,box),(subset,subset))
+PIO_TF_AUTO_TEST_SUB_BEGIN test_rearrs_combs
+  implicit none
+
+  character(len=PIO_TF_MAX_STR_LEN), target :: fname = "pio_rearrs_combs.nc"
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: attname = "filename"
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: dimname = "filename_dim"
+  integer, parameter :: NUM_REARRANGERS = 2
+  integer :: rearrs(NUM_REARRANGERS) = (/pio_rearr_subset,pio_rearr_box/)
+  integer, parameter :: MAX_PERMS = 4
+  integer :: rearrs_perms(NUM_REARRANGERS,MAX_PERMS) = reshape(&
+                (/pio_rearr_subset, pio_rearr_box,&
+                  pio_rearr_box, pio_rearr_subset,&
+                  pio_rearr_subset, pio_rearr_subset,&
+                  pio_rearr_box, pio_rearr_box/),&
+                  (/NUM_REARRANGERS,MAX_PERMS/)&
+              ) 
+  character(len=PIO_TF_MAX_STR_LEN) :: rearrs_perms_info(NUM_REARRANGERS,MAX_PERMS) =&
+            reshape(&
+              (/"PIO_REARR_SUBSET", "PIO_REARR_BOX   ",&
+              "PIO_REARR_BOX   ", "PIO_REARR_SUBSET",&
+              "PIO_REARR_SUBSET", "PIO_REARR_SUBSET",&
+              "PIO_REARR_BOX   ", "PIO_REARR_BOX   "/),&
+              (/NUM_REARRANGERS,MAX_PERMS/)&
+            )
+  character(len=PIO_TF_MAX_STR_LEN) :: rearrs_info(NUM_REARRANGERS) = (/"PIO_REARR_SUBSET","PIO_REARR_BOX   "/)
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: i, j, k, num_iotypes = 0
+  type(file_desc_t) :: pio_file
+
+  type(iosystem_desc_t) :: dup_iosys
+  integer :: dup_comm
+  integer :: ret
+
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing iotype: ", iotype_descs(i)
+    call create_file(pio_tf_comm_, pio_tf_iosystem_, iotypes(i), &
+                      fname, attname, dimname, ret)
+    PIO_TF_CHECK_ERR(ret, pio_tf_comm_, "Failed to create file :" // fname)
+
+    call MPI_Comm_dup(pio_tf_comm_, dup_comm, ret)
+    ! Try different combinations of rearrangers
+    do k=1,MAX_PERMS
+      do j=1, NUM_REARRANGERS
+        PIO_TF_LOG(0,*) "Testing rearr : ", rearrs_perms_info(j,k)
+        call PIO_init(pio_tf_world_rank_, dup_comm, pio_tf_world_sz_, &
+                      1, &! Num aggregators
+                      1, &! Stride
+                      rearrs_perms(j,k), dup_iosys, base=0)
+        call PIO_seterrorhandling(dup_iosys, PIO_BCAST_ERROR)
+
+        call open_and_check_rdwr(dup_comm, dup_iosys, iotypes(i), &
+                        pio_file, fname, ret)
+        PIO_TF_CHECK_ERR(ret, dup_comm, "Checking rd+wr on file failed :" // fname)
+
+        call PIO_finalize(dup_iosys, ret)
+      end do
+    end do
+    call PIO_deletefile(pio_tf_iosystem_, fname)
+    call MPI_Comm_free(dup_comm, ret)
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+PIO_TF_AUTO_TEST_SUB_END test_rearrs_combs
+
