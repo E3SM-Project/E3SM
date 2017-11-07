@@ -229,8 +229,11 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         if case is not None:
             case.flush()
         fullcmd = cmd
-        for arg in cmdargs:
-            fullcmd += " " + str(arg)
+        if isinstance(cmdargs, list):
+            for arg in cmdargs:
+                fullcmd += " " + str(arg)
+        else:
+            fullcmd += " " + cmdargs
         output = run_cmd_no_fail("{} 1> {} 2>&1".format(fullcmd, logfile),
                                  combine_output=combine_output,
                                  from_dir=from_dir)
