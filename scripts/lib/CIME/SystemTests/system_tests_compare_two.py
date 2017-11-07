@@ -53,8 +53,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = '',
-                 multisubmit = False,
-                 expected=None):
+                 multisubmit = False):
         """
         Initialize a SystemTestsCompareTwo object. Individual test cases that
         inherit from SystemTestsCompareTwo MUST call this __init__ method.
@@ -74,7 +73,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             multisubmit (bool): Do first and second runs as different submissions.
                 Designed for tests with RESUBMIT=1
         """
-        SystemTestsCommon.__init__(self, case, expected=expected)
+        SystemTestsCommon.__init__(self, case)
 
         self._separate_builds = separate_builds
 

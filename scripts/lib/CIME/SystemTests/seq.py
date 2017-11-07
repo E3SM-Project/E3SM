@@ -20,8 +20,7 @@ class SEQ(SystemTestsCompareTwo):
                                        separate_builds=True,
                                        run_two_suffix="seq",
                                        run_one_description = "base",
-                                       run_two_description = "sequence",
-                                       expected=["TEST"])
+                                       run_two_description = "sequence")
 
     def _case_one_setup(self):
         pass
