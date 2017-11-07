@@ -610,13 +610,22 @@ contains
 
 
 
-  subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+!!== KZ_WATCON
+!!subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+  subroutine applyCAMforcing(elem,fvm,hvcoord,hybrid,tl,np1,np1_qdp,dt_q,nets,nete)
+!!== KZ_WATCON
+
 
   use dimensions_mod, only: np, nc, nlev, qsize, ntrac
   use control_mod,    only: moisture, tracer_grid_type
   use control_mod,    only: TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
   use fvm_control_volume_mod, only : fvm_struct, n0_fvm
+!!== KZ_WATCON
+  use time_mod, only : TimeLevel_t
+  use prim_state_mod, only : prim_diag_Qdp
+  use hybrid_mod, only : hybrid_t
+!!== KZ_WATCON
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
@@ -624,6 +633,10 @@ contains
   real (kind=real_kind),  intent(in)    :: dt_q
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
+!!== KZ_WATCON
+  type (TimeLevel_t),   intent(inout) :: tl
+  type (hybrid_t), intent(in)       :: hybrid
+!!== KZ_WATCON
 
   ! local
   integer :: i,j,k,ie,q
@@ -632,6 +645,33 @@ contains
   logical :: wet
 
   wet = (moisture /= "dry")
+
+
+!!! !!!  do ie=nets,nete
+!!! !!!     do q = 1, 9
+!!! !!!        if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+!!! !!!         write(iulog,*) '### prim_advance_mod 001 : ie, it, minval, maxval = ', ie, q, &
+!!! !!!              minval(elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp)), & 
+!!! !!!              maxval(elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp))
+!!! !!!         endif
+!!! !!!     enddo
+!!! !!!  end do
+!!! 
+!!!   if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+!!!      write(iulog,*) ' '
+!!!      write(iulog,*) 'prim_advance_mod 001 '
+!!!      write(iulog,*) ' '
+!!!   endif
+!!! 
+!!!   call prim_diag_Qdp(elem,hybrid,hvcoord,np1_qdp,nets,nete)
+!!! 
+!!! !!!!!== KZ_WATCON
+!!! !!!  do ie=nets,nete
+!!! !!!     do q = 1, qsize
+!!! !!!        call massborrow_dyn('Qdp',q,np,nlev,elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp),elem(ie)%state%Qdp(1:np,1:np,1:nlev,1,np1_qdp))
+!!! !!!     enddo
+!!! !!!  end do
+!!! !!!!!== KZ_WATCON
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -668,6 +708,56 @@ contains
            enddo
         enddo
      enddo
+
+  end do !! do ie=nets,nete
+
+!!! !!!  do ie=nets,nete
+!!! !!!     do q = 1, 9
+!!! !!!        if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+!!! !!!         write(iulog,*) '### prim_advance_mod 003 : ie, it, minval, maxval = ', ie, q, &
+!!! !!!              minval(elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp)), &
+!!! !!!              maxval(elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp))
+!!! !!!        endif
+!!! !!!     enddo
+!!! !!!  end do
+!!! 
+!!! 
+!!!   if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+!!!      write(iulog,*) ' '
+!!!      write(iulog,*) 'prim_advance_mod 002 '
+!!!      write(iulog,*) ' '
+!!!   endif
+!!! 
+!!!   call prim_diag_Qdp(elem,hybrid,hvcoord,np1_qdp,nets,nete)
+!!! 
+!!! !!!!== KZ_WATCON
+!!! !!  do ie=nets,nete
+!!! !!     do q = 1, qsize
+!!! !!        call massborrow_dyn('Qdp',q,np,nlev,elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp),elem(ie)%state%Qdp(1:np,1:np,1:nlev,1,np1_qdp))
+!!! !!     enddo
+!!! !!  end do 
+!!! !!!!== KZ_WATCON
+!!! 
+!!! !!!  do ie=nets,nete
+!!! !!!     do q = 1, 9
+!!! !!!        if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+!!! !!!         write(iulog,*) '### prim_advance_mod 004 : ie, it, minval, maxval = ', ie, q, &
+!!! !!!              minval(elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp)), &
+!!! !!!              maxval(elem(ie)%state%Qdp(1:np,1:np,1:nlev,q,np1_qdp))
+!!! !!!        endif
+!!! !!!     enddo
+!!! !!!  end do
+!!! 
+!!!   if(hybrid%par%masterproc .and. hybrid%ithr==0) then
+!!!      write(iulog,*) ' '
+!!!      write(iulog,*) 'prim_advance_mod 003 '
+!!!      write(iulog,*) ' '
+!!!   endif
+!!!   call prim_diag_Qdp(elem,hybrid,hvcoord,np1_qdp,nets,nete)
+
+
+  do ie=nets,nete
+
      ! Repeat for the fvm tracers
      do q = 1, ntrac
         do k = 1, nlev
@@ -739,6 +829,14 @@ contains
                  dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
                  elem(ie)%state%Q(i,j,k,q) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)/dp
+
+!!== KZ_WATCON
+!!            if(elem(ie)%state%Qdp(i,j,k,q,np1_qdp).lt.0) then
+!!               write(iulog,*) 'prim_advance_mod : ie, it, k, i, j, Qdp = ', ie, q, k, i, j, elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+!!               stop ' prim_advance_mod 02 ' 
+!!            end if
+!!== KZ_WATCON
+
               enddo
            enddo
         enddo
@@ -756,7 +854,6 @@ contains
 
   use dimensions_mod, only: np, nlev, qsize
   use element_mod,    only: element_t
-  use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
   type (element_t)     ,  intent(inout) :: elem(:)

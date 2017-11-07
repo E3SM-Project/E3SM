@@ -30,6 +30,9 @@ private
 
 
   public :: prim_printstate
+!!== KZ_WATCON
+  public :: prim_diag_Qdp
+!!== KZ_WATCON
   public :: prim_printstate_init
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
@@ -1006,4 +1009,54 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
 
 end subroutine prim_diag_scalars
+
+
+!!== KZ_WATCON
+subroutine prim_diag_Qdp(elem,hybrid,hvcoord,it,nets,nete)
+
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, np, nlev
+    use hybvcoord_mod, only : hvcoord_t
+    use element_mod, only : element_t
+
+    implicit none 
+
+    type (element_t), intent(in) :: elem(:)
+    type (hybrid_t),  intent(in) :: hybrid
+    type (hvcoord_t), intent(in) :: hvcoord
+
+    integer :: nets
+    integer :: nete
+    integer :: ie
+    integer :: it
+    integer :: k
+    integer :: q
+
+    real (kind=real_kind) :: tmp(np,np,nets:nete)
+    real (kind=real_kind) :: QQmass(qsize_d)
+
+
+    QQmass = 0
+
+    do q=1,qsize
+       do ie=nets,nete
+          tmp(:,:,ie)= 0
+          do k=1,nlev
+             tmp(:,:,ie)= tmp(:,:,ie) + elem(ie)%state%Qdp(1:np,1:np,k,q,it)
+          enddo
+       enddo
+       QQmass(q) = global_integral(elem, tmp(:,:,nets:nete),hybrid,np,nets,nete)
+    enddo
+
+    if(hybrid%par%masterproc .and. hybrid%ithr==0) then
+       do q=1,qsize
+          write(iulog,'(a,i3,E22.14,a)') "Q",q, QQmass(q)," kg/m^2"
+       enddo
+    endif
+
+end subroutine prim_diag_Qdp
+!!== KZ_WATCON
+
+
+
 end module prim_state_mod

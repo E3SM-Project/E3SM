@@ -907,7 +907,10 @@ contains
 
 
 
-  subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,nsubstep)
+!!== KZ_WATCON
+!!subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(isplit,elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,nsubstep)
+!!== KZ_WATCON
 
     !   advance dynamic variables and tracers (u,v,T,ps,Q,C) from time t to t + dt_q
     !
@@ -937,6 +940,9 @@ contains
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
 
+!!== KZ_WATCON
+    integer,              intent(in)    :: isplit
+!!== KZ_WATCON
     type (element_t) ,    intent(inout) :: elem(:)
     type (fvm_struct),    intent(inout) :: fvm(:)
     type (hybrid_t),      intent(in)    :: hybrid                       ! distributed parallel structure (shared)
@@ -970,8 +976,17 @@ contains
        compute_diagnostics= .true.
        compute_energy     = .true.
     endif
+!!== KZ_WATCON
+    compute_diagnostics=.true.
+    compute_energy = .true.
+!!== KZ_WATCON
+
     if(disable_diagnostics) compute_diagnostics= .false.
 
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 001 : isplit, nstep, dt_q = ', isplit, tl%nstep, dt_q  
+!!!!!== KZ_WATCON
+!!!
     ! compute scalar diagnostics if currently active
     if (compute_diagnostics) then
       call t_startf("prim_diag_scalars")
@@ -979,6 +994,10 @@ contains
       call t_stopf("prim_diag_scalars")
     endif
 
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 002 '
+!!!!!== KZ_WATCON
+!!!
 #ifdef CAM
 
     ! Apply CAM Physics forcing
@@ -992,7 +1011,10 @@ contains
 
     if (ftype==0) then
       call t_startf("ApplyCAMForcing")
-      call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+!!== KZ_WATCON
+!!    call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call ApplyCAMForcing(elem, fvm, hvcoord, hybrid, tl, tl%n0, n0_qdp, dt_remap, nets, nete)
+!!== KZ_WATCON
       call t_stopf("ApplyCAMForcing")
 
     elseif (ftype==2) then
@@ -1006,6 +1028,11 @@ contains
 
 #endif
 
+!!!
+!!!!!== KZ_WATCON
+!!!    call prim_diag_Qdp(elem,hybrid,hvcoord,n0_qdp,nets,nete)
+!!!!!== KZ_WATCON
+!!!
     ! E(1) Energy after CAM forcing
     if (compute_energy) then
       call t_startf("prim_energy_halftimes")
@@ -1020,6 +1047,10 @@ contains
       call t_stopf("prim_diag_scalars")
     endif
 
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc.and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 004 n0_qdp = ', n0_qdp 
+!!!!!== KZ_WATCON
+!!!
     ! initialize dp3d from ps
     do ie=nets,nete
        do k=1,nlev
@@ -1037,19 +1068,51 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 005 n0_qdp = ', n0_qdp 
+!!!!!== KZ_WATCON
+!!!
     ! Loop over rsplit vertically lagrangian timesteps
     call t_startf("prim_step_rX")
+
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 006 n0_qdp = ', n0_qdp 
+!!!    call prim_diag_Qdp(elem,hybrid,hvcoord,n0_qdp,nets,nete)
+!!!!!== KZ_WATCON
+
+
     call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
     call t_stopf("prim_step_rX")
 
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 007 n0_qdp = ', n0_qdp 
+!!!    call prim_diag_Qdp(elem,hybrid,hvcoord,n0_qdp,nets,nete)
+!!!!!== KZ_WATCON
+
     do r=2,rsplit
+
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 0071 n0_qdp, np1_qdp : ', n0_qdp, np1_qdp, r 
+!!!    call prim_diag_Qdp(elem,hybrid,hvcoord,n0_qdp,nets,nete)
+!!!!!== KZ_WATCON
+
        call TimeLevel_update(tl,"leapfrog")
        call t_startf("prim_step_rX")
        call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
        call t_stopf("prim_step_rX")
+
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 0072 : ', r 
+!!!    call prim_diag_Qdp(elem,hybrid,hvcoord,n0_qdp,nets,nete)
+!!!!!== KZ_WATCON
+
     enddo
     ! defer final timelevel update until after remap and diagnostics
 
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 008 '
+!!!!!== KZ_WATCON
+!!!
 #if (USE_OPENACC)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
@@ -1066,6 +1129,15 @@ contains
     ! note: time level update for fvm tracers takes place in fvm_mod
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
+
+
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 009 : '
+!!!    call prim_diag_Qdp(elem,hybrid,hvcoord,np1_qdp,nets,nete)
+!!!
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 010 '
+!!!!!== KZ_WATCON
+
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
@@ -1135,6 +1207,11 @@ contains
     if (compute_diagnostics) then
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
     end if
+
+!!!!!== KZ_WATCON
+!!!    if(hybrid%par%masterproc .and. hybrid%ithr==0) write(iulog,*) ' prim_run_subcycle 011 '
+!!!!!== KZ_WATCON
+
   end subroutine prim_run_subcycle
 
 

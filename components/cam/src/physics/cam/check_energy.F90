@@ -209,9 +209,217 @@ end subroutine check_energy_get_integrals
     call addfld('BC02QS', horiz_only,  'I', 'kg/m2', 'qs after process')
     call addfld('BC02TW', horiz_only,  'I', 'kg/m2', 'total water after process')
 
-    call addfld('AC01QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
-    call addfld('AC02QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
-    call addfld('BC01QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
+    call addfld('BC03Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC03QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC03QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC03QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC03QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC03TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC04Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC04QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC04QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC04QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC04QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC04TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC05Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC05QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC05QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC05QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC05QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC05TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC07AQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC07AQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC07AQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC07AQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC07AQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC07ATW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC07BQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC07BQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC07BQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC07BQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC07BQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC07BTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC07CQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC07CQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC07CQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC07CQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC07CQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC07CTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC07DQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC07DQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC07DQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC07DQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC07DQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC07DTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC07EQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC07EQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC07EQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC07EQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC07EQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC07ETW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC07FQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC07FQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC07FQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC07FQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC07FQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC07FTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC08AQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC08AQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC08AQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC08AQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC08AQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC08ATW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC08BQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC08BQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC08BQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC08BQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC08BQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC08BTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC08CQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC08CQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC08CQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC08CQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC08CQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC08CTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC08DQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC08DQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC08DQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC08DQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC08DQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC08DTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC08EQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC08EQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC08EQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC08EQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC08EQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC08ETW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC08FQ', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC08FQL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC08FQI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC08FQR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC08FQS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC08FTW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC09Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC09QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC09QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC09QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC09QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC09TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('BC99Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('BC99QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('BC99QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('BC99QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('BC99QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('BC99TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC01Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('AC01QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('AC01QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('AC01QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('AC01QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('AC01TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC02Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('AC02QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('AC02QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('AC02QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('AC02QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('AC02TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC03Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('AC03QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('AC03QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('AC03QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('AC03QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('AC03TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC04Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('AC04QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('AC04QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('AC04QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('AC04QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('AC04TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC05Q', horiz_only,   'I', 'kg/m2', 'q after process')
+    call addfld('AC05QL', horiz_only,  'I', 'kg/m2', 'ql after process')
+    call addfld('AC05QI', horiz_only,  'I', 'kg/m2', 'qi after process')
+    call addfld('AC05QR', horiz_only,  'I', 'kg/m2', 'qr after process')
+    call addfld('AC05QS', horiz_only,  'I', 'kg/m2', 'qs after process')
+    call addfld('AC05TW', horiz_only,  'I', 'kg/m2', 'total water after process')
+
+    call addfld('AC01QFLX', horiz_only,    'A', 'kg/m2/s', 'QFLX AC01')
+    call addfld('AC02QFLX', horiz_only,    'A', 'kg/m2/s', 'QFLX AC02')
+    call addfld('BC01QFLX', horiz_only,    'A', 'kg/m2/s', 'QFLX BC01')
+    call addfld('BC06QFLX', horiz_only,    'A', 'kg/m2/s', 'QFLX cflx')
+    call addfld('BC07QFLX', horiz_only,    'A', 'kg/m2/s', 'QFLX lhflx/latvap')
+
+    call addfld('BC01PR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC02PR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC04PR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC05PR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC07APR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC07BPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC07CPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC07DPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC07EPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC07FPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC08APR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC08BPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC08CPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC08DPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC08EPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC08FPR', horiz_only,   'A', 'kg/m2', 'prect after process')
+    call addfld('BC09PR', horiz_only,   'A', 'kg/m2', 'prect after process')
+
+    call addfld('BC03WDIF',  horiz_only,    'A', 'kg/m2', 'dry_adjustment TW diff')
+    call addfld('BC03WRDIF', horiz_only,    'A', '',      'dry_adjustment TW diff')
+
+    call addfld('BC04WDIF',  horiz_only,    'A', 'kg/m2', 'deep_conv TW diff')
+    call addfld('BC04WRDIF', horiz_only,    'A', '',      'deep_conv TW diff')
+
+    call addfld('BC07AWDIF',  horiz_only,    'A', 'kg/m2', 'clubb sub-cycle TW diff')
+    call addfld('BC07BWDIF',  horiz_only,    'A', 'kg/m2', 'clubb sub-cycle TW diff')
+    call addfld('BC07CWDIF',  horiz_only,    'A', 'kg/m2', 'clubb sub-cycle TW diff')
+    call addfld('BC07DWDIF',  horiz_only,    'A', 'kg/m2', 'clubb sub-cycle TW diff')
+    call addfld('BC07EWDIF',  horiz_only,    'A', 'kg/m2', 'clubb sub-cycle TW diff')
+    call addfld('BC07FWDIF',  horiz_only,    'A', 'kg/m2', 'clubb sub-cycle TW diff')
+
+    call addfld('BC07AWRDIF', horiz_only,    'A', '',      'clubb sub-cycle TW diff')
+    call addfld('BC07BWRDIF', horiz_only,    'A', '',      'clubb sub-cycle TW diff')
+    call addfld('BC07CWRDIF', horiz_only,    'A', '',      'clubb sub-cycle TW diff')
+    call addfld('BC07DWRDIF', horiz_only,    'A', '',      'clubb sub-cycle TW diff')
+    call addfld('BC07EWRDIF', horiz_only,    'A', '',      'clubb sub-cycle TW diff')
+    call addfld('BC07FWRDIF', horiz_only,    'A', '',      'clubb sub-cycle TW diff')
+
+    call addfld('BC08AWDIF',  horiz_only,    'A', 'kg/m2', 'mg2 sub-cycle TW diff')
+    call addfld('BC08BWDIF',  horiz_only,    'A', 'kg/m2', 'mg2 sub-cycle TW diff')
+    call addfld('BC08CWDIF',  horiz_only,    'A', 'kg/m2', 'mg2 sub-cycle TW diff')
+    call addfld('BC08DWDIF',  horiz_only,    'A', 'kg/m2', 'mg2 sub-cycle TW diff')
+    call addfld('BC08EWDIF',  horiz_only,    'A', 'kg/m2', 'mg2 sub-cycle TW diff')
+    call addfld('BC08FWDIF',  horiz_only,    'A', 'kg/m2', 'mg2 sub-cycle TW diff')
+
+    call addfld('BC08AWRDIF', horiz_only,    'A', '',      'mg2 sub-cycle TW diff')
+    call addfld('BC08BWRDIF', horiz_only,    'A', '',      'mg2 sub-cycle TW diff')
+    call addfld('BC08CWRDIF', horiz_only,    'A', '',      'mg2 sub-cycle TW diff')
+    call addfld('BC08DWRDIF', horiz_only,    'A', '',      'mg2 sub-cycle TW diff')
+    call addfld('BC08EWRDIF', horiz_only,    'A', '',      'mg2 sub-cycle TW diff')
+    call addfld('BC08FWRDIF', horiz_only,    'A', '',      'mg2 sub-cycle TW diff')
 
 
     if (masterproc) then
@@ -538,6 +746,76 @@ end subroutine check_energy_get_integrals
     where (state%tw_cur(:ncol) > 0._r8) 
        tw_rer(:ncol) = (tw_xpd(:ncol) - tw(:ncol)) / state%tw_cur(:ncol)
     end where
+
+    if(name.eq."dry_adjustment") then 
+       call outfld('BC03WDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC03WRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."convect_deep") then 
+       call outfld('BC04WDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC04WRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."clubb_tend1") then 
+       call outfld('BC07AWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC07AWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."clubb_tend2") then 
+       call outfld('BC07BWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC07BWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."clubb_tend3") then 
+       call outfld('BC07CWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC07CWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."clubb_tend4") then 
+       call outfld('BC07DWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC07DWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."clubb_tend5") then 
+       call outfld('BC07EWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC07EWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."clubb_tend6") then 
+       call outfld('BC07FWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC07FWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."microp_tend1") then 
+       call outfld('BC08AWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC08AWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."microp_tend2") then 
+       call outfld('BC08BWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC08BWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."microp_tend3") then 
+       call outfld('BC08CWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC08CWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."microp_tend4") then 
+       call outfld('BC08DWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC08DWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."microp_tend5") then 
+       call outfld('BC08EWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC08EWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
+
+    if(name.eq."microp_tend6") then 
+       call outfld('BC08FWDIF',  tw_err,pcols   ,lchnk   )
+       call outfld('BC08FWRDIF', tw_rer,pcols   ,lchnk   )
+    end if 
 
     ! error checking
     ! the relative error threshold for the water budget has been reduced to 1.e-10
@@ -1050,6 +1328,204 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
        call outfld('BC02TW',          tw,pcols   ,lchnk   )
     end if
 
+    if(name.eq.'PHYBC03') then
+       call outfld('BC03Q',           wv,pcols   ,lchnk   )
+       call outfld('BC03QL',          wl,pcols   ,lchnk   )
+       call outfld('BC03QI',          wi,pcols   ,lchnk   )
+       call outfld('BC03QR',          wr,pcols   ,lchnk   )
+       call outfld('BC03QS',          ws,pcols   ,lchnk   )
+       call outfld('BC03TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC04') then
+       call outfld('BC04Q',           wv,pcols   ,lchnk   )
+       call outfld('BC04QL',          wl,pcols   ,lchnk   )
+       call outfld('BC04QI',          wi,pcols   ,lchnk   )
+       call outfld('BC04QR',          wr,pcols   ,lchnk   )
+       call outfld('BC04QS',          ws,pcols   ,lchnk   )
+       call outfld('BC04TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC05') then
+       call outfld('BC05Q',           wv,pcols   ,lchnk   )
+       call outfld('BC05QL',          wl,pcols   ,lchnk   )
+       call outfld('BC05QI',          wi,pcols   ,lchnk   )
+       call outfld('BC05QR',          wr,pcols   ,lchnk   )
+       call outfld('BC05QS',          ws,pcols   ,lchnk   )
+       call outfld('BC05TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC07A') then
+       call outfld('BC07AQ',           wv,pcols   ,lchnk   )
+       call outfld('BC07AQL',          wl,pcols   ,lchnk   )
+       call outfld('BC07AQI',          wi,pcols   ,lchnk   )
+       call outfld('BC07AQR',          wr,pcols   ,lchnk   )
+       call outfld('BC07AQS',          ws,pcols   ,lchnk   )
+       call outfld('BC07ATW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC07B') then
+       call outfld('BC07BQ',           wv,pcols   ,lchnk   )
+       call outfld('BC07BQL',          wl,pcols   ,lchnk   )
+       call outfld('BC07BQI',          wi,pcols   ,lchnk   )
+       call outfld('BC07BQR',          wr,pcols   ,lchnk   )
+       call outfld('BC07BQS',          ws,pcols   ,lchnk   )
+       call outfld('BC07BTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC07C') then
+       call outfld('BC07CQ',           wv,pcols   ,lchnk   )
+       call outfld('BC07CQL',          wl,pcols   ,lchnk   )
+       call outfld('BC07CQI',          wi,pcols   ,lchnk   )
+       call outfld('BC07CQR',          wr,pcols   ,lchnk   )
+       call outfld('BC07CQS',          ws,pcols   ,lchnk   )
+       call outfld('BC07CTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC07D') then
+       call outfld('BC07DQ',           wv,pcols   ,lchnk   )
+       call outfld('BC07DQL',          wl,pcols   ,lchnk   )
+       call outfld('BC07DQI',          wi,pcols   ,lchnk   )
+       call outfld('BC07DQR',          wr,pcols   ,lchnk   )
+       call outfld('BC07DQS',          ws,pcols   ,lchnk   )
+       call outfld('BC07DTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC07E') then
+       call outfld('BC07EQ',           wv,pcols   ,lchnk   )
+       call outfld('BC07EQL',          wl,pcols   ,lchnk   )
+       call outfld('BC07EQI',          wi,pcols   ,lchnk   )
+       call outfld('BC07EQR',          wr,pcols   ,lchnk   )
+       call outfld('BC07EQS',          ws,pcols   ,lchnk   )
+       call outfld('BC07ETW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC07F') then
+       call outfld('BC07FQ',           wv,pcols   ,lchnk   )
+       call outfld('BC07FQL',          wl,pcols   ,lchnk   )
+       call outfld('BC07FQI',          wi,pcols   ,lchnk   )
+       call outfld('BC07FQR',          wr,pcols   ,lchnk   )
+       call outfld('BC07FQS',          ws,pcols   ,lchnk   )
+       call outfld('BC07FTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC08A') then
+       call outfld('BC08AQ',           wv,pcols   ,lchnk   )
+       call outfld('BC08AQL',          wl,pcols   ,lchnk   )
+       call outfld('BC08AQI',          wi,pcols   ,lchnk   )
+       call outfld('BC08AQR',          wr,pcols   ,lchnk   )
+       call outfld('BC08AQS',          ws,pcols   ,lchnk   )
+       call outfld('BC08ATW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC08B') then
+       call outfld('BC08BQ',           wv,pcols   ,lchnk   )
+       call outfld('BC08BQL',          wl,pcols   ,lchnk   )
+       call outfld('BC08BQI',          wi,pcols   ,lchnk   )
+       call outfld('BC08BQR',          wr,pcols   ,lchnk   )
+       call outfld('BC08BQS',          ws,pcols   ,lchnk   )
+       call outfld('BC08BTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC08C') then
+       call outfld('BC08CQ',           wv,pcols   ,lchnk   )
+       call outfld('BC08CQL',          wl,pcols   ,lchnk   )
+       call outfld('BC08CQI',          wi,pcols   ,lchnk   )
+       call outfld('BC08CQR',          wr,pcols   ,lchnk   )
+       call outfld('BC08CQS',          ws,pcols   ,lchnk   )
+       call outfld('BC08CTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC08D') then
+       call outfld('BC08DQ',           wv,pcols   ,lchnk   )
+       call outfld('BC08DQL',          wl,pcols   ,lchnk   )
+       call outfld('BC08DQI',          wi,pcols   ,lchnk   )
+       call outfld('BC08DQR',          wr,pcols   ,lchnk   )
+       call outfld('BC08DQS',          ws,pcols   ,lchnk   )
+       call outfld('BC08DTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC08E') then
+       call outfld('BC08EQ',           wv,pcols   ,lchnk   )
+       call outfld('BC08EQL',          wl,pcols   ,lchnk   )
+       call outfld('BC08EQI',          wi,pcols   ,lchnk   )
+       call outfld('BC08EQR',          wr,pcols   ,lchnk   )
+       call outfld('BC08EQS',          ws,pcols   ,lchnk   )
+       call outfld('BC08ETW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC08F') then
+       call outfld('BC08FQ',           wv,pcols   ,lchnk   )
+       call outfld('BC08FQL',          wl,pcols   ,lchnk   )
+       call outfld('BC08FQI',          wi,pcols   ,lchnk   )
+       call outfld('BC08FQR',          wr,pcols   ,lchnk   )
+       call outfld('BC08FQS',          ws,pcols   ,lchnk   )
+       call outfld('BC08FTW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC09') then
+       call outfld('BC09Q',           wv,pcols   ,lchnk   )
+       call outfld('BC09QL',          wl,pcols   ,lchnk   )
+       call outfld('BC09QI',          wi,pcols   ,lchnk   )
+       call outfld('BC09QR',          wr,pcols   ,lchnk   )
+       call outfld('BC09QS',          ws,pcols   ,lchnk   )
+       call outfld('BC09TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYBC99') then
+       call outfld('BC99Q',           wv,pcols   ,lchnk   )
+       call outfld('BC99QL',          wl,pcols   ,lchnk   )
+       call outfld('BC99QI',          wi,pcols   ,lchnk   )
+       call outfld('BC99QR',          wr,pcols   ,lchnk   )
+       call outfld('BC99QS',          ws,pcols   ,lchnk   )
+       call outfld('BC99TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYAC01') then
+       call outfld('AC01Q',           wv,pcols   ,lchnk   )
+       call outfld('AC01QL',          wl,pcols   ,lchnk   )
+       call outfld('AC01QI',          wi,pcols   ,lchnk   )
+       call outfld('AC01QR',          wr,pcols   ,lchnk   )
+       call outfld('AC01QS',          ws,pcols   ,lchnk   )
+       call outfld('AC01TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYAC02') then
+       call outfld('AC02Q',           wv,pcols   ,lchnk   )
+       call outfld('AC02QL',          wl,pcols   ,lchnk   )
+       call outfld('AC02QI',          wi,pcols   ,lchnk   )
+       call outfld('AC02QR',          wr,pcols   ,lchnk   )
+       call outfld('AC02QS',          ws,pcols   ,lchnk   )
+       call outfld('AC02TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYAC03') then
+       call outfld('AC03Q',           wv,pcols   ,lchnk   )
+       call outfld('AC03QL',          wl,pcols   ,lchnk   )
+       call outfld('AC03QI',          wi,pcols   ,lchnk   )
+       call outfld('AC03QR',          wr,pcols   ,lchnk   )
+       call outfld('AC03QS',          ws,pcols   ,lchnk   )
+       call outfld('AC03TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYAC04') then
+       call outfld('AC04Q',           wv,pcols   ,lchnk   )
+       call outfld('AC04QL',          wl,pcols   ,lchnk   )
+       call outfld('AC04QI',          wi,pcols   ,lchnk   )
+       call outfld('AC04QR',          wr,pcols   ,lchnk   )
+       call outfld('AC04QS',          ws,pcols   ,lchnk   )
+       call outfld('AC04TW',          tw,pcols   ,lchnk   )
+    end if
+
+    if(name.eq.'PHYAC05') then
+       call outfld('AC05Q',           wv,pcols   ,lchnk   )
+       call outfld('AC05QL',          wl,pcols   ,lchnk   )
+       call outfld('AC05QI',          wi,pcols   ,lchnk   )
+       call outfld('AC05QR',          wr,pcols   ,lchnk   )
+       call outfld('AC05QS',          ws,pcols   ,lchnk   )
+       call outfld('AC05TW',          tw,pcols   ,lchnk   )
+    end if
+
   end subroutine check_water 
 
 
@@ -1090,6 +1566,13 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
        call outfld('BC01QFLX', qflx, pcols, lchnk)
     end if
 
+    if(name.eq.'PHYBC06') then
+       call outfld('BC06QFLX', qflx, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07') then
+       call outfld('BC07QFLX', qflx, pcols, lchnk)
+    end if
   end subroutine check_qflx
 
 
@@ -1124,6 +1607,66 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     if(name.eq.'PHYBC02') then
        call outfld('BC02PR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC04') then
+       call outfld('BC04PR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC05') then
+       call outfld('BC05PR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07A') then
+       call outfld('BC07APR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07B') then
+       call outfld('BC07BPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07C') then
+       call outfld('BC07CPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07D') then
+       call outfld('BC07DPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07E') then
+       call outfld('BC07EPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC07F') then
+       call outfld('BC07FPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC08A') then
+       call outfld('BC08APR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC08B') then
+       call outfld('BC08BPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC08C') then
+       call outfld('BC08CPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC08D') then
+       call outfld('BC08DPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC08E') then
+       call outfld('BC08EPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC08F') then
+       call outfld('BC08FPR', prect, pcols, lchnk)
+    end if
+
+    if(name.eq.'PHYBC09') then
+       call outfld('BC09PR', prect, pcols, lchnk)
     end if
 
   end subroutine check_prect

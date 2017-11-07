@@ -1124,6 +1124,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
     use physconst,      only: stebol, latvap
     use carma_intr,     only: carma_accumulate_stats
+!!== KZ_WATCON
+    use time_manager,   only: get_nstep
+    use check_energy,   only: check_energy_gmean, qflx_gmean
+!!== KZ_WATCON
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
@@ -1140,6 +1144,9 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
     type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
     type(cam_in_t),      intent(inout), dimension(begchunk:endchunk) :: cam_in
+!!== KZ_WATCON
+    integer             :: nstep           ! current timestep number
+!!== KZ_WATCON
     !
     !-----------------------------------------------------------------------
     !---------------------------Local workspace-----------------------------
@@ -1176,6 +1183,14 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call t_barrierf('sync_ac_physics', mpicom)
     call t_startf ('ac_physics')
     !call t_adj_detailf(+1)
+
+!!== KZ_WATCON
+!!    nstep = get_nstep()
+!!
+!!    call t_startf ('qflx_gmean')
+!!    call qflx_gmean(phys_state, phys_tend, cam_in, ztodt, nstep)
+!!    call t_stopf ('qflx_gmean') 
+!!== KZ_WATCON
 
 !$OMP PARALLEL DO PRIVATE (C, NCOL, phys_buffer_chunk)
 
@@ -1449,6 +1464,8 @@ end if ! l_tracer_aero
 
 !!== KZ_WCON
 
+    call check_water(state, tend, "PHYAC01", nstep, ztodt)
+
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
     if(.not.use_qqflx_fixer) then 
@@ -1499,6 +1516,8 @@ if (l_tracer_aero) then
 
 end if ! l_tracer_aero
 
+    call check_water(state, tend, "PHYAC02", nstep, ztodt)
+
 if (l_vdiff) then
     !===================================================
     ! Vertical diffusion/pbl calculation
@@ -1536,6 +1555,8 @@ if (l_vdiff) then
     endif
 
 end if ! l_vdiff
+
+    call check_water(state, tend, "PHYAC03", nstep, ztodt)
 
 if (l_rayleigh) then
     !===================================================
@@ -1588,6 +1609,8 @@ if (l_tracer_aero) then
 
 end if ! l_tracer_aero
 
+    call check_water(state, tend, "PHYAC04", nstep, ztodt)
+
 if (l_gw_drag) then
     !===================================================
     ! Gravity wave drag
@@ -1628,6 +1651,8 @@ if (l_gw_drag) then
     call t_stopf  ( 'iondrag' )
 
 end if ! l_gw_drag
+
+    call check_water(state, tend, "PHYAC05", nstep, ztodt)
 
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -1707,6 +1732,8 @@ end if ! l_ac_energy_chk
 
     call clybry_fam_set( ncol, lchnk, map2chm, state%q, pbuf )
 
+    call check_water(state, tend, "PHYAC06", nstep, ztodt)
+
 end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
@@ -1778,7 +1805,9 @@ subroutine tphysbc (ztodt,               &
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
-    use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+!!== KZ_WATCON
+    use phys_control,    only: use_qqflx_fixer, use_mass_borrower, clubb_qflx_fix 
+!!== KZ_WATCON
 
     implicit none
 
@@ -2153,7 +2182,14 @@ if (l_dry_adj) then
     ptend%q(:ncol,:,1) = (ptend%q(:ncol,:,1) - state%q(:ncol,:,1))/ztodt
     call physics_update(state, ptend, ztodt, tend)
 
+    ! Check water and energy integrals
+    call check_energy_chng(state, tend, "dry_adjustment", nstep, ztodt, zero, zero, zero, zero)
+
     call t_stopf('dry_adjustment')
+
+!!== KZ_WCON
+      call check_water(state, tend, "PHYBC03", nstep, ztodt)
+!!== KZ_WCON
 
 end if
     !
@@ -2197,6 +2233,11 @@ end if
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
 
+!!== KZ_WCON
+      call check_water(state, tend, "PHYBC04", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC04", nstep, ztodt, flx_cnd)
+!!== KZ_WCON
+
     !
     ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection
     !
@@ -2215,6 +2256,11 @@ end if
     call check_tracers_chng(state, tracerint, "convect_shallow", nstep, ztodt, zero_tracers)
 
     call t_stopf('moist_convection')
+
+!!== KZ_WCON
+      call check_water(state, tend, "PHYBC05", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC05", nstep, ztodt, flx_cnd)
+!!== KZ_WCON
 
 if (l_tracer_aero) then
 
@@ -2377,10 +2423,108 @@ end if
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
-                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
  
+      if(macmic_it.eq.1) then
+                if(clubb_qflx_fix) then 
+                   call check_energy_chng(state, tend, "clubb_tend1", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                else 
+                   call check_energy_chng(state, tend, "clubb_tend1", nstep, ztodt, &
+                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
+      end if
+
+      if(macmic_it.eq.2) then
+                if(clubb_qflx_fix) then 
+                   call check_energy_chng(state, tend, "clubb_tend2", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                else 
+                   call check_energy_chng(state, tend, "clubb_tend2", nstep, ztodt, &
+                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
+      end if
+
+      if(macmic_it.eq.3) then
+                if(clubb_qflx_fix) then 
+                   call check_energy_chng(state, tend, "clubb_tend3", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                else 
+                   call check_energy_chng(state, tend, "clubb_tend3", nstep, ztodt, &
+                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
+      end if
+
+      if(macmic_it.eq.4) then
+                if(clubb_qflx_fix) then 
+                   call check_energy_chng(state, tend, "clubb_tend4", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                else 
+                   call check_energy_chng(state, tend, "clubb_tend4", nstep, ztodt, &
+                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
+      end if
+
+      if(macmic_it.eq.5) then
+                if(clubb_qflx_fix) then 
+                   call check_energy_chng(state, tend, "clubb_tend5", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                else 
+                   call check_energy_chng(state, tend, "clubb_tend5", nstep, ztodt, &
+                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
+      end if
+
+      if(macmic_it.eq.6) then
+                if(clubb_qflx_fix) then 
+                   call check_energy_chng(state, tend, "clubb_tend6", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                else 
+                   call check_energy_chng(state, tend, "clubb_tend6", nstep, ztodt, &
+                        cam_in%lhf/latvap/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
+      end if
+
+!!== KZ_WCON
+      if(macmic_it.eq.1) then
+         call check_qflx(state, tend, "PHYBC06", nstep, ztodt, cam_in%cflx(:,1))
+         call check_qflx(state, tend, "PHYBC07", nstep, ztodt, cam_in%lhf/latvap)
+         call check_water(state, tend, "PHYBC07A", nstep, ztodt)
+         call check_prect(state, tend, "PHYBC07A", nstep, ztodt, flx_cnd/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.2) then
+         call check_water(state, tend, "PHYBC07B", nstep, ztodt)
+         call check_prect(state, tend, "PHYBC07B", nstep, ztodt, flx_cnd/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.3) then
+         call check_water(state, tend, "PHYBC07C", nstep, ztodt)
+         call check_prect(state, tend, "PHYBC07C", nstep, ztodt, flx_cnd/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.4) then
+         call check_water(state, tend, "PHYBC07D", nstep, ztodt)
+         call check_prect(state, tend, "PHYBC07D", nstep, ztodt, flx_cnd/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.5) then
+         call check_water(state, tend, "PHYBC07E", nstep, ztodt)
+         call check_prect(state, tend, "PHYBC07E", nstep, ztodt, flx_cnd/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.6) then
+         call check_water(state, tend, "PHYBC07F", nstep, ztodt)
+         call check_prect(state, tend, "PHYBC07F", nstep, ztodt, flx_cnd/cld_macmic_num_steps)
+      end if
+!!== KZ_WCON
+
           endif
 
           call t_stopf('macrop_tend')
@@ -2449,9 +2593,51 @@ end if
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
           call physics_update (state, ptend, ztodt, tend)
-          call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
+
+!!== KZ_WCON
+      if(macmic_it.eq.1) then
+          call check_energy_chng(state, tend, "microp_tend1", nstep, ztodt, &
                zero, prec_str(:ncol)/cld_macmic_num_steps, &
                snow_str(:ncol)/cld_macmic_num_steps, zero)
+      call check_water(state, tend, "PHYBC08A", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC08A", nstep, ztodt, prec_str(:ncol)/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.2) then
+          call check_energy_chng(state, tend, "microp_tend2", nstep, ztodt, &
+               zero, prec_str(:ncol)/cld_macmic_num_steps, &
+               snow_str(:ncol)/cld_macmic_num_steps, zero)
+      call check_water(state, tend, "PHYBC08B", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC08B", nstep, ztodt, prec_str(:ncol)/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.3) then
+          call check_energy_chng(state, tend, "microp_tend3", nstep, ztodt, &
+               zero, prec_str(:ncol)/cld_macmic_num_steps, &
+               snow_str(:ncol)/cld_macmic_num_steps, zero)
+      call check_water(state, tend, "PHYBC08C", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC08C", nstep, ztodt, prec_str(:ncol)/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.4) then
+          call check_energy_chng(state, tend, "microp_tend4", nstep, ztodt, &
+               zero, prec_str(:ncol)/cld_macmic_num_steps, &
+               snow_str(:ncol)/cld_macmic_num_steps, zero)
+      call check_water(state, tend, "PHYBC08D", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC08D", nstep, ztodt, prec_str(:ncol)/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.5) then
+          call check_energy_chng(state, tend, "microp_tend5", nstep, ztodt, &
+               zero, prec_str(:ncol)/cld_macmic_num_steps, &
+               snow_str(:ncol)/cld_macmic_num_steps, zero)
+      call check_water(state, tend, "PHYBC08E", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC08E", nstep, ztodt, prec_str(:ncol)/cld_macmic_num_steps)
+      end if
+      if(macmic_it.eq.6) then
+          call check_energy_chng(state, tend, "microp_tend6", nstep, ztodt, &
+               zero, prec_str(:ncol)/cld_macmic_num_steps, &
+               snow_str(:ncol)/cld_macmic_num_steps, zero)
+      call check_water(state, tend, "PHYBC08F", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC08F", nstep, ztodt, prec_str(:ncol)/cld_macmic_num_steps)
+      end if
+!!== KZ_WCON
 
           call t_stopf('microp_tend')
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
@@ -2469,6 +2655,11 @@ end if
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
      end if ! l_st_mic
+
+!!== KZ_WCON
+      call check_water(state, tend, "PHYBC09", nstep, ztodt)
+      call check_prect(state, tend, "PHYBC09", nstep, ztodt, prec_str(:ncol))
+!!== KZ_WCON
 
 if (l_tracer_aero) then
 
@@ -2603,6 +2794,10 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+!!== KZ_WCON
+      call check_water(state, tend, "PHYBC99", nstep, ztodt)
+!!== KZ_WCON
 
 end subroutine tphysbc
 

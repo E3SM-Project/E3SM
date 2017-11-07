@@ -27,6 +27,9 @@ module clubb_intr
   use pbl_utils,     only: calc_ustar, calc_obklen
   use perf_mod,      only: t_startf, t_stopf
   use mpishorthand
+!!== KZ_WATCON
+  use phys_control,  only: clubb_qflx_fix
+!!== KZ_WATCON
 
   implicit none
 
@@ -1696,7 +1699,14 @@ end subroutine clubb_init_cnst
       
       !  Surface fluxes provided by host model
       wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
+!!== KZ_WATCON
+      if(clubb_qflx_fix) then 
+         wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
+      else
+         wprtp_sfc  = cam_in%lhf(i)/(latvap*rho_ds_zm(1))      ! Latent heat flux
+      end if 
+!!== KZ_WATCON
+
       upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
       vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
       
@@ -2003,7 +2013,13 @@ end subroutine clubb_init_cnst
       enddo
      
       ! Take into account the surface fluxes of heat and moisture
-      te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
+!!== KZ_WATCON
+      if(clubb_qflx_fix) then 
+         te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
+      else
+         te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%lhf(i)/latvap)*(latvap+latice))*hdtime
+      end if
+!!== KZ_WATCON
 
       ! Limit the energy fixer to find highest layer where CLUBB is active
       ! Find first level where wp2 is higher than lowest threshold
@@ -2409,8 +2425,15 @@ end subroutine clubb_init_cnst
       rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                        rrho, ustar2(i) )
-      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &
-                        kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
+!!== KZ_WATCON
+      if(clubb_qflx_fix) then 
+         call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &
+                           kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
+      else
+         call calc_obklen( th(i,pver), thv(i,pver), cam_in%lhf(i)/latvap, cam_in%shf(i), rrho, ustar2(i), &
+                           kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
+      end if
+!!== KZ_WATCON
    enddo
    
    dummy2(:) = 0._r8
@@ -2600,8 +2623,15 @@ end subroutine clubb_init_cnst
     do i = 1, ncol
        call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                         rrho, ustar(i) )
-       call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
-                        kinheat, kinwat, kbfs, obklen(i) )
+!!== KZ_WATCON
+       if(clubb_qflx_fix) then 
+          call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
+                           kinheat, kinwat, kbfs, obklen(i) )
+       else
+          call calc_obklen( th(i), thv(i), cam_in%lhf(i)/latvap, cam_in%shf(i), rrho, ustar(i), &
+                           kinheat, kinwat, kbfs, obklen(i) )
+       end if
+!!== KZ_WATCON
     enddo
 
     rztodt                 = 1._r8/ztodt

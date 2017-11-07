@@ -1110,6 +1110,13 @@ Whether or not to use the new qqflx fixer (instead of QNEG4).
 Default: set by build-namelist.
 </entry>
 
+<entry id="clubb_qflx_fix" type="logical" category="fixers"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to switch on the qflx in clubb. 
+Only for integration purposes. Should be removed later. 
+Default: set by build-namelist.
+</entry>
+
 <entry id="print_fixer_message" type="logical" category="fixers"
        group="phys_ctl_nl" valid_values="" >
 Whether or not to printout fixer diagnostic message. 
