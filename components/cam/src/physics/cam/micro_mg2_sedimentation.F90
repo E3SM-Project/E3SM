@@ -177,7 +177,7 @@ contains
   end subroutine sed_CalcFallRate
 
   subroutine sed_AdvanceOneStep(q,n,alphaq,alphan,pdel,deltat,deltat_sed,nlev,&
-    i,mg_type,g,qtend,ntend,prect,qsedtend,cloud_frac,qvlat,tlat,xxl,preci,qsevap)
+    i,mg_type,g,qtend,ntend,prect,qsedtend,flx,cloud_frac,qvlat,tlat,xxl,preci,qsevap)
     use micro_mg_utils, only: qsmall
     implicit none
     real(r8), intent(in)              :: pdel(:,:), alphaq(:), alphan(:)
@@ -186,6 +186,7 @@ contains
     real(r8), intent(inout)           :: q(:,:), qtend(:,:), n(:,:), ntend(:,:)
     real(r8), intent(inout)           :: prect(:)
     real(r8), intent(inout)           :: qsedtend(:,:)
+    real(r8), intent(inout)           :: flx(:,:)
     real(r8), intent(in), optional    :: cloud_frac(:,:), xxl
     real(r8), intent(inout), optional :: qvlat(:,:), tlat(:,:), preci(:)
     real(r8), intent(inout), optional :: qsevap(:,:)
@@ -228,8 +229,9 @@ contains
       !sed tend over all substeps.
       qtend(i,k) = qtend(i,k) - deltafluxQ*deltat_sed/deltat
       ntend(i,k) = ntend(i,k) - deltafluxN*deltat_sed/deltat
-      ! sedimentation tendency for output
+      ! sedimentation tendency and flx for output
       qsedtend(i,k) = qsedtend(i,k) - deltafluxQ*deltat_sed/deltat
+      flx(i,k+1) = flx(i,k+1) + fq(k)/g*deltat_sed/deltat
       if (mg_type == MG_ICE .or. mg_type == MG_LIQUID) then
         ! add terms to to evap/sub of cloud water
         deltafluxQ_evap = (ratio(k)-1._r8)*fq(k-1)/pdel(i,k)
@@ -271,6 +273,7 @@ contains
          write(iulog,*) 'forcing crash',log(n(i,k)-deltat_sed*deltafluxN)
       end if
 
+      ! update subcycle quantities
       q(i,k) = q(i,k) - deltat_sed*deltafluxQ
       n(i,k) = n(i,k) - deltat_sed*deltafluxN
 
