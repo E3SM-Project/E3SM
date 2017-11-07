@@ -1,0 +1,30 @@
+module r8_vector_tests
+! Module to test dynamic vector template on reals.
+
+use pfunit_mod
+
+use shr_log_mod, only: OOBMsg => shr_log_OOBMsg
+
+use shr_kind_mod, only: r8 => shr_kind_r8
+
+#define TYPE_NAME r8
+#define TYPE_DECL real(r8)
+#define VECTOR_NAME r8_vector
+
+use dynamic_vector_r8, only: &
+     r8_vector
+
+implicit none
+
+real(r8), parameter :: test_array(3) = [ 1.2_r8, 2.3_r8, 6.4_r8 ]
+
+real(r8), parameter :: test_array_2(5) = &
+     [ 6.2_r8, 6.7_r8, 3.4_r8, 7.8_r8, 3.4_r8 ]
+
+real(r8), parameter :: new_val = -1.8_r8
+
+contains
+
+#include "dynamic_vector_base_tests.inc"
+
+end module r8_vector_tests
