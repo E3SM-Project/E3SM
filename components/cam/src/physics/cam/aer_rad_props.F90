@@ -228,8 +228,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
    extinct3d(:,:,:) = huge_real
    trop_level(:)    = huge_int
    if (is_cmip6_volc) then
-      !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variables
-      !extinction needs to be multiplied by layer thickness first after 
+      !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m 
 
       call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
@@ -252,13 +251,12 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
             extinct_sw(icol,ipver) = 0.0_r8
             ilev_tropp = trop_level(icol)
             if (ipver <= ilev_tropp) then
+               !extinct3d needs to be multiplied by layer thickness for tau variable later in the code
                lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)! in meters
                extinct3d(:,icol,ipver) = lyr_thk * ext_cmip6_sw(:,icol,ipver) !computing this here as we can re-use it later in the code
                
-               !sum over bands
-               extinct_sw(icol,ipver) = 0.0_r8
-               do iband = 1, nswbands
-                  extinct_sw(icol,ipver) = extinct_sw(icol,ipver) + extinct3d(iband,icol,ipver)
+               !extinction is computed for only visible band
+               extinct_sw(icol,ipver) = extinct_sw(icol,ipver) + ext_cmip6_sw(idx_sw_diag,icol,ipver)
                enddo
             endif
          enddo
