@@ -138,9 +138,9 @@ def _datetime_str_mpas(date):
     to support abbreviations, so we can't use that here
 
     >>> _datetime_str_mpas(datetime.datetime(5, 8, 22))
-    '0005-08-22_00000'
+    '0005-08-22_00:00:00'
     >>> _datetime_str_mpas(_get_file_date("0011-12-09-00435"))
-    '0011-12-09_00435'
+    '0011-12-09_00:07:15'
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}_{hours:02d}:{minutes:02d}:{seconds:02d}"
