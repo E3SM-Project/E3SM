@@ -35,11 +35,11 @@ setenv OMP_STACKSIZE 64M
 #setenv CUDA_PROFILE_CONFIG ./cuda_config
 
 set i=0
-mkdir -f /tmp/mps_$i
-mkdir -f /tmp/mps_log_$i
+mkdir -p /tmp/mps_$i
+mkdir -p /tmp/mps_log_$i
 setenv CUDA_VISIBLE_DEVICES $i
-export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_$i
-export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_$i
+setenv CUDA_MPS_PIPE_DIRECTORY /tmp/mps_$i
+setenv CUDA_MPS_LOG_DIRECTORY /tmp/mps_log_$i
 nvidia-cuda-mps-control -d
 
 #setenv PGI_ACC_DEBUG 3

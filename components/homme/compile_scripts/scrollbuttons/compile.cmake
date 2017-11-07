@@ -31,7 +31,7 @@ cmake                                                                           
   -DBUILD_HOMME_SWEQX=FALSE                                                      \
   -DBUILD_HOMME_PREQX=TRUE                                                       \
   -DBUILD_HOMME_PREQX_ACC=TRUE                                                   \
-  -DENABLE_OPENMP=FALSE                                                          \
+  -DENABLE_OPENMP=TRUE                                                           \
   -DCMAKE_EXE_LINKER_FLAGS="${NCLIBS}"                                           \
   -DOPENACC_Linker_FLAGS="-ta=tesla,managed,cuda8.0,cc60"                        \
   -DAPPEND_LIBRARIES="netcdff -lnetcdf -lhdf5_hl -lhdf5 -lsz -lz -ldl"           \

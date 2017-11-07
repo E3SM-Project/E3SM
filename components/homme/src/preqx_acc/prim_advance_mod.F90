@@ -484,14 +484,6 @@ contains
           kptr = 3*nlev; call edgeVpack_openacc(edge3,state_dp3d,  nlev,kptr,elem,1,nelemd,timelevels,nt)
           !$omp end master
           !$omp barrier
-          ! do ie=nets,nete
-          !   kptr=0
-          !   call edgeVpack(edge3, ttens(:,:,:,ie),nlev,kptr,ie)
-          !   kptr=nlev
-          !   call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
-          !   kptr=3*nlev
-          !   call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
-          ! enddo
 
           call t_startf('ahdp_bexchV2')
           call bndry_exchangeV(hybrid,edge3)
@@ -519,11 +511,11 @@ contains
                   !      X = (u dot utens) + .5 utens dot utens
                   !  alt:  (u+utens) dot utens
                   ! update v first (gives better results than updating v after heating)
-                  elem(ie)%state%v(i,j,:,k,nt)=elem(ie)%state%v(i,j,:,k,nt) + vtens(i,j,:,k,ie)
-                  v1=elem(ie)%state%v(i,j,1,k,nt)
-                  v2=elem(ie)%state%v(i,j,2,k,nt)
+                  state_v(i,j,:,k,nt,ie)=state_v(i,j,:,k,nt,ie) + vtens(i,j,:,k,ie)
+                  v1=state_v(i,j,1,k,nt,ie)
+                  v2=state_v(i,j,2,k,nt,ie)
                   heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2 )
-                  elem(ie)%state%T(i,j,k,nt)=elem(ie)%state%T(i,j,k,nt)+ttens(i,j,k,ie)-heating/cp
+                  state_T(i,j,k,nt,ie)=state_T(i,j,k,nt,ie)+ttens(i,j,k,ie)-heating/cp
                 enddo
               enddo
             enddo
