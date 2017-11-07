@@ -192,7 +192,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
-      <xs:anyAttribute/>
+      <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="resource_limits">
