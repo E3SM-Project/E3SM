@@ -582,8 +582,14 @@ contains
       if (adiabatic)   write(iulog,*) 'Model will run ADIABATICALLY (i.e. no physics)'
       if (ideal_phys)  write(iulog,*) 'Run ONLY the "idealized" dynamical core of the ', &
                                   'model  (dynamics + Held&Suarez-specified physics)'
-      if (aqua_planet) write(iulog,*) 'Run model in "AQUA_PLANET" mode'
+      if (aqua_planet) then
+         write(iulog,*) 'Running model in "AQUA_PLANET" mode'
+      else
+         write(iulog,*) 'NOT Running model in "AQUA_PLANET" mode'
+      end if
 #endif
+
+
    end if
 
    ! set public data in cam_control_mod
