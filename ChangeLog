@@ -1,5 +1,27 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 11-07-2017
+Tag: cime5.4.0-alpha.08
+Answer Changes: None
+Tests: Hand test B1850 
+Dependencies:
+
+Brief Summary:
+    - Handle case when cmdargs is not a list
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+fc72203 Merge pull request #2032 from jedwards4b/cmdargs_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/utils.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 11-06-2017
 Tag: cime5.4.0-alpha.07
