@@ -78,7 +78,7 @@
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
   <mpirun mpilib="default">
     <executable>srun</executable>
@@ -203,7 +203,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -348,7 +348,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
