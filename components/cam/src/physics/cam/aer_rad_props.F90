@@ -257,7 +257,6 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
                
                !extinction is computed for only visible band
                extinct_sw(icol,ipver) = extinct_sw(icol,ipver) + ext_cmip6_sw(idx_sw_diag,icol,ipver)
-               enddo
             endif
          enddo
       enddo
