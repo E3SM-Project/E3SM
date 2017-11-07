@@ -411,19 +411,22 @@ class TestScheduler(object):
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib {}".format(mpilib)
                     logger.debug (" MPILIB set to {}".format(mpilib))
-                if case_opt.startswith('N'):
+                elif case_opt.startswith('N'):
                     expect(ncpl == 1,"Cannot combine _C and _N options")
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst {}".format(ninst)
                     logger.debug (" NINST set to {}".format(ninst))
-                if case_opt.startswith('C'):
+                elif case_opt.startswith('C'):
                     expect(ninst == 1,"Cannot combine _C and _N options")
                     ncpl = case_opt[1:]
                     create_newcase_cmd += " --ninst {} --multi-driver" .format(ncpl)
                     logger.debug (" NCPL set to {}" .format(ncpl))
-                if case_opt.startswith('P'):
+                elif case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
+                elif case_opt.startswith('V'):
+                    driver = case_opt[1:]
+                    create_newcase_cmd += " --driver {}".format(driver)
 
         # create_test mpilib option overrides default but not explicitly set case_opt mpilib
         if mpilib is None and self._mpilib is not None:
@@ -540,24 +543,14 @@ class TestScheduler(object):
                     # For PTS_MODE, compile with mpi-serial
                     envtest.set_test_parameter("MPILIB", "mpi-serial")
 
-                elif opt.startswith('I'):
-                    # Marker to distinguish tests with same name - ignored
-                    continue
+                elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
+                      opt.startswith('M') or # handled in create_newcase
+                      opt.startswith('P') or # handled in create_newcase
+                      opt.startswith('N') or # handled in create_newcase
+                      opt.startswith('C') or # handled in create_newcase
+                      opt.startswith('V')):  # handled in create_newcase
+                    pass
 
-                elif opt.startswith('M'):
-                    # M option handled by create newcase
-                    continue
-
-                elif opt.startswith('P'):
-                    # P option handled by create newcase
-                    continue
-
-                elif opt.startswith('N'):
-                    # handled in create_newcase
-                    continue
-                elif opt.startswith('C'):
-                    # handled in create_newcase
-                    continue
                 elif opt.startswith('IOP'):
                     logger.warning("IOP test option not yet implemented")
                 else:

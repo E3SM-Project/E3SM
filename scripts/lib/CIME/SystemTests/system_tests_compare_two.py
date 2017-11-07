@@ -186,8 +186,11 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # to share the sharedlibroot area with case1 so we can reuse
             # pieces of the build from there.
             if get_model() != "acme":
+                # We need to turn off this change for ACME because it breaks
+                # the MPAS build system
                 self._case2.set_value("SHAREDLIBROOT",
                                       self._case1.get_value("SHAREDLIBROOT"))
+
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         else:
             self._activate_case1()

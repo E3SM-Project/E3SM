@@ -147,7 +147,12 @@ begin
   print("determining map_ms vals where REGION_MASK<0")
   sign_REGION_MASK_ms = sign_matlab(REGION_MASK_1d(map_in_ms_row-1))
   ind_vals_ms = ind(sign_REGION_MASK_ms .lt. 0)
-  n_s_subset_ms = dimsizes(ind_vals_ms)
+  if (all(ismissing(ind_vals_ms))) then
+    print("No source points mapped to marginal seas: output will just contain points mapped to open ocean")
+    n_s_subset_ms = 0
+  else
+    n_s_subset_ms = dimsizes(ind_vals_ms)
+  end if
 
   n_s_out = n_s_subset_oo + n_s_subset_ms
 
@@ -174,9 +179,11 @@ begin
   map_out_col(0:n_s_subset_oo-1) = (/ map_in_oo_col(ind_vals_oo) /)
   map_out_row(0:n_s_subset_oo-1) = (/ map_in_oo_row(ind_vals_oo) /)
 
-  map_out_S(n_s_subset_oo:n_s_subset_oo+n_s_subset_ms-1)   = (/ map_in_ms_S(ind_vals_ms) /)
-  map_out_col(n_s_subset_oo:n_s_subset_oo+n_s_subset_ms-1) = (/ map_in_ms_col(ind_vals_ms) /)
-  map_out_row(n_s_subset_oo:n_s_subset_oo+n_s_subset_ms-1) = (/ map_in_ms_row(ind_vals_ms) /)
+  if (n_s_subset_ms .gt. 0) then
+    map_out_S(n_s_subset_oo:n_s_subset_oo+n_s_subset_ms-1)   = (/ map_in_ms_S(ind_vals_ms) /)
+    map_out_col(n_s_subset_oo:n_s_subset_oo+n_s_subset_ms-1) = (/ map_in_ms_col(ind_vals_ms) /)
+    map_out_row(n_s_subset_oo:n_s_subset_oo+n_s_subset_ms-1) = (/ map_in_ms_row(ind_vals_ms) /)
+  end if
 
   print("writing merged map, " + MAP_OUT_FNAME)
   system("rm -f " + MAP_OUT_FNAME)

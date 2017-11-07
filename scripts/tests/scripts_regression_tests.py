@@ -31,7 +31,7 @@ TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
 TEST_COMPILER = None
 GLOBAL_TIMEOUT = None
 TEST_MPILIB = None
-MACHINE     = Machines()
+MACHINE     = None
 FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
@@ -1399,6 +1399,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_prereq(self):
     ###########################################################################
+        if not MACHINE.has_batch_system() or NO_BATCH:
+            self.skipTest("Skipping testing user prerequisites without batch systems")
         testcase_name = 'prereq_test'
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
@@ -1420,7 +1422,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             for batch_cmd in batch_commands:
                 self.assertTrue(isinstance(batch_cmd, collections.Sequence), "case.submit_jobs did not return a sequence of sequences")
                 self.assertTrue(len(batch_cmd) > batch_cmd_index, "case.submit_jobs returned internal sequences with length <= {}".format(batch_cmd_index))
-                self.assertTrue(isinstance(batch_cmd[1], str), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
+                self.assertTrue(isinstance(batch_cmd[1], six.string_types), "case.submit_jobs returned internal sequences without the batch command string as the second parameter: {}".format(batch_cmd[1]))
                 batch_cmd_args = batch_cmd[1]
 
                 jobid_ident = 'jobid'
@@ -1477,10 +1479,10 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_mpi_serial(self):
     ###########################################################################
-        self._create_test(["--no-build", "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A"], test_id=self._baseline_name)
+        self._create_test(["--no-build", "TESTRUNPASS_Mmpi-serial_P10.f19_g16_rx1.A"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P10.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=True) as case:
@@ -1491,13 +1493,15 @@ class K_TestCimeCase(TestCreateTestCommon):
             # Serial cases should be using 1 task
             self.assertEqual(case.get_value("TOTALPES"), 1)
 
+            self.assertEqual(case.get_value("NTASKS_CPL"), 1)
+
     ###########################################################################
     def test_cime_case_force_pecount(self):
     ###########################################################################
-        self._create_test(["--no-build", "--force-procs=16", "--force-threads=8", "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A"], test_id=self._baseline_name)
+        self._create_test(["--no-build", "--force-procs=16", "--force-threads=8", "TESTRUNPASS.f19_g16_rx1.A"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=True) as case:
@@ -2462,9 +2466,15 @@ def _main_func():
         midx = sys.argv.index("--machine")
         mach_name = sys.argv[midx + 1]
         MACHINE = Machines(machine=mach_name)
-        os.environ["CIME_MACHINE"] = mach_name
         del sys.argv[midx + 1]
         del sys.argv[midx]
+        os.environ["CIME_MACHINE"] = mach_name
+    elif "CIME_MACHINE" in os.environ:
+        mach_name = os.environ["CIME_MACHINE"]
+        MACHINE = Machines(machine=mach_name)
+    else:
+        MACHINE = Machines()
+        
 
     if "--compiler" in sys.argv:
         global TEST_COMPILER
