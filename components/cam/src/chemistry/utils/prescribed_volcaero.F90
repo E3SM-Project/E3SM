@@ -183,7 +183,7 @@ end subroutine prescribed_volcaero_readnl
 
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
-  subroutine prescribed_volcaero_init()
+  subroutine prescribed_volcaero_init(is_cmip6_volc)
 
     use tracer_data, only : trcdata_init
     use cam_history, only : addfld, horiz_only
@@ -194,7 +194,11 @@ end subroutine prescribed_volcaero_readnl
     use physics_buffer, only : physics_buffer_desc, pbuf_get_index
 
     implicit none
+    
+    !Arguments
+    logical, intent(out):: is_cmip6_volc
 
+    !Local variables
     integer :: ndx, istat
     integer :: errcode, ispf
     character(len=32) :: specifier(1)
@@ -206,9 +210,9 @@ end subroutine prescribed_volcaero_readnl
     else
        return
     endif
-
+    is_cmip6_volc = .false.
     if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
-
+       is_cmip6_volc = .true.
        ispf = 1
        specifier_sw(ispf) = trim(adjustl(ext_sun_name))
        ispf = ispf + 1

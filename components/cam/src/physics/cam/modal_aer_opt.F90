@@ -364,7 +364,7 @@ end subroutine modal_aer_opt_init
 
 !===============================================================================
 
-subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
+subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, extinct_cmip6_sw,  &
                          tauxar, wa, ga, fa)
 
    ! calculates aerosol sw radiative properties
@@ -375,6 +375,8 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer,             intent(in) :: nnite          ! number of night columns
    integer,             intent(in) :: idxnite(nnite) ! local column indices of night columns
+   real(r8),            intent(in) :: extinct_cmip6_sw(pcols,pver) !balli comments
+   logical,             intent(in) :: is_cmip6_volc !BALLI-comments
 
    real(r8), intent(out) :: tauxar(pcols,0:pver,nswbands) ! layer extinction optical depth
    real(r8), intent(out) :: wa(pcols,0:pver,nswbands)     ! layer single-scatter albedo
@@ -1051,6 +1053,16 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
       deallocate(qaerwat_m)
       deallocate(wetdens_m)
    end if
+
+   !Add contributions fron volcanic aerosols directly read in extinction
+   if(is_cmip6_volc) then
+      do k = 1, pver
+         do i = 1, ncol
+            extinct(i,k) = extinct(i,k) + extinct_cmip6_sw(i,k)
+         enddo
+      enddo
+   endif
+   
 
    ! Output visible band diagnostics for quantities summed over the modes
    ! These fields are put out for diagnostic lists as well as the climate list.
