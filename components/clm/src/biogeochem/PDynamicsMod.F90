@@ -26,9 +26,9 @@ module PDynamicsMod
   use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
-  use ColumnType          , only : col
-  use PatchType           , only : pft
-  use EcophysConType      , only : ecophyscon
+  use ColumnType          , only : col_pp
+  use VegetationType           , only : veg_pp
+  use VegetationPropertiesType      , only : veg_vp
   !
   implicit none
   save
@@ -74,7 +74,7 @@ contains
 
       ! Loop through columns
       do c = bounds%begc, bounds%endc
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
          pdep_to_sminp(c) = forc_pdep(g)
       end do
 
@@ -422,7 +422,7 @@ contains
          elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col%dz(c,j))
+               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col_pp%dz(c,j))
             end do
          endif
       end do
@@ -450,12 +450,12 @@ contains
                else
                   disp_conc = 0._r8
                   if (h2osoi_liq(c,j) > 0._r8) then
-                     disp_conc = (solutionp_vr(c,j) * col%dz(c,j))/(h2osoi_liq(c,j) )
+                     disp_conc = (solutionp_vr(c,j) * col_pp%dz(c,j))/(h2osoi_liq(c,j) )
                   end if
 
                   ! calculate the P leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
-                  sminp_leached_vr(c,j) = disp_conc * drain_tot(c) *h2osoi_liq(c,j) / ( tot_water(c) * col%dz(c,j) )
+                  sminp_leached_vr(c,j) = disp_conc * drain_tot(c) *h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
 
                end if
                ! limit the flux based on current sminp state
@@ -559,9 +559,11 @@ contains
 
                  biochem_pmin_ppools_vr_col(c,j,l) = decomp_ppools_vr_col(c,j,l)* &
                                      k_s1_biochem_c * fpi_vr_col(c,j)*&
-                                     (1._r8-exp(r_bc*(1-fpi_p_vr_col(c,j)) ) )/dt
+                                     (1._r8-exp(r_bc*(1._r8-fpi_p_vr_col(c,j)) ))/dt
+
 
                endif 
+              
 
             end do
          end do
@@ -623,10 +625,10 @@ contains
          biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
          biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
          npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
-         vmax_ptase_vr        => ecophyscon%vmax_ptase_vr                 , &
-         km_ptase             => ecophyscon%km_ptase                      , &
+         vmax_ptase           => veg_vp%vmax_ptase                    , &
+         km_ptase             => veg_vp%km_ptase                      , &
          decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
-         lamda_ptase          => ecophyscon%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar                 &
          )
@@ -640,14 +642,14 @@ contains
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j) = 0.0_r8
-            do p = col%pfti(c), col%pftf(c)
-                if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+                if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                     !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                        vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * pft%wtcol(p)
+                        vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
                 end if
             enddo
         enddo
@@ -679,10 +681,12 @@ contains
             biochem_pmin_vr(c,j)=0._r8
             do l = 1, ndecomp_pools
                biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
-                                          biochem_pmin_ppools_vr_col(c,j,l)*dt
+                                          biochem_pmin_ppools_vr_col(c,j,l)
             enddo
         enddo
     end do
+
+    
     
     end associate
 

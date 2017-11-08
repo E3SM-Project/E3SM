@@ -183,6 +183,9 @@ real(r8) :: icenuct     ! ice nucleation temperature: currently -5 degrees C
 real(r8) :: snowmelt    ! what temp to melt all snow: currently 2 degrees C
 real(r8) :: rainfrze    ! what temp to freeze all rain: currently -5 degrees C
 
+! Mass gradient method parameters.
+real(r8) :: alpha_grad, beta_grad
+
 ! additional constants to help speed up code
 real(r8) :: gamma_br_plus1
 real(r8) :: gamma_br_plus4
@@ -227,7 +230,8 @@ subroutine micro_mg_init( &
      do_nccons_in, do_nicons_in, ncnst_in, ninst_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
-     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
+     prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, alpha_grad_in, &
+     beta_grad_in, errstring)
 
   use micro_mg_utils, only: micro_mg_utils_init
 
@@ -270,6 +274,11 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: prc_coef1_in,prc_exp_in,prc_exp1_in, cld_sed_in
   logical, intent(in)   :: mg_prc_coeff_fix_in
 
+  ! Magnitude of effect of precipitation mass gradient on precipitation
+  ! fraction.
+  real(r8), intent(in) :: alpha_grad_in ! When mass increases with height.
+  real(r8), intent(in) :: beta_grad_in  ! When mass decreases with height.
+
   real(r8), intent(in)  :: ncnst_in
   real(r8), intent(in)  :: ninst_in        
 
@@ -307,6 +316,8 @@ subroutine micro_mg_init( &
   micro_mg_precip_frac_method = micro_mg_precip_frac_method_in
   micro_mg_berg_eff_factor    = micro_mg_berg_eff_factor_in
   allow_sed_supersat          = allow_sed_supersat_in
+  alpha_grad = alpha_grad_in
+  beta_grad = beta_grad_in
 
   ! latent heats
 
@@ -358,6 +369,7 @@ subroutine micro_mg_tend ( &
      qrn,                          qsn,                          &
      nrn,                          nsn,                          &
      relvar,                       accre_enhan,                  &
+     precip_off,                                                 &
      p,                            pdel,                         &
      cldn,               liqcldf,            icecldf,            &
      qcsinksum_rate1ord,                                         &
@@ -463,6 +475,8 @@ subroutine micro_mg_tend ( &
   real(r8), intent(in) :: relvar(:,:)   ! cloud water relative variance (-)
   real(r8), intent(in) :: accre_enhan(:,:)  ! optional accretion
                                              ! enhancement factor (-)
+					     
+  logical, intent(in)  :: precip_off					     
 
   real(r8), intent(in) :: p(:,:)        ! air pressure (pa)
   real(r8), intent(in) :: pdel(:,:)     ! pressure difference across level (pa)
@@ -807,6 +821,10 @@ subroutine micro_mg_tend ( &
   real(r8) :: dumns(mgncol,nlev)  ! snow number concentration
   ! Array dummy variable
   real(r8) :: dum_2D(mgncol,nlev)
+  ! Total precipitation fraction used in mass_gradient method.
+  real(r8) :: qt(mgncol,2)
+  ! Weighting used in mass_gradient method.
+  real(r8) :: weight(mgncol)
 
   ! loop array variables
   ! "i" and "k" are column/level iterators for internal (MG) variables
@@ -1238,9 +1256,14 @@ subroutine micro_mg_tend ( &
 
      if (trim(micro_mg_precip_frac_method) == 'in_cloud') then
 
+        ! If cloud mass exists, keep precip_frac = cldm (precipitation
+        ! only present in cloud). If not, use the max of cloud fraction
+        ! and fraction from the level above (precip is originating from
+        ! above in this case, but we need to use the max because MG2 can't
+        ! handle precip_frac < cldm correctly).
         if (k /= 1) then
            where (qc(:,k) < qsmall .and. qi(:,k) < qsmall)
-              precip_frac(:,k) = precip_frac(:,k-1)
+              precip_frac(:,k) = max(precip_frac(:,k-1),precip_frac(:,k))
            end where
         endif
 
@@ -1256,6 +1279,22 @@ subroutine micro_mg_tend ( &
            end where
         end if
 
+     else if (trim(micro_mg_precip_frac_method) == 'mass_gradient') then
+        if (k /= 1) then
+           qt = qr(:,k-1:k) + qs(:,k-1:k)
+           where (precip_frac(:,k) < precip_frac(:,k-1))
+              where (qt(:,1) > qt(:,2))
+                 weight = (alpha_grad * qt(:,2) + (1. - alpha_grad) * qt(:,1) + qsmall) &
+                      / (qt(:,1) + qsmall)
+              elsewhere
+                 weight = (beta_grad * qt(:,1) + (1. - beta_grad) * qt(:,2) + qsmall) &
+                      / (qt(:,2) + qsmall)
+              end where
+              weight = max(weight, 0._r8)
+              precip_frac(:,k) = weight * precip_frac(:,k-1) + &
+                   (1._r8 - weight) * precip_frac(:,k)
+           end where
+        endif
      endif
 
      do i = 1, mgncol
@@ -1280,6 +1319,12 @@ subroutine micro_mg_tend ( &
 
      call kk2000_liq_autoconversion(microp_uniform, qcic(:,k), &
           ncic(:,k), rho(:,k), relvar(:,k),mg_prc_coeff_fix,prc_coef1,prc_exp,prc_exp1, prc(:,k), nprc(:,k), nprc1(:,k))
+
+     if (precip_off) then
+       prc(:,k) = 0.0_r8
+       nprc(:,k) = 0.0_r8
+       nprc1(:,k) = 0.0_r8
+     endif
 
      ! assign qric based on prognostic qr, using assumed precip fraction
      ! note: this could be moved above for consistency with qcic and qiic calculations
@@ -1329,6 +1374,11 @@ subroutine micro_mg_tend ( &
         prci(:,k)  = tnd_qsnow(:,k) / cldm(:,k)
         nprci(:,k) = tnd_nsnow(:,k) / cldm(:,k)
      end if
+     
+     if (precip_off) then
+        prci(:,k) = 0.0_r8
+	nprci(:,k) = 0.0_r8
+     endif
 
      ! note, currently we don't have this
      ! inside the do_cldice block, should be changed later
@@ -1512,8 +1562,8 @@ subroutine micro_mg_tend ( &
 
         berg(:,k)=berg(:,k)*micro_mg_berg_eff_factor
 
-        where (vap_dep(:,k) < 0._r8 .and. qi(:,k) > qsmall .and. icldm(:,k) > mincld)
-           nsubi(:,k) = vap_dep(:,k) / qi(:,k) * ni(:,k) / icldm(:,k)
+        where (qi(:,k) >= qsmall)
+           nsubi(:,k) = ice_sublim(:,k) / qi(:,k) * ni(:,k) / icldm(:,k)
         elsewhere
            nsubi(:,k) = 0._r8
         end where
@@ -1672,7 +1722,7 @@ subroutine micro_mg_tend ( &
              nprc(i,k)*lcldm(i,k))*deltat
 
         if (dum.gt.nr(i,k)) then
-           ratio = (nr(i,k)/deltat+nprc(i,k)*lcldm(i,k)/precip_frac(i,k))/ &
+           ratio = (nr(i,k)/deltat+nprc(i,k)*lcldm(i,k))/precip_frac(i,k)/ &
                 (-nsubr(i,k)+npracs(i,k)+nnuccr(i,k)+nnuccri(i,k)-nragg(i,k))*omsm
 
            nragg(i,k)=nragg(i,k)*ratio
@@ -2018,6 +2068,8 @@ subroutine micro_mg_tend ( &
   prain = prain + prodsnow
 
   sed_col_loop: do i=1,mgncol
+  
+   if (.not. precip_off) then
 
      do k=1,nlev
 
@@ -2416,6 +2468,8 @@ subroutine micro_mg_tend ( &
         preci(i) = preci(i)+falouts(nlev)/g/real(nstep)/1000._r8
 
      end do   !! nstep loop
+     
+     end if
 
      ! end sedimentation
      !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -96,6 +96,7 @@ use ref_pres,       only: top_lev=>trop_cloud_top_lev
 
 use subcol_utils,   only: subcol_get_scheme
 use perf_mod,       only: t_startf, t_stopf
+use scamMod,        only: precip_off
 
 implicit none
 private
@@ -124,6 +125,8 @@ logical :: micro_mg_dcs_tdep  = .false.! if set to true, use temperature depende
 
 
 character(len=16) :: micro_mg_precip_frac_method = 'max_overlap' ! type of precipitation fraction method
+real(r8) :: micro_mg_mass_gradient_alpha = -1._r8                ! Parameters used in mass_gradient method.
+real(r8) :: micro_mg_mass_gradient_beta = -1._r8
 
 real(r8)          :: micro_mg_berg_eff_factor    = 1.0_r8        ! berg efficiency factor
 
@@ -285,8 +288,10 @@ subroutine micro_mg_cam_readnl(nlfile)
 !!== KZ_DCS
        micro_mg_dcs_tdep, & 
 !!== KZ_DCS
-       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
-       micro_do_nccons, micro_do_nicons, micro_nccons, micro_nicons
+       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, &
+       micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
+       micro_mg_berg_eff_factor, micro_do_nccons, micro_do_nicons, &
+       micro_nccons, micro_nicons
 
   !-----------------------------------------------------------------------------
 
@@ -337,7 +342,20 @@ subroutine micro_mg_cam_readnl(nlfile)
      end select
 
      if (micro_mg_dcs < 0._r8) call endrun( "micro_mg_cam_readnl: &
-              &micro_mg_dcs has not been set to a valid value.")
+          &micro_mg_dcs has not been set to a valid value.")
+
+     if (trim(micro_mg_precip_frac_method) == 'mass_gradient') then
+        if (micro_mg_version < 2) call endrun("micro_mg_cam_readnl: &
+             &mass_gradient precipitation fraction not available in MG1.")
+
+        ! Alpha must be positive, while beta should be non-negative.
+        if (micro_mg_mass_gradient_alpha <= 0._r8 .or. &
+             micro_mg_mass_gradient_beta < 0._r8) then
+           call endrun("micro_mg_cam_readnl: mass_gradient precipitation &
+                &fraction method requires alpha and beta to be set &
+                &to valid values")
+        end if
+     end if
   end if
 
 #ifdef SPMD
@@ -357,6 +375,8 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(nccons,                      1, mpir8,  0, mpicom)
   call mpibcast(nicons,                      1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
+  call mpibcast(micro_mg_mass_gradient_alpha, 1, mpir8, 0, mpicom)
+  call mpibcast(micro_mg_mass_gradient_beta, 1, mpir8,  0, mpicom)
 
 #endif
 
@@ -623,6 +643,7 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    integer :: m, mm
    logical :: history_amwg         ! output the variables used by the AMWG diag package
+   logical :: history_verbose      ! produce verbose history output
    logical :: history_budget       ! Output tendencies and state variables for CAM4
                                    ! temperature, water vapor, cloud ice and cloud
                                    ! liquid budgets.
@@ -704,7 +725,9 @@ subroutine micro_mg_cam_init(pbuf2d)
 	      do_nccons, do_nicons, nccons, nicons, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
-              prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
+              prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, &
+              micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
+              errstring)
       end select
    end select
 
@@ -896,6 +919,7 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
+                     history_verbose_out        = history_verbose      , &
                      history_budget_out         = history_budget       , &
                      history_budget_histfile_num_out = budget_histfile)
 
@@ -905,8 +929,10 @@ subroutine micro_mg_cam_init(pbuf2d)
       call add_default ('AQSNOW   ', 1, ' ')
       call add_default ('ANRAIN   ', 1, ' ')
       call add_default ('ANSNOW   ', 1, ' ')
-      call add_default ('ADRAIN   ', 1, ' ')
-      call add_default ('ADSNOW   ', 1, ' ')
+      if (history_verbose) then
+         call add_default ('ADRAIN   ', 1, ' ')
+         call add_default ('ADSNOW   ', 1, ' ')
+      endif
       call add_default ('AREI     ', 1, ' ')
       call add_default ('AREL     ', 1, ' ')
       call add_default ('AWNC     ', 1, ' ')
@@ -2172,6 +2198,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_qr,              packed_qs,              &
                  packed_nr,              packed_ns,              &
                  packed_relvar,          packed_accre_enhan,     &
+		 precip_off,                                     &
                  packed_p,               packed_pdel,            &
                  packed_cldn,    packed_liqcldf, packed_icecldf, &
                  packed_rate1ord_cw2pr_st,                       &

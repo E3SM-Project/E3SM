@@ -3,8 +3,9 @@ API for preview namelist
 """
 
 from CIME.XML.standard_module_setup import *
-
-import glob, shutil, imp
+from CIME.utils import run_sub_or_cmd
+from CIME.check_input_data import stage_refcase
+import glob, shutil
 logger = logging.getLogger(__name__)
 
 def create_dirs(case):
@@ -30,10 +31,10 @@ def create_dirs(case):
     for dir_to_make in dirs_to_make:
         if (not os.path.isdir(dir_to_make)):
             try:
-                logger.debug("Making dir '%s'" % dir_to_make)
+                logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)
             except OSError as e:
-                expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
+                expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
 
     # As a convenience write the location of the case directory in the bld and run directories
     for dir_ in (exeroot, rundir):
@@ -57,6 +58,9 @@ def create_namelists(case, component=None):
     # Load modules
     case.load_env()
 
+    stage_refcase(case)
+
+
     logger.info("Creating component namelists")
 
     # Create namelists - must have cpl last in the list below
@@ -66,44 +70,23 @@ def create_namelists(case, component=None):
     models += [models.pop(0)]
     for model in models:
         model_str = model.lower()
-        config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
+        config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
         if model_str == "cpl":
             compname = "drv"
         else:
-            compname = case.get_value("COMP_%s" % model_str.upper())
-
+            compname = case.get_value("COMP_{}".format(model_str.upper()))
         if component is None or component == model_str:
-            cmd = os.path.join(config_dir, "buildnml")
-            do_run_cmd = False
-            # This code will try to import and run each buildnml as a subroutine
-            # if that fails it will run it as a program in a seperate shell
-            try:
-                with open(cmd, 'r') as f:
-                    first_line = f.readline()
-                if "python" in first_line:
-                    mod = imp.load_source("buildnml", cmd)
-                    logger.info("   Calling %s buildnml"%compname)
-                    mod.buildnml(case, caseroot, compname)
-                else:
-                    raise SyntaxError
-            except SyntaxError as detail:
-                if 'python' in first_line:
-                    expect(False, detail)
-                else:
-                    do_run_cmd = True
-            except AttributeError:
-                do_run_cmd = True
-            except:
-                raise
-
-            if do_run_cmd:
-                logger.info("   Running %s buildnml"%compname)
-                case.flush()
-                output = run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
-                logger.info(output)
-                # refresh case xml object from file
-                case.read_xml()
+            # first look in the case SourceMods directory
+            cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
+            if os.path.isfile(cmd):
+                logger.warning("\nWARNING: Using local buildnml file {}\n".format(cmd))
+            else:
+                # otherwise look in the component config_dir
+                cmd = os.path.join(config_dir, "buildnml")
+            expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
+            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case,
+                           combine_output=True)
 
     logger.info("Finished creating component namelists")
 
@@ -114,12 +97,12 @@ def create_namelists(case, component=None):
             with open(os.path.join(docdir, "README"), "w") as fd:
                 fd.write(" CESM Resolved Namelist Files\n   For documentation only DO NOT MODIFY\n")
         except (OSError, IOError) as e:
-            expect(False, "Failed to write %s/README: %s" % (docdir, e))
+            expect(False, "Failed to write {}/README: {}".format(docdir, e))
 
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
-            logger.debug("Copy file from '%s' to '%s'" % (file_to_copy, docdir))
+            logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))
             shutil.copy2(file_to_copy, docdir)
 
     # Copy over chemistry mechanism docs if they exist

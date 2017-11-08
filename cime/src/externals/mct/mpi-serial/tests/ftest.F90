@@ -7,8 +7,8 @@
       implicit none
         integer ierr
         integer ec
-	character*(MPI_MAX_LIBRARY_VERSION_STRING) version
-	integer vlen
+        character*(MPI_MAX_LIBRARY_VERSION_STRING) version
+        integer vlen
 
         ec = 0
 #ifdef TEST_INTERNAL
@@ -17,8 +17,8 @@
 
         call mpi_init(ierr)
 
-	call MPI_GET_LIBRARY_VERSION(version,vlen,ierr)
-	print *,"MPI Version '",version,"' len=",vlen
+        call MPI_GET_LIBRARY_VERSION(version,vlen,ierr)
+        print *,"MPI Version '",version,"' len=",vlen
 
         call test_contiguous(ec)
         call test_vector(ec)
@@ -31,6 +31,7 @@
         call test_multiple(ec)
         call test_multiple_indexed(ec)
         call test_collectives(ec)
+        call test_mpi_version(ec)
 
         call mpi_finalize(ierr)
         if (ec .eq. 0) then
@@ -678,3 +679,31 @@
         end do
       end subroutine
 
+!!!!!!!!!!!!!!!!!!!!!!!!
+! Test MPI_VERSION
+!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine test_mpi_version(ec)
+      use mpi
+      integer ec
+      integer ierr
+      integer mpiv
+      integer mpisv
+
+      print *, "Testing MPI_Get_Version"
+
+      call mpi_get_version(mpiv, mpisv, ierr)
+      if (ierr /= MPI_SUCCESS) then
+        print *, "MPI_get_VERSION ierr not zero (",ierr,")"
+        ec = ec + 1
+      else
+        if (mpiv /= MPI_VERSION) then
+          print *, "MPI_VERSION mismatch, should be ",MPI_VERSION,", found ",mpiv
+          ec = ec + 1
+        end if
+        if (mpisv /= MPI_SUBVERSION) then
+          print *, "MPI_SUBVERSION mismatch, should be ",MPI_SUBVERSION,", found ",mpisv
+          ec = ec + 1
+        end if
+      end if
+      end subroutine test_mpi_version

@@ -42,6 +42,7 @@ program mksurfdat
     use mktopostatsMod     , only : mktopostats
     use mkVICparamsMod     , only : mkVICparams
     use mkCH4inversionMod  , only : mkCH4inversion
+    use mksoilphosphorusMod, only : mksoilphosphorus
 !
 ! !ARGUMENTS:
     implicit none
@@ -137,6 +138,10 @@ program mksurfdat
     real(r8), allocatable  :: f0(:)              ! max fractional inundated area (unitless)
     real(r8), allocatable  :: p3(:)              ! coefficient for qflx_surf_lag for finundated (s/mm)
     real(r8), allocatable  :: zwt0(:)            ! decay factor for finundated (m)
+    real(r8), allocatable  :: apatiteP(:)        ! apptite phosphorus
+    real(r8), allocatable  :: labileP(:)         ! labile phosphorus
+    real(r8), allocatable  :: occludedP(:)       ! occluded phosphorus
+    real(r8), allocatable  :: secondaryP(:)      ! secondaryP phosphorus
 
 
     type(domain_type) :: ldomain
@@ -167,6 +172,7 @@ program mksurfdat
          mksrf_ftopostats,         &
          mksrf_fvic,               &
          mksrf_fch4,               &
+         mksrf_fphosphorus,        &
          nglcec,                   &
          numpft,                   &
          soil_color,               &
@@ -199,6 +205,7 @@ program mksurfdat
          map_ftopostats,           &
          map_fvic,                 &
          map_fch4,                 &
+         map_fphosphorus,          &
          outnc_large_files,        &
          outnc_double,             &
          outnc_dims,               &
@@ -236,6 +243,7 @@ program mksurfdat
     !    mksrf_ftopostats Topography statistics dataset
     !    mksrf_fvic ----- VIC parameters dataset
     !    mksrf_fch4 ----- inversion-derived CH4 parameters dataset
+    !    mksrf_fphosphorus Soil phosphorus dataset
     ! ======================================
     ! Must specify mapping file for the different datafiles above
     ! ======================================
@@ -260,6 +268,7 @@ program mksurfdat
     !    map_ftopostats -- Mapping for mksrf_ftopostats
     !    map_fvic -------- Mapping for mksrf_fvic
     !    map_fch4 -------- Mapping for mksrf_fch4
+    !    map_fphosphorus - Mapping for mksrf_fphosphorus
     ! ======================================
     ! Optionally specify setting for:
     ! ======================================
@@ -416,7 +425,12 @@ program mksurfdat
                lakedepth(ns_o)                    , &
                f0(ns_o)                           , &
                p3(ns_o)                           , &
-               zwt0(ns_o)                         )       
+               zwt0(ns_o)                         , &
+               apatiteP(ns_o)                     , &
+               labileP(ns_o)                      , &
+               occludedP(ns_o)                    , &
+               secondaryP(ns_o)                   )
+
     landfrac_pft(:)       = spval 
     pctlnd_pft(:)         = spval
     pftdata_mask(:)       = -999
@@ -449,6 +463,10 @@ program mksurfdat
     f0(:)                 = spval
     p3(:)                 = spval
     zwt0(:)               = spval
+    apatiteP(:)           = spval
+    labileP(:)            = spval
+    occludedP(:)          = spval
+    secondaryP(:)         = spval
 
     ! ----------------------------------------------------------------------
     ! Open diagnostic output log file
@@ -491,6 +509,7 @@ program mksurfdat
     write(ndiag,*) 'topography statistics from:  ',trim(mksrf_ftopostats)
     write(ndiag,*) 'VIC parameters from:         ',trim(mksrf_fvic)
     write(ndiag,*) 'CH4 parameters from:         ',trim(mksrf_fch4)
+    write(ndiag,*) 'Soil phosphorus from:        ',trim(mksrf_fphosphorus)
     write(ndiag,*)' mapping for pft              ',trim(map_fpft)
     write(ndiag,*)' mapping for lake water       ',trim(map_flakwat)
     write(ndiag,*)' mapping for wetland          ',trim(map_fwetlnd)
@@ -512,6 +531,7 @@ program mksurfdat
     write(ndiag,*)' mapping for topography stats ',trim(map_ftopostats)
     write(ndiag,*)' mapping for VIC parameters   ',trim(map_fvic)
     write(ndiag,*)' mapping for CH4 parameters   ',trim(map_fch4)
+    write(ndiag,*)' mapping for soil phosphorus  ',trim(map_fphosphorus)
 
     if (mksrf_fdynuse /= ' ') then
        write(6,*)'mksrf_fdynuse = ',trim(mksrf_fdynuse)
@@ -681,6 +701,10 @@ program mksurfdat
     ! Do landuse changes such as for the poles, etc.
 
     call change_landuse( ldomain, dynpft=.false. )
+
+    call mksoilphosphorus (ldomain, mapfname=map_fphosphorus, datfname=mksrf_fphosphorus, &
+         ndiag=ndiag, apatiteP_o=apatiteP, labileP_o=labileP, occludedP_o=occludedP, &
+         secondaryP_o=secondaryP)
 
     do n = 1,ns_o
 
@@ -968,6 +992,18 @@ program mksurfdat
     call check_ret(nf_inq_varid(ncid, 'URBAN_REGION_ID', varid), subname)
     call check_ret(nf_put_var_int(ncid, varid, urban_region), subname)
 
+    call check_ret(nf_inq_varid(ncid, 'APATITE_P', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, apatiteP), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'LABILE_P', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, labileP), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'OCCLUDED_P', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, occludedP), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'SECONDARY_P', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, secondaryP), subname)
+
     ! Deallocate arrays NOT needed for dynamic-pft section of code
 
     deallocate ( organic )
@@ -984,6 +1020,7 @@ program mksurfdat
     deallocate ( vic_binfl, vic_ws, vic_dsmax, vic_ds )
     deallocate ( lakedepth )
     deallocate ( f0, p3, zwt0 )
+    deallocate ( apatiteP, labileP, occludedP, secondaryP )
 
     ! Synchronize the disk copy of a netCDF dataset with in-memory buffers
 

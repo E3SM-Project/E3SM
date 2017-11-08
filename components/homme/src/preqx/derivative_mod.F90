@@ -7,6 +7,6 @@ module derivative_mod
                                  derivinit, gradient, gradient_wk, vorticity, divergence, &
                                  gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
                                  curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, limiter_optim_iter_full, &
-                                 laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere
+                                 laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere, laplace_z
   implicit none
 end module derivative_mod

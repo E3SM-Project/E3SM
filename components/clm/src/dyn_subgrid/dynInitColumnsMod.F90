@@ -14,9 +14,9 @@ module dynInitColumnsMod
   use clm_varctl      , only : iulog  
   use clm_varcon      , only : ispval, namec
   use TemperatureType , only : temperature_type
-  use GridcellType    , only : grc
-  use LandunitType    , only : lun
-  use ColumnType      , only : col
+  use GridcellType    , only : grc_pp
+  use LandunitType    , only : lun_pp
+  use ColumnType      , only : col_pp
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -64,7 +64,7 @@ contains
 
     do c = bounds%begc, bounds%endc
        ! If this column is newly-active, then we need to initialize it using the routines in this module
-       if (col%active(c) .and. .not. cactive_prior(c)) then
+       if (col_pp%active(c) .and. .not. cactive_prior(c)) then
           c_template = initial_template_col_dispatcher(bounds, c, cactive_prior(bounds%begc:bounds%endc))
           if (c_template /= ispval) then
              call copy_state(c, c_template, temperature_vars)
@@ -106,8 +106,8 @@ contains
     
     SHR_ASSERT_ALL((ubound(cactive_prior) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
-    l = col%landunit(c_new)
-    ltype = lun%itype(l)
+    l = col_pp%landunit(c_new)
+    ltype = lun_pp%itype(l)
     select case(ltype)
     case(istsoil)
        c_template = initial_template_col_soil(c_new)
@@ -161,7 +161,7 @@ contains
     character(len=*), parameter :: subname = 'initial_template_col_soil'
     !-----------------------------------------------------------------------
 
-    if (col%wtgcell(c_new) > 0._r8) then
+    if (col_pp%wtgcell(c_new) > 0._r8) then
        write(iulog,*) subname// ' ERROR: Expectation is that the only vegetated columns that&
             & can newly become active are ones with 0 weight on the grid cell'
        call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
@@ -245,16 +245,16 @@ contains
     SHR_ASSERT_ALL((ubound(cactive_prior) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     found = .false.
-    g = col%gridcell(c_new)
-    l = grc%landunit_indices(landunit_type, g)
+    g = col_pp%gridcell(c_new)
+    l = grc_pp%landunit_indices(landunit_type, g)
 
     ! If this landunit exists on this grid cell...
     if (l /= ispval) then
 
        ! Loop through columns on this landunit; stop if as soon as we find an active
        ! column: that will serve as the template
-       c = lun%coli(l)
-       do while (.not. found .and. c <= lun%colf(l))
+       c = lun_pp%coli(l)
+       do while (.not. found .and. c <= lun_pp%colf(l))
           if (cactive_prior(c)) then
              found = .true.
           else

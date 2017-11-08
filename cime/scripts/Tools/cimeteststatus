@@ -5,9 +5,9 @@ Purpose:  Give basic and detailed summaries of CIME(CESM) tests,
 and send the test results back to the test database.
 Authors: Jay Shollenberger and Ben Andre
 """
-
-from __future__ import print_function
-import sys
+from standard_script_setup import *
+#pylint: disable=import-error
+from six.moves import urllib
 if sys.hexversion < 0x02070000:
     print(70 * "*")
     print("ERROR: {0} requires python >= 2.7.x. ".format(sys.argv[0]))
@@ -17,11 +17,10 @@ if sys.hexversion < 0x02070000:
     sys.exit(1)
 import xml.etree.ElementTree as etree
 import argparse
-import os, glob, re
-import urllib
-import urllib2
+import glob, re
 import pprint
 import getpass
+
 
 testdburl = "https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
 
@@ -354,10 +353,10 @@ def getSuiteInfo(specfile):
 
     for t in root.findall('test'):
         testlist.append(t.get('case'))
-        if 'machine' not in suiteinfo.keys():
+        if 'machine' not in suiteinfo:
             machnodelist = t.findall('mach')
             suiteinfo['machine'] = machnodelist[0].text
-        if 'compiler' not in suiteinfo.keys():
+        if 'compiler' not in suiteinfo:
             compnodelist = t.findall('compiler')
             suiteinfo['compiler'] = compnodelist[0].text
 
@@ -527,13 +526,13 @@ def sendTestReport(args, suiteinfo, cimetests, auth):
     # Get the testdb username/password, and POST
     # the data.
     print("sending test report for " + suiteinfo['machine'] + " " + suiteinfo['compiler'])
-    data = urllib.urlencode({'username':auth['username'],
+    data = urllib.parse.urlencode({'username':auth['username'],
                              'password':auth['password'],
                              'testXML':testrecord})
-    req = urllib2.Request(testdburl, data)
+    req = urllib.request.Request(testdburl, data)
     try:
-        urllib2.urlopen(req)
-    except urllib2.URLError as e:
+        urllib.request.urlopen(req)
+    except urllib.error.URLError as e:
         print("Error when posting data: " + e.reason)
 
     if(args.debug):
@@ -552,7 +551,7 @@ def authenticate():
     auth['password'] = getpass.getpass("enter TestDB password:")
     return auth
 
-def main():
+def _main_func():
     """ Parse the arguments, get the suite information from the test spec,
     get the test statuses, then print a raw status, test summary, or send the
     test report.
@@ -596,5 +595,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
+    _main_func()

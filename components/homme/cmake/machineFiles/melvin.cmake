@@ -11,9 +11,7 @@ SET (PNETCDF_DIR $ENV{SEMS_NETCDF_ROOT} CACHE FILEPATH "")
 SET (HDF5_DIR $ENV{SEMS_HDF5_ROOT} CACHE FILEPATH "")
 SET (ZLIB_DIR $ENV{SEMS_ZLIB_ROOT} CACHE FILEPATH "")
 
-# hack until findnetcdf is updated to look for netcdf.mod
-# but this is ignored by cprnc
-# SET (ADD_Fortran_FLAGS "-I/usr/lib64/gfortran/modules" CACHE STRING "")
+SET (CPRNC_DIR /sems-data-store/ACME/cprnc/build CACHE FILEPATH "")
 
 SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")

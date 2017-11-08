@@ -29,7 +29,7 @@ module landunit_varcon
   integer, parameter, public :: isturb_md  = 9  !urban md     landunit type
   integer, parameter, public :: isturb_MAX = 9  !maximum urban type index
 
-  integer, parameter, public :: max_lunit  = 9  !maximum value that lun%itype can have
+  integer, parameter, public :: max_lunit  = 9  !maximum value that lun_pp%itype can have
                                         !(i.e., largest value in the above list)
 
   integer, parameter, public                   :: landunit_name_length = 40  ! max length of landunit names

@@ -32,7 +32,7 @@ module CLMFatesInterfaceMod
    !  use ed_driver_interface, only: 
    
    ! Used CLM Modules
-   use PatchType         , only : pft
+   use VegetationType    , only : veg_pp
    use shr_kind_mod      , only : r8 => shr_kind_r8
    use decompMod         , only : bounds_type
    use WaterStateType    , only : waterstate_type
@@ -44,13 +44,19 @@ module CLMFatesInterfaceMod
    use SoilStateType     , only : soilstate_type 
    use clm_varctl        , only : iulog
    use clm_varctl        , only : use_vertsoilc 
-   use clm_varctl        , only : use_ed_spitfire
+   use clm_varctl        , only : use_fates_spitfire
+   use clm_varctl        , only : use_fates_planthydro
+   use clm_varctl        , only : use_fates_ed_st3
+   use clm_varctl        , only : use_fates_ed_prescribed_phys
+   use clm_varctl        , only : use_fates_logging
+   use clm_varctl        , only : use_fates_inventory_init
+   use clm_varctl        , only : fates_inventory_ctrl_filename
    use clm_varcon        , only : tfrz
    use clm_varcon        , only : spval 
    use clm_varcon        , only : denice
    use clm_varcon        , only : ispval
 
-   use clm_varpar        , only : numpft
+   use clm_varpar        , only : natpft_size
    use clm_varpar        , only : numrad
    use clm_varpar        , only : ivis
    use clm_varpar        , only : inir
@@ -80,15 +86,15 @@ module CLMFatesInterfaceMod
    use decompMod         , only : get_proc_bounds,   &
                                   get_proc_clumps,   &
                                   get_clump_bounds
-   use GridCellType      , only : grc
-   use ColumnType        , only : col
-   use LandunitType      , only : lun
+   use GridCellType      , only : grc_pp
+   use ColumnType        , only : col_pp
+   use LandunitType      , only : lun_pp
    use landunit_varcon   , only : istsoil
    use abortutils        , only : endrun
    use shr_log_mod       , only : errMsg => shr_log_errMsg    
    use clm_varcon        , only : dzsoi_decomp
    use FuncPedotransferMod, only: get_ipedof
-
+   
 
    ! Used FATES Modules
    use FatesInterfaceMod     , only : fates_interface_type
@@ -102,17 +108,15 @@ module CLMFatesInterfaceMod
 
    use ChecksBalancesMod     , only : SummarizeNetFluxes, FATES_BGC_Carbon_BalanceCheck
    use EDTypesMod            , only : ed_patch_type
-   use EDTypesMod            , only : ed_hist_scpfmaps
    use FatesHydraulicsMemMod , only : nlevsoi_hyd
-   use EDTypesMod            , only : use_fates_plant_hydro
    use FatesInterfaceMod     , only : hlm_numlevgrnd, hlm_numlevsoil, hlm_numlevdecomp_full
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
    use EDInitMod             , only : zero_site
+   use EDInitMod             , only : init_site_vars
    use EDInitMod             , only : init_patches
    use EDInitMod             , only : set_site_properties
    use EDPftVarcon           , only : EDpftvarcon_inst
-   use EDEcophysConType      , only : EDecophysconInit
    use EDSurfaceRadiationMod , only : ED_SunShadeFracs, ED_Norman_Radiation
    use EDBtranMod            , only : btran_ed, &
                                       get_active_suction_layers
@@ -124,6 +128,7 @@ module CLMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : UpdateH2OVeg
+   use FatesInterfaceMod      , only : bc_in_type, bc_out_type
 
    implicit none
    
@@ -217,9 +222,12 @@ contains
       ! is not turned on
       ! ---------------------------------------------------------------------------------
      
-      use FatesInterfaceMod, only : FatesInterfaceInit
-      use EDTypesMod       , only : numpft_ed
+      use FatesInterfaceMod, only : FatesInterfaceInit 
+      use FatesInterfaceMod, only : FatesReportParameters
       use FatesParameterDerivedMod, only : param_derived
+      use FatesInterfaceMod, only : numpft_fates => numpft
+
+
 
       implicit none
       
@@ -229,11 +237,16 @@ contains
 
       ! local variables
       integer                                        :: nclumps   ! Number of threads
-      logical :: verbose_output
-      integer :: pass_masterproc
-      integer :: pass_vertsoilc
-      integer :: pass_spitfire
-      integer :: pass_is_restart
+      logical                                        :: verbose_output
+      integer                                        :: pass_masterproc
+      integer                                        :: pass_vertsoilc
+      integer                                        :: pass_spitfire     
+      integer                                        :: pass_ed_st3
+      integer                                        :: pass_logging
+      integer                                        :: pass_ed_prescribed_phys
+      integer                                        :: pass_planthydro
+      integer                                        :: pass_inventory_init
+      integer                                        :: pass_is_restart
       integer                                        :: nc        ! thread index
       integer                                        :: s         ! FATES site index
       integer                                        :: c         ! HLM column index
@@ -248,8 +261,7 @@ contains
       ! This involves to stages
       ! 1) allocate the vectors
       ! 2) add the history variables defined in clm_inst to the history machinery
-      call EDecophysconInit( EDpftvarcon_inst, numpft )
-      call param_derived%Init( numpft_ed )
+      call param_derived%Init( numpft_fates )
 
       verbose_output = .false.
       call FatesInterfaceInit(iulog, verbose_output)
@@ -278,6 +290,10 @@ contains
       call set_fates_ctrlparms('hlm_name',cval='CLM')
       call set_fates_ctrlparms('hio_ignore_val',rval=spval)
       call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
+      call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1)) ! FATES IGNORES
+                                                                          ! AND DOESNT TOUCH
+                                                                          ! THE BARE SOIL PATCH
+ 
 
       if(is_restart()) then
          pass_is_restart = 1
@@ -293,12 +309,51 @@ contains
       end if
       call set_fates_ctrlparms('use_vertsoilc',ival=pass_vertsoilc)
       
-      if(use_ed_spitfire) then
+      if(use_fates_spitfire) then
          pass_spitfire = 1
       else
          pass_spitfire = 0
       end if
       call set_fates_ctrlparms('use_spitfire',ival=pass_spitfire)
+
+      if(use_fates_ed_st3) then
+         pass_ed_st3 = 1
+      else
+         pass_ed_st3 = 0
+      end if
+      call set_fates_ctrlparms('use_ed_st3',ival=pass_ed_st3)
+      
+      if(use_fates_logging) then
+         pass_logging = 1
+      else
+         pass_logging = 0
+      end if
+      call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
+      if(use_fates_ed_prescribed_phys) then
+         pass_ed_prescribed_phys = 1
+      else
+         pass_ed_prescribed_phys = 0
+      end if
+      call set_fates_ctrlparms('use_ed_prescribed_phys',ival=pass_ed_prescribed_phys)
+
+      if(use_fates_planthydro) then
+         pass_planthydro = 1
+      else
+         pass_planthydro = 0
+      end if
+      call set_fates_ctrlparms('use_planthydro',ival=pass_planthydro)
+
+      if(use_fates_inventory_init) then
+         pass_inventory_init = 1
+      else
+         pass_inventory_init = 0
+      end if
+      call set_fates_ctrlparms('use_inventory_init',ival=pass_inventory_init)
+
+      call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
+
+
 
       if(masterproc)then
          pass_masterproc = 1
@@ -333,7 +388,7 @@ contains
 
          s = 0
          do c = bounds_clump%begc,bounds_clump%endc
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
                
             ! These are the key constraints that determine if this column
             ! will have a FATES site associated with it
@@ -341,13 +396,13 @@ contains
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
 
-            if (lun%itype(l) == istsoil ) then
+            if (lun_pp%itype(l) == istsoil ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
                if(DEBUG)then
                   write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
-                  write(iulog,*) 'LU type:', lun%itype(l)
+                  write(iulog,*) 'LU type:', lun_pp%itype(l)
                end if
             endif
             
@@ -394,9 +449,9 @@ contains
             ! Pass any grid-cell derived attributes to the site
             ! ---------------------------------------------------------------------------
             c = this%f2hmap(nc)%fcolumn(s)
-            g = col%gridcell(c)
-            this%fates(nc)%sites(s)%lat = grc%latdeg(g)
-            this%fates(nc)%sites(s)%lon = grc%londeg(g)
+            g = col_pp%gridcell(c)
+            this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
+            this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
          end do
 
@@ -406,7 +461,7 @@ contains
 
          call this%init_soil_depths(nc)
          
-         if (use_fates_plant_hydro) call InitHydrSites(this%fates(nc)%sites)
+         if (use_fates_planthydro) call InitHydrSites(this%fates(nc)%sites)
 
 
          if( this%fates(nc)%nsites == 0 ) then
@@ -422,23 +477,18 @@ contains
 
          do s = 1, this%fates(nc)%nsites
             c = this%f2hmap(nc)%fcolumn(s)
-            pi = col%pfti(c)+1
-            pf = col%pftf(c)
-            pft%is_fates(pi:pf) = .true.
+            pi = col_pp%pfti(c)+1
+            pf = col_pp%pftf(c)
+            veg_pp%is_fates(pi:pf) = .true.
          end do
 
       end do
       !$OMP END PARALLEL DO
 
-      ! Initialize some dimensioning and mapping tables
-      call ed_hist_scpfmaps()
-
-
       call this%init_history_io(bounds_proc)
-
       
-
-
+      ! Report Fates Parameters (debug flag in lower level routines)
+      call FatesReportParameters(masterproc)
 
     end subroutine init
 
@@ -462,13 +512,13 @@ contains
       do c = bounds_clump%begc,bounds_clump%endc
 
          ! FATES ACTIVE BUT HLM IS NOT
-         if(this%f2hmap(nc)%hsites(c)>0 .and. .not.col%active(c)) then
+         if(this%f2hmap(nc)%hsites(c)>0 .and. .not.col_pp%active(c)) then
             
             write(iulog,*) 'INACTIVE COLUMN WITH ACTIVE FATES SITE'
             write(iulog,*) 'c = ',c
             call endrun(msg=errMsg(sourcefile, __LINE__))
 
-         elseif (this%f2hmap(nc)%hsites(c)==0 .and. col%active(c)) then
+         elseif (this%f2hmap(nc)%hsites(c)==0 .and. col_pp%active(c)) then
             
             write(iulog,*) 'ACTIVE COLUMN WITH INACTIVE FATES SITE'
             write(iulog,*) 'c = ',c
@@ -561,12 +611,12 @@ contains
          ! TO-DO: SHOULD THIS BE LIQVOL OR IS VOL OK? (RGK-02-2017)
 
          this%fates(nc)%bc_in(s)%t_veg24_si = &
-               temperature_inst%t_veg24_patch(col%pfti(c))
+               temperature_inst%t_veg24_patch(col_pp%pfti(c))
 
          this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = canopystate_inst%altmax_lastyear_indx_col(c)
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-            p = ifp+col%pfti(c)
+            p = ifp+col_pp%pfti(c)
             this%fates(nc)%bc_in(s)%t_veg24_pa(ifp) = &
                  temperature_inst%t_veg24_patch(p)
 
@@ -582,7 +632,7 @@ contains
          end do
 
          
-         if(use_fates_plant_hydro)then
+         if(use_fates_planthydro)then
             this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoi)  = soilstate_inst%hksat_col(c,1:nlevsoi)
             this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoi) = soilstate_inst%watsat_col(c,1:nlevsoi)
             this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoi) = spval !soilstate_inst%watres_col(c,1:nlevsoi)
@@ -743,7 +793,7 @@ contains
        !       ! Diagnose water storage in canopy if hydraulics is on
        !       ! This updates the internal value and the bc_out value.
        !       ! If hydraulics is off, it returns 0 storage
-       !       if ( use_fates_plant_hydro ) then
+       !       if ( use_fates_planthydro ) then
        !          call UpdateH2OVeg(this%fates(nc)%nsites, &
        !                this%fates(nc)%sites,  &
        !                this%fates(nc)%bc_out)
@@ -762,9 +812,9 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
-       pft%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
-       pft%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
-       pft%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
+       veg_pp%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
+       veg_pp%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
+       veg_pp%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
 
        do s = 1,this%fates(nc)%nsites
           
@@ -772,25 +822,25 @@ contains
 
           ! Other modules may have AI's we only flush values
           ! that are on the naturally vegetated columns
-          elai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          tlai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          esai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          tsai(col%pfti(c):col%pftf(c)) = 0.0_r8
-          htop(col%pfti(c):col%pftf(c)) = 0.0_r8
-          hbot(col%pfti(c):col%pftf(c)) = 0.0_r8
+          elai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          tlai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          esai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          tsai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          htop(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          hbot(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
 
           ! FATES does not dictate bare-ground so turbulent
           ! variables are not over-written.
-          z0m(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
-          displa(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
-          dleaf_patch(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
+          z0m(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
+          displa(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
+          dleaf_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
 
-          frac_veg_nosno_alb(col%pfti(c):col%pftf(c)) = 0.0_r8
+          frac_veg_nosno_alb(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
 
           ! Set the bareground patch indicator
-          pft%is_bareground(col%pfti(c)) = .true.
+          veg_pp%is_bareground(col_pp%pfti(c)) = .true.
           npatch = this%fates(nc)%sites(s)%youngest_patch%patchno
-          pft%wt_ed(col%pfti(c)) = 1.0-sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))
+          veg_pp%wt_ed(col_pp%pfti(c)) = 1.0-sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))
 
           if(sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))>1.0_r8)then
              write(iulog,*)'Projected Canopy Area of all FATES patches'
@@ -800,14 +850,14 @@ contains
 
           do ifp = 1, npatch
 
-             p = ifp+col%pfti(c)
+             p = ifp+col_pp%pfti(c)
 
              ! bc_out(s)%canopy_fraction_pa(ifp) is the area fraction
              ! the site's total ground area that is occupied by the 
              ! area footprint of the current patch's vegetation canopy 
 
-             pft%is_veg(p) = .true.
-             pft%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
+             veg_pp%is_veg(p) = .true.
+             veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
              elai(p) = this%fates(nc)%bc_out(s)%elai_pa(ifp)
              tlai(p) = this%fates(nc)%bc_out(s)%tlai_pa(ifp)
              esai(p) = this%fates(nc)%bc_out(s)%esai_pa(ifp)
@@ -878,6 +928,7 @@ contains
       type(fates_bounds_type) :: fates_clump
       integer                 :: c   ! HLM column index
       integer                 :: s   ! Fates site index
+      integer                 :: g   ! HLM grid index
       integer                 :: dk_index
       character(len=fates_long_string_length) :: ioname
       integer                 :: nvar
@@ -932,7 +983,7 @@ contains
          end do
          !$OMP END PARALLEL DO
          
-         !$OMP PARALLEL DO PRIVATE (nc,s,c)
+         !$OMP PARALLEL DO PRIVATE (nc,s,c,g)
          do nc = 1,nclumps
             
             allocate(this%fates_restart%restart_map(nc)%site_index(this%fates(nc)%nsites))
@@ -940,8 +991,8 @@ contains
             do s=1,this%fates(nc)%nsites
                c = this%f2hmap(nc)%fcolumn(s)
                this%fates_restart%restart_map(nc)%site_index(s)   = c
-               this%fates_restart%restart_map(nc)%cohort1_index(s) = &
-                    bounds_proc%begCohort + (c-bounds_proc%begc)*fates_maxElementsPerSite
+               g = col_pp%gridcell(c)
+               this%fates_restart%restart_map(nc)%cohort1_index(s) = (g-1)*fates_maxElementsPerSite + 1
             end do
             
          end do
@@ -1119,6 +1170,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
+              call init_site_vars(this%fates(nc)%sites(s))
               call zero_site(this%fates(nc)%sites(s))
            end do
            
@@ -1129,7 +1181,7 @@ contains
            ! Called prior to init_patches(). Site level rhizosphere shells must
            ! be set prior to cohort initialization.
            ! ----------------------------------------------------------------------------
-           if (use_fates_plant_hydro) then
+           if (use_fates_planthydro) then
 
               do s = 1,this%fates(nc)%nsites
                  c = this%f2hmap(nc)%fcolumn(s)
@@ -1154,14 +1206,14 @@ contains
 
                  do j = 1, nlevsoi
                     vol_ice = min(soilstate_inst%watsat_col(c,j), &
-                          waterstate_inst%h2osoi_ice_col(c,j)/(col%dz(c,j)*denice))
+                          waterstate_inst%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice))
                     eff_porosity = max(0.01_r8,soilstate_inst%watsat_col(c,j)-vol_ice)
                     this%fates(nc)%bc_in(s)%eff_porosity_gl(j) = eff_porosity
                  end do
 
               end do
 
-              if (use_fates_plant_hydro) call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
+              if (use_fates_planthydro) call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
            end if
 
            call init_patches(this%fates(nc)%nsites, this%fates(nc)%sites, &
@@ -1243,12 +1295,12 @@ contains
 
         do s = 1, this%fates(nc)%nsites
            c = this%f2hmap(nc)%fcolumn(s)
-           g = col%gridcell(c)
+           g = col_pp%gridcell(c)
 
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
            !do ifp = 1, this%fates(nc)%bc_in(s)%npatches
 
-              p = ifp+col%pfti(c)
+              p = ifp+col_pp%pfti(c)
 
               this%fates(nc)%bc_in(s)%solad_parb(ifp,:) = forc_solad(g,:)
               this%fates(nc)%bc_in(s)%solai_parb(ifp,:) = forc_solai(g,:)
@@ -1274,7 +1326,7 @@ contains
         do s = 1, this%fates(nc)%nsites
            c = this%f2hmap(nc)%fcolumn(s)
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-              p = ifp+col%pfti(c)
+              p = ifp+col_pp%pfti(c)
               fsun(p)   = this%fates(nc)%bc_out(s)%fsun_pa(ifp)
               laisun(p) = this%fates(nc)%bc_out(s)%laisun_pa(ifp)
               laisha(p) = this%fates(nc)%bc_out(s)%laisha_pa(ifp)
@@ -1473,7 +1525,7 @@ contains
            c = this%f2hmap(nc)%fcolumn(s)
            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
               
-              p = ifp+col%pfti(c)
+              p = ifp+col_pp%pfti(c)
               
               do j = 1,nlevgrnd
                  
@@ -1504,9 +1556,8 @@ contains
     use clm_varctl        , only : iulog
     use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic
-    use EDTypesMod        , only : numpft_ed, dinc_ed
-    use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type, numpft_ed
-    use EDEcophysContype  , only : EDecophyscon
+    use EDTypesMod        , only : dinc_ed
+    use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type
    
     !
     ! !ARGUMENTS:
@@ -1553,7 +1604,7 @@ contains
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             
-            p = ifp+col%pfti(c)
+            p = ifp+col_pp%pfti(c)
 
             ! Check to see if this patch is in the filter
             ! Note that this filter is most likely changing size, and getting smaller
@@ -1594,10 +1645,10 @@ contains
       ! ---------------------------------------------------------------------------------
       do icp = 1,fn
          p = filterp(icp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
          s = this%f2hmap(nc)%hsites(c)
          ! do if structure here and only pass natveg columns
-         ifp = p-col%pfti(c)
+         ifp = p-col_pp%pfti(c)
          if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 2)then
             write(iulog,*) 'Not all patches on the natveg column in the photosynthesis'
             write(iulog,*) 'filter ran photosynthesis'
@@ -1637,9 +1688,9 @@ contains
     ! Run a check on the filter
     do icp = 1,fn
        p = filterp(icp)
-       c = pft%column(p)
+       c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
-       ifp = p-col%pfti(c)
+       ifp = p-col_pp%pfti(c)
        if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
@@ -1698,7 +1749,7 @@ contains
        c = this%f2hmap(nc)%fcolumn(s)
        do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
           
-          p = ifp+col%pfti(c)
+          p = ifp+col_pp%pfti(c)
           
           if( any(filter_vegsol==p) )then
     
@@ -1725,10 +1776,10 @@ contains
     ! -----------------------------------------------------------------------------------
     do icp = 1,num_vegsol
        p = filter_vegsol(icp)
-       c = pft%column(p)
+       c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
        ! do if structure here and only pass natveg columns
-       ifp = p-col%pfti(c)
+       ifp = p-col_pp%pfti(c)
 
        if(.not.this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) )then
           write(iulog,*) 'Not all patches on the natveg column were passed to canrad'
@@ -1830,11 +1881,11 @@ contains
     do s = 1, this%fates(ci)%nsites
        c = this%f2hmap(ci)%fcolumn(s)
 
-       frictionvel_inst%z0m_patch(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
-       canopystate_inst%displa_patch(col%pfti(c)+1:col%pftf(c)) = 0.0_r8
+       frictionvel_inst%z0m_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
+       canopystate_inst%displa_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
 
        do ifp = 1, this%fates(ci)%sites(s)%youngest_patch%patchno
-          p = ifp+col%pfti(c)
+          p = ifp+col_pp%pfti(c)
           frictionvel_inst%z0m_patch(p) = this%fates(ci)%bc_out(s)%z0m_pa(ifp)
           canopystate_inst%displa_patch(p) = this%fates(ci)%bc_out(s)%displa_pa(ifp)
        end do
@@ -1930,7 +1981,7 @@ contains
       do s=1,this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
          this%fates_hist%iovar_map(nc)%site_index(s)   = c
-         this%fates_hist%iovar_map(nc)%patch1_index(s) = col%pfti(c)+1
+         this%fates_hist%iovar_map(nc)%patch1_index(s) = col_pp%pfti(c)+1
       end do
       
    end do
@@ -2121,9 +2172,9 @@ contains
 
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
-       this%fates(nc)%bc_in(s)%zi_sisl(0:hlm_numlevsoil)    = col%zi(c,0:hlm_numlevsoil)
-       this%fates(nc)%bc_in(s)%dz_sisl(1:hlm_numlevsoil)    = col%dz(c,1:hlm_numlevsoil)
-       this%fates(nc)%bc_in(s)%z_sisl(1:hlm_numlevsoil)     = col%z(c,1:hlm_numlevsoil)
+       this%fates(nc)%bc_in(s)%zi_sisl(0:hlm_numlevsoil)    = col_pp%zi(c,0:hlm_numlevsoil)
+       this%fates(nc)%bc_in(s)%dz_sisl(1:hlm_numlevsoil)    = col_pp%dz(c,1:hlm_numlevsoil)
+       this%fates(nc)%bc_in(s)%z_sisl(1:hlm_numlevsoil)     = col_pp%z(c,1:hlm_numlevsoil)
        this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:hlm_numlevdecomp_full) = &
              dzsoi_decomp(1:hlm_numlevdecomp_full)
     end do
@@ -2151,7 +2202,7 @@ contains
     integer :: num_filter_fates
 
 
-    if( .not. use_fates_plant_hydro ) return
+    if( .not. use_fates_planthydro ) return
        
     nc = bounds_clump%clump_index
     
@@ -2159,8 +2210,8 @@ contains
     ! root water sink is the same that was expected in the hydrology filter
     num_filter_fates = 0
     do s = 1,num_filterc
-       l = col%landunit(filterc(s))
-       if (lun%itype(l) == istsoil ) then
+       l = col_pp%landunit(filterc(s))
+       if (lun_pp%itype(l) == istsoil ) then
           num_filter_fates = num_filter_fates + 1
        end if
     end do
@@ -2194,7 +2245,7 @@ contains
 !   integer :: s
 !   integer :: c 
 !   
-!   if (.not. (use_ed .and. use_fates_plant_hydro) ) return
+!   if (.not. (use_ed .and. use_fates_planthydro) ) return
 !   
 !   do s = 1, this%fates(nc)%nsites
 !      c = this%f2hmap(nc)%fcolumn(s)
@@ -2233,7 +2284,7 @@ contains
    real(r8) :: dtime
 
 
-   if ( .not.use_fates_plant_hydro ) return
+   if ( .not.use_fates_planthydro ) return
 
    nc = bounds_clump%clump_index
    dtime = get_step_size()
@@ -2259,7 +2310,7 @@ contains
             soilstate_inst%eff_porosity_col(c,1:nlevsoi)
 
       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno 
-         p = ifp+col%pfti(c)
+         p = ifp+col_pp%pfti(c)
          this%fates(nc)%bc_in(s)%swrad_net_pa(ifp) = solarabs_inst%fsa_patch(p)
          this%fates(nc)%bc_in(s)%lwrad_net_pa(ifp) = energyflux_inst%eflx_lwrad_net_patch(p)
          this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = waterflux_inst%qflx_tran_veg_patch(p)
@@ -2302,15 +2353,18 @@ contains
  subroutine hlm_bounds_to_fates_bounds(hlm, fates)
 
    use FatesIODimensionsMod, only : fates_bounds_type
-   use EDtypesMod, only : nlevsclass_ed, nlevage_ed
-   use EDtypesMod, only : nfsc, ncwd
-   use EDtypesMod, only : nlevleaf, nclmax, numpft_ed
-   use EDTypesMod, only : maxpft
-   use clm_varpar, only : nlevgrnd
+   use FatesInterfaceMod, only : nlevsclass_fates => nlevsclass
+   use FatesInterfaceMod, only : nlevage_fates    => nlevage
+   use EDtypesMod,        only : nfsc_fates       => nfsc
+   use EDtypesMod,        only : ncwd_fates       => ncwd
+   use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
+   use EDtypesMod,        only : nclmax_fates     => nclmax
+   use clm_varpar,        only : nlevgrnd
+   use FatesInterfaceMod, only : numpft_fates     => numpft
 
    implicit none
 
-   type(bounds_type), intent(in) :: hlm
+   type(bounds_type), intent(in)        :: hlm
    type(fates_bounds_type), intent(out) :: fates
 
    fates%cohort_begin = hlm%begcohort
@@ -2326,34 +2380,34 @@ contains
    fates%ground_end = nlevgrnd
    
    fates%sizepft_class_begin = 1
-   fates%sizepft_class_end = nlevsclass_ed * maxpft
+   fates%sizepft_class_end = nlevsclass_fates * numpft_fates
    
    fates%size_class_begin = 1
-   fates%size_class_end = nlevsclass_ed
+   fates%size_class_end = nlevsclass_fates
 
    fates%pft_class_begin = 1
-   fates%pft_class_end = maxpft
+   fates%pft_class_end = numpft_fates
 
    fates%age_class_begin = 1
-   fates%age_class_end = nlevage_ed
+   fates%age_class_end = nlevage_fates
 
    fates%sizeage_class_begin = 1
-   fates%sizeage_class_end   = nlevsclass_ed * nlevage_ed
+   fates%sizeage_class_end   = nlevsclass_fates * nlevage_fates
    
    fates%fuel_begin = 1
-   fates%fuel_end = nfsc
+   fates%fuel_end = nfsc_fates
    
    fates%cwdsc_begin = 1
-   fates%cwdsc_end = ncwd
+   fates%cwdsc_end = ncwd_fates
    
    fates%can_begin = 1
-   fates%can_end = nclmax
+   fates%can_end = nclmax_fates
    
    fates%cnlf_begin = 1
-   fates%cnlf_end = nlevleaf * nclmax
+   fates%cnlf_end = nlevleaf_fates * nclmax_fates
    
    fates%cnlfpft_begin = 1
-   fates%cnlfpft_end = nlevleaf * nclmax * numpft_ed
+   fates%cnlfpft_end = nlevleaf_fates * nclmax_fates * numpft_fates
    
  end subroutine hlm_bounds_to_fates_bounds
 

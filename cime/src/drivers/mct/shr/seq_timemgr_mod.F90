@@ -4,7 +4,7 @@
 !
 ! !DESCRIPTION:
 !
-!     A module to create derived types to manage time and clock information 
+!     A module to create derived types to manage time and clock information
 !     for use with CCSM drivers and models.
 !
 ! !REMARKS:
@@ -41,7 +41,7 @@ module seq_timemgr_mod
    ! --- Clock object methods --------------------------------------------------
    public :: seq_timemgr_clockInit         ! Setup the sync clock
    public :: seq_timemgr_clockAdvance      ! Advance the sync clock
-   public :: seq_timemgr_clockPrint        ! Print sync clock information 
+   public :: seq_timemgr_clockPrint        ! Print sync clock information
 
    public :: seq_timemgr_EClockGetData     ! Get data from an ESMF clock
 
@@ -64,7 +64,7 @@ module seq_timemgr_mod
 
  ! ! PUBLIC PARAMETERS:
 
-   integer(SHR_KIND_IN),public :: seq_timemgr_histavg_type 
+   integer(SHR_KIND_IN),public :: seq_timemgr_histavg_type
    integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_other  = -1
    integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_never  = 1
    integer(SHR_KIND_IN),public,parameter :: seq_timemgr_type_nhour  = 2
@@ -77,14 +77,14 @@ module seq_timemgr_mod
 
 !  These are public but declared in the private area for clarity
 
-!  clocknames: 
+!  clocknames:
 !   character(len=*),public,parameter :: &
-!      seq_timemgr_clock_drv 
-!      seq_timemgr_clock_atm 
-!      seq_timemgr_clock_lnd 
+!      seq_timemgr_clock_drv
+!      seq_timemgr_clock_atm
+!      seq_timemgr_clock_lnd
 !      seq_timemgr_clock_rof
-!      seq_timemgr_clock_ocn 
-!      seq_timemgr_clock_ice 
+!      seq_timemgr_clock_ocn
+!      seq_timemgr_clock_ice
 !      seq_timemgr_clock_glc
 !      seq_timemgr_clock_wav
 !      seq_timemgr_clock_esp
@@ -92,18 +92,18 @@ module seq_timemgr_mod
 !  alarmnames:
 !   character(len=*),public,parameter :: &
 !      seq_timemgr_alarm_restart
-!      seq_timemgr_alarm_run    
-!      seq_timemgr_alarm_stop   
+!      seq_timemgr_alarm_run
+!      seq_timemgr_alarm_stop
 !      seq_timemgr_alarm_datestop
 !      seq_timemgr_alarm_history
-!      seq_timemgr_alarm_atmrun 
-!      seq_timemgr_alarm_lndrun 
-!      seq_timemgr_alarm_rofrun 
-!      seq_timemgr_alarm_ocnrun 
-!      seq_timemgr_alarm_icerun 
-!      seq_timemgr_alarm_glcrun 
-!      seq_timemgr_alarm_glcrun_avg 
-!      seq_timemgr_alarm_wavrun 
+!      seq_timemgr_alarm_atmrun
+!      seq_timemgr_alarm_lndrun
+!      seq_timemgr_alarm_rofrun
+!      seq_timemgr_alarm_ocnrun
+!      seq_timemgr_alarm_icerun
+!      seq_timemgr_alarm_glcrun
+!      seq_timemgr_alarm_glcrun_avg
+!      seq_timemgr_alarm_wavrun
 !      seq_timemgr_alarm_esprun
 !      seq_timemgr_alarm_ocnnext
 !      seq_timemgr_alarm_tprof
@@ -154,7 +154,7 @@ module seq_timemgr_mod
 
    integer(SHR_KIND_IN),private,parameter :: max_clocks = 9
    character(len=*),public,parameter :: &
-      seq_timemgr_clock_drv  = 'seq_timemgr_clock_drv' , & 
+      seq_timemgr_clock_drv  = 'seq_timemgr_clock_drv' , &
       seq_timemgr_clock_atm  = 'seq_timemgr_clock_atm' , &
       seq_timemgr_clock_lnd  = 'seq_timemgr_clock_lnd' , &
       seq_timemgr_clock_ocn  = 'seq_timemgr_clock_ocn' , &
@@ -162,7 +162,7 @@ module seq_timemgr_mod
       seq_timemgr_clock_glc  = 'seq_timemgr_clock_glc' , &
       seq_timemgr_clock_wav  = 'seq_timemgr_clock_wav' , &
       seq_timemgr_clock_rof  = 'seq_timemgr_clock_rof' , &
-      seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp' 
+      seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp'
    character(len=8),private,parameter :: seq_timemgr_clocks(max_clocks) = &
       (/'drv     ','atm     ','lnd     ','ocn     ', &
         'ice     ','glc     ','wav     ','rof     ','esp     '/)
@@ -223,7 +223,7 @@ module seq_timemgr_mod
       type(EClock_pointer) :: ECP(max_clocks)    ! ESMF clocks, array of pointers
       type(ESMF_Alarm) :: EAlarm(max_clocks,max_alarms) ! array of clock alarms
    end type seq_timemgr_type
- 
+
    ! --- Private local data ----------------------------------------------------
 
    type(ESMF_Calendar), target, save :: seq_timemgr_cal      ! calendar
@@ -240,17 +240,17 @@ contains
 
 !===============================================================================
 ! !IROUTINE: seq_timemgr_clockInit -- Initializes clocks
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Initializes clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioid, mpicom, &
       EClock_drv, EClock_atm, EClock_lnd, EClock_ocn, EClock_ice, Eclock_glc, &
       Eclock_rof, EClock_wav, Eclock_esp)
-                                           
+
 ! !USES:
    use pio, only : file_desc_T
    use shr_file_mod,   only : shr_file_getunit, shr_file_freeunit
@@ -694,7 +694,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     endif
 
 
-    ! --- Initialize generic stuff --- 
+    ! --- Initialize generic stuff ---
     seq_timemgr_calendar             = shr_cal_calendarName(calendar)
     seq_timemgr_esp_run_on_pause     = esp_run_on_pause
     seq_timemgr_end_restart          = end_restart
@@ -744,7 +744,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
          (trim(pause_option) /= seq_timemgr_optNever)) then
        do n = 1, max_clocks
-          if (pause_active(n)) then
+          if (pause_active(n) .and. (iam == 0)) then
              write(logunit, '(4a)') subname, ': Pause active for ',           &
                   trim(seq_timemgr_clocks(n)),' component'
           end if
@@ -1012,7 +1012,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
             opt_n   = dtime(seq_timemgr_nclock_glc), &
             RefTime = OffsetTime,                    &
             alarmname = trim(seq_timemgr_alarm_glcrun_avg))
-    else if (glc_avg_period == seq_timemgr_optYearly) then 
+    else if (glc_avg_period == seq_timemgr_optYearly) then
        call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
             EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
             option  = seq_timemgr_optYearly,         &
@@ -1057,11 +1057,11 @@ end subroutine seq_timemgr_clockInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_EClockGetData -- Get information from the clock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Get various values from the clock.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
@@ -1094,7 +1094,7 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     type(ESMF_Time),      intent(OUT), optional :: ECurrTime  ! Current ESMF time
     real(SHR_KIND_R8)   , intent(OUT), optional :: curr_cday  ! current calendar day
     real(SHR_KIND_R8)   , intent(OUT), optional :: next_cday  ! current calendar day
-    real(SHR_KIND_R8)   , intent(OUT), optional :: curr_time  ! time interval between current time 
+    real(SHR_KIND_R8)   , intent(OUT), optional :: curr_time  ! time interval between current time
                                                               ! and reference date
     real(SHR_KIND_R8)   , intent(OUT), optional :: prev_time  ! time interval between previous time
                                                               ! and reference date
@@ -1163,7 +1163,7 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     endif
 
     ! ---Current Time (the time interval between the current date and the reference date) ---
-    if ( present(curr_time)) then 
+    if ( present(curr_time)) then
        timediff = CurrentTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        call seq_timemgr_ESMFCodeCheck( rc, msg=subname//"Error from  TimeIntervalGet timediff")
@@ -1171,7 +1171,7 @@ subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
     end if
 
     ! ---Previous Time (the time interval between the previous date and the reference date) ---
-    if ( present(prev_time)) then 
+    if ( present(prev_time)) then
        timediff = PreviousTime - RefTime
        call ESMF_TimeIntervalGet(timediff, d=days, s=seconds, rc=rc)
        call seq_timemgr_ESMFCodeCheck( rc, msg=subname//"Error from  TimeIntervalGet timediff")
@@ -1210,11 +1210,11 @@ end subroutine seq_timemgr_EClockGetData
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_clockAdvance  -- Advance the syncclock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 ! Advance this clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, force_stop_tod )
@@ -1230,7 +1230,7 @@ subroutine seq_timemgr_clockAdvance( SyncClock, force_stop, force_stop_ymd, forc
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_clockAdvance) '
-    integer :: n    
+    integer :: n
     type(ESMF_Time) :: NextAlarm              ! Next restart alarm time
     integer :: rc    ! Return code
 
@@ -1331,11 +1331,11 @@ end subroutine seq_timemgr_clockAdvance
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmInit -- Set an alarm
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Setup an alarm in a clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_tod, RefTime, alarmname)
@@ -1369,7 +1369,7 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
 !-------------------------------------------------------------------------------
 ! Notes: This is slightly screwed up because of the way the ESMF alarm
 !        initializes.  The ringtime sent to AlarmCreate MUST be the next
-!        alarm time.  If you send an arbitrary but proper ringtime from 
+!        alarm time.  If you send an arbitrary but proper ringtime from
 !        the past and the ring interval, the alarm will always go off on
 !        the next clock advance and this will cause serious problems.
 !        So, even if it makes sense to initialize an alarm with some
@@ -1410,21 +1410,21 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
     selectcase (trim(option))
 
     case (seq_timemgr_optNONE)
-       !--- tcx seems we need an alarm interval or the alarm create fails, 
+       !--- tcx seems we need an alarm interval or the alarm create fails,
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
        call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
        update_nextalarm  = .false.
 
     case (seq_timemgr_optNever)
-       !--- tcx seems we need an alarm interval or the alarm create fails, 
+       !--- tcx seems we need an alarm interval or the alarm create fails,
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
        call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
        update_nextalarm  = .false.
 
     case (seq_timemgr_optDate)
-       !--- tcx seems we need an alarm interval or the alarm create fails, 
+       !--- tcx seems we need an alarm interval or the alarm create fails,
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
        if (.not. present(opt_ymd)) call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
@@ -1570,11 +1570,11 @@ end subroutine seq_timemgr_AlarmInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmGet -- Get information from the alarm
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Get various values from the alarm.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_alarmGet( EAlarm, next_ymd, next_tod, prev_ymd, prev_tod,    &
@@ -1643,11 +1643,11 @@ end subroutine seq_timemgr_alarmGet
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmSetOn -- turn alarm on
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     turn alarm on
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
@@ -1676,8 +1676,8 @@ subroutine seq_timemgr_AlarmSetOn( EClock, alarmname)
 !   and the alarm pointer is valid if it's associated.  If it's not associated
 !   the AlarmGet calls will generally return an error code.  What we really
 !   want is to ignore the unset alarms.  So below, we have to kind of kludge
-!   this up.  We set name=xalarm, a special value, before the AlarmGet call so 
-!   if Alarm_list(n) is not associated, the name will remain the value of 
+!   this up.  We set name=xalarm, a special value, before the AlarmGet call so
+!   if Alarm_list(n) is not associated, the name will remain the value of
 !   xalarm.  Then we check whether it's a valid alarm by first checking
 !   the name vs xalarm.  If name is not xalarm, then it must be a valid alarm
 !   and we either set found to true if we are setting all alarms or we compare
@@ -1724,11 +1724,11 @@ end subroutine seq_timemgr_AlarmSetOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmSetOff -- turn alarm off
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     turn alarm off
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
@@ -1757,8 +1757,8 @@ subroutine seq_timemgr_AlarmSetOff( EClock, alarmname)
 !   and the alarm pointer is valid if it's associated.  If it's not associated
 !   the AlarmGet calls will generally return an error code.  What we really
 !   want is to ignore the unset alarms.  So below, we have to kind of kludge
-!   this up.  We set name=xalarm, a special value, before the AlarmGet call so 
-!   if Alarm_list(n) is not associated, the name will remain the value of 
+!   this up.  We set name=xalarm, a special value, before the AlarmGet call so
+!   if Alarm_list(n) is not associated, the name will remain the value of
 !   xalarm.  Then we check whether it's a valid alarm by first checking
 !   the name vs xalarm.  If name is not xalarm, then it must be a valid alarm
 !   and we either set found to true if we are setting all alarms or we compare
@@ -1805,11 +1805,11 @@ end subroutine seq_timemgr_AlarmSetOff
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_alarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_alarmIsOn( EClock, alarmname)
@@ -1885,11 +1885,11 @@ end function seq_timemgr_alarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_restartAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_restartAlarmIsOn( EClock)
@@ -1915,11 +1915,11 @@ end function seq_timemgr_restartAlarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_stopAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_stopAlarmIsOn( EClock)
@@ -1945,11 +1945,11 @@ end function seq_timemgr_stopAlarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_historyAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_historyAlarmIsOn( EClock)
@@ -1975,11 +1975,11 @@ end function seq_timemgr_historyAlarmIsOn
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_pauseAlarmIsOn -- check if an alarm is ringing
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     check if an alarm is ringing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_pauseAlarmIsOn( EClock)
@@ -2007,11 +2007,11 @@ logical function seq_timemgr_pauseAlarmIsOn( EClock)
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_pause_active -- Is pause/resume active this run?
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Return .true. if any component is configured for pause/resume
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
   logical function seq_timemgr_pause_active()
@@ -2031,11 +2031,11 @@ logical function seq_timemgr_pauseAlarmIsOn( EClock)
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_pause_component_index -- return an index for a component
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Look up a component's internal index for faster processing
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
   integer function seq_timemgr_pause_component_index(component_name)
@@ -2074,11 +2074,11 @@ logical function seq_timemgr_pauseAlarmIsOn( EClock)
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_pause_component_active -- Check if component paused
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Return .true. if component is active in driver pause
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
   logical function seq_timemgr_pause_component_active(component_index)
@@ -2106,13 +2106,13 @@ logical function seq_timemgr_pauseAlarmIsOn( EClock)
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ETimeInit -- Create ESMF_Time object based on YMD values
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Create the ESMF_Time object corresponding to the given input time, given in
 !  YMD (Year Month Day) and TOD (Time-of-day) format.
 ! Set the time by an integer as YYYYMMDD and integer seconds in the day
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ETimeInit( ETime, ymd, tod, desc )
@@ -2165,11 +2165,11 @@ end subroutine seq_timemgr_ETimeInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ETimeGet -- Get the date in YYYYMMDD from from ESMF Time
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Get the date in YYYYMMDD format from a ESMF time object.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ETimeGet( ETime, offset, ymd, tod )
@@ -2230,13 +2230,13 @@ end subroutine seq_timemgr_ETimeGet
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_EClockInit -- Initialize the ESMF clock in the shared clock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 ! Private method:
 !
 ! Setup the ESMF clock inside the wrapped CCSM clock
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_EClockInit( TimeStep, StartTime, RefTime, CurrTime, EClock )
@@ -2294,11 +2294,11 @@ end subroutine seq_timemgr_EClockInit
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_EClockDateInSync -- Check that input date in sync with clock
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Check that the given input date/time is in sync with clock time
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 logical function seq_timemgr_EClockDateInSync( EClock, ymd, tod, prev)
@@ -2349,11 +2349,11 @@ end function seq_timemgr_EClockDateInSync
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_clockPrint -- Print clock information out
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !      Print clock information out.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_clockPrint( SyncClock )
@@ -2450,11 +2450,11 @@ end subroutine seq_timemgr_clockPrint
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ESMFDebug -- Print ESMF stuff for debugging
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 ! Print ESMF stuff for debugging
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ESMFDebug( EClock, ETime, ETimeInterval, istring )
@@ -2522,11 +2522,11 @@ end subroutine seq_timemgr_ESMFDebug
 !===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_timemgr_ESMFCodeCheck -- Check return-code from ESMF -- abort if not
-!   
+!
 ! !DESCRIPTION:
-!   
+!
 !     Check ESMF return code and abort if not successful.
-!      
+!
 ! !INTERFACE: ------------------------------------------------------------------
 
 subroutine seq_timemgr_ESMFCodeCheck( rc, msg )

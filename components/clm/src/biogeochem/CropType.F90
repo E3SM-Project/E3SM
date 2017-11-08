@@ -228,8 +228,8 @@ contains
     use pftvarcon        , only : nwcereal, nwcerealirrig, mxtmp, baset
     use TemperatureType  , only : temperature_type
     use CNStateType      , only : cnstate_type
-    use PatchType        , only : pft                
-    use ColumnType       , only : col
+    use VegetationType        , only : veg_pp                
+    use ColumnType       , only : col_pp
     !
     ! !ARGUMENTS:
     class(crop_type)       , intent(inout) :: this
@@ -266,7 +266,7 @@ contains
     
     do p = begp,endp
        if (cnstate_vars%croplive_patch(p)) then ! relative to planting date
-          ivt = pft%itype(p)
+          ivt = veg_pp%itype(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
                temperature_vars%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
                * dtime/SHR_CONST_CDAY
@@ -286,11 +286,11 @@ contains
 
     do p = begp,endp
        if (cnstate_vars%croplive_patch(p)) then ! relative to planting date
-          ivt = pft%itype(p)
-          c = pft%column(p)
+          ivt = veg_pp%itype(p)
+          c = veg_pp%column(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               ((temperature_vars%t_soisno_col(c,1)*col%dz(c,1) + &
-               temperature_vars%t_soisno_col(c,2)*col%dz(c,2))/(col%dz(c,1)+col%dz(c,2))) - &
+               ((temperature_vars%t_soisno_col(c,1)*col_pp%dz(c,1) + &
+               temperature_vars%t_soisno_col(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
                (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
              rbufslp(p) = rbufslp(p)*cnstate_vars%vf_patch(p)

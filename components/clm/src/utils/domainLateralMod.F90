@@ -372,8 +372,8 @@ contains
     ! !USES:
     use landunit_varcon , only : max_lunit
     use decompMod       , only : bounds_type, BOUNDS_LEVEL_PROC
-    use LandunitType    , only : lun
-    use ColumnType      , only : col
+    use LandunitType    , only : lun_pp
+    use ColumnType      , only : col_pp
     use UnstructuredGridType, only : ScatterDataG2L
     !
     implicit none
@@ -420,8 +420,8 @@ contains
     landunit_index = 0
 
     do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
-       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
-          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       if (landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) == 0) then
+          landunit_index(lun_pp%gridcell(lidx),lun_pp%itype(lidx)) = lidx
        endif
     enddo
 
@@ -431,7 +431,7 @@ contains
 
     max_ncol_local = 0
     do c = bounds_proc%begc, bounds_proc%endc
-       g       = col%gridcell(c)
+       g       = col_pp%gridcell(c)
        ncol(g) = ncol(g) + 1
        if (ncol(g) > max_ncol_local) max_ncol_local = ncol(g)
     enddo
@@ -467,11 +467,11 @@ contains
     last_lun_type   = -1
 
     do l = bounds_proc%begl_all, bounds_proc%endl_all
-       g             = lun%gridcell(l)
+       g             = lun_pp%gridcell(l)
 
-       if (last_lun_type /= lun%itype(l)) then
+       if (last_lun_type /= lun_pp%itype(l)) then
           grid_count(:) = 0.d0
-          last_lun_type = lun%itype(l)
+          last_lun_type = lun_pp%itype(l)
        endif
        grid_count(g) = grid_count(g) + 1.d0
        lun_rank(l)   = grid_count(g)
@@ -481,11 +481,11 @@ contains
     ncol = 0
     do c = bounds_proc%begc, bounds_proc%endc
 
-       g = col%gridcell(c)
-       l = col%landunit(c)
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
 
        beg_idx            = (g-bounds_proc%begg)*nblocks + ncol(g)*nvals + 1
-       data_send(beg_idx) = real(lun%itype(l))
+       data_send(beg_idx) = real(lun_pp%itype(l))
 
        beg_idx            = beg_idx + 1
        data_send(beg_idx) = lun_rank(l)

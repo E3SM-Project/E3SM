@@ -10,10 +10,14 @@ use shr_kind_mod, only: r8 => shr_kind_r8
 use shr_kind_mod, only: r4 => shr_kind_r4
 use shr_kind_mod, only: i8 => shr_kind_i8
 use shr_kind_mod, only: i4 => shr_kind_i4
+use, intrinsic :: ieee_exceptions, only : ieee_status_type, ieee_get_status, ieee_set_status
+use, intrinsic :: ieee_exceptions, only : ieee_set_halting_mode
+use, intrinsic :: ieee_exceptions, only : ieee_invalid, ieee_divide_by_zero
 use shr_infnan_mod
 
 implicit none
 
+type(ieee_status_type) :: status_value
 real(r8) :: x, zero
 real(r4) :: y
 real(r8) :: r8array(100), r82Darray(10,10), r83Darray(4,4,4)
@@ -29,6 +33,12 @@ integer(i8), parameter :: dpnanspat = int(O'0777610000000000000000',i8)
 integer(i4), parameter :: spnanpat =  int(Z'7FC00000',i4)
 integer(i4), parameter :: spnanspat = int(Z'7FC10000',i4)
 intrinsic :: count
+
+! Get initial ieee status so we can restore it later
+call ieee_get_status(status_value)
+
+! Need to turn off ieee_invalid checks for some of these tests to pass
+call ieee_set_halting_mode([ieee_invalid, ieee_divide_by_zero], .false.)
 
 inf = transfer(dpinfpat,inf)
 nan = transfer(dpnanpat,nan)
@@ -140,6 +150,13 @@ x = shr_infnan_to_r8(shr_infnan_neginf)
 call assert(       shr_infnan_isneginf( x ),  "Test that shr_infnan_to_r8(shr_infnan_neginf) sets r8 to -inf" )
 y = shr_infnan_to_r4(shr_infnan_neginf)
 call assert(       shr_infnan_isneginf( y ),  "Test that shr_infnan_to_r4(shr_infnan_neginf) sets r4 to -inf" )
+
+! Restore original status
+!
+! At least with gfortran, this restoration prevents floating point exceptions from being
+! raised at the end of the run. Alternatively, we could probably set various flags to
+! .false., using ieee_set_flag.
+call ieee_set_status(status_value)
 
 contains
 

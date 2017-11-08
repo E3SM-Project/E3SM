@@ -31,8 +31,8 @@ class Archive(GenericXML):
 
 
         model = get_model()
-        if 'cpl' not in components:
-            components.append('cpl')
+        if 'drv' not in components:
+            components.append('drv')
         if 'dart' not in components and model == 'cesm':
             components.append('dart')
 
@@ -44,15 +44,14 @@ class Archive(GenericXML):
                 specs = arch.get_node("comp_archive_spec", {"compname":comp})
             else:
                 if infile is None:
-                    logger.debug("No archive file defined for component %s"%comp)
+                    logger.debug("No archive file defined for component {}".format(comp))
                 else:
-                    logger.debug("Archive file %s for component %s not found"%(infile,comp))
+                    logger.debug("Archive file {} for component {} not found".format(infile,comp))
 
                 specs = self.get_optional_node("comp_archive_spec", attributes={"compname":comp})
             if specs is None:
-                logger.debug("No archive specs found for component %s"%comp)
+                logger.debug("No archive specs found for component {}".format(comp))
             else:
-                logger.debug("adding archive spec for %s"%comp)
+                logger.debug("adding archive spec for {}".format(comp))
                 components_node.append(specs)
         env_archive.add_child(components_node)
-

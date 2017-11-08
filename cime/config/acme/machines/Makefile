@@ -27,8 +27,8 @@ VPATH := $(subst $(space),:,$(VPATH))
 RM    := rm
 CP    := cp
 
-exec_se: $(EXEC_SE)  $(CURDIR)/Depends
-complib: $(COMPLIB)  $(CURDIR)/Depends
+exec_se: $(EXEC_SE)  Depends
+complib: $(COMPLIB)  Depends
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -90,12 +90,7 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-# ESMF_INTERFACE is currently only defined in env_build.xml
-ifeq ($(COMP_INTERFACE), ESMF)
-   CPPDEFS += -DESMF_INTERFACE
-else
-   CPPDEFS += -DMCT_INTERFACE
-endif
+CPPDEFS += -DMCT_INTERFACE
 
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
@@ -251,8 +246,9 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
     $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
   endif
 
-  # Get the "PETSC_LIB" list an env var
-  include $(PETSC_PATH)/conf/variables
+  # Get the "PETSC_LIB" list an env var 
+  include $(PETSC_PATH)/lib/petsc/conf/variables
+  
 endif
 
 # Set Trilinos info if it is being used
@@ -288,6 +284,25 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 
   # get the "ALBANY_LINK_LIBS" list as an env var
   include $(ALBANY_PATH)/export_albany.in
+endif
+
+# Set MOAB info if it is being used
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  ifdef MOAB_PATH
+    CPPDEFS += -DHAVE_MOAB
+    ifndef INC_MOAB
+      INC_MOAB:=$(MOAB_PATH)/include
+    endif
+    ifndef LIB_MOAB
+      LIB_MOAB:=$(MOAB_PATH)/lib
+    endif
+  else
+    $(error MOAB_PATH must be defined when USE_MOAB is TRUE)
+  endif
+
+  # get the "IMESH_LIBS" list as an env var
+  include $(LIB_MOAB)/iMesh-Defs.inc
+
 endif
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
@@ -389,6 +404,9 @@ ifdef INC_TRILINOS
 endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
+endif
+ifdef INC_MOAB
+  INCLDIR += -I$(INC_MOAB)
 endif
 
 ifeq ($(MODEL),driver)
@@ -542,7 +560,7 @@ endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
-  SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
+  SLIBS += ${PETSC_LIB}
 endif
 
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
@@ -554,6 +572,11 @@ endif
 # Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
 ifeq ($(strip $(USE_ALBANY)), TRUE)
   SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
+# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  SLIBS += $(IMESH_LIBS)
 endif
 
 # Add libraries and flags that we need on the link line when C++ code is included
@@ -626,7 +649,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(IN
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
-	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/externals/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
+	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
@@ -679,7 +702,7 @@ $(PIO_LIBDIR)/Makefile:
 #-------------------------------------------------------------------------------
 
 touch_filepath:
-	touch $(CURDIR)/Filepath
+	touch Filepath
 
 # Get list of files and build dependency file for all .o files
 #   using perl scripts mkSrcfiles and mkDepends
@@ -691,17 +714,17 @@ INCS    := $(foreach dir,$(cpp_dirs),-I$(dir))
 
 CURDIR := $(shell pwd)
 
-$(CURDIR)/Depends: $(CURDIR)/Srcfiles $(CURDIR)/Deppath
+Depends: Srcfiles Deppath
 	$(CASETOOLS)/mkDepends $(USER_MKDEPENDS_OPTS) Deppath Srcfiles > $@
 
-$(CURDIR)/Deppath: $(CURDIR)/Filepath
-	$(CP) -f $(CURDIR)/Filepath $@
+Deppath: Filepath
+	$(CP) -f Filepath $@
 	@echo "$(MINCROOT)" >> $@
 
-$(CURDIR)/Srcfiles: $(CURDIR)/Filepath
+Srcfiles: Filepath
 	$(CASETOOLS)/mkSrcfiles
 
-$(CURDIR)/Filepath:
+Filepath:
 	@echo "$(VPATH)" > $@
 
 
@@ -877,7 +900,7 @@ cleanrof:
 	$(RM) -fr $(EXEROOT)/rof/obj
 
 cleanlnd:
-	$(RM) -f $(LIBROOT)/liblnd.a
+	$(RM) -f $(LIBROOT)/$(LNDLIB)
 	$(RM) -fr $(EXEROOT)/lnd/obj
 
 cleancsmshare:
@@ -904,7 +927,7 @@ realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
+    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
 endif

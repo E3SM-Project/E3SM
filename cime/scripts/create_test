@@ -124,7 +124,7 @@ OR
 
     parser.add_argument("--mpilib",
                         help="Specify the mpilib. "
-                        "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
+                        "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
 
     if model == "cesm":
@@ -184,10 +184,14 @@ OR
                         "The default is user-specified environment variable PROJECT")
 
     parser.add_argument("-t", "--test-id",
-                        help="Specify an 'id' for the test. This is simply a"
-                        "string that is appended to the end of a test name."
-                        "If no testid is specified, then a time stamp plus random number"
-                        "will be used.")
+                        help="Specify an 'id' for the test. This is simply a "
+                        "string that is appended to the end of a test name. "
+                        "If no test-id is specified, then a time stamp plus random "
+                        "string will be used (ensuring a high probability of uniqueness). "
+                        "If test-id is specified, it is the user's responsibility to ensure "
+                        "that each run of create_test uses a unique test-id. "
+                        "(All sorts of problems can occur if you use the same test-id twice "
+                        "on the same file system, even if the test lists are completely different.)")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
@@ -195,7 +199,7 @@ OR
 
     parser.add_argument("--proc-pool", type=int, default=None,
                         help="The size of the processor pool that create_test can use. Default "
-                        "is PES_PER_NODE + 25 percent.")
+                        "is MAX_MPITASKS_PER_NODE + 25 percent.")
 
     parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
                         help="Set the wallclock limit for all tests in the suite. "
@@ -224,6 +228,11 @@ OR
 
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files")
+
+    parser.add_argument("--pesfile",
+                        help="Full pathname of an optional pes specification "
+                        "file. The file can follow either the config_pes.xml or "
+                        "the env_mach_pes.xml format.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -320,6 +329,9 @@ OR
 
         logger.info("Testnames: %s" % test_names)
     else:
+        if args.machine is None:
+            args.machine = update_acme_tests.infer_machine_name_from_tests(args.testargs)
+
         mach_obj = Machines(machine=args.machine)
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
@@ -350,24 +362,32 @@ OR
     if args.input_dir is not None:
         args.input_dir = os.path.abspath(args.input_dir)
 
+    # sanity check
+    for name in test_names:
+        dot_count = name.count('.')
+        expect(dot_count > 1 and dot_count <= 4, "Invalid test Name, '{}'".format(name))
+
+    # for acme, sort by walltime
+    if model == "acme":
+        if args.walltime is None:
+            test_names.sort(cmp=update_acme_tests.sort_by_time)
+        else:
+            test_names.sort()
+
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
-        args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \
+        args.namelists_only, args.project, \
+        args.test_id, args.parallel_jobs, args.walltime, \
         args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
-        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir
+        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir, args.pesfile
 
 ###############################################################################
-def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
+def single_submit_impl(machine_name, test_id, proc_pool, _, args, job_cost_map, wall_time, test_root):
 ###############################################################################
     mach = Machines(machine=machine_name)
     expect(mach.has_batch_system(), "Single submit does not make sense on non-batch machine '%s'" % mach.get_machine_name())
 
     machine_name = mach.get_machine_name()
-
-    if project is None:
-        project = CIME.utils.get_project(mach)
-        if project is None:
-            project = mach.get_value("PROJECT")
 
     #
     # Compute arg list for second call to create_test
@@ -405,11 +425,10 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     with Case(first_case, read_only=False) as case:
         env_batch = case.get_env("batch")
 
-        directives = env_batch.get_batch_directives(case, "case.run", raw=True)
         submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
         submit_args = env_batch.get_submit_args(case, "case.run")
 
-    tasks_per_node = mach.get_value("PES_PER_NODE")
+    tasks_per_node = mach.get_value("MAX_MPITASKS_PER_NODE")
     num_nodes = int(math.ceil(float(proc_pool) / tasks_per_node))
     if wall_time is None:
         wall_time = compute_total_time(job_cost_map, proc_pool)
@@ -417,7 +436,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     else:
         wall_time_bab = wall_time
 
-    queue = env_batch.select_best_queue(proc_pool, wall_time_bab)
+    queue = env_batch.select_best_queue(proc_pool, num_nodes, wall_time_bab)
     wall_time_max_bab = env_batch.get_queue_specs(queue)[3]
     if wall_time_max_bab is not None:
         wall_time_max = convert_to_seconds(wall_time_max_bab)
@@ -425,20 +444,16 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
             wall_time = wall_time_max
             wall_time_bab = convert_to_babylonian_time(wall_time)
 
-    job_id = "create_test_single_submit_%s" % test_id
-    directives = directives.replace("{{ job_id }}", job_id)
-    directives = directives.replace("{{ num_nodes }}", str(num_nodes))
-    directives = directives.replace("{{ tasks_per_node }}", str(tasks_per_node))
-    directives = directives.replace("{{ ptile }}", str(tasks_per_node))
-    directives = directives.replace("{{ totaltasks }}", str(tasks_per_node * num_nodes))
+    overrides = {
+        "job_id" : "create_test_single_submit_%s" % test_id,
+        "num_nodes" : num_nodes,
+        "tasks_per_node": tasks_per_node,
+        "totaltasks" : tasks_per_node * num_nodes,
+        "job_wallclock_time": wall_time_bab,
+        "job_queue": queue
+        }
 
-    directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
-    directives = directives.replace("{{ job_wallclock_time }}", wall_time_bab)
-    directives = directives.replace("{{ job_queue }}", queue)
-    if project is not None:
-        directives = directives.replace("{{ project }}", project)
-
-    expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
+    directives = env_batch.get_batch_directives(case, "case.run", overrides=overrides)
 
     #
     # Make simple submit script and submit
@@ -460,7 +475,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
 def create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                 baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs,
                 walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite, output_root, wait,
-                force_procs, force_threads, mpilib, input_dir):
+                force_procs, force_threads, mpilib, input_dir, pesfile):
 ###############################################################################
     impl = TestScheduler(test_names, test_data=test_data,
                          no_run=no_run, no_build=no_build, no_setup=no_setup, no_batch=no_batch,
@@ -473,7 +488,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
                          proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing,
                          queue=queue, allow_baseline_overwrite=allow_baseline_overwrite,
                          output_root=output_root, force_procs=force_procs, force_threads=force_threads,
-                         mpilib=mpilib, input_dir=input_dir)
+                         mpilib=mpilib, input_dir=input_dir, pesfile=pesfile)
 
     success = impl.run_tests(wait=wait)
 
@@ -514,13 +529,13 @@ def _main_func(description):
     test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, \
     test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
     project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \
-    save_timing, queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir \
+    save_timing, queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                          baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
                          project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
-                         queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir))
+                         queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile))
 
 ###############################################################################
 

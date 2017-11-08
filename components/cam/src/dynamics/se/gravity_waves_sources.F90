@@ -155,7 +155,7 @@ CONTAINS
        call edgeVpack(edge3, frontgf(:,:,:,ie),nlev,0,ie)
        call edgeVpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,ie)
     enddo
-    if (iam<par%nprocs) then
+    if (par%dynproc) then
        call bndry_exchangeV(hybrid,edge3)
     end if
     do ie=nets,nete

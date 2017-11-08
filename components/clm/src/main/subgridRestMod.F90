@@ -15,10 +15,10 @@ module subgridRestMod
   use pio                , only : file_desc_t
   use ncdio_pio          , only : ncd_int, ncd_double
   use GetGlobalValuesMod , only : GetGlobalIndex
-  use GridcellType       , only : grc                
-  use LandunitType       , only : lun                
-  use ColumnType         , only : col                
-  use PatchType          , only : pft                
+  use GridcellType       , only : grc_pp                
+  use LandunitType       , only : lun_pp                
+  use ColumnType         , only : col_pp                
+  use VegetationType          , only : veg_pp                
   use restUtilMod
   !
   ! !PUBLIC TYPES:
@@ -37,7 +37,7 @@ module subgridRestMod
   private :: save_old_weights
 
   ! !PRIVATE TYPES:
-  real(r8), allocatable :: pft_wtlunit_before_rest_read(:)  ! pft%wtlunit weights - saved values from before the restart read
+  real(r8), allocatable :: pft_wtlunit_before_rest_read(:)  ! veg_pp%wtlunit weights - saved values from before the restart read
   !------------------------------------------------------------------------
 
 contains
@@ -108,12 +108,12 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='grid1d_lon', xtype=ncd_double, &
          dim1name='gridcell',                                          &
          long_name='gridcell longitude', units='degrees_east',         &
-         interpinic_flag='skip', readvar=readvar, data=grc%londeg)
+         interpinic_flag='skip', readvar=readvar, data=grc_pp%londeg)
 
     call restartvar(ncid=ncid, flag=flag, varname='grid1d_lat', xtype=ncd_double, &
          dim1name='gridcell',                                          &
          long_name='gridcell latitude', units='degrees_north',         &
-         interpinic_flag='skip', readvar=readvar, data=grc%latdeg)
+         interpinic_flag='skip', readvar=readvar, data=grc_pp%latdeg)
 
     do g=bounds%begg,bounds%endg
        igarr(g)= mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1
@@ -140,7 +140,7 @@ contains
     allocate(rlarr(bounds%begl:bounds%endl), ilarr(bounds%begl:bounds%endl))
 
     do l=bounds%begl,bounds%endl
-       rlarr(l) = grc%londeg(lun%gridcell(l))
+       rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
     enddo
 
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lon', xtype=ncd_double,  &
@@ -149,7 +149,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rlarr)
     
     do l=bounds%begl,bounds%endl
-       rlarr(l) = grc%latdeg(lun%gridcell(l))
+       rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lat', xtype=ncd_double,  &
          dim1name='landunit',                                                      &
@@ -157,7 +157,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rlarr)
 
     do l=bounds%begl,bounds%endl
-       ilarr(l) = mod(ldecomp%gdc2glo(lun%gridcell(l))-1,ldomain%ni) + 1
+       ilarr(l) = mod(ldecomp%gdc2glo(lun_pp%gridcell(l))-1,ldomain%ni) + 1
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_ixy', xtype=ncd_int,     &
          dim1name='landunit',                                                      &
@@ -165,7 +165,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
     do l=bounds%begl,bounds%endl
-       ilarr(l) = (ldecomp%gdc2glo(lun%gridcell(l))-1)/ldomain%ni + 1
+       ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
     end do
     call restartvar(ncid=ncid, flag=flag, varname='land1d_jxy', xtype=ncd_int,     &
          dim1name='landunit',                                                      &
@@ -173,7 +173,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
     do l=bounds%begl,bounds%endl
-       ilarr(l) = GetGlobalIndex(decomp_index=lun%gridcell(l), clmlevel=nameg)
+       ilarr(l) = GetGlobalIndex(decomp_index=lun_pp%gridcell(l), clmlevel=nameg)
     end do
     call restartvar(ncid=ncid, flag=flag, varname='land1d_gridcell_index', xtype=ncd_int, &
          dim1name='landunit',                                                             &
@@ -183,10 +183,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='land1d_ityplun', xtype=ncd_int, &
          dim1name='landunit',                                                      &
          long_name='landunit type (see global attributes)', units=' ',             &
-         interpinic_flag='skip', readvar=readvar, data=lun%itype)
+         interpinic_flag='skip', readvar=readvar, data=lun_pp%itype)
 
     do l=bounds%begl,bounds%endl
-       if (lun%active(l)) then
+       if (lun_pp%active(l)) then
           ilarr(l) = 1
        else
           ilarr(l) = 0
@@ -206,7 +206,7 @@ contains
     allocate(rcarr(bounds%begc:bounds%endc), icarr(bounds%begc:bounds%endc))
 
     do c= bounds%begc, bounds%endc
-       rcarr(c) = grc%londeg(col%gridcell(c))
+       rcarr(c) = grc_pp%londeg(col_pp%gridcell(c))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_lon', xtype=ncd_double,   &
          dim1name='column',                                                         &
@@ -214,7 +214,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rcarr)
 
     do c= bounds%begc, bounds%endc
-       rcarr(c) = grc%latdeg(col%gridcell(c))
+       rcarr(c) = grc_pp%latdeg(col_pp%gridcell(c))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_lat', xtype=ncd_double,   &
          dim1name='column',                                                         &
@@ -222,7 +222,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rcarr)
 
     do c= bounds%begc, bounds%endc
-       icarr(c) = mod(ldecomp%gdc2glo(col%gridcell(c))-1,ldomain%ni) + 1
+       icarr(c) = mod(ldecomp%gdc2glo(col_pp%gridcell(c))-1,ldomain%ni) + 1
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ixy', xtype=ncd_int,      &
          dim1name='column',                                                         &
@@ -230,7 +230,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     do c= bounds%begc, bounds%endc
-       icarr(c) = (ldecomp%gdc2glo(col%gridcell(c))-1)/ldomain%ni + 1
+       icarr(c) = (ldecomp%gdc2glo(col_pp%gridcell(c))-1)/ldomain%ni + 1
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_jxy', xtype=ncd_int,      &
          dim1name='column',                                                         &
@@ -238,7 +238,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     do c= bounds%begc, bounds%endc
-       icarr(c) = GetGlobalIndex(decomp_index=col%gridcell(c), clmlevel=nameg)
+       icarr(c) = GetGlobalIndex(decomp_index=col_pp%gridcell(c), clmlevel=nameg)
     end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_gridcell_index', xtype=ncd_int, &
          dim1name='column',                                                               &
@@ -246,7 +246,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     do c= bounds%begc, bounds%endc
-       icarr(c) = GetGlobalIndex(decomp_index=col%landunit(c), clmlevel=namel)
+       icarr(c) = GetGlobalIndex(decomp_index=col_pp%landunit(c), clmlevel=namel)
     end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_landunit_index', xtype=ncd_int, &
          dim1name='column',                                                               &
@@ -254,7 +254,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     do c= bounds%begc, bounds%endc
-       icarr(c) = lun%itype(col%landunit(c))
+       icarr(c) = lun_pp%itype(col_pp%landunit(c))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ityplun', xtype=ncd_int,  &
          dim1name='column',                                                         &
@@ -264,10 +264,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ityp', xtype=ncd_int,     &
          dim1name='column',                                                         &
          long_name='column type (see global attributes)', units=' ',                &
-         interpinic_flag='skip', readvar=readvar, data=col%itype)
+         interpinic_flag='skip', readvar=readvar, data=col_pp%itype)
 
     do c=bounds%begc,bounds%endc
-       if (col%active(c)) then 
+       if (col_pp%active(c)) then 
           icarr(c) = 1
        else
           icarr(c) = 0
@@ -287,7 +287,7 @@ contains
     allocate(rparr(bounds%begp:bounds%endp), iparr(bounds%begp:bounds%endp))
 
     do p=bounds%begp,bounds%endp
-       rparr(p) = grc%londeg(pft%gridcell(p))
+       rparr(p) = grc_pp%londeg(veg_pp%gridcell(p))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_lon', xtype=ncd_double, &
          dim1name='pft',                                                          &
@@ -295,7 +295,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rparr)
 
     do p=bounds%begp,bounds%endp
-       rparr(p) = grc%latdeg(pft%gridcell(p))
+       rparr(p) = grc_pp%latdeg(veg_pp%gridcell(p))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_lat', xtype=ncd_double, &
          dim1name='pft',                                                          &
@@ -303,7 +303,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rparr)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = mod(ldecomp%gdc2glo(pft%gridcell(p))-1,ldomain%ni) + 1
+       iparr(p) = mod(ldecomp%gdc2glo(veg_pp%gridcell(p))-1,ldomain%ni) + 1
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_ixy', xtype=ncd_int, &
          dim1name='pft',                                                       &
@@ -311,7 +311,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = (ldecomp%gdc2glo(pft%gridcell(p))-1)/ldomain%ni + 1
+       iparr(p) = (ldecomp%gdc2glo(veg_pp%gridcell(p))-1)/ldomain%ni + 1
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_jxy', xtype=ncd_int, &
          dim1name='pft',                                                       &
@@ -319,7 +319,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = GetGlobalIndex(decomp_index=pft%gridcell(p), clmlevel=nameg)
+       iparr(p) = GetGlobalIndex(decomp_index=veg_pp%gridcell(p), clmlevel=nameg)
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_gridcell_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
@@ -327,7 +327,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = GetGlobalIndex(decomp_index=pft%landunit(p), clmlevel=namel)
+       iparr(p) = GetGlobalIndex(decomp_index=veg_pp%landunit(p), clmlevel=namel)
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_landunit_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
@@ -335,7 +335,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = GetGlobalIndex(decomp_index=pft%column(p), clmlevel=namec)
+       iparr(p) = GetGlobalIndex(decomp_index=veg_pp%column(p), clmlevel=namec)
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_column_index', xtype=ncd_int,   &
          dim1name='pft',                                                                  &
@@ -345,10 +345,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_itypveg', xtype=ncd_int,  &
          dim1name='pft',                                                            &
          long_name='pft vegetation type', units='',                                 &
-         interpinic_flag='skip', readvar=readvar, data=pft%itype)
+         interpinic_flag='skip', readvar=readvar, data=veg_pp%itype)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = col%itype(pft%column(p))
+       iparr(p) = col_pp%itype(veg_pp%column(p))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_itypcol', xtype=ncd_int, &
          dim1name='pft',                                                           &
@@ -356,7 +356,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       iparr(p) = lun%itype(pft%landunit(p))
+       iparr(p) = lun_pp%itype(veg_pp%landunit(p))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_ityplun', xtype=ncd_int, &
          dim1name='pft',                                                           &
@@ -364,7 +364,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       if (pft%active(p)) then
+       if (veg_pp%active(p)) then
           iparr(p) = 1
        else
           iparr(p) = 0
@@ -376,8 +376,8 @@ contains
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
-       c = pft%column(p)
-       rparr(p) = col%glc_topo(c)
+       c = veg_pp%column(p)
+       rparr(p) = col_pp%glc_topo(c)
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_topoglc', xtype=ncd_double,   &
          dim1name='column',                                                             &
@@ -415,81 +415,81 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='land1d_wtxy', xtype=ncd_double, &
          dim1name='landunit',                                                      &
          long_name='landunit weight relative to corresponding gridcell',           &
-         interpinic_flag='skip', readvar=readvar, data=lun%wtgcell)
+         interpinic_flag='skip', readvar=readvar, data=lun_pp%wtgcell)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
          dim1name='column',                                                         &
          long_name='column weight relative to corresponding gridcell', units=' ',   &
-         interpinic_flag='skip', readvar=readvar, data=col%wtgcell)
+         interpinic_flag='skip', readvar=readvar, data=col_pp%wtgcell)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtlnd', xtype=ncd_double, &
          dim1name='column',                                                         &
          long_name='column weight relative to corresponding landunit', units=' ',   &
-         interpinic_flag='skip', readvar=readvar, data=col%wtlunit)
+         interpinic_flag='skip', readvar=readvar, data=col_pp%wtlunit)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_topoglc', xtype=ncd_double,   &
          dim1name='column',                                                             &
          long_name='mean elevation on glacier elevation classes', units='m',            &
-         interpinic_flag='skip', readvar=readvar, data=col%glc_topo)
+         interpinic_flag='skip', readvar=readvar, data=col_pp%glc_topo)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtxy', xtype=ncd_double,  &
          dim1name='pft',                                                            &
          long_name='pft weight relative to corresponding gridcell', units='',       &  
-         interpinic_flag='skip', readvar=readvar, data=pft%wtgcell)
+         interpinic_flag='skip', readvar=readvar, data=veg_pp%wtgcell)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtlnd', xtype=ncd_double, &
          dim1name='pft',                                                            &
          long_name='pft weight relative to corresponding landunit', units='',       & 
-         interpinic_flag='skip', readvar=readvar, data=pft%wtlunit)
+         interpinic_flag='skip', readvar=readvar, data=veg_pp%wtlunit)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtcol', xtype=ncd_double, &
          dim1name='pft',                                                            &
          long_name='pft weight relative to corresponding column', units='',         &
-         interpinic_flag='skip', readvar=readvar, data=pft%wtcol)
+         interpinic_flag='skip', readvar=readvar, data=veg_pp%wtcol)
 
     ! Snow column variables
 
     call restartvar(ncid=ncid, flag=flag, varname='SNLSNO', xtype=ncd_int,  & 
          dim1name='column', &
          long_name='number of snow layers', units='unitless', &
-         interpinic_flag='interp', readvar=readvar, data=col%snl)
+         interpinic_flag='interp', readvar=readvar, data=col_pp%snl)
 
     allocate(temp2d(bounds%begc:bounds%endc,-nlevsno+1:0))
     if (flag == 'write') then
-       temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) = col%dz(bounds%begc:bounds%endc,-nlevsno+1:0)
+       temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) = col_pp%dz(bounds%begc:bounds%endc,-nlevsno+1:0)
     end if
     call restartvar(ncid=ncid, flag=flag, varname='DZSNO', xtype=ncd_double,  & 
          dim1name='column', dim2name='levsno', switchdim=.true., lowerb2=-nlevsno+1, upperb2=0, &
          long_name='snow layer thickness', units='m', &
          interpinic_flag='interp', readvar=readvar, data=temp2d)
     if (flag == 'read') then
-       col%dz(bounds%begc:bounds%endc,-nlevsno+1:0) = temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) 
+       col_pp%dz(bounds%begc:bounds%endc,-nlevsno+1:0) = temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) 
     end if
     deallocate(temp2d)
 
     allocate(temp2d(bounds%begc:bounds%endc,-nlevsno+1:0))
     if (flag == 'write') then
-       temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) = col%z(bounds%begc:bounds%endc,-nlevsno+1:0)
+       temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) = col_pp%z(bounds%begc:bounds%endc,-nlevsno+1:0)
     end if
     call restartvar(ncid=ncid, flag=flag, varname='ZSNO', xtype=ncd_double,  & 
          dim1name='column', dim2name='levsno', switchdim=.true., lowerb2=-nlevsno+1, upperb2=0, &
          long_name='snow layer depth', units='m', &
          interpinic_flag='interp', readvar=readvar, data=temp2d)
     if (flag == 'read') then
-       col%z(bounds%begc:bounds%endc,-nlevsno+1:0) = temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) 
+       col_pp%z(bounds%begc:bounds%endc,-nlevsno+1:0) = temp2d(bounds%begc:bounds%endc,-nlevsno+1:0) 
     end if
     deallocate(temp2d)
 
     allocate(temp2d(bounds%begc:bounds%endc,-nlevsno:-1))
     if (flag == 'write') then
-       temp2d(bounds%begc:bounds%endc,-nlevsno:-1) = col%zi(bounds%begc:bounds%endc,-nlevsno:-1)
+       temp2d(bounds%begc:bounds%endc,-nlevsno:-1) = col_pp%zi(bounds%begc:bounds%endc,-nlevsno:-1)
     end if
     call restartvar(ncid=ncid, flag=flag, varname='ZISNO', xtype=ncd_double,  & 
          dim1name='column', dim2name='levsno', switchdim=.true., lowerb2=-nlevsno, upperb2=-1, &
          long_name='snow interface depth', units='m', &
          interpinic_flag='interp', readvar=readvar, data=temp2d)
     if (flag == 'read') then
-       col%zi(bounds%begc:bounds%endc,-nlevsno:-1) = temp2d(bounds%begc:bounds%endc,-nlevsno:-1) 
+       col_pp%zi(bounds%begc:bounds%endc,-nlevsno:-1) = temp2d(bounds%begc:bounds%endc,-nlevsno:-1) 
     end if
     deallocate(temp2d)
 
@@ -514,7 +514,7 @@ contains
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname//' ERROR: expect proc-level bounds')
 
     allocate(pft_wtlunit_before_rest_read(bounds%begp:bounds%endp))
-    pft_wtlunit_before_rest_read(bounds%begp:bounds%endp) = pft%wtlunit(bounds%begp:bounds%endp)
+    pft_wtlunit_before_rest_read(bounds%begp:bounds%endp) = veg_pp%wtlunit(bounds%begp:bounds%endp)
 
   end subroutine save_old_weights
 
@@ -614,9 +614,9 @@ contains
       !-----------------------------------------------------------------------
       
       do p = bounds%begp, bounds%endp
-         l = pft%landunit(p)
-         if (lun%itype(l) == istsoil) then
-            diff = abs(pft%wtlunit(p) - pft_wtlunit_before_rest_read(p))
+         l = veg_pp%landunit(p)
+         if (lun_pp%itype(l) == istsoil) then
+            diff = abs(veg_pp%wtlunit(p) - pft_wtlunit_before_rest_read(p))
             if (diff > tol) then
                write(iulog,*) 'ERROR: PFT weights are SIGNIFICANTLY different between the restart (finidat) file'
                write(iulog,*) 'and the surface dataset (fsurdat).'

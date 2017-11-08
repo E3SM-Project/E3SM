@@ -12,15 +12,20 @@ module PStateUpdate1Mod
   use clm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use soilorder_varcon       , only : smax,ks_sorption
-  use EcophysconType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
-  use PatchType              , only : pft
-  !! bgc interface & pflotran:
+  use VegetationType              , only : veg_pp
+  use tracer_varcon          , only : is_active_betr_bgc
+  ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
+  ! forest fertilization experiment
+  use clm_time_manager       , only : get_curr_date
+  use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
+  use clm_varctl             , only : forest_fert_exp
   !
   implicit none
   save
@@ -54,13 +59,16 @@ contains
     integer :: fp,fc     ! lake filter indices
     real(r8):: dt        ! radiation time step (seconds)
 
-
+    integer:: kyr                     ! current year 
+    integer:: kmo                     ! month of year  (1, ..., 12)
+    integer:: kda                     ! day of month   (1, ..., 31) 
+    integer:: mcsec                   ! seconds of day (0, ..., seconds/day)
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 
-         ivt                   => pft%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+         ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
 
-         woody                 => ecophyscon%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
@@ -83,12 +91,14 @@ contains
          c = filter_soilc(fc)
          ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_leaf_col(c) * dt
          ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_deadstem_col(c) * dt
+         ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_ppool_col(c) * dt
       end do
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
 !      if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
+      if(.not. is_active_betr_bgc)then
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -148,9 +158,25 @@ contains
             end do
          end if
       end do
-!      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      endif ! if (.not. is_active_betr_bgc))
       !------------------------------------------------------------------
-      
+     
+      ! forest fertilization
+      call get_curr_date(kyr, kmo, kda, mcsec)
+      if (forest_fert_exp) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
+               .and. fert_type(c) == 2 &
+               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
+               do j = 1, nlevdecomp
+                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+               end do
+            end if
+         end do
+      end if
+
+
       ! patch loop
 
       do fp = 1,num_soilp

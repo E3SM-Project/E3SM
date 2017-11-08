@@ -12,12 +12,12 @@ module CNCarbonFluxType
   use ch4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use PatchType              , only : pft                
-  use ColumnType             , only : col                
-  use LandunitType           , only : lun
+  use VegetationType              , only : veg_pp                
+  use ColumnType             , only : col_pp                
+  use LandunitType           , only : lun_pp
   use clm_varctl             , only : nu_com
   ! bgc interface & pflotran
-  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -56,6 +56,7 @@ module CNCarbonFluxType
      real(r8), pointer :: m_deadcrootc_xfer_to_litter_patch         (:)     ! dead coarse root C transfer mortality (gC/m2/s)
      real(r8), pointer :: m_gresp_storage_to_litter_patch           (:)     ! growth respiration storage mortality (gC/m2/s)
      real(r8), pointer :: m_gresp_xfer_to_litter_patch              (:)     ! growth respiration transfer mortality (gC/m2/s)
+     real(r8), pointer :: m_cpool_to_litter_patch                   (:)     ! plant storage C pool to litter (gC/m2/s)
 
      ! harvest mortality fluxes
      real(r8), pointer :: hrv_leafc_to_litter_patch                 (:)     ! leaf C harvest mortality (gC/m2/s)
@@ -80,6 +81,7 @@ module CNCarbonFluxType
      real(r8), pointer :: hrv_gresp_storage_to_litter_patch         (:)     ! growth respiration storage harvest mortality (gC/m2/s)
      real(r8), pointer :: hrv_gresp_xfer_to_litter_patch            (:)     ! growth respiration transfer harvest mortality (gC/m2/s)
      real(r8), pointer :: hrv_xsmrpool_to_atm_patch                 (:)     ! excess MR pool harvest mortality (gC/m2/s)
+     real(r8), pointer :: hrv_cpool_to_litter_patch                 (:)     ! Harvest cpool to litter (gC/m2/s)
      ! crop harvest
      real(r8), pointer :: hrv_leafc_to_prod1c_patch                 (:)     ! crop leafc harvested (gC/m2/s)
      real(r8), pointer :: hrv_livestemc_to_prod1c_patch             (:)     ! crop stemc harvested (gC/m2/s)
@@ -107,6 +109,8 @@ module CNCarbonFluxType
      real(r8), pointer :: m_deadcrootc_xfer_to_fire_patch           (:)     ! (gC/m2/s) fire C emissions from deadcrootc_xfer
      real(r8), pointer :: m_gresp_storage_to_fire_patch             (:)     ! (gC/m2/s) fire C emissions from gresp_storage 
      real(r8), pointer :: m_gresp_xfer_to_fire_patch                (:)     ! (gC/m2/s) fire C emissions from gresp_xfer
+     real(r8), pointer :: m_cpool_to_fire_patch                     (:)     ! (gC/m2/s) fire C emissions from cpool
+
      real(r8), pointer :: m_leafc_to_litter_fire_patch              (:)     ! (gC/m2/s) from leafc to litter c due to fire
      real(r8), pointer :: m_leafc_storage_to_litter_fire_patch      (:)     ! (gC/m2/s) from leafc_storage to litter C  due to fire               
      real(r8), pointer :: m_leafc_xfer_to_litter_fire_patch         (:)     ! (gC/m2/s) from leafc_xfer to litter C  due to fire               
@@ -129,6 +133,7 @@ module CNCarbonFluxType
      real(r8), pointer :: m_deadcrootc_xfer_to_litter_fire_patch    (:)     ! (gC/m2/s) from deadcrootc_xfer to litter C due to fire                       
      real(r8), pointer :: m_gresp_storage_to_litter_fire_patch      (:)     ! (gC/m2/s) from gresp_storage to litter C due to fire                       
      real(r8), pointer :: m_gresp_xfer_to_litter_fire_patch         (:)     ! (gC/m2/s) from gresp_xfer to litter C due to fire                       
+     real(r8), pointer :: m_cpool_to_litter_fire_patch              (:)     ! (gC/m2/s) from cpool to litter C due to fire              
 
      ! phenology fluxes from transfer pools                     
      real(r8), pointer :: grainc_xfer_to_grainc_patch               (:)     ! grain C growth from storage for prognostic crop(gC/m2/s)
@@ -161,6 +166,8 @@ module CNCarbonFluxType
      real(r8), pointer :: livestem_xsmr_patch                       (:)     ! live stem maintenance respiration from storage (gC/m2/s)
      real(r8), pointer :: livecroot_xsmr_patch                      (:)     ! live coarse root maintenance respiration from storage (gC/m2/s)
      real(r8), pointer :: grain_xsmr_patch                          (:)     ! crop grain or organs maint. respiration from storage (gC/m2/s)
+     !turnover of excess carbon
+     real(r8), pointer :: xr_patch                                  (:)     ! respiration from excess carbon cpool (gC/m2/s)
 
      ! photosynthesis fluxes                                   
      real(r8), pointer :: psnsun_to_cpool_patch                     (:)     ! C fixation from sunlit canopy (gC/m2/s)
@@ -269,6 +276,10 @@ module CNCarbonFluxType
      real(r8), pointer :: tempavg_agnpp_patch                       (:)     ! (gC/m2/s) temp. average aboveground NPP
      real(r8), pointer :: tempavg_bgnpp_patch                       (:)     ! (gC/m2/s) temp. average belowground NPP
 
+     ! For comparison with RAINFOR wood productivity data
+     real(r8), pointer :: agwdnpp_patch                             (:)     !(gC/m2/s) aboveground NPP
+
+
      !----------------------------------------------------
      ! column carbon flux variables  
      !----------------------------------------------------
@@ -373,11 +384,12 @@ module CNCarbonFluxType
      real(r8), pointer :: npp_col                                   (:)     ! column (gC/m2/s) net primary production (p2c)                  
      real(r8), pointer :: fire_closs_p2c_col                        (:)     ! column (gC/m2/s) patch2col averaged column-level fire C loss (p2c)
      real(r8), pointer :: fire_closs_col                            (:)     ! column (gC/m2/s) total patch-level fire C loss 
+     real(r8), pointer :: fire_decomp_closs_col                     (:)     ! column (gC/m2/s) carbon loss to fire for decomposable pools
      real(r8), pointer :: litfall_col                               (:)     ! column (gC/m2/s) total patch-level litterfall C loss (p2c)       
      real(r8), pointer :: vegfire_col                               (:)     ! column (gC/m2/s) patch-level fire loss (obsolete, mark for removal) (p2c)
      real(r8), pointer :: wood_harvestc_col                         (:)     ! column (p2c)                                                  
      real(r8), pointer :: hrv_xsmrpool_to_atm_col                   (:)     ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
-
+  
      ! Temporary and annual sums
      real(r8), pointer :: tempsum_litfall_patch       (:) ! temporary annual sum of litfall (gC/m2/yr) (CNDV)
      real(r8), pointer :: tempsum_npp_patch           (:) ! patch temporary annual sum of NPP (gC/m2/yr)
@@ -393,7 +405,7 @@ module CNCarbonFluxType
      real(r8), pointer :: allocation_stem 		  (:) ! check allocation to stem for dynamic allocation scheme
      real(r8), pointer :: allocation_froot 		  (:) ! check allocation to fine root for dynamic allocation scheme
 
-     ! new variables for clm_bgc_interface & pflotran
+     ! new variables for clm_interface_funcsMod & pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
                                                                             ! (sum of all external C additions and removals, excluding decomposition/hr).
@@ -470,6 +482,7 @@ contains
         allocate(this%m_deadcrootc_to_litter_patch              (begp:endp)) ; this%m_deadcrootc_to_litter_patch              (:) = nan
         allocate(this%m_gresp_storage_to_litter_patch           (begp:endp)) ; this%m_gresp_storage_to_litter_patch           (:) = nan
         allocate(this%m_gresp_xfer_to_litter_patch              (begp:endp)) ; this%m_gresp_xfer_to_litter_patch              (:) = nan
+        allocate(this%m_cpool_to_litter_patch                   (begp:endp)) ; this%m_cpool_to_litter_patch                   (:) = nan
         allocate(this%hrv_leafc_to_litter_patch                 (begp:endp)) ; this%hrv_leafc_to_litter_patch                 (:) = nan
         allocate(this%hrv_leafc_storage_to_litter_patch         (begp:endp)) ; this%hrv_leafc_storage_to_litter_patch         (:) = nan
         allocate(this%hrv_leafc_xfer_to_litter_patch            (begp:endp)) ; this%hrv_leafc_xfer_to_litter_patch            (:) = nan
@@ -496,6 +509,7 @@ contains
         allocate(this%hrv_gresp_storage_to_litter_patch         (begp:endp)) ; this%hrv_gresp_storage_to_litter_patch         (:) = nan
         allocate(this%hrv_gresp_xfer_to_litter_patch            (begp:endp)) ; this%hrv_gresp_xfer_to_litter_patch            (:) = nan
         allocate(this%hrv_xsmrpool_to_atm_patch                 (begp:endp)) ; this%hrv_xsmrpool_to_atm_patch                 (:) = nan
+        allocate(this%hrv_cpool_to_litter_patch                 (begp:endp)) ; this%hrv_cpool_to_litter_patch                 (:) = nan
         allocate(this%m_leafc_to_fire_patch                     (begp:endp)) ; this%m_leafc_to_fire_patch                     (:) = nan
         allocate(this%m_leafc_storage_to_fire_patch             (begp:endp)) ; this%m_leafc_storage_to_fire_patch             (:) = nan
         allocate(this%m_leafc_xfer_to_fire_patch                (begp:endp)) ; this%m_leafc_xfer_to_fire_patch                (:) = nan
@@ -516,6 +530,8 @@ contains
         allocate(this%m_deadcrootc_xfer_to_fire_patch           (begp:endp)) ; this%m_deadcrootc_xfer_to_fire_patch           (:) = nan
         allocate(this%m_gresp_storage_to_fire_patch             (begp:endp)) ; this%m_gresp_storage_to_fire_patch             (:) = nan
         allocate(this%m_gresp_xfer_to_fire_patch                (begp:endp)) ; this%m_gresp_xfer_to_fire_patch                (:) = nan
+        allocate(this%m_cpool_to_fire_patch                     (begp:endp)) ; this%m_cpool_to_fire_patch                     (:) = nan
+
         allocate(this%m_leafc_to_litter_fire_patch              (begp:endp)) ; this%m_leafc_to_litter_fire_patch              (:) = nan
         allocate(this%m_leafc_storage_to_litter_fire_patch      (begp:endp)) ; this%m_leafc_storage_to_litter_fire_patch      (:) = nan
         allocate(this%m_leafc_xfer_to_litter_fire_patch         (begp:endp)) ; this%m_leafc_xfer_to_litter_fire_patch         (:) = nan
@@ -538,6 +554,8 @@ contains
         allocate(this%m_deadcrootc_xfer_to_litter_fire_patch    (begp:endp)) ; this%m_deadcrootc_xfer_to_litter_fire_patch    (:) = nan
         allocate(this%m_gresp_storage_to_litter_fire_patch      (begp:endp)) ; this%m_gresp_storage_to_litter_fire_patch      (:) = nan
         allocate(this%m_gresp_xfer_to_litter_fire_patch         (begp:endp)) ; this%m_gresp_xfer_to_litter_fire_patch         (:) = nan
+        allocate(this%m_cpool_to_litter_fire_patch              (begp:endp)) ; this%m_cpool_to_litter_fire_patch              (:) = nan
+
         allocate(this%leafc_xfer_to_leafc_patch                 (begp:endp)) ; this%leafc_xfer_to_leafc_patch                 (:) = nan
         allocate(this%frootc_xfer_to_frootc_patch               (begp:endp)) ; this%frootc_xfer_to_frootc_patch               (:) = nan
         allocate(this%livestemc_xfer_to_livestemc_patch         (begp:endp)) ; this%livestemc_xfer_to_livestemc_patch         (:) = nan
@@ -561,6 +579,7 @@ contains
         allocate(this%livestem_xsmr_patch                       (begp:endp)) ; this%livestem_xsmr_patch                       (:) = nan
         allocate(this%livecroot_xsmr_patch                      (begp:endp)) ; this%livecroot_xsmr_patch                      (:) = nan
         allocate(this%grain_xsmr_patch                          (begp:endp)) ; this%grain_xsmr_patch                          (:) = nan
+        allocate(this%xr_patch                                  (begp:endp)) ; this%xr_patch                                  (:) = nan
         allocate(this%psnsun_to_cpool_patch                     (begp:endp)) ; this%psnsun_to_cpool_patch                     (:) = nan
         allocate(this%psnshade_to_cpool_patch                   (begp:endp)) ; this%psnshade_to_cpool_patch                   (:) = nan
         allocate(this%cpool_to_xsmrpool_patch                   (begp:endp)) ; this%cpool_to_xsmrpool_patch                   (:) = nan
@@ -654,6 +673,9 @@ contains
         allocate(this%annavg_agnpp_patch                (begp:endp))                  ; this%annavg_agnpp_patch  (:) = spval ! To detect first year
         allocate(this%annavg_bgnpp_patch                (begp:endp))                  ; this%annavg_bgnpp_patch  (:) = spval ! To detect first year
 
+        allocate(this%agwdnpp_patch                             (begp:endp)) ; this%agwdnpp_patch                             (:) = nan
+
+
      end if ! if(.not.use_ed)
 
      allocate(this%t_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%t_scalar_col (:,:)=spval
@@ -726,6 +748,7 @@ contains
      allocate(this%npp_col                           (begc:endc))                  ; this%npp_col                   (:)  =nan
      allocate(this%fire_closs_p2c_col                (begc:endc))                  ; this%fire_closs_p2c_col        (:)  =nan
      allocate(this%fire_closs_col                    (begc:endc))                  ; this%fire_closs_col            (:)  =nan
+     allocate(this%fire_decomp_closs_col             (begc:endc))                  ; this%fire_decomp_closs_col     (:)  =nan
      allocate(this%litfall_col                       (begc:endc))                  ; this%litfall_col               (:)  =nan
      allocate(this%vegfire_col                       (begc:endc))                  ; this%vegfire_col               (:)  =nan
      allocate(this%wood_harvestc_col                 (begc:endc))                  ; this%wood_harvestc_col         (:)  =nan
@@ -785,7 +808,7 @@ contains
      allocate(this%allocation_stem       (begp:endp)) ; this%allocation_stem       (:) = nan
      allocate(this%allocation_froot      (begp:endp)) ; this%allocation_froot      (:) = nan
 
-     ! clm_bgc_interface & pflotran
+     ! clm_interface & pflotran
      !------------------------------------------------------------------------
      allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
      allocate(this%externalc_to_decomp_delta_col (begc:endc));                                   this%externalc_to_decomp_delta_col (:)     = spval
@@ -1120,6 +1143,11 @@ contains
             avgflag='A', long_name='growth respiration transfer fire loss', &
             ptr_patch=this%m_gresp_xfer_to_fire_patch, default='inactive')
 
+       this%m_cpool_to_fire_patch(begp:endp) = spval
+       call hist_addfld1d (fname='M_CPOOL_TO_FIRE', units='gC/m^2/s', &
+            avgflag='A', long_name='cpool fire loss', &
+            ptr_patch=this%m_cpool_to_fire_patch, default='inactive')
+
        this%m_leafc_to_litter_fire_patch(begp:endp) = spval
        call hist_addfld1d (fname='M_LEAFC_TO_LITTER_FIRE', units='gC/m^2/s', &
             avgflag='A', long_name='leaf C fire mortality to litter', &
@@ -1241,6 +1269,11 @@ contains
        call hist_addfld1d (fname='M_GRESP_XFER_TO_LITTER_FIRE', units='gC/m^2/s', &
             avgflag='A', long_name='growth respiration transfer fire mortality to litter', &
             ptr_patch=this%m_gresp_xfer_to_litter_fire_patch, default='inactive')   
+
+      this%m_cpool_to_litter_fire_patch(begp:endp) = spval
+       call hist_addfld1d (fname='M_CPOOL_TO_LITTER_FIRE', units='gC/m^2/s', &
+            avgflag='A', long_name='cpool fire mortality to litter', &
+            ptr_patch=this%m_cpool_to_litter_fire_patch, default='inactive')
 
        this%leafc_xfer_to_leafc_patch(begp:endp) = spval
        call hist_addfld1d (fname='LEAFC_XFER_TO_LEAFC', units='gC/m^2/s', &
@@ -1547,6 +1580,11 @@ contains
             avgflag='A', long_name='total growth respiration', &
             ptr_patch=this%gr_patch)
 
+       this%xr_patch(begp:endp) = spval
+       call hist_addfld1d (fname='XR', units='gC/m^2/s', &
+            avgflag='A', long_name='total excess respiration', &
+            ptr_patch=this%xr_patch)
+
        this%ar_patch(begp:endp) = spval
        call hist_addfld1d (fname='AR', units='gC/m^2/s', &
             avgflag='A', long_name='autotrophic respiration (MR + GR)', &
@@ -1571,6 +1609,12 @@ contains
        call hist_addfld1d (fname='BGNPP', units='gC/m^2/s', &
             avgflag='A', long_name='belowground NPP', &
             ptr_patch=this%bgnpp_patch)
+
+       this%agwdnpp_patch(begp:endp) = spval
+       call hist_addfld1d (fname='AGWDNPP', units='gC/m^2/s', &
+            avgflag='A', long_name='aboveground wood NPP', &
+            ptr_patch=this%agwdnpp_patch)
+
 
        this%litfall_patch(begp:endp) = spval
        call hist_addfld1d (fname='LITFALL', units='gC/m^2/s', &
@@ -3048,6 +3092,11 @@ contains
             avgflag='A', long_name='total column-level fire C loss for non-peat fires outside land-type converted region', &
             ptr_col=this%fire_closs_col, default='inactive')
 
+       this%fire_decomp_closs_col(begc:endc) = spval
+       call hist_addfld1d (fname='DECOMP_FIRE_CLOSS', units='gC/m^2/s', &
+          avgflag='A', long_name='decomposable fire C loss for non-peat fires outside land-type converted region', &
+          ptr_col=this%fire_decomp_closs_col, default='inactive')
+
        this%dwt_seedc_to_leaf_col(begc:endc) = spval
        call hist_addfld1d (fname='DWT_SEEDC_TO_LEAF', units='gC/m^2/s', &
             avgflag='A', long_name='seed source to patch-level leaf', &
@@ -3610,8 +3659,8 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -3621,9 +3670,9 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -3632,12 +3681,12 @@ contains
     if (.not.use_ed) then
        
        do p = bounds%begp,bounds%endp
-          l = pft%landunit(p)
+          l = veg_pp%landunit(p)
 
           this%gpp_patch(p)                      = 0._r8
           this%gpp_before_downreg_patch(p)       = 0._r8
 
-          if (lun%ifspecial(l)) then
+          if (lun_pp%ifspecial(l)) then
              this%tempsum_npp_patch(p)           = spval
              this%annsum_npp_patch(p)            = spval
              this%availc_patch(p)                = spval
@@ -3654,7 +3703,7 @@ contains
                 this%xsmrpool_c13ratio_patch(p)  = spval
              endif
           end if
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
              this%tempsum_npp_patch(p)           = 0._r8
              this%annsum_npp_patch(p)            = 0._r8
              this%availc_patch(p)                = 0._r8
@@ -3673,16 +3722,16 @@ contains
     end if !(.not.use_ed)
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%annsum_npp_col(c) = spval
        end if
 
        this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 
-       else if (lun%itype(l) == istdlak .and. allowlakeprod) then
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%fphr_col(c,:) = spval
        else  ! Inactive CH4 columns
           this%fphr_col(c,:) = spval
@@ -3690,7 +3739,7 @@ contains
 
        ! also initialize dynamic landcover fluxes so that they have
        ! real values on first timestep, prior to calling pftdyn_cnbal
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%lf_conv_cflux_col(c)         = 0._r8
           this%dwt_seedc_to_leaf_col(c)     = 0._r8
           this%dwt_seedc_to_deadstem_col(c) = 0._r8
@@ -3912,7 +3961,15 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%annsum_litfall_patch)
     end if
 
-    ! clm_bgc_interface & pflotran
+    if (use_vertsoilc) then
+       ptr2d => this%t_scalar_col
+       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='T scaling factor', units='-', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+
+    ! clm_interface & pflotran
     !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externalc_to_decomp_npools_col
@@ -3990,6 +4047,7 @@ contains
           this%m_deadcrootc_to_litter_patch(i)              = value_patch
           this%m_gresp_storage_to_litter_patch(i)           = value_patch
           this%m_gresp_xfer_to_litter_patch(i)              = value_patch
+          this%m_cpool_to_litter_patch(i)                   = value_patch
           this%hrv_leafc_to_litter_patch(i)                 = value_patch             
           this%hrv_leafc_storage_to_litter_patch(i)         = value_patch     
           this%hrv_leafc_xfer_to_litter_patch(i)            = value_patch        
@@ -4016,6 +4074,7 @@ contains
           this%hrv_gresp_storage_to_litter_patch(i)         = value_patch     
           this%hrv_gresp_xfer_to_litter_patch(i)            = value_patch        
           this%hrv_xsmrpool_to_atm_patch(i)                 = value_patch
+          this%hrv_cpool_to_litter_patch(i)                 = value_patch
 
           this%m_leafc_to_fire_patch(i)                     = value_patch
           this%m_leafc_storage_to_fire_patch(i)             = value_patch
@@ -4037,6 +4096,7 @@ contains
           this%m_deadcrootc_xfer_to_fire_patch(i)           = value_patch
           this%m_gresp_storage_to_fire_patch(i)             = value_patch
           this%m_gresp_xfer_to_fire_patch(i)                = value_patch
+          this%m_cpool_to_fire_patch(i)                     = value_patch
 
           this%m_leafc_to_litter_fire_patch(i)              = value_patch
           this%m_leafc_storage_to_litter_fire_patch(i)      = value_patch
@@ -4060,6 +4120,7 @@ contains
           this%m_deadcrootc_xfer_to_litter_fire_patch(i)    = value_patch
           this%m_gresp_storage_to_litter_fire_patch(i)      = value_patch
           this%m_gresp_xfer_to_litter_fire_patch(i)         = value_patch
+          this%m_cpool_to_litter_fire_patch(i)              = value_patch
 
           this%leafc_xfer_to_leafc_patch(i)                 = value_patch
           this%frootc_xfer_to_frootc_patch(i)               = value_patch
@@ -4084,6 +4145,7 @@ contains
           this%livestem_xsmr_patch(i)                       = value_patch
           this%livecroot_xsmr_patch(i)                      = value_patch
           this%grain_xsmr_patch(i)                          = value_patch
+          this%xr_patch(i)                                  = value_patch
           this%psnsun_to_cpool_patch(i)                     = value_patch
           this%psnshade_to_cpool_patch(i)                   = value_patch
           this%cpool_to_xsmrpool_patch(i)                   = value_patch
@@ -4139,6 +4201,7 @@ contains
           this%npp_patch(i)                                 = value_patch 
           this%agnpp_patch(i)                               = value_patch
           this%bgnpp_patch(i)                               = value_patch
+          this%agwdnpp_patch(i)                               = value_patch
           this%litfall_patch(i)                             = value_patch
           this%vegfire_patch(i)                             = value_patch
           this%wood_harvestc_patch(i)                       = value_patch
@@ -4370,6 +4433,7 @@ contains
     use subgridAveMod    , only : p2c
     use tracer_varcon    , only : is_active_betr_bgc
     use MathfuncMod      , only : dot_sum
+    use clm_varpar       , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -4385,6 +4449,7 @@ contains
     integer  :: c,p,j,k,l       ! indices
     integer  :: fp,fc           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
+    integer  :: nlev
     !-----------------------------------------------------------------------
 
     associate(& 
@@ -4453,7 +4518,7 @@ contains
             this%cpool_livecroot_storage_gr_patch(p) + &
             this%cpool_deadcroot_storage_gr_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%mr_patch(p) = &
                this%mr_patch(p) + &
                this%grain_mr_patch(p)
@@ -4478,10 +4543,11 @@ contains
             this%storage_gr_patch(p)
 
        ! autotrophic respiration (AR)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%ar_patch(p) = &
                this%mr_patch(p) + &
                this%gr_patch(p) + &
+               this%xr_patch(p) + &
                this%xsmrpool_to_atm_patch(p) ! xsmr... is -ve (slevis)
           if (nu_com .ne. 'RD' ) then
              this%ar_patch(p) = this%ar_patch(p) + &
@@ -4490,7 +4556,8 @@ contains
        else
           this%ar_patch(p) = &
                this%mr_patch(p) + &
-               this%gr_patch(p)
+               this%gr_patch(p) + &
+               this%xr_patch(p)
           if (nu_com .ne. 'RD' ) then
              this%ar_patch(p) = this%ar_patch(p) + &
                   this%xsmrpool_turnover_patch(p)
@@ -4576,7 +4643,8 @@ contains
             this%hrv_deadcrootc_storage_to_litter_patch(p)    + &
             this%hrv_deadcrootc_xfer_to_litter_patch(p)       + &
             this%hrv_gresp_storage_to_litter_patch(p)         + &
-            this%hrv_gresp_xfer_to_litter_patch(p)
+            this%hrv_gresp_xfer_to_litter_patch(p)            + &
+            this%hrv_cpool_to_litter_patch(p)
 
        ! update the annual litfall accumulator, for use in mortality code
        if (use_cndv) then
@@ -4593,7 +4661,7 @@ contains
        this%wood_harvestc_patch(p) = &
             this%hrv_deadstemc_to_prod10c_patch(p) + &
             this%hrv_deadstemc_to_prod100c_patch(p)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%wood_harvestc_patch(p) = &
                this%wood_harvestc_patch(p) + &
                this%hrv_cropc_to_prod1c_patch(p)
@@ -4620,9 +4688,10 @@ contains
             this%m_deadcrootc_storage_to_fire_patch(p)   + &
             this%m_deadcrootc_xfer_to_fire_patch(p)      + &
             this%m_gresp_storage_to_fire_patch(p)        + &
-            this%m_gresp_xfer_to_fire_patch(p)
+            this%m_gresp_xfer_to_fire_patch(p)           + &
+            this%m_cpool_to_fire_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
 
           this%litfall_patch(p) =                  &
                this%litfall_patch(p)             + &
@@ -4658,7 +4727,7 @@ contains
             this%hrv_leafc_to_litter_patch(p)    + &
             this%leafc_to_litter_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%leafc_loss_patch(p) = &
                this%leafc_loss_patch(p) + &
                this%hrv_leafc_to_prod1c_patch(p)
@@ -4700,7 +4769,7 @@ contains
             this%hrv_deadcrootc_storage_to_litter_patch(p) + &
             this%hrv_deadcrootc_xfer_to_litter_patch(p)   
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%woodc_loss_patch(p) = &
                this%woodc_loss_patch(p) + &
                this%hrv_grainc_to_prod1c_patch(p) + &
@@ -4765,6 +4834,9 @@ contains
     endif
 
     ! column soil variables
+    ! column variables
+    nlev = nlevdecomp
+    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
     ! some zeroing
     do fc = 1,num_soilc
@@ -4779,9 +4851,9 @@ contains
        ! vertically integrate HR and decomposition cascade fluxes
        do k = 1, ndecomp_cascade_transitions
 
-          do j = 1,nlevdecomp
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
+       do j = 1,nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
 
                 this%decomp_cascade_ctransfer_col(c,k) = &
                      this%decomp_cascade_ctransfer_col(c,k) + &
@@ -4811,10 +4883,10 @@ contains
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_bgc_interface) then
-       call CSummary_interface(this, bounds, num_soilc, filter_soilc)
+    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
+        call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
-    !! CSummary_interface: hr_col(c) will be used below
+    ! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------
 
     do fc = 1,num_soilc
@@ -4850,7 +4922,7 @@ contains
 
     ! vertically integrate column-level carbon fire losses
     do l = 1, ndecomp_pools
-       do j = 1,nlevdecomp
+       do j = 1,nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%m_decomp_cpools_to_fire_col(c,l) = &
@@ -4907,10 +4979,7 @@ contains
             this%landuseflux_col(c)
     end do
 
-    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
-
-    if ( (.not. is_active_betr_bgc)           .and. &
-         (.not.(use_pflotran .and. pf_cmode)) ) then
+    if  (.not. is_active_betr_bgc) then
 
        ! _col(cWDC_HR) - coarse woody debris heterotrophic respiration
        do fc = 1,num_soilc
@@ -4941,99 +5010,104 @@ contains
           end if
        end do
 
-       ! (LITTERC_LOSS) - litter C loss      
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%litterc_loss_col(c) = this%lithr_col(c)  
-       end do
+       if (.not.(use_pflotran .and. pf_cmode)) then
+          ! (LITTERC_LOSS) - litter C loss
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%litterc_loss_col(c) = this%lithr_col(c)
+          end do
+       end if !(.not.(use_pflotran .and. pf_cmode))
+
        do l = 1, ndecomp_pools
           if ( is_litter(l) ) then
              do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%litterc_loss_col(c) = &
-                     this%litterc_loss_col(c) + &
-                     this%m_decomp_cpools_to_fire_col(c,l)
+                 c = filter_soilc(fc)
+                 this%litterc_loss_col(c) = &
+                    this%litterc_loss_col(c) + &
+                    this%m_decomp_cpools_to_fire_col(c,l)
              end do
           end if
        end do
-
-
+    
+ 
        do k = 1, ndecomp_cascade_transitions
-          if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%litterc_loss_col(c) = &
-                     this%litterc_loss_col(c) + &
-                     this%decomp_cascade_ctransfer_col(c,k)
-             end do
-          end if
+         if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+           do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%litterc_loss_col(c) = &
+                  this%litterc_loss_col(c) + &
+                  this%decomp_cascade_ctransfer_col(c,k)
+           end do
+         end if
        end do
 
-    else if ((use_pflotran .and. pf_cmode)) then
-
-       ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_cpools_leached_col(c,l) = 0._r8
-          end do
-          do j = 1, nlevdecomp
+       if (use_pflotran .and. pf_cmode) then
+          ! note: the follwoing should be useful to non-pflotran-coupled, but seems cause 1 BFB test unmatching.
+          ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+          do l = 1, ndecomp_pools
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%decomp_cpools_leached_col(c,l) = &
+                this%decomp_cpools_leached_col(c,l) = 0._r8
+             end do
+             do j = 1, nlev
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_cpools_leached_col(c,l) = &
                      this%decomp_cpools_leached_col(c,l) + &
                      this%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+                end do
+             end do
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%som_c_leached_col(c) = &
+                   this%som_c_leached_col(c) + &
+                   this%decomp_cpools_leached_col(c,l)
              end do
           end do
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%som_c_leached_col(c) = &
-                  this%som_c_leached_col(c) + &
-                  this%decomp_cpools_leached_col(c,l)
-          end do
-       end do
-    endif
+       end if
 
+    end if
+    
     ! debug
     do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%plant_to_litter_cflux(c) = 0._r8
-       this%plant_to_cwd_cflux(c) = 0._r8
-       do j = 1, nlevdecomp
-          this%plant_to_litter_cflux(c) = &
-               this%plant_to_litter_cflux(c)  + &
-               this%phenology_c_to_litr_met_c_col(c,j)* dzsoi_decomp(j) + &
-               this%phenology_c_to_litr_cel_c_col(c,j)* dzsoi_decomp(j) + &
-               this%phenology_c_to_litr_lig_c_col(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_c_to_litr_met_c_col(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_c_to_litr_cel_c_col(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_c_to_litr_lig_c_col(c,j)* dzsoi_decomp(j) + &
-               this%m_c_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
-               this%m_c_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
-               this%m_c_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
-          this%plant_to_cwd_cflux(c) = &
-               this%plant_to_cwd_cflux(c) + &
-               this%gap_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j) + &
-               this%fire_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j)
-       end do
+        c = filter_soilc(fc)
+        this%plant_to_litter_cflux(c) = 0._r8
+        this%plant_to_cwd_cflux(c) = 0._r8
+        do j = 1, nlev
+            this%plant_to_litter_cflux(c) = &
+                this%plant_to_litter_cflux(c)  + &
+                this%phenology_c_to_litr_met_c_col(c,j)* dzsoi_decomp(j) + &
+                this%phenology_c_to_litr_cel_c_col(c,j)* dzsoi_decomp(j) + &
+                this%phenology_c_to_litr_lig_c_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_met_c_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_cel_c_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_lig_c_col(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
+            this%plant_to_cwd_cflux(c) = &
+                this%plant_to_cwd_cflux(c) + &
+                this%gap_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j) + &
+                this%fire_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j)
+        end do
     end do
 
 
   end associate
 end subroutine Summary
 
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 ! !INTERFACE:
 subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
-!! bgc interface & pflotran:
+! bgc interface & pflotran:
 ! On the radiation time step, perform column-level carbon
 ! summary calculations, which mainly from PFLOTRAN bgc
 !
 ! !USES:
    use shr_sys_mod, only: shr_sys_flush
-   use clm_varpar , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
+   use clm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
    use clm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 !
@@ -5047,10 +5121,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 ! !CALLED FROM:
 ! subroutine Summary (if plotran bgc coupled with CLM-CN
 !
-! !REVISION HISTORY:
-!!06/17/2015: modified by Gangsheng Wang
-! !
-! !LOCAL VARIABLES:
+! LOCAL VARIABLES:
    real(r8) :: dtime                ! time-step (s)
    integer :: c,j,l                 ! indices
    integer :: fc                    ! column filter indices
@@ -5062,13 +5133,12 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
         )
 
     dtime = get_step_size()
-!!---------------------------------------------------------------------------------------------------
-    if (use_pflotran.and.pf_cmode) then
-     ! total heterotrophic respiration (HR)
-       this%hr_col(:) = 0._r8
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
+!---------------------------------------------------------------------------------------------------
+   ! total heterotrophic respiration (HR)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%hr_col(c) = 0._r8
+          do j = 1,nlevdecomp_full
              this%hr_col(c) = this%hr_col(c) + &
                 this%hr_vr_col(c,j) * dzsoi_decomp(j)
           end do
@@ -5079,7 +5149,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
           c = filter_soilc(fc)
           this%f_co2_soil_col(c) = 0._r8
        end do
-       do j = 1,nlevdecomp
+       do j = 1,nlevdecomp_full
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%f_co2_soil_col(c) = this%f_co2_soil_col(c) + &
@@ -5100,7 +5170,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
           if ( is_cwd(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                do j = 1, nlevdecomp
+                do j = 1, nlevdecomp_full
                    this%cwdc_loss_col(c) = &
                       this%cwdc_loss_col(c) + &
                       this%decomp_cpools_sourcesink_col(c,j,l) / dtime
@@ -5111,7 +5181,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
           if ( is_litter(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                do j = 1, nlevdecomp
+                do j = 1, nlevdecomp_full
                    this%litterc_loss_col(c) = &
                       this%litterc_loss_col(c) + &
                       this%decomp_cpools_sourcesink_col(c,j,l) / dtime
@@ -5120,33 +5190,35 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
           end if
 
        end do
-    end if !!if (use_pflotran.and.pf_cmode)
 
    ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools for PFLOTRAN-bgc
     ! (note: this can be for general purpose, although here added an 'if...endif' block for PF-bgc)
     ! first, need to save the total plant C adding/removing to decomposing pools at previous time-step
     ! for calculating the net changes, which are used to do balance check
-    this%externalc_to_decomp_delta_col(:) = 0._r8
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp
-          do fc = 1, num_soilc
-             c = filter_soilc(fc)
-             this%externalc_to_decomp_delta_col(c) = this%externalc_to_decomp_delta_col(c) + &
+
+    do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        this%externalc_to_decomp_delta_col(c) = 0._r8
+        do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+            this%externalc_to_decomp_delta_col(c) = this%externalc_to_decomp_delta_col(c) + &
                                 this%externalc_to_decomp_cpools_col(c,j,l)*dzsoi_decomp(j)
           end do
-       end do
+        end do
     end do
-!write(*,'(A40,E14.6)')">>>DEBUG | externC[t-1]=",this%externalc_to_decomp_delta_col(1)*dtime
     !
     ! do the initialization for the following variable here.
     ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
-    this%externalc_to_decomp_cpools_col(:,:,:) = 0._r8
 
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%externalc_to_decomp_cpools_col(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+    end do
 
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
              ! for litter C pools
              if (l==i_met_lit) then
                 this%externalc_to_decomp_cpools_col(c,j,l) =                 &
@@ -5154,10 +5226,8 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
                         + this%phenology_c_to_litr_met_c_col(c,j)            &
                         + this%dwt_frootc_to_litr_met_c_col(c,j)             &
                         + this%gap_mortality_c_to_litr_met_c_col(c,j)        &
-                        + this%harvest_c_to_litr_met_c_col(c,j)              !!&
-!                        + this%m_c_to_litr_met_fire_col(c,j)                 &
-!                        + this%decomp_cpools_transport_tendency_col(c,j,l)   &
-!                        - this%m_decomp_cpools_to_fire_vr_col(c,j,l)
+                        + this%harvest_c_to_litr_met_c_col(c,j)              &
+                        + this%m_c_to_litr_met_fire_col(c,j)                 
 
              elseif (l==i_cel_lit) then
                 this%externalc_to_decomp_cpools_col(c,j,l) =                 &
@@ -5165,10 +5235,8 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
                         + this%phenology_c_to_litr_cel_c_col(c,j)            &
                         + this%dwt_frootc_to_litr_cel_c_col(c,j)             &
                         + this%gap_mortality_c_to_litr_cel_c_col(c,j)        &
-                        + this%harvest_c_to_litr_cel_c_col(c,j)              !!&
-!                        + this%m_c_to_litr_cel_fire_col(c,j)                 &
-!                        + this%decomp_cpools_transport_tendency_col(c,j,l)   &
-!                        - this%m_decomp_cpools_to_fire_vr_col(c,j,l)
+                        + this%harvest_c_to_litr_cel_c_col(c,j)              &
+                        + this%m_c_to_litr_cel_fire_col(c,j)                 
 
              elseif (l==i_lig_lit) then
                 this%externalc_to_decomp_cpools_col(c,j,l) =                 &
@@ -5176,10 +5244,8 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
                         + this%phenology_c_to_litr_lig_c_col(c,j)            &
                         + this%dwt_frootc_to_litr_lig_c_col(c,j)             &
                         + this%gap_mortality_c_to_litr_lig_c_col(c,j)        &
-                        + this%harvest_c_to_litr_lig_c_col(c,j)              !!&
-!                        + this%m_c_to_litr_lig_fire_col(c,j)                 &
-!                        + this%decomp_cpools_transport_tendency_col(c,j,l)   &
-!                        - this%m_decomp_cpools_to_fire_vr_col(c,j,l)
+                        + this%harvest_c_to_litr_lig_c_col(c,j)              &
+                        + this%m_c_to_litr_lig_fire_col(c,j)                 
 
              ! for cwd
              elseif (l==i_cwd) then
@@ -5188,18 +5254,8 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
                         + this%dwt_livecrootc_to_cwdc_col(c,j)               &
                         + this%dwt_deadcrootc_to_cwdc_col(c,j)               &
                         + this%gap_mortality_c_to_cwdc_col(c,j)              &
-                        + this%harvest_c_to_cwdc_col(c,j)                    !!&
-!                        + this%fire_mortality_c_to_cwdc_col(c,j)             &
-!                        + this%decomp_cpools_transport_tendency_col(c,j,l)   &
-!                        - this%m_decomp_cpools_to_fire_vr_col(c,j,l)
-
-             ! for som
-             ! no external input to som
-!             else
-!                this%externalc_to_decomp_cpools_col(c,j,l) =                 &
-!                    this%externalc_to_decomp_cpools_col(c,j,l)               &
-!                        + this%decomp_cpools_transport_tendency_col(c,j,l)   &
-!                        - this%m_decomp_cpools_to_fire_vr_col(c,j,l)
+                        + this%harvest_c_to_cwdc_col(c,j)                    &
+                        + this%fire_mortality_c_to_cwdc_col(c,j)             
 
              end if
 
@@ -5226,7 +5282,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 
     end associate
 end subroutine CSummary_interface
-!!-------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------------------------
 
   !------------------------------------------------------------  
   subroutine summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
@@ -5306,7 +5362,7 @@ end subroutine CSummary_interface
             this%cpool_to_deadstemc_patch(p)              + &
             this%deadstemc_xfer_to_deadstemc_patch(p)
 
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
           this%agnpp_patch(p) =                    &
                this%agnpp_patch(p)               + &
                this%cpool_to_grainc_patch(p)     + &
@@ -5324,6 +5380,13 @@ end subroutine CSummary_interface
             this%livecrootc_xfer_to_livecrootc_patch(p)     + &
             this%cpool_to_deadcrootc_patch(p)               + &
             this%deadcrootc_xfer_to_deadcrootc_patch(p)
+
+       this%agwdnpp_patch(p) = &
+            this%cpool_to_livestemc_patch(p)              + &
+            this%livestemc_xfer_to_livestemc_patch(p)     + &
+            this%cpool_to_deadstemc_patch(p)              + &
+            this%deadstemc_xfer_to_deadstemc_patch(p)
+
     enddo
     ! some zeroing
     do fc = 1,num_soilc
@@ -5331,7 +5394,11 @@ end subroutine CSummary_interface
        this%somhr_col(c)              = 0._r8
        this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
-       this%hr_vr_col(c,1:nlevdecomp) = 0._r8
+       if (.not. (use_pflotran .and. pf_cmode)) then
+       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+       ! thus 'hr_vr_col' should NOT be set to 0
+            this%hr_vr_col(c,1:nlevdecomp) = 0._r8
+       end if
     enddo
 
     if ( (.not. is_active_betr_bgc           ) .and. &

@@ -96,11 +96,11 @@
       <value compset="_CLM45%[^_]*CNDV-CROP" >-bgc cn -dynamic_vegetation -crop</value>
       <value compset="_CLM45%[^_]*BGCDV-CROP">-bgc bgc -dynamic_vegetation -crop</value>
       <value compset="_CLM45%[^_]*ED"         >-bgc ed -no-megan</value>
-      <value compset="_CLM45%[^_]*CRDCTCBC"   >-bgc cn -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
-      <value compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc cn -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
-      <value compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc cn -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
-      <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc cn -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
-      <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc cn -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
+      <value compset="_CLM45%[^_]*CRDCTCBC"   >-bgc bgc -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
+      <value compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc bgc -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
+      <value compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif </value>
+      <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
+      <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif </value>
 
       <value compset="_CLM45%[^_]*CNECACNTBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp century -methane -nitrif_denitrif </value>
       <value compset="_CLM45%[^_]*CNPECACNTBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane -nitrif_denitrif </value>

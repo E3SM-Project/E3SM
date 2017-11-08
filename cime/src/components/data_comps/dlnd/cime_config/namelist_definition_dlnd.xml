@@ -43,7 +43,7 @@
          lnd.cplhist
          sno.cplhist
 
-    **** NOTE: in the value matches below, regular expressions are used **** 
+    **** NOTE: in the value matches below, regular expressions are used ****
          If two matches are equivalent, the FIRST one will be used
 
 	 As an example, say dlnd_mode=GLC_CPLHIST
@@ -51,7 +51,7 @@
          the following will results in the CORRECT set of streams for this dlnd_mode
              <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
              <value dlnd_mode="CPLHIST">COPYALL</value>
- 
+
          the following order would result in an INCORRECT setting of streams for this datm_mode
              <value dlnd_mode="CPLHIST">COPYALL</value>
              <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
@@ -200,15 +200,12 @@
       datamode = "NULL"
       NULL is always a valid option and means no data will be generated.
       Turns off the data model as a provider of data to the coupler.  The
-      ice_present flag will be set to false and the coupler will assume no
+      lnd_present flag will be set to false and the coupler will assume no
       exchange of data to or from the data model.
       dataMode = "COPYALL"
       Copies all fields directly from the input data streams Any required
       fields not found on an input stream will be set to zero.
-
-      Set by the following xml variables in env_run.xml
-      DLND_MODE
-      default value: NULL
+      Set by the DLND_MODE xml variable in env_run.xml
     </desc>
     <values>
       <value dlnd_mode="NULL">NULL</value>
@@ -395,6 +392,23 @@
     </desc>
     <values>
       <value>cycle</value>
+    </values>
+  </entry>
+
+  <entry id="readmode" per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>single,full_file</valid_values>
+    <desc>
+      array (up to 30 elements) of reading mode associated with the array of
+      streams.  specifies the mode of reading temporal stream dataset.
+      valid options are "single" (read temporal dataset one at a time) or
+      "full_file" (read all entires of temporal dataset in a given netcdf file)
+      valid values: single,full_file
+    </desc>
+    <values>
+      <value>single</value>
     </values>
   </entry>
 

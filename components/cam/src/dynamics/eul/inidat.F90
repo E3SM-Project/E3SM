@@ -103,6 +103,7 @@ contains
     real(r8) :: clat2d(plon,plat),clon2d(plon,plat)
     integer :: ierr
 
+    logical :: iop_update_surface
     integer londimid,dimlon,latdimid,dimlat,latvarid,lonvarid
     integer strt(3),cnt(3)
     character(len=3), parameter :: arraydims3(3) = (/ 'lon', 'lev', 'lat' /)
@@ -283,7 +284,10 @@ contains
           loniop(1)=(mod(scmlon-2.0_r8+360.0_r8,360.0_r8))*pi/180.0_r8
           loniop(2)=(mod(scmlon+2.0_r8+360.0_r8,360.0_r8))*pi/180.0_r8
           call setiopupdate()
-          call readiopdata()
+          ! No need to initialize surface properties here
+          !  at this point
+          iop_update_surface = .false.
+          call readiopdata( iop_update_surface )
           ps(:,:,1)     = ps(:,:,n3)
           if (have_u) u3(:,:,:,1)   = u3(:,:,:,n3)
           if (have_v) v3(:,:,:,1)   = v3(:,:,:,n3)

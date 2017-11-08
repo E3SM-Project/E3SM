@@ -69,6 +69,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    integer :: m, nmodes
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
+   logical :: history_verbose      ! produce verbose history output
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
@@ -80,6 +81,10 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    call rad_cnst_get_info(0, nmodes=nmodes)
 
+   ! determine default variables
+   call phys_getopts(history_aerosol_out = history_aerosol, &
+                     history_verbose_out = history_verbose)
+
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
       call addfld('dgnd_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
@@ -89,16 +94,22 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
       call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
          'aerosol water, interstitial, mode '//trnum(2:3))
       
-      ! determine default variables
-      call phys_getopts(history_aerosol_out = history_aerosol)
-
       if (history_aerosol) then  
-         call add_default('dgnd_a'//trnum(2:3), 1, ' ')
-         call add_default('dgnw_a'//trnum(2:3), 1, ' ')
-         call add_default('wat_a'//trnum(3:3),  1, ' ')
+         if (history_verbose) then
+            call add_default('dgnd_a'//trnum(2:3), 1, ' ')
+            call add_default('dgnw_a'//trnum(2:3), 1, ' ')
+            call add_default('wat_a'//trnum(3:3),  1, ' ')
+         endif
       endif
 
    end do
+
+   ! Add total aerosol water
+   if (history_aerosol .and. .not. history_verbose) then
+      call addfld('aero_water', (/ 'lev' /), 'A', 'm', &
+         'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
+      call add_default( 'aero_water',  1, ' ')
+   endif
    
    if (is_first_step()) then
       ! initialize fields in physics buffer
@@ -182,12 +193,19 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    real(r8) :: es(pcols)             ! saturation vapor pressure
    real(r8) :: qs(pcols)             ! saturation specific humidity
+   real(r8) :: aerosol_water(pcols,pver) !sum of aerosol water (wat_a1 + wat_a2 + wat_a3 + wat_a4)
+   logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
+   logical :: history_verbose      ! produce verbose history output
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !-----------------------------------------------------------------------
 
    lchnk = state%lchnk
    ncol = state%ncol
+
+   ! determine default variables
+   call phys_getopts(history_aerosol_out = history_aerosol, &
+                     history_verbose_out = history_verbose)
 
    list_idx = 0
    if (present(list_idx_in)) then
@@ -363,13 +381,19 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    if (list_idx == 0) then
 
+      aerosol_water(:ncol,:) = 0._r8
       do m = 1, nmodes
          ! output to history
          write( trnum, '(i3.3)' ) m
          call outfld( 'wat_a'//trnum(3:3),  qaerwat(:,:,m),     pcols, lchnk)
          call outfld( 'dgnd_a'//trnum(2:3), dgncur_a(:,:,m),    pcols, lchnk)
          call outfld( 'dgnw_a'//trnum(2:3), dgncur_awet(:,:,m), pcols, lchnk)
+         if (history_aerosol .and. .not. history_verbose) &
+         aerosol_water(:ncol,:) = aerosol_water(:ncol,:) + qaerwat(:ncol,:,m)
       end do
+
+      if (history_aerosol .and. .not. history_verbose) &
+         call outfld( 'aero_water',  aerosol_water(:ncol,:),    ncol, lchnk)
 
    end if
 

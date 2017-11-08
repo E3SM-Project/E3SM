@@ -12,14 +12,14 @@ module CNNitrogenStateType
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
   use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
-  use pftvarcon              , only : npcropmin
+  use pftvarcon              , only : npcropmin, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType              , only : veg_pp
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
                
@@ -55,7 +55,8 @@ module CNNitrogenStateType
      real(r8), pointer :: retransn_patch               (:)     ! patch (gN/m2) plant pool of retranslocated N
      real(r8), pointer :: npool_patch                  (:)     ! patch (gN/m2) temporary plant N pool
      real(r8), pointer :: ntrunc_patch                 (:)     ! patch (gN/m2) pft-level sink for N truncation
-
+     real(r8), pointer :: plant_n_buffer_patch         (:)     ! patch (gN/m2) pft-level abstract N storage
+     real(r8), pointer :: plant_n_buffer_col           (:)     ! patch (gN/m2) col-level abstract N storage
      real(r8), pointer :: decomp_npools_vr_col         (:,:,:) ! col (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
      real(r8), pointer :: sminn_vr_col                 (:,:)   ! col (gN/m3) vertically-resolved soil mineral N
      real(r8), pointer :: ntrunc_vr_col                (:,:)   ! col (gN/m3) vertically-resolved column-level sink for N truncation
@@ -188,7 +189,6 @@ module CNNitrogenStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , public  :: nbuffer_update
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -267,7 +267,8 @@ contains
     allocate(this%storvegn_patch           (begp:endp))                   ; this%storvegn_patch           (:)   = nan
     allocate(this%totvegn_patch            (begp:endp))                   ; this%totvegn_patch            (:)   = nan
     allocate(this%totpftn_patch            (begp:endp))                   ; this%totpftn_patch            (:)   = nan
-
+    allocate(this%plant_n_buffer_patch    (begp:endp))                    ; this%plant_n_buffer_patch     (:)   = nan
+    allocate(this%plant_n_buffer_col    (begc:endc))                      ; this%plant_n_buffer_col       (:)   = nan
     allocate(this%sminn_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%sminn_vr_col             (:,:) = nan
     allocate(this%ntrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ntrunc_vr_col            (:,:) = nan
     allocate(this%smin_no3_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_vr_col          (:,:) = nan
@@ -600,10 +601,10 @@ contains
             ptr_col=this%totsomn_1m_col, default='inactive')
     endif
 
-    this%plant_nbuffer_col(begc:endc) = spval
+    this%plant_n_buffer_patch(begp:endp) = spval
     call hist_addfld1d (fname='PLANTN_BUFFER', units='gN/m^2', &
             avgflag='A', long_name='plant nitrogen stored as buffer', &
-            ptr_col=this%plant_nbuffer_col)
+            ptr_col=this%plant_n_buffer_patch,default='inactive')
     
     this%ntrunc_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
@@ -617,7 +618,7 @@ contains
        vr_suffix = ""
     endif
 
-    if (use_nitrif_denitrif) then
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
        this%smin_no3_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SMIN_NO3'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral NO3 (vert. res.)', &
@@ -629,10 +630,12 @@ contains
             ptr_col=this%smin_nh4_vr_col)
 
        ! pflotran
-       this%smin_nh4sorb_vr_col(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='SMIN_NH4SORB'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+       if(use_pflotran .and. pf_cmode) then
+          this%smin_nh4sorb_vr_col(begc:endc,:) = spval
+          call hist_addfld_decomp (fname='SMIN_NH4SORB'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral NH4 absorbed (vert. res.)', &
             ptr_col=this%smin_nh4sorb_vr_col)
+       end if
 
        if ( nlevdecomp_full > 1 ) then
           this%smin_no3_col(begc:endc) = spval
@@ -646,11 +649,13 @@ contains
                ptr_col=this%smin_nh4_col)
 
           ! pflotran
-          this%smin_nh4sorb_col(begc:endc) = spval
-          call hist_addfld1d (fname='SMIN_NH4SORB', units='gN/m^2', &
+          if(use_pflotran .and. pf_cmode) then
+            this%smin_nh4sorb_col(begc:endc) = spval
+            call hist_addfld1d (fname='SMIN_NH4SORB', units='gN/m^2', &
                avgflag='A', long_name='soil mineral NH4 absorbed', &
                ptr_col=this%smin_nh4sorb_col)
-       endif
+          end if
+       end if
 
        this%sminn_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
@@ -756,8 +761,8 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -767,8 +772,8 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%ifspecial(l)) then
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -780,14 +785,14 @@ contains
     
     do p = bounds%begp,bounds%endp
 
-       l = pft%landunit(p)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then       
-          if (pft%itype(p) == noveg) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then       
+          if (veg_pp%itype(p) == noveg) then
              this%leafn_patch(p) = 0._r8
              this%leafn_storage_patch(p) = 0._r8
           else
-             this%leafn_patch(p)         = leafc_patch(p)         / ecophyscon%leafcn(pft%itype(p))
-             this%leafn_storage_patch(p) = leafc_storage_patch(p) / ecophyscon%leafcn(pft%itype(p))
+             this%leafn_patch(p)         = leafc_patch(p)         / veg_vp%leafcn(veg_pp%itype(p))
+             this%leafn_storage_patch(p) = leafc_storage_patch(p) / veg_vp%leafcn(veg_pp%itype(p))
           end if
 
           this%leafn_xfer_patch(p)        = 0._r8
@@ -806,8 +811,8 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (ecophyscon%woody(pft%itype(p)) == 1._r8) then
-             this%deadstemn_patch(p) = deadstemc_patch(p) / ecophyscon%deadwdcn(pft%itype(p))
+          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+             this%deadstemn_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcn(veg_pp%itype(p))
           else
              this%deadstemn_patch(p) = 0._r8
           end if
@@ -815,9 +820,9 @@ contains
           if (nu_com .ne. 'RD') then
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
-              if (pft%itype(p) .ne. noveg) then
-                 this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
-                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
+              if (veg_pp%itype(p) .ne. noveg) then
+                 this%frootn_patch(p) = frootc_patch(p) / veg_vp%frootcn(veg_pp%itype(p))
+                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / veg_vp%frootcn(veg_pp%itype(p))
               end if
           end if
 
@@ -831,11 +836,15 @@ contains
           this%deadcrootn_xfer_patch(p)    = 0._r8
           this%retransn_patch(p)           = 0._r8
           this%npool_patch(p)              = 0._r8
+          if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then 
+              this%npool_patch(p)          = 10.0_r8
+          end if
           this%ntrunc_patch(p)             = 0._r8
           this%dispvegn_patch(p)           = 0._r8
           this%storvegn_patch(p)           = 0._r8
           this%totvegn_patch(p)            = 0._r8
           this%totpftn_patch(p)            = 0._r8          
+          this%plant_n_buffer_patch(p)     = 1._r8
        end if
 
        this%npimbalance_patch(p) = 0.0_r8
@@ -848,8 +857,8 @@ contains
     !-------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       l = col_pp%landunit(c)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           ! column nitrogen state variables
           this%ntrunc_col(c) = 0._r8
@@ -874,15 +883,19 @@ contains
              this%decomp_npools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
              this%decomp_npools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cn_ratio(k)
           end do
-          if (use_nitrif_denitrif) then
+          if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
              do j = 1, nlevdecomp_full
                 this%smin_nh4_vr_col(c,j) = 0._r8
                 this%smin_no3_vr_col(c,j) = 0._r8
-                this%smin_nh4sorb_vr_col(c,j) = 0._r8
+                if(use_pflotran .and. pf_cmode) then
+                    this%smin_nh4sorb_vr_col(c,j) = 0._r8
+                end if
              end do
              this%smin_nh4_col(c) = 0._r8
              this%smin_no3_col(c) = 0._r8
-             this%smin_nh4sorb_col(c) = 0._r8
+             if(use_pflotran .and. pf_cmode) then
+                this%smin_nh4sorb_col(c) = 0._r8
+             end if
           end if
           this%totlitn_col(c)    = 0._r8
           this%totsomn_col(c)    = 0._r8
@@ -898,7 +911,6 @@ contains
           this%prod10n_col(c)       = 0._r8
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
-          this%plant_nbuffer_col(c) = 1._r8
        end if
     end do
 
@@ -1134,7 +1146,7 @@ contains
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 
-    if (use_nitrif_denitrif) then
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
        ! smin_no3_vr
        if (use_vertsoilc) then
           ptr2d => this%smin_no3_vr_col(:,:)
@@ -1154,7 +1166,7 @@ contains
        end if
     end if
 
-    if (use_nitrif_denitrif) then
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
        ! smin_nh4
        if (use_vertsoilc) then
           ptr2d => this%smin_nh4_vr_col(:,:)
@@ -1206,10 +1218,6 @@ contains
        end do
     end do
 
-    call restartvar(ncid=ncid, flag=flag, varname='plant_nbuffer', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%plant_nbuffer_col)
-         
     call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%totcoln_col) 
@@ -1240,7 +1248,7 @@ contains
        decomp_cascade_state = 0
     end if
     ! add info about the nitrification / denitrification state
-    if (use_nitrif_denitrif) then
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
        decomp_cascade_state = decomp_cascade_state + 10
     end if
     if (flag == 'write') itemp = decomp_cascade_state    
@@ -1333,10 +1341,10 @@ contains
              do j = 1, nlevdecomp
 	       if ( exit_spinup ) then
 		 m = decomp_cascade_con%spinup_factor(k)
-                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c,j)
                else if ( enter_spinup ) then 
                  m = 1. / decomp_cascade_con%spinup_factor(k)
-		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
                end if 
                this%decomp_npools_vr_col(c,j,k) = this%decomp_npools_vr_col(c,j,k) * m
              end do
@@ -1422,7 +1430,7 @@ contains
        this%sminn_col(i)       = value_column
        this%ntrunc_col(i)      = value_column
        this%cwdn_col(i)        = value_column
-       if (use_nitrif_denitrif) then
+       if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
           this%smin_no3_col(i) = value_column
           this%smin_nh4_col(i) = value_column
           if(use_pflotran .and. pf_cmode) then
@@ -1442,7 +1450,7 @@ contains
           i = filter_column(fi)
           this%sminn_vr_col(i,j)       = value_column
           this%ntrunc_vr_col(i,j)      = value_column
-          if (use_nitrif_denitrif) then
+          if (use_nitrif_denitrif  .or. (use_pflotran .and. pf_cmode)) then
              this%smin_no3_vr_col(i,j) = value_column
              this%smin_nh4_vr_col(i,j) = value_column
              if(use_pflotran .and. pf_cmode) then
@@ -1503,6 +1511,7 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
+    use clm_varpar    , only: nlevdecomp_full
     !
     ! !ARGUMENTS:
     class (nitrogenstate_type) :: this
@@ -1516,6 +1525,7 @@ contains
     integer  :: c,p,j,k,l   ! indices
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    integer  :: nlev
     !-----------------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -1547,7 +1557,7 @@ contains
            this%npool_patch(p)              + &
            this%retransn_patch(p)
 
-      if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
          this%dispvegn_patch(p) = &
               this%dispvegn_patch(p) + &
               this%grainn_patch(p)
@@ -1571,6 +1581,10 @@ contains
    end do
 
    call p2c(bounds, num_soilc, filter_soilc, &
+        this%plant_n_buffer_patch(bounds%begp:bounds%endp), &
+        this%plant_n_buffer_col(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
         this%totvegn_patch(bounds%begp:bounds%endp), &
         this%totvegn_col(bounds%begc:bounds%endc))
 
@@ -1579,7 +1593,10 @@ contains
         this%totpftn_col(bounds%begc:bounds%endc))
 
    ! vertically integrate NO3 NH4 N2O pools
-   if (use_nitrif_denitrif) then
+   nlev = nlevdecomp
+   if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+   if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%smin_no3_col(c) = 0._r8
@@ -1588,7 +1605,7 @@ contains
             this%smin_nh4sorb_col(c) = 0._r8
          end if
       end do
-      do j = 1, nlevdecomp
+      do j = 1, nlev
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             this%smin_no3_col(c) = &
@@ -1614,7 +1631,7 @@ contains
          c = filter_soilc(fc)
          this%decomp_npools_col(c,l) = 0._r8
       end do
-      do j = 1, nlevdecomp
+      do j = 1, nlev
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             this%decomp_npools_col(c,l) = &
@@ -1743,7 +1760,7 @@ contains
       c = filter_soilc(fc)
       this%sminn_col(c)      = 0._r8
    end do
-   do j = 1, nlevdecomp
+   do j = 1, nlev
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%sminn_col(c) = &
@@ -1757,7 +1774,7 @@ contains
       c = filter_soilc(fc)
       this%ntrunc_col(c) = 0._r8
    end do
-   do j = 1, nlevdecomp
+   do j = 1, nlev
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          this%ntrunc_col(c) = &
@@ -1793,15 +1810,15 @@ contains
            this%sminn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c) + &
-           this%plant_nbuffer_col(c)
+           this%ntrunc_col(c)+ &
+           this%plant_n_buffer_col(c)
            
       this%totabgn_col (c) =  &
            this%totpftn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c) + &
-           this%plant_nbuffer_col(c)
+           this%ntrunc_col(c)+ &
+           this%plant_n_buffer_col(c) 
 
       this%totblgn_col(c) = &
            this%cwdn_col(c) + &
@@ -1813,33 +1830,6 @@ contains
 
  end subroutine Summary
  
-  !-----------------------------------------------------------------------
  
-  subroutine nbuffer_update(this, bounds, num_soilc, filter_soilc,  &
-      plant_minn_active_yield_flx_col, plant_minn_passive_yield_flx_col)
-
-    use clm_time_manager         , only : get_step_size        
-    ! !ARGUMENTS:
-    class (nitrogenstate_type) :: this
-    type(bounds_type) , intent(in) :: bounds  
-    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
-    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
-    
-    real(r8)          , intent(in) :: plant_minn_active_yield_flx_col(bounds%begc:bounds%endc)
-    real(r8)          , intent(in) :: plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc)
-    integer :: fc, c
-    real(r8) :: dtime
-  
-    dtime =  get_step_size()
-  
-    
-    do fc = 1, num_soilc
-      c = filter_soilc(fc)
-      this%plant_nbuffer_col(c) = this%plant_nbuffer_col(c)           + &
-                                  (plant_minn_active_yield_flx_col(c) + &
-                                   plant_minn_passive_yield_flx_col(c))*dtime
-    enddo
-      
-  end subroutine nbuffer_update      
 
 end module CNNitrogenStateType

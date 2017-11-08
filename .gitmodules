@@ -16,3 +16,6 @@
 	path = components/clm/src/external_models/mpp
 	url = git@github.com:ACME-Climate/mpp.git
 	branch = alm/develop
+[submodule "sbetr"]
+	path = components/clm/src/external_models/sbetr
+	url = git@github.com:ACME-Climate/sbetr.git

@@ -186,11 +186,17 @@ module clm_varctl
   logical, public :: use_c14 = .false.                  ! true => use C-14 model
 
   !----------------------------------------------------------
-  !  ED switches
+  !  FATES switches
   !----------------------------------------------------------
 
-  logical, public :: use_ed = .false.            ! true => use  ED
-  logical, public :: use_ed_spitfire = .false.  ! true => use spitfire model
+  logical, public            :: use_ed = .false.              ! true => use  ED
+  logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
+  logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
+  logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
+  logical, public            :: use_fates_ed_st3   = .false.           ! true => static stand structure
+  logical, public            :: use_fates_ed_prescribed_phys = .false. ! true => prescribed physiology
+  logical, public            :: use_fates_inventory_init = .false.     ! true => initialize fates from inventory
+  character(len=256), public :: fates_inventory_ctrl_filename = ''     ! filename for inventory control
 
   !----------------------------------------------------------
   !  BeTR switches
@@ -300,6 +306,7 @@ module clm_varctl
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
+  logical, public :: use_var_soil_thick  = .false.
 
   !----------------------------------------------------------
   ! VSFM switches
@@ -321,11 +328,16 @@ module clm_varctl
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
   !
   logical, private :: clmvarctl_isset = .false.
- !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
  
- !-----------------------------------------------------------------------
- ! nutrient competition (nu_com), default is relative demand approach (RD)
- character(len=15), public :: nu_com = 'RD'
+  !-----------------------------------------------------------------------
+  ! nutrient competition (nu_com), default is relative demand approach (RD)
+  character(len=15), public :: nu_com = 'RD'
+ 
+  !-----------------------------------------------------------------------
+  ! forest N/P fertilization
+  logical, public :: forest_fert_exp = .false. 
+
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity
@@ -336,16 +348,17 @@ module clm_varctl
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
-  logical, public :: use_bgc_interface  = .false.
+  logical, public :: use_clm_interface  = .false.
   logical, public :: use_clm_bgc        = .false.
   logical, public :: use_pflotran       = .false.
   logical, public :: pf_surfaceflow     = .false.
   ! the following switches will allow flexibility of coupling CLM with PFLOTRAN (which in fact runs in 3 modes individually or coupled)
+  logical, public :: pf_cmode     = .false.                 ! switch for 'C' mode coupling (will be updated in interface)
   logical, public :: pf_hmode     = .false.                 ! switch for 'H' mode coupling (will be updated in interface)
   logical, public :: pf_tmode     = .false.                 ! switch for 'T' mode coupling (will be updated in interface)
   logical, public :: pf_frzmode   = .false.                 ! switch for 'freezing' mode availablity in PF-thmode (will be updated in interface)
-  logical, public :: pf_cmode     = .false.                 ! switch for 'C' mode coupling (will be updated in interface)
   logical, public :: initth_pf2clm= .false.                 ! switch for initializing CLM TH states from pflotran
+  integer, public :: pf_clmnstep0 = 0                       ! the CLM timestep of start/restart
 
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode

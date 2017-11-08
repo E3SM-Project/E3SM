@@ -11,7 +11,7 @@ module dynConsBiogeochemMod
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_c13, use_c14
-  use EcophysConType      , only : ecophyscon
+  use VegetationPropertiesType      , only : veg_vp
   use CanopyStateType     , only : canopystate_type
   use PhotosynthesisType  , only : photosyns_type
   use CNStateType         , only : cnstate_type
@@ -21,9 +21,9 @@ module dynConsBiogeochemMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use LandunitType        , only : lun                
-  use ColumnType          , only : col                
-  use PatchType           , only : pft                
+  use LandunitType        , only : lun_pp                
+  use ColumnType          , only : col_pp                
+  use VegetationType           , only : veg_pp                
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -85,6 +85,7 @@ contains
     real(r8), allocatable         :: dwt_leafn_seed(:)             ! pft-level mass gain due to seeding of new area
     real(r8), allocatable         :: dwt_deadstemc_seed(:)         ! pft-level mass gain due to seeding of new area
     real(r8), allocatable         :: dwt_deadstemn_seed(:)         ! pft-level mass gain due to seeding of new area
+    real(r8), allocatable         :: dwt_npool_seed(:)             ! pft-level mass gain due to seeding of new area
     real(r8), allocatable         :: dwt_frootc_to_litter(:)       ! pft-level mass loss due to weight shift
     real(r8), allocatable         :: dwt_livecrootc_to_litter(:)   ! pft-level mass loss due to weight shift
     real(r8), allocatable         :: dwt_deadcrootc_to_litter(:)   ! pft-level mass loss due to weight shift
@@ -101,13 +102,14 @@ contains
     real(r8)                      :: init_state, change_state, new_state
     real(r8)                      :: tot_leaf, pleaf, pstor, pxfer
     real(r8)                      :: leafc_seed, leafn_seed
-    real(r8)                      :: deadstemc_seed, deadstemn_seed
+    real(r8)                      :: deadstemc_seed, deadstemn_seed, npool_seed
     real(r8), pointer             :: dwt_ptr0, dwt_ptr1, dwt_ptr2, dwt_ptr3, ptr
     character(len=32)             :: subname='dyn_cbal'            ! subroutine name
 
     ! ! add phosphorus local variables
     real(r8), allocatable         :: dwt_leafp_seed(:)             ! pft-level mass gain due to seeding of new area    
     real(r8), allocatable         :: dwt_deadstemp_seed(:)         ! pft-level mass gain due to seeding of new area
+    real(r8), allocatable         :: dwt_ppool_seed(:)             ! pft-level mass gain due to seeding of new area
     real(r8), allocatable, target :: dwt_frootp_to_litter(:)       ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: dwt_livecrootp_to_litter(:)   ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: dwt_deadcrootp_to_litter(:)   ! pft-level mass loss due to weight shift
@@ -115,7 +117,7 @@ contains
     real(r8), allocatable, target :: prod10_pflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_pflux(:)              ! pft-level mass loss due to weight shift
     real(r8)                      :: leafp_seed
-    real(r8)                      :: deadstemp_seed
+    real(r8)                      :: deadstemp_seed, ppool_seed
 
 
 
@@ -188,6 +190,11 @@ contains
           write(iulog,*)subname,' allocation error for dwt_deadstemn_seed'
           call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
+    allocate(dwt_npool_seed(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_npool_seed'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
     allocate(dwt_frootc_to_litter(bounds%begp:bounds%endp), stat=ier)
     if (ier /= 0) then
           write(iulog,*)subname,' allocation error for dwt_frootc_to_litter'
@@ -258,6 +265,11 @@ contains
     allocate(dwt_deadstemp_seed(bounds%begp:bounds%endp), stat=ier)
     if (ier /= 0) then
           write(iulog,*)subname,' allocation error for dwt_deadstemp_seed'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(dwt_ppool_seed(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_ppool_seed'
           call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     allocate(dwt_frootp_to_litter(bounds%begp:bounds%endp), stat=ier)
@@ -380,12 +392,13 @@ contains
     dt = real( get_step_size(), r8 )
     
     do p = bounds%begp,bounds%endp
-       c = pft%column(p)
+       c = veg_pp%column(p)
        ! initialize all the pft-level local flux arrays
        dwt_leafc_seed(p) = 0._r8
        dwt_leafn_seed(p) = 0._r8
        dwt_deadstemc_seed(p) = 0._r8
        dwt_deadstemn_seed(p) = 0._r8
+       dwt_npool_seed(p) = 0._r8
        dwt_frootc_to_litter(p) = 0._r8
        dwt_livecrootc_to_litter(p) = 0._r8
        dwt_deadcrootc_to_litter(p) = 0._r8
@@ -401,6 +414,7 @@ contains
        
        dwt_leafp_seed(p) = 0._r8
        dwt_deadstemp_seed(p) = 0._r8
+       dwt_ppool_seed(p) = 0._r8
        dwt_frootp_to_litter(p) = 0._r8
        dwt_livecrootp_to_litter(p) = 0._r8
        dwt_deadcrootp_to_litter(p) = 0._r8
@@ -430,11 +444,11 @@ contains
           prod100_c14flux(p) = 0._r8
        endif
        
-       l = pft%landunit(p)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           
           ! calculate the change in weight for the timestep
-          dwt = pft%wtcol(p)-prior_weights%pwtcol(p)
+          dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
           cnstate_vars%lfpftd_patch(p) = -dwt
 
           ! Patches for which weight increases on this timestep
@@ -610,6 +624,8 @@ contains
                 cnstate_vars%offset_swi_patch(p)            = 0._r8
                 cnstate_vars%lgsf_patch(p)                  = 0._r8
                 cnstate_vars%bglfr_patch(p)                 = 0._r8
+                cnstate_vars%bglfr_leaf_patch(p)            = 0._r8
+                cnstate_vars%bglfr_froot_patch(p)           = 0._r8
                 cnstate_vars%bgtr_patch(p)                  = 0._r8
                 cnstate_vars%annavg_t2m_patch(p)            = cnstate_vars%annavg_t2m_col(c)
                 cnstate_vars%tempavg_t2m_patch(p)           = 0._r8
@@ -668,6 +684,8 @@ contains
              leafp_seed   = 0._r8
              deadstemc_seed   = 0._r8
              deadstemn_seed   = 0._r8
+             npool_seed       = 0._r8
+             ppool_seed       = 0._r8
              deadstemp_seed   = 0._r8
              if ( use_c13 ) then
                 leafc13_seed = 0._r8
@@ -677,15 +695,20 @@ contains
                 leafc14_seed = 0._r8
                 deadstemc14_seed = 0._r8
              endif
-             if (pft%itype(p) /= 0) then
+             if (veg_pp%itype(p) /= 0) then
                 leafc_seed = 1._r8
-                leafn_seed  = leafc_seed / ecophyscon%leafcn(pft%itype(p))
-                leafp_seed  = leafc_seed / ecophyscon%leafcp(pft%itype(p))
-                if (ecophyscon%woody(pft%itype(p)) == 1._r8) then
+                leafn_seed  = leafc_seed / veg_vp%leafcn(veg_pp%itype(p))
+                leafp_seed  = leafc_seed / veg_vp%leafcp(veg_pp%itype(p))
+                if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
                    deadstemc_seed = 0.1_r8
-                   deadstemn_seed = deadstemc_seed / ecophyscon%deadwdcn(pft%itype(p))
-                   deadstemp_seed = deadstemc_seed / ecophyscon%deadwdcp(pft%itype(p))
+                   deadstemn_seed = deadstemc_seed / veg_vp%deadwdcn(veg_pp%itype(p))
+                   deadstemp_seed = deadstemc_seed / veg_vp%deadwdcp(veg_pp%itype(p))
                 end if
+                if (veg_vp%nstor(veg_pp%itype(p)) > 1e-6_r8) then
+                   npool_seed     = 0.1_r8
+                   ppool_seed     = 0.01_r8
+                end if
+
                 
                 if ( use_c13 ) then
                    ! 13c state is initialized assuming del13c = -28 permil for C3, and -13 permil for C4.
@@ -701,7 +724,7 @@ contains
                    c4_r1_c13 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
                    c4_r2_c13 = c4_r1_c13/(1._r8 + c4_r1_c13)
                    
-                   if (ecophyscon%c3psn(pft%itype(p)) == 1._r8) then
+                   if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
                       leafc13_seed     = leafc_seed     * c3_r2_c13
                       deadstemc13_seed = deadstemc_seed * c3_r2_c13
                    else
@@ -712,7 +735,7 @@ contains
                 
                 if ( use_c14 ) then
                    ! 14c state is initialized assuming initial "modern" 14C of 1.e-12
-                   if (ecophyscon%c3psn(pft%itype(p)) == 1._r8) then
+                   if (veg_vp%c3psn(veg_pp%itype(p)) == 1._r8) then
                       leafc14_seed     = leafc_seed     * c14ratio
                       deadstemc14_seed = deadstemc_seed * c14ratio
                    else
@@ -726,8 +749,8 @@ contains
              ! is modified to conserve the original pft mass distributed
              ! over the new (larger) area, plus a term to account for the 
              ! introduction of new seed source for leaf and deadstem
-             t1 = prior_weights%pwtcol(p)/pft%wtcol(p)
-             t2 = dwt/pft%wtcol(p)
+             t1 = prior_weights%pwtcol(p)/veg_pp%wtcol(p)
+             t2 = dwt/veg_pp%wtcol(p)
              
              tot_leaf = cs%leafc_patch(p) + cs%leafc_storage_patch(p) + cs%leafc_xfer_patch(p)
              pleaf = 0._r8
@@ -740,7 +763,7 @@ contains
                 pxfer = cs%leafc_xfer_patch(p)/tot_leaf
              else
                 ! when initiating from zero leaf state, use evergreen flag to set proportions
-                if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
+                if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    pleaf = 1._r8
                 else
                    pstor = 1._r8
@@ -786,7 +809,7 @@ contains
                    pxfer = c13_cs%leafc_xfer_patch(p)/tot_leaf
                 else
                    ! when initiating from zero leaf state, use evergreen flag to set proportions
-                   if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
+                   if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                       pleaf = 1._r8
                    else
                       pstor = 1._r8
@@ -834,7 +857,7 @@ contains
                    pxfer = c14_cs%leafc_xfer_patch(p)/tot_leaf
                 else
                    ! when initiating from zero leaf state, use evergreen flag to set proportions
-                   if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
+                   if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                       pleaf = 1._r8
                    else
                       pstor = 1._r8
@@ -879,7 +902,7 @@ contains
                 pxfer = ns%leafn_xfer_patch(p)/tot_leaf
              else
                 ! when initiating from zero leaf state, use evergreen flag to set proportions
-                if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
+                if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    pleaf = 1._r8
                 else
                    pstor = 1._r8
@@ -898,6 +921,7 @@ contains
              ns%deadstemn_patch(p)          = ns%deadstemn_patch(p)          * t1 + deadstemn_seed*t2
              ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  * t1
              ns%deadstemn_xfer_patch(p)     = ns%deadstemn_xfer_patch(p)     * t1
+             ns%npool_patch(p)              = ns%npool_patch(p)              * t1 + npool_seed*t2
              ns%livecrootn_patch(p)         = ns%livecrootn_patch(p)         * t1
              ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) * t1
              ns%livecrootn_xfer_patch(p)    = ns%livecrootn_xfer_patch(p)    * t1
@@ -905,7 +929,6 @@ contains
              ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) * t1
              ns%deadcrootn_xfer_patch(p)    = ns%deadcrootn_xfer_patch(p)    * t1
              ns%retransn_patch(p)	    = ns%retransn_patch(p)           * t1
-             ns%npool_patch(p)              = ns%npool_patch(p)              * t1
              ns%ntrunc_patch(p)             = ns%ntrunc_patch(p)             * t1
              ns%dispvegn_patch(p)	    = ns%dispvegn_patch(p)           * t1
              ns%storvegn_patch(p)	    = ns%storvegn_patch(p)           * t1
@@ -923,7 +946,7 @@ contains
                 pxfer = ps%leafp_xfer_patch(p)/tot_leaf
              else
                 ! when initiating from zero leaf state, use evergreen flag to set proportions
-                if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
+                if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    pleaf = 1._r8
                 else
                    pstor = 1._r8
@@ -949,7 +972,7 @@ contains
              ps%deadcrootp_storage_patch(p) = ps%deadcrootp_storage_patch(p) * t1
              ps%deadcrootp_xfer_patch(p)    = ps%deadcrootp_xfer_patch(p)    * t1
              ps%retransp_patch(p)	    = ps%retransp_patch(p)           * t1
-             ps%ppool_patch(p)              = ps%ppool_patch(p)              * t1
+             ps%ppool_patch(p)              = ps%ppool_patch(p)              * t1 + ppool_seed*t2
              ps%ptrunc_patch(p)             = ps%ptrunc_patch(p)             * t1
              ps%dispvegp_patch(p)	    = ps%dispvegp_patch(p)           * t1
              ps%storvegp_patch(p)	    = ps%storvegp_patch(p)           * t1
@@ -972,9 +995,11 @@ contains
              dwt_leafn_seed(p)   = leafn_seed   * dwt
              dwt_deadstemc_seed(p)   = deadstemc_seed   * dwt
              dwt_deadstemn_seed(p)   = deadstemn_seed   * dwt
-             
+             dwt_npool_seed(p)       = npool_seed * dwt             
+
              dwt_leafp_seed(p)   = leafp_seed   * dwt
              dwt_deadstemp_seed(p)   = deadstemp_seed   * dwt
+             dwt_ppool_seed(p)       = ppool_seed * dwt
           else if (dwt < 0._r8) then
              
              ! if the pft lost weight on the timestep, then the carbon and nitrogen state
@@ -985,7 +1010,7 @@ contains
              ! positive values
              
              ! set local weight variables for this pft
-             wt_new = pft%wtcol(p)
+             wt_new = veg_pp%wtcol(p)
              wt_old = prior_weights%pwtcol(p)
              
              !---------------
@@ -1116,14 +1141,14 @@ contains
              new_state = init_state+change_state
              if (wt_new /= 0._r8) then
                 ptr = new_state/wt_new
-                conv_cflux(p) = conv_cflux(p) + change_state*pconv(pft%itype(p))
-                prod10_cflux(p) = prod10_cflux(p) + change_state*pprod10(pft%itype(p))
-                prod100_cflux(p) = prod100_cflux(p) + change_state*pprod100(pft%itype(p))
+                conv_cflux(p) = conv_cflux(p) + change_state*pconv(veg_pp%itype(p))
+                prod10_cflux(p) = prod10_cflux(p) + change_state*pprod10(veg_pp%itype(p))
+                prod100_cflux(p) = prod100_cflux(p) + change_state*pprod100(veg_pp%itype(p))
              else
                 ptr = 0._r8
-                conv_cflux(p) = conv_cflux(p) - init_state*pconv(pft%itype(p))
-                prod10_cflux(p) = prod10_cflux(p) - init_state*pprod10(pft%itype(p))
-                prod100_cflux(p) = prod100_cflux(p) - init_state*pprod100(pft%itype(p))
+                conv_cflux(p) = conv_cflux(p) - init_state*pconv(veg_pp%itype(p))
+                prod10_cflux(p) = prod10_cflux(p) - init_state*pprod10(veg_pp%itype(p))
+                prod100_cflux(p) = prod100_cflux(p) - init_state*pprod100(veg_pp%itype(p))
              end if
              
              ! deadstemc_storage 
@@ -1431,14 +1456,14 @@ contains
                 new_state = init_state+change_state
                 if (wt_new /= 0._r8) then
                    ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state*pconv(pft%itype(p))
-                   dwt_ptr2 = dwt_ptr2 + change_state*pprod10(pft%itype(p))
-                   dwt_ptr3 = dwt_ptr3 + change_state*pprod100(pft%itype(p))
+                   dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
+                   dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
+                   dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
                 else
                    ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state*pconv(pft%itype(p))
-                   dwt_ptr2 = dwt_ptr2 - init_state*pprod10(pft%itype(p))
-                   dwt_ptr3 = dwt_ptr3 - init_state*pprod100(pft%itype(p))
+                   dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
+                   dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
+                   dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
                 end if
                 
                 ! deadstemc_storage 
@@ -1737,14 +1762,14 @@ contains
                 new_state = init_state+change_state
                 if (wt_new /= 0._r8) then
                    ptr = new_state/wt_new
-                   dwt_ptr1 = dwt_ptr1 + change_state*pconv(pft%itype(p))
-                   dwt_ptr2 = dwt_ptr2 + change_state*pprod10(pft%itype(p))
-                   dwt_ptr3 = dwt_ptr3 + change_state*pprod100(pft%itype(p))
+                   dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
+                   dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
+                   dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
                 else
                    ptr = 0._r8
-                   dwt_ptr1 = dwt_ptr1 - init_state*pconv(pft%itype(p))
-                   dwt_ptr2 = dwt_ptr2 - init_state*pprod10(pft%itype(p))
-                   dwt_ptr3 = dwt_ptr3 - init_state*pprod100(pft%itype(p))
+                   dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
+                   dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
+                   dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
                 end if
                 
                 ! deadstemc_storage 
@@ -2042,14 +2067,14 @@ contains
              new_state = init_state+change_state
              if (wt_new /= 0._r8) then
                 ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state*pconv(pft%itype(p))
-                dwt_ptr2 = dwt_ptr2 + change_state*pprod10(pft%itype(p))
-                dwt_ptr3 = dwt_ptr3 + change_state*pprod100(pft%itype(p))
+                dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
+                dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
+                dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
              else
                 ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state*pconv(pft%itype(p))
-                dwt_ptr2 = dwt_ptr2 - init_state*pprod10(pft%itype(p))
-                dwt_ptr3 = dwt_ptr3 - init_state*pprod100(pft%itype(p))
+                dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
+                dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
+                dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
              end if
              
              ! deadstemn_storage 
@@ -2333,14 +2358,14 @@ contains
              new_state = init_state+change_state
              if (wt_new /= 0._r8) then
                 ptr = new_state/wt_new
-                dwt_ptr1 = dwt_ptr1 + change_state*pconv(pft%itype(p))
-                dwt_ptr2 = dwt_ptr2 + change_state*pprod10(pft%itype(p))
-                dwt_ptr3 = dwt_ptr3 + change_state*pprod100(pft%itype(p))
+                dwt_ptr1 = dwt_ptr1 + change_state*pconv(veg_pp%itype(p))
+                dwt_ptr2 = dwt_ptr2 + change_state*pprod10(veg_pp%itype(p))
+                dwt_ptr3 = dwt_ptr3 + change_state*pprod100(veg_pp%itype(p))
              else
                 ptr = 0._r8
-                dwt_ptr1 = dwt_ptr1 - init_state*pconv(pft%itype(p))
-                dwt_ptr2 = dwt_ptr2 - init_state*pprod10(pft%itype(p))
-                dwt_ptr3 = dwt_ptr3 - init_state*pprod100(pft%itype(p))
+                dwt_ptr1 = dwt_ptr1 - init_state*pconv(veg_pp%itype(p))
+                dwt_ptr2 = dwt_ptr2 - init_state*pprod10(veg_pp%itype(p))
+                dwt_ptr3 = dwt_ptr3 - init_state*pprod100(veg_pp%itype(p))
              end if
              
              ! deadstemp_storage 
@@ -2495,8 +2520,8 @@ contains
     ! calculate column-level seeding fluxes
     do pi = 1,max_patch_per_col
        do c = bounds%begc, bounds%endc
-          if ( pi <=  col%npfts(c) ) then
-             p = col%pfti(c) + pi - 1
+          if ( pi <=  col_pp%npfts(c) ) then
+             p = col_pp%pfti(c) + pi - 1
              
              ! C fluxes
              cf%dwt_seedc_to_leaf_col(c) = cf%dwt_seedc_to_leaf_col(c) + dwt_leafc_seed(p)/dt
@@ -2519,11 +2544,14 @@ contains
              nf%dwt_seedn_to_leaf_col(c) = nf%dwt_seedn_to_leaf_col(c) + dwt_leafn_seed(p)/dt
              nf%dwt_seedn_to_deadstem_col(c) = nf%dwt_seedn_to_deadstem_col(c) &
                   + dwt_deadstemn_seed(p)/dt
-
+             nf%dwt_seedn_to_npool_col(c) = nf%dwt_seedn_to_npool_col(c) &
+                  + dwt_npool_seed(p)/dt
              ! P fluxes
              pf%dwt_seedp_to_leaf_col(c) = pf%dwt_seedp_to_leaf_col(c) + dwt_leafp_seed(p)/dt
              pf%dwt_seedp_to_deadstem_col(c) = pf%dwt_seedp_to_deadstem_col(c) &
                   + dwt_deadstemp_seed(p)/dt
+             pf%dwt_seedp_to_ppool_col(c) = pf%dwt_seedp_to_ppool_col(c) &
+                  + dwt_ppool_seed(p)/dt
           end if
        end do
     end do
@@ -2533,49 +2561,49 @@ contains
     do j = 1, nlevdecomp
        do pi = 1,max_patch_per_col
           do c = bounds%begc, bounds%endc
-             if ( pi <=  col%npfts(c) ) then
-                p = col%pfti(c) + pi - 1
+             if ( pi <=  col_pp%npfts(c) ) then
+                p = col_pp%pfti(c) + pi - 1
                 
                 ! fine root litter carbon fluxes
                 cf%dwt_frootc_to_litr_met_c_col(c,j) = &
                      cf%dwt_frootc_to_litr_met_c_col(c,j) + &
-                     (dwt_frootc_to_litter(p)*ecophyscon%fr_flab(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootc_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                 cf%dwt_frootc_to_litr_cel_c_col(c,j) = &
                      cf%dwt_frootc_to_litr_cel_c_col(c,j) + &
-                     (dwt_frootc_to_litter(p)*ecophyscon%fr_fcel(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootc_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                 cf%dwt_frootc_to_litr_lig_c_col(c,j) = &
                      cf%dwt_frootc_to_litr_lig_c_col(c,j) + &
-                     (dwt_frootc_to_litter(p)*ecophyscon%fr_flig(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootc_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
                 
                 
                 ! fine root litter nitrogen fluxes
                 nf%dwt_frootn_to_litr_met_n_col(c,j) = &
                      nf%dwt_frootn_to_litr_met_n_col(c,j) + &
-                     (dwt_frootn_to_litter(p)*ecophyscon%fr_flab(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootn_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
                 nf%dwt_frootn_to_litr_cel_n_col(c,j) = &
 
                      nf%dwt_frootn_to_litr_cel_n_col(c,j) + &
-                     (dwt_frootn_to_litter(p)*ecophyscon%fr_fcel(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootn_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                 nf%dwt_frootn_to_litr_lig_n_col(c,j) = &
                      nf%dwt_frootn_to_litr_lig_n_col(c,j) + &
-                     (dwt_frootn_to_litter(p)*ecophyscon%fr_flig(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootn_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
                 
 
                 ! fine root litter phosphorus fluxes
                 pf%dwt_frootp_to_litr_met_p_col(c,j) = &
                      pf%dwt_frootp_to_litr_met_p_col(c,j) + &
-                     (dwt_frootp_to_litter(p)*ecophyscon%fr_flab(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootp_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
                 pf%dwt_frootp_to_litr_cel_p_col(c,j) = &
 
                      pf%dwt_frootp_to_litr_cel_p_col(c,j) + &
-                     (dwt_frootp_to_litter(p)*ecophyscon%fr_fcel(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootp_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                 pf%dwt_frootp_to_litr_lig_p_col(c,j) = &
                      pf%dwt_frootp_to_litr_lig_p_col(c,j) + &
-                     (dwt_frootp_to_litter(p)*ecophyscon%fr_flig(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                     (dwt_frootp_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                 ! livecroot fluxes to cwd
                 cf%dwt_livecrootc_to_cwdc_col(c,j) = &
@@ -2607,15 +2635,15 @@ contains
                    ! C13 fine root litter fluxes
                    c13_cf%dwt_frootc_to_litr_met_c_col(c,j) = &
                         c13_cf%dwt_frootc_to_litr_met_c_col(c,j) + &
-                        (dwt_frootc13_to_litter(p)*ecophyscon%fr_flab(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc13_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                    c13_cf%dwt_frootc_to_litr_cel_c_col(c,j) = &
                         c13_cf%dwt_frootc_to_litr_cel_c_col(c,j) + &
-                        (dwt_frootc13_to_litter(p)*ecophyscon%fr_fcel(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc13_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                    c13_cf%dwt_frootc_to_litr_lig_c_col(c,j) = &
                         c13_cf%dwt_frootc_to_litr_lig_c_col(c,j) + &
-                        (dwt_frootc13_to_litter(p)*ecophyscon%fr_flig(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc13_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                    ! livecroot fluxes to cwd
                    c13_cf%dwt_livecrootc_to_cwdc_col(c,j) = &
@@ -2633,15 +2661,15 @@ contains
                    ! C14 fine root litter fluxes
                    c14_cf%dwt_frootc_to_litr_met_c_col(c,j) = &
                         c14_cf%dwt_frootc_to_litr_met_c_col(c,j) + &
-                        (dwt_frootc14_to_litter(p)*ecophyscon%fr_flab(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc14_to_litter(p)*veg_vp%fr_flab(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                    c14_cf%dwt_frootc_to_litr_cel_c_col(c,j) = &
                         c14_cf%dwt_frootc_to_litr_cel_c_col(c,j) + &
-                        (dwt_frootc14_to_litter(p)*ecophyscon%fr_fcel(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc14_to_litter(p)*veg_vp%fr_fcel(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                    c14_cf%dwt_frootc_to_litr_lig_c_col(c,j) = &
                         c14_cf%dwt_frootc_to_litr_lig_c_col(c,j) + &
-                        (dwt_frootc14_to_litter(p)*ecophyscon%fr_flig(pft%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
+                        (dwt_frootc14_to_litter(p)*veg_vp%fr_flig(veg_pp%itype(p)))/dt * cnstate_vars%froot_prof_patch(p,j)
 
                    ! livecroot fluxes to cwd
                    c14_cf%dwt_livecrootc_to_cwdc_col(c,j) = &
@@ -2661,8 +2689,8 @@ contains
     ! calculate pft-to-column for fluxes into product pools and conversion flux
     do pi = 1,max_patch_per_col
        do c = bounds%begc,bounds%endc
-          if (pi <= col%npfts(c)) then
-             p = col%pfti(c) + pi - 1
+          if (pi <= col_pp%npfts(c)) then
+             p = col_pp%pfti(c) + pi - 1
              
              ! column-level fluxes are accumulated as positive fluxes.
              ! column-level C flux updates
@@ -2671,7 +2699,7 @@ contains
              cf%dwt_prod100c_gain_col(c) = cf%dwt_prod100c_gain_col(c) - prod100_cflux(p)/dt
 
              ! These magic constants should be replaced with: nbrdlf_evr_trp_tree and nbrdlf_dcd_trp_tree
-             if(pft%itype(p)==4.or.pft%itype(p)==6)then
+             if(veg_pp%itype(p)==4.or.veg_pp%itype(p)==6)then
                 cf%lf_conv_cflux_col(c) = cf%lf_conv_cflux_col(c) - conv_cflux(p)/dt
              end if
              
@@ -2709,6 +2737,7 @@ contains
     deallocate(dwt_leafn_seed)
     deallocate(dwt_deadstemc_seed)
     deallocate(dwt_deadstemn_seed)
+    deallocate(dwt_npool_seed)
     deallocate(dwt_frootc_to_litter)
     deallocate(dwt_livecrootc_to_litter)
     deallocate(dwt_deadcrootc_to_litter)
@@ -2724,6 +2753,7 @@ contains
 
     deallocate(dwt_leafp_seed)
     deallocate(dwt_deadstemp_seed)
+    deallocate(dwt_ppool_seed)
     deallocate(dwt_frootp_to_litter)
     deallocate(dwt_livecrootp_to_litter)
     deallocate(dwt_deadcrootp_to_litter)

@@ -27,8 +27,8 @@ module lnd2glcMod
   use abortutils      , only : endrun
   use WaterFluxType   , only : waterflux_type
   use TemperatureType , only : temperature_type
-  use LandunitType    , only : lun                
-  use ColumnType      , only : col                
+  use LandunitType    , only : lun_pp                
+  use ColumnType      , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -179,14 +179,14 @@ contains
 
     do fc = 1, num_do_smb_c
       c = filter_do_smb_c(fc)
-      l = col%landunit(c)
-      g = col%gridcell(c) 
+      l = col_pp%landunit(c)
+      g = col_pp%gridcell(c) 
 
       ! Set vertical index and a flux normalization, based on whether the column in question is glacier or vegetated.  
-      if (lun%itype(l) == istice_mec) then
-         n = col_itype_to_icemec_class(col%itype(c))
+      if (lun_pp%itype(l) == istice_mec) then
+         n = col_itype_to_icemec_class(col_pp%itype(c))
          flux_normalization = 1.0_r8
-      else if (lun%itype(l) == istsoil) then
+      else if (lun_pp%itype(l) == istsoil) then
          n = 0  !0-level index (bareland information)
          flux_normalization = bareland_normalization(c)
       else
@@ -216,7 +216,7 @@ contains
       ! for qice, as set above.
       fields_assigned(g,n) = .true.
       this%tsrf_grc(g,n) = temperature_vars%t_soisno_col(c,1)
-      this%topo_grc(g,n) = col%glc_topo(c)
+      this%topo_grc(g,n) = col_pp%glc_topo(c)
       if (.not. init) then
          this%qice_grc(g,n) = waterflux_vars%qflx_glcice_col(c) * flux_normalization
 
@@ -282,7 +282,7 @@ contains
     character(len=*), parameter :: subname = 'bareland_normalization'
     !-----------------------------------------------------------------------
 
-    g = col%gridcell(c)
+    g = col_pp%gridcell(c)
 
     area_glacier = get_landunit_weight(g, istice_mec)
 
@@ -291,7 +291,7 @@ contains
        ! set it to 1 so we don't do any normalization in this case
        bareland_normalization = 1.0_r8
     else
-       area_this_col = col%wtgcell(c)
+       area_this_col = col_pp%wtgcell(c)
        bareland_normalization = area_this_col / (1.0_r8 - area_glacier)
     end if
 

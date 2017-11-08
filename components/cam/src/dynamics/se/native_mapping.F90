@@ -149,7 +149,7 @@ contains
 
     
 
-    if(iam > par%nprocs) then
+    if(.not.par%dynproc) then
        ! The special case of npes_se < npes_cam is not worth dealing with here
        call endrun('Native mapping code requires npes_se==npes_cam')
     end if

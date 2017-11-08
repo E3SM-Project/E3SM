@@ -26,6 +26,8 @@
 <dtime dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"  >900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >600</dtime>
+<dtime dyn="se"    hgrid="ne0np4_enax4v1">900</dtime>
+<dtime dyn="se"    hgrid="ne0np4_twpx4v1">900</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -139,6 +141,7 @@
 
 
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-01-01_ne4np4_L30_c161102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
 <ncdata dyn="se" hgrid="ne11np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne11np4_L30_c160824.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_c120525.nc</ncdata>
@@ -180,6 +183,10 @@
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne0np4_twpx4v1" nlev="72" >atm/cam/inic/homme/cami-mam3_0002-01-01-twpx4v1_L72_c170723.nc</ncdata>
+<!-- Initial condition file for ENA RRM grid from 1 year spin-up -->
+<!-- (starting from initial file interpolated using interpic) -->
+<ncdata dyn="se" hgrid="ne0np4_enax4v1" nlev="72">atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
 
 <ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
@@ -220,6 +227,8 @@
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/topo/USGS_svalbardx8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
 <!-- Bulk aerosol physical properties (includes optics) -->
 
@@ -708,6 +717,9 @@
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon">atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_svalbard_x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_svalbardx8v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_sooberingoax4x8v1.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
+<!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
+<drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
@@ -1255,6 +1267,7 @@
 
 <!-- Control output to history file(s) -->
 <history_amwg>                 .true.   </history_amwg>
+<history_verbose>              .false.  </history_verbose>
 <history_vdiag>                .false.  </history_vdiag>
 <history_aerosol>              .false.  </history_aerosol>
 <history_aero_optics>          .false.  </history_aero_optics>
@@ -1262,7 +1275,7 @@
 <history_budget>               .false.  </history_budget>
 <history_waccm>                .false.  </history_waccm>
 <history_waccm waccm_phys="1"> .true.   </history_waccm>
-<history_clubb>      .true.   </history_clubb>
+<history_clubb>      .false.   </history_clubb>
 
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
@@ -1288,6 +1301,8 @@
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/inic/homme/sooberingoax4x8v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_enax4v1">atm/cam/inic/homme/enax4v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_twpx4v1" >atm/cam/inic/homme/twpx4v1.g</mesh_file>
 
 <nu_top> 2.5e5 </nu_top>
 <nu_top hgrid="ne240np4"> 1.0e5 </nu_top>
@@ -1304,13 +1319,14 @@
 <nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
-
+<nu hgrid="ne0np4_enax4v1">8.0e-8</nu>
 
 
 <nu hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
+<nu hgrid="ne0np4_twpx4v1" >8.0e-8</nu>
 
 <!-- This will set nu_q to nu internally. -->
 <nu_q> -1.0 </nu_q>
@@ -1327,6 +1343,8 @@
 <nu_p hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu_p>
+<nu_p hgrid="ne0np4_enax4v1">8.0e-8</nu_p>
+<nu_p hgrid="ne0np4_twpx4v1" >8.0e-8</nu_p>
 
 
 <nu_div>                   2.5e15 </nu_div>
@@ -1341,6 +1359,8 @@
 <nu_div hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 20.0e-8</nu_div>
+<nu_div hgrid="ne0np4_enax4v1">20.0e-8</nu_div>
+<nu_div hgrid="ne0np4_twpx4v1" >20.0e-8</nu_div>
 
 <hypervis_order >     2 </hypervis_order>
 
@@ -1357,6 +1377,8 @@
 <hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_enax4v1">7</hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_twpx4v1" > 7 </hypervis_subcycle>
 
 <hypervis_subcycle_q> 1 </hypervis_subcycle_q>
 
@@ -1385,6 +1407,8 @@
 <se_nsplit hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
 <se_nsplit hgrid="ne0np4_svalbard_x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 5 </se_nsplit>
+<se_nsplit hgrid="ne0np4_enax4v1">4</se_nsplit>
+<se_nsplit hgrid="ne0np4_twpx4v1" > 4 </se_nsplit>
 
 <se_nsplit hgrid="ne11np4"  waccm_phys="1">  5 </se_nsplit>
 <se_nsplit hgrid="ne16np4"  waccm_phys="1">  5 </se_nsplit>
@@ -1398,11 +1422,15 @@
 <hypervis_scaling  hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_svalbard_x8v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 3.2 </hypervis_scaling>
+<hypervis_scaling  hgrid="ne0np4_enax4v1">3.2</hypervis_scaling>
+<hypervis_scaling  hgrid="ne0np4_twpx4v1" > 3.2 </hypervis_scaling>
 
 <se_ne hgrid="ne0np4_arm_x8v3_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_svalbard_x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 0 </se_ne>
+<se_ne hgrid="ne0np4_enax4v1">0</se_ne>
+<se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 
 
 <se_ftype> 0 </se_ftype>
@@ -1476,8 +1504,7 @@
 <finidat hgrid="ne30np4"   ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_ne30np4_gx1v6_simyr2000_c110328.nc</finidat>
 <finidat hgrid="ne0np4_arm_x8v3_lowcon"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.armx8v3.1850-01-01.nc</finidat>
 <!-- for CLM4.0finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.conusx4v1.2000-01-01_c141106.nc</finidat-->
-<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="1850">lnd/clm2/initdata_map/clmi.I1850CLM45.conusx4v1.74e105b.clm2.r.0021-01-01-00000.nc</finidat>
-<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45.conusx4v1.74e105b.clm2.r.0021-01-01-00000.nc</finidat>
+<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45.0021-01-01.conusx4v1.0ac6464_simyr2000_c161130.nc</finidat>
 <finidat hgrid="ne0np4_svalbard_x8v1_lowcon"  ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.svalbardx8v1.1850-01-01.nc</finidat>
 <finidat hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.sooberingoax4x8v1.1850-01-01_c141110.nc</finidat>
 
@@ -1573,6 +1600,8 @@
 <fatmlndfrc hgrid="ne120np4"  >share/domains/domain.lnd.ne120np4_gx1v6.111226.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne240np4"  >share/domains/domain.lnd.ne240np4_gx1v6.120125.nc</fatmlndfrc>
 
+<fatmlndfrc hgrid="ne0np4_enax4v1">share/domains/domain.lnd.enax4v1_oRRS18to6.170621.nc</fatmlndfrc>
+
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <fsnowoptics >lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 <fsnowaging  >lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc</fsnowaging>
@@ -1662,5 +1691,7 @@
 <focndomain hgrid="ne60np4"   >share/domains/domain.ocn.ne60np4_gx1v6.120406.nc</focndomain>
 <focndomain hgrid="ne120np4"  >share/domains/domain.ocn.ne120np4_gx1v6.111226.nc</focndomain>
 <focndomain hgrid="ne240np4"  >share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</focndomain>
+
+<focndomain hgrid="ne0np4_enax4v1">share/domains/domain.ocn.enax4v1_oRRS18to6.170621.nc</focndomain>
 
 </namelist_defaults>

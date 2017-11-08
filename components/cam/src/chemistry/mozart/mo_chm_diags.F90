@@ -76,12 +76,14 @@ contains
 
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
     logical :: history_amwg         ! output the variables used by the AMWG diag package
+    logical :: history_verbose      ! produce verbose history output
     integer :: bulkaero_species(20)
 
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_amwg_out    = history_amwg,  &
+                       history_verbose_out = history_verbose,  &
                        cam_chempkg_out     = chempkg   )
 
     id_bry     = get_spc_ndx( 'BRY' )
@@ -281,6 +283,7 @@ contains
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
           if (history_aerosol) then
+             if (history_verbose .or. trim(spc_name) == 'O3' .or. trim(spc_name) == 'SO2' ) &
              call add_default( spc_name, 1, ' ' )
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
           endif 
@@ -290,6 +293,31 @@ contains
        endif
 
     enddo
+
+    ! Add sum of mass mixing ratios for each aerosol class
+    if (history_aerosol .and. .not. history_verbose) then
+       call addfld( 'Mass_bc',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of bc mass concentration bc_a1+bc_c1+bc_a3+bc_c3+bc_a4+bc_c4')
+       call add_default( 'Mass_bc', 1, ' ' )
+       call addfld( 'Mass_pom',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of pom mass concentration pom_a1+pom_c1+pom_a3+pom_c3+pom_a4+pom_c4')
+       call add_default( 'Mass_pom', 1, ' ' )
+       call addfld( 'Mass_mom',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of mom mass concentration mom_a1+mom_c1+mom_a2+mom_c2+mom_a3+mom_c3+mom_a4+mom_c4')
+       call add_default( 'Mass_mom', 1, ' ' )
+       call addfld( 'Mass_ncl',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of ncl mass concentration ncl_a1+ncl_c1+ncl_a2+ncl_c2+ncl_a3+ncl_c3')
+       call add_default( 'Mass_ncl', 1, ' ' )
+       call addfld( 'Mass_soa',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of soa mass concentration soa_a1+soa_c1+soa_a2+soa_c2+soa_a3+soa_c3')
+       call add_default( 'Mass_soa', 1, ' ' )
+       call addfld( 'Mass_so4',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of so4 mass concentration so4_a1+so4_c1+so4_a2+so4_c2+so4_a3+so4_c3')
+       call add_default( 'Mass_so4', 1, ' ' )
+       call addfld( 'Mass_dst',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of dst mass concentration dst_a1+dst_c1+dst_a3+dst_c3')
+       call add_default( 'Mass_dst', 1, ' ' )
+    endif
 
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
@@ -315,6 +343,15 @@ contains
     use constituents, only : cnst_get_ind
     use phys_grid,    only : get_area_all_p, pcols
     use physics_buffer, only : physics_buffer_desc
+
+! here and below for the calculations of total aerosol mass mixing ratios for each aerosol class
+! are only enabled when MODAL aerosol is used (i.e., -DMODAL_AERO is set in macro)
+
+#ifdef MODAL_AERO
+    use modal_aero_data,  only : cnst_name_cw, qqcw_get_field ! for calculate sum of aerosol masses
+#endif
+
+    use phys_control, only: phys_getopts
     
     implicit none
 
@@ -350,7 +387,16 @@ contains
     real(r8) :: area(ncol), mass(ncol,pver)
     real(r8) :: wgt
     character(len=16) :: spc_name
+    real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
+    real(r8), dimension(ncol,pver) :: mass_bc, mass_dst, mass_mom, mass_ncl, mass_pom, mass_so4, mass_soa
 
+    logical :: history_aerosol      ! output aerosol variables
+    logical :: history_verbose      ! produce verbose history output
+
+    !-----------------------------------------------------------------------
+
+    call phys_getopts( history_aerosol_out = history_aerosol, &
+                       history_verbose_out = history_verbose )
     !--------------------------------------------------------------------
     !	... "diagnostic" groups
     !--------------------------------------------------------------------
@@ -369,6 +415,27 @@ contains
     df_sox(:ncol) = 0._r8
     df_nhx(:ncol) = 0._r8
 
+    ! Save the sum of mass mixing ratios for each class instea of individual
+    ! species to reduce history file size
+
+    ! Mass_bc = bc_a1 + bc_c1 + bc_a3 + bc_c3 + bc_a4 + bc_c4
+    ! Mass_dst = dst_a1 + dst_c1 + dst_a3 + dst_c3
+    ! Mass_mom = mom_a1 + mom_c1 + mom_a2 + mom_c2 + mom_a3 + mom_c3 + mom_a4 + mom_c4
+    ! Mass_ncl = ncl_a1 + ncl_c1 + ncl_a2 + ncl_c2 + ncl_a3 + ncl_c3
+    ! Mass_pom = pom_a1 + pom_c1 + pom_a3 + pom_c3 + pom_a4 + pom_c4
+    ! Mass_so4 = so4_a1 + so4_c1 + so4_a2 + so4_c2 + so4_a3 + so4_c3
+    ! Mass_soa = soa_a1 + soa_c1 + soa_a2 + soa_c2 + soa_a3 + soa_c3
+
+    !initialize the mass arrays
+    if (history_aerosol .and. .not. history_verbose) then
+       mass_bc(:ncol,:) = 0._r8
+       mass_dst(:ncol,:) = 0._r8
+       mass_mom(:ncol,:) = 0._r8
+       mass_ncl(:ncol,:) = 0._r8
+       mass_pom(:ncol,:) = 0._r8
+       mass_so4(:ncol,:) = 0._r8
+       mass_soa(:ncol,:) = 0._r8
+    endif
 
     call get_area_all_p(lchnk, ncol, area)
     area = area * rearth**2
@@ -433,6 +500,26 @@ contains
        if ( any( aer_species == m ) ) then
           call outfld( solsym(m), mmr(:ncol,:,m), ncol ,lchnk )
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
+#ifdef MODAL_AERO
+          if (history_aerosol .and. .not. history_verbose) then
+             select case (trim(solsym(m)))
+             case ('bc_a1','bc_a3','bc_a4')
+                  mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
+             case ('dst_a1','dst_a3')
+                  mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,m)
+             case ('mom_a1','mom_a2','mom_a3','mom_a4')
+                  mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,m)
+             case ('ncl_a1','ncl_a2','ncl_a3')
+                  mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,m)
+             case ('pom_a1','pom_a3','pom_a4')
+                  mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,m)
+             case ('so4_a1','so4_a2','so4_a3')
+                  mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,m)
+             case ('soa_a1','soa_a2','soa_a3')
+                  mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
+             end select
+          endif
+#endif
        else
           call outfld( solsym(m), vmr(:ncol,:,m), ncol ,lchnk )
           call outfld( trim(solsym(m))//'_SRF', vmr(:ncol,pver,m), ncol ,lchnk )
@@ -460,6 +547,41 @@ contains
 
     enddo
 
+#ifdef MODAL_AERO
+    ! diagnostics for cloud-borne aerosols, then add to corresponding mass accumulators
+    if (history_aerosol .and. .not. history_verbose) then
+
+
+       do n = 1,pcnst
+          fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
+          if(associated(fldcw)) then
+             select case (trim(cnst_name_cw(n)))
+                case ('bc_c1','bc_c3','bc_c4')
+                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
+                case ('dst_c1','dst_c3')
+                     mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
+                case ('mom_c1','mom_c2','mom_c3','mom_c4')
+                     mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
+                case ('ncl_c1','ncl_c2','ncl_c3')
+                     mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
+                case ('pom_c1','pom_c3','pom_c4')
+                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
+                case ('so4_c1','so4_c2','so4_c3')
+                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
+                case ('soa_c1','soa_c2','soa_c3')
+                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
+             end select
+          endif
+       end do
+       call outfld( 'Mass_bc', mass_bc(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_dst', mass_dst(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_mom', mass_mom(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_ncl', mass_ncl(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_pom', mass_pom(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_so4', mass_so4(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_soa', mass_soa(:ncol,:),ncol,lchnk)
+    endif
+#endif
 
     call outfld( 'NOX',  vmr_nox(:ncol,:),  ncol, lchnk )
     call outfld( 'NOY',  vmr_noy(:ncol,:),  ncol, lchnk )

@@ -10,7 +10,7 @@ module AerosolMod
   use WaterfluxType    , only : waterflux_type
   use WaterstateType   , only : waterstate_type
   use AerosolType      , only : aerosol_type
-  use ColumnType       , only : col               
+  use ColumnType       , only : col_pp               
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -56,7 +56,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                & 
-         snl           => col%snl                           , & ! Input:  [integer  (:)   ]  number of snow layers                    
+         snl           => col_pp%snl                           , & ! Input:  [integer  (:)   ]  number of snow layers                    
 
          do_capsnow    => waterstate_vars%do_capsnow_col    , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          h2osoi_ice    => waterstate_vars%h2osoi_ice_col    , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
@@ -243,7 +243,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                   & 
-         snl              => col%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
+         snl              => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
 
          forc_aer         => atm2lnd_vars%forc_aer_grc         , & ! Input:  [real(r8) (:,:) ] aerosol deposition from atmosphere model (grd,aer) [kg m-1 s-1]
 
@@ -289,7 +289,7 @@ contains
     ! aerosol. "wet" and "dry" fluxes of BC and OC specified here are
     ! purely diagnostic
     do c = bounds%begc,bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
 
        flx_bc_dep_dry(c)   = forc_aer(g,2)
        flx_bc_dep_wet(c)   = forc_aer(g,1) + forc_aer(g,3)
@@ -324,7 +324,7 @@ contains
     ! wet BC/OC) are purely diagnostic.
 
       do c = bounds%begc,bounds%endc
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
 
          flx_bc_dep_dry(c)   = forc_aer(g,1) + forc_aer(g,2)
          flx_bc_dep_wet(c)   = forc_aer(g,3)

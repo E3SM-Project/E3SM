@@ -117,6 +117,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    integer  :: n, nacc, nait, nspec
    integer  :: nchfrma, nchfrmc, nchfrmskip, nchtooa, nchtooc, nchtooskip
    logical  :: history_aerosol
+   logical  :: history_verbose
 
    character(len=fieldname_len)   :: tmpnamea, tmpnameb
    character(len=fieldname_len+3) :: fieldname
@@ -124,7 +125,8 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    character(8)                   :: unit
    !-----------------------------------------------------------------------
 
-   call phys_getopts(history_aerosol_out=history_aerosol)
+   call phys_getopts(history_aerosol_out=history_aerosol, &
+                     history_verbose_out=history_verbose)
 
    ! init entities required for both prescribed and prognostic modes
 
@@ -356,7 +358,7 @@ do_adjust_if_block2: &
          fieldname = trim(tmpnamea) // '_sfcsiz1'
          long_name = trim(tmpnamea) // ' calcsize number-adjust column source'
          call addfld( fieldname, horiz_only, 'A', unit, long_name )
-         if (history_aerosol) then
+         if (history_aerosol .and. history_verbose) then
             call add_default(fieldname, 1, ' ')
          end if
          if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
@@ -364,7 +366,7 @@ do_adjust_if_block2: &
          fieldname = trim(tmpnamea) // '_sfcsiz2'
          long_name = trim(tmpnamea) // ' calcsize number-adjust column sink'
          call addfld( fieldname, horiz_only, 'A', unit, long_name )
-         if (history_aerosol) then
+         if (history_aerosol .and. history_verbose) then
             call add_default(fieldname, 1, ' ')
          end if
          if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
@@ -417,7 +419,7 @@ do_aitacc_transfer_if_block2: &
             fieldname = trim(tmpnamea) // '_sfcsiz3'
             long_name = trim(tmpnamea) // ' calcsize aitken-to-accum adjust column tendency'
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if (history_aerosol) then
+            if (history_aerosol .and. history_verbose) then
                call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
@@ -425,7 +427,7 @@ do_aitacc_transfer_if_block2: &
             fieldname = trim(tmpnameb) // '_sfcsiz3'
             long_name = trim(tmpnameb) // ' calcsize aitken-to-accum adjust column tendency'            
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if (history_aerosol) then
+            if (history_aerosol .and. history_verbose) then
                call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
@@ -433,7 +435,7 @@ do_aitacc_transfer_if_block2: &
             fieldname = trim(tmpnamea) // '_sfcsiz4'
             long_name = trim(tmpnamea) // ' calcsize accum-to-aitken adjust column tendency'   
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if (history_aerosol) then
+            if (history_aerosol .and. history_verbose) then
                call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
@@ -441,7 +443,7 @@ do_aitacc_transfer_if_block2: &
             fieldname = trim(tmpnameb) // '_sfcsiz4'
             long_name = trim(tmpnameb) // ' calcsize accum-to-aitken adjust column tendency'
             call addfld( fieldname, horiz_only, 'A', unit, long_name )
-            if (history_aerosol) then
+            if (history_aerosol .and. history_verbose) then
                call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname

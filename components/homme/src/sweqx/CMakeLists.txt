@@ -26,6 +26,7 @@ SET(SWEQX_SRCS
   ${SRC_BASE}/pio_io_mod.F90
   ${SRC_BASE}/repro_sum_mod.F90
   ${SRC_BASE}/restart_io_mod.F90
+  ${SRC_SHARE}/zoltan_mod.F90
   ${SRC_SHARE}/bndry_mod_base.F90
   ${SRC_SHARE}/cg_mod.F90
   ${SRC_SHARE}/control_mod.F90
@@ -42,7 +43,6 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/hybrid_mod.F90
   ${SRC_SHARE}/interpolate_mod.F90
   ${SRC_SHARE}/kinds.F90
-  ${SRC_SHARE}/linear_algebra_mod.F90
   ${SRC_SHARE}/ll_mod.F90
   ${SRC_SHARE}/mass_matrix_mod.F90
   ${SRC_SHARE}/mesh_mod.F90
@@ -57,13 +57,12 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/schedule_mod.F90
   ${SRC_SHARE}/schedtype_mod.F90
   ${SRC_SHARE}/edgetype_mod.F90
-  ${SRC_SHARE}/solver_init_mod_base.F90
   ${SRC_SHARE}/solver_mod.F90
   ${SRC_SHARE}/spacecurve_mod.F90
   ${SRC_SHARE}/thread_mod.F90
   ${SRC_SHARE}/time_mod.F90
   ${SRC_SHARE}/unit_tests_mod.F90
-  ${SRC_SHARE}/viscosity_mod_base.F90
+  ${SRC_SHARE}/viscosity_base.F90
   ${SRC_UTILS}/shr_file_mod.F90
   ${SRC_UTILS}/shr_kind_mod.F90
   ${SRC_UTILS}/shr_mpi_mod.F90

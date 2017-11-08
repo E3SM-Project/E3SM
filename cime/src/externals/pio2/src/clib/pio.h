@@ -50,7 +50,7 @@
 /** Used in the decomposition netCDF file. */
 
 /* Holds the version of the decomposition file. */
-#define DECOMP_VERSION_ATT_NAME "version"
+#define DECOMP_VERSION_ATT_NAME "PIO_library_version"
 
 /* Holds the maximum length of any task map. */
 #define DECOMP_MAX_MAPLEN_ATT_NAME "max_maplen"
@@ -105,12 +105,16 @@
  */
 typedef struct var_desc_t
 {
-    /** The unlimited dimension in the netCDF file (typically the time
-     * dimension). -1 if there is no unlimited dimension. */
-    int record;
+    /* Variable ID. */
+    int varid;
 
-    /** Number of dimensions for this variable. */
-    int ndims;
+    /* Non-zero if this is a record var (i.e. uses unlimited
+     * dimension). */
+    int rec_var;
+
+    /** The record number to be written. Ignored if there is no
+     * unlimited dimension. */
+    int record;
 
     /** ID of each outstanding pnetcdf request for this variable. */
     int *request;
@@ -121,12 +125,6 @@ typedef struct var_desc_t
     /* Holds the fill value of this var. */
     void *fillvalue;
 
-    /* The PIO data type (PIO_INT, PIO_FLOAT, etc.) */
-    int pio_type;
-
-    /* The size of the data type (2 for PIO_SHORT, 4 for PIO_INT, etc.) */
-    PIO_Offset type_size;
-
     /** Non-zero if fill mode is turned on for this var. */
     int use_fill;
 
@@ -134,8 +132,20 @@ typedef struct var_desc_t
      * missing sections of data when using the subset rearranger. */
     void *fillbuf;
 
-    /** Data buffer for this variable. */
-    void *iobuf;
+    /** The PIO data type. */
+    int pio_type;
+
+    /** The size, in bytes, of the PIO data type. */
+    int pio_type_size;
+
+    /** The MPI type of the data. */
+    MPI_Datatype mpi_type;
+
+    /** The size in bytes of a datum of MPI type mpitype. */
+    int mpi_type_size;
+
+    /** Pointer to next var in list. */
+    struct var_desc_t *next;
 } var_desc_t;
 
 /**
@@ -287,11 +297,17 @@ typedef struct io_desc_t
     /** The maximum number of bytes of this iodesc before flushing. */
     int maxbytes;
 
-    /** The MPI type of the data. */
-    MPI_Datatype basetype;
+    /** The PIO type of the data. */
+    int piotype;
 
-    /** The size in bytes of a datum of MPI type basetype. */
-    int basetype_size;
+    /** The size of one element of the piotype. */
+    int piotype_size;
+
+    /** The MPI type of the data. */
+    MPI_Datatype mpitype;
+
+    /** The size in bytes of a datum of MPI type mpitype. */
+    int mpitype_size;
 
     /** Length of the iobuffer on this task for a single field on the
      * IO node. The arrays from compute nodes gathered and rearranged
@@ -390,13 +406,6 @@ typedef struct iosystem_desc_t
     /** This is a copy (but not an MPI copy) of either the comp (for
      * non-async) or the union (for async) communicator. */
     MPI_Comm my_comm;
-
-    /** This MPI group contains the processors involved in
-     * computation. */
-    MPI_Group compgroup;
-
-    /** This MPI group contains the processors involved in I/O. */
-    MPI_Group iogroup;
 
     /** The number of tasks in the IO communicator. */
     int num_iotasks;
@@ -531,18 +540,27 @@ typedef struct file_desc_t
     /** The ncid that will be returned to the user. */
     int pio_ncid;
 
-    /** The PIO_TYPE value that was used to open this file. */
+    /** The IOTYPE value that was used to open this file. */
     int iotype;
 
     /** List of variables in this file. */
-    struct var_desc_t varlist[PIO_MAX_VARS];
+    struct var_desc_t *varlist;
 
-    /** ??? */
-    int mode;
+    /** Number of variables. */
+    int nvars;
+
+    /** True if file can be written to. */
+    int writable;
 
     /** The wmulti_buffer is used to aggregate multiple variables with
      * the same communication pattern prior to a write. */
     struct wmulti_buffer buffer;
+
+    /** Data buffer for this file. */
+    void *iobuf;
+
+    /** PIO data type. */
+    int pio_type;
 
     /** Pointer to the next file_desc_t in the list of open files. */
     struct file_desc_t *next;
@@ -760,7 +778,7 @@ extern "C" {
 
     /* Free resources associated with a decomposition. */
     int PIOc_freedecomp(int iosysid, int ioid);
-    
+
     int PIOc_readmap(const char *file, int *ndims, int **gdims, PIO_Offset *fmaplen,
                      PIO_Offset **map, MPI_Comm comm);
     int PIOc_readmap_from_f90(const char *file,int *ndims, int **gdims, PIO_Offset *maplen,
@@ -785,7 +803,7 @@ extern "C" {
     int PIOc_init_async(MPI_Comm world, int num_io_procs, int *io_proc_list, int component_count,
                         int *num_procs_per_comp, int **proc_list, MPI_Comm *io_comm, MPI_Comm *comp_comm,
                         int rearranger, int *iosysidp);
-    
+
     int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm, MPI_Comm *comp_comms,
                             MPI_Comm io_comm, int *iosysidp);
     int PIOc_get_numiotasks(int iosysid, int *numiotasks);
@@ -826,6 +844,7 @@ extern "C" {
     int PIOc_createfile(int iosysid, int *ncidp,  int *iotype, const char *fname, int mode);
     int PIOc_create(int iosysid, const char *path, int cmode, int *ncidp);
     int PIOc_openfile(int iosysid, int *ncidp, int *iotype, const char *fname, int mode);
+    int PIOc_openfile2(int iosysid, int *ncidp, int *iotype, const char *fname, int mode);
     int PIOc_open(int iosysid, const char *path, int mode, int *ncidp);
     int PIOc_closefile(int ncid);
     int PIOc_inq_format(int ncid, int *formatp);
@@ -834,6 +853,7 @@ extern "C" {
     int PIOc_inq_nvars(int ncid, int *nvarsp);
     int PIOc_inq_natts(int ncid, int *ngattsp);
     int PIOc_inq_unlimdim(int ncid, int *unlimdimidp);
+    int PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp);
     int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep);
     int PIOc_set_blocksize(int newblocksize);
     int PIOc_File_is_Open(int ncid);

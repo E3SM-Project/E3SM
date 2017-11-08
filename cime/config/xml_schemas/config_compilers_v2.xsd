@@ -161,6 +161,7 @@
       <xs:element name="LD" type="systemPath"/>
       <xs:element name="LDFLAGS" type="flagsVar"/>
       <xs:element name="MLIBS" type="flagsVar"/>
+      <xs:element name="MOAB_PATH" type="systemPath"/>
       <xs:element name="MPI_LIB_NAME" type="systemPath"/>
       <xs:element name="MPI_PATH" type="systemPath"/>
       <xs:element name="MPICC" type="systemPath"/>

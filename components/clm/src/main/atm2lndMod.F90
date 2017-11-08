@@ -18,8 +18,8 @@ module atm2lndMod
   use abortutils     , only : endrun
   use decompMod      , only : bounds_type
   use atm2lndType    , only : atm2lnd_type
-  use LandunitType   , only : lun                
-  use ColumnType     , only : col                
+  use LandunitType   , only : lun_pp                
+  use ColumnType     , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -96,8 +96,8 @@ contains
       
       ! Initialize column forcing (needs to be done for ALL active columns)
       do c = bounds%begc,bounds%endc
-         if (col%active(c)) then
-            g = col%gridcell(c)
+         if (col_pp%active(c)) then
+            g = col_pp%gridcell(c)
 
             forc_t_c(c)     = forc_t_g(g)
             forc_th_c(c)    = forc_th_g(g)
@@ -114,14 +114,14 @@ contains
       ! For other columns the downscaling is a simple copy (above).
       do fc = 1, num_do_smb_c
          c = filter_do_smb_c(fc)
-         l = col%landunit(c)
-         g = col%gridcell(c)
+         l = col_pp%landunit(c)
+         g = col_pp%gridcell(c)
 
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
          hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
-         hsurf_c = col%glc_topo(c)                       ! column sfc elevation
+         hsurf_c = col_pp%glc_topo(c)                       ! column sfc elevation
          tbot_g  = forc_t_g(g)                           ! atm sfc temp
          thbot_g = forc_th_g(g)                          ! atm sfc pot temp
          qbot_g  = forc_q_g(g)                           ! atm sfc spec humid
@@ -232,8 +232,8 @@ contains
     
       ! Initialize column forcing (needs to be done for ALL active columns)
       do c = bounds%begc, bounds%endc
-         if (col%active(c)) then
-            g = col%gridcell(c)
+         if (col_pp%active(c)) then
+            g = col_pp%gridcell(c)
             forc_lwrad_c(c) = forc_lwrad_g(g)
          end if
       end do
@@ -251,11 +251,11 @@ contains
          ! Do the downscaling
          do fc = 1, num_do_smb_c
             c = filter_do_smb_c(fc)
-            l = col%landunit(c)
-            g = col%gridcell(c)
+            l = col_pp%landunit(c)
+            g = col_pp%gridcell(c)
 
             hsurf_g = ldomain%topo(g)
-            hsurf_c = col%glc_topo(c)
+            hsurf_c = col_pp%glc_topo(c)
 
             ! Here we assume that deltaLW = (dLW/dT)*(dT/dz)*deltaz
             ! We get dLW/dT = 4*eps*sigma*T^3 = 4*LW/T from the Stefan-Boltzmann law,
@@ -272,8 +272,8 @@ contains
             ! downscaling (e.g., glc_mec points). Thus the contributing weights
             ! generally do not add to 1. So to do the normalization properly, we also
             ! need to keep track of the weights that have contributed to this sum.
-            sum_lwrad_g(g) = sum_lwrad_g(g) + col%wtgcell(c)*forc_lwrad_c(c)
-            sum_wts_g(g) = sum_wts_g(g) + col%wtgcell(c)
+            sum_lwrad_g(g) = sum_lwrad_g(g) + col_pp%wtgcell(c)*forc_lwrad_c(c)
+            sum_wts_g(g) = sum_wts_g(g) + col_pp%wtgcell(c)
          end do
 
 
@@ -286,11 +286,11 @@ contains
 
          do fc = 1, num_do_smb_c
             c = filter_do_smb_c(fc)
-            l = col%landunit(c)
-            g = col%gridcell(c)
+            l = col_pp%landunit(c)
+            g = col_pp%gridcell(c)
 
             forc_lwrad_c(c) = forc_lwrad_c(c) * lwrad_norm_g(g)
-            newsum_lwrad_g(g) = newsum_lwrad_g(g) + col%wtgcell(c)*forc_lwrad_c(c)
+            newsum_lwrad_g(g) = newsum_lwrad_g(g) + col_pp%wtgcell(c)*forc_lwrad_c(c)
          end do
 
 
@@ -422,11 +422,11 @@ contains
       ! refactor to change this to use column-level fields).
       
       do c = bounds%begc, bounds%endc
-         if (col%active(c)) then
-            l = col%landunit(c)
-            g = col%gridcell(c)
+         if (col_pp%active(c)) then
+            l = col_pp%landunit(c)
+            g = col_pp%gridcell(c)
 
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (forc_t_c(c)     /= forc_t_g(g)    .or. &
                     forc_th_c(c)    /= forc_th_g(g)   .or. &
                     forc_q_c(c)     /= forc_q_g(g)    .or. &

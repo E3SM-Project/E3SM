@@ -5,7 +5,7 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-import logging, glob, os, shutil, re, stat
+import logging, glob, os, shutil, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
@@ -15,23 +15,23 @@ def _iter_model_file_substrs(case):
         yield model
 
 def _get_all_hist_files(testcase, model, from_dir, suffix=""):
-    suffix = (".%s" % suffix) if suffix else ""
+    suffix = (".{}".format(suffix) if suffix else "")
 
     # Match hist files produced by run
-    test_hists = glob.glob("%s/%s.%s*.h?.nc%s" % (from_dir, testcase, model, suffix))
-    test_hists.extend(glob.glob("%s/%s.%s*.h.nc%s" % (from_dir, testcase, model, suffix)))
+    test_hists = glob.glob("{}/{}.{}*.h?.nc{}".format(from_dir, testcase, model, suffix))
+    test_hists.extend(glob.glob("{}/{}.{}*.h.nc{}".format(from_dir, testcase, model, suffix)))
 
     # Match multi-instance files produced by run
-    test_hists.extend(glob.glob("%s/%s.%s*.h?.*.nc%s" % (from_dir, testcase, model, suffix)))
-    test_hists.extend(glob.glob("%s/%s.%s*.h.*.nc%s" % (from_dir, testcase, model, suffix)))
+    test_hists.extend(glob.glob("{}/{}.{}*.h?.*.nc{}".format(from_dir, testcase, model, suffix)))
+    test_hists.extend(glob.glob("{}/{}.{}*.h.*.nc{}".format(from_dir, testcase, model, suffix)))
 
     # suffix == "" implies baseline comparison, baseline hist files have simpler names
 
     if suffix == "":
-        test_hists.extend(glob.glob("%s/%s*.h.nc" % (from_dir, model)))
-        test_hists.extend(glob.glob("%s/%s*.h?.nc" % (from_dir, model)))
-        test_hists.extend(glob.glob("%s/%s*.h.*.nc" % (from_dir, model)))
-        test_hists.extend(glob.glob("%s/%s*.h?.*.nc" % (from_dir, model)))
+        test_hists.extend(glob.glob("{}/{}*.h.nc".format(from_dir, model)))
+        test_hists.extend(glob.glob("{}/{}*.h?.nc".format(from_dir, model)))
+        test_hists.extend(glob.glob("{}/{}*.h.*.nc".format(from_dir, model)))
+        test_hists.extend(glob.glob("{}/{}*.h?.*.nc".format(from_dir, model)))
 
     test_hists.sort()
     return test_hists
@@ -61,18 +61,18 @@ def copy(case, suffix):
     testcase = case.get_value("CASE")
 
     # Loop over models
-    comments = "Copying hist files to suffix '%s'\n" % suffix
+    comments = "Copying hist files to suffix '{}'\n".format(suffix)
     num_copied = 0
     for model in _iter_model_file_substrs(case):
-        comments += "  Copying hist files for model '%s'\n" % model
+        comments += "  Copying hist files for model '{}'\n".format(model)
         test_hists = _get_latest_hist_files(testcase, model, rundir)
         num_copied += len(test_hists)
         for test_hist in test_hists:
-            new_file = "%s.%s" % (test_hist, suffix)
+            new_file = "{}.{}".format(test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)
 
-            comments += "    Copying '%s' to '%s'\n" % (test_hist, new_file)
+            comments += "    Copying '{}' to '{}'\n".format(test_hist, new_file)
 
             # Need to copy rather than move in case there are some history files
             # that will need to continue to be filled on the next phase; this
@@ -88,7 +88,7 @@ def copy(case, suffix):
             # noted above.)
             shutil.copy(test_hist, new_file)
 
-    expect(num_copied > 0, "copy failed: no hist files found in rundir '%s'" % rundir)
+    expect(num_copied > 0, "copy failed: no hist files found in rundir '{}'".format(rundir))
 
     return comments
 
@@ -121,7 +121,7 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
         for hist in hists:
             normalized_name = hist[hist.rfind(model):]
             if suffix != "":
-                expect(normalized_name.endswith(suffix), "How did '%s' not have suffix '%s'" % (hist, suffix))
+                expect(normalized_name.endswith(suffix), "How did '{}' not have suffix '{}'".format(hist, suffix))
                 normalized_name = normalized_name[:len(normalized_name) - len(suffix) - 1]
 
             m = re.search("(.+)_[0-9]{4}(.+.nc)",normalized_name)
@@ -178,45 +178,54 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
     testcase = case.get_value("CASE")
+    casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
-    comments = "Comparing hists for case '%s' dir1='%s', suffix1='%s',  dir2='%s' suffix2='%s'\n" % \
-        (testcase, from_dir1, suffix1, from_dir2, suffix2)
-    multiinst_cpl_compare = False
+    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
+    multiinst_driver_compare = False
     for model in _iter_model_file_substrs(case):
         if model == 'cpl' and suffix2 == 'multiinst':
-            multiinst_cpl_compare = True
-        comments += "  comparing model '%s'\n" % model
+            multiinst_driver_compare = True
+        comments += "  comparing model '{}'\n".format(model)
         hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
         hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
         if len(hists1) == 0 and len(hists2) == 0:
-            comments += "    no hist files found for model %s\n" % model
+            comments += "    no hist files found for model {}\n".format(model)
             continue
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
         for item in one_not_two:
-            comments += "    File '%s' had no counterpart in '%s' with suffix '%s'\n" % (item, from_dir2, suffix2)
+            comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir2, suffix2)
             all_success = False
         for item in two_not_one:
-            comments += "    File '%s' had no counterpart in '%s' with suffix '%s'\n" % (item, from_dir1, suffix1)
+            comments += "    File '{}' had no counterpart in '{}' with suffix '{}'\n".format(item, from_dir1, suffix1)
             all_success = False
 
         num_compared += len(match_ups)
 
         for hist1, hist2 in match_ups:
-            success, cprnc_comments = cprnc(model, hist1, hist2, case, from_dir1,
-                                            multiinst_cpl_compare=multiinst_cpl_compare,
+            success, cprnc_log_file = cprnc(model, hist1, hist2, case, from_dir1,
+                                            multiinst_driver_compare=multiinst_driver_compare,
                                             outfile_suffix=outfile_suffix)
             if success:
-                comments += "    %s matched %s\n" % (hist1, hist2)
+                comments += "    {} matched {}\n".format(hist1, hist2)
             else:
-                comments += "    %s did NOT match %s\n" % (hist1, hist2)
-                comments += cprnc_comments + "\n"
+                comments += "    {} did NOT match {}\n".format(hist1, hist2)
+                comments += "    cat " + cprnc_log_file + "\n"
+                expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
+                if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
+                    try:
+                        shutil.copy(cprnc_log_file, casedir)
+                    except OSError:
+                        logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
+
                 all_success = False
 
     if num_compared == 0:
         all_success = False
         comments += "Did not compare any hist files! Missing baselines?\n"
+
+    comments += "PASS" if all_success else "FAIL"
 
     return all_success, comments
 
@@ -234,7 +243,7 @@ def compare_test(case, suffix1, suffix2):
 
     return _compare_hists(case, rundir, rundir, suffix1, suffix2)
 
-def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfile_suffix=""):
+def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix=""):
     """
     Run cprnc to compare two individual nc files
 
@@ -245,7 +254,7 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     outfile_suffix - if non-blank, then the output file name ends with this
         suffix (with a '.' added before the given suffix)
 
-    returns True if the files matched
+    returns (True if the files matched, log_name)
     """
     cprnc_exe = case.get_value("CCSM_CPRNC")
     basename = os.path.basename(file1)
@@ -263,25 +272,25 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     if mstr1 != mstr2:
         mstr = mstr1+mstr2
 
-    output_filename = os.path.join(rundir, "%s%s.cprnc.out" % (basename, mstr))
+    output_filename = os.path.join(rundir, "{}{}.cprnc.out".format(basename, mstr))
     if outfile_suffix:
-        output_filename += ".%s" % outfile_suffix
+        output_filename += ".{}".format(outfile_suffix)
 
     if outfile_suffix is None:
-        cpr_stat, out, _ = run_cmd("%s -m %s %s" % (cprnc_exe, file1, file2), combine_output=True)
+        cpr_stat, out, _ = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True)
     else:
-        cpr_stat = run_cmd("%s -m %s %s" % (cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
+        cpr_stat = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
         with open(output_filename, "r") as fd:
             out = fd.read()
 
-    if multiinst_cpl_compare:
+    if multiinst_driver_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
         # in this case we only want to check that the fields we are able to compare
         # have no differences.
-        return (cpr_stat == 0 and " 0 had non-zero differences" in out, out)
+        return (cpr_stat == 0 and " 0 had non-zero differences" in out, output_filename)
     else:
-        return (cpr_stat == 0 and "files seem to be IDENTICAL" in out, out)
+        return (cpr_stat == 0 and "files seem to be IDENTICAL" in out, output_filename)
 
 def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     """
@@ -306,7 +315,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
 
     for bdir in dirs_to_check:
         if not os.path.isdir(bdir):
-            return False, "ERROR %s baseline directory '%s' does not exist" % (TEST_NO_BASELINES_COMMENT,bdir)
+            return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
     return _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
 
@@ -336,7 +345,7 @@ def get_extension(model, filepath):
     ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
 
     m = ext_regex.match(basename)
-    expect(m is not None, "Failed to get extension for file '%s'" % filepath)
+    expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
     if m.group(1) is not None:
         result = m.group(1)+'.'+m.group(2)
@@ -370,12 +379,12 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         not allow_baseline_overwrite):
         expect(False, " Cowardly refusing to overwrite existing baseline directory")
 
-    comments = "Generating baselines into '%s'\n" % basegen_dir
+    comments = "Generating baselines into '{}'\n".format(basegen_dir)
     num_gen = 0
     for model in _iter_model_file_substrs(case):
-        comments += "  generating for model '%s'\n" % model
+        comments += "  generating for model '{}'\n".format(model)
         hists =  _get_latest_hist_files(testcase, model, rundir)
-        logger.debug("latest_files: %s" % hists)
+        logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:
             basename = hist[hist.rfind(model):]
@@ -386,17 +395,26 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             #special care for multi-instance cases,
             #only keep first instance and
             #remove instance string from filename
-            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)"%model, baseline)
+            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)" % model, baseline)
             if m is not None:
                 if m.group(2) != '0001':
                     continue
                 baseline = m.group(1)+m.group(3)
 
-                logger.debug("Found multiinstance hist file %s"%hist)
+                logger.debug("Found multiinstance hist file {}".format(hist))
             shutil.copy(hist, baseline)
-            comments += "    generating baseline '%s' from file %s\n" % (baseline, hist)
+            comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
-    expect(num_gen > 0, "Could not generate any hist files for case '%s', something is seriously wrong" % testcase)
+    # copy latest cpl log to baseline
+    # drop the date so that the name is generic
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
+    if newestcpllogfile is None:
+        logger.warning("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+    else:
+        shutil.copyfile(newestcpllogfile,
+                    os.path.join(basegen_dir, "cpl.log.gz"))
+
+    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:
