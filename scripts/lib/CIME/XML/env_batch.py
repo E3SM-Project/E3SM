@@ -445,10 +445,18 @@ class EnvBatch(EnvBase):
                 mail_type = mail_type.split(",") # pylint: disable=no-member
 
         if mail_type:
-            for indv_type in mail_type:
-                mail_type_flag, mail_type_arg = self.get_batch_mail_type(indv_type)
-                if mail_type_flag is not None:
-                    submitargs += " " + mail_type_flag + " " + mail_type_arg
+            mail_type_flag = self.get_value("batch_mail_type_flag", subgroup=None)
+            if mail_type_flag is not None:
+                mail_type_args = []
+                for indv_type in mail_type:
+                    mail_type_arg = self.get_batch_mail_type(indv_type)
+                    mail_type_args.append(mail_type_arg)
+
+                if mail_type_flag == "-m":
+                    # hacky, PBS-type systems pass multiple mail-types differently
+                    submitargs += " {} {}".format(mail_type_flag, "".join(mail_type_args))
+                else:
+                    submitargs += " {} {}".format(mail_type_flag, " {}".format(mail_type_flag).join(mail_type_args))
 
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         expect(batchsubmit is not None,
@@ -476,14 +484,11 @@ class EnvBatch(EnvBase):
             return jobid
 
     def get_batch_mail_type(self, mail_type):
-        mail_type_flag = self.get_value("batch_mail_type_flag", subgroup=None)
         raw =  self.get_value("batch_mail_type", subgroup=None)
         mail_types = [item.strip() for item in raw.split(",")] # pylint: disable=no-member
         idx = ["never", "all", "begin", "end", "fail"].index(mail_type)
 
-        expect(idx < len(mail_types), "Mail type '{}' is not supported on this batch system")
-
-        return mail_type_flag, mail_types[idx]
+        return mail_types[idx] if idx < len(mail_types) else None
 
     def get_batch_system_type(self):
         nodes = self.get_nodes("batch_system")
