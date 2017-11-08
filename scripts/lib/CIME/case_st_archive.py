@@ -101,7 +101,8 @@ def _get_file_date(filename):
         return datetime.datetime(year, month, day) + datetime.timedelta(seconds = second)
 
     # Not a valid filename date format
-    raise ValueError("{} is a filename without a supported date!".format(filename))
+    logger.debug("{} is a filename without a supported date!".format(filename))
+    return None
 
 def _get_day_second(date):
     """
@@ -311,7 +312,7 @@ def _archive_history_files(case, archive, archive_entry,
             if histfiles:
                 for histfile in histfiles:
                     file_date = _get_file_date(os.path.basename(histfile))
-                    if last_date is None or file_date <= last_date:
+                    if last_date is None or file_date is None or file_date <= last_date:
                         srcfile = join(rundir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history file {} does not exist ".format(srcfile))
