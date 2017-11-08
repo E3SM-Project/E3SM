@@ -68,7 +68,7 @@ def create_lat_lon_metrics_table(root_dir, parameters):
                             
 
                 # save metrics information in .csv table
-                header = ['Variables','Model mean','Obs mean','Mean Bias','RMSE','correlation']
+                header = ['Variables','Unit','Model mean','Obs mean','Mean Bias','RMSE','correlation']
                 for season in parameter.seasons:
                     table_path = os.path.abspath(os.path.join(
                                 #'..', '{}'.format(set_num), parameter.case_id, fnm)
@@ -79,7 +79,7 @@ def create_lat_lon_metrics_table(root_dir, parameters):
                         writer.writerow(header)
                         for key, metrics_dic in metrics_info[season].items():
                             metrics = metrics_dic['metrics']
-                            row = [key, round(metrics['test_regrid']['mean'],3),round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
+                            row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3),round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
                             writer.writerow(row)
                     
 

@@ -181,6 +181,8 @@ def run_diag(parameter):
                         metrics_dict = create_metrics(
                             mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
 
+                        metrics_dict['unit'] = mv1_reg.units
+
                         fnm = os.path.join(get_output_dir(
                             parameter.current_set, parameter), parameter.output_file)
                         with open(fnm + '.json' , 'w') as outfile:
@@ -235,6 +237,8 @@ def run_diag(parameter):
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(
                         mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+
+                    metrics_dict['unit'] = mv1_reg.units
 
                     fnm = os.path.join(get_output_dir(
                         parameter.current_set, parameter), parameter.output_file)
