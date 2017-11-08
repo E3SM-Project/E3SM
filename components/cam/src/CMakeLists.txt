@@ -89,6 +89,7 @@ INCLUDE_DIRECTORIES (
           ${MPEU_BINARY_DIR}
           ${GPTL_BINARY_DIR} #Need perf_mod.mod
           ${SEQ_BINARY_DIR}  #seq_cdata_mod
+          ${ACME_PIO_LIBRARY_DIR}  #pio.mod
           ${ACME_SHR_DIR}    #shr_assert.h
 )
 
