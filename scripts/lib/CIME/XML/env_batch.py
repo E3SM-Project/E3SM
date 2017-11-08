@@ -3,9 +3,8 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import format_time
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config
 
 from copy import deepcopy
 from collections import OrderedDict
@@ -426,13 +425,22 @@ class EnvBatch(EnvBase):
         if batch_args is not None:
             submitargs += " " + batch_args
 
+        cime_config = get_cime_config()
+
+        if mail_user is None and cime_config.has_option("main", "MAILUSER"):
+            mail_user = cime_config.get("main", "MAILUSER")
+
         if mail_user is not None:
             mail_user_flag = self.get_value('batch_mail_flag', subgroup=None)
             if mail_user_flag is not None:
                 submitargs += " " + mail_user_flag + " " + mail_user
 
         if mail_type is None:
-            mail_type = self.get_value("batch_mail_default")
+            if cime_config.has_option("main", "MAILTYPE"):
+                mail_type = cime_config.get("main", "MAILTYPE")
+            else:
+                mail_type = self.get_value("batch_mail_default")
+
             if mail_type:
                 mail_type = mail_type.split(",") # pylint: disable=no-member
 
