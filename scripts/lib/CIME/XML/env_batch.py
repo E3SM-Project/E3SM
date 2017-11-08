@@ -148,7 +148,7 @@ class EnvBatch(EnvBase):
     def set_batch_system(self, batchobj, batch_system_type=None):
         if batch_system_type is not None:
             self.set_batch_system_type(batch_system_type)
-        
+
         if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
             for node in batchobj.get_nodes('any', root=batchobj.machine_node, xpath='*'):
                 oldnode = batchobj.get_optional_node(node.tag, root=batchobj.batch_system_node)
@@ -160,8 +160,6 @@ class EnvBatch(EnvBase):
             self.root.append(deepcopy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
             self.root.append(deepcopy(batchobj.machine_node))
-        
-
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
@@ -325,7 +323,7 @@ class EnvBatch(EnvBase):
         return submitargs
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None,
-                    skip_pnl=False, mail_user=None, mail_type='never',
+                    skip_pnl=False, mail_user=None, mail_type=None,
                     batch_args=None, dry_run=False):
         alljobs = self.get_jobs()
         startindex = 0
@@ -391,7 +389,7 @@ class EnvBatch(EnvBase):
             return depid
 
     def _submit_single_job(self, case, job, dep_jobs=None, no_batch=False,
-                           skip_pnl=False, mail_user=None, mail_type='never',
+                           skip_pnl=False, mail_user=None, mail_type=None,
                            batch_args=None, dry_run=False):
         logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -432,10 +430,17 @@ class EnvBatch(EnvBase):
             mail_user_flag = self.get_value('batch_mail_flag', subgroup=None)
             if mail_user_flag is not None:
                 submitargs += " " + mail_user_flag + " " + mail_user
-        if 'never' not in mail_type:
-            mail_type_flag, mail_type = self.get_batch_mail_type(mail_type)
-            if mail_type_flag is not None:
-                submitargs += " " + mail_type_flag + " " + mail_type
+
+        if mail_type is None:
+            mail_type = self.get_value("batch_mail_default")
+            if mail_type:
+                mail_type = mail_type.split(",") # pylint: disable=no-member
+
+        if mail_type:
+            for indv_type in mail_type:
+                mail_type_flag, mail_type_arg = self.get_batch_mail_type(indv_type)
+                if mail_type_flag is not None:
+                    submitargs += " " + mail_type_flag + " " + mail_type_arg
 
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         expect(batchsubmit is not None,
@@ -462,11 +467,13 @@ class EnvBatch(EnvBase):
             logger.info("Submitted job id is {}".format(jobid))
             return jobid
 
-    def get_batch_mail_type(self, mail_type='never'):
+    def get_batch_mail_type(self, mail_type):
         mail_type_flag = self.get_value("batch_mail_type_flag", subgroup=None)
         raw =  self.get_value("batch_mail_type", subgroup=None)
         mail_types = [item.strip() for item in raw.split(",")] # pylint: disable=no-member
         idx = ["never", "all", "begin", "end", "fail"].index(mail_type)
+
+        expect(idx < len(mail_types), "Mail type '{}' is not supported on this batch system")
 
         return mail_type_flag, mail_types[idx]
 
@@ -556,7 +563,7 @@ class EnvBatch(EnvBase):
         return self.get_nodes("queue")
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
-        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT", 
+        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
                         "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
             nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
                                         root=root, xpath=xpath)

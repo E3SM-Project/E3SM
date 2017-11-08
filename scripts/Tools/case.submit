@@ -52,7 +52,7 @@ OR
 
     parser.add_argument("-M", "--mail-user", help="email to be used for batch notification.")
 
-    parser.add_argument("-m", "--mail-type", default="never",
+    parser.add_argument("-m", "--mail-type", action="append",
                         choices=("never", "all", "begin", "end", "fail"),
                         help="when to send user email.")
 
