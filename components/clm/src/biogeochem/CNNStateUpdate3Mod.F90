@@ -158,6 +158,8 @@ contains
          ! retranslocated N pool
          ns%retransn_patch(p)           =  ns%retransn_patch(p) - nf%m_retransn_to_fire_patch(p)        * dt
          ns%retransn_patch(p)           =  ns%retransn_patch(p) - nf%m_retransn_to_litter_fire_patch(p) * dt
+         ns%npool_patch(p)              =  ns%npool_patch(p)    - nf%m_npool_to_fire_patch(p)           * dt
+         ns%npool_patch(p)              =  ns%npool_patch(p)    - nf%m_npool_to_litter_fire_patch(p)    * dt
       end do
 
     end associate 

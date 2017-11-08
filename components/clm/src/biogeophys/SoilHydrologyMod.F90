@@ -876,6 +876,7 @@ contains
      use abortutils       , only : endrun
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
+     use pftvarcon        , only : rsub_top_globalmax
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
@@ -1232,7 +1233,7 @@ contains
                    rsub_top_max = dsmax_tmp(c)
                 else
                    imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = 10._r8 * sin((rpi/180.) * col_pp%topo_slope(c))
+                   rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
                 end if
              endif
              if (use_vichydro) then
@@ -1519,6 +1520,7 @@ contains
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
      use clm_varctl       , only : use_vsfm
+     use pftvarcon        , only : rsub_top_globalmax
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds
@@ -1868,7 +1870,7 @@ contains
                    rsub_top_max = dsmax_tmp(c)
                 else
                    imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = 10._r8 * sin((rpi/180.) * col_pp%topo_slope(c))
+                   rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
                 end if
              endif
              if (use_vichydro) then

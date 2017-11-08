@@ -721,7 +721,7 @@ contains
       !tau_cwd = CNDecompBgcParamsInst%tau_cwd_bgc
 
       ! set "Q10" parameter
-      Q10 = CNParamsShareInst%Q10
+      Q10 = CNParamsShareInst%Q10_hr
 
       ! set "froz_q10" parameter
       froz_q10  = CNParamsShareInst%froz_q10 

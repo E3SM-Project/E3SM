@@ -48,6 +48,9 @@ module soilorder_varcon
   real(r8), pointer :: k_s3_biochem(:)
   real(r8), pointer :: k_s4_biochem(:)
 
+  !+
+  real(r8), pointer :: r_mort_soilorder(:)
+
 
 
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -123,6 +126,7 @@ contains
     allocate(k_s2_biochem (0:nsoilorder) ); k_s2_biochem (:) = nan
     allocate(k_s3_biochem (0:nsoilorder) ); k_s3_biochem (:) = nan
     allocate(k_s4_biochem (0:nsoilorder) ); k_s4_biochem (:) = nan
+    allocate(r_mort_soilorder (0:nsoilorder) ); r_mort_soilorder (:) = nan
 
    ! Set specific soil order values
 
@@ -156,6 +160,8 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order parameter'//errMsg(__FILE__, __LINE__))
     call ncd_io('ks_sorption',ks_sorption, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order parameter'//errMsg(__FILE__, __LINE__))
+    call ncd_io('r_mort_soilorder',r_mort_soilorder, 'read', ncid, readvar=readv)
+    if ( .not. readv ) r_mort_soilorder(:) = 0.02_r8 !call endrun(msg=' ERROR: error in reading in soil order parameter'//errMsg(__FILE__, __LINE__))
 
     call ncd_pio_closefile(ncid)
 

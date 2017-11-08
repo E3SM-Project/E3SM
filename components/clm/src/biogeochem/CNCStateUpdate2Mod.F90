@@ -103,6 +103,7 @@ contains
          cs%livecrootc_storage_patch(p)  = cs%livecrootc_storage_patch(p) - cf%m_livecrootc_storage_to_litter_patch(p) * dt
          cs%deadcrootc_storage_patch(p)  = cs%deadcrootc_storage_patch(p) - cf%m_deadcrootc_storage_to_litter_patch(p) * dt
          cs%gresp_storage_patch(p)       = cs%gresp_storage_patch(p)      - cf%m_gresp_storage_to_litter_patch(p)      * dt
+         cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%m_cpool_to_litter_patch(p)              * dt
 
          ! transfer pools
          cs%leafc_xfer_patch(p)          = cs%leafc_xfer_patch(p)         - cf%m_leafc_xfer_to_litter_patch(p)         * dt
@@ -204,6 +205,7 @@ contains
          cs%livecrootc_storage_patch(p)  = cs%livecrootc_storage_patch(p) - cf%hrv_livecrootc_storage_to_litter_patch(p) * dt
          cs%deadcrootc_storage_patch(p)  = cs%deadcrootc_storage_patch(p) - cf%hrv_deadcrootc_storage_to_litter_patch(p) * dt
          cs%gresp_storage_patch(p)       = cs%gresp_storage_patch(p)      - cf%hrv_gresp_storage_to_litter_patch(p)      * dt
+         cs%cpool_patch(p)               = cs%cpool_patch(p)              - cf%hrv_cpool_to_litter_patch(p)              * dt
 
          ! transfer pools
          cs%leafc_xfer_patch(p)          = cs%leafc_xfer_patch(p)         - cf%hrv_leafc_xfer_to_litter_patch(p)         * dt

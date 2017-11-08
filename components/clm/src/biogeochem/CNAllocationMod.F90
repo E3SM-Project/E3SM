@@ -786,10 +786,15 @@ contains
          ! allocation as specified in the pft-physiology file.  The value is also used
          ! as a trigger here: -1.0 means to use the dynamic allocation (trees).
 
-         if (stem_leaf(ivt(p)) == -1._r8) then
-            f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
+         if (stem_leaf(ivt(p)) < 0._r8) then
+             if (stem_leaf(ivt(p)) == -1._r8) then
+                 f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
+             else 
+                 f3 = max((-1.0_r8*stem_leaf(ivt(p))*2.7_r8)/(1.0_r8+exp(-0.004_r8*(annsum_npp(p) - &
+                           300.0_r8))) - 0.4_r8, 0.2_r8)
+             end if
          else
-            f3 = stem_leaf(ivt(p))
+             f3 = stem_leaf(ivt(p))
          end if
 
          f4   = flivewd(ivt(p))
@@ -2814,7 +2819,7 @@ contains
     real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
 
     !! Local P variables
-    real(r8):: rc_npool, rc, r                                               !Factors for nitrogen pool
+    real(r8):: rc, rc_p, r                                               !Factors for nitrogen pool
     real(r8):: cpl,cpfr,cplw,cpdw,cpg                                    !C:N ratios for leaf, fine root, and wood
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
@@ -2891,7 +2896,7 @@ contains
          cpool_to_grainc              => carbonflux_vars%cpool_to_grainc_patch               , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
          cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
 
-         npool                        => nitrogenstate_vars%npool_patch                        , & ! Input:  [real(r8) (:)   ]  (gN/m3) plant N pool storage
+         npool                        => nitrogenstate_vars%npool_patch                        , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant N pool storage
 
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
@@ -2915,7 +2920,8 @@ contains
          sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                , & ! Output: [real(r8) (:)   ]
          sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
 
-         !!! add phosphorus variables  - X. YANG
+         !!! add phosphorus variables  - X. YANG 
+         ppool                        => phosphorusstate_vars%ppool_patch                      , & ! Input: [real(r8)       ] Plant non-structural P storage (gP/m2)
          plant_pdemand                => phosphorusflux_vars%plant_pdemand_patch               , & ! Output: [real(r8) (:)   ]  P flux required to support initial GPP (gP/m2/s)
          plant_palloc                 => phosphorusflux_vars%plant_palloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated P flux (gP/m2/s)
          ppool_to_grainp              => phosphorusflux_vars%ppool_to_grainp_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain P (gP/m2/s)
@@ -3055,12 +3061,18 @@ contains
              ! This variable allocation is only for trees. Shrubs have a constant
              ! allocation as specified in the pft-physiology file.  The value is also used
              ! as a trigger here: -1.0 means to use the dynamic allocation (trees).
-             if (stem_leaf(ivt(p)) == -1._r8) then
-                 f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
+
+             if (stem_leaf(ivt(p)) < 0._r8) then
+                 if (stem_leaf(ivt(p)) == -1._r8) then
+                     f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
+                 else
+                     f3 = max((-1.0_r8*stem_leaf(ivt(p))*2.7_r8)/(1.0_r8+exp(-0.004_r8*(annsum_npp(p) - &
+                               300.0_r8))) - 0.4_r8, 0.2_r8)
+                 end if
              else
                  f3 = stem_leaf(ivt(p))
              end if
-
+             
              f4 = flivewd(ivt(p))
              g1 = grperc(ivt(p))
              g2 = grpnow(ivt(p))
@@ -3095,18 +3107,33 @@ contains
              ! turning off this correction (PET, 12/11/03), instead using bgtr in
              ! phenology algorithm.
 
-             sminn_to_npool(p) = plant_ndemand(p) * fpg(c)
-             sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c)
 
              if (veg_vp%nstor(veg_pp%itype(p)) > 1e-6_r8) then 
-               rc = veg_vp%nstor(veg_pp%itype(p)) * max(annsum_npp(p) * n_allometry(p) / c_allometry(p), 0.01_r8)
-               r  = max(1._r8,rc/max(npool(p), 1e-9_r8))
-               plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
-             else
-               plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
-             end if
+               !N pool modification
+               sminn_to_npool(p) = plant_ndemand(p) * min(fpg(c), fpg_p(c))
+               sminp_to_ppool(p) = plant_pdemand(p) * min(fpg(c), fpg_p(c))
 
-             plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+               rc   = veg_vp%nstor(veg_pp%itype(p)) * max(annsum_npp(p) * n_allometry(p) / c_allometry(p), 0.01_r8)
+               rc_p = veg_vp%nstor(veg_pp%itype(p)) * max(annsum_npp(p) * p_allometry(p) / c_allometry(p), 0.01_r8)
+
+               if (.not. cnallocate_carbon_only() .and. .not. cnallocate_carbonphosphorus_only() &
+                     .and. .not. cnallocate_carbonnitrogen_only() ) then  
+                   !sminn_to_npool(p) = plant_ndemand(p) * fpg(c)   / max((npool(p) / rc), 1.0_r8)  !limit uptake when pool is large
+                   !sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c) / max((ppool(p) / rc_p), 1.0_r8)  !limit uptake when pool is large
+               end if
+               r  = max(1._r8,rc/max(npool(p), 1e-15_r8))                         
+               plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
+
+               r  = max(1._r8,rc_p/max(ppool(p), 1e-15_r8))
+               plant_palloc(p) = (plant_pdemand(p) + retransp_to_ppool(p)) / r
+
+             else
+               sminn_to_npool(p) = plant_ndemand(p) * fpg(c)
+               sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c)
+
+               plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+               plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+             end if
 
              ! calculate the associated carbon allocation, and the excess
              ! carbon flux that must be accounted for through downregulation
@@ -3116,23 +3143,23 @@ contains
                      plant_palloc(p) * (c_allometry(p)/p_allometry(p)) )then
 
                      plant_calloc(p) = plant_nalloc(p) * (c_allometry(p)/n_allometry(p))
-
                      plant_palloc(p) = plant_nalloc(p) * (p_allometry(p)/n_allometry(p))
-
-                     sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p),0.0_r8) ! in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)
-                     
-                     retransp_to_ppool(p) = min(plant_palloc(p) , retransp_to_ppool(p)) ! in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)
+                     !in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)                    
+                     if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then 
+                         sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p),0.0_r8)                 
+                         retransp_to_ppool(p) = min(plant_palloc(p), retransp_to_ppool(p)) 
+                     end if
                  else
                      plant_calloc(p) = plant_palloc(p) * (c_allometry(p)/p_allometry(p))
-
                      plant_nalloc(p) = plant_palloc(p) * (n_allometry(p)/p_allometry(p))
-
-                     sminn_to_npool(p) = max(plant_nalloc(p) - retransn_to_npool(p), 0.0_r8) ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
-                     
-                     retransn_to_npool(p) = min(plant_nalloc(p) , retransn_to_npool(p)) ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
+                     ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
+                     if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then 
+                         sminn_to_npool(p) = max(plant_nalloc(p) - retransn_to_npool(p), 0.0_r8) 
+                         retransn_to_npool(p) = min(plant_nalloc(p) , retransn_to_npool(p)) 
+                     end if
                  endif
              endif
-         
+
              if(cnallocate_carbonphosphorus_only().or.cnallocate_carbon_only() )then
                  plant_calloc(p) = plant_palloc(p) * (c_allometry(p)/p_allometry(p)) 
              endif
@@ -3140,7 +3167,9 @@ contains
              if(cnallocate_carbonnitrogen_only().or.cnallocate_carbon_only() )then
                  plant_calloc(p) = plant_nalloc(p) * (c_allometry(p)/n_allometry(p)) 
                  plant_palloc(p) = plant_calloc(p) * (p_allometry(p)/c_allometry(p))
-                 sminp_to_ppool(p) = plant_palloc(p) - retransp_to_ppool(p)
+                 if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then 
+                     sminp_to_ppool(p) = plant_palloc(p) - retransp_to_ppool(p)
+                 end if
              endif
   
              excess_cflux(p) = availc(p) - plant_calloc(p)
@@ -3148,16 +3177,34 @@ contains
              ! reduce gpp fluxes due to N limitation
              if (gpp(p) > 0.0_r8) then
                  downreg(p) = excess_cflux(p)/gpp(p)
-                 psnsun_to_cpool(p)   = psnsun_to_cpool(p)  *(1._r8 - downreg(p))
-                 psnshade_to_cpool(p) = psnshade_to_cpool(p)*(1._r8 - downreg(p))
-                 if ( use_c13 ) then
-                     c13cf%psnsun_to_cpool_patch(p)   = c13cf%psnsun_to_cpool_patch(p)  *(1._r8 - downreg(p))
-                     c13cf%psnshade_to_cpool_patch(p) = c13cf%psnshade_to_cpool_patch(p)*(1._r8 - downreg(p))
-                 endif
 
-                 if ( use_c14 ) then
-                     c14cf%psnsun_to_cpool_patch(p)   = c14cf%psnsun_to_cpool_patch(p)  *(1._r8 - downreg(p))
-                     c14cf%psnshade_to_cpool_patch(p) = c14cf%psnshade_to_cpool_patch(p)*(1._r8 - downreg(p))
+                 if (veg_vp%br_xr(veg_pp%itype(p)) > 1e-9_r8) then
+                     !Excess carbon goes to temporary NSC pool instead of
+                     !instantaneous downregulation
+                     psnsun_to_cpool(p) = psnsun_to_cpool(p)
+                     psnshade_to_cpool(p) = psnshade_to_cpool(p) 
+                     if ( use_c13 ) then
+                         c13cf%psnsun_to_cpool_patch(p) = c13cf%psnsun_to_cpool_patch(p)
+                         c13cf%psnshade_to_cpool_patch(p) = c13cf%psnshade_to_cpool_patch(p)
+                     endif
+
+                     if ( use_c14 ) then
+                         c14cf%psnsun_to_cpool_patch(p) = c14cf%psnsun_to_cpool_patch(p)
+                         c14cf%psnshade_to_cpool_patch(p) = c14cf%psnshade_to_cpool_patch(p)
+                     endif
+
+                 else
+                     psnsun_to_cpool(p)   = psnsun_to_cpool(p)  *(1._r8 - downreg(p))
+                     psnshade_to_cpool(p) = psnshade_to_cpool(p)*(1._r8 - downreg(p))
+                     if ( use_c13 ) then
+                         c13cf%psnsun_to_cpool_patch(p)   = c13cf%psnsun_to_cpool_patch(p)  *(1._r8 - downreg(p))
+                         c13cf%psnshade_to_cpool_patch(p) = c13cf%psnshade_to_cpool_patch(p)*(1._r8 - downreg(p))
+                     endif
+
+                     if ( use_c14 ) then
+                         c14cf%psnsun_to_cpool_patch(p)   = c14cf%psnsun_to_cpool_patch(p)  *(1._r8 - downreg(p))
+                         c14cf%psnshade_to_cpool_patch(p) = c14cf%psnshade_to_cpool_patch(p)*(1._r8 - downreg(p))
+                     endif
                  endif
              end if
          else
