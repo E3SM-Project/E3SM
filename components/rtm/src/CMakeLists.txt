@@ -6,6 +6,7 @@ INCLUDE_DIRECTORIES (
       ${SEQ_BINARY_DIR}
       ${GPTL_BINARY_DIR}
       ${ESMF_BINARY_DIR}
+      ${ACME_PIO_LIBRARY_DIR}  #pio.mod
       ${ACME_SHR_DIR}
 )
 

@@ -9,6 +9,9 @@ cmake_minimum_required(VERSION 2.8)
 #
 SET(ACME_BUILD ON)
 SET(CIME_REL_DIR cime)
+SET(CIME_REL_DIR "cime" CACHE PATH "The relative path to CIME from the top level CMakeLists file. Default set by ACME or CIME.")
+
+
 SET(ACME_COMPONENTS_DIR components)
 
 INCLUDE(cime/scripts/cmake/includedCMakeLists.txt)

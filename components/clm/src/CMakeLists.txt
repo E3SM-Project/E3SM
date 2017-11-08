@@ -117,9 +117,11 @@ ELSE() #ACME_BUILD
 
   INCLUDE_DIRECTORIES (
           ${SHR_BINARY_DIR}
+          ${STREAMS_BINARY_DIR} #shr_strdata
           ${GPTL_BINARY_DIR}  #perf_mod
           ${ESMF_BINARY_DIR} # esmf.mod
           ${ACME_SHR_DIR}  #shr_assert.h
+          ${ACME_PIO_LIBRARY_DIR}  #pio.mod
           ${SEQ_BINARY_DIR}
   )
 
