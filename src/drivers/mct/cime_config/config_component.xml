@@ -360,39 +360,24 @@
     </desc>
   </entry>
 
-  <entry id="PAUSE_OPTION">
+  <entry id="DATA_ASSIMILATION_PAUSE_OPTION">
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</valid_values>
     <default_value>never</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the pause frequency along with PAUSE_N
+      Sets the pause frequency along with DATA_ASSIMILATION_PAUSE_N
     </desc>
   </entry>
 
-  <entry id="PAUSE_N">
+  <entry id="DATA_ASSIMILATION_PAUSE_N">
     <type>integer</type>
     <default_value>0</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Provides a numerical count for $PAUSE_OPTION.
-    </desc>
-  </entry>
-
-  <entry id="PAUSE_COMPONENT_LIST">
-    <type>char</type>
-    <default_value>none</default_value>
-    <values match="last">
-      <value compset="_DESP">cpl</value>
-    </values>
-    <group>run_begin_stop_restart</group>
-    <file>env_run.xml</file>
-    <desc>
-      A colon-separated list of components to receive pause and resume signals
-      A value of 'all' means all components will pause and resume
-      A value of 'none' means that no components will pause or resume
+      Provides a numerical count for $DATA_ASSIMILATION_PAUSE_OPTION.
     </desc>
   </entry>
 
@@ -424,13 +409,13 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: false
+      ESP component runs after driver 'pause cycle' If any component
+      'pauses' (see DATA_ASSIMILATION_PAUSE_OPTION,
+      DATA_ASSIMILATION_PAUSE_N and DATA_ASSIMILATION XML variables),
+      the ESP component (if present) will be run to process the
+      component 'pause' (restart) files and set any required 'resume'
+      signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
+      ignored.  default: false
     </desc>
   </entry>
 
@@ -2580,6 +2565,7 @@
     <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
     <values>
       <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
       <value compclass="OCN">FALSE</value>
       <value compclass="WAV">FALSE</value>
       <value compclass="GLC">FALSE</value>
