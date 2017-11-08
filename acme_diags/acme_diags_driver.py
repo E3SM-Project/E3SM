@@ -81,7 +81,41 @@ def create_lat_lon_metrics_table(root_dir, parameters):
                             metrics = metrics_dic['metrics']
                             row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3),round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
                             writer.writerow(row)
+
+                    # convert csv to html
+
+                    read_csv = csv.reader(open(table_path + '/' + season + '_metrics_table.csv'))
+                    htmlfile = open(table_path + '/' + season + '_metrics_table.html','w+')
+                    htmlfile.write('<p><th><b>'+ season + ' Mean' + '</b></th></p>')
+                    # initialize rownum variable
+                    rownum = 0
+                    # write <table> tag
+                    htmlfile.write('<table>')
+                    # generate table contents
+                
+                    for row in read_csv: # Read a single row from the CSV file
+                
+                     # write header row. assumes first row in csv contains header
+                         if rownum == 0:
+                            htmlfile.write('<tr>') # write <tr> tag
+                            for column in row:
+                                htmlfile.write('<th>' + column +'</th>')
+                            htmlfile.write('</tr>')
+                
+                      #  write all other rows 
+                         else:
+                            htmlfile.write('<tr><div style="width: 50px" >')
+                            #htmlfile.write('<tr>')    
+                            for column in row:
+                                htmlfile.write('<td>' + column +'</td>')
+                            #htmlfile.write('</tr>')
+                            htmlfile.write('</div></tr>')
+                         #increment row count 
+                         rownum += 1
+                   # write </table> tag
+                    htmlfile.write('</table>') 
                     
+
 
 
 def _get_default_diags(set_num, dataset):
