@@ -1,5 +1,32 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 11-08-2017
+Tag: cime5.4.0-alpha.09
+Answer Changes: None
+Tests: IRT.T62_g17.C1850ECO.yellowstone_intel.pop-default
+       code_checker, seq by-hand and with re-run
+Dependencies:
+
+Brief Summary:
+    - Allow undated history files to be archived.
+    - Convert SEQ to use compare-two.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ce40669 Merge pull request #2037 from jedwards4b/fix_for_undated_history_file_archiving
+280e006 Merge pull request #2030 from ESMCI/jgfouca/seq_cmpr_two
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/SystemTests/seq.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/case_st_archive.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 11-07-2017
 Tag: cime5.4.0-alpha.08
