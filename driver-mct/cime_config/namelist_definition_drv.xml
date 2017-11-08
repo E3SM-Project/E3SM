@@ -1643,13 +1643,13 @@
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <desc>
-      true => ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: true
+      true => ESP component runs after driver 'pause cycle' If any
+      component 'pauses' (see DATA_ASSIMILATION_PAUSE_OPTION,
+      DATA_ASSIMILATION_PAUSE_N and DATA_ASSIMILATION_XXX XML
+      variables), the ESP component (if present) will be run to
+      process the component 'pause' (restart) files and set any
+      required 'resume' signals.  If true, esp_cpl_dt and
+      esp_cpl_offset settings are ignored.  default: true
     </desc>
     <values>
       <value>.true.</value>
@@ -2024,52 +2024,38 @@
     </values>
   </entry>
 
-  <entry id="pause_option" modify_via_xml="PAUSE_OPTION">
+  <entry id="data_assimilation_pause_option" modify_via_xml="DATA_ASSIMILATION_PAUSE_OPTION">
     <type>char</type>
-    <category>time</category>
+    <category>data_assimilation</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear</valid_values>
     <desc>
-      sets the pause frequency with pause_n
-      pause_option alarms are:
+      sets the pause frequency with data_assimilation_pause_n
+      data_assimilation_pause_option alarms are:
       [none/never], turns option off
-      [nstep/s]   , pauses every pause_n nsteps  , relative to start or last pause time
-      [nsecond/s] , pauses every pause_n nseconds, relative to start or last pause time
-      [nminute/s] , pauses every pause_n nminutes, relative to start or last pause time
-      [nhour/s]   , pauses every pause_n nhours  , relative to start or last pause time
-      [nday/s]    , pauses every pause_n ndays   , relative to start or last pause time
-      [nmonth/s]  , pauses every pause_n nmonths , relative to start or last pause time
+      [nstep/s]   , pauses every data_assimilation_pause_n nsteps  , relative to start or last pause time
+      [nsecond/s] , pauses every data_assimilation_pause_n nseconds, relative to start or last pause time
+      [nminute/s] , pauses every data_assimilation_pause_n nminutes, relative to start or last pause time
+      [nhour/s]   , pauses every data_assimilation_pause_n nhours  , relative to start or last pause time
+      [nday/s]    , pauses every data_assimilation_pause_n ndays   , relative to start or last pause time
+      [nmonth/s]  , pauses every data_assimilation_pause_n nmonths , relative to start or last pause time
       [monthly/s] , pauses every        month    , relative to start or last pause time
-      [nyear/s]   , pauses every pause_n nyears  , relative to start or last pause time
+      [nyear/s]   , pauses every data_assimilation_pause_n nyears  , relative to start or last pause time
     </desc>
     <values>
-      <value>$PAUSE_OPTION</value>
+      <value>$DATA_ASSIMILATION_PAUSE_OPTION</value>
     </values>
   </entry>
 
-  <entry id="pause_n" modify_via_xml="PAUSE_N">
+  <entry id="data_assimilation_pause_n" modify_via_xml="DATA_ASSIMILATION_PAUSE_N">
     <type>integer</type>
-    <category>time</category>
+    <category>data_assimilation</category>
     <group>seq_timemgr_inparm</group>
     <desc>
-      Sets the pause frequency with pause_option
+      Sets the pause frequency with data_assimilation_pause_option
     </desc>
     <values>
-      <value>$PAUSE_N</value>
-    </values>
-  </entry>
-
-  <entry id="pause_component_list" modify_via_xml="PAUSE_COMPONENT_LIST" skip_default_entry="true">
-    <type>char</type>
-    <category>time</category>
-    <group>seq_timemgr_inparm</group>
-    <desc>
-      A colon-separated list of component types (e.g., ocn,atm) to receive a
-      resume signal after a pause has happened. Special values "all" or "none"
-      may be used in place of a list
-    </desc>
-    <values>
-      <value>$PAUSE_COMPONENT_LIST</value>
+      <value>$DATA_ASSIMILATION_PAUSE_N</value>
     </values>
   </entry>
 
@@ -3937,7 +3923,7 @@
   <entry id="data_assimilation_atm" modify_via_xml="DATA_ASSIMILATION_ATM">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component atm
     </desc>
@@ -3946,10 +3932,22 @@
     </values>
   </entry>
 
+  <entry id="data_assimilation_cpl" modify_via_xml="DATA_ASSIMILATION_CPL">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component CPL
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_CPL</value>
+    </values>
+  </entry>
+
   <entry id="data_assimilation_ocn" modify_via_xml="DATA_ASSIMILATION_OCN">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component ocn
     </desc>
@@ -3961,7 +3959,7 @@
   <entry id="data_assimilation_wav" modify_via_xml="DATA_ASSIMILATION_WAV">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component wav
     </desc>
@@ -3973,7 +3971,7 @@
   <entry id="data_assimilation_glc" modify_via_xml="DATA_ASSIMILATION_GLC">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component glc
     </desc>
@@ -3985,7 +3983,7 @@
   <entry id="data_assimilation_rof" modify_via_xml="DATA_ASSIMILATION_ROF">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component rof
     </desc>
@@ -3997,7 +3995,7 @@
   <entry id="data_assimilation_ice" modify_via_xml="DATA_ASSIMILATION_ICE">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component ice
     </desc>
@@ -4009,7 +4007,7 @@
   <entry id="data_assimilation_lnd" modify_via_xml="DATA_ASSIMILATION_LND">
     <type>logical</type>
     <category>data_assimilation</category>
-    <group>seq_infodata_inparm</group>
+    <group>seq_timemgr_inparm</group>
     <desc>
       Whether Data Assimilation is on for component lnd
     </desc>
