@@ -456,7 +456,7 @@ class EnvBatch(EnvBase):
                     # hacky, PBS-type systems pass multiple mail-types differently
                     submitargs += " {} {}".format(mail_type_flag, "".join(mail_type_args))
                 else:
-                    submitargs += " {} {}".format(mail_type_flag, " {}".format(mail_type_flag).join(mail_type_args))
+                    submitargs += " {} {}".format(mail_type_flag, " {} ".format(mail_type_flag).join(mail_type_args))
 
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         expect(batchsubmit is not None,
