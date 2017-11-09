@@ -18,8 +18,8 @@ def setup():
     if ESMCI_REMOTE_NAME not in remotes:
         run_cmd_no_fail("git remote add {} {}".format(ESMCI_REMOTE_NAME, ESMCI_URL))
 
-    run_cmd_no_fail("git fetch {}".format(ESMCI_REMOTE_NAME))
-    run_cmd_no_fail("git fetch {} --tags".format(ESMCI_REMOTE_NAME))
+    run_cmd_no_fail("git fetch --prune {}".format(ESMCI_REMOTE_NAME))
+    run_cmd_no_fail("git fetch --prune {} --tags".format(ESMCI_REMOTE_NAME))
 
 ###############################################################################
 def get_tag(prefix, expected_num=1):
