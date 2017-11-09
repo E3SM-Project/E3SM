@@ -255,16 +255,16 @@
       <value compset="_DLND.*_MPASLI">1</value>
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oQU240">12</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oQU240wLI">12</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oQU120">24</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oEC60to30">48</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oEC60to30v3">48</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oEC60to30wLI">48</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS30to10v3">96</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS30to10wLI">96</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS18to6v3">96</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS15to5">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30wLI">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10wLI">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>

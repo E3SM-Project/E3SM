@@ -2282,15 +2282,15 @@
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
     <values>
-      <value compclass="ATM">1</value>
-      <value compclass="CPL">1</value>
-      <value compclass="OCN">1</value>
-      <value compclass="WAV">1</value>
-      <value compclass="GLC">1</value>
-      <value compclass="ICE">1</value>
-      <value compclass="ROF">1</value>
-      <value compclass="LND">1</value>
-      <value compclass="ESP">1</value>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
     </values>
   </entry>
 

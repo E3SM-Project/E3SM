@@ -139,6 +139,8 @@ class Case(object):
             "threaded" : self.get_build_threaded(),
             }
 
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
             _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "acme.exe")
@@ -897,7 +899,6 @@ class Case(object):
         charge_account = get_charge_account(machobj)
         if charge_account is not None:
             self.set_value("CHARGE_ACCOUNT", charge_account)
-
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them

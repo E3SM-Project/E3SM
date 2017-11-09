@@ -78,7 +78,7 @@
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
   <mpirun mpilib="default">
     <executable>srun</executable>
@@ -203,7 +203,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -348,7 +348,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -382,6 +382,7 @@
       <command name="rm">craype</command>
       <command name="rm">craype-mic-knl</command>
       <command name="rm">craype-haswell</command>
+
       <command name="rm">PrgEnv-intel</command>
       <command name="rm">PrgEnv-gnu</command>
       <command name="rm">intel</command>
@@ -1168,9 +1169,13 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
-      <env name="OMP_DISPLAY_ENV" DEBUG="TRUE">verbose</env>
-      <env name="KMP_AFFINITY" DEBUG="TRUE">verbose,scatter</env>
-      <env name="KMP_AFFINITY" DEBUG="FALSE">scatter</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" DEBUG="FALSE">
+      <env name="KMP_AFFINITY">scatter</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" DEBUG="TRUE">
+      <env name="KMP_AFFINITY">verbose,scatter</env>
+      <env name="OMP_DISPLAY_ENV">verbose</env>
     </environment_variables>
     <environment_variables mpilib="mvapich">
       <env name="MV2_ENABLE_AFFINITY">1</env>
@@ -1302,6 +1307,7 @@
                <arg name="num_tasks">--np $TOTALPES</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
+               <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1319,9 +1325,16 @@
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
       <env name="BGQ_SMP_VARS"></env>
+      <env name="BGQ_STACKSIZE"></env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_STACKSIZE=64M OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="!16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
 </machine>
 
@@ -1352,10 +1365,10 @@
            <executable>srun</executable>
          </mpirun>
 	 <module_system type="generic">
-	   <cmd_path lang="sh">use</cmd_path>
-	   <cmd_path lang="csh">use</cmd_path>
            <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
            <init_path lang="sh">/usr/global/tools/dotkit/init.sh</init_path>
+	   <cmd_path lang="sh">use</cmd_path>
+	   <cmd_path lang="csh">use</cmd_path>
 	   <modules compiler="pgi">
 	     <command name="-q">pgi-14.3</command>
 	     <command name="-q">mvapich2-pgi-1.7</command>
@@ -1408,10 +1421,10 @@
            <executable>srun</executable>
          </mpirun>
 	 <module_system type="generic">
-	   <cmd_path lang="sh">use</cmd_path>
-	   <cmd_path lang="csh">use</cmd_path>
            <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
            <init_path lang="sh">/usr/global/tools/dotkit/init.sh</init_path>
+	   <cmd_path lang="sh">use</cmd_path>
+	   <cmd_path lang="csh">use</cmd_path>
 	   <modules compiler="pgi">
 	     <command name="-q">pgi-14.3</command>
 	     <command name="-q">mvapich2-pgi-1.7</command>
@@ -1530,12 +1543,13 @@
                <arg name="num_tasks">--np $TOTALPES</arg>
                <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
+               <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
       <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
-      <cmd_path lang="csh">soft</cmd_path>
       <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
+      <cmd_path lang="csh">soft</cmd_path>
       <cmd_path lang="sh">soft</cmd_path>
       <modules>
         <command name="add">+mpiwrapper-xl</command>
@@ -1547,9 +1561,16 @@
     <environment_variables>
       <env name="MPI_TYPE_MAX">10000</env>
       <env name="BGQ_SMP_VARS"></env>
+      <env name="BGQ_STACKSIZE"></env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
-      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_STACKSIZE=64M OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="!16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="16">
+      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
 </machine>
 
@@ -1571,7 +1592,6 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT>OceanClimate</PROJECT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -2221,10 +2241,6 @@
         <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
         <env name="CRAY_CPU_TARGET">istanbul</env>
         <env name="CRAY_CUDA_MPS">1</env>
-      </environment_variables>
-      <environment_variables compiler="pgi">
-        <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
-        <env name="CRAY_CPU_TARGET">istanbul</env>
       </environment_variables>
       <environment_variables compiler="intel">
         <env name="CRAYPE_LINK_TYPE">dynamic</env>

@@ -48,6 +48,7 @@ module perf_mod
    public t_stampf
    public t_startf
    public t_stopf
+   public t_startstop_valsf
    public t_enablef
    public t_disablef
    public t_adj_detailf
@@ -730,7 +731,8 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
-   integer  str_length, i                 ! support for adding prefix
+   integer  str_length, i                 ! support for adding
+                                          !  detail prefix
    character(len=2) cdetail               ! char variable for detail
 !
 !-----------------------------------------------------------------------
@@ -836,6 +838,95 @@ contains
 
    return
    end subroutine t_stopf
+!
+!========================================================================
+!
+   subroutine t_startstop_valsf(event, walltime, callcount, handle)
+!-----------------------------------------------------------------------
+! Purpose: Create/add walltime and call count to an event timer
+! Author: P. Worley (based on J. Rosinski GPTL routine)
+!-----------------------------------------------------------------------
+!---------------------------Input arguments-----------------------------
+!
+   ! performance timer event name
+   character(len=*), intent(in) :: event
+   ! walltime (seconds) associated with this start/stop pair
+   ! If not set, default is 0.0 . If < 0.0, set to 0.0 .
+   real(shr_kind_r8), intent(in), optional :: walltime
+   ! call count associated with this start/stop pair
+   ! If not set, default is 1. If < 0, set to 0.
+   integer, intent(in), optional :: callcount
+!
+!---------------------------Input/Output arguments----------------------
+!
+   ! GPTL event handle
+   integer,  optional :: handle
+!
+!---------------------------Local workspace-----------------------------
+!
+   integer  ierr                          ! GPTL error return
+   integer  str_length, i                 ! support for adding 
+                                          !  detail prefix
+   character(len=2) cdetail               ! char variable for detail
+   real(shr_kind_r8) wtime                ! walltime increment (seconds)
+   integer  callcnt                       ! call count increment
+!
+!-----------------------------------------------------------------------
+!
+   if (.not. timing_initialized) return
+   if (timing_disable_depth > 0) return
+
+   wtime = 0.0_shr_kind_r8
+   if ( present(walltime) ) then
+      if (walltime > 0.0) then
+         wtime = walltime
+      endif
+   endif
+
+   callcnt = 1
+   if ( present(callcount) ) then
+      if (callcount > 0) then
+         callcnt = callcount
+      else
+         callcnt = 0
+      endif
+   endif
+
+   if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
+
+      write(cdetail,'(i2.2)') cur_timing_detail
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
+         ierr = GPTLstartstop_vals( &
+            '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
+            event(1:str_length)//'"', wtime, callcnt)
+      else
+         str_length = min(SHR_KIND_CM-5,len_trim(event))
+         ierr = GPTLstartstop_vals( &
+            '"'//cdetail//"_"//event(1:str_length)//'"', wtime, callcnt)
+      endif
+
+   else
+
+      if (prefix_len > 0) then
+         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
+         ierr = GPTLstartstop_vals('"'//event_prefix(1:prefix_len)// &
+              event(1:str_length)//'"', wtime, callcnt)
+      else
+         str_length = min(SHR_KIND_CM-2,len_trim(event))
+         ierr = GPTLstartstop_vals('"'//trim(event)//'"', wtime, callcnt)
+      endif
+
+!pw   if ( present (handle) ) then
+!pw      ierr = GPTLstartstop_vals_handle(event, wtime, handle)
+!pw   else
+!pw      ierr = GPTLstartstop_vals(event, wtime)
+!pw   endif
+
+   endif
+
+   return
+   end subroutine t_startstop_valsf
 !
 !========================================================================
 !

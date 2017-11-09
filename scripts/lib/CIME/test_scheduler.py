@@ -546,13 +546,6 @@ class TestScheduler(object):
                     # For PTS_MODE, compile with mpi-serial
                     envtest.set_test_parameter("MPILIB", "mpi-serial")
 
-                    # TODO: IN NEXT MERGE, REMOVE THIS COMMENT AND MAKE THIS CHANGE IN components/cam/cime_config/config_compsets.xml
-                    # # Set latitude and longitude for the appropriate case
-                    # # Below for ARM97, default SCM test case
-                    # if 'A97' in test:
-                    #     envtest.set_test_parameter("PTS_LAT", "36.6")
-                    #     envtest.set_test_parameter("PTS_LON", "262.5")
-
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
                       opt.startswith('P') or # handled in create_newcase
@@ -560,6 +553,7 @@ class TestScheduler(object):
                       opt.startswith('C') or # handled in create_newcase
                       opt.startswith('V')):  # handled in create_newcase
                     pass
+
                 elif opt.startswith('IOP'):
                     logger.warning("IOP test option not yet implemented")
                 else:

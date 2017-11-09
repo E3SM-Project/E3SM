@@ -106,7 +106,11 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
 
     while loop:
         loop = False
-        stat = run_cmd(cmd, from_dir=rundir)[0]
+
+        save_prerun_provenance(case)
+        run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
+        stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
         if stat != 0:
@@ -275,8 +279,6 @@ def case_run(case, skip_pnl=False):
     # set up the LID
     lid = new_lid()
 
-    save_prerun_provenance(case)
-
     if prerun_script:
         case.flush()
         do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
@@ -290,6 +292,7 @@ def case_run(case, skip_pnl=False):
             lid = new_lid()
 
         lid = run_model(case, lid, skip_pnl, da_cycle=cycle)
+
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
 
@@ -301,6 +304,8 @@ def case_run(case, skip_pnl=False):
 
         save_logs(case, lid)       # Copy log files back to caseroot
 
+        save_postrun_provenance(case)
+
     if postrun_script:
         case.flush()
         do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
@@ -308,8 +313,6 @@ def case_run(case, skip_pnl=False):
         case.read_xml()
 
     save_logs(case, lid)       # Copy log files back to caseroot
-
-    save_postrun_provenance(case)
 
     logger.warning("check for resubmit")
     resubmit_check(case)

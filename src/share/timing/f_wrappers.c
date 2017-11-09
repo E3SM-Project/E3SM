@@ -30,6 +30,7 @@
 #define gptlstart_handle GPTLSTART_HANDLE
 #define gptlstop GPTLSTOP
 #define gptlstop_handle GPTLSTOP_HANDLE
+#define gptlstartstop_vals GPTLSTARTSTOP_VALS
 #define gptlsetoption GPTLSETOPTION
 #define gptlenable GPTLENABLE
 #define gptldisable GPTLDISABLE
@@ -65,6 +66,7 @@
 #define gptlstart_handle            FCI_GLOBAL(gptlstart_handle,GPTLSTART_HANDLE)
 #define gptlstop                    FCI_GLOBAL(gptlstop,GPTLSTOP)
 #define gptlstop_handle             FCI_GLOBAL(gptlstop_handle,GPTLSTOP_HANDLE)
+#define gptlstartstop_vals          FCI_GLOBAL(gptlstartstop_vals,GPTLSTARTSTOP_VALS)
 #define gptlsetoption               FCI_GLOBAL(gptlsetoption,GPTLSETOPTION)
 #define gptlenable                  FCI_GLOBAL(gptlenable,GPTLENABLE)
 #define gptldisable                 FCI_GLOBAL(gptldisable,GPTLDISABLE)
@@ -100,6 +102,7 @@
 #define gptlstart_handle gptlstart_handle_
 #define gptlstop gptlstop_
 #define gptlstop_handle gptlstop_handle_
+#define gptlstartstop_vals gptlstartstop_vals_
 #define gptlsetoption gptlsetoption_
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
@@ -135,6 +138,7 @@
 #define gptlstart_handle gptlstart_handle__
 #define gptlstop gptlstop__
 #define gptlstop_handle gptlstop_handle__
+#define gptlstartstop_vals gptlstartstop_vals__
 #define gptlsetoption gptlsetoption__
 #define gptlenable gptlenable__
 #define gptldisable gptldisable__
@@ -174,6 +178,7 @@ int gptlstart (char *name, int nc1);
 int gptlstart_handle (char *name, void **, int nc1);
 int gptlstop (char *name, int nc1);
 int gptlstop_handle (char *name, void **, int nc1);
+int gptlstartstop_vals (char *name, double *val, int *cnt, int nc1);
 int gptlsetoption (int *option, int *val);
 int gptlenable (void);
 int gptldisable (void);
@@ -306,6 +311,7 @@ int gptlpr_summary_file (int *fcomm, char *file, int nc1)
 int gptlbarrier (int *fcomm, char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 #ifdef HAVE_MPI
   MPI_Comm ccomm;
@@ -320,7 +326,10 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
 #endif
 
   numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
   return GPTLbarrier (ccomm, cname);
 }
@@ -391,6 +400,22 @@ int gptlstop_handle (char *name, void **handle, int nc1)
   return GPTLstopf_handle (name, nc1, handle);
 }
 
+int gptlstartstop_vals (char *name, double *val, int *cnt, int nc1)
+{
+  /*  char cname[MAX_CHARS+1];*/
+  /*  int c;*/
+  /*  int numchars;*/
+
+  /*  numchars = MIN (nc1, MAX_CHARS);*/
+  //pw  strncpy (cname, name, numchars);
+  /*  for (c = 0; c < numchars; c++) {*/
+  /*    cname[c] = name[c];*/
+  /*  }*/
+  /*  cname[numchars] = '\0';*/
+  /*  return GPTLstartstop_vals (cname, *val, *cnt);*/
+  return GPTLstartstop_valsf (name, nc1, *val, *cnt);
+}
+
 int gptlsetoption (int *option, int *val)
 {
   return GPTLsetoption (*option, *val);
@@ -416,10 +441,14 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
 	       int nc)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
   return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
 }
@@ -427,10 +456,14 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
   return GPTLquerycounters (cname, *t, papicounters_out);
 }
@@ -438,10 +471,14 @@ int gptlquerycounters (const char *name, int *t, long long *papicounters_out, in
 int gptlget_wallclock (const char *name, int *t, double *value, int nc)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
 
   return GPTLget_wallclock (cname, *t, value);
@@ -452,14 +489,21 @@ int gptlget_eventvalue (const char *timername, const char *eventname, int *t, do
 {
   char ctimername[MAX_CHARS+1];
   char ceventname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc1, MAX_CHARS);
-  strncpy (ctimername, timername, numchars);
+  //pw  strncpy (ctimername, timername, numchars);
+  for (c = 0; c < numchars; c++) {
+    ctimername[c] = timername[c];
+  }
   ctimername[numchars] = '\0';
 
   numchars = MIN (nc2, MAX_CHARS);
-  strncpy (ceventname, eventname, numchars);
+  //pw  strncpy (ceventname, eventname, numchars);
+  for (c = 0; c < numchars; c++) {
+    ceventname[c] = eventname[c];
+  }
   ceventname[numchars] = '\0';
 
   return GPTLget_eventvalue (ctimername, ceventname, *t, value);
@@ -491,9 +535,13 @@ int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 int gptlprint_memusage (const char *str, int nc)
 {
   char cname[128+1];
+  int c;
   int numchars = MIN (nc, 128);
 
-  strncpy (cname, str, numchars);
+  //pw  strncpy (cname, str, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = str[c];
+  }
   cname[numchars] = '\0';
   return GPTLprint_memusage (cname);
 }
@@ -509,9 +557,13 @@ int gptl_papilibraryinit (void)
 int gptlevent_name_to_code (const char *str, int *code, int nc)
 {
   char cname[PAPI_MAX_STR_LEN+1];
+  int c;
   int numchars = MIN (nc, PAPI_MAX_STR_LEN);
 
-  strncpy (cname, str, numchars);
+  //pw  strncpy (cname, str, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = str[c];
+  }
   cname[numchars] = '\0';
 
   /* "code" is an int* and is an output variable */
