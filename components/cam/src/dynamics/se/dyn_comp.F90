@@ -401,9 +401,14 @@ CONTAINS
        hybrid = hybrid_create(par,ithr,NThreads)
 
        do n=1,se_nsplit
+
+          if (iam==0) write (iulog,*) ' '
+          if (iam==0) write (iulog,*) '### dyn_run subcycle = ', n 
+          if (iam==0) write (iulog,*) ' '
+
           ! forward-in-time RK, with subcycling
           call t_startf("prim_run_sybcycle")
-          call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
+          call prim_run_subcycle(n,dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
                tstep, TimeLevel, hvcoord, n)
           call t_stopf("prim_run_sybcycle")
        end do
