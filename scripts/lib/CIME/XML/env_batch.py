@@ -436,10 +436,10 @@ class EnvBatch(EnvBase):
                 submitargs += " " + mail_user_flag + " " + mail_user
 
         if mail_type is None:
-            if job == "case.test" and cime_config.has_option("create_test", "MAILTYPE"):
-                mail_type = cime_config.get("create_test", "MAILTYPE")
-            elif cime_config.has_option("main", "MAILTYPE"):
-                mail_type = cime_config.get("main", "MAILTYPE")
+            if job == "case.test" and cime_config.has_option("create_test", "MAIL_TYPE"):
+                mail_type = cime_config.get("create_test", "MAIL_TYPE")
+            elif cime_config.has_option("main", "MAIL_TYPE"):
+                mail_type = cime_config.get("main", "MAIL_TYPE")
             else:
                 mail_type = self.get_value("batch_mail_default")
 
