@@ -18,7 +18,7 @@
 ! !REVISION HISTORY:
 !     2005-Nov-11 - E. Kluzek - creation of shr_inputinfo_mod
 !     2007-Nov-15 - T. Craig - refactor for ccsm4 system and move to seq_infodata_mod
-!     2016-Dec-08 - R. Montuoro - updated for multiple coupler instances
+!     2016-Dec-08 - R. Montuoro - updated for multiple driver instances
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
@@ -68,14 +68,14 @@ MODULE seq_infodata_mod
    ! Type to hold pause/resume signaling information
    type seq_pause_resume_type
       private
-      logical :: data_assimilation_atm(num_inst_atm) = .false.
-      logical :: data_assimilation_cpl                           = .false.
-      logical :: data_assimilation_ocn(num_inst_ocn) = .false.
-      logical :: data_assimilation_wav(num_inst_wav) = .false.
-      logical :: data_assimilation_glc(num_inst_glc) = .false.
-      logical :: data_assimilation_ice(num_inst_ice) = .false.
-      logical :: data_assimilation_rof(num_inst_rof) = .false.
-      logical :: data_assimilation_lnd(num_inst_lnd) = .false.
+      character(SHR_KIND_CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
+      character(SHR_KIND_CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
+      character(SHR_KIND_CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
+      character(SHR_KIND_CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
+      character(SHR_KIND_CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
+      character(SHR_KIND_CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
+      character(SHR_KIND_CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
+      character(SHR_KIND_CL) :: cpl_resume = ' '               ! cpl resume file
    end type seq_pause_resume_type
 
    ! InputInfo derived type
@@ -181,6 +181,7 @@ MODULE seq_infodata_mod
       real(SHR_KIND_R8)       :: reprosum_diffmax    ! maximum difference tolerance
       logical                 :: reprosum_recompute  ! recompute reprosum with nonscalable algorithm
                                                      ! if reprosum_diffmax is exceeded
+
       !--- set via namelist and may be time varying ---
       integer(SHR_KIND_IN)    :: info_debug      ! debug level
       logical                 :: bfbflag         ! turn on bfb option
@@ -698,7 +699,6 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
        infodata%ocnrof_prognostic = .false.
        infodata%ice_prognostic = .false.
        infodata%glc_prognostic = .false.
-
        ! It's safest to assume glc_coupled_fluxes = .true. if it's not set elsewhere,
        ! because this is needed for conservation in some cases. Note that it is ignored
        ! if glc_present is .false., so it's okay to just start out assuming it's .true.
@@ -963,6 +963,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            glc_resume, rof_resume, wav_resume, cpl_resume,                    &
            mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
 
+
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -1123,14 +1124,14 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
    real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
    logical,                optional, intent(OUT) :: glc_valid_input
-   logical, optional, intent(OUT) :: atm_resume(:) ! atm read resume state
-   logical, optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
-   logical, optional, intent(OUT) :: ice_resume(:) ! ice read resume state
-   logical, optional, intent(OUT) :: ocn_resume(:) ! ocn read resume state
-   logical, optional, intent(OUT) :: glc_resume(:) ! glc read resume state
-   logical, optional, intent(OUT) :: rof_resume(:) ! rof read resume state
-   logical, optional, intent(OUT) :: wav_resume(:) ! wav read resume state
-   logical, optional, intent(OUT) :: cpl_resume ! cpl read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: ice_resume(:) ! ice read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: ocn_resume(:) ! ocn read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: glc_resume(:) ! glc read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: rof_resume(:) ! rof read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: wav_resume(:) ! wav read resume state
+   character(SHR_KIND_CL), optional, intent(OUT) :: cpl_resume ! cpl read resume state
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_GetData_explicit) '
@@ -1306,56 +1307,56 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(glc_g2lupdate)  ) glc_g2lupdate  = infodata%glc_g2lupdate
     if ( present(atm_resume) ) then
       if (associated(infodata%pause_resume)) then
-        atm_resume(:)  = infodata%pause_resume%data_assimilation_atm(:)
+        atm_resume(:)  = infodata%pause_resume%atm_resume(:)
       else
         atm_resume(:) = ' '
       end if
     end if
     if ( present(lnd_resume) ) then
       if (associated(infodata%pause_resume)) then
-        lnd_resume(:)  = infodata%pause_resume%data_assimilation_lnd(:)
+        lnd_resume(:)  = infodata%pause_resume%lnd_resume(:)
       else
         lnd_resume(:) = ' '
       end if
     end if
     if ( present(ice_resume) ) then
       if (associated(infodata%pause_resume)) then
-        ice_resume(:)  = infodata%pause_resume%data_assimilation_ice(:)
+        ice_resume(:)  = infodata%pause_resume%ice_resume(:)
       else
         ice_resume(:) = ' '
       end if
     end if
     if ( present(ocn_resume) ) then
       if (associated(infodata%pause_resume)) then
-        ocn_resume(:)  = infodata%pause_resume%data_assimilation_ocn(:)
+        ocn_resume(:)  = infodata%pause_resume%ocn_resume(:)
       else
         ocn_resume(:) = ' '
       end if
     end if
     if ( present(glc_resume) ) then
       if (associated(infodata%pause_resume)) then
-        glc_resume(:)  = infodata%pause_resume%data_assimilation_glc(:)
+        glc_resume(:)  = infodata%pause_resume%glc_resume(:)
       else
         glc_resume(:) = ' '
       end if
     end if
     if ( present(rof_resume) ) then
       if (associated(infodata%pause_resume)) then
-        rof_resume(:)  = infodata%pause_resume%data_assimilation_rof(:)
+        rof_resume(:)  = infodata%pause_resume%rof_resume(:)
       else
         rof_resume(:) = ' '
       end if
     end if
     if ( present(wav_resume) ) then
       if (associated(infodata%pause_resume)) then
-        wav_resume(:)  = infodata%pause_resume%data_assimilation_wav(:)
+        wav_resume(:)  = infodata%pause_resume%wav_resume(:)
       else
         wav_resume(:) = ' '
       end if
     end if
     if ( present(cpl_resume) ) then
       if (associated(infodata%pause_resume)) then
-        cpl_resume     = infodata%pause_resume%data_assimilation_cpl
+        cpl_resume     = infodata%pause_resume%cpl_resume
       else
         cpl_resume = ' '
       end if
@@ -1393,7 +1394,7 @@ SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_ny         ! nx,ny 2d grid size global
    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_phase
    logical,                optional, intent(OUT) :: histavg_comp
-   logical, optional, intent(OUT) :: comp_resume(:)
+   character(SHR_KIND_CL), optional, intent(OUT) :: comp_resume(:)
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_GetData_bytype) '
@@ -1684,14 +1685,14 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
    logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
    logical,                optional, intent(IN) :: glc_valid_input
-   logical, optional, intent(IN) :: atm_resume(:)         ! atm resume
-   logical, optional, intent(IN) :: lnd_resume(:)         ! lnd resume
-   logical, optional, intent(IN) :: ice_resume(:)         ! ice resume
-   logical, optional, intent(IN) :: ocn_resume(:)         ! ocn resume
-   logical, optional, intent(IN) :: glc_resume(:)         ! glc resume
-   logical, optional, intent(IN) :: rof_resume(:)         ! rof resume
-   logical, optional, intent(IN) :: wav_resume(:)         ! wav resume
-   logical, optional, intent(IN) :: cpl_resume            ! cpl resume
+   character(SHR_KIND_CL), optional, intent(IN) :: atm_resume(:)         ! atm resume
+   character(SHR_KIND_CL), optional, intent(IN) :: lnd_resume(:)         ! lnd resume
+   character(SHR_KIND_CL), optional, intent(IN) :: ice_resume(:)         ! ice resume
+   character(SHR_KIND_CL), optional, intent(IN) :: ocn_resume(:)         ! ocn resume
+   character(SHR_KIND_CL), optional, intent(IN) :: glc_resume(:)         ! glc resume
+   character(SHR_KIND_CL), optional, intent(IN) :: rof_resume(:)         ! rof resume
+   character(SHR_KIND_CL), optional, intent(IN) :: wav_resume(:)         ! wav resume
+   character(SHR_KIND_CL), optional, intent(IN) :: cpl_resume            ! cpl resume
 
 !EOP
 
@@ -1856,66 +1857,66 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(glc_valid_input) ) infodata%glc_valid_input = glc_valid_input
     if ( present(atm_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_atm(:) = atm_resume(:)
-      else if (ANY(atm_resume(:))) then
+        infodata%pause_resume%atm_resume(:) = atm_resume(:)
+      else if (ANY(len_trim(atm_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_atm(:) = atm_resume(:)
+        infodata%pause_resume%atm_resume(:) = atm_resume(:)
       end if
     end if
     if ( present(lnd_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_lnd(:) = lnd_resume(:)
-      else if (ANY(lnd_resume(:))) then
+        infodata%pause_resume%lnd_resume(:) = lnd_resume(:)
+      else if (ANY(len_trim(lnd_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_lnd(:) = lnd_resume(:)
+        infodata%pause_resume%lnd_resume(:) = lnd_resume(:)
       end if
     end if
     if ( present(ice_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_ice(:) = ice_resume(:)
-      else if (ANY(ice_resume(:))) then
+        infodata%pause_resume%ice_resume(:) = ice_resume(:)
+      else if (ANY(len_trim(ice_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_ice(:) = ice_resume(:)
+        infodata%pause_resume%ice_resume(:) = ice_resume(:)
       end if
     end if
     if ( present(ocn_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_ocn(:) = ocn_resume(:)
-      else if (ANY(ocn_resume(:))) then
+        infodata%pause_resume%ocn_resume(:) = ocn_resume(:)
+      else if (ANY(len_trim(ocn_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_ocn(:) = ocn_resume(:)
+        infodata%pause_resume%ocn_resume(:) = ocn_resume(:)
       end if
     end if
     if ( present(glc_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_glc(:) = glc_resume(:)
-      else if (ANY(glc_resume(:))) then
+        infodata%pause_resume%glc_resume(:) = glc_resume(:)
+      else if (ANY(len_trim(glc_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_glc(:) = glc_resume(:)
+        infodata%pause_resume%glc_resume(:) = glc_resume(:)
       end if
     end if
     if ( present(rof_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_rof(:) = rof_resume(:)
-      else if (ANY(rof_resume(:))) then
+        infodata%pause_resume%rof_resume(:) = rof_resume(:)
+      else if (ANY(len_trim(rof_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_rof(:) = rof_resume(:)
+        infodata%pause_resume%rof_resume(:) = rof_resume(:)
       end if
     end if
     if ( present(wav_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_wav(:) = wav_resume(:)
-      else if (ANY(wav_resume(:))) then
+        infodata%pause_resume%wav_resume(:) = wav_resume(:)
+      else if (ANY(len_trim(wav_resume(:)) > 0)) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_wav(:) = wav_resume(:)
+        infodata%pause_resume%wav_resume(:) = wav_resume(:)
       end if
     end if
     if ( present(cpl_resume) ) then
       if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%data_assimilation_cpl = cpl_resume
-      else if (cpl_resume) then
+        infodata%pause_resume%cpl_resume = cpl_resume
+      else if (len_trim(cpl_resume) > 0) then
         allocate(infodata%pause_resume)
-        infodata%pause_resume%data_assimilation_cpl = cpl_resume
+        infodata%pause_resume%cpl_resume = cpl_resume
       end if
     end if
 
@@ -1948,7 +1949,7 @@ SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_ny         ! nx,ny 2d grid size global
    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_phase
    logical,                optional, intent(IN)    :: histavg_comp
-   logical, optional, intent(IN) :: comp_resume(:)
+   character(SHR_KIND_CL), optional, intent(IN) :: comp_resume(:)
 
 !EOP
 
@@ -2057,22 +2058,36 @@ subroutine seq_infodata_pauseresume_bcast(infodata, mpicom, pebcast)
   end if
 
   if (associated(infodata%pause_resume)) then
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_atm, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_lnd, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_ice, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_ocn, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_glc, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_rof, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_wav, mpicom,       &
-          pebcast=pebcast_local)
-     call shr_mpi_bcast(infodata%pause_resume%data_assimilation_cpl,        mpicom,       &
-          pebcast=pebcast_local)
+    do ind = 1, num_inst_atm
+      call shr_mpi_bcast(infodata%pause_resume%atm_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_lnd
+      call shr_mpi_bcast(infodata%pause_resume%lnd_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_ice
+      call shr_mpi_bcast(infodata%pause_resume%ice_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_ocn
+      call shr_mpi_bcast(infodata%pause_resume%ocn_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_glc
+      call shr_mpi_bcast(infodata%pause_resume%glc_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_rof
+      call shr_mpi_bcast(infodata%pause_resume%rof_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_wav
+      call shr_mpi_bcast(infodata%pause_resume%wav_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    call shr_mpi_bcast(infodata%pause_resume%cpl_resume,        mpicom,       &
+         pebcast=pebcast_local)
   end if
 end subroutine seq_infodata_pauseresume_bcast
 
@@ -2932,16 +2947,47 @@ SUBROUTINE seq_infodata_print( infodata )
 
        write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
        if (associated(infodata%pause_resume)) then
-          write(logunit,FIA) subname,'atm_resume = ', infodata%pause_resume%data_assimilation_atm
-          write(logunit,FIA) subname,'cpl_resume = ', infodata%pause_resume%data_assimilation_cpl
-          write(logunit,FIA) subname,'ocn_resume = ', infodata%pause_resume%data_assimilation_ocn
-          write(logunit,FIA) subname,'wav_resume = ', infodata%pause_resume%data_assimilation_wav
-          write(logunit,FIA) subname,'glc_resume = ', infodata%pause_resume%data_assimilation_glc
-          write(logunit,FIA) subname,'ice_resume = ', infodata%pause_resume%data_assimilation_ice
-          write(logunit,FIA) subname,'rof_resume = ', infodata%pause_resume%data_assimilation_rof
-          write(logunit,FIA) subname,'lnd_resume = ', infodata%pause_resume%data_assimilation_lnd
-       endif
-       ! endif
+         do ind = 1, num_inst_atm
+           if (len_trim(infodata%pause_resume%atm_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'atm_resume(',ind,')        = ', trim(infodata%pause_resume%atm_resume(ind))
+           end if
+         end do
+         do ind = 1, num_inst_lnd
+           if (len_trim(infodata%pause_resume%lnd_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'lnd_resume(',ind,')        = ', trim(infodata%pause_resume%lnd_resume(ind))
+           end if
+         end do
+         do ind = 1, num_inst_ocn
+           if (len_trim(infodata%pause_resume%ocn_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'ocn_resume(',ind,')        = ', trim(infodata%pause_resume%ocn_resume(ind))
+           end if
+         end do
+         do ind = 1, num_inst_ice
+           if (len_trim(infodata%pause_resume%ice_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'ice_resume(',ind,')        = ', trim(infodata%pause_resume%ice_resume(ind))
+           end if
+         end do
+         do ind = 1, num_inst_glc
+           if (len_trim(infodata%pause_resume%glc_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'glc_resume(',ind,')        = ', trim(infodata%pause_resume%glc_resume(ind))
+           end if
+         end do
+         do ind = 1, num_inst_rof
+           if (len_trim(infodata%pause_resume%rof_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'rof_resume(',ind,')        = ', trim(infodata%pause_resume%rof_resume(ind))
+           end if
+         end do
+         do ind = 1, num_inst_wav
+           if (len_trim(infodata%pause_resume%wav_resume(ind)) > 0) then
+             write(logunit,FIA) subname,'wav_resume(',ind,')        = ', trim(infodata%pause_resume%wav_resume(ind))
+           end if
+         end do
+         if (len_trim(infodata%pause_resume%cpl_resume) > 0) then
+           write(logunit,F0A) subname,'cpl_resume               = ', trim(infodata%pause_resume%cpl_resume)
+         end if
+       end if
+!     endif
+
 END SUBROUTINE seq_infodata_print
 
 !===============================================================================
