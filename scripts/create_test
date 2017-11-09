@@ -234,6 +234,9 @@ OR
                         "file. The file can follow either the config_pes.xml or "
                         "the env_mach_pes.xml format.")
 
+    parser.add_argument("--retry", type=int, default=0,
+                        help="Automatically retry failed tests. >0 implies --wait")
+
     CIME.utils.add_mail_type_args(parser)
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
@@ -260,6 +263,9 @@ OR
 
     expect(not (args.namelists_only and not (args.generate or args.compare)),
            "Must provide either --compare or --generate with --namelists-only")
+
+    if args.retry > 0:
+        args.wait = True
 
     if args.parallel_jobs is not None:
         expect(args.parallel_jobs > 0,
@@ -383,7 +389,7 @@ OR
         args.namelists_only, args.project, \
         args.test_id, args.parallel_jobs, args.walltime, \
         args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
-        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir, args.pesfile, args.mail_user, args.mail_type
+        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir, args.pesfile, args.retry, args.mail_user, args.mail_type
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, _, args, job_cost_map, wall_time, test_root):
@@ -518,7 +524,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
         # Create submit script
         single_submit_impl(machine_name, test_id, proc_pool, project, sys.argv[1:], job_cost_map, walltime, test_root)
 
-    return 0 if success else CIME.utils.TESTS_FAILED_ERR_CODE
+    return success
 
 ###############################################################################
 def _main_func(description):
@@ -534,14 +540,25 @@ def _main_func(description):
     test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
     project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \
     save_timing, queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile, \
-    mail_user, mail_type = \
+    retry, mail_user, mail_type = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
-                         baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
-                         project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
-                         queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile,
-                         mail_user, mail_type))
+    success = False
+    run_count = 0
+    while not success and run_count <= retry:
+        use_existing = use_existing if run_count == 0 else True
+        success = create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
+                              baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
+                              project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
+                              queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile,
+                              mail_user, mail_type)
+        run_count += 1
+
+        # For testing only
+        os.environ["TESTBUILDFAIL_PASS"] = "True"
+        os.environ["TESTRUNFAIL_PASS"] = "True"
+
+    sys.exit(0 if success else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 

@@ -244,7 +244,7 @@ class SystemTestsCommon(object):
                     allgood = allgood - 1
             except BaseException as e:
                 msg = e.__str__()
-                    
+
                 logger.info("{} is not compressed, assuming run failed {}".format(cpllog, msg))
 
         return allgood==0
