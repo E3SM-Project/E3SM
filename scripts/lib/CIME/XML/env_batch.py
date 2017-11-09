@@ -427,8 +427,8 @@ class EnvBatch(EnvBase):
 
         cime_config = get_cime_config()
 
-        if mail_user is None and cime_config.has_option("main", "MAILUSER"):
-            mail_user = cime_config.get("main", "MAILUSER")
+        if mail_user is None and cime_config.has_option("main", "MAIL_USER"):
+            mail_user = cime_config.get("main", "MAIL_USER")
 
         if mail_user is not None:
             mail_user_flag = self.get_value('batch_mail_flag', subgroup=None)
