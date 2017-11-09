@@ -48,7 +48,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     reference.long_name = parameter.reference_title
     diff.long_name = parameter.diff_title
 
-    test.id = parameter.test_name
+    test.id = parameter.test_name_yrs
     reference.id = parameter.reference_name
     diff.id = parameter.diff_name
 

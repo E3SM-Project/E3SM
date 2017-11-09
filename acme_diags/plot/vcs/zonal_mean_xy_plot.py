@@ -64,7 +64,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
         diff.long_name = parameters.diff_title if parameters.diff_title is not '' else diff.long_name
 
     test.id = str(
-        parameters.test_name) if parameters.test_name is not '' else test.id
+        parameters.test_name_yrs) if parameters.test_name_yrs is not '' else test.id
     ref.id = str(
         parameters.reference_name) if parameters.reference_name is not '' else ref.id
     diff.id = str(

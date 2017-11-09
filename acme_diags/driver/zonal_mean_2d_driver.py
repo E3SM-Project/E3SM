@@ -90,6 +90,14 @@ def run_diag(parameter):
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
+        try:
+            yrs_averaged =  f_mod.getglobal('yrs_averaged')
+            parameter.test_name_yrs = parameter.test_name + ' yrs(' + yrs_averaged +')'
+
+        except:
+            print('No yrs_averaged exists in global attributes')
+            parameter.test_name_yrs = parameter.test_name
+
         # save land/ocean fraction for masking
         try:
             land_frac = f_mod('LANDFRAC')
