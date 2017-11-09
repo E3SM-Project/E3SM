@@ -16,7 +16,7 @@ from CIME.test_status               import *
 logger = logging.getLogger(__name__)
 
 def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
-            skip_pnl=False, mail_user=None, mail_type='never', batch_args=None):
+            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
@@ -83,7 +83,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
         case.set_value("JOB_IDS", xml_jobid_text)
 
 def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
-           skip_pnl=False, mail_user=None, mail_type='never', batch_args=None):
+           skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if case.get_value("TEST"):
         caseroot = case.get_value("CASEROOT")
         casebaseid = case.get_value("CASEBASEID")
