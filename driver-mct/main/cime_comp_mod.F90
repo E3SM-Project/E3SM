@@ -2090,7 +2090,7 @@ end subroutine cime_init
    integer            :: hashint(hashcnt)
    ! Driver pause/resume
    logical            :: drv_pause  ! Driver writes pause restart file
-   logical            :: drv_resume ! Driver resets state from restart file
+   character(len=CL)  :: drv_resume ! Driver resets state from restart file
    integer            :: iamroot_ESPID
 
 101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
