@@ -63,8 +63,6 @@ class PRE(SystemTestsCompareTwo):
         for comp in comps:
             data_assimilation.append(self._case.get_value("DATA_ASSIMILATION_{}".format(comp)))
 
-        print "HERE: {}".format(data_assimilation)
-
         expect(any(data_assimilation), "No Data_Assimilation flag is set")
 
         self._case.flush()
