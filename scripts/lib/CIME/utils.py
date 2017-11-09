@@ -1408,6 +1408,25 @@ def _check_for_invalid_args(args):
             if arg.startswith("-") and len(arg) > 2:
                 sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
 
+def add_mail_type_args(parser):
+    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+
+    parser.add_argument("-M", "--mail-type", action="append",
+                        help="when to send user email. Options are: never, all, begin, end, fail."
+                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+
+def resolve_mail_type_args(args):
+    if args.mail_type is not None:
+        resolved_mail_types = []
+        for mail_type in args.mail_type:
+            resolved_mail_types.extend(mail_type.split(","))
+
+        for mail_type in resolved_mail_types:
+            expect(mail_type in ("never", "all", "begin", "end", "fail"),
+                   "Unsupported mail-type '{}'".format(mail_type))
+
+        args.mail_type = resolved_mail_types
+
 class SharedArea(object):
     """
     Enable 0002 umask within this manager

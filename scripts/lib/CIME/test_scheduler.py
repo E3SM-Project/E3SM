@@ -88,7 +88,7 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -100,6 +100,9 @@ class TestScheduler(object):
         self._input_dir       = input_dir
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
+
+        self._mail_user = mail_user
+        self._mail_type = mail_type
 
         self._machobj = Machines(machine=machine_name)
 
@@ -613,10 +616,14 @@ class TestScheduler(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
+
+        cmd = "./case.submit --skip-preview-namelist"
         if self._no_batch:
-            cmd = "./case.submit --no-batch --skip-preview-namelist"
-        else:
-            cmd = "./case.submit --skip-preview-namelist"
+            cmd += " --no-batch"
+        if self._mail_user:
+            cmd += " --mail-user={}".format(self._mail_user)
+        if self._mail_type:
+            cmd += " -M={}".format(",".join(self._mail_type))
 
         return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
