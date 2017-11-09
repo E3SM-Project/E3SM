@@ -12,7 +12,7 @@ from Tools.standard_script_setup import *
 
 import update_acme_tests
 from CIME.test_scheduler import TestScheduler, RUN_PHASE
-from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail
+from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd_no_fail, get_cime_config
 from CIME.XML.machines import Machines
 from CIME.case import Case
 
@@ -74,6 +74,8 @@ OR
 
     CIME.utils.setup_standard_logging_options(parser)
 
+    config = get_cime_config()
+
     parser.add_argument("--no-run", action="store_true",
                         help="Do not run generated tests")
 
@@ -86,35 +88,79 @@ OR
     parser.add_argument("-u", "--use-existing", action="store_true",
                         help="Use pre-existing case directories they will pick up at the latest PEND state or re-run the first failed state. Requires test-id")
 
+    if config.has_option("create_test","SAVE_TIMING"):
+        default = config.get("create_test","SAVE_TIMING")
+    else:
+        default = False
+
     parser.add_argument("--save-timing", action="store_true",
+                        default=default,
                         help="Enable archiving of performance data.")
 
     parser.add_argument("--no-batch", action="store_true",
                         help="Do not submit jobs to batch system, run locally."
                         " If false, will default to machine setting.")
 
+    if config.has_option("create_test","SINGLE_SUBMIT"):
+        default = config.get("create_test","SINGLE_SUBMIT")
+    else:
+        default = False
+
     parser.add_argument("--single-submit", action="store_true",
+                        default=default,
                         help="Use a single interactive allocation to run all the tests. "
                         "Can drastically reduce queue waiting. Only makes sense on batch machines.")
 
+    if config.has_option("create_test","TEST_ROOT"):
+        default = config.get("create_test","TEST_ROOT")
+    else:
+        default = None
+
     parser.add_argument("-r", "--test-root",
+                        default=default,
                         help="Where test cases will be created."
                         " Will default to output root as defined in the config_machines file")
 
+    if config.has_option("create_test","OUTPUT_ROOT"):
+        default = config.get("create_test","OUTPUT_ROOT")
+    else:
+        default = None
+
     parser.add_argument("--output-root",
+                        default=default,
                         help="Where the case output is written.")
 
+    if config.has_option("create_test","BASELINE_ROOT"):
+        default = config.get("create_test","BASELINE_ROOT")
+    else:
+        default = None
+
     parser.add_argument("--baseline-root",
+                        default=default,
                         help="Specifies an root directory for baseline"
                         "datasets used for Bit-for-bit generate/compare"
                         "testing.")
 
+    if config.has_option("create_test","CLEAN"):
+        default = config.get("create_test","CLEAN")
+    else:
+        default = False
+
     parser.add_argument("--clean", action="store_true",
+                        default=default,
                         help="Specifies if tests should be cleaned after run. If set, "
                         "all object executables, and data files will"
                         " be removed after tests are run")
 
+    if config.has_option("create_test","MACHINE"):
+        default = config.get("create_test","MACHINE")
+    elif config.has_option("main","MACHINE"):
+        default = config.get("main","MACHINE")
+    else:
+        default = None
+
     parser.add_argument("-m", "--machine",
+                        default=default,
                         help="The machine for which to build tests, this machine must be defined"
                         " in the config_machines.xml file for the given model. "
                         "Default is to match the name of the machine in the test name or "
@@ -122,7 +168,15 @@ OR
                         "NODENAME_REGEX field in config_machines.xml. This option is highly "
                         "unsafe and should only be used if you know what you're doing.")
 
+    if config.has_option("create_test","MPILIB"):
+        default = config.get("create_test","MPILIB")
+    elif config.has_option("main","MPILIB"):
+        default = config.get("main","MPILIB")
+    else:
+        default = None
+
     parser.add_argument("--mpilib",
+                        default=default,
                         help="Specify the mpilib. "
                         "To see list of supported mpilibs for each machine, use the utility query_config in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
@@ -171,7 +225,15 @@ OR
                             help="While testing, generate baselines; "
                             "this can also be done after the fact with bless_test_results")
 
+    if config.has_option("create_test","COMPILER"):
+        default = config.get("create_test","COMPILER")
+    elif config.has_option("main","COMPILER"):
+        default = config.get("main","COMPILER")
+    else:
+        default = None
+
     parser.add_argument("--compiler",
+                        default=default,
                         help="Compiler to use to build cime.  Default will be the name in"
                         " the Testnames or the default defined for the machine.")
 
@@ -193,48 +255,107 @@ OR
                         "(All sorts of problems can occur if you use the same test-id twice "
                         "on the same file system, even if the test lists are completely different.)")
 
-    parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
+    if config.has_option("create_test","PARALLEL_JOBS"):
+        default = config.get("create_test","PARALLEL_JOBS")
+    else:
+        default = None
+
+    parser.add_argument("-j", "--parallel-jobs", type=int, default=default,
                         help="Number of tasks create_test should perform simultaneously. Default "
                         "will be min(num_cores, num_tests).")
 
-    parser.add_argument("--proc-pool", type=int, default=None,
+    if config.has_option("create_test","PROC_POOL"):
+        default = config.get("create_test","PROC_POOL")
+    else:
+        default = None
+
+    parser.add_argument("--proc-pool", type=int, default=default,
                         help="The size of the processor pool that create_test can use. Default "
                         "is MAX_MPITASKS_PER_NODE + 25 percent.")
 
-    parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
+    default = os.getenv("CIME_GLOBAL_WALLTIME")
+    if default is None and config.has_option("create_test","WALLTIME"):
+        default = config.get("create_test","WALLTIME")
+
+    parser.add_argument("--walltime", default=default,
                         help="Set the wallclock limit for all tests in the suite. "
                         "Can use env var CIME_GLOBAL_WALLTIME to set this for all test.")
 
-    parser.add_argument("-q", "--queue", default=None,
+    if config.has_option("create_test","JOB_QUEUE"):
+        default = config.get("create_test","JOB_QUEUE")
+    else:
+        default = None
+
+    parser.add_argument("-q", "--queue", default=default,
                         help="Force batch system to use a certain queue")
 
     parser.add_argument("-f", "--testfile",
                         help="A file containing an ascii list of tests to run")
 
+    if config.has_option("create_test","ALLOW_BASELINE_OVERWRITE"):
+        default = config.get("create_test","ALLOW_BASELINE_OVERWRITE")
+    else:
+        default = False
+
     parser.add_argument("-o", "--allow-baseline-overwrite", action="store_true",
+                        default=default,
                         help="If the --generate option is given, then by default "
                         "an attempt to overwrite an existing baseline directory "
                         "will raise an error. Specifying this option allows "
                         "existing baseline directories to be silently overwritten.")
 
+    if config.has_option("create_test","WAIT"):
+        default = config.get("create_test","WAIT")
+    else:
+        default = False
+
     parser.add_argument("--wait", action="store_true",
+                        default=default,
                         help="On batch systems, wait for submitted jobs to complete")
 
-    parser.add_argument("--force-procs", type=int, default=None,
+    if config.has_option("create_test","FORCE_PROCS"):
+        default = config.get("create_test","FORCE_PROCS")
+    else:
+        default = None
+
+    parser.add_argument("--force-procs", type=int, default=default,
                         help="For all tests to run with this number of processors")
 
-    parser.add_argument("--force-threads", type=int, default=None,
+    if config.has_option("create_test","FORCE_THREADS"):
+        default = config.get("create_test","FORCE_THREADS")
+    else:
+        default = None
+
+    parser.add_argument("--force-threads", type=int, default=default,
                         help="For all tests to run with this number of threads")
 
+    if config.has_option("create_test","INPUT_DIR"):
+        default = config.get("create_test","INPUT_DIR")
+    elif config.has_option("main","INPUT_DIR"):
+        default = config.get("main","INPUT_DIR")
+    else:
+        default = None
+
     parser.add_argument("-i", "--input-dir",
+                        default=default,
                         help="Use a non-default location for input files")
 
-    parser.add_argument("--pesfile",
+    if config.has_option("create_test","PESFILE"):
+        default = config.get("create_test","PESFILE")
+    else:
+        default=None
+
+    parser.add_argument("--pesfile",default=default,
                         help="Full pathname of an optional pes specification "
                         "file. The file can follow either the config_pes.xml or "
                         "the env_mach_pes.xml format.")
 
-    parser.add_argument("--retry", type=int, default=0,
+    if config.has_option("create_test","RETRY"):
+        default = config.get("create_test","RETRY")
+    else:
+        default=0
+
+    parser.add_argument("--retry", type=int, default=default,
                         help="Automatically retry failed tests. >0 implies --wait")
 
     CIME.utils.add_mail_type_args(parser)
