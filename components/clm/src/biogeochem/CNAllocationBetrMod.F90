@@ -692,8 +692,8 @@ contains
      t_scalar => carbonflux_vars%t_scalar_col  , &
      w_scalar => carbonflux_vars%w_scalar_col  , &
      t_soisno => temperature_vars%t_soisno_col , &
-     sucsat   => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)                              
-     soilpsi  => soilstate_vars%soilpsi_col      & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa) 
+     sucsat   => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)
+     soilpsi  => soilstate_vars%soilpsi_col      & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa)
   )
   q10 = CNParamsShareInst%q10
   froz_q10 = CNParamsShareInst%froz_q10
@@ -822,6 +822,7 @@ contains
      minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col    , &
      minsurf_nh4_compet           => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col  , &
      km_minsurf_nh4_vr_col        => PlantMicKinetics_vars%km_minsurf_nh4_vr_col      , &
+     plant_eff_frootc_vr_patch    => PlantMicKinetics_vars%plant_eff_frootc_vr_patch  , &
      isoilorder                   => cnstate_vars%isoilorder                          , &
      cn_scalar                    => cnstate_vars%cn_scalar                           , &
      cp_scalar                    => cnstate_vars%cp_scalar                           , &
@@ -870,14 +871,14 @@ contains
       else
         vmax_minsurf_p_vr_col(c,j) = 1.e-7_r8
         km_minsurf_p_vr_col(c,j) = km_minsurf_p_vr(isoilorder(c),j)
-        km_minsurf_nh4_vr_col(c,j)=2.e-3_r8 ! mol/m3, this is a rough guess
+        km_minsurf_nh4_vr_col(c,j)=28.e-2_r8 ! gN/m3, this is a rough guess
         ! effective p competing mineral surfaces, this needs update as a function of soil texture,
         ! anion exchange capacity, pH?. Note the definition of vmax_minsurf_p_vr in eca-cnp is
         ! actually maximum sorption capacity. For simplicity, I also assume the sorption capacity
         ! for nh4 same as for P. In soil, the sorption mechanisms for nh4 and phoshpate are different.
         ! Nh4 is associated anions and P is associated with cations
-        minsurf_p_compet(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)/31._r8  !convert in mol/m3
-        minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)
+        minsurf_p_compet(c,j) = vmax_minsurf_p_vr(isoilorder(c),j) !
+        minsurf_nh4_compet(c,j) = minsurf_p_compet(c,j)*14.007_r8/30.97_r8 !convert into gN/m3
       endif
       !the following is temporary set using alm, in the future, it will be
       !set through the betr_alm interface
@@ -890,24 +891,21 @@ contains
       decomp_eff_pcompet_b(c,j) = 0._r8
       do p = col_pp%pfti(c), col_pp%pftf(c)
         if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
+          plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) * t_scalar(c,j)
 
-          plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j)
+          plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* plant_eff_frootc_vr_patch(p,j) * &
+                            cn_scalar(p) / e_plant_scalar
 
-          plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j)
-          plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cp_scalar(p) * t_scalar(c,j)
-!          if( plant_p_vmax_vr_patch(p,j)/=0._r8 .and. j==1 .and. c==4445)then
-!            print*,'ppp',p,cn_scalar(p),cp_scalar(p)
-!            print*,'scal0',frootc(p), froot_prof(p,j),t_scalar(c,j)
-!            print*,'vxss',vmax_plant_nh4(ivt(p)),vmax_plant_no3(ivt(p)),vmax_plant_p(ivt(p))
-!            print*,'mxx',plant_nh4_vmax_vr_patch(p,j),plant_no3_vmax_vr_patch(p,j),plant_p_vmax_vr_patch(p,j)
-!          endif
+          plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) *plant_eff_frootc_vr_patch(p,j) * &
+                             cn_scalar(p)  / e_plant_scalar
+          plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) *plant_eff_frootc_vr_patch(p,j)  * &
+                             cp_scalar(p)  / e_plant_scalar
+
           plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))
           plant_no3_km_vr_patch(p,j) = km_plant_no3(ivt(p))
           plant_p_km_vr_patch(p,j) = km_plant_p(ivt(p))
 
+          plant_eff_frootc_vr_patch(p,j) = plant_eff_frootc_vr_patch(p,j) * veg_pp%wtcol(p)
           plant_eff_ncompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
           plant_eff_pcompet_b(p,j) = e_plant_scalar*frootc(p)*froot_prof(p,j) * veg_pp%wtcol(p)
 
