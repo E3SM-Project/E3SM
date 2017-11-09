@@ -85,6 +85,8 @@ class PRE(SystemTestsCompareTwo):
         multi_driver = self._case.get_value("MULTI_DRIVER")
         comps = self._case.get_values("COMP_CLASSES")
         for comp in comps:
+            if not self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
+                continue
             if comp == "CPL":
                 if multi_driver:
                     ninst = self._case.get_value("NINST_MAX")
