@@ -1037,6 +1037,31 @@ class O_TestTestScheduler(TestCreateTestCommon):
             assert_test_status(self, test_name, ts, SUBMIT_PHASE, TEST_PASS_STATUS)
             assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
 
+        del os.environ["TESTBUILDFAIL_PASS"]
+        del os.environ["TESTRUNFAIL_PASS"]
+
+        # test that passed tests are not re-run
+
+        ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
+                            test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=self._compiler,
+                            mpilib=TEST_MPILIB)
+
+        log_lvl = logging.getLogger().getEffectiveLevel()
+        logging.disable(logging.CRITICAL)
+        try:
+            ct2.run_tests()
+        finally:
+            logging.getLogger().setLevel(log_lvl)
+
+        self._wait_for_tests(test_id)
+
+        for test_status in test_statuses:
+            ts = TestStatus(test_dir=os.path.dirname(test_status))
+            test_name = ts.get_name()
+            assert_test_status(self, test_name, ts, MODEL_BUILD_PHASE, TEST_PASS_STATUS)
+            assert_test_status(self, test_name, ts, SUBMIT_PHASE, TEST_PASS_STATUS)
+            assert_test_status(self, test_name, ts, RUN_PHASE, TEST_PASS_STATUS)
+
     ###########################################################################
     def test_d_retry(self):
     ###########################################################################
