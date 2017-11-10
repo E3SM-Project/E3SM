@@ -88,7 +88,7 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -100,6 +100,9 @@ class TestScheduler(object):
         self._input_dir       = input_dir
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
+
+        self._mail_user = mail_user
+        self._mail_type = mail_type
 
         self._machobj = Machines(machine=machine_name)
 
@@ -218,21 +221,26 @@ class TestScheduler(object):
 
         if use_existing:
             for test in self._tests:
-                ts = TestStatus(self._get_test_dir(test))
-                for phase, status in ts:
-                    if phase in CORE_PHASES:
-                        if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
-                            # We need to pick up here
-                            break
-                        else:
-                            if phase != SUBMIT_PHASE:
-                                # Somewhat subtle. Create_test considers submit/run to be the run phase,
-                                # so don't try to update test status for a passed submit phase
-                                self._update_test_status(test, phase, TEST_PEND_STATUS)
-                                self._update_test_status(test, phase, status)
+                with TestStatus(self._get_test_dir(test)) as ts:
+                    for phase, status in ts:
+                        if phase in CORE_PHASES:
+                            if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
+                                if status == TEST_FAIL_STATUS:
+                                    # Import for potential subsequent waits
+                                    ts.set_status(phase, TEST_PEND_STATUS)
 
-                                if phase == RUN_PHASE:
-                                    logger.info("Test {} passed and will not be re-run".format(test))
+                                # We need to pick up here
+                                break
+
+                            else:
+                                if phase != SUBMIT_PHASE:
+                                    # Somewhat subtle. Create_test considers submit/run to be the run phase,
+                                    # so don't try to update test status for a passed submit phase
+                                    self._update_test_status(test, phase, TEST_PEND_STATUS)
+                                    self._update_test_status(test, phase, status)
+
+                                    if phase == RUN_PHASE:
+                                        logger.info("Test {} passed and will not be re-run".format(test))
 
                 logger.info("Using existing test directory {}".format(self._get_test_dir(test)))
         else:
@@ -411,19 +419,22 @@ class TestScheduler(object):
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib {}".format(mpilib)
                     logger.debug (" MPILIB set to {}".format(mpilib))
-                if case_opt.startswith('N'):
+                elif case_opt.startswith('N'):
                     expect(ncpl == 1,"Cannot combine _C and _N options")
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst {}".format(ninst)
                     logger.debug (" NINST set to {}".format(ninst))
-                if case_opt.startswith('C'):
+                elif case_opt.startswith('C'):
                     expect(ninst == 1,"Cannot combine _C and _N options")
                     ncpl = case_opt[1:]
                     create_newcase_cmd += " --ninst {} --multi-driver" .format(ncpl)
                     logger.debug (" NCPL set to {}" .format(ncpl))
-                if case_opt.startswith('P'):
+                elif case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
+                elif case_opt.startswith('V'):
+                    driver = case_opt[1:]
+                    create_newcase_cmd += " --driver {}".format(driver)
 
         # create_test mpilib option overrides default but not explicitly set case_opt mpilib
         if mpilib is None and self._mpilib is not None:
@@ -540,24 +551,14 @@ class TestScheduler(object):
                     # For PTS_MODE, compile with mpi-serial
                     envtest.set_test_parameter("MPILIB", "mpi-serial")
 
-                elif opt.startswith('I'):
-                    # Marker to distinguish tests with same name - ignored
-                    continue
+                elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
+                      opt.startswith('M') or # handled in create_newcase
+                      opt.startswith('P') or # handled in create_newcase
+                      opt.startswith('N') or # handled in create_newcase
+                      opt.startswith('C') or # handled in create_newcase
+                      opt.startswith('V')):  # handled in create_newcase
+                    pass
 
-                elif opt.startswith('M'):
-                    # M option handled by create newcase
-                    continue
-
-                elif opt.startswith('P'):
-                    # P option handled by create newcase
-                    continue
-
-                elif opt.startswith('N'):
-                    # handled in create_newcase
-                    continue
-                elif opt.startswith('C'):
-                    # handled in create_newcase
-                    continue
                 elif opt.startswith('IOP'):
                     logger.warning("IOP test option not yet implemented")
                 else:
@@ -614,10 +615,14 @@ class TestScheduler(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
+
+        cmd = "./case.submit --skip-preview-namelist"
         if self._no_batch:
-            cmd = "./case.submit --no-batch --skip-preview-namelist"
-        else:
-            cmd = "./case.submit --skip-preview-namelist"
+            cmd += " --no-batch"
+        if self._mail_user:
+            cmd += " --mail-user={}".format(self._mail_user)
+        if self._mail_type:
+            cmd += " -M={}".format(",".join(self._mail_type))
 
         return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
