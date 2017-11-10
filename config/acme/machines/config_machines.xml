@@ -592,6 +592,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">sems-env</command>
+        <command name="load">acme-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
         <command name="load">sems-cmake/2.8.12</command>
@@ -604,6 +605,7 @@
       </modules>
       <modules mpilib="mpi-serial">
         <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">sems-openmpi/1.8.7</command>
