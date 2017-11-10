@@ -183,9 +183,6 @@ class EnvBatch(EnvBase):
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def set_job_defaults(self, batch_jobs, case):
-        walltime    = case.get_value("USER_REQUESTED_WALLTIME") if case.get_value("USER_REQUESTED_WALLTIME") else None
-        force_queue = case.get_value("USER_REQUESTED_QUEUE") if case.get_value("USER_REQUESTED_QUEUE") else None
-
         if self._batchtype is None:
             self._batchtype = self.get_batch_system_type()
 
@@ -193,6 +190,9 @@ class EnvBatch(EnvBase):
             return
 
         for job, jsect in batch_jobs:
+            walltime    = case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) if case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) else None
+            force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
+            logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
             task_count = jsect["task_count"] if "task_count" in jsect else None
             if task_count is None:
                 node_count = case.num_nodes
@@ -415,6 +415,7 @@ class EnvBatch(EnvBase):
             logger.info("dependencies: {}".format(dep_jobs))
             dep_string = self.get_value("depend_string", subgroup=None)
             separator_string = self.get_value("depend_separator", subgroup=None)
+            expect(separator_string is not None,"depend_separator string not defined")
             expect("jobid" in dep_string, "depend_string is missing jobid for prerequisite jobs")
             dep_ids_str = str(dep_jobs[0])
             for dep_id in dep_jobs[1:]:

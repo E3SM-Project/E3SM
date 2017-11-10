@@ -391,8 +391,12 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
-        expect(allow_undefined or result is not None,
-               "No variable {} found in case".format(item))
+        if len(self._files) == 1:
+            expect(allow_undefined or result is not None,
+                   "No variable {} found in file {}".format(item, self._files[0].filename))
+        else:
+            expect(allow_undefined or result is not None,
+                   "No variable {} found in case".format(item))
 
     def set_valid_values(self, item, valid_values):
         """

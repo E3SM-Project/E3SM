@@ -102,6 +102,7 @@
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
+    <depend_separator>&amp;&amp;</depend_separator>
     <walltime_format>%H:%M</walltime_format>
     <batch_mail_flag>-u</batch_mail_flag>
     <batch_mail_type_flag></batch_mail_type_flag>
