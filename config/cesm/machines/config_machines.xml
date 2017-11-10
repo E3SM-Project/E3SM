@@ -56,12 +56,13 @@
     <OS>CNL</OS>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <PROJECT>banu</PROJECT>
     <CIME_OUTPUT_ROOT>/scratch/sciteam/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/scratch/sciteam/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J> 8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -95,28 +96,28 @@
       </modules>
       <modules compiler="pgi">
 	<command name="load">PrgEnv-pgi</command>
-	<command name="switch">pgi pgi/16.3.0</command>
+	<command name="switch">pgi pgi/17.5.0</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">PrgEnv-gnu/4.2.84</command>
-	<command name="switch">gcc gcc/4.8.2</command>
+	<command name="load">PrgEnv-gnu</command>
+	<command name="switch">gcc gcc/6.3.0</command>
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.6</command>
+	<command name="switch">cce cce/8.5.8</command>
       </modules>
       <modules>
-	<command name="load">papi/5.3.2</command>
-	<command name="switch">cray-mpich cray-mpich/7.3.3</command>
-	<command name="switch">cray-libsci cray-libsci/16.03.1</command>
-	<command name="load">torque/6.0.2</command>
+	<command name="load">papi/5.5.1.1</command>
+	<command name="switch">cray-mpich cray-mpich/7.5.3</command>
+	<command name="switch">cray-libsci cray-libsci/16.11.1</command>
+	<command name="load">torque/6.0.4</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-	<command name="load">cray-parallel-netcdf/1.7.0</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1.1</command>
+	<command name="load">cray-parallel-netcdf/1.8.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-netcdf/4.4.0</command>
+	<command name="load">cray-netcdf/4.4.1.1</command>
       </modules>
       <modules>
 	<command name="load">cmake/3.1.3</command>
@@ -194,7 +195,7 @@
   <machine MACH="centos7-linux">
     <DESC>
 	Example port to centos7 linux system with gcc, netcdf, pnetcdf and mpich
-        using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules
+	using modules from http://www.admin-magazine.com/HPC/Articles/Environment-Modules
     </DESC>
     <NODENAME_REGEX>regex.expression.matching.your.machine</NODENAME_REGEX>
     <OS>LINUX</OS>
@@ -285,8 +286,8 @@
     </mpirun>
     <mpirun mpilib="default" unit_testing="true">
       <!-- The only place we can build and run the unit tests is on cheyenne's
-           shared nodes. However, running mpi jobs on the shared nodes currently
-           requires some workarounds; these workarounds are implemented here -->
+	   shared nodes. However, running mpi jobs on the shared nodes currently
+	   requires some workarounds; these workarounds are implemented here -->
       <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
     </mpirun>
     <module_system type="module">
@@ -346,7 +347,7 @@
     </environment_variables>
     <environment_variables unit_testing="true">
       <!-- It's possible that we also need to set:
-           LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
+	   LD_LIBRARY_PATH=/opt/sgi/mpt/mpt-2.15/lib:$LD_LIBRARY_PATH
       -->
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
@@ -733,7 +734,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-     	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
+	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1082,7 +1083,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
+	<arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1096,8 +1097,8 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="load">sems-env</command>
-        <command name="load">sems-git</command>
+	<command name="load">sems-env</command>
+	<command name="load">sems-git</command>
 	<command name="load">sems-python/2.7.9</command>
 	<command name="load">sems-gcc/5.1.0</command>
 	<command name="load">sems-openmpi/1.8.7</command>
@@ -1247,12 +1248,12 @@
 	<command name="purge"/>
 	<command name="load">nas</command>
 	<command name="load">pkgsrc</command>
-        <command name="load">comp-intel/2016.2.181</command>
-        <command name="load">mpi-sgi/mpt.2.15r20</command>
-        <command name="load">szip/2.1.1</command>
-        <command name="load">hdf4/4.2.12</command>
-        <command name="load">hdf5/1.8.18_mpt</command>
-        <command name="load">netcdf/4.4.1.1_mpt</command>
+	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">mpi-sgi/mpt.2.15r20</command>
+	<command name="load">szip/2.1.1</command>
+	<command name="load">hdf4/4.2.12</command>
+	<command name="load">hdf5/1.8.18_mpt</command>
+	<command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1302,11 +1303,11 @@
 	<command name="load">nas</command>
 	<command name="load">pkgsrc</command>
 	<command name="load">comp-intel/2016.2.181</command>
-        <command name="load">mpi-sgi/mpt.2.15r20</command>
-        <command name="load">szip/2.1.1</command>
-        <command name="load">hdf4/4.2.12</command>
-        <command name="load">hdf5/1.8.18_mpt</command>
-        <command name="load">netcdf/4.4.1.1_mpt</command>
+	<command name="load">mpi-sgi/mpt.2.15r20</command>
+	<command name="load">szip/2.1.1</command>
+	<command name="load">hdf4/4.2.12</command>
+	<command name="load">hdf5/1.8.18_mpt</command>
+	<command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1357,10 +1358,10 @@
 	<command name="load">pkgsrc</command>
 	<command name="load">comp-intel/2016.2.181</command>
 	<command name="load">mpi-sgi/mpt.2.15r20</command>
-        <command name="load">szip/2.1.1</command>
-        <command name="load">hdf4/4.2.12</command>
-        <command name="load">hdf5/1.8.18_mpt</command>
- 	<command name="load">netcdf/4.4.1.1_mpt</command>
+	<command name="load">szip/2.1.1</command>
+	<command name="load">hdf4/4.2.12</command>
+	<command name="load">hdf5/1.8.18_mpt</command>
+	<command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1411,10 +1412,10 @@
 	<command name="load">pkgsrc</command>
 	<command name="load">comp-intel/2016.2.181</command>
 	<command name="load">mpi-sgi/mpt.2.15r20</command>
-        <command name="load">szip/2.1.1</command>
-        <command name="load">hdf4/4.2.12</command>
-        <command name="load">hdf5/1.8.18_mpt</command>
- 	<command name="load">netcdf/4.4.1.1_mpt</command>
+	<command name="load">szip/2.1.1</command>
+	<command name="load">hdf4/4.2.12</command>
+	<command name="load">hdf5/1.8.18_mpt</command>
+	<command name="load">netcdf/4.4.1.1_mpt</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1482,7 +1483,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
+	<arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1496,8 +1497,8 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="load">sems-env</command>
-        <command name="load">sems-git</command>
+	<command name="load">sems-env</command>
+	<command name="load">sems-git</command>
 	<command name="load">sems-python/2.7.9</command>
 	<command name="load">sems-gcc/5.1.0</command>
 	<command name="load">sems-openmpi/1.8.7</command>
@@ -1550,21 +1551,21 @@
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
-        <command name="purge"/>
-        <command name="load">sems-env</command>
-        <command name="load">sems-git</command>
-        <command name="load">sems-python/2.7.9</command>
-        <command name="load">gnu/4.9.2</command>
-        <command name="load">intel/intel-15.0.3.187</command>
-        <command name="load">libraries/intel-mkl-15.0.2.164</command>
-        <command name="load">libraries/intel-mkl-15.0.2.164</command>
+	<command name="purge"/>
+	<command name="load">sems-env</command>
+	<command name="load">sems-git</command>
+	<command name="load">sems-python/2.7.9</command>
+	<command name="load">gnu/4.9.2</command>
+	<command name="load">intel/intel-15.0.3.187</command>
+	<command name="load">libraries/intel-mkl-15.0.2.164</command>
+	<command name="load">libraries/intel-mkl-15.0.2.164</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load" >openmpi-intel/1.8</command>
-        <command name="load" >sems-hdf5/1.8.12/parallel</command>
-        <command name="load" >sems-netcdf/4.3.2/parallel</command>
-        <command name="load" >sems-hdf5/1.8.12/base</command>
-        <command name="load" >sems-netcdf/4.3.2/base</command>
+	<command name="load" >openmpi-intel/1.8</command>
+	<command name="load" >sems-hdf5/1.8.12/parallel</command>
+	<command name="load" >sems-netcdf/4.3.2/parallel</command>
+	<command name="load" >sems-hdf5/1.8.12/base</command>
+	<command name="load" >sems-netcdf/4.3.2/base</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1845,14 +1846,14 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default" unit_testing="true">
       <!-- For unit testing, avoid all of the extra stuff that we use before and
-           after the mpirun command when launching cesm on yellowstone -->
+	   after the mpirun command when launching cesm on yellowstone -->
       <executable>mpirun.lsf </executable>
     </mpirun>
     <mpirun mpilib="default" threaded="false">
       <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
 	<arg name="anum_tasks"> -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
+	<arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
 	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/launch </arg>
       </arguments>
     </mpirun>
@@ -1860,7 +1861,7 @@
       <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
 	<arg name="anum_tasks"> -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
+	<arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
 	<arg name="bindtool">$ENV{CESMDATAROOT}/tools/bin/hybrid_launch </arg>
       </arguments>
     </mpirun>
@@ -1868,7 +1869,7 @@
       <executable> $ENV{CESMDATAROOT}/tools/bin/mpirun </executable>
       <arguments>
 	<arg name="anum_tasks"> -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
+	<arg name="tasks_per_node"> -tpn {{ tasks_per_node }} </arg>
       </arguments>
     </mpirun>
     <module_system type="module">

@@ -45,7 +45,6 @@ GENF90 = ../../src/externals/genf90/genf90.pl
 
 FC := $(SFC)
 FFLAGS += -I$(INC_NETCDF) -I.
-LDFLAGS=$(SLIBS)
 #------------------------------------------------------------------------
 # Default rules and macros
 #------------------------------------------------------------------------
@@ -72,7 +71,7 @@ endif
 	$(FC) -c $(FFLAGS) $<
 
 $(EXEDIR)/$(EXENAME): $(OBJS)
-	$(FC) -o $@ $(OBJS) $(LDFLAGS)
+	$(FC) -o $@ $(OBJS) $(LDFLAGS) $(SLIBS)
 
 compare_vars_mod.F90 : compare_vars_mod.F90.in
 	perl $(GENF90) $< > $@
