@@ -1472,6 +1472,76 @@ class K_TestCimeCase(TestCreateTestCommon):
                 self.assertTrue(prereq_name in prereq_substr, "Dependencies added, but not the user specified one")
 
     ###########################################################################
+    def test_starchive_last_date(self):
+    ###########################################################################
+        logger = logging.getLogger()
+        # ch = logging.StreamHandler(stream=sys.stdout)
+        # ch.setLevel(logging.DEBUG)
+        # logger.addHandler(ch)
+        testcase_name = 'starchive_last_date'
+        testdir = os.path.join(TEST_ROOT, testcase_name)
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        run_cmd_assert_result(self,
+                              ("{}/create_newcase --case {} "
+                               + "--script-root {} "
+                               + "--compset A --res ne4np4_oQU240 "
+                               + "--output-root {}").format(SCRIPT_DIR,
+                                                            testcase_name,
+                                                            testdir,
+                                                            TEST_ROOT),
+                              from_dir=SCRIPT_DIR)
+
+        with Case(testdir, read_only=False) as case:
+            import datetime, dateutil
+            start_date = datetime.datetime(1, 1, 1)
+            last_date = datetime.datetime(2, 1, 1)
+            case.set_value("STOP_N", last_date.year * 12 + last_date.month)
+            case.set_value("REST_N", 1)
+            case.set_value("HIST_N", 1)
+            case.set_value("STOP_OPTION", "nmonths")
+            case.set_value("REST_OPTION", "nmonths")
+            case.set_value("HIST_OPTION", "nmonths")
+            import CIME.case_setup, CIME.build, CIME.case_submit
+            from CIME.case_st_archive import case_st_archive
+            # TODO: Make these utility functions
+            from CIME.case_st_archive import _get_file_date, _datetime_str
+            CIME.case_setup.case_setup(case)
+            CIME.build.case_build(testdir, case)
+            CIME.case_submit.submit(case)
+
+            job_name = "case.run"
+            job_info = case.get_job_info()
+            logger.info("\n\nJob info: {}".format(job_info))
+            logger.info(str(job_info))
+            job_id = job_info[job_name]
+            env_batch = case.get_env('batch')
+
+            # HACK to wait until the job is finished
+            while job_id in env_batch.get_status(job_id):
+                logger.info("Job {} status: {}".format(job_id, env_batch.get_status(job_id)))
+
+            archive_path = os.path.join(case.get_value("DOUT_S_ROOT"), "rest")
+            increment_date = datetime.timedelta(50)
+            current_date = start_date
+            date_rrule = dateutil.rrule(freq=dateutil.MONTHLY, dtstart=start_date, until=last_date)
+            next_datecheck = date_rrule.next()
+            while current_date < last_date:
+                current_date_str = _datetime_str(current_date)
+                case_st_archive(case, last_date_str=current_date_str, copy_only=False)
+                archive_dates = [_get_file_date(fname)
+                                 for fname in glob.glob(os.path.join(archive_path, "*"))]
+                while next_datecheck <= current_date:
+                    self.assertTrue(next_datecheck in archive_dates,
+                                    "Not all dates generated and/or archived: {} is missing".format(next_datecheck))
+                    next_datecheck = date_rrule.next()
+                for date in archive_dates:
+                    self.assertTrue(date <= current_date,
+                                    "Archived date greater than specified by last-date: {}".format(date))
+
+                current_date += increment_date
+
+    ###########################################################################
     def test_cime_case_build_threaded_1(self):
     ###########################################################################
         self._create_test(["--no-build", "TESTRUNPASS_P1x1.f19_g16_rx1.A"], test_id=self._baseline_name)
