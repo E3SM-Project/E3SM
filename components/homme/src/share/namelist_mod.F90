@@ -727,14 +727,13 @@ module namelist_mod
 
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
-    if (NThreads*vthreads > omp_get_max_threads()) then
+    if (NThreads > omp_get_max_threads()) then
        if(par%masterproc) write(iulog,*) "Main:NThreads=",NThreads
        if(par%masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()
        if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
        call abortmp('stopping')
     endif
-    call omp_set_num_threads(NThreads*vthreads)
-
+    call omp_set_num_threads(NThreads)
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
     if (hypervis_subcycle==-1) then
