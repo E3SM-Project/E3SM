@@ -54,7 +54,7 @@ contains
     use hybrid_mod    , only: hybrid_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
-    use bndry_mod, only: bndry_exchangeV_timing
+    !use bndry_mod, only: bndry_exchangeV_timing
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
@@ -66,9 +66,9 @@ contains
     integer              , intent(in   ) :: nete
     integer :: i
     if (first_time) then
-      do i = 1 , 100
-        call bndry_exchangeV_timing(hybrid,edgeAdv)
-      enddo
+      !do i = 1 , 100
+      !  call bndry_exchangeV_timing(hybrid,edgeAdv)
+      !enddo
       first_time = .false.
     endif
     call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )

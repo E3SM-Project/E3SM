@@ -107,6 +107,9 @@ contains
 #ifdef CAM
     use spmd_utils, only : mpicom
 #endif      
+#ifdef _OPENACC
+    use openacc
+#endif
     integer, intent(in), optional ::  npes_in
     integer, intent(in), optional ::  npes_stride
     type (parallel_t) par
@@ -169,6 +172,14 @@ contains
     if(par%rank .eq. par%root) par%masterproc = .TRUE.
     if (par%masterproc) write(iulog,*)'number of MPI processes: ',par%nprocs
     if (par%masterproc) write(iulog,*)'MPI processors stride: ',npes_cam_stride
+
+#ifdef _OPENACC
+    !call acc_init(acc_device_nvidia)
+    !$omp parallel
+    call acc_set_device_num(0, acc_device_nvidia)
+    !$omp end parallel
+#endif
+
            
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION

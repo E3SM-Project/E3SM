@@ -13,9 +13,9 @@ module bndry_mod
   integer, parameter, private :: maxCycles = 20
 
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
-  public :: bndry_exchangeS_simple_overlap
-  public :: bndry_exchangeV_timing
-  public :: bndry_exchangeV_simple_overlap
+  !public :: bndry_exchangeS_simple_overlap
+  !public :: bndry_exchangeV_timing
+  !public :: bndry_exchangeV_simple_overlap
 
 contains
 

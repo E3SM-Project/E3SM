@@ -36,12 +36,8 @@ contains
 
     integer :: ie
 
-#ifdef _OPENACC
-    call acc_set_device_num(0, acc_device_nvidia)
-#endif
     !$omp barrier
     !$omp master
-
 
     !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj)
     !$acc enter data pcopyin(elem(1:nelemd),deriv)

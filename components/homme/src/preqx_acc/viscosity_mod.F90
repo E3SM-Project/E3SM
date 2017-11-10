@@ -209,7 +209,7 @@ contains
     use perf_mod         , only: t_startf, t_stopf
     use edgetype_mod     , only: edgeBuffer_t
     use edge_mod , only: edgeSpack_openacc, edgeSunpackMin_openacc, edgeSunpackMax_openacc
-    use bndry_mod, only: bndry_exchangeS => bndry_exchangeS_simple_overlap
+    use bndry_mod, only: bndry_exchangeS
     implicit none
     ! compute Q min&max over the element and all its neighbors
     integer :: nets,nete
