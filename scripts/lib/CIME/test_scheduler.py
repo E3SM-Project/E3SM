@@ -221,21 +221,26 @@ class TestScheduler(object):
 
         if use_existing:
             for test in self._tests:
-                ts = TestStatus(self._get_test_dir(test))
-                for phase, status in ts:
-                    if phase in CORE_PHASES:
-                        if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
-                            # We need to pick up here
-                            break
-                        else:
-                            if phase != SUBMIT_PHASE:
-                                # Somewhat subtle. Create_test considers submit/run to be the run phase,
-                                # so don't try to update test status for a passed submit phase
-                                self._update_test_status(test, phase, TEST_PEND_STATUS)
-                                self._update_test_status(test, phase, status)
+                with TestStatus(self._get_test_dir(test)) as ts:
+                    for phase, status in ts:
+                        if phase in CORE_PHASES:
+                            if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
+                                if status == TEST_FAIL_STATUS:
+                                    # Import for potential subsequent waits
+                                    ts.set_status(phase, TEST_PEND_STATUS)
 
-                                if phase == RUN_PHASE:
-                                    logger.info("Test {} passed and will not be re-run".format(test))
+                                # We need to pick up here
+                                break
+
+                            else:
+                                if phase != SUBMIT_PHASE:
+                                    # Somewhat subtle. Create_test considers submit/run to be the run phase,
+                                    # so don't try to update test status for a passed submit phase
+                                    self._update_test_status(test, phase, TEST_PEND_STATUS)
+                                    self._update_test_status(test, phase, status)
+
+                                    if phase == RUN_PHASE:
+                                        logger.info("Test {} passed and will not be re-run".format(test))
 
                 logger.info("Using existing test directory {}".format(self._get_test_dir(test)))
         else:
