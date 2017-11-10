@@ -135,9 +135,9 @@ real(r8), parameter :: minrefl = 1.26e-10_r8    ! minrefl = 10._r8**(mindbz/10._
 ! autoconversion size threshold for cloud ice to snow (m)
 real(r8) :: dcs
 
-!!== KZ_DCS 
+!!== KZ_DCS
 logical :: dcs_tdep
-!!== KZ_DCS 
+!!== KZ_DCS
 
 ! minimum mass of new crystal due to freezing of cloud droplets done
 ! externally (kg)
@@ -210,7 +210,7 @@ logical  :: allow_sed_supersat ! Allow supersaturated conditions after sedimenta
 ! nccons = .true. to specify constant cloud droplet number
 ! nicons = .true. to specify constant cloud ice number
 
-logical :: nccons 
+logical :: nccons
 logical :: nicons
 
 !===============================================================================
@@ -220,9 +220,9 @@ contains
 subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,    &
      tmelt_in, latvap, latice,           &
-!!== KZ_DCS 
+!!== KZ_DCS
      rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, &
-!!== KZ_DCS 
+!!== KZ_DCS
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      do_nccons_in, do_nicons_in, ncnst_in, ninst_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
@@ -251,9 +251,9 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: rhmini_in    ! Minimum rh for ice cloud fraction > 0.
   real(r8), intent(in)  :: micro_mg_dcs
   real(r8), intent(in)  :: ice_sed_ai   !Fall speed parameter for cloud ice
-!!== KZ_DCS 
+!!== KZ_DCS
   logical,  intent(in)  :: micro_mg_dcs_tdep
-!!== KZ_DCS 
+!!== KZ_DCS
 
   logical,  intent(in)  :: microp_uniform_in    ! .true. = configure uniform for sub-columns
                                             ! .false. = use w/o sub-columns (standard)
@@ -261,7 +261,7 @@ subroutine micro_mg_init( &
                                             ! .false. = skip all processes affecting
                                             !           cloud ice
   logical,  intent(in)  :: do_nccons_in     ! .true. = set cloud droplet to constant
-  logical,  intent(in)  :: do_nicons_in     ! .true. = set ice concentration to constant					    
+  logical,  intent(in)  :: do_nicons_in     ! .true. = set ice concentration to constant
   logical,  intent(in)  :: use_hetfrz_classnuc_in ! use heterogeneous freezing
 
   character(len=16),intent(in)  :: micro_mg_precip_frac_method_in  ! type of precipitation fraction method
@@ -271,7 +271,7 @@ subroutine micro_mg_init( &
   logical, intent(in)   :: mg_prc_coeff_fix_in
 
   real(r8), intent(in)  :: ncnst_in
-  real(r8), intent(in)  :: ninst_in        
+  real(r8), intent(in)  :: ninst_in
 
   character(128), intent(out) :: errstring    ! Output status (non-blank for error return)
 
@@ -279,9 +279,9 @@ subroutine micro_mg_init( &
 
   dcs = micro_mg_dcs
 
-!!== KZ_DCS 
-  dcs_tdep = micro_mg_dcs_tdep 
-!!== KZ_DCS 
+!!== KZ_DCS
+  dcs_tdep = micro_mg_dcs_tdep
+!!== KZ_DCS
 
  prc_coef1 = prc_coef1_in
  prc_exp   = prc_exp_in
@@ -416,9 +416,9 @@ subroutine micro_mg_tend ( &
   ! Size calculation functions.
   use micro_mg_utils, only: &
        size_dist_param_liq, &
-                                !!== KZ_DCS 
+                                !!== KZ_DCS
        size_dist_param_ice, &
-                                !!== KZ_DCS 
+                                !!== KZ_DCS
        size_dist_param_basic, &
        avg_diameter
 
@@ -474,7 +474,7 @@ subroutine micro_mg_tend ( &
   real(r8), intent(in) :: accre_enhan(:,:)  ! optional accretion
   ! enhancement factor (-)
 
-  logical, intent(in)  :: precip_off					     
+  logical, intent(in)  :: precip_off
 
   real(r8), intent(in) :: p(:,:)        ! air pressure (pa)
   real(r8), intent(in) :: pdel(:,:)     ! pressure difference across level (pa)
@@ -760,9 +760,9 @@ subroutine micro_mg_tend ( &
   ! relative humidity
   real(r8) :: relhum(mgncol,nlev)
 
-  !!== KZ_DCS 
+  !!== KZ_DCS
   real(r8) :: dcst(mgncol,nlev)        ! t-dependent dcs
-  !!== KZ_DCS 
+  !!== KZ_DCS
 
   ! parameters for cloud water and cloud ice sedimentation calculations
   real(r8) :: alphaq(0:nlev), alphan(0:nlev)
@@ -820,9 +820,6 @@ subroutine micro_mg_tend ( &
 
   ! sedimentation substep loop variables
   real(r8) :: cfl, deltat_sed, time_sed
-
-  ! number of sub-steps for loops over "n" (for sedimentation)
-  integer nstep !PMC - this var isn't needed???
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -1326,12 +1323,12 @@ subroutine micro_mg_tend ( &
         ! Get size distribution parameters for cloud ice
         call size_dist_param_ice(mg_ice_props, dcst(:,k), qiic(:,k), niic(:,k), &
              lami(:,k), n0i(:,k))
-     else 
+     else
         ! Get size distribution parameters for cloud ice
         call size_dist_param_basic(mg_ice_props, qiic(:,k), niic(:,k), &
              lami(:,k), n0i(:,k))
      end if
-     !!== KZ_DCS 
+     !!== KZ_DCS
 
      !.......................................................................
      ! Autoconversion of cloud ice to snow
@@ -1339,9 +1336,9 @@ subroutine micro_mg_tend ( &
 
      if (do_cldice) then
         call ice_autoconversion(t(:,k), qiic(:,k), lami(:,k), n0i(:,k), &
-                                !!== KZ_DCS 
+                                !!== KZ_DCS
              dcs, dcst(:,k), dcs_tdep, prci(:,k), nprci(:,k))
-        !!== KZ_DCS 
+        !!== KZ_DCS
      else
         ! Add in the particles that we have already converted to snow, and
         ! don't do any further autoconversion of ice.
@@ -1351,7 +1348,7 @@ subroutine micro_mg_tend ( &
 
      if (precip_off) then
         prci(:,k) = 0.0_r8
-	nprci(:,k) = 0.0_r8
+        nprci(:,k) = 0.0_r8
      endif
 
      ! note, currently we don't have this
@@ -1529,9 +1526,9 @@ subroutine micro_mg_tend ( &
      if (do_cldice) then
 
         call ice_deposition_sublimation(t(:,k), q(:,k), qi(:,k), ni(:,k), &
-                                !!== KZ_DCS 
+                                !!== KZ_DCS
              icldm(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), dcst(:,k), dcs_tdep, &
-                                !!== KZ_DCS 
+                                !!== KZ_DCS
              berg(:,k), vap_dep(:,k), ice_sublim(:,k))
 
         berg(:,k)=berg(:,k)*micro_mg_berg_eff_factor
@@ -1836,7 +1833,7 @@ subroutine micro_mg_tend ( &
               ! modify rates if needed, divide by precip_frac to get local (in-precip) value
               pre(i,k)=dum*dum1/deltat/precip_frac(i,k)
 
-              !+++PMC bugfix - dum should take (qtmp-qvn) calculated for *liquid* 
+              !+++PMC bugfix - dum should take (qtmp-qvn) calculated for *liquid*
               !                divided by the correction computed for ice.
 
               ! do separately using RHI for prds and ice_sublim
@@ -1858,7 +1855,7 @@ subroutine micro_mg_tend ( &
               !ice_sublim(i,k) = dum*dum1/deltat
               ice_sublim(i,k) = max(ice_sublim(i,k),dum*dum1/deltat) !max b/c ice_sublim<0.
               !---PMC bugfix
-              
+
            end if
         end if
 
@@ -2094,7 +2091,6 @@ subroutine micro_mg_tend ( &
         else
            time_sed = 0._r8
         end if
-        nstep = 0 ! used to track number of sedimentation steps
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2108,9 +2104,8 @@ subroutine micro_mg_tend ( &
 
            ! advance cloud ice sedimentation
            time_sed = time_sed - deltat_sed
-           nstep = nstep+1
            call sed_AdvanceOneStep(dumi,dumni,alphaq,alphan,pdel,deltat,deltat_sed, &
-                nlev,i,MG_ICE,g,qitend,nitend,preci,qisedten,&
+                nlev,i,MG_ICE,g,qitend,nitend,preci,qisedten,iflx,&
                 cloud_frac=icldm,qvlat=qvlat,tlat=tlat,xxl=xxls,preci=preci,qsevap=qisevap)
         end do
 
@@ -2118,7 +2113,6 @@ subroutine micro_mg_tend ( &
         !==============================================================
         deltat_sed = deltat
         time_sed = deltat
-        nstep = 0 ! used to track number of sedimentation steps
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2130,9 +2124,8 @@ subroutine micro_mg_tend ( &
            deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
            ! advance cloud liquid sedimentation
            time_sed = time_sed - deltat_sed
-           nstep = nstep + 1
            call sed_AdvanceOneStep(dumc,dumnc,alphaq,alphan,pdel,deltat,deltat_sed, &
-                nlev,i,MG_LIQUID,g,qctend,nctend,prect,qcsedten,&
+                nlev,i,MG_LIQUID,g,qctend,nctend,prect,qcsedten,lflx,&
                 cloud_frac=lcldm,qvlat=qvlat,tlat=tlat,xxl=xxlv,qsevap=qcsevap)
         end do
 
@@ -2140,7 +2133,6 @@ subroutine micro_mg_tend ( &
         !==============================================================
         deltat_sed = deltat
         time_sed = deltat
-        nstep = 0 ! used to track number of sedimentation steps
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2152,16 +2144,14 @@ subroutine micro_mg_tend ( &
            deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
            ! advance rain sedimentation
            time_sed = time_sed - deltat_sed
-           nstep = nstep + 1
            call sed_AdvanceOneStep(dumr,dumnr,alphaq,alphan,pdel,deltat,deltat_sed, &
-                nlev,i,MG_RAIN,g,qrtend,nrtend,prect,qrsedten)
+                nlev,i,MG_RAIN,g,qrtend,nrtend,prect,qrsedten,rflx)
         end do
 
         ! loop over snow sedimentation to ensure stability
         !==============================================================
         deltat_sed = deltat
         time_sed = deltat
-        nstep = 0 ! used to track number of sedimentation steps
 
         ! subcycle
         do while (time_sed > qsmall)
@@ -2173,9 +2163,8 @@ subroutine micro_mg_tend ( &
            deltat_sed = min(deltat*CFL_FAC/cfl,time_sed)
            ! advance snow sedimentation
            time_sed = time_sed - deltat_sed
-           nstep = nstep + 1
            call sed_AdvanceOneStep(dums,dumns,alphaq,alphan,pdel,deltat,deltat_sed, &
-                nlev,i,MG_SNOW,g,qstend,nstend,prect,qssedten,preci=preci)
+                nlev,i,MG_SNOW,g,qstend,nstend,prect,qssedten,sflx,preci=preci)
         end do
 
      end if !not precip_off
