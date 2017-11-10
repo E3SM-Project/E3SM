@@ -1330,8 +1330,6 @@ class Case(object):
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
 
-        self.flush(flushall=True)
-
         logger.warning("setting case file to {}".format(xmlfile))
         components = self.get_value("COMP_CLASSES")
         new_env_file = None
