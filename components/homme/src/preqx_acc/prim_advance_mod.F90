@@ -279,6 +279,8 @@ contains
       call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
       deriv,nets,nete,.false.,0d0)
       ! compute (5*u1/4 - u0/4) in timelevel nm1:
+      !$omp barrier
+      !$omp master
       !$acc parallel loop gang vector collapse(4)
       do ie = 1 , nelemd
         do k = 1 , nlev
@@ -291,6 +293,8 @@ contains
           enddo
         enddo
       enddo
+      !$omp end master
+      !$omp barrier
       ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
       call compute_and_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
       deriv,nets,nete,.false.,3*eta_ave_w/4)
@@ -638,7 +642,7 @@ contains
     ! Compute relative vorticity and divergence
     ! =========================================
     call divergence_sphere_openacc(vdp,deriv,elem,divdp,nlev,1,nelemd,1,1,1,1)
-    call vorticity_sphere_openacc(state_v,deriv,elem,vort,nlev,nets,nete,timelevels,n0,1,1)
+    call vorticity_sphere_openacc(state_v,deriv,elem,vort,nlev,1,nelemd,timelevels,n0,1,1)
 
     !$acc parallel loop gang vector collapse(4) private(Qt)
     do ie=1,nelemd
