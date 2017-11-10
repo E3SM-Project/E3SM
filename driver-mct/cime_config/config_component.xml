@@ -2066,7 +2066,7 @@
     <desc>pes or cores per node for mpitasks </desc>
   </entry>
 
-  <entry id="COST_PER_NODE">
+  <entry id="COSTPES_PER_NODE">
     <type>integer</type>
     <default_value>$MAX_MPITASKS_PER_NODE</default_value>
     <group>mach_pes_last</group>
