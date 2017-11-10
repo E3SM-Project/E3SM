@@ -21,7 +21,7 @@ def _get_batch_job_id_for_syslog(case):
             return os.environ["PBS_JOBID"]
         elif mach in ['edison', 'cori-haswell', 'cori-knl']:
             return os.environ["SLURM_JOB_ID"]
-        elif mach == 'mira':
+        elif mach in ['mira', 'theta']:
             return os.environ["COBALT_JOBID"]
     except:
         pass
@@ -124,6 +124,14 @@ def _save_prerun_timing_acme(case, lid):
     if job_id is not None:
         if mach == "mira":
             for cmd, filename in [("qstat -f", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
+                filename = "%s.%s" % (filename, lid)
+                run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename))
+        elif mach == "theta":
+            for cmd, filename in [("qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry", "qstatf"), 
+                                  ("qstat -lf %s" % job_id, "qstatf_jobid"),
+                                  ("xtnodestat", "xtnodestat"),
+                                  ("xtprocadmin", "xtprocadmin")]:
                 filename = "%s.%s" % (filename, lid)
                 run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename))
@@ -310,7 +318,8 @@ def _save_postrun_timing_acme(case, lid):
             globs_to_copy.append("%s*OU" % job_id)
         elif mach == "anvil":
             globs_to_copy.append("/home/%s/%s*OU" % (getpass.getuser(), job_id))
-        elif mach == "mira":
+        elif mach in ["mira", "theta"]:
+            globs_to_copy.append("%s*error" % job_id)
             globs_to_copy.append("%s*output" % job_id)
             globs_to_copy.append("%s*cobaltlog" % job_id)
         elif mach in ["edison", "cori-haswell", "cori-knl"]:
