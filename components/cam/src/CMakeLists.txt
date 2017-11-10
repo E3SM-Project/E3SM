@@ -58,8 +58,11 @@ ADD_DEFINITIONS(-DN_RAD_CNST=30)
 ADD_DEFINITIONS(-DMODAL_AERO -DMODAL_AERO_3MODE)
 ###############
 
-FILE(GLOB CAM_DYNAMICS_SOURCE ${CAM_DYNAMICS_SOURCE_DIR}/*F90
-     ../../homme/src/share/*F90 ../../homme/src/preqx/*F90)
+FILE(GLOB CAM_DYNAMICS_SOURCE 
+    ${CAM_DYNAMICS_SOURCE_DIR}/*F90
+    ../../homme/src/share/*F90
+    ../../homme/src/preqx/*F90
+    ../../homme/src/preqx/share/*F90)
 FILE(GLOB CAM_UTILS_SOURCE utils/*F90
                            #unitdrivers/*F90 ???
 )
