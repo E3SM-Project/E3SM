@@ -2063,6 +2063,14 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
+    <desc>pes or cores per node for mpitasks </desc>
+  </entry>
+
+  <entry id="COSTPES_PER_NODE">
+    <type>integer</type>
+    <default_value>$MAX_MPITASKS_PER_NODE</default_value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
     <desc>pes or cores per node for accounting purposes </desc>
   </entry>
 
