@@ -2600,15 +2600,15 @@
  <!-- Job Submission stuff -->
  <entry id="USER_REQUESTED_QUEUE">
    <type>char</type>
-   <group>run_desc</group>
-   <file>env_run.xml</file>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
    <desc>Store user override for queue</desc>
  </entry>
 
  <entry id="USER_REQUESTED_WALLTIME">
    <type>char</type>
-   <group>run_desc</group>
-   <file>env_run.xml</file>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
    <desc>Store user override for walltime</desc>
  </entry>
 
