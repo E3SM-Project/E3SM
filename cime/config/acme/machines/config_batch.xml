@@ -161,33 +161,32 @@
   </batch_system>
 
   <!-- for lawrence livermore computing -->
-   <batch_system type="lc_slurm">
-     <batch_submit>sbatch</batch_submit>
-     <batch_cancel>scancel</batch_cancel>
-     <batch_directive>#SBATCH</batch_directive>
-     <jobid_pattern>(\d+)$</jobid_pattern>
-     <depend_string> -l depend=jobid</depend_string>
-     <depend_separator>:</depend_separator>
-     <walltime_format>%H:%M:%S</walltime_format>
-     <batch_mail_flag>--mail-user</batch_mail_flag>
-     <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
-     <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
-     <directives>
-       <directive>--export=ALL</directive>
-       <directive>-p {{ job_queue }}</directive>
-       <directive>-J {{ job_id }}</directive>
-       <directive>-N {{ num_nodes }}</directive>
-       <directive>-n {{ total_tasks }}</directive>
-       <directive>-t {{ job_wallclock_time }}</directive>
-       <directive>-o {{ job_id }}.out</directive>
-       <directive>-e {{ job_id }}.err</directive>
-       <directive>--mail-type=all</directive>
+  <batch_system type="lc_slurm">
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string> -l depend=jobid</depend_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <directives>
+      <directive>--export=ALL</directive>
+      <directive>-p {{ job_queue }}</directive>
+      <directive>-J {{ job_id }}</directive>
+      <directive>-N {{ num_nodes }}</directive>
+      <directive>-n {{ total_tasks }}</directive>
+      <directive>-t {{ job_wallclock_time }}</directive>
+      <directive>-o {{ job_id }}.out</directive>
+      <directive>-e {{ job_id }}.err</directive>
       <directive> -A {{ project }} </directive>
-     </directives>
-     <queues>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="270" default="true">pbatch</queue>
-     </queues>
-   </batch_system>
+    </directives>
+    <queues>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="270" default="true">pbatch</queue>
+    </queues>
+  </batch_system>
   <!-- for lawrence livermore computing -->
 
   <batch_system type="slurm" >
@@ -305,7 +304,6 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--mail-type=END</directive>
 	<directive>--mail-user=email@pnnl.gov</directive>
       </directives>
       <queues>
@@ -315,10 +313,8 @@
 
    <batch_system MACH="constance" type="slurm">
     <directives>
-       <directive>--mail-type=END</directive>
-       <directive>--mail-user=email@pnnl.gov</directive>
-       <directive>--output=slurm.out</directive>
-       <directive>--error=slurm.err</directive>
+      <directive>--output=slurm.out</directive>
+      <directive>--error=slurm.err</directive>
     </directives>
     <queues>
       <queue walltimemax="00:59:00" nodemin="1" nodemax="416" default="true">slurm</queue>
@@ -328,8 +324,6 @@
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--mail-type=END</directive>
-       <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
      </directives>
