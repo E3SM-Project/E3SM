@@ -72,7 +72,9 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     # Compute task and thread settings for batch commands
     tasks_per_node, min_tasks_per_node, task_count, thread_count, max_thread_count, total_node_count, total_task_count, aprun_args = \
         0, max_mpitasks_per_node, 1, maxt[0], maxt[0], 0, 0, ""
-    for c1 in (range(1, total_tasks) + [None]):
+    c1list = list(range(1, total_tasks))
+    c1list.append(None)
+    for c1 in c1list:
         if c1 is None or maxt[c1] != thread_count:
             tasks_per_node = min(max_mpitasks_per_node, int(max_tasks_per_node / thread_count))
 

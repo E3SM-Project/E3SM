@@ -192,10 +192,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
-      <xs:attribute ref="DEBUG"/>
-      <xs:attribute ref="mpilib"/>
-      <xs:attribute ref="compiler"/>
-      <xs:attribute ref="unit_testing"/>
+      <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="resource_limits">
