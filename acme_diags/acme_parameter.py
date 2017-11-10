@@ -9,8 +9,6 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.case_id = ''
         self.reference_data_path = ''
         self.test_data_path = ''
-        self.reference_name = ''
-        self.test_name = ''
         self.viewer_descr = {}
 
         self.sets = []
@@ -37,6 +35,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.contour_levels = []  # used both in test and reference
         self.test_name = ''
+        self.short_test_name = ''
         self.test_title = ''
         # self.test_colormap = 'viridis'
         self.test_colormap = 'cet_rainbow.rgb'

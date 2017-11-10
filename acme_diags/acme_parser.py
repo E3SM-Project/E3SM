@@ -122,6 +122,12 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '--short_test_name',
+            dest='short_test_name',
+            help='User-defined test name',
+            required=False)
+
+        self.add_argument(
             '--diff_name',
             dest='diff_name',
             help='Name of the difference variable',
