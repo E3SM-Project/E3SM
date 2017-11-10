@@ -124,7 +124,7 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--short_test_name',
             dest='short_test_name',
-            help='user defined test name',
+            help='User-defined test name',
             required=False)
 
         self.add_argument(

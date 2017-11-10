@@ -62,8 +62,6 @@ def run_diag(parameter):
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
         
-        print('***',parameter.short_test_name)
-    
         if parameter.short_test_name:
             parameter.test_name_yrs = parameter.short_test_name
         else:
