@@ -40,7 +40,7 @@
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
   <xs:element name="MAX_MPITASKS_PER_NODE" type="xs:integer"/>
-  <xs:element name="COST_PER_NODE" type="xs:integer"/>
+  <xs:element name="COSTPES_PER_NODE" type="xs:integer"/>
   <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
   <xs:element name="GMAKE" type="xs:string"/>
   <xs:element name="TESTS" type="xs:string"/>
@@ -116,7 +116,7 @@
 	     this machine, in practice the MPI tasks per node will not exceed this value -->
         <xs:element ref="MAX_MPITASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
 	<!-- Optional cost factor per node unit -->
-        <xs:element ref="COST_PER_NODE" minOccurs="0" maxOccurs="1"/>
+        <xs:element ref="COSTPES_PER_NODE" minOccurs="0" maxOccurs="1"/>
 	<!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
 	     the batch system?  See PROJECT above -->
         <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>

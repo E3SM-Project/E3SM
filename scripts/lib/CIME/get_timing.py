@@ -140,7 +140,7 @@ class _TimingParser:
         stop_n = self.case.get_value("STOP_N")
 
         cost_pes = self.case.get_value("COST_PES")
-        cost_per_node = self.case.get_value("COST_PER_NODE")
+        costpes_per_node = self.case.get_value("COSTPES_PER_NODE")
 
         totalpes = self.case.get_value("TOTALPES")
         max_mpitasks_per_node = self.case.get_value("MAX_MPITASKS_PER_NODE")
@@ -148,8 +148,8 @@ class _TimingParser:
 
         if cost_pes > 0:
             pecost = cost_pes
-        elif cost_per_node:
-            pecost = self.case.num_nodes * cost_per_node
+        elif costpes_per_node:
+            pecost = self.case.num_nodes * costpes_per_node
         else:
             pecost = totalpes
 
