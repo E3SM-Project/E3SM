@@ -692,7 +692,7 @@
 
   <entry id="COMP_INTERFACE">
     <type>char</type>
-    <valid_values>mct</valid_values>
+    <valid_values>mct,nuopc</valid_values>
     <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
@@ -2282,15 +2282,15 @@
     <file>env_run.xml</file>
     <desc>pio root processor relative to component root</desc>
     <values>
-      <value component="ATM">0</value>
-      <value component="CPL">0</value>
-      <value component="OCN">0</value>
-      <value component="WAV">0</value>
-      <value component="GLC">0</value>
-      <value component="ICE">0</value>
-      <value component="ROF">0</value>
-      <value component="LND">0</value>
-      <value component="ESP">0</value>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
     </values>
   </entry>
 
@@ -2600,15 +2600,15 @@
  <!-- Job Submission stuff -->
  <entry id="USER_REQUESTED_QUEUE">
    <type>char</type>
-   <group>run_desc</group>
-   <file>env_run.xml</file>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
    <desc>Store user override for queue</desc>
  </entry>
 
  <entry id="USER_REQUESTED_WALLTIME">
    <type>char</type>
-   <group>run_desc</group>
-   <file>env_run.xml</file>
+   <group>job_submission</group>
+   <file>env_batch.xml</file>
    <desc>Store user override for walltime</desc>
  </entry>
 

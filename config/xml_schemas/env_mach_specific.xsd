@@ -84,7 +84,13 @@
       <xs:attribute name="name" use="required" type="xs:string"/>
     </xs:complexType>
   </xs:element>
-  <xs:element name="environment_variables" type="xs:anyType">
+  <xs:element name="environment_variables">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="env"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
   </xs:element>
   <xs:element name="env">
     <xs:complexType mixed="true">

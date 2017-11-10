@@ -57,7 +57,7 @@ program OfflineTester
 
       type(ESMF_VM) :: vm
 
-      character(ESMF_MAXSTR) :: wgtfile, title
+      character(ESMF_MAXSTR) :: wgtfile
 
       real(ESMF_KIND_R8), pointer :: factorList(:)
       integer, pointer            :: factorIndexList(:,:)
@@ -155,7 +155,7 @@ program OfflineTester
       totCnt = 0
 
       ! read in the grid dimensions
-      call NCFileInquire(wgtfile, title, src_dim, nxs, nys, &
+      call NCFileInquire(wgtfile, src_dim, nxs, nys, &
                                          dst_dim, nxd, nyd, localrc=status)
       if (ESMF_LogFoundError(rcToCheck=status, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) &
@@ -774,10 +774,9 @@ contains
 ! The weights file should have the source and destination grid information
 ! provided.
 !***********************************************************************************
-  subroutine NCFileInquire (wgtfile, title, src_dim, nxs, nys, dst_dim, nxd, nyd, localrc)
+  subroutine NCFileInquire (wgtfile, src_dim, nxs, nys, dst_dim, nxd, nyd, localrc)
 
     character(ESMF_MAXSTR), intent(in)  :: wgtfile
-    character(ESMF_MAXSTR), intent(out)  :: title
     integer, intent(out)                :: src_dim
     integer, intent(out)                :: nxs, nys
     integer, intent(out)                :: dst_dim
@@ -786,7 +785,6 @@ contains
 
     integer :: ncstat,  nc_file_id,  nc_srcdim_id, nc_dstdim_id, srcdim, dstdim
     integer :: gdims(2), dim_ids(1)
-    integer :: titleLen
 
     character(ESMF_MAXSTR) :: msg
 
@@ -799,29 +797,6 @@ contains
         write (msg, '(a,i4)') "- nf90_open error:", ncstat
         call ESMF_LogSetError(ESMF_RC_SYS, msg=msg, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)
-        return
-      endif
-
-      !-----------------------------------------------------------------
-      ! source grid dimensions
-      !-----------------------------------------------------------------
-
-      ncstat = nf90_inquire_attribute(nc_file_id, nf90_global, 'title', len=titleLen)
-      if(ncstat /= 0) then
-        write (msg, '(a,i4)') "- nf90_inquire_attribute error:", ncstat
-        call ESMF_LogSetError(ESMF_RC_SYS, msg=msg, &
-          line=__LINE__, file=__FILE__ , rcToReturn=rc)
-        return
-      endif
-      if(len(title) < titleLen) then
-        print *, "Not enough space to put title."
-        return
-      end if
-      ncstat = nf90_get_att(nc_file_id, nf90_global, "title", title)
-      if(ncstat /= 0) then
-        write (msg, '(a,i4)') "- nf90_get_att error:", ncstat
-        call ESMF_LogSetError(ESMF_RC_SYS, msg=msg, &
-          line=__LINE__, file=__FILE__ , rcToReturn=rc)
         return
       endif
 
