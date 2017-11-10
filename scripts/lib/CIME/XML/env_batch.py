@@ -415,6 +415,7 @@ class EnvBatch(EnvBase):
             logger.info("dependencies: {}".format(dep_jobs))
             dep_string = self.get_value("depend_string", subgroup=None)
             separator_string = self.get_value("depend_separator", subgroup=None)
+            expect(separator_string is not None,"depend_separator string not defined")
             expect("jobid" in dep_string, "depend_string is missing jobid for prerequisite jobs")
             dep_ids_str = str(dep_jobs[0])
             for dep_id in dep_jobs[1:]:
