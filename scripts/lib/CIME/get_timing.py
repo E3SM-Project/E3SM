@@ -138,13 +138,18 @@ class _TimingParser:
         run_type = self.case.get_value("RUN_TYPE")
         stop_option = self.case.get_value("STOP_OPTION")
         stop_n = self.case.get_value("STOP_N")
+
         cost_pes = self.case.get_value("COST_PES")
+        cost_per_node = self.case.get_value("COST_PER_NODE")
+
         totalpes = self.case.get_value("TOTALPES")
         max_mpitasks_per_node = self.case.get_value("MAX_MPITASKS_PER_NODE")
         smt_factor = max(1,int(self.case.get_value("MAX_TASKS_PER_NODE") / max_mpitasks_per_node))
 
         if cost_pes > 0:
             pecost = cost_pes
+        elif cost_per_node:
+            pecost = self.case.num_nodes * cost_per_node
         else:
             pecost = totalpes
 
@@ -309,7 +314,7 @@ class _TimingParser:
 
         self.write("\n")
         self.write("  total pes active           : {} \n".format(totalpes*maxthrds*smt_factor ))
-        self.write("  pes per node               : {} \n".format(max_mpitasks_per_node))
+        self.write("  mpi tasks per node               : {} \n".format(max_mpitasks_per_node))
         self.write("  pe count for cost estimate : {} \n".format(pecost))
         self.write("\n")
 
