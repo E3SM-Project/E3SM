@@ -90,14 +90,27 @@ ELSE() #ACME_BUILD
   #AGS: Globbing all clm files in one library. There appear to
   #     be to many inter-directory dependencies to tease out
   #     separate libraries with one-way dependencies.
-  FILE(GLOB CLM_MAIN_SOURCE         main/*F90 ED/main/*F90)
+  FILE(GLOB CLM_MAIN_SOURCE         main/*F90 data_types/*F90)
   FILE(GLOB CLM_UTILS_SOURCE        utils/*F90)
-  FILE(GLOB CLM_EDFIRE_SOURCE       ED/fire/*F90)
-  FILE(GLOB CLM_BIOGEOPHYS_SOURCE   biogeophys/*F90 ED/biogeophys/*F90)
-  FILE(GLOB CLM_BIOGEOCHEM_SOURCE   biogeochem/*F90 ED/biogeochem/*F90)
+  FILE(GLOB CLM_BIOGEOPHYS_SOURCE   biogeophys/*F90)
+  FILE(GLOB CLM_BIOGEOCHEM_SOURCE   biogeochem/*F90)
   FILE(GLOB CLM_DYN_SUBGRID_SOURCE  dyn_subgrid/*F90)
-  FILE(GLOB CLM_BETR_SOURCE         betr/*F90 betr/betr_core/*F90
-         betr/betr_math/*F90 betr/bgc_century/*F90 betr/bgc_sminn/*F90)
+  FILE(GLOB CLM_BETR_SOURCE         
+     external_models/sbetr/src/betr/betr_bgc/*F90
+     external_models/sbetr/src/betr/betr_core/*F90
+     external_models/sbetr/src/betr/betr_dtype/*F90
+     external_models/sbetr/src/betr/betr_grid/*F90
+     external_models/sbetr/src/betr/betr_main/*F90
+     external_models/sbetr/src/betr/betr_math/*F90
+     external_models/sbetr/src/betr/betr_para/*F90 
+     external_models/sbetr/src/betr/betr_rxns/*F90
+     external_models/sbetr/src/betr/betr_util/*F90
+     external_models/sbetr/src/driver/alm/*F90
+     external_models/sbetr/src/driver/shared/*F90
+     external_models/sbetr/src/Applications/app_util/*F90
+     external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/*F90
+     external_models/sbetr/src/Applications/soil-farm/bgcfarm_util/*F90
+  )
   FILE(GLOB CLM_CPL_SOURCE  cpl/*F90)
 
 # Look into CMake ExternalProject for FATES
@@ -107,7 +120,10 @@ ELSE() #ACME_BUILD
          external_models/fates/biogeochem/*F90
          external_models/fates/fire/*F90
          external_models/emi/src/*F90
-         external_models/mpp/src/mpp/util/*F90)
+         external_models/mpp/src/mpp/dtypes/*F90
+         external_models/mpp/src/mpp/thermal/*F90
+         external_models/mpp/src/mpp/util/*F90
+         external_models/mpp/src/mpp/vsfm/*F90)
 
   message("   clm build: add_definitions: NDEBUG Required!!")
 #  add_definitions( -mcmodel=medium -fconvert=big-endian
@@ -123,14 +139,17 @@ ELSE() #ACME_BUILD
           ${ACME_SHR_DIR}  #shr_assert.h
           ${ACME_PIO_LIBRARY_DIR}  #pio.mod
           ${SEQ_BINARY_DIR}
+          external_models/sbetr/src/betr/betr_util #bshr_assert.h
   )
 
   #  ${MPI_Fortran_INCLUDE_PATH}
   ADD_LIBRARY (clm
                ${CLM_MAIN_SOURCE} ${CLM_UTILS_SOURCE}
-               ${CLM_BIOGEOPHYS_SOURCE} ${CLM_BIOGEOCHEM_SOURCE}
-               ${CLM_EDFIRE_SOURCE} ${CLM_DYN_SUBGRID_SOURCE}
-               ${CLM_BETR_SOURCE} ${CLM_CPL_SOURCE}
+               ${CLM_BIOGEOPHYS_SOURCE}
+               ${CLM_BIOGEOCHEM_SOURCE}
+               ${CLM_DYN_SUBGRID_SOURCE}
+               ${CLM_BETR_SOURCE} 
+               ${CLM_CPL_SOURCE}
                ${CLM_FATES_SOURCE}
               )
   ADD_DEPENDENCIES(clm shrsys seq shr gptl)
