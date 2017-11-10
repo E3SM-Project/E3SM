@@ -101,7 +101,8 @@ def _get_file_date(filename):
         return datetime.datetime(year, month, day) + datetime.timedelta(seconds = second)
 
     # Not a valid filename date format
-    raise ValueError("{} is a filename without a supported date!".format(filename))
+    logger.debug("{} is a filename without a supported date!".format(filename))
+    return None
 
 def _get_day_second(date):
     """
@@ -138,9 +139,9 @@ def _datetime_str_mpas(date):
     to support abbreviations, so we can't use that here
 
     >>> _datetime_str_mpas(datetime.datetime(5, 8, 22))
-    '0005-08-22_00000'
+    '0005-08-22_00:00:00'
     >>> _datetime_str_mpas(_get_file_date("0011-12-09-00435"))
-    '0011-12-09_00435'
+    '0011-12-09_00:07:15'
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}_{hours:02d}:{minutes:02d}:{seconds:02d}"
@@ -277,7 +278,7 @@ def _archive_history_files(case, archive, archive_entry,
 
     # determine history archive directory (create if it does not exist)
     dout_s_root = case.get_value("DOUT_S_ROOT")
-    casename = case.get_value("CASE")
+    casename = re.escape(case.get_value("CASE"))
     archive_histdir = os.path.join(dout_s_root, compclass, 'hist')
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
@@ -313,7 +314,7 @@ def _archive_history_files(case, archive, archive_entry,
             if histfiles:
                 for histfile in histfiles:
                     file_date = _get_file_date(os.path.basename(histfile))
-                    if last_date is None or file_date <= last_date:
+                    if last_date is None or file_date is None or file_date <= last_date:
                         srcfile = join(rundir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history file {} does not exist ".format(srcfile))
@@ -439,7 +440,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     # the compname is drv but the files are named cpl
     if compname == 'drv':
         compname = 'cpl'
-
+    casename = re.escape(casename)
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):

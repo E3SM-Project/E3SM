@@ -49,7 +49,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("{} {}".format(error_prefix, error_msg))
+        raise exc_type(error_prefix + " " + error_msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -228,7 +228,14 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
-        output = run_cmd_no_fail("{} {}".format(cmd, cmdargs), combine_output=combine_output,
+        fullcmd = cmd
+        if isinstance(cmdargs, list):
+            for arg in cmdargs:
+                fullcmd += " " + str(arg)
+        else:
+            fullcmd += " " + cmdargs
+        output = run_cmd_no_fail("{} 1> {} 2>&1".format(fullcmd, logfile),
+                                 combine_output=combine_output,
                                  from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
@@ -342,9 +349,9 @@ def check_minimum_python_version(major, minor):
     >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
     >>>
     """
+    msg = "Python " + str(major) + ", minor version " + str(minor) + " is required, you have " + str(sys.version_info[0]) + "." + str(sys.version_info[1])
     expect(sys.version_info[0] > major or
-           (sys.version_info[0] == major and sys.version_info[1] >= minor),
-           "Python {:d}, minor version {:d}+ is required, you have {:d}.{:d}".format(major, minor, sys.version_info[0], sys.version_info[1]))
+           (sys.version_info[0] == major and sys.version_info[1] >= minor), msg)
 
 def normalize_case_id(case_id):
     """
@@ -1400,6 +1407,25 @@ def _check_for_invalid_args(args):
                 continue
             if arg.startswith("-") and len(arg) > 2:
                 sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+
+def add_mail_type_args(parser):
+    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+
+    parser.add_argument("-M", "--mail-type", action="append",
+                        help="when to send user email. Options are: never, all, begin, end, fail."
+                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+
+def resolve_mail_type_args(args):
+    if args.mail_type is not None:
+        resolved_mail_types = []
+        for mail_type in args.mail_type:
+            resolved_mail_types.extend(mail_type.split(","))
+
+        for mail_type in resolved_mail_types:
+            expect(mail_type in ("never", "all", "begin", "end", "fail"),
+                   "Unsupported mail-type '{}'".format(mail_type))
+
+        args.mail_type = resolved_mail_types
 
 class SharedArea(object):
     """
