@@ -16,12 +16,17 @@ from CIME.test_status               import *
 logger = logging.getLogger(__name__)
 
 def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
-            skip_pnl=False, mail_user=None, mail_type='never', batch_args=None):
+            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
         else:
             job = "case.run"
+
+    rundir = case.get_value("RUNDIR")
+    continue_run = case.get_value("CONTINUE_RUN")
+    expect(os.path.isdir(rundir) or not continue_run,
+           " CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
 
     if resubmit:
         resub = case.get_value("RESUBMIT")
@@ -78,7 +83,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
         case.set_value("JOB_IDS", xml_jobid_text)
 
 def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
-           skip_pnl=False, mail_user=None, mail_type='never', batch_args=None):
+           skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if case.get_value("TEST"):
         caseroot = case.get_value("CASEROOT")
         casebaseid = case.get_value("CASEBASEID")
