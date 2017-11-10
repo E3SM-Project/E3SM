@@ -43,13 +43,14 @@ def parse_input(argv):
 
 def build_cime_component_lib(case, compname, libroot, bldroot):
     cimeroot  = case.get_value("CIMEROOT")
+    comp_interface = case.get_value("COMP_INTERFACE")
     compclass = compname[1:]
 
     with open(os.path.join(bldroot,'Filepath'), 'w') as out:
         out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, "mct") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, comp_interface) + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
         elif compname.startswith('x'):
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
