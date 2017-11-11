@@ -360,24 +360,24 @@
     </desc>
   </entry>
 
-  <entry id="DATA_ASSIMILATION_PAUSE_OPTION">
+  <entry id="PAUSE_OPTION">
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</valid_values>
     <default_value>never</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the pause frequency along with DATA_ASSIMILATION_PAUSE_N
+      Sets the pause frequency along with PAUSE_N
     </desc>
   </entry>
 
-  <entry id="DATA_ASSIMILATION_PAUSE_N">
+  <entry id="PAUSE_N">
     <type>integer</type>
     <default_value>0</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Provides a numerical count for $DATA_ASSIMILATION_PAUSE_OPTION.
+      Provides a numerical count for $PAUSE_OPTION.
     </desc>
   </entry>
 
@@ -410,8 +410,8 @@
     <file>env_run.xml</file>
     <desc>
       ESP component runs after driver 'pause cycle' If any component
-      'pauses' (see DATA_ASSIMILATION_PAUSE_OPTION,
-      DATA_ASSIMILATION_PAUSE_N and DATA_ASSIMILATION XML variables),
+      'pauses' (see PAUSE_OPTION,
+      PAUSE_N and DATA_ASSIMILATION XML variables),
       the ESP component (if present) will be run to process the
       component 'pause' (restart) files and set any required 'resume'
       signals.  If true, esp_cpl_dt and esp_cpl_offset settings are

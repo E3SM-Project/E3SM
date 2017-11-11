@@ -304,8 +304,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     character(SHR_KIND_CS)  :: restart_option        ! Restart option units
     integer(SHR_KIND_IN)    :: restart_n             ! Number until restart interval
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
-    character(SHR_KIND_CS)  :: data_assimilation_pause_option          ! Pause option units
-    integer(SHR_KIND_IN)    :: data_assimilation_pause_n               ! Number between pause intervals
+    character(SHR_KIND_CS)  :: pause_option          ! Pause option units
+    integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
 
     logical :: data_assimilation_atm
     logical :: data_assimilation_cpl
@@ -362,8 +362,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     namelist /seq_timemgr_inparm/  calendar, curr_ymd, curr_tod,  &
          stop_option, stop_n, stop_ymd, stop_tod,                &
          restart_option, restart_n, restart_ymd,                 &
-         data_assimilation_pause_option,   &
-         data_assimilation_pause_n,           &
+         pause_option,   &
+         pause_n,           &
          data_assimilation_atm, &
          data_assimilation_cpl, &
          data_assimilation_ocn, &
@@ -415,8 +415,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        restart_option   = seq_timemgr_optYearly
        restart_n        = -1
        restart_ymd      = -1
-       data_assimilation_pause_option     = seq_timemgr_optNever
-       data_assimilation_pause_n          = -1
+       pause_option     = seq_timemgr_optNever
+       pause_n          = -1
        data_assimilation_atm = .false.
        data_assimilation_cpl = .false.
        data_assimilation_ocn = .false.
@@ -567,10 +567,10 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' restart_n      = ',restart_n
        write(logunit,F0I) trim(subname),' restart_ymd    = ',restart_ymd
        write(logunit,F0L) trim(subname),' end_restart    = ',end_restart
-       write(logunit,F0A) trim(subname),' data_assimilation_pause_option   = ',&
-            trim(data_assimilation_pause_option)
-       write(logunit,F0I) trim(subname),' data_assimilation_pause_n        = ',&
-            data_assimilation_pause_n
+       write(logunit,F0A) trim(subname),' pause_option   = ',&
+            trim(pause_option)
+       write(logunit,F0I) trim(subname),' pause_n        = ',&
+            pause_n
        write(logunit,F0L) trim(subname),' esp_run_on_pause = ',esp_run_on_pause
        write(logunit,F0A) trim(subname),' history_option = ',trim(history_option)
        write(logunit,F0I) trim(subname),' history_n      = ',history_n
@@ -657,8 +657,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( restart_n,            mpicom )
     call shr_mpi_bcast( restart_option,       mpicom )
     call shr_mpi_bcast( restart_ymd,          mpicom )
-    call shr_mpi_bcast( data_assimilation_pause_n,              mpicom )
-    call shr_mpi_bcast( data_assimilation_pause_option,         mpicom )
+    call shr_mpi_bcast( pause_n,              mpicom )
+    call shr_mpi_bcast( pause_option,         mpicom )
     call shr_mpi_bcast(data_assimilation_atm, mpicom)
     call shr_mpi_bcast(data_assimilation_cpl, mpicom)
     call shr_mpi_bcast(data_assimilation_ocn, mpicom)
@@ -762,8 +762,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     endif
 
     if ( ANY(pause_active) .and.                                              &
-         (trim(data_assimilation_pause_option) /= seq_timemgr_optNONE)  .and.                   &
-         (trim(data_assimilation_pause_option) /= seq_timemgr_optNever)) then
+         (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
+         (trim(pause_option) /= seq_timemgr_optNever)) then
        do n = 1, max_clocks
           if (pause_active(n) .and. (iam == 0)) then
              write(logunit, '(4a)') subname, ': Pause active for ',           &
@@ -917,8 +917,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        if (pause_active(n)) then
          call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                  &
               EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),         &
-              option  = data_assimilation_pause_option,                                         &
-              opt_n   = data_assimilation_pause_n,                                              &
+              option  = pause_option,                                         &
+              opt_n   = pause_n,                                              &
               RefTime = CurrTime,                                             &
               alarmname = trim(seq_timemgr_alarm_pause))
        else
