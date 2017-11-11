@@ -221,16 +221,18 @@ contains
     !find time indices to read data for two consecutive time indices to interpolate in time
     !get current model date
     call get_curr_date(yr, mon, day, ncsec)
-    if(iscyclic)yr = cyc_yr_in
+    if(iscyclic) yr = cyc_yr_in
  
     call set_time_float_from_date( curr_mdl_time, yr, mon, day, ncsec )
     
     call find_times_to_interpolate(curr_mdl_time, datatimem, datatimep, it, itp1)
 
-    deltat = datatimep - datatimem
-    fact1 = (datatimep - curr_mdl_time)/deltat
-    fact2 = 1._r8-fact1
-  
+    else
+       deltat = datatimep - datatimem
+       fact1 = (datatimep - curr_mdl_time)/deltat
+       fact2 = 1._r8-fact1
+    end if
+
     !see if we need to read data (i.e. we are at a time where new data is needed)
     strt_t = (/ it, 1, 1, 1 /)
     strt_tp1 = (/ itp1, 1, 1, 1 /)
@@ -296,16 +298,26 @@ contains
        if ( cyc_tsize > 1 ) then
           call findplb(times(cyc_ndx_beg:cyc_ndx_end),cyc_tsize, curr_mdl_time, n_out )
           if (n_out == cyc_tsize) then
-             np1 = 1
+             !PMC bugfix: in this case, target x is smaller than the 1st source x,
+             !so it=1 and itp1=cyc_tsize. This was causing weird values for interpolation
+             !solution: allow datatimep to be a negative number.
+             it   = n_out + cyc_ndx_beg-1
+             itp1 = cyc_ndx_beg          
+             datatimem = times(it)
+             datatimep = times(itp1) - 365.
+             !KLUDGE: line above hardcodes assumption that times are in days!
+             times_found = .true.
           else
              np1 = n_out+1
+             it   = n_out + cyc_ndx_beg-1
+             itp1 = n_out  + cyc_ndx_beg          
+             datatimem = times(it)
+             datatimep = times(itp1)
+             times_found = .true.
           endif
 
-          it   = n_out + cyc_ndx_beg-1
-          itp1 = np1   + cyc_ndx_beg-1          
-          datatimem = times(it)
-          datatimep = times(itp1)
-          times_found = .true.
+       else
+          call endrun('cyclic method for cyc_tsize<=1 not implemented yet')
        endif
     endif
        
