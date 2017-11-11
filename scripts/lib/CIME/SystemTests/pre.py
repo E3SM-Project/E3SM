@@ -56,8 +56,8 @@ class PRE(SystemTestsCompareTwo):
             pausen = 1
         # End if
 
-        self._case.set_value("DATA_ASSIMILATION_PAUSE_OPTION", stopopt)
-        self._case.set_value("DATA_ASSIMILATION_PAUSE_N", pausen)
+        self._case.set_value("PAUSE_OPTION", stopopt)
+        self._case.set_value("PAUSE_N", pausen)
         comps = self._case.get_values("COMP_CLASSES")
         data_assimilation = []
         for comp in comps:
