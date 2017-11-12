@@ -213,25 +213,38 @@ contains
     integer :: errcode, yr, mon, day, ncsec, it, itp1, banddim
 
     real(r8) :: datatimem, datatimep, curr_mdl_time, deltat, fact1, fact2
-    real(r8) :: wrk_sw(2,nswbands,nlats,nalts)
+
+!PMC bugfix: netcdf data being read in has dims (nalts,nlats,nbands)
+!(double-checked this 11/11/17 w/ pio_inquire_dimension) but was being 
+!assigned to arrays with dims (nbands,nlats,nalts). As a quick fix, read
+!in correct dims, then copy data to arrays with order used in rest of code.
+!In the longer term, the code should be modified to use the netcdf order.
+    real(r8) :: read_wrk_sw(2,nalts,nlats,nswbands)
+    real(r8) :: read_wrk_lw(2,nalts,nlats,nlwbands)
+    !dims expected by this code
+    real(r8) :: wrk_sw(2,nswbands,nlats,nalts) 
     real(r8) :: wrk_lw(2,nlwbands,nlats,nalts)
+    integer :: i,j !for indexing in temporary bugfix
 
   !------------------------------------------------------------------------------------------------
 
     !find time indices to read data for two consecutive time indices to interpolate in time
-    !get current model date
+    !get current model date. 
     call get_curr_date(yr, mon, day, ncsec)
     if(iscyclic) yr = cyc_yr_in
  
+    !PMC 11/11/17 note: curr_mdl_time is always in DAYS, so attempts to be general
+    !about time units in find_times_to_interpolate are unneeded. In light of this  
+    !and the fact that ACME always uses 365 day calendar, I'm subtracting 365 days 
+    !from left-hand side of time interval for interpolation for cyclic times to fix 
+    !a bug. If curr_mdl_time changes units, this bugfix needs to be generalized.
     call set_time_float_from_date( curr_mdl_time, yr, mon, day, ncsec )
     
     call find_times_to_interpolate(curr_mdl_time, datatimem, datatimep, it, itp1)
 
-    else
-       deltat = datatimep - datatimem
-       fact1 = (datatimep - curr_mdl_time)/deltat
-       fact2 = 1._r8-fact1
-    end if
+    deltat = datatimep - datatimem
+    fact1 = (datatimep - curr_mdl_time)/deltat
+    fact2 = 1._r8-fact1
 
     !see if we need to read data (i.e. we are at a time where new data is needed)
     strt_t = (/ it, 1, 1, 1 /)
@@ -241,8 +254,19 @@ contains
     do ifld = 1,mxnflds_sw
        !Get netcdf variable id for the field
        ierr = pio_inq_varid(piofile, trim(adjustl(specifier_sw(ifld))),var_id) !get id of the variable to read from iput file
-       ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, wrk_sw(1,:,:,:) )!BALLI: handle error?
-       ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, wrk_sw(2,:,:,:) )!BALLI: handle error?
+
+       ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, read_wrk_sw(1,:,:,:) )!BALLI: handle error?
+       ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, read_wrk_sw(2,:,:,:) )!BALLI: handle error?
+
+       !PMC bugfix: swap dimension order
+       !Note: read_wrk has dim=(time,nalts,nlats,nswbands) while wrk has dims=(time,nbands,nlats,nalts)
+       do i=1,nalts
+          do j=1,nlats
+             wrk_sw(:,:,j,i) = read_wrk_sw(:,i,j,:)
+             wrk_lw(:,:,j,i) = read_wrk_lw(:,i,j,:)
+          end do !for j=lats
+       end do !for i=alts
+
        !interpolate in lats, time and vertical
        call interpolate_lats_time_vert(state, wrk_sw, nswbands, pbuf_idx_sw(ifld), fact1, fact2, pbuf2d )
     enddo
@@ -305,7 +329,9 @@ contains
              itp1 = cyc_ndx_beg          
              datatimem = times(it)
              datatimep = times(itp1) - 365.
-             !KLUDGE: line above hardcodes assumption that times are in days!
+             !KLUDGE: line above hardcodes assumption that times are in days. This is 
+             !probably ok since curr_mdl_time is also hardcoded to return time in days, 
+             !but it would be good to generalize this fix later.
              times_found = .true.
           else
              np1 = n_out+1
