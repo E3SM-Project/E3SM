@@ -2377,7 +2377,7 @@ end if
 
     if( microp_scheme == 'RK' ) then
 
-     if (l_st_mac) then
+     if (l_st_mac.or.l_st_mic) then
        !===================================================
        ! Calculate stratiform tendency (sedimentation, detrain, cloud fraction and microphysics )
        !===================================================
@@ -2408,6 +2408,8 @@ end if
        snow_pcw_macmic = 0._r8
 
        do macmic_it = 1, cld_macmic_num_steps
+
+        if (l_st_mac) then
 
           if (micro_do_icesupersat) then 
 
@@ -2504,10 +2506,12 @@ end if
           endif
 
           call t_stopf('macrop_tend')
+        end if ! l_st_mac
 
           !===================================================
           ! Calculate cloud microphysics 
           !===================================================
+        if (l_st_mic) then
 
           if (is_subcol_on()) then
              ! Allocate sub-column structures. 
@@ -2574,6 +2578,8 @@ end if
                snow_str(:ncol)/cld_macmic_num_steps, zero)
 
           call t_stopf('microp_tend')
+        end if ! l_st_mic
+
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
@@ -2588,7 +2594,7 @@ end if
        prec_str(:ncol) = prec_pcw(:ncol) + prec_sed(:ncol)
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
-     end if ! l_st_mic
+     end if !microp_scheme
 
 if (l_tracer_aero) then
 
