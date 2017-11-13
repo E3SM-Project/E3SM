@@ -2026,7 +2026,7 @@
 
   <entry id="pause_option" modify_via_xml="PAUSE_OPTION">
     <type>char</type>
-    <category>data_assimilation</category>
+    <category>time</category>
     <group>seq_timemgr_inparm</group>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear</valid_values>
     <desc>
@@ -2049,7 +2049,7 @@
 
   <entry id="pause_n" modify_via_xml="PAUSE_N">
     <type>integer</type>
-    <category>data_assimilation</category>
+    <category>time</category>
     <group>seq_timemgr_inparm</group>
     <desc>
       Sets the pause frequency with pause_option
