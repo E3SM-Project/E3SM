@@ -1,6 +1,179 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 11-08-2017
+Tag: cime5.4.0-alpha.09
+Answer Changes: None
+Tests: IRT.T62_g17.C1850ECO.yellowstone_intel.pop-default
+       code_checker, seq by-hand and with re-run
+Dependencies:
+
+Brief Summary:
+    - Allow undated history files to be archived.
+    - Convert SEQ to use compare-two.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ce40669 Merge pull request #2037 from jedwards4b/fix_for_undated_history_file_archiving
+280e006 Merge pull request #2030 from ESMCI/jgfouca/seq_cmpr_two
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/SystemTests/seq.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/case_st_archive.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 11-07-2017
+Tag: cime5.4.0-alpha.08
+Answer Changes: None
+Tests: Hand test B1850 
+Dependencies:
+
+Brief Summary:
+    - Handle case when cmdargs is not a list
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+fc72203 Merge pull request #2032 from jedwards4b/cmdargs_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/utils.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 11-06-2017
+Tag: cime5.4.0-alpha.07
+Answer Changes: None
+Tests: scripts_regression_tests.pr
+       manual checks of mapping files generated with runoff_to_ocn tool and run of check_map.sh tool
+       Tested runoff_map tool with a source file
+       run_merge_mapping_files.sh
+       code_checker
+       tests with casename try+45
+Dependencies:
+
+Brief Summary:
+    - Improve interface to external scripts PRERUN_SCRIPT, POSTRUN_SCRIPT, DATA_ASSIMILATION_SCRIPT.
+    - Better error message for compsets.
+    - For runoff map: fix mask_b and frac_b in nearest neighbor map.
+    - If area units on source grid file are in sq deg, convert to sq radians.
+    - Handle the case where no points are mapped to marginal seas.
+    - Add function to rebuild dependencies.
+    - Make srt change backward compatible.
+    - Allow overrides in config batch.
+    - Fix machines option to srt and unitialzed var.
+    - Fix cprnc build on mac.    
+    - Add NLCOMP warning if comparison fails and RUN phase is complete.
+    - Remove string formatting from code-path that checks python version.
+    - Bluewaters update.
+    - Fix for ACME MPAS builds.
+    - Add support for selecting different driver.
+    - Fix critical bug with py3 str handling.
+    - Only report mem and tput errors once.
+    - Fix slurm output fields.
+    - Fix critical problems found during ACME/ESMCI integration.
+    - Handle pattern match chars like + in casename.
+    - Add check for a batch system when testing user prerequisites.
+    - Fix batch prepend test.
+    - py3 fixes
+    - Fix COST_PES and TOTALPES for titan (aprun).
+    - Add support for arbitrary prerequisites to case.submit.
+    - Updates for NAS pleiades systems.
+
+User interface changes: 
+    - Add --clean-depends to case.build, this argument can take a component list and will 
+      clean all components if one is not provided.
+    - Some additional output from nl comp code in some cases
+    - --driver added to create_newcase, new _V$driver testopt.
+    
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0027c84 Merge pull request #2005 from jedwards4b/external_process_interface
+a84b875 Merge pull request #2027 from jedwards4b/better_errormsg_for_compsets
+184d7de Merge pull request #2013 from billsacks/runoff_nn_fix_mask
+28f74aa Merge pull request #2022 from billsacks/runoff_convert_sq_degrees
+4793fd8 Merge pull request #2007 from billsacks/runoff_map_no_marginal_ocean
+5e79775 Merge pull request #2026 from jedwards4b/clean_depends
+2b79440 make srt change backward compatible
+a5a6949 Merge pull request #2025 from jedwards4b/allow_overrides_in_config_batch
+cd181bb Merge pull request #2023 from jedwards4b/fix_unitialized_var
+2978605 Merge pull request #2021 from billsacks/fix_cprnc_make
+2d39e61 Merge pull request #2016 from ESMCI/jgfouca/add_nl_comp_warning
+32375b4 Merge pull request #2017 from ESMCI/jgfouca/fix_cime_for_old_python
+f3493fa Merge pull request #2015 from jedwards4b/bluewaters_update1
+33ddbe8 Merge pull request #2008 from ESMCI/jgfouca/fix_acme_mpas_builds
+f99c174 Merge pull request #1988 from ESMCI/jgfouca/add_driver_selection_support
+33597f4 Merge pull request #2003 from ESMCI/jgfouca/py3_str_unicode_confusion
+9202dbb Merge pull request #1998 from ESMCI/jgfouca/only_report_memory_tput_errors_once
+09b7b8e Merge pull request #2001 from ESMCI/jgfouca/fix_slurm_output_fields
+e67caa2 Merge pull request #1999 from ESMCI/jgfouca/misc_fixes
+abf1e91 Merge pull request #1997 from jedwards4b/handle_special_chars_in_casename
+952c5fd Merge pull request #1996 from ESMCI/mfdeakin-sandia/case_submit_prereq/fix_test
+ef08588 fix batch prepend test
+4226f42 py3 fixes
+e959bdc Merge pull request #1990 from ESMCI/jgfouca/titan_fixes_and_misc
+5f7359b Merge pull request #1753 from ESMCI/mfdeakin-sandia/case_submit/prereq
+b8190ea Merge pull request #1983 from ESMCI/jgfouca/merge_st_archive
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/config_files.xml
+M       config/acme/machines/Makefile
+M       config/acme/machines/config_batch.xml
+M       config/cesm/machines/Makefile
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_machines.xml
+M       config/xml_schemas/config_batch.xsd
+M       doc/source/users_guide/running-a-case.rst
+M       scripts/Tools/case.build
+M       scripts/Tools/case.submit
+M       scripts/create_newcase
+M       scripts/lib/CIME/SystemTests/dae.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/entry_id.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/aprun.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/buildlib.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/CIME/case_cmpgen_namelists.py
+M       scripts/lib/CIME/case_run.py
+M       scripts/lib/CIME/case_setup.py
+M       scripts/lib/CIME/case_st_archive.py
+M       scripts/lib/CIME/case_submit.py
+M       scripts/lib/CIME/compare_namelists.py
+M       scripts/lib/CIME/get_timing.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/utils.py
+M       scripts/query_config
+M       scripts/tests/scripts_regression_tests.py
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/main/prep_ocn_mod.F90
+M       tools/cprnc/Makefile
+M       tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
+M       tools/mapping/gen_mapping_files/runoff_to_ocn/ncl/merge_mapping_files.ncl
+M       tools/mapping/gen_mapping_files/runoff_to_ocn/src/main.F90
+M       tools/mapping/gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-25-2017
 Tag: cime5.4.0-alpha.06
 Answer Changes: None
