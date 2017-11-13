@@ -377,7 +377,7 @@ def _archive_restarts_date(case, archive,
     logger.info('-------------------------------------------')
     logger.info('Archiving restarts for date {}'.format(datename))
     logger.info('-------------------------------------------')
-    logger.info("last date: {}".format(last_date))
+    logger.debug("last date: {}".format(last_date))
 
     histfiles_savein_rundir_by_compname = {}
 
@@ -464,7 +464,6 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
                 restfile = os.path.basename(restfile)
 
                 file_date = _get_file_date(restfile)
-                logger.info("Last date: {}".format(last_date))
                 if last_date is not None and file_date > last_date:
                     # Skip this file
                     continue
@@ -553,7 +552,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         if datename == datenames[-1]:
             datename_is_last = True
 
-        if last_date is None or datename < last_date:
+        if last_date is None or datename <= last_date:
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
 
             histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
