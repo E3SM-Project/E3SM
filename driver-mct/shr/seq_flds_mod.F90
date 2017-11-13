@@ -2246,6 +2246,8 @@ module seq_flds_mod
 
      name = 'Fogg_rofl'
      call seq_flds_add(g2x_fluxes,trim(name))
+     ! Don't need to add this to x2o_fluxes, because Foxx_rofl is already added in the
+     ! course of adding Forr_rofl
      call seq_flds_add(g2o_liq_fluxes,trim(name))
      longname = 'glc liquid runoff flux to ocean'
      stdname  = 'glacier_liquid_runoff_flux_to_ocean'
@@ -2255,6 +2257,8 @@ module seq_flds_mod
 
      name = 'Fogg_rofi'
      call seq_flds_add(g2x_fluxes,trim(name))
+     ! Don't need to add this to x2o_fluxes, because Foxx_rofi is already added in the
+     ! course of adding Forr_rofi
      call seq_flds_add(g2o_ice_fluxes,trim(name))
      longname = 'glc frozen runoff flux to ocean'
      stdname  = 'glacier_frozen_runoff_flux_to_ocean'
@@ -2264,6 +2268,8 @@ module seq_flds_mod
 
      name = 'Figg_rofi'
      call seq_flds_add(g2x_fluxes,trim(name))
+     ! Don't need to add this to x2i_fluxes, because Fixx_rofi is already added in the
+     ! course of adding Firr_rofi
      longname = 'glc frozen runoff_iceberg flux to ice'
      stdname  = 'glacier_frozen_runoff_flux_to_seaice'
      units    = 'kg m-2 s-1'
