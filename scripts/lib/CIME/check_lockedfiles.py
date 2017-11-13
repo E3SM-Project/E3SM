@@ -111,11 +111,14 @@ def check_lockedfiles(case):
                 continue
             diffs = f1obj.compare_xml(f2obj)
             if diffs:
-                logging.warning("File {} has been modified".format(lfile))
-                for key in diffs.keys():
-                    print("  found difference in {} : case {} locked {}"
-                          .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
 
+                logging.warning("File {} has been modified".format(lfile))
+                toggle_build_status = False
+                for key in diffs.keys():
+                    if key != "BUILD_COMPLETE":
+                        print("  found difference in {} : case {} locked {}"
+                              .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
+                        toggle_build_status = True
                 if objname == "env_mach_pes":
                     expect(False, "Invoke case.setup --reset ")
                 elif objname == "env_case":
@@ -128,8 +131,9 @@ def check_lockedfiles(case):
                         case.set_value("BUILD_STATUS", 2)
                         logging.critical("Changing PIO_VERSION requires running "
                                          "case.build --clean-all and rebuilding")
-                    else:
+                    elif toggle_build_status:
                         case.set_value("BUILD_STATUS", 1)
+                    f2obj.set_value("BUILD_COMPLETE", False)
                 elif objname == "env_batch":
                     expect(False, "Batch configuration has changed, please run case.setup --reset")
                 else:
