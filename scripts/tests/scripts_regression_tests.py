@@ -1493,7 +1493,7 @@ class K_TestCimeCase(TestCreateTestCommon):
                               from_dir=SCRIPT_DIR)
 
         with Case(testdir, read_only=False) as case:
-            import datetime, dateutil
+            import datetime
             start_date = datetime.datetime(1, 1, 1)
             last_date = datetime.datetime(2, 1, 1)
             case.set_value("STOP_N", last_date.year * 12 + last_date.month)
@@ -1505,7 +1505,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             import CIME.case_setup, CIME.build, CIME.case_submit
             from CIME.case_st_archive import case_st_archive
             # TODO: Make these utility functions
-            from CIME.case_st_archive import _get_file_date, _datetime_str
+            from CIME.case_st_archive import _get_file_date
             CIME.case_setup.case_setup(case)
             CIME.build.case_build(testdir, case)
             CIME.case_submit.submit(case)
@@ -1520,26 +1520,33 @@ class K_TestCimeCase(TestCreateTestCommon):
             # HACK to wait until the job is finished
             while job_id in env_batch.get_status(job_id):
                 logger.info("Job {} status: {}".format(job_id, env_batch.get_status(job_id)))
+                time.sleep(10)
+
+            def increment_month(date):
+                if date.month < 12:
+                    return datetime.datetime(date.year, date.month + 1, date.day)
+                else:
+                    return datetime.datetime(date.year + 1, 1, date.day)
 
             archive_path = os.path.join(case.get_value("DOUT_S_ROOT"), "rest")
-            increment_date = datetime.timedelta(50)
-            current_date = start_date
-            date_rrule = dateutil.rrule(freq=dateutil.MONTHLY, dtstart=start_date, until=last_date)
-            next_datecheck = date_rrule.next()
+            current_date = increment_month(start_date)
+            next_datecheck = current_date
             while current_date < last_date:
-                current_date_str = _datetime_str(current_date)
+                current_date_str = '{:04}-{:02}-{:02}'.format(current_date.year,
+                                                              current_date.month,
+                                                              current_date.day)
                 case_st_archive(case, last_date_str=current_date_str, copy_only=False)
                 archive_dates = [_get_file_date(fname)
                                  for fname in glob.glob(os.path.join(archive_path, "*"))]
                 while next_datecheck <= current_date:
                     self.assertTrue(next_datecheck in archive_dates,
                                     "Not all dates generated and/or archived: {} is missing".format(next_datecheck))
-                    next_datecheck = date_rrule.next()
+                    next_datecheck = increment_month(next_datecheck)
                 for date in archive_dates:
                     self.assertTrue(date <= current_date,
                                     "Archived date greater than specified by last-date: {}".format(date))
 
-                current_date += increment_date
+                current_date = increment_month(current_date)
 
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
