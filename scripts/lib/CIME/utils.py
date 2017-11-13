@@ -31,6 +31,13 @@ def redirect_stderr(new_target):
     finally:
         sys.stderr = old_target # restore to the previous value
 
+@contextmanager
+def redirect_stdout_stderr(new_target):
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    try:
+        yield new_target
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -213,7 +220,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
         if logfile:
-            with redirect_stdout(open(logfile,"w")):
+            with redirect_stdout_stderr(open(logfile,"w")):
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
