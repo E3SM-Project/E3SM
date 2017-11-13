@@ -2919,7 +2919,7 @@ end subroutine empty_list_particlelists!}}}
      type (domain_type), intent(in) :: domain
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer, dimension(:), pointer, intent(inout) :: nPartRecv
 
      integer :: i, j, numProcs
      integer, dimension(:), pointer :: requestID
@@ -3229,7 +3229,7 @@ end subroutine allocate_list_particlelists !}}}
      type (domain_type), intent(in) :: domain
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer, dimension(:), pointer, intent(in) :: nPartRecv
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
      integer :: i, j, numProcs, numFields, numRecv, numSends
@@ -3449,7 +3449,7 @@ end subroutine allocate_list_particlelists !}}}
      type (domain_type), intent(in) :: domain
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer, dimension(:), pointer, intent(in) :: nPartRecv
      integer :: MPI_TYPE
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 

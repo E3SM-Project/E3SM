@@ -55,9 +55,9 @@ module ocn_lagrangian_particle_tracking_interpolations
     integer, intent(in) :: filterNum  ! filtering strength employed
     real (kind=RKIND), dimension(:,:), pointer, intent(in) :: layerThickness !< Input: layerThickness on cells
     real (kind=RKIND), dimension(:,:), pointer, intent(in) :: u !< Input: Velocity field on edges (normalVelocity)
-    type (field2DReal), pointer, intent(out) :: uvReconstructX !< Output: X Component of velocity reconstructed to vertices
-    type (field2DReal), pointer, intent(out) :: uvReconstructY !< Output: Y Component of velocity reconstructed to vertices
-    type (field2DReal), pointer, intent(out) :: uvReconstructZ !< Output: Z Component of velocity reconstructed to vertices
+    type (field2DReal), pointer, intent(inout) :: uvReconstructX !< Output: X Component of velocity reconstructed to vertices
+    type (field2DReal), pointer, intent(inout) :: uvReconstructY !< Output: Y Component of velocity reconstructed to vertices
+    type (field2DReal), pointer, intent(inout) :: uvReconstructZ !< Output: Z Component of velocity reconstructed to vertices
 
     ! could add additional reconstruction techniques here with switch if desired
 
@@ -96,9 +96,9 @@ module ocn_lagrangian_particle_tracking_interpolations
     logical, intent(in) :: initialize_weights !< Input: Determine if weights for RBF should be pre-computed
 
     ! outputs
-    type (field2DReal), pointer, intent(out) :: uvReconstructX !< Output: X Component of velocity reconstructed to vertices
-    type (field2DReal), pointer, intent(out) :: uvReconstructY !< Output: Y Component of velocity reconstructed to vertices
-    type (field2DReal), pointer, intent(out) :: uvReconstructZ !< Output: Z Component of velocity reconstructed to vertices
+    type (field2DReal), pointer, intent(inout) :: uvReconstructX !< Output: X Component of velocity reconstructed to vertices
+    type (field2DReal), pointer, intent(inout) :: uvReconstructY !< Output: Y Component of velocity reconstructed to vertices
+    type (field2DReal), pointer, intent(inout) :: uvReconstructZ !< Output: Z Component of velocity reconstructed to vertices
 
     ! local / temporary arrays needed in the compute procedure
     type (field2DReal), pointer :: &
@@ -220,9 +220,9 @@ module ocn_lagrangian_particle_tracking_interpolations
     integer, dimension(:,:), pointer, intent(in) :: boundaryVertex, boundaryCell !< Input: Boundary flags
 
     ! output variables
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructX !< Output: Vertex Reconstructed X Velocity Component
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructY !< Output: Vertex Reconstructed Y Velocity Component
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructZ !< Output: Vertex Reconstructed Z Velocity Component
+    real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: uvReconstructX !< Output: Vertex Reconstructed X Velocity Component
+    real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: uvReconstructY !< Output: Vertex Reconstructed Y Velocity Component
+    real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: uvReconstructZ !< Output: Vertex Reconstructed Z Velocity Component
 
     ! local variables
     integer, pointer :: nVerticesSolve, nCells, vertexDegree, nVertLevels
@@ -340,11 +340,11 @@ module ocn_lagrangian_particle_tracking_interpolations
                                                               uvReconstructZ    !< Input: Vertex z values
 
     ! output variables
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructX !< Output: X Component of velocity
+    real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: ucReconstructX !< Output: X Component of velocity
                                                                               !<         reconstructed to cells
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructY !< Output: Y Component of velocity
+    real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: ucReconstructY !< Output: Y Component of velocity
                                                                               !<         reconstructed to cells
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructZ !< Output: Z Component of velocity
+    real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: ucReconstructZ !< Output: Z Component of velocity
                                                                               !<         reconstructed to cells
 
     ! local variables
