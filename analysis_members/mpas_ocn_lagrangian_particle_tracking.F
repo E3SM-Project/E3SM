@@ -18,10 +18,16 @@
 !>  diagnostics
 !-----------------------------------------------------------------------
 #define COMMA ,
-#define LIGHT_DEBUG_WRITE(Z) ! print *, Z 
-#define LIGHT_DEBUG_ALL_WRITE(Z) !  print *, Z 
-#define LIGHT_WARNING_WRITE(Z)  print *, Z 
-#define LIGHT_ERROR_WRITE(Z)  print *, Z 
+#ifdef MPAS_DEBUG
+#define LIGHT_DEBUG_WRITE(Z)   print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z)  print *, Z
+#else
+#define LIGHT_DEBUG_WRITE(Z)  ! print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
+#endif
+
+#define LIGHT_ERROR_WRITE(Z)  print *, Z
+#define LIGHT_WARNING_WRITE(Z)  print *, Z
 
 module ocn_lagrangian_particle_tracking
 
