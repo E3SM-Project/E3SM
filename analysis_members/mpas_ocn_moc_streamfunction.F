@@ -343,7 +343,7 @@ contains
       !!!! TRANSECT VARIABLES !!!!
       integer, pointer :: nEdgesSolve, num_tracers
       integer :: iEdge, iTransect, c1, c2, currentTransect
-      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: transectEdgeMasks, transectEdgeMaskSigns, cellsOnEdge, &
             transectsInGroup
 
@@ -495,6 +495,7 @@ contains
          call mpas_pool_get_array(statePool, normalVelocityArrayName, normalVelocity, timeLevel)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
 
@@ -524,21 +525,25 @@ contains
 
          do iCell = 1,nCellsSolve
             iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
-            !!!!! REGION STUFF
-            do i = 1, regionsInAddGroup
-               currentRegion = regionsInGroup(i, regionGroupNumber)
-               sumVertBinVelocityRegion(iBin, :, i) = sumVertBinVelocityRegion(iBin, :, i) + (vertVelocityTop(:, iCell) * &
+            do k = 1,maxLevelCell(iCell)
+               do i = 1, regionsInAddGroup
+                  currentRegion = regionsInGroup(i, regionGroupNumber)
+                  sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + (vertVelocityTop(k, iCell) * &
                         areaCell(iCell) * regionCellMasks(currentRegion, iCell))
+               end do
+               sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + (vertVelocityTop(k, iCell) * areaCell(iCell))
             end do
-            !!!!! END REGION STUFF
-            sumVertBinVelocity(iBin, :) = sumVertBinVelocity(iBin, :) + (vertVelocityTop(:, iCell) * areaCell(iCell))
          end do
 
-         do iBin = 2, nMocStreamfunctionBinsUsed + 1
-            mocStreamValLatAndDepthLocal(iBin, :) = mocStreamValLatAndDepthLocal(iBin-1, :) &
-               + sumVertBinVelocity(iBin, :)
-            mocStreamValLatAndDepthRegionLocal(iBin, :, :) = mocStreamValLatAndDepthRegionLocal(iBin-1, :, :) &
-               + sumVertBinVelocityRegion(iBin, :, :)
+         do i = 1, regionsInAddGroup
+            do k = 1,nVertLevels
+               do iBin = 2, nMocStreamfunctionBinsUsed + 1
+                  mocStreamValLatAndDepthLocal(iBin, k) = mocStreamValLatAndDepthLocal(iBin-1, k) &
+                     + sumVertBinVelocity(iBin, k)
+                  mocStreamValLatAndDepthRegionLocal(iBin, k, i) = mocStreamValLatAndDepthRegionLocal(iBin-1, k, i) &
+                     + sumVertBinVelocityRegion(iBin, k, i)
+               end do
+            end do
          end do
 
          block => block % next
