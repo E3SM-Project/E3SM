@@ -439,7 +439,7 @@ contains
     this%ppool_patch(begp:endp) = spval
     call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
          avgflag='A', long_name='temporary plant P pool', &
-         ptr_patch=this%ppool_patch, default='inactive')
+         ptr_patch=this%ppool_patch, default='active')
 
     this%ptrunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
@@ -1686,7 +1686,6 @@ contains
       this%totvegp_patch(p) = &
            this%dispvegp_patch(p) + &
            this%storvegp_patch(p)
-
       ! total pft-level carbon (add pft_ntrunc)
       this%totpftp_patch(p) = &
            this%totvegp_patch(p) + &

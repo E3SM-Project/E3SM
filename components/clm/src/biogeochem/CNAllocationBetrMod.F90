@@ -752,6 +752,8 @@ contains
   use clm_varpar       , only :  nlevdecomp !!nlevsoi,
   use pftvarcon        , only :  noveg
   use clm_varcon       , only : spval
+  use clm_varctl       , only : iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+                                 cnallocate_carbonphosphorus_only
   implicit none
   type(bounds_type), intent(in) :: bounds
   integer, intent(in) :: num_soilc
@@ -893,14 +895,22 @@ contains
         if (veg_pp%active(p) .and. (veg_pp%itype(p) /= noveg)) then
           plant_eff_frootc_vr_patch(p,j) = frootc(p) * froot_prof(p,j) * t_scalar(c,j)
 
-          plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* plant_eff_frootc_vr_patch(p,j) * &
+          if (cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only()) then
+            plant_nh4_vmax_vr_patch(p,j)  = 0._r8
+            plant_no3_vmax_vr_patch(p,j)  = 0._r8
+          else
+            plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* plant_eff_frootc_vr_patch(p,j) * &
                             cn_scalar(p) / e_plant_scalar
 
-          plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) *plant_eff_frootc_vr_patch(p,j) * &
+            plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) *plant_eff_frootc_vr_patch(p,j) * &
                              cn_scalar(p)  / e_plant_scalar
-          plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) *plant_eff_frootc_vr_patch(p,j)  * &
+          endif
+          if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
+            plant_p_vmax_vr_patch(p,j) = 0._r8
+          else
+            plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) *plant_eff_frootc_vr_patch(p,j)  * &
                              cp_scalar(p)  / e_plant_scalar
-
+          endif
           plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))
           plant_no3_km_vr_patch(p,j) = km_plant_no3(ivt(p))
           plant_p_km_vr_patch(p,j) = km_plant_p(ivt(p))
@@ -1255,11 +1265,10 @@ contains
            end if
          end if
 
-         sminn_to_npool(p) = plant_n_buffer_patch(p)/taun
-         sminp_to_ppool(p) = plant_p_buffer_patch(p)/taup
-         plant_n_buffer_patch(p) = plant_n_buffer_patch(p) * (1._r8-dt/taun)
-         plant_p_buffer_patch(p) = plant_p_buffer_patch(p) * (1._r8-dt/taun)
-
+         sminn_to_npool(p) = plant_n_buffer_patch(p)/max(taun,dt)
+         sminp_to_ppool(p) = plant_p_buffer_patch(p)/max(taup,dt)
+         plant_n_buffer_patch(p) = plant_n_buffer_patch(p) * max(1._r8-dt/taun,0._r8)
+         plant_p_buffer_patch(p) = plant_p_buffer_patch(p) * max(1._r8-dt/taup,0._r8)
          if (ivt(p) >= npcropmin .and. grain_flag(p) == 1._r8) then
            avail_retransn(p) = retransn(p)/dt
            avail_retransp(p) = retransp(p)/dt
@@ -1735,13 +1744,6 @@ contains
             ppool_to_leafp_storage(p) =  cpool_to_leafc_storage(p) / cpl
             ppool_to_frootp(p) = cpool_to_frootc(p) / cpfr
             ppool_to_frootp_storage(p) = cpool_to_frootc_storage(p) / cpfr
-!            if(p==27121)then
-!              print*,'ppool_to_leafp         =',ppool_to_leafp(p)
-!              print*,'ppool_to_leafp_storage =',ppool_to_leafp_storage(p)
-!              print*,'ppool_to_frootp        =',ppool_to_frootp(p)
-!              print*,'ppool_to_frootp_storage=',ppool_to_frootp_storage(p)
-!            endif
-!            if(c==1596)print*,'supp p1=',p,supplement_to_sminp_surf(p)
             if (woody(ivt(p)) == 1._r8) then
                supplement_to_sminp_surf(p) = supplement_to_sminp_surf(p) +  &
                      (max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8))
@@ -1776,7 +1778,6 @@ contains
                ppool_to_deadcrootp(p) = cpool_to_deadcrootc(p) / cpdw
                ppool_to_deadcrootp_storage(p) = cpool_to_deadcrootc_storage(p) / cpdw
              end if
-!             if(c==1596)print*,'supp p2=',p,supplement_to_sminp_surf(p)
              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
                   cpg = graincp(ivt(p))
                   supplement_to_sminp_surf(p) = supplement_to_sminp_surf(p) +  &
@@ -1820,9 +1821,7 @@ contains
                   ppool_to_grainp(p) = cpool_to_grainc(p) / cpg
                   ppool_to_grainp_storage(p) =  cpool_to_grainc_storage(p) / cpg
              end if
-!             if(c==1596)print*,'supp p3=',p,supplement_to_sminp_surf(p)
              supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) + supplement_to_sminp_surf(p) * veg_pp%wtcol(p)/ dzsoi_decomp(1)
-!             if(c==1596)print*,'supptop=',supplement_to_sminp_vr(c,1)*dzsoi_decomp(1) * 1800._r8
          end if
 
       end do ! end pft loop

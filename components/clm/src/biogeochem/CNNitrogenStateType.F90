@@ -515,7 +515,7 @@ contains
     this%npool_patch(begp:endp) = spval
     call hist_addfld1d (fname='NPOOL', units='gN/m^2', &
          avgflag='A', long_name='temporary plant N pool', &
-         ptr_patch=this%npool_patch, default='inactive')
+         ptr_patch=this%npool_patch, default='active')
 
     this%ntrunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_NTRUNC', units='gN/m^2', &
