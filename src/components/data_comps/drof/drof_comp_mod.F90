@@ -191,7 +191,7 @@ CONTAINS
        ! do nothing extra
 
     end select
-    call t_stopf('dlnd_datamode')
+    call t_stopf('drof_datamode')
 
     !----------------------------------------------------------------------------
     ! Read restart
