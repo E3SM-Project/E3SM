@@ -85,8 +85,8 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_TASKS_PER_NODE`*$ENV{OMP_NUM_THREADS} | bc }</arg>
-      <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads"; fi} </arg>
+      <arg name="thread_count"> -c $SHELL{echo 48/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+      <arg name="binding"> $SHELL{if [ 24 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -219,9 +219,8 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <!--NOTE: hard-coding -c 2 for now, which is only optimal when using full node with no hyper-threading. (ndk) -->
-      <arg name="thread_count" > -c 2 </arg>
-      <arg name="binding" > --cpu_bind=cores</arg>
+      <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+      <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -364,9 +363,8 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <!--NOTE: hard-coding -c 4 for now.  (ndk) -->
-      <arg name="thread_count" > -c 4 </arg>
-      <arg name="binding" > --cpu_bind=cores</arg>
+      <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+      <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
     </arguments>
   </mpirun>
   <module_system type="module">

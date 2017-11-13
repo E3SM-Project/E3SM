@@ -181,7 +181,6 @@
       <directive>-t {{ job_wallclock_time }}</directive>
       <directive>-o {{ job_id }}.out</directive>
       <directive>-e {{ job_id }}.err</directive>
-      <directive>--mail-type=all</directive>
       <directive> -A {{ project }} </directive>
     </directives>
     <queues>
@@ -305,7 +304,6 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--mail-type=END</directive>
 	<directive>--mail-user=email@pnnl.gov</directive>
       </directives>
       <queues>
@@ -315,10 +313,8 @@
 
    <batch_system MACH="constance" type="slurm">
     <directives>
-       <directive>--mail-type=END</directive>
-       <directive>--mail-user=email@pnnl.gov</directive>
-       <directive>--output=slurm.out</directive>
-       <directive>--error=slurm.err</directive>
+      <directive>--output=slurm.out</directive>
+      <directive>--error=slurm.err</directive>
     </directives>
     <queues>
       <queue walltimemax="00:59:00" nodemin="1" nodemax="416" default="true">slurm</queue>
@@ -328,8 +324,6 @@
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--mail-type=END</directive>
-       <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
      </directives>
