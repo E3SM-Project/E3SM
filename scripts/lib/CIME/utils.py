@@ -33,10 +33,30 @@ def redirect_stderr(new_target):
 @contextmanager
 def redirect_stdout_stderr(new_target):
     old_stdout, old_stderr = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = new_target, new_target
+
     try:
         yield new_target
     finally:
         sys.stdout, sys.stderr = old_stdout, old_stderr
+
+@contextmanager
+def redirect_logger(new_target, logger_name):
+
+    ch = logging.StreamHandler(stream=new_target)
+    ch.setLevel(logging.DEBUG)
+    log = logging.getLogger(logger_name)
+    root_log = logging.getLogger()
+    orig_handlers = log.handlers
+    orig_root_loggers = root_log.handlers
+
+    try:
+        root_log.handlers = []
+        log.handlers = [ch]
+        yield log
+    finally:
+        root_log.handlers = orig_root_loggers
+        log.handlers = orig_handlers
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -219,20 +239,24 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
         if logfile:
-            with redirect_stdout_stderr(open(logfile,"w")):
+            with redirect_logger(open(logfile,"w"), subname):
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
+
     except SyntaxError:
         do_run_cmd = True
+
     except AttributeError:
         do_run_cmd = True
+
     except BaseException as e:
         if logfile:
             msg = e.__str__()
             excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
             with open(logfile, "a") as fd:
                 fd.write(excmsg)
+
         raise
 
     if do_run_cmd:
