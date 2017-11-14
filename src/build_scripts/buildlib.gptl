@@ -57,10 +57,13 @@ def buildlib(bldroot, installpath, caseroot):
         output = run_cmd_no_fail(cmd)
         logger.info(output)
 
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    buildlib(bldroot, installpath, caseroot)
+
+
 if (__name__ == "__main__"):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
-
-    mbldroot, minstallpath, mcaseroot = parse_command_line(sys.argv, __doc__)
-    buildlib(mbldroot, minstallpath, mcaseroot)
+    _main(sys.argv, __doc__)
