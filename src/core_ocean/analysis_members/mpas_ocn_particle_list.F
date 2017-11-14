@@ -17,10 +17,16 @@
 !>  used in implementation of Lagrangian Particles Tracking.
 !-----------------------------------------------------------------------
 #define COMMA ,
-#define LIGHT_DEBUG_WRITE(Z) !  print *, Z
-#define LIGHT_DEBUG_ALL_WRITE(Z) !  print *, Z
-#define LIGHT_WARNING_WRITE(Z)  print *, Z
+#ifdef MPAS_DEBUG
+#define LIGHT_DEBUG_WRITE(Z)   print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z)  print *, Z
+#else
+#define LIGHT_DEBUG_WRITE(Z)  ! print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
+#endif
+
 #define LIGHT_ERROR_WRITE(Z)  print *, Z
+#define LIGHT_WARNING_WRITE(Z)  print *, Z
 
 module ocn_particle_list
 
@@ -162,18 +168,29 @@ contains
      err = 0
      ! build / allocate the listPLSend, setting ioProc (currentBlock read in as haloData)
      call build_block_particlelists(domain, err)
-
+#ifdef MPAS_DEBUG
+     LIGHT_DEBUG_ALL_WRITE('finished build_block_particlelists 1')
+     call MPI_Barrier(domain % dminfo % comm, err)
+#endif
 
      ! read in data from netCDF-injected data structures
      ! nonhalo-data is diagnostic
      call read_haloData(domain, err)
+#ifdef MPAS_DEBUG
+     LIGHT_DEBUG_ALL_WRITE('finished read_haloData 1')
+     call MPI_Barrier(domain % dminfo % comm, err)
+#endif
 
      ! note that nonhalo data is just initialized with 0
      ! values are not imported from netCDF input file
      call read_nonhaloData(domain, err)
-
 #ifdef MPAS_DEBUG
+     LIGHT_DEBUG_ALL_WRITE('finished read_nonhaloData 1')
+     call MPI_Barrier(domain % dminfo % comm, err)
+
      call mpas_particle_list_test_num_current_particlelist(domain)
+     LIGHT_DEBUG_ALL_WRITE('finished test in mpas_particle_list_build_and_assign_particle_list')
+     call MPI_Barrier(domain % dminfo % comm, err)
 #endif
      !! test to make sure deallocation is ok before transfer...!{{{
 #ifdef MPAS_DEBUG
@@ -185,6 +202,7 @@ contains
      call mpas_particle_list_test_num_current_particlelist(domain)
      call test_currentBlock(domain)
      LIGHT_DEBUG_ALL_WRITE('    Rebuilt data structures-- ok')
+     call MPI_Barrier(domain % dminfo % comm, err)
 #endif
      !}}}
    end subroutine mpas_particle_list_build_and_assign_particle_list !}}}
@@ -773,27 +791,45 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      ! particles beloning to the list on the list
      LIGHT_DEBUG_WRITE('before make_proc_to_proc_particlelists')
 #ifdef MPAS_DEBUG
+     call MPI_Barrier(domain % dminfo % comm, err)
      call mpas_particle_list_test_numparticles_to_neighprocs(domain % dminfo % my_proc_id, procNeighs, procNeighs)
+     call MPI_Barrier(domain % dminfo % comm, err)
 #endif
      call make_proc_to_proc_particlelists(domain, copyOnly, namedBlock, listPLSend, procNeighs, err)
      LIGHT_DEBUG_WRITE('after make_proc_to_proc_particlelists')
 #ifdef MPAS_DEBUG
+     call MPI_Barrier(domain % dminfo % comm, err)
      call mpas_particle_list_test_numparticles_to_neighprocs(domain % dminfo % my_proc_id, procNeighs, procNeighs)
+     call MPI_Barrier(domain % dminfo % comm, err)
 #endif
      LIGHT_DEBUG_WRITE('finished make_proc_to_proc_particlelists')
 #ifdef MPAS_DEBUG
+     call MPI_Barrier(domain % dminfo % comm, err)
      call mpas_particle_list_test_num_current_particlelist(domain)
+     call MPI_Barrier(domain % dminfo % comm, err)
      call test_num_particles_on_particlelist(listPLSend, size(procNeighs))
+     call MPI_Barrier(domain % dminfo % comm, err)
 #endif
 
      ! now move data from one proc to another, assuming that data is move to 1st block
      ! on foreign processor
      ! tell other processors how many particles are going to be communicated to them
      call get_num_particlelists(listPLSend, size(procNeighs), nPartSend)
+#ifdef MPAS_DEBUG
      LIGHT_DEBUG_WRITE('finished get_num_particlelists')
      LIGHT_DEBUG_WRITE('proc id=' COMMA domain % dminfo % my_proc_id COMMA ' comm=' COMMA domain % dminfo % comm)
+     LIGHT_DEBUG_WRITE('before 1st barrier communicate_num_particles_send_recv')
+     call MPI_Barrier(domain % dminfo % comm, err)
+     LIGHT_DEBUG_WRITE('after 1st barrier communicate_num_particles_send_recv')
+#endif
      call communicate_num_particles_send_recv(domain, procNeighs, nPartSend, nPartRecv)
+#ifdef MPAS_DEBUG
+     ! Error is above of here
+     LIGHT_DEBUG_WRITE('before 2nd barrier communicate_num_particles_send_recv')
+     call MPI_Barrier(domain % dminfo % comm, err)
+     LIGHT_DEBUG_WRITE('after 2nd barrier communicate_num_particles_send_recv')
      LIGHT_DEBUG_WRITE('finished communicate_num_particles_send_recv')
+#endif
 
      !2. communicating from processor to processor
      ! make appropriate list
@@ -2883,7 +2919,7 @@ end subroutine empty_list_particlelists!}}}
      type (domain_type), intent(in) :: domain
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer, dimension(:), pointer, intent(inout) :: nPartRecv
 
      integer :: i, j, numProcs
      integer, dimension(:), pointer :: requestID
@@ -2897,6 +2933,20 @@ end subroutine empty_list_particlelists!}}}
 
      ! want to send individual values in nPartSend to each entry in procNeighs (paired data)
      ! values obtained after communication are to be stored in nPartRecv
+
+#ifdef MPAS_DEBUG
+     !i = 990 + domain % dminfo % my_proc_id
+     !write(message,*) 'proc_debug_message_', domain % dminfo % my_proc_id
+     !open(unit=i, file=message)
+     !write(i,*) 'procNeighs=', procNeighs
+     !write(i,*) '\n'
+     !write(i,*) 'nPartSend=', nPartSend
+     !close(unit=i)
+
+#ifdef _MPI
+     call MPI_Barrier(domain % dminfo % comm, mpi_ierr)
+#endif
+#endif
 
      allocate(requestID(2*numProcs))
 #ifdef MPAS_DEBUG
@@ -3179,7 +3229,7 @@ end subroutine allocate_list_particlelists !}}}
      type (domain_type), intent(in) :: domain
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer, dimension(:), pointer, intent(in) :: nPartRecv
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
      integer :: i, j, numProcs, numFields, numRecv, numSends
@@ -3399,7 +3449,7 @@ end subroutine allocate_list_particlelists !}}}
      type (domain_type), intent(in) :: domain
      integer, dimension(:), pointer, intent(in) :: procNeighs
      integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(out) :: nPartRecv
+     integer, dimension(:), pointer, intent(in) :: nPartRecv
      integer :: MPI_TYPE
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
@@ -3876,8 +3926,8 @@ end subroutine allocate_list_particlelists !}}}
               call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
               ! assign ioBlock explicitly during initial read
               if (dimItr % memberName == 'ioBlock') then
-                LIGHT_DEBUG_WRITE('ioBlock = ' COMMA  field1DIntPointer % array)
                 field1DIntPointer % array = domain % dminfo % my_proc_id
+                LIGHT_DEBUG_WRITE('ioBlock = ' COMMA  field1DIntPointer % array)
               end if
               LIGHT_DEBUG_WRITE(dimItr % memberName COMMA ' = ')
               LIGHT_DEBUG_WRITE(field1DIntPointer % array)
