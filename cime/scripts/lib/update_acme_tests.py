@@ -162,6 +162,7 @@ _TEST_SUITES = {
     "acme_hi_res" : (("acme_atm_hi_res",),None,
                      (
                       ("SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS", "cam-cosplite"),
+                       "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
                      )),
 
     #acme tests to mimic production runs
