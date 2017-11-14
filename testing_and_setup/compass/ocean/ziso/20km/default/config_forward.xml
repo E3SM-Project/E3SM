@@ -16,6 +16,7 @@
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="ziso_template.xml" path_base="script_configuration_dir"/>
+		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_dt">'00:00:30'</option>
 		<option name="config_run_duration">'0000_00:01:30'</option>
 		<option name="config_pio_num_iotasks">1</option>
