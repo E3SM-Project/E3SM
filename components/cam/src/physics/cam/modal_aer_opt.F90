@@ -364,7 +364,7 @@ end subroutine modal_aer_opt_init
 
 !===============================================================================
 
-subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, extinct_cmip6_sw,  &
+subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
                          tauxar, wa, ga, fa)
 
    ! calculates aerosol sw radiative properties
@@ -375,7 +375,8 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer,             intent(in) :: nnite          ! number of night columns
    integer,             intent(in) :: idxnite(nnite) ! local column indices of night columns
-   real(r8),            intent(in) :: extinct_cmip6_sw(pcols,pver) !balli comments
+   integer,             intent(in) :: trop_level(pcols)!tropopause level for each column
+   real(r8),            intent(in) :: ext_cmip6_sw(pcols,pver) !balli comments
    logical,             intent(in) :: is_cmip6_volc !BALLI-comments
 
    real(r8), intent(out) :: tauxar(pcols,0:pver,nswbands) ! layer extinction optical depth
@@ -384,7 +385,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8), intent(out) :: fa(pcols,0:pver,nswbands)     ! forward scattered fraction
 
    ! Local variables
-   integer :: i, ifld, isw, k, l, m, nc, ns
+   integer :: i, ifld, isw, k, l, m, nc, ns, ilev_tropp
    integer :: lchnk                    ! chunk id
    integer :: ncol                     ! number of active columns in the chunk
    integer :: nmodes
@@ -1054,11 +1055,20 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       deallocate(wetdens_m)
    end if
 
-   !Add contributions fron volcanic aerosols directly read in extinction
+   !Add contributions from volcanic aerosols directly read in extinction
    if(is_cmip6_volc) then
+      !update tropopause layer first
+      do i = 1, ncol
+         ilev_tropp = trop_level(i)
+         extinct(i,ilev_tropp) = 0.5_r8*( extinct(i,ilev_tropp) + ext_cmip6_sw(i,ilev_tropp) )
+      enddo
       do k = 1, pver
-         do i = 1, ncol
-            extinct(i,k) = extinct(i,k) + extinct_cmip6_sw(i,k)
+         do i = 1, ncol            
+            ilev_tropp = trop_level(i)
+            if (k < ilev_tropp) then
+               !extinction is assigned read in values only for visible band above tropopause
+               extinct(i,k) = ext_cmip6_sw(i,k)
+            endif
          enddo
       enddo
    endif

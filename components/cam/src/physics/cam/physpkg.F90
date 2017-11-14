@@ -798,7 +798,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_aero_init()
     call aerodep_flx_init()
     call aircraft_emit_init()
-    is_cmip6_volc = .false. !true if cmip6 style volcanic file is read otherwise false
+	!when is_cmip6_volc is true ,cmip6 style volcanic file is read
+	!Initialized to .false. here but it gets its values from prescribed_volcaero_init
+    is_cmip6_volc = .false. 
     call prescribed_volcaero_init(is_cmip6_volc)
 
     ! Initialize ocean data

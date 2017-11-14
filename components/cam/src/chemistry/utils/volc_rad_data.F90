@@ -78,7 +78,7 @@ contains
         
     curr_filename = trim(filename)
     cyc_yr_in     = cyc_yr
-    neg_huge = -1.0_r8* huge(1.0)
+    neg_huge = -1.0_r8* huge(1.0_r8)
     
     mxnflds_sw = size( specifier_sw )
     mxnflds_lw = size( specifier_lw )
@@ -129,12 +129,14 @@ contains
        endif
     enddo
     
-    if (cyc_ndx_beg < 0) then
-       write(iulog,*) 'volc_rad_data.F90: subr volc_rad_data_init: cycle year not found : ' , cyc_yr
-       call endrun('volc_rad_data_init:: cycle year not found')
-    endif
+    if(iscyclic) then
+       if (cyc_ndx_beg < 0) then
+          write(iulog,*) 'volc_rad_data.F90: subr volc_rad_data_init: cycle year not found : ' , cyc_yr
+          call endrun('volc_rad_data_init:: cycle year not found')
+       endif
 
-    cyc_tsize = cyc_ndx_end - cyc_ndx_beg + 1 
+       cyc_tsize = cyc_ndx_end - cyc_ndx_beg + 1 
+    endif
 
 
     !Polulate lats from the volc file
@@ -378,9 +380,9 @@ contains
 
     real(r8) :: wrk_1d(ntslc,pcols), to_lats(pcols)
     real(r8) :: loc_arr(ntslc,banddim,pcols,nalts), datain(banddim,pcols,nalts)
-    real(r8) :: model_z(pverp)
+    real(r8) :: model_z(pverp),data_out_tmp(banddim,pcols,pver)    
 
-    real(r8), pointer :: data_out(:,:,:)    
+    real(r8), pointer :: data_out(:,:,:)
 
     do ichnk = begchunk, endchunk
        call pbuf_get_field(pbuf2d, ichnk, pbuf_idx, data_out)
@@ -403,7 +405,9 @@ contains
        do icol = 1, ncols
           model_z(1:pverp) = m2km * state(ichnk)%zi(icol,pverp:1:-1)
           do iband = 1, banddim
-             call rebin( nalts, pver, alts_int, model_z, datain(iband,icol,:), data_out(iband,icol,:) )
+             call rebin( nalts, pver, alts_int, model_z, datain(iband,icol,:), data_out_tmp(iband,icol,:) )
+             !flip in vertical
+             data_out(iband,icol,:) = data_out_tmp(iband,icol,pver:1:-1)
           enddo
        enddo
     end do

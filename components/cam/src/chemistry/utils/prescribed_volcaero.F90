@@ -82,7 +82,6 @@ subroutine prescribed_volcaero_readnl(nlfile)
    integer            :: prescribed_volcaero_cycle_yr
    integer            :: prescribed_volcaero_fixed_ymd
    integer            :: prescribed_volcaero_fixed_tod
-   
 
    namelist /prescribed_volcaero_nl/    &
       prescribed_volcaero_name,         &
