@@ -1245,10 +1245,10 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2o_liq, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_liq_fluxes, norm=.true.)
+            fldlist=seq_flds_g2o_liq_fluxes, norm=.false.)
 
        call seq_map_map(mapper_Rg2o_ice, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_ice_fluxes, norm=.true.)
+            fldlist=seq_flds_g2o_ice_fluxes, norm=.false.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
