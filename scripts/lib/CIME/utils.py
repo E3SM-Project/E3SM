@@ -2,9 +2,8 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal, traceback, warnings
 import stat as statlib
-import warnings
 import six
 from contextlib import contextmanager
 #pylint: disable=import-error
@@ -228,7 +227,12 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         do_run_cmd = True
     except AttributeError:
         do_run_cmd = True
-    except:
+    except BaseException as e:
+        if logfile:
+            msg = e.__str__()
+            excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
+            with open(logfile, "a") as fd:
+                fd.write(excmsg)
         raise
 
     if do_run_cmd:
