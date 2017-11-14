@@ -399,6 +399,24 @@
       <alias>armx8v3_armx8v3</alias>
     </grid>
 
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
+      <sname>ne0np4_conus_x4v1_lowcon_ne0np4_conus_x4v1_lowcon</sname>
+      <lname>    a%ne0np4_conus_x4v1_lowcon_l%ne0np4_conus_x4v1_lowcon_oi%ne0np4_conus_x4v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
+      <alias>conusx4v1_conusx4v1</alias>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
+      <sname>ne0np4_svalbard_x8v1_lowcon_ne0np4_svalbard_x8v1_lowcon</sname>
+      <lname>    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
+      <alias>svalbardx8v1_svalbardx8v1</alias>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQP1)">
+      <sname>ne0np4_sooberingoa_x4x8v1_lowcon_ne0np4_sooberingoa_x4x8v1_lowcon</sname>
+      <lname>    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%null_m%tx0.1v2_g%null_w%null</lname>
+      <alias>sooberingoax4x8v1_sooberingoax4x8v1</alias>
+    </grid>
+
     <!-- ENA RRM grid (all components) -->
     <grid compset="(DOCN|XOCN|SOCN|AQP1)">
       <sname>ne0np4_enax4v1_ne0np4_enax4v1</sname>
