@@ -44,7 +44,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
-    expect(False, "test this")
     with Case(caseroot, read_only=False) as case:
         pio_version = case.get_value("PIO_VERSION")
         mpilib = case.get_value("MPILIB")
@@ -146,13 +145,13 @@ def buildlib(bldroot, installpath, caseroot):
             if current_value not in valid_values:
                 logger.warning("Resetting PIO_TYPENAME to netcdf for component %s"%comp)
                 case.set_value(comp_pio_typename,"netcdf")
-
+        os.chdir(caseroot)
 
 
 if (__name__ == "__main__"):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
-    
+
     bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
     buildlib(bldroot, installpath, caseroot)
