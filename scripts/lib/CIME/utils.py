@@ -2,9 +2,8 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal, traceback, warnings
 import stat as statlib
-import warnings
 import six
 from contextlib import contextmanager
 #pylint: disable=import-error
@@ -31,6 +30,13 @@ def redirect_stderr(new_target):
     finally:
         sys.stderr = old_target # restore to the previous value
 
+@contextmanager
+def redirect_stdout_stderr(new_target):
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    try:
+        yield new_target
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -213,7 +219,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
         if logfile:
-            with redirect_stdout(open(logfile,"w")):
+            with redirect_stdout_stderr(open(logfile,"w")):
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
@@ -221,7 +227,12 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         do_run_cmd = True
     except AttributeError:
         do_run_cmd = True
-    except:
+    except BaseException as e:
+        if logfile:
+            msg = e.__str__()
+            excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
+            with open(logfile, "a") as fd:
+                fd.write(excmsg)
         raise
 
     if do_run_cmd:
