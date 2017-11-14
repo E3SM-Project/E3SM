@@ -4,13 +4,6 @@
 Testing with create_test
 **************************
 
-.. todo ::
-
-   add list and descriptions on functionality tests (ERS, ERI, ect)
-
-    
-
-     
 
 create_test is the tool we use to test cime-driven models. It can be used as a easy way to
 run a single basic test or can be used to run an entire suite of tests. It has parallelism
