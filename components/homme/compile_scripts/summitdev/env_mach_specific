@@ -1,0 +1,37 @@
+#! /bin/bash -f
+
+#===============================================================================
+# Titan machine specific settings
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Modules
+#-------------------------------------------------------------------------------
+
+source $MODULESHOME/init/bash
+module purge
+module load DefApps
+module load pgi/17.10
+module load netcdf
+module load netcdf-fortran
+module load parallel-netcdf
+module load cmake
+module load cuda
+
+module list
+echo `which cmake`
+
+ulimit -c unlimited
+ulimit -s unlimited
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine. 
+export MPSTKZ=64M
+export OMP_STACKSIZE=64M
+
+# Capture logical to physics PE assignment and active environment variable 
+# settings
+export MPICH_ENV_DISPLAY=1
+export MPICH_VERSION_DISPLAY=1
+export MPICH_CPUMASK_DISPLAY=1
+# export MPICH_RANK_REORDER_DISPLAY=1

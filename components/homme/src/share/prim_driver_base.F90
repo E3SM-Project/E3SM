@@ -112,6 +112,10 @@ contains
 #ifdef TRILINOS
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
+#if (defined _OPENACC)
+    use openacc
+#endif
+
 
     implicit none
 
@@ -151,6 +155,14 @@ contains
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
 #endif
+
+#if (defined _OPENACC)
+    !$omp parallel
+    call acc_set_device_num(0,acc_device_nvidia)
+    !$omp end parallel
+#endif
+
+
 
     ! =====================================
     ! Read in model control information
