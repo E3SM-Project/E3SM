@@ -42,13 +42,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-def _main_func(description):
+def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
+    expect(False, "test this")
     with Case(caseroot, read_only=False) as case:
         pio_version = case.get_value("PIO_VERSION")
         mpilib = case.get_value("MPILIB")
@@ -154,4 +150,9 @@ def _main_func(description):
 
 
 if (__name__ == "__main__"):
-    _main_func(__doc__)
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+    
+    bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
+    buildlib(bldroot, installpath, caseroot)
