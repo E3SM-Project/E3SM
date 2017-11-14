@@ -4,9 +4,11 @@ import fnmatch
 import datetime
 import shutil
 import collections
+import csv
+import json
 from bs4 import BeautifulSoup
-import acme_diags
 from cdp.cdp_viewer import OutputViewer
+import acme_diags
 from acme_diags.driver.utils import get_set_name
 
 # Dict of
@@ -24,6 +26,8 @@ from acme_diags.driver.utils import get_set_name
 # needed so we can have a cols in order of ANN, DJF, MAM, JJA, SON
 ROW_INFO = collections.OrderedDict()
 
+# A similar dict for creating the lat-lon tables
+LAT_LON_TABLE_INFO = collections.OrderedDict()
 
 def _copy_acme_logo(root_dir):
     """Copy over ACME_Logo.png to root_dir/viewer"""
@@ -169,7 +173,81 @@ def _better_page_name(old_name):
         return 'CloudTopHeight-Tau joint histograms'
     else:
         return old_name
+    
+def _add_to_lat_lon_metrics_table(metrics_path, season, row_name):
+    """Add the metrics for the current season and row_name to the lat-lon table"""
+    with open(metrics_path + '.json') as json_file:
+        metrics_dict = json.load(json_file)
 
+        if season not in LAT_LON_TABLE_INFO:
+            LAT_LON_TABLE_INFO[season] = collections.OrderedDict()
+        if row_name not in LAT_LON_TABLE_INFO[season]:
+            LAT_LON_TABLE_INFO[season][row_name] = collections.OrderedDict()
+        LAT_LON_TABLE_INFO[season][row_name]['metrics'] = metrics_dict
+
+def _create_csv_from_dict(output_dir, season):
+    """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
+
+    # output_dir = os.path.join(parameter.results_dir, '{}'.format(set_num))
+    
+    table_path = os.path.abspath(os.path.join(output_dir, season + '_metrics_table.csv'))
+
+    col_names = ['Variables', 'Unit', 'Model mean', 'Obs mean', 'Mean Bias', 'RMSE', 'correlation']
+
+    with open(table_path, 'w') as table_csv:
+        writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
+        writer.writerow(col_names)
+        for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
+            metrics = metrics_dic['metrics']
+            row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
+            writer.writerow(row)
+
+    return table_path
+
+def _cvs_to_html(csv_path, season):
+    """Convert the csv for a season located at csv_path to an HTML, returning the path to the HTML"""
+    html_path = csv_path.replace('csv', 'html')
+
+    with open(html_path, 'w') as htmlfile:
+        htmlfile.write('<p><th><b>{} Mean </b></th></p>'.format(season))
+        htmlfile.write('<table>')
+
+        with open(csv_path) as csv_file:
+            read_csv = csv.reader(csv_file)
+
+            # generate table contents
+            for num, row in enumerate(read_csv):
+
+                # write the header row, assuming the first row in csv contains the header
+                if num == 0:
+                    htmlfile.write('<tr>')
+                    for column in row:
+                        htmlfile.write('<th>{}</th>'.format(column))
+                    htmlfile.write('</tr>')
+
+                # write all other rows 
+                else:
+                    htmlfile.write('<tr><div style="width: 50px">')
+                    for column in row:
+                        htmlfile.write('<td>{}</td>'.format(column))
+                    htmlfile.write('</div></tr>')
+
+        htmlfile.write('</table>')
+
+    return html_path
+
+def _add_lat_lon_table_to_viewer(csv_path):
+    """Add a link to the lat-lon table to the viewer"""
+    # TODO: Implement this, but first talk to the others about how they want it to look
+    pass
+
+def generate_lat_lon_metrics_table(root_dir):
+    """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
+    for season in LAT_LON_TABLE_INFO:
+        csv_path = _create_csv_from_dict(root_dir, season)
+        html_path = _cvs_to_html(csv_path, season)
+        _add_lat_lon_table_to_viewer(html_path)
+        # print('Path to lat-lon table: {}'.format(html_path))
 
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
@@ -206,6 +284,10 @@ def create_viewer(root_dir, parameters, ext):
                                 fnm = '{}-{}-{}-{}-{}'.format(
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
+
+                        if set_num in ['lat_lon', '5']:
+                            metrics_path = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id, fnm)
+                            _add_to_lat_lon_metrics_table(metrics_path, season, row_name)
 
                         for row_name, fnm in row_name_and_fnm:
                             if parameter.case_id not in ROW_INFO[set_num]:
@@ -256,4 +338,5 @@ def create_viewer(root_dir, parameters, ext):
                                        title=col_season, other_files=formatted_files)
 
     viewer.generate_viewer(prompt_user=False)
+    generate_lat_lon_metrics_table(root_dir)
     _extras(root_dir, parameters)
