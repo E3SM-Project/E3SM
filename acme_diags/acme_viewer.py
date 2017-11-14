@@ -236,18 +236,91 @@ def _cvs_to_html(csv_path, season):
 
     return html_path
 
-def _add_lat_lon_table_to_viewer(csv_path):
+def _create_lat_lon_table_index(table_dir):
+    """Create an index.html that links the individual htmls for the lat-lon table."""
+    html = '''
+    <html>
+    <head>
+        <title>Latitude Longitude Table</title>
+    </head>
+    <body>
+        <!-- <h1>Some title?</h1> -->
+        <table align="center" id="the_table">
+            <!-- Programatically insert the table -->
+        </table>
+    </body>
+    </html>
+    '''
+    soup = BeautifulSoup(html, "lxml")
+    for t in soup.find_all("table"):
+
+        # Add the title of the col
+        titles = soup.new_tag("tr")
+        for season in LAT_LON_TABLE_INFO:
+            title = soup.new_tag("th")
+            title.append(season)
+            titles.append(title)
+        t.append(titles)
+
+        rows = soup.new_tag("tr")
+        for season in LAT_LON_TABLE_INFO:
+            row_url = "{}_metrics_table.html".format(season)
+            td = soup.new_tag("td")
+            a = soup.new_tag("a", href=row_url)
+            a.append(season)
+            td.append(a)
+            rows.append(td)
+        t.append(rows)
+        break  # there should only be one table tag
+
+    html = soup.prettify("utf-8")
+    index_page = os.path.join(table_dir, 'index.html')
+    with open(index_page, "wb") as f:
+        f.write(html)
+
+def _add_lat_lon_table_to_viewer(csv_path, root_dir):
     """Add a link to the lat-lon table to the viewer"""
-    # TODO: Implement this, but first talk to the others about how they want it to look
-    pass
+
+    # Add this to index.html:
+
+    # <a href="table/index.html" style="padding-left:1em">
+    #   Latitiude-Longitude Table
+    # </a>
+    # underneath this, which is already in index.html:
+    # <a href="latitude-longitude/index.html">
+    #   Latitude-Longitude contour maps
+    # </a>
+
+    index_page = os.path.join(root_dir, 'index.html')
+    soup = BeautifulSoup(open(index_page), "lxml")
+
+    table_index_path = 'table/index.html'
+    table_a = soup.new_tag("a", href=table_index_path, style="padding-left:1em")
+    table_a.append("Latitiude-Longitude Table")
+
+    # append the new tag underneath the old one, so add it to the parent of the old one
+    for a in soup.find_all('a'):
+        if _better_page_name('lat_lon') in a:
+            parent = a.parent
+            parent.append(table_a)
+
+    html = soup.prettify("utf-8")
+    with open(index_page, "wb") as f:
+        f.write(html)
 
 def generate_lat_lon_metrics_table(root_dir):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
+    table_dir = os.path.join(root_dir, 'table')  # output_dir/viewer/table
+    table_dir = os.path.abspath(table_dir)
+    if not os.path.exists(table_dir):
+        os.mkdir(table_dir)
+
+    _create_lat_lon_table_index(table_dir)
+
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict(root_dir, season)
+        csv_path = _create_csv_from_dict(table_dir, season)
         html_path = _cvs_to_html(csv_path, season)
-        _add_lat_lon_table_to_viewer(html_path)
-        # print('Path to lat-lon table: {}'.format(html_path))
+        _add_lat_lon_table_to_viewer(html_path, root_dir)
 
 def create_viewer(root_dir, parameters, ext):
     """Based of the parameters, find the files with
