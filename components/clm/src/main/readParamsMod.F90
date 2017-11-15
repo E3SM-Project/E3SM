@@ -95,6 +95,7 @@ contains
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
     use tracer_varcon            , only : is_active_betr_bgc                                         
+    use clm_instMod              , only : ep_betr
     
     !
     ! !ARGUMENTS:
@@ -121,6 +122,7 @@ contains
     if(use_betr)then
     !  the following will be replaced with something more general. Jinyun Tang
     !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
+      call ep_betr%readParams(ncid)
     endif
 
     !
