@@ -2,9 +2,8 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal, traceback, warnings
 import stat as statlib
-import warnings
 import six
 from contextlib import contextmanager
 #pylint: disable=import-error
@@ -31,6 +30,32 @@ def redirect_stderr(new_target):
     finally:
         sys.stderr = old_target # restore to the previous value
 
+@contextmanager
+def redirect_stdout_stderr(new_target):
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = new_target, new_target
+    try:
+        yield new_target
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
+@contextmanager
+def redirect_logger(new_target, logger_name):
+
+    ch = logging.StreamHandler(stream=new_target)
+    ch.setLevel(logging.DEBUG)
+    log = logging.getLogger(logger_name)
+    root_log = logging.getLogger()
+    orig_handlers = log.handlers
+    orig_root_loggers = root_log.handlers
+
+    try:
+        root_log.handlers = []
+        log.handlers = [ch]
+        yield log
+    finally:
+        root_log.handlers = orig_root_loggers
+        log.handlers = orig_handlers
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -49,7 +74,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("{} {}".format(error_prefix, error_msg))
+        raise exc_type(error_prefix + " " + error_msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -213,22 +238,38 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
         if logfile:
-            with redirect_stdout(open(logfile,"w")):
+            with redirect_logger(open(logfile,"w"), subname):
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
+
     except SyntaxError:
         do_run_cmd = True
+
     except AttributeError:
         do_run_cmd = True
-    except:
+
+    except BaseException as e:
+        if logfile:
+            msg = e.__str__()
+            excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
+            with open(logfile, "a") as fd:
+                fd.write(excmsg)
+
         raise
 
     if do_run_cmd:
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
-        output = run_cmd_no_fail("{} {}".format(cmd, cmdargs), combine_output=combine_output,
+        fullcmd = cmd
+        if isinstance(cmdargs, list):
+            for arg in cmdargs:
+                fullcmd += " " + str(arg)
+        else:
+            fullcmd += " " + cmdargs
+        output = run_cmd_no_fail("{} 1> {} 2>&1".format(fullcmd, logfile),
+                                 combine_output=combine_output,
                                  from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
@@ -342,9 +383,9 @@ def check_minimum_python_version(major, minor):
     >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
     >>>
     """
+    msg = "Python " + str(major) + ", minor version " + str(minor) + " is required, you have " + str(sys.version_info[0]) + "." + str(sys.version_info[1])
     expect(sys.version_info[0] > major or
-           (sys.version_info[0] == major and sys.version_info[1] >= minor),
-           "Python {:d}, minor version {:d}+ is required, you have {:d}.{:d}".format(major, minor, sys.version_info[0], sys.version_info[1]))
+           (sys.version_info[0] == major and sys.version_info[1] >= minor), msg)
 
 def normalize_case_id(case_id):
     """
@@ -715,6 +756,48 @@ def get_project(machobj=None):
 
     logger.info("No project info available")
     return None
+
+def get_charge_account(machobj=None):
+    """
+    Hierarchy for choosing CHARGE_ACCOUNT:
+    1. Environment variable CHARGE_ACCOUNT
+    2. File $HOME/.cime/config
+    3. config_machines.xml (if machobj provided)
+    4. default to same value as PROJECT
+
+    >>> import CIME
+    >>> import CIME.XML.machines
+    >>> machobj = CIME.XML.machines.Machines(machine="theta")
+    >>> project = get_project(machobj)
+    >>> charge_account = get_charge_account(machobj)
+    >>> project == charge_account
+    True
+    >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
+    >>> get_charge_account(machobj)
+    'ChargeAccount'
+    >>> del os.environ["CHARGE_ACCOUNT"]
+    """
+    charge_account = os.environ.get("CHARGE_ACCOUNT")
+    if (charge_account is not None):
+        logger.info("Using charge_account from env CHARGE_ACCOUNT: " + charge_account)
+        return charge_account
+
+    cime_config = get_cime_config()
+    if (cime_config.has_option('main','CHARGE_ACCOUNT')):
+        charge_account = cime_config.get('main','CHARGE_ACCOUNT')
+        if (charge_account is not None):
+            logger.info("Using charge_account from .cime/config: " + charge_account)
+            return charge_account
+
+    if machobj is not None:
+        charge_account = machobj.get_value("CHARGE_ACCOUNT")
+        if charge_account is not None:
+            logger.info("Using charge_account from config_machines.xml: " + charge_account)
+            return charge_account
+
+    logger.info("No charge_account info available, using value from PROJECT")
+    return get_project(machobj)
+
 
 def setup_standard_logging_options(parser):
     helpfile = "{}.log".format(sys.argv[0])
@@ -1351,12 +1434,32 @@ def run_and_log_case_status(func, phase, caseroot='.'):
     return rv
 
 def _check_for_invalid_args(args):
-    for arg in args:
-        # if arg contains a space then it was originally quoted and we can ignore it here.
-        if " " in arg or arg.startswith("--"):
-            continue
-        if arg.startswith("-") and len(arg) > 2:
-            sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+    if get_model() != "acme":
+        for arg in args:
+            # if arg contains a space then it was originally quoted and we can ignore it here.
+            if " " in arg or arg.startswith("--"):
+                continue
+            if arg.startswith("-") and len(arg) > 2:
+                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+
+def add_mail_type_args(parser):
+    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+
+    parser.add_argument("-M", "--mail-type", action="append",
+                        help="when to send user email. Options are: never, all, begin, end, fail."
+                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+
+def resolve_mail_type_args(args):
+    if args.mail_type is not None:
+        resolved_mail_types = []
+        for mail_type in args.mail_type:
+            resolved_mail_types.extend(mail_type.split(","))
+
+        for mail_type in resolved_mail_types:
+            expect(mail_type in ("never", "all", "begin", "end", "fail"),
+                   "Unsupported mail-type '{}'".format(mail_type))
+
+        args.mail_type = resolved_mail_types
 
 class SharedArea(object):
     """

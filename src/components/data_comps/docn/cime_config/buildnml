@@ -125,6 +125,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     if ocn_domain_file != "UNSET":
         full_domain_path = os.path.join(ocn_domain_path, ocn_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
+    else:
+        if "aqua" in docn_mode:
+            expect( ocn_domain_file != "UNSET",
+                    "in aquaplanet mode the xml variable OCN_DOMAIN_FILE cannot be equal to UNSET ")
+        else:
+            nmlgen.add_default("domainfile", value='null')
 
     #----------------------------------------------------
     # Finally, write out all the namelists.

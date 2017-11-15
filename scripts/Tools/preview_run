@@ -58,6 +58,7 @@ def _main_func(description):
 
     with Case(caseroot, read_only=False) as case:
         print("BATCH SUBMIT:")
+        case.load_env()
         job = "case.test" if case.get_value("TEST") else "case.run"
         job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
         for job_id, cmd in job_id_to_cmd:

@@ -5,13 +5,14 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy import deepcopy
-import glob, os, shutil, math
+import glob, os, shutil, math, six
 from CIME.XML.standard_module_setup import *
 #pylint: disable=import-error,redefined-builtin
 from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.utils                     import get_current_commit, check_name
+from CIME.utils                     import convert_to_type, get_model
+from CIME.utils                     import get_project, get_charge_account, check_name
+from CIME.utils                     import get_current_commit
 from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -128,18 +129,9 @@ class Case(object):
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
-        MAX_MPITASKS_PER_NODE  = self.get_value("MAX_MPITASKS_PER_NODE")
-        self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+        max_mpitasks_per_node  = self.get_value("MAX_MPITASKS_PER_NODE")
+
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
-        self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
-        logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
-
-        self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
-        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / MAX_MPITASKS_PER_NODE))
-
-        threads_per_node = self.tasks_per_node * self.thread_count
-        threads_per_core = 1 if (threads_per_node <= MAX_MPITASKS_PER_NODE) else smt_factor
-        self.cores_per_task = self.thread_count / threads_per_core
 
         mpi_attribs = {
             "compiler" : self.get_value("COMPILER"),
@@ -147,14 +139,30 @@ class Case(object):
             "threaded" : self.get_build_threaded(),
             }
 
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable is not None and "aprun" in executable:
-            self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+            _, self.num_nodes, self.total_tasks, self.tasks_per_node, self.thread_count = get_aprun_cmd_for_case(self, "acme.exe")
             self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
             self.num_nodes += self.spare_nodes
         else:
+            self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+            self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
+
             self.num_nodes, self.spare_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
             self.num_nodes += self.spare_nodes
+
+        logger.debug("total_tasks {} thread_count {}".format(self.total_tasks, self.thread_count))
+
+        self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / max_mpitasks_per_node))
+
+        threads_per_node = self.tasks_per_node * self.thread_count
+        threads_per_core = 1 if (threads_per_node <= max_mpitasks_per_node) else smt_factor
+        self.cores_per_task = self.thread_count / threads_per_core
+
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -175,11 +183,8 @@ class Case(object):
         self._env_files_that_need_rewrite.add(env_file)
 
     def read_xml(self):
-        if(len(self._env_files_that_need_rewrite)>0):
-            files = ""
-            for env_file in self._env_files_that_need_rewrite:
-                files += " "+env_file.filename
-            expect(False,"Object(s) {} seem to have newer data than the corresponding case file".format(files))
+        if self._env_files_that_need_rewrite:
+            expect(False, "Object(s) {} seem to have newer data than the corresponding case file".format(" ".join([env_file.filename for env_file in self._env_files_that_need_rewrite])))
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
@@ -247,7 +252,7 @@ class Case(object):
                 vtype = env_file.get_type_info(item)
                 if resolved:
                     for result in results:
-                        if type(result) is str:
+                        if isinstance(result, six.string_types):
                             result = self.get_resolved_value(result)
                             new_results.append(convert_to_type(result, vtype, item))
                         else:
@@ -261,7 +266,7 @@ class Case(object):
             if len(results) > 0:
                 if resolved:
                     for result in results:
-                        if type(result) is str:
+                        if isinstance(result, six.string_types):
                             new_results.append(self.get_resolved_value(result))
                         else:
                             new_results.append(result)
@@ -278,7 +283,7 @@ class Case(object):
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
             if result is not None:
-                if resolved and type(result) is str:
+                if resolved and isinstance(result, six.string_types):
                     result = self.get_resolved_value(result)
                     vtype = env_file.get_type_info(item)
                     if vtype is not None:
@@ -290,7 +295,7 @@ class Case(object):
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
 
             if result is not None:
-                if resolved and type(result) is str:
+                if resolved and isinstance(result, six.string_types):
                     return self.get_resolved_value(result)
                 return result
 
@@ -386,8 +391,12 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
-        expect(allow_undefined or result is not None,
-               "No variable {} found in case".format(item))
+        if len(self._files) == 1:
+            expect(allow_undefined or result is not None,
+                   "No variable {} found in file {}".format(item, self._files[0].filename))
+        else:
+            expect(allow_undefined or result is not None,
+                   "No variable {} found in case".format(item))
 
     def set_valid_values(self, item, valid_values):
         """
@@ -573,7 +582,7 @@ class Case(object):
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
             for key, val in entryid_file:
-                if type(val) is str and '$' in val:
+                if isinstance(val, six.string_types) and '$' in val:
                     yield key, self.get_resolved_value(val)
                 else:
                     yield key, val
@@ -622,9 +631,18 @@ class Case(object):
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
+            root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
+            comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
+            if comp_root_dir is not None:
+                # the set_value in files is needed for the archiver setup below
+                files.set_value(root_dir_node_name, comp_root_dir)
+                self.set_value(root_dir_node_name, comp_root_dir)
+                compatt = None
+            else:
+                compatt = {"component":comp_name}
             # Add the group and elements for the config_files.xml
-            comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
+            comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
@@ -719,10 +737,10 @@ class Case(object):
             mach_pes_obj.set_value(rootpe_str, rootpe)
 
         pesize = 1
-        MAX_MPITASKS_PER_NODE = self.get_value("MAX_MPITASKS_PER_NODE")
+        max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
         for val in totaltasks:
             if val < 0:
-                val = -1*val*MAX_MPITASKS_PER_NODE
+                val = -1*val*max_mpitasks_per_node
             if val > pesize:
                 pesize = val
         if multi_driver:
@@ -752,9 +770,13 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None):
+                  input_dir=None, driver=None):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
+
+        if driver:
+            self.set_lookup_value("COMP_INTERFACE", driver)
+
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
@@ -790,7 +812,7 @@ class Case(object):
 
         self.get_compset_var_settings()
 
-        self.clean_up_lookups()
+        self.clean_up_lookups(allow_undefined=True)
 
         #--------------------------------------------
         # machine
@@ -854,7 +876,7 @@ class Case(object):
         infile = self.get_resolved_value(infile)
         logger.debug("archive defaults located in {}".format(infile))
         archive = Archive(infile=infile, files=files)
-        archive.setup(env_archive, self._components)
+        archive.setup(env_archive, self._components, files=files)
         self.schedule_rewrite(env_archive)
 
         self.set_value("COMPSET",self._compsetname)
@@ -877,6 +899,10 @@ class Case(object):
             self.set_value("PROJECT", project)
         elif machobj.get_value("PROJECT_REQUIRED"):
             expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -1151,11 +1177,11 @@ class Case(object):
         else:
             return comp_user_mods
 
-    def submit_jobs(self, no_batch=False, job=None, skip_pnl=False,
-                    mail_user=None, mail_type='never', batch_args=None,
+    def submit_jobs(self, no_batch=False, job=None, prereq=None, skip_pnl=False,
+                    mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job,
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
                                      skip_pnl=skip_pnl, mail_user=mail_user,
                                      mail_type=mail_type, batch_args=batch_args,
                                      dry_run=dry_run)
@@ -1217,8 +1243,8 @@ class Case(object):
         executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if executable is not None and "aprun" in executable:
-            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+        if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)[0:2]
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
 
@@ -1250,13 +1276,11 @@ class Case(object):
         else:
             logger.warning("WARNING: No {} Model version found.".format(model))
 
-    def load_env(self):
-        if not self._is_env_loaded:
-            compiler = self.get_value("COMPILER")
-            debug=self.get_value("DEBUG")
-            mpilib=self.get_value("MPILIB")
+    def load_env(self, reset=False):
+        if not self._is_env_loaded or reset:
+            os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
-            env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
+            env_module.load_env(self)
             self._is_env_loaded = True
 
     def get_build_threaded(self):
@@ -1264,7 +1288,8 @@ class Case(object):
         Returns True if current settings require a threaded build/run.
         """
         force_threaded = self.get_value("BUILD_THREADED")
-        return bool(force_threaded) or self.thread_count > 1
+        smp_present = bool(force_threaded) or self.thread_count > 1
+        return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
         """
@@ -1308,8 +1333,9 @@ class Case(object):
 
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
-        components = self.get_value("COMP_CLASSES")
+
         logger.warning("setting case file to {}".format(xmlfile))
+        components = self.get_value("COMP_CLASSES")
         new_env_file = None
         for env_file in self._env_entryid_files:
             if os.path.basename(env_file.filename) == ftype:
@@ -1387,7 +1413,7 @@ class Case(object):
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None):
+               input_dir=None, driver=None):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1403,7 +1429,7 @@ class Case(object):
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir)
+                           input_dir=input_dir, driver=driver)
 
             self.create_caseroot()
 

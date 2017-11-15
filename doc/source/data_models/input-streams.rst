@@ -12,7 +12,7 @@ The data models can have multiple input streams.
 
 The data for one stream may be all in one file or may be spread over several files. For example, 50 years of monthly average data might be contained all in one data file or it might be spread over 50 files, each containing one year of data.
 
-The data models can *loop* over stream data -- repeatedly cycle over some subset of an input stream's time axis. When looping, the models can only loop over whole years. For example, an input stream might have SST data for years 1950 through 2000, but a model could loop over the data for years 1960 through 1980. A model *cannot* loop over partial years, for example, from 1950-Feb-10 through 1980-Mar-15.
+The data models can *loop* over stream data -- i.e., repeatedly cycle over some subset of an input stream's time axis. When looping, the models can only loop over whole years. For example, an input stream might have SST data for years 1950 through 2000, but a model could loop over the data for years 1960 through 1980. A model *cannot* loop over partial years, for example, from 1950-Feb-10 through 1980-Mar-15.
 
 The input data must be in a netcdf file and the time axis in that file must be CF-1.0 compliant.
 
@@ -26,13 +26,13 @@ Generally, information about what streams a user wants to use and how to use the
 --------------------------------------------------
 Stream Data and shr_strdata_nml namelists
 --------------------------------------------------
-The stream data (referred to as *strdata*) input is set via a fortran namelist called ``shr_strdata_nml``.
+The stream data (referred to as *strdata*) input is set via a Fortran namelist called ``shr_strdata_nml``.
 That namelist, the associated strdata datatype, and the methods are contained in the share source code file, ``shr_strdata_mod.F90``.
 In general, strdata input defines an array of input streams and operations to perform on those streams.
 Therefore, many namelist inputs are arrays of character strings.
 Different variables of the same index are associated. For instance, mapalgo(1) spatial interpolation will be performed between streams(1) and the target domain.
 
-Each data model as an associated input namelist file, ``xxx_in``, where ``xxx=[datm,dlnd,dice,docn,drof,dwav]``.
+Each data model has an associated input namelist file, ``xxx_in``, where ``xxx=[datm,dlnd,dice,docn,drof,dwav]``.
 
 The input namelist file for each data model has a stream dependent namelist group, ``shr_strdata_nml``, and a stream independent namelist group.
 The  ``shr_strdata_nml`` namelist variables **are the same for all data models**.
@@ -81,7 +81,7 @@ domainFile  component domain (all streams will be mapped to this domain).
 
 	    default="null"
 
-streams     character array (up to 30 elemnets) of input stream filenames and associated years of data.
+streams     character array (up to 30 elements) of input stream filenames and associated years of data.
 
             Each array entry consists of a stream_input_filename year_align year_first year_last.
             The  stream_input_filename is a stream text input file and the format and options are described elsewhere.
@@ -127,7 +127,6 @@ mapread     array of spatial interpolation mapping files to read (optional)
 	    default='NOT_SET'
 
 mapwrite    array (up to 30 elements) of spatial interpolation mapping files to write (optional). Specifies the weights file
-
             to generate after weights are computed on the fly for the mapping (interpolation) operation, thereby allowing
 	    users to save and reuse a set of weights later.
 	    default='NOT_SET'
@@ -150,15 +149,11 @@ tintalgo    array (up to 30 elements) of time interpolation algorithm options as
 taxMode     array (up to 30 elements) of time interpolation modes.
 
             Time axis interpolation modes are associated with the array of streams for
-
 	    handling data outside the specified stream time axis.
 
 	    Valid options are to cycle the data based on the first, last, and align
-
 	    settings associated with the stream dataset, to extend the first and last
-
 	    valid value indefinitely, or to limit the interpolated data to fall only between
-
 	    the least and greatest valid value of the time array.
 
 	    valid values: cycle,extend,limit
@@ -174,25 +169,15 @@ taxMode     array (up to 30 elements) of time interpolation modes.
 dtlimit     array (up to 30 elements) of setting delta time axis limit.
 
             Specifies delta time ratio limits placed on the time interpolation
-
 	    associated with the array of streams.  Causes the model to stop if
-
 	    the ratio of the running maximum delta time divided by the minimum delta time
-
 	    is greater than the dtlimit for that stream.  For instance, with daily data,
-
 	    the delta time should be exactly one day throughout the dataset and
-
 	    the computed maximum divided by minimum delta time should always be 1.0.
-
 	    For monthly data, the delta time should be between 28 and 31 days and the
-
             maximum ratio should be about 1.1.  The running value of the delta
-
             time is computed as data is read and any wraparound or cycling is also
-
             included.  this input helps trap missing data or errors in cycling.
-
             to turn off trapping, set the value to 1.0e30 or something similar.
 
             default=1.5
@@ -214,7 +199,8 @@ The general input format for the ``streams`` namelist variable is:
    /
 
 where:
-::
+
+.. code-block:: none
 
    streamN.txt
       the stream description file, a plain text file containing details about the input stream (see below)
@@ -277,7 +263,7 @@ year 1850.
 Customizing shr_strdata_nml values
 --------------------------------------------------
 
-The contents of ``shr_strdata_nml are automatically generated by that data model's **cime_config/buildnml** script.
+The contents of ``shr_strdata_nml`` are automatically generated by that data model's **cime_config/buildnml** script.
 These contents are easily customizable for your target experiment.
 As an example we refer to the following ``datm_in`` contents (that would appear in both ``$CASEROOT/CaseDocs`` and ``$RUNDIR``):
 ::
@@ -302,7 +288,8 @@ As an example we refer to the following ``datm_in`` contents (that would appear 
 
 As is discussed in the :ref:`CIME User's Guide<running-a-case>`, to change the contents of ``datm_in``, you must edit ``$CASEROOT/user_nl_datm``.
 In the above example, you can to this to change any of the above settings **except for the names**
-::
+
+.. code-block:: none
 
    datm.streams.txt.CLM_QIAN.Solar
    datm.streams.txt.CLM_QIAN.Precip
@@ -371,20 +358,20 @@ The data elements found in the stream description file are:
   Information about the domain data for this stream specified by the following 3 sub elements.
 
   ``variableNames``
-      A list of the domain variable names. This is a paired list with the name of the variable in the netCDF file on the left and the name of the corresponding model variable on the right. This data models require five variables in this list. The names of model's variables (names on the right) must be: "time," "lon," "lat," "area," and "mask."
+    A list of the domain variable names. This is a paired list with the name of the variable in the netCDF file on the left and the name of the corresponding model variable on the right. This data models require five variables in this list. The names of model's variables (names on the right) must be: "time," "lon," "lat," "area," and "mask."
 
   ``filePath``
-     The file system directory where the domain data file is located.
+    The file system directory where the domain data file is located.
 
-   ``fileNames``
-     The name of the domain data file. Often the domain data is located in the same file as the field data (above), in which case the name of the domain file could simply be the name of the first field data file. Sometimes the field data files don't contain the domain data required by the data models, in this case, one new file can be created that contains the required data.
+  ``fileNames``
+    The name of the domain data file. Often the domain data is located in the same file as the field data (above), in which case the name of the domain file could simply be the name of the first field data file. Sometimes the field data files don't contain the domain data required by the data models, in this case, one new file can be created that contains the required data.
 
 
 ``fieldInfo``
   Information about the stream data for this stream specified by the following 3 required sub elements and optional offset element.
 
   ``variableNames``
-    A list of the field variable names. This is a paired list with the name of the variable in the netCDF file on the left and the name of the corresponding model variable on the right. This is the list of fields to read in from the data file, there may be other fields in the file which are not read in (ie. they won't be used).
+    A list of the field variable names. This is a paired list with the name of the variable in the netCDF file on the left and the name of the corresponding model variable on the right. This is the list of fields to read in from the data file; there may be other fields in the file which are not read in (i.e., they won't be used).
 
   ``filePath``
     The file system directory where the data files are located.
@@ -398,8 +385,8 @@ The data elements found in the stream description file are:
 The data models advance in time discretely.
 At a given time, they read/derive fields from input files.
 Those input files have data on a discrete time axis as well.
-Each data point in the input files are associated with a discrete time (as opposed to a time interval).
-Depending whether you pick lower, upper, nearest, linear, or coszen; the data in the input file will be "interpolated" to the time in the model.
+Each data point in the input files is associated with a discrete time (as opposed to a time interval).
+Depending on whether you pick lower, upper, nearest, linear, or coszen, the data in the input file will be "interpolated" to the time in the model.
 
 The offset shifts the time axis of the input data the given number of seconds.
 So if the input data is at 0, 3600, 7200, 10800 seconds (hourly) and you set an offset of 1800, then the input data will be set at times 1800, 5400, 9000, and 12600.
@@ -460,7 +447,7 @@ The directory contents of each data model will look like the following (using DA
    $CIMEROOT/components/data_comps/datm/cime_config/namelist_definition_datm.xml
 
 The ``namelist_definition_datm.xml`` file defines and sets default values for all the namelist variables and associated groups and also provides out-of-the box settings for the target data model and target stream.
-**buildnml** utilizes this two files to construct the stream files for the given compset settings. You can modify the generated stream files for your particular needs by doing the following:
+**buildnml** utilizes these two files to construct the stream files for the given compset settings. You can modify the generated stream files for your particular needs by doing the following:
 
 
 1. Copy the relevant description file from ``$CASEROOT/CaseDocs`` to ``$CASEROOT`` and pre-pend a "\user_"\ string to the filename. Change the permission of the file to write. For example, assuming you are in **$CASEROOT**

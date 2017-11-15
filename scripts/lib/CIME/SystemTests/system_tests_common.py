@@ -196,6 +196,7 @@ class SystemTestsCommon(object):
         Use for tests that have multiple cases
         """
         self._case = case
+        self._case.load_env(reset=True)
         self._caseroot = case.get_value("CASEROOT")
 
     def run_indv(self, suffix="base", st_archive=False):
@@ -243,7 +244,7 @@ class SystemTestsCommon(object):
                     allgood = allgood - 1
             except BaseException as e:
                 msg = e.__str__()
-                    
+
                 logger.info("{} is not compressed, assuming run failed {}".format(cpllog, msg))
 
         return allgood==0
@@ -258,7 +259,7 @@ class SystemTestsCommon(object):
         run case needs indirection based on success.
         If success_change is True, success requires some files to be different
         """
-        success, comments = compare_test(self._case, suffix1, suffix2)
+        success, comments = self._do_compare_test(suffix1, suffix2)
         if success_change:
             success = not success
 
@@ -267,6 +268,13 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, suffix1, suffix2), status)
         return success
+
+    def _do_compare_test(self, suffix1, suffix2):
+        """
+        Wraps the call to compare_test to facilitate replacement in unit
+        tests
+        """
+        return compare_test(self._case, suffix1, suffix2)
 
     def _get_mem_usage(self, cpllog):
         """
@@ -399,25 +407,31 @@ class SystemTestsCommon(object):
                     # for backward compatibility
                     baselog = os.path.join(basecmp_dir, "cpl.log")
                 if os.path.isfile(baselog) and len(memlist) > 3:
-                    blmem = self._get_mem_usage(baselog)[-1][1]
+                    blmem = self._get_mem_usage(baselog)
+                    blmem = 0 if blmem == [] else blmem[-1][1]
                     curmem = memlist[-1][1]
                     diff = (curmem-blmem)/blmem
-                    if(diff < 0.1):
+                    if diff < 0.1 and self._test_status.get_status(MEMCOMP_PHASE) is None:
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
-                    else:
+                    elif self._test_status.get_status(MEMCOMP_PHASE) != TEST_FAIL_STATUS:
                         comment = "Error: Memory usage increase > 10% from baseline"
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                         append_testlog(comment)
+
                     # compare throughput to baseline
                     current = self._get_throughput(cpllog)
                     baseline = self._get_throughput(baselog)
                     #comparing ypd so bigger is better
                     if baseline is not None and current is not None:
                         diff = (baseline - current)/baseline
-                        if(diff < 0.25):
+                        tolerance = self._case.get_value("TEST_TPUT_TOLERANCE")
+                        if tolerance is None:
+                            tolerance = 0.25
+                        expect(tolerance > 0.0, "Bad value for throughput tolerance in test")
+                        if diff < tolerance and self._test_status.get_status(THROUGHPUT_PHASE) is None:
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
-                        else:
-                            comment = "Error: Computation time increase > 25% from baseline"
+                        elif self._test_status.get_status(THROUGHPUT_PHASE) != TEST_FAIL_STATUS:
+                            comment = "Error: Computation time increase > {:d} pct from baseline".format(int(tolerance*100))
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
                             append_testlog(comment)
 

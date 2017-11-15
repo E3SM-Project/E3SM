@@ -247,6 +247,7 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
     <DOUT_S>FALSE</DOUT_S>
+    <BUILD_THREADED>TRUE</BUILD_THREADED>
     <REST_N>$STOP_N / 2 + 1 </REST_N>
     <REST_OPTION>$STOP_OPTION</REST_OPTION>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
@@ -470,7 +471,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_N>0</STOP_N>
     <REST_OPTION>none</REST_OPTION>
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
-    <TIMER_LEVEL>12</TIMER_LEVEL>
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
@@ -557,7 +557,6 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_N>10</STOP_N>
     <REST_OPTION>none</REST_OPTION>
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
-    <TIMER_LEVEL>12</TIMER_LEVEL>
     <DOUT_S>FALSE</DOUT_S>
   </test>
 

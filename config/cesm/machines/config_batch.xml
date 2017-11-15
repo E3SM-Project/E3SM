@@ -19,6 +19,9 @@
  queues across machines.  The batch_system tag denotes the name for a particular
  batch system, these can either be shared between one or more machines, or can be
  defined for a specific machine if need be.
+
+ Machine specific entries take precidence over generic entries, directives are appended
+
  queues:
  one or more queues can be defined per batch_system. if the attribute default="true"
  is used, then that queue will be used by default. Alternatively, multiple queues can
@@ -99,6 +102,7 @@
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
+    <depend_separator>&amp;&amp;</depend_separator>
     <walltime_format>%H:%M</walltime_format>
     <batch_mail_flag>-u</batch_mail_flag>
     <batch_mail_type_flag></batch_mail_type_flag>
@@ -127,6 +131,7 @@
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <depend_separator>:</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>-M</batch_mail_flag>
     <batch_mail_type_flag>-m</batch_mail_type_flag>
@@ -195,13 +200,14 @@
 
   <!-- bluewaters is PBS -->
   <batch_system MACH="bluewaters" type="pbs" >
+    <jobid_pattern>(\d+.bw)$</jobid_pattern>
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
       <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="24:00:00" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="16">debug</queue>
+      <queue walltimemax="24:00:00">normal</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="16" default="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -442,6 +448,30 @@
       <queue walltimemax="12:00" nodemin="9" nodemax="546" default="true">regular</queue>
       <queue walltimemax="12:00" nodemin="16385" nodemax="2184">capability</queue>
       <queue walltimemax="12:00" nodemin="1" nodemax="546">premium</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="lbl-lr3" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+       <directive>--qos=lr_normal</directive>
+       <directive>--partition=lr3</directive>
+       <directive>--account={{ project }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="lbl-lr2" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+       <directive>--qos=lr_normal</directive>
+       <directive>--partition=lr2</directive>
+       <directive>--account={{ project }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
     </queues>
   </batch_system>
 

@@ -60,7 +60,8 @@ def _save_build_provenance_acme(case, lid):
     env_prov = os.path.join(exeroot, "build_environment.{}.txt".format(lid))
     if os.path.exists(env_prov):
         os.remove(env_prov)
-    copy_umask(os.path.join(caseroot, "software_environment.txt"), env_prov)
+    env_module = case.get_env("mach_specific")
+    env_module.save_all_env_info(env_prov)
 
     # For all the just-created post-build provenance files, symlink a generic name
     # to them to indicate that these are the most recent or active.
@@ -95,7 +96,7 @@ def save_build_provenance(case, lid=None):
 def _save_prerun_timing_acme(case, lid):
     timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR '%s' is not valid. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
+        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data.".format(timing_dir))
         return
 
     logger.info("timing dir is {}".format(timing_dir))
@@ -105,10 +106,16 @@ def _save_prerun_timing_acme(case, lid):
     cimeroot = case.get_value("CIMEROOT")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
-    expect(not os.path.exists(full_timing_dir), "{} already exists".format(full_timing_dir))
+    if os.path.exists(full_timing_dir):
+        logger.warning("{} already exists. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
+        return
 
-    os.makedirs(full_timing_dir)
-    expect(os.path.exists(full_timing_dir), "{} does not exists".format(full_timing_dir))
+    try:
+        os.makedirs(full_timing_dir)
+    except OSError:
+        logger.warning("{} cannot be created. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
+        return
+
     mach = case.get_value("MACH")
     compiler = case.get_value("COMPILER")
 
@@ -164,7 +171,7 @@ def _save_prerun_timing_acme(case, lid):
         "*.xml",
         "user_nl_*",
         "*env_mach_specific*",
-        "Macros",
+        "Macros*",
         "README.case",
         "Depends.{}".format(mach),
         "Depends.{}".format(compiler),
@@ -184,8 +191,28 @@ def _save_prerun_timing_acme(case, lid):
         for item in glob.glob(os.path.join(blddir, blddir_glob_to_copy)):
             copy_umask(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
 
+    # Save state of repo
+    if os.path.exists(os.path.join(cimeroot, ".git")):
+        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=cimeroot)
+    else:
+        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=os.path.dirname(cimeroot))
+
     # What this block does is mysterious to me (JGF)
     if job_id is not None:
+
+        # Kill mach_syslog from previous run if one exists
+        syslog_jobid_path = os.path.join(rundir, "syslog_jobid.{}".format(job_id))
+        if os.path.exists(syslog_jobid_path):
+            try:
+                with open(syslog_jobid_path, "r") as fd:
+                    syslog_jobid = int(fd.read().strip())
+                os.kill(syslog_jobid, signal.SIGTERM)
+            except (ValueError, OSError) as e:
+                logger.warning("Failed to kill syslog: {}".format(e))
+            finally:
+                os.remove(syslog_jobid_path)
+
+        # If requested, spawn a mach_syslog process to monitor job progress
         sample_interval = case.get_value("SYSLOG_N")
         if sample_interval > 0:
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.{}".format(lid))
@@ -195,12 +222,6 @@ def _save_prerun_timing_acme(case, lid):
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
                 fd.write("{}\n".format(syslog_jobid))
-
-    # Save state of repo
-    if os.path.exists(os.path.join(cimeroot, ".git")):
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=cimeroot)
-    else:
-        run_cmd_no_fail("git describe", arg_stdout=os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), from_dir=os.path.dirname(cimeroot))
 
 def _save_prerun_provenance_acme(case, lid):
     if case.get_value("SAVE_TIMING"):
@@ -254,12 +275,14 @@ def _save_postrun_timing_acme(case, lid):
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR '%s' is not valid. ACME requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive timings" % timing_dir)
         return
 
     mach = case.get_value("MACH")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
+
+    if not os.path.isdir(full_timing_dir):
+        return
 
     # Kill mach_syslog
     job_id = _get_batch_job_id_for_syslog(case)

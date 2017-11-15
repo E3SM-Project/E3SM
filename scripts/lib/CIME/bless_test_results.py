@@ -38,6 +38,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
 
         result, comments = compare_baseline(case, baseline_dir=baseline_full_dir, outfile_suffix=None)
         if result:
+            logging.info("Diff appears to have been already resolved.")
             return True, None
         else:
             print(comments)
@@ -65,6 +66,14 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
         test_dir = os.path.dirname(test_status_file)
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
+        if test_name is None:
+            case_dir = os.path.basename(os.path.dirname(test_status_file))
+            test_name = CIME.utils.normalize_case_id(case_dir)
+            if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
+                broken_blesses.append((test_name, "test had invalid TestStatus file: '{}'".format(test_status_file)))
+            else:
+                continue
+
         if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
             overall_result = ts.get_overall_test_status()
 

@@ -8,6 +8,7 @@ from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.generic_xml import GenericXML
 
 from copy import deepcopy
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +230,7 @@ class EntryID(GenericXML):
     def get_valid_value_string(self, node, value,vid=None,  ignore_type=False):
         valid_values = self._get_valid_values(node)
         if ignore_type:
-            expect(type(value) is str, "Value must be type string if ignore_type is true")
+            expect(isinstance(value, six.string_types), "Value must be type string if ignore_type is true")
             str_value = value
             return str_value
         type_str = self._get_type_info(node)
@@ -421,6 +422,16 @@ class EntryID(GenericXML):
                                             if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
                                                 xmldiffs["{}:{}".format(vid, valnode.attrib)] = [valnode.text, f2valnode.text]
         return xmldiffs
+
+    def overwrite_existing_entries(self):
+        # if there exist two nodes with the same id delete the first one.
+        for node in self.get_nodes("entry"):
+            vid = node.get("id")
+            samenodes = self.get_nodes_by_id(vid)
+            if len(samenodes) > 1:
+                expect(len(samenodes) == 2, "Too many matchs for id {} in file {}".format(vid, self.filename))
+                logger.debug("Overwriting node {}".format(vid))
+                self.root.remove(samenodes[0])
 
     def __iter__(self):
         for node in self.get_nodes("entry"):

@@ -73,6 +73,14 @@
     <desc>timer output depth</desc>
   </entry>
 
+  <entry id="TIMER_LEVEL">
+    <type>integer</type>
+    <default_value>12</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer output depth</desc>
+  </entry>
+
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -182,13 +190,13 @@
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne60np4.pg3">96</value>
       <value compset=".+" grid="a%ne60np4.pg4">96</value>
-      <value compset=".+" grid="a%ne120np4">96</value>
-      <value compset=".+" grid="a%ne120np4.pg2">96</value>
-      <value compset=".+" grid="a%ne120np4.pg3">96</value>
-      <value compset=".+" grid="a%ne120np4.pg4">96</value>
-      <value compset=".+" grid="a%ne240np4">144</value>
-      <value compset=".+" grid="a%ne240np4.pg2">144</value>
-      <value compset=".+" grid="a%ne240np4.pg3">144</value>
+      <value compset=".+" grid="a%ne120np4">192</value>
+      <value compset=".+" grid="a%ne120np4.pg2">192</value>
+      <value compset=".+" grid="a%ne120np4.pg3">192</value>
+      <value compset=".+" grid="a%ne120np4.pg4">192</value>
+      <value compset=".+" grid="a%ne240np4">384</value>
+      <value compset=".+" grid="a%ne240np4.pg2">384</value>
+      <value compset=".+" grid="a%ne240np4.pg3">384</value>
       <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>

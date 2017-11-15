@@ -64,17 +64,19 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     # the Jenkins jobs with timeouts to avoid this.
     #
 
+    mach_comp = "{}_{}".format(machine.get_machine_name(), compiler)
+
     # Remove the old CTest XML
     if (os.path.isdir("Testing")):
         shutil.rmtree("Testing")
 
     # Remove the old build/run dirs
     test_id_root = "jenkins_{}".format(baseline_name)
-    for old_dir in glob.glob("{}/*{}*".format(scratch_root, test_id_root)):
+    for old_dir in glob.glob("{}/*{}*{}*".format(scratch_root, mach_comp, test_id_root)):
         shutil.rmtree(old_dir)
 
     # Remove the old cases
-    for old_file in glob.glob("{}/*{}*".format(test_root, test_id_root)):
+    for old_file in glob.glob("{}/*{}*{}*".format(test_root, mach_comp, test_id_root)):
         if (os.path.isdir(old_file)):
             shutil.rmtree(old_file)
         else:
@@ -103,7 +105,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     if walltime is not None:
         create_test_args.append(" --walltime " + walltime)
 
-
     create_test_cmd = "./create_test " + " ".join(create_test_args)
 
     if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
@@ -123,6 +124,10 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         cdash_build_name = None
 
     os.environ["CIME_MACHINE"] = machine.get_machine_name()
+
+    if submit_to_cdash:
+        logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus -b {}".format(test_root, test_id, cdash_build_name))
+
     tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
                                                  no_wait=not use_batch, # wait if using queue
                                                  check_throughput=False, # don't check throughput
@@ -131,6 +136,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                                  cdash_build_name=cdash_build_name,
                                                  cdash_project=cdash_project,
                                                  cdash_build_group=cdash_build_group)
+
     if use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED:
         # Cleanup
         cleanup_queue(test_root, test_id)

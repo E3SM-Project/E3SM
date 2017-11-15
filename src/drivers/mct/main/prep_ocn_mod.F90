@@ -162,6 +162,7 @@ contains
          wav_gnam=wav_gnam             , &
          atm_nx=atm_nx                 , &
          atm_ny=atm_ny                 , &
+         glc_gnam=glc_gnam             , &
          esmf_map_flag=esmf_map_flag   )
 
     allocate(mapper_Sa2o)

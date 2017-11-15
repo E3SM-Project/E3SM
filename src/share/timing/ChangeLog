@@ -1,14 +1,24 @@
+timing_171028: Backported GPTLstartstop_val from a more recent version
+               of GPTL, added a callcount parameter, and renamed it
+               GPTLstartstop_vals. Also added a version for non-null
+               terminated timing event names (GPTLstartstop_valsf).
+               Added t_startstop_valsf to perf_mod. Also replaced
+               all strncpy calls in f_wrapper.c, just to be safe.
+               [Patrick Worley (but primarily Jim Rosinksi)]
+timing_171027: Mitigated against nonmonotonic timing calls by
+               setting negative deltas to zero in gptl.c .
+               [Patrick Worley]
 timing_160816: Added quotes to timing event names in t_startf and t_stopf
                before calling GPTL routines.
                [Patrick Worley and Sean Patrick Santos]
-timing_161207: Replaced strncpy and snprintf where applied to 
+timing_161207: Replaced strncpy and snprintf where applied to
                non-null-terminated strings, to avoid memory issues
                when strncpy and snprintf implementations use strnlen
                to check validity of passed in string length parameter.
                (Why this causes problems is still a mystery.)
                [Patrick Worley and Gautam Bisht]
 timing_160320: Added routines t_set_prefixf and t_unset_prefixf.
-               Setting the prefix adds this to the beginning of all subsequent 
+               Setting the prefix adds this to the beginning of all subsequent
                timer event names (defined in t_startf/t_stopf).
                Also doubling default hash index tablesize to 2048.
                [Patrick Worley]

@@ -4,7 +4,6 @@ be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
-from xml.dom import minidom
 import getpass
 import six
 
@@ -47,11 +46,12 @@ class GenericXML(object):
         Read and parse an xml file into the object
         """
         logger.debug("read: " + infile)
-        if self.tree:
-            self.root.append(ET.parse(infile).getroot())
-        else:
-            self.tree = ET.parse(infile)
-            self.root = self.tree.getroot()
+        with open(infile, 'r') as fd:
+            if self.tree:
+                self.root.append(ET.parse(fd).getroot())
+            else:
+                self.tree = ET.parse(fd)
+                self.root = self.tree.getroot()
 
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
@@ -79,9 +79,8 @@ class GenericXML(object):
         if xmllint is not None:
             run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
         else:
-            doc = minidom.parseString(xmlstr)
             with open(outfile,'w') as xmlout:
-                doc.writexml(xmlout,addindent='  ')
+                xmlout.write(xmlstr)
 
     def get_node(self, nodename, attributes=None, root=None, xpath=None):
         """
@@ -210,7 +209,7 @@ class GenericXML(object):
         if item_data is None:
             return None
 
-        if type(item_data) is not str:
+        if not isinstance(item_data, six.string_types):
             return item_data
 
         for m in env_ref_re.finditer(item_data):

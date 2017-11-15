@@ -12,7 +12,7 @@ from CIME.BuildTools.configure import configure
 from CIME.utils             import get_cime_root, run_and_log_case_status, get_model
 from CIME.test_status       import *
 
-import shutil
+import shutil, six
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:
-        expect(not (type(value) is str and "USERDEFINED_required_build" in value),
+        expect(not (isinstance(value, six.string_types) and "USERDEFINED_required_build" in value),
                "Parameter '{}' must be defined".format(vid))
 
     # Remove batch scripts
@@ -122,7 +122,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
             for vid, value in case:
-                if vid.startswith("NTASKS_") and value != 1:
+                if vid.startswith("NTASKS") and value != 1:
                     case.set_value(vid, 1)
 
         # Check ninst.
@@ -150,6 +150,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()
+
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
+
         else:
             check_pelayouts_require_rebuild(case, models)
 
@@ -157,15 +160,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             case.flush()
             check_lockedfiles(case)
-            env_mach_pes = case.get_env("mach_pes")
-            pestot = env_mach_pes.get_total_tasks(models)
-            logger.debug("at update TOTALPES = {}".format(pestot))
-            case.set_value("TOTALPES", pestot)
-            thread_count = env_mach_pes.get_max_thread_count(models)
-            cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
-            case.set_value("COST_PES", cost_pes)
 
             case.initialize_derived_attributes()
+
+            cost_per_node = 16 if case.get_value("MACH") == "yellowstone" else case.get_value("MAX_MPITASKS_PER_NODE")
+            case.set_value("COST_PES", case.num_nodes * cost_per_node)
+            case.set_value("TOTALPES", case.total_tasks)
+            case.set_value("SMP_PRESENT", case.get_build_threaded())
 
             # create batch files
             logger.info("Creating batch script case.run")
@@ -216,8 +217,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Record env information
         env_module = case.get_env("mach_specific")
-        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
-        env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
+        env_module.make_env_mach_specific_file("sh", case)
+        env_module.make_env_mach_specific_file("csh", case)
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
