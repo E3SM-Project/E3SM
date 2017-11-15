@@ -5,10 +5,10 @@ Testing with create_test
 **************************
 
 
-create_test is the tool we use to test cime-driven models. It can be used as a easy way to
-run a single basic test or can be used to run an entire suite of tests. It has parallelism
-built-in on many levels to make full use of the underlying system. create_test is the driver
-behind the automated nightly testing of cime-driven models.
+**create_test** is the tool we use to test cime-driven models. It can be used as an easy way to
+run a single basic test or an entire suite of tests.  create_test runs a test suite in parallel 
+for improved performance.  create_test is the driver behind the automated nightly testing of 
+cime-driven models.
 
 Tests come in form::
 
@@ -19,22 +19,22 @@ A common test type would be ERS which stands for exact restart, which means you 
 grid and compset to see if they reproduce the same result upon restart as they would if no restart
 took place. GRID and COMPSET are self-explanatory. MACHINE_COMPILER is optional; create_test will probe
 the underlying machine and use the default compiler for that machine if this value is not
-supplied. TESTMODS is also optional and can be used to make some env XML changes prior to doing
-the test.
+supplied. TESTMODS are optional and can be used to make some env XML changes prior to running
+a test.
 
 ======================= =====================================================================================
 TESTTYPE                Description
 ======================= =====================================================================================
    ERS                  Exact restart from startup (default 6 days + 5 days) 
-                         Do an 11 day initial test - write a restart at day 6.    (suffix: base) 
+                         Do an 11 day initial test - write a restart at day 6.    (file suffix: base) 
 
-                         Do a 5 day restart test, starting from restart at day 6. (suffix: rest) 
+                         Do a 5 day restart test, starting from restart at day 6. (file suffix: rest) 
 
                          Compare component history files '.base' and '.rest' at day 11.
    ERS2                 Exact restart from startup  (default 6 days + 5 days).
-                         Do an 11 day initial test without making restarts.     (suffix: base)
+                         Do an 11 day initial test without making restarts.     (file suffix: base)
  
-                         Do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6. (suffix: rest)
+                         Do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6. (file suffix: rest)
  
                          Compare component history files ".base" and ".rest" at day 11.
    ERT                  Exact restart from startup, default 2 month + 1 month (ERS with info DBUG = 1).
@@ -80,31 +80,31 @@ TESTTYPE                Description
    ERP                  PES counts hybrid (OPENMP/MPI) restart bit for bit test from startup, (default 6 days + 5 days).
                          Initial PES set up out of the box
 
-                         Do an 11 day initial test - write a restart at day 6.     (suffix base)
+                         Do an 11 day initial test - write a restart at day 6.     (file suffix base)
 
                          Half the number of tasks and threads for each component.
 
-                         Do a 5 day restart test starting from restart at day 6. (suffix rest)
+                         Do a 5 day restart test starting from restart at day 6. (file suffix rest)
 
                          Compare component history files '.base' and '.rest' at day 11.
 
                          This is just like an ERS test but the tasks/threading counts are modified on restart
    PEA                  Single PE bit for bit test (default 5 days)
-                         Do an initial run on 1 PE with mpi library.     (suffix: base)
+                         Do an initial run on 1 PE with mpi library.     (file suffix: base)
 
-                         Do the same run on 1 PE with mpiserial library. (suffix: mpiserial)
+                         Do the same run on 1 PE with mpiserial library. (file suffix: mpiserial)
 
                          Compare base and mpiserial.
    PEM                  Modified PE counts for MPI(NTASKS) bit for bit test (default 5 days)
-                         Do an initial run with default PE layout                               (suffix: base)
+                         Do an initial run with default PE layout                               (file suffix: base)
 
-                         Do another initial run with modified PE layout (NTASKS_XXX => NTASKS_XXX/2)  (suffix: modpes)
+                         Do another initial run with modified PE layout (NTASKS_XXX => NTASKS_XXX/2)  (file suffix: modpes)
 
                          Compare base and modpes
    PET                  Modified threading OPENMP bit for bit test (default 5 days)
-                         Do an initial run where all components are threaded by default. (suffix: base)
+                         Do an initial run where all components are threaded by default. (file suffix: base)
 
-                         Do another initial run with NTHRDS=1 for all components.        (suffix: single_thread)
+                         Do another initial run with NTHRDS=1 for all components.        (file suffix: single_thread)
 
                          Compare base and single_thread.
 
@@ -114,20 +114,20 @@ TESTTYPE                Description
 
    MCC                  Multi-driver validation vs single-instance. (default 5 days)
    NCK                  Multi-instance validation vs single instance - sequential PE for instances (default length)
-                         Do an initial run test with NINST 1. (suffix: base)
+                         Do an initial run test with NINST 1. (file suffix: base)
 
-                         Do an initial run test with NINST 2. (suffix: multiinst for both _0001 and _0002)
+                         Do an initial run test with NINST 2. (file suffix: multiinst for both _0001 and _0002)
 
                          Compare base and _0001 and _0002.
 
    REP                  Reproducibility: Two identical runs are bit for bit. (default 5 days)
    SBN                  Smoke build-namelist test (just run preview_namelist and check_input_data).
    SMS                  Smoke startup test (default 5 days)
-                         Do a 5 day initial test. (suffix: base)
+                         Do a 5 day initial test. (file suffix: base)
    SEQ                  Different sequencing bit for bit test. (default 10 days)
-                         Do an initial run test with out-of-box PE-layout. (suffix: base)
+                         Do an initial run test with out-of-box PE-layout. (file suffix: base)
 
-                         Do a second run where all root pes are at pe-0.   (suffix: seq)
+                         Do a second run where all root pes are at pe-0.   (file suffix: seq)
 
                          Compare base and seq.
    DAE                  Data assimilation test, default 1 day, two DA cycles, no data modification.
@@ -137,7 +137,7 @@ TESTTYPE                Description
 ======================= =====================================================================================
 
 
-Each test run by create test will be put through the following mandatory phases:
+Each test run by create_test includes the following mandatory steps:
 
 * CREATE_NEWCASE: creating the create
 * XML: xml changes to case based on test settings
