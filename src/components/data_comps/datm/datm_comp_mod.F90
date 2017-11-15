@@ -851,7 +851,7 @@ CONTAINS
              write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE2'
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE2')
           endif
-          if (trim(atm_mode) == 'CORE2_IAF' ) then
+          if (trim(datamode) == 'CORE2_IAF' ) then
              if (starcf < 1 ) then
                 write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE2_IAF'
                 call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE2_IAF')

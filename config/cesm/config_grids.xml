@@ -1278,6 +1278,7 @@
       <file grid="atm|lnd" mask="tx0.1v2">/glade/p/work/fredc/Maps/domain.lnd.TL319_tx0.1v2.161014.nc</file>
       <file grid="ocnice"  mask="tx0.1v2">/glade/p/work/fredc/Maps/domain.ocn.tx0.1v2.161014.nc</file>
       <desc>TL319 grid for JRA55</desc>
+    </domain>
 
     <domain name="ne240np4.pg2">
       <nx>1382400</nx> <ny>1</ny>
@@ -1387,6 +1388,7 @@
       <desc>WW3 90 x 50 global grid</desc>
       <support>For testing of the WAV model</support>
     </domain>
+
 
   </domains>
 
