@@ -93,10 +93,14 @@ def buildlib(bldroot, installpath, caseroot):
 
         components = case.get_values("COMP_CLASSES")
         multiinst_cppdefs = ""
+        multi_driver = case.get_value("MULTI_DRIVER")
         for comp in components:
             if comp == "CPL":
                 continue
-            ninst_comp = case.get_value("NINST_{}".format(comp))
+            if multi_driver:
+                ninst_comp = 1
+            else:
+                ninst_comp = case.get_value("NINST_{}".format(comp))
             multiinst_cppdefs += " -DNUM_COMP_INST_{}={}".format(comp, ninst_comp)
 
         installdir = os.path.join(installpath, comp_interface,
