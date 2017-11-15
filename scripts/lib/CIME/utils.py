@@ -34,7 +34,6 @@ def redirect_stderr(new_target):
 def redirect_stdout_stderr(new_target):
     old_stdout, old_stderr = sys.stdout, sys.stderr
     sys.stdout, sys.stderr = new_target, new_target
-
     try:
         yield new_target
     finally:
