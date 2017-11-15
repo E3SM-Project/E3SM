@@ -42,7 +42,8 @@ def redirect_stdout_stderr(new_target):
 
 @contextmanager
 def redirect_logger(new_target, logger_name):
-
+    old_stdout = sys.stdout
+    sys.stdout = new_target
     ch = logging.StreamHandler(stream=new_target)
     ch.setLevel(logging.DEBUG)
     log = logging.getLogger(logger_name)
@@ -57,6 +58,7 @@ def redirect_logger(new_target, logger_name):
     finally:
         root_log.handlers = orig_root_loggers
         log.handlers = orig_handlers
+        sys.stdout = old_stdout
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
