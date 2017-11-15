@@ -1863,10 +1863,10 @@ contains
 
   subroutine limiter_clip_and_sum(ptens,sphweights,minp,maxp,dpmass)
     ! Prototype limiter. This is perhaps the fastest limiter that (i) is assured
-    ! to find x in the constraint set if that set is empty and (ii) is such that
-    ! the 1-norm of the update, norm(x*c - ptens*sphweights, 1), is minimal. It
-    ! does not require iteration. However, its solution quality is not
-    ! established.
+    ! to find x in the constraint set if that set is not empty and (ii) is such
+    ! that the 1-norm of the update, norm(x*c - ptens*sphweights, 1), is
+    ! minimal. It does not require iteration. However, its solution quality is
+    ! not established.
     use kinds         , only : real_kind
     use dimensions_mod, only : np, np, nlev
     implicit none
