@@ -2195,11 +2195,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-<<<<<<< HEAD
-    <valid_values>CLMNCEP,COPYALL,CPLHIST,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,NULL</valid_values>
-=======
-    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,NULL</valid_values>
->>>>>>> master
+    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,NULL</valid_values>
     <desc>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
@@ -2250,12 +2246,8 @@
       <value datm_mode="CLM">CLMNCEP</value>
       <value datm_mode="CORE2_NYF">CORE2_NYF</value>
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
-<<<<<<< HEAD
       <value datm_mode="CORE_IAF_JRA">CORE_IAF_JRA</value>
-      <value datm_mode="CPLHISTForcing">CPLHIST</value>
-=======
       <value datm_mode="CPLHIST">COPYALL</value>
->>>>>>> master
     </values>
   </entry>
 
