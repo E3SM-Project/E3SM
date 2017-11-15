@@ -160,6 +160,7 @@ CONTAINS
     if (trim(atm_mode) == 'NULL'      .or. &
          trim(atm_mode) == 'CORE2_NYF' .or. &
          trim(atm_mode) == 'CORE2_IAF' .or. &
+         trim(atm_mode) == 'CORE_IAF_JRA' .or. &
          trim(atm_mode) == 'CLMNCEP'   .or. &
          trim(atm_mode) == 'CPLHIST'   .or. &
          trim(atm_mode) == 'COPYALL'   ) then
