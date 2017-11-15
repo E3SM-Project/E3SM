@@ -202,8 +202,8 @@ CONTAINS
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
        scmmode, scmlon, scmlat)
 
-    use seq_flds_mod, only : seq_flds_dom_coord, seq_flds_dom_other
-    use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
+    use shr_flds_mod  , only : seq_flds_dom_coord, seq_flds_dom_other
+    use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
     use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes, &
          shr_ncread_varexists, shr_ncread_vardimnum, &
