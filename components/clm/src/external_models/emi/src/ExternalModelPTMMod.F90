@@ -963,23 +963,23 @@ contains
     ! Add BC/SS
     !
     ieqn = 1
-    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
+    call this%thermal_mpp%soe%AddConditionInGovEqn(ieqn, COND_BC,           &
          'Heat_flux_BC_at_top_of_snow', 'W/m^2', COND_HEAT_FLUX, &
          SNOW_TOP_CELLS)
-    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_SS,           &
+    call this%thermal_mpp%soe%AddConditionInGovEqn(ieqn, COND_SS,           &
          'Absorbed_solar_radiation', 'W/m^2', COND_HEAT_RATE, &
          ALL_CELLS)
 
     ieqn = 2
-    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
+    call this%thermal_mpp%soe%AddConditionInGovEqn(ieqn, COND_BC,           &
          'Heat_flux_BC_at_top_of_standing_surface_water', 'W/m^2', COND_HEAT_FLUX, &
          SSW_TOP_CELLS)
 
     ieqn = 3
-    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_BC,           &
+    call this%thermal_mpp%soe%AddConditionInGovEqn(ieqn, COND_BC,           &
          'Heat_flux_BC_at_top_of_soil', 'W/m^2', COND_HEAT_FLUX, &
          SOIL_TOP_CELLS)
-    call this%thermal_mpp%GovEqnAddCondition(ieqn, COND_SS,           &
+    call this%thermal_mpp%soe%AddConditionInGovEqn(ieqn, COND_SS,           &
          'Absorbed_solar_radiation', 'W/m^2', COND_HEAT_RATE, &
          ALL_CELLS)
 
@@ -1272,6 +1272,9 @@ contains
     use MultiPhysicsProbConstants , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants , only : AUXVAR_BC
     use MultiPhysicsProbConstants , only : AUXVAR_SS
+    use SystemOfEquationsBaseType   , only : sysofeqns_base_type
+    use SystemOfEquationsThermalType, only : sysofeqns_thermal_type
+    
     use petscsys
     !
     implicit none
@@ -1357,6 +1360,8 @@ contains
     PetscErrorCode                       :: ierr
     PetscBool                            :: converged
     PetscInt                             :: converged_reason
+
+    class(sysofeqns_base_type), pointer  :: soe
 
     begc = bounds_clump%begc
     endc = bounds_clump%endc
@@ -1588,118 +1593,123 @@ contains
        enddo
     enddo
 
-    ! Set temperature
-    call this%thermal_mpp%sysofeqns%SetSolnPrevCLM(temperature_1d)
+    soe => this%thermal_mpp%soe
+    select type(soe)
+    class is(sysofeqns_thermal_type)
 
-    ! Set h2soi_liq
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_LIQ_AREAL_DEN, soe_auxvar_id, liq_areal_den_1d)
+       ! Set temperature
+       call soe%SetSolnPrevCLM(temperature_1d)
 
-    ! Set h2osi_ice
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_ICE_AREAL_DEN, soe_auxvar_id, ice_areal_den_1d)
+       ! Set h2soi_liq
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_LIQ_AREAL_DEN, soe_auxvar_id, liq_areal_den_1d)
 
-    ! Set snow water
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_SNOW_WATER, soe_auxvar_id, snow_water_1d)
+       ! Set h2osi_ice
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_ICE_AREAL_DEN, soe_auxvar_id, ice_areal_den_1d)
 
-    ! Set dz
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_DZ, soe_auxvar_id, dz_1d)
+       ! Set snow water
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_SNOW_WATER, soe_auxvar_id, snow_water_1d)
 
-    ! Set dist_up
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_DIST_UP, soe_auxvar_id, dist_up_1d)
+       ! Set dz
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_DZ, soe_auxvar_id, dz_1d)
 
-    ! Set dist_dn
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_DIST_DN, soe_auxvar_id, dist_dn_1d)
+       ! Set dist_up
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_DIST_UP, soe_auxvar_id, dist_up_1d)
 
-    ! Set number of snow layers
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetIDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_NUM_SNOW_LYR, soe_auxvar_id, num_snow_layer_1d)
+       ! Set dist_dn
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_DIST_DN, soe_auxvar_id, dist_dn_1d)
 
-    ! Set if cell is active
-    call this%thermal_mpp%sysofeqns%SetBDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_ACTIVE, is_active_1d)
+       ! Set number of snow layers
+       soe_auxvar_id = 1;
+       call soe%SetIDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_NUM_SNOW_LYR, soe_auxvar_id, num_snow_layer_1d)
 
-    ! Set tuning factor
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_TUNING_FACTOR, soe_auxvar_id, tsurf_tuning_factor_1d)
+       ! Set if cell is active
+       call soe%SetBDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_ACTIVE, is_active_1d)
 
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_INTERNAL, &
-         VAR_FRAC, soe_auxvar_id, frac_1d)
+       ! Set tuning factor
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_TUNING_FACTOR, soe_auxvar_id, tsurf_tuning_factor_1d)
 
-    !
-    ! Set heat flux for:
-    !
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_INTERNAL, &
+            VAR_FRAC, soe_auxvar_id, frac_1d)
 
-    ! 1) top snow layer
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_BC_SS_CONDITION, soe_auxvar_id, hs_snow_1d)
+       !
+       ! Set heat flux for:
+       !
 
-    ! 2) top standing water layer
-    soe_auxvar_id = 2;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_BC_SS_CONDITION, soe_auxvar_id, hs_sh2o_1d)
+       ! 1) top snow layer
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_BC_SS_CONDITION, soe_auxvar_id, hs_snow_1d)
 
-    ! 3) soil
-    soe_auxvar_id = 3;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_BC_SS_CONDITION, soe_auxvar_id, hs_soil_1d)
+       ! 2) top standing water layer
+       soe_auxvar_id = 2;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_BC_SS_CONDITION, soe_auxvar_id, hs_sh2o_1d)
 
-    !
-    ! Set derivative of heat flux w.r.t temperature for:
-    !
+       ! 3) soil
+       soe_auxvar_id = 3;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_BC_SS_CONDITION, soe_auxvar_id, hs_soil_1d)
 
-    ! 1) top snow layer
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_DHS_DT, soe_auxvar_id, dhsdT_snow_1d)
+       !
+       ! Set derivative of heat flux w.r.t temperature for:
+       !
 
-    ! 2) top standing water layer
-    soe_auxvar_id = 2;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_DHS_DT, soe_auxvar_id, dhsdT_sh2o_1d)
+       ! 1) top snow layer
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_DHS_DT, soe_auxvar_id, dhsdT_snow_1d)
 
-    ! 3) soil
-    soe_auxvar_id = 3;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_DHS_DT, soe_auxvar_id, dhsdT_soil_1d)
+       ! 2) top standing water layer
+       soe_auxvar_id = 2;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_DHS_DT, soe_auxvar_id, dhsdT_sh2o_1d)
 
-    !
-    ! Set fraction of soil not covered by snow and standing water
-    !
-    soe_auxvar_id = 3;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
-         VAR_FRAC, soe_auxvar_id, frac_soil_1d)
+       ! 3) soil
+       soe_auxvar_id = 3;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_DHS_DT, soe_auxvar_id, dhsdT_soil_1d)
+
+       !
+       ! Set fraction of soil not covered by snow and standing water
+       !
+       soe_auxvar_id = 3;
+       call soe%SetRDataFromCLM(AUXVAR_BC, &
+            VAR_FRAC, soe_auxvar_id, frac_soil_1d)
 
 
-    ! Set absorbed solar radiation
-    soe_auxvar_id = 1;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_SS, &
-         VAR_BC_SS_CONDITION, soe_auxvar_id, sabg_snow_1d)
+       ! Set absorbed solar radiation
+       soe_auxvar_id = 1;
+       call soe%SetRDataFromCLM(AUXVAR_SS, &
+            VAR_BC_SS_CONDITION, soe_auxvar_id, sabg_snow_1d)
 
-    ! Set absorbed solar radiation
-    soe_auxvar_id = 2;
-    call this%thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_SS, &
-         VAR_BC_SS_CONDITION, soe_auxvar_id, sabg_soil_1d)
+       ! Set absorbed solar radiation
+       soe_auxvar_id = 2;
+       call soe%SetRDataFromCLM(AUXVAR_SS, &
+            VAR_BC_SS_CONDITION, soe_auxvar_id, sabg_soil_1d)
+    end select
 
 
     ! Preform Pre-StepDT operations
-    call this%thermal_mpp%sysofeqns%PreStepDT()
+    call this%thermal_mpp%soe%PreStepDT()
 
     ! Solve
-    call this%thermal_mpp%sysofeqns%StepDT(dt, nstep, &
+    call this%thermal_mpp%soe%StepDT(dt, nstep, &
          converged, converged_reason, ierr); CHKERRQ(ierr)
 
     ! Did the model converge
@@ -1708,8 +1718,12 @@ contains
             errMsg(__FILE__, __LINE__))
     endif
 
-    ! Get the updated soil tempreature
-    call this%thermal_mpp%sysofeqns%GetSoln(temperature_1d)
+    soe => this%thermal_mpp%soe
+    select type(soe)
+    class is(sysofeqns_thermal_type)
+       ! Get the updated soil tempreature
+       call soe%GetSoln(temperature_1d)
+    end select
 
     ! Put temperature back in ALM structure for snow
     offset = 0
