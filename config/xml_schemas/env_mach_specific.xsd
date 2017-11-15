@@ -7,6 +7,7 @@
 <xs:attribute name="compiler" type="xs:string"/>
 <xs:attribute name="debug" type="xs:boolean"/>
 <xs:attribute name="mpilib" type="xs:string"/>
+<xs:attribute name="SMP_PRESENT" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
 <xs:attribute name="unit_testing" type="xs:boolean"/>
 
@@ -80,6 +81,7 @@
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="unit_testing"/>
+      <xs:attribute ref="SMP_PRESENT"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="env">

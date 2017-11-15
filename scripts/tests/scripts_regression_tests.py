@@ -24,6 +24,8 @@ from  CIME.test_status import *
 
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
 TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
+TEST_COMPILER = None
+TEST_MPILIB = None
 MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
@@ -179,8 +181,11 @@ class N_TestUnitTest(unittest.TestCase):
         cls._testdirs = []
 
     def _has_unit_test_support(self):
-        default_compiler = MACHINE.get_default_compiler()
-        compiler = Compilers(MACHINE, compiler=default_compiler)
+        if TEST_COMPILER is None:
+            default_compiler = MACHINE.get_default_compiler()
+            compiler = Compilers(MACHINE, compiler=default_compiler)
+        else:
+            compiler = Compilers(MACHINE, compiler=TEST_COMPILER)
         attrs = {'MPILIB': 'mpi-serial', 'compile_threaded': 'false'}
         pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH",
                                                           attributes=attrs)
@@ -251,9 +256,14 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
+        args =  " --case %s --compset X --res f19_g16 --output-root %s " % (testdir, cls._testroot)
+        if TEST_COMPILER is not None:
+            args = args +  " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args = args +  " --mpilib %s"%TEST_MPILIB
 
         cls._testdirs.append(testdir)
-        run_cmd_assert_result(self, "%s/create_newcase --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./create_newcase %s"%(args), from_dir=SCRIPT_DIR)
         self.assertTrue(os.path.exists(testdir))
         self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
 
@@ -281,8 +291,14 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test1")
-        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"
-                              % (SCRIPT_DIR, testdir, user_mods_dir, cls._testroot),from_dir=SCRIPT_DIR)
+        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"% (testdir, user_mods_dir, cls._testroot)
+        if TEST_COMPILER is not None:
+            args = args + " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args = args +  " --mpilib %s"%TEST_MPILIB
+
+        run_cmd_assert_result(self, "%s/create_newcase %s "
+                              % (SCRIPT_DIR, args),from_dir=SCRIPT_DIR)
 
         self.assertTrue(os.path.isfile(os.path.join(testdir,"SourceMods","src.drv","somefile.F90")), msg="User_mods SourceMod missing")
         with open(os.path.join(testdir,"user_nl_cpl"),"r") as fd:
@@ -383,6 +399,10 @@ class J_TestCreateNewcase(unittest.TestCase):
         args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV  --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args = args +  " --mpilib %s"%TEST_MPILIB
 
         run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
@@ -403,6 +423,10 @@ class J_TestCreateNewcase(unittest.TestCase):
         args =  "--case %s --compset 2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --pesfile %s --res f19_g16 --output-root %s" % (testdir, pesfile, cls._testroot)
         if CIME.utils.get_model() == "cesm":
             args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args +=  " --mpilib %s"%TEST_MPILIB
 
         run_cmd_assert_result(self, "%s/create_newcase %s"%(SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "diff env_mach_pes.xml %s"%(previous_testdir), from_dir=testdir)
@@ -421,7 +445,13 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
 
         cls._testdirs.append(testdir)
-        run_cmd_assert_result(self, "%s/create_newcase --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs u" % (SCRIPT_DIR, testdir, cls._testroot), from_dir=SCRIPT_DIR)
+        args = " --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs u" % (testdir, cls._testroot)
+        if TEST_COMPILER is not None:
+            args += " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args +=  " --mpilib %s"%TEST_MPILIB
+
+        run_cmd_assert_result(self, "%s/create_newcase %s" % (SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         self.assertTrue(os.path.exists(testdir))
         self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
 
@@ -695,7 +725,15 @@ class TestCreateTestCommon(unittest.TestCase):
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
         self._machine           = MACHINE.get_machine_name()
-        self._compiler          = MACHINE.get_default_compiler()
+        if TEST_COMPILER is None:
+            self._compiler          = MACHINE.get_default_compiler()
+        else:
+            self._compiler = TEST_COMPILER
+        if TEST_MPILIB is None:
+            self._mpilib = MACHINE.get_default_MPIlib()
+        else:
+            self._mpilib = TEST_MPILIB
+
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
         self._testroot          = TEST_ROOT
@@ -754,7 +792,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
-        ct = TestScheduler(tests, test_root=TEST_ROOT, output_root=TEST_ROOT)
+        ct = TestScheduler(tests, test_root=TEST_ROOT, output_root=TEST_ROOT,
+                           compiler=self._compiler, mpilib=self._mpilib)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -824,7 +863,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,output_root=TEST_ROOT)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
+                           output_root=TEST_ROOT,compiler=self._compiler, mpilib=self._mpilib)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL_" in item][0]
         build_fail_exc_test = [item for item in tests if "TESTBUILDFAILEXC" in item][0]
@@ -890,7 +930,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True,test_root=TEST_ROOT,output_root=TEST_ROOT)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True,test_root=TEST_ROOT,
+                           output_root=TEST_ROOT,compiler=self._compiler, mpilib=self._mpilib)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
@@ -917,7 +958,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
         os.environ["TESTBUILDFAIL_PASS"] = "True"
         ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
-                            test_root=TEST_ROOT,output_root=TEST_ROOT)
+                            test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=self._compiler,
+                            mpilib=self._mpilib)
 
         log_lvl = logging.getLogger().getEffectiveLevel()
         logging.disable(logging.CRITICAL)
@@ -1036,7 +1078,9 @@ class T_TestRunRestart(TestCreateTestCommon):
     ###########################################################################
     def test_run_restart(self):
     ###########################################################################
-        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} NODEFAIL_P1.f09_g16.X".format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name))
+        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} --compiler {} --mpilib {} NODEFAIL_P1.f09_g16.X".
+                              format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name,
+                                     self._compiler, self._mpilib))
         if self._hasbatch:
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                   from_dir=self._testroot)
@@ -1053,7 +1097,9 @@ class T_TestRunRestart(TestCreateTestCommon):
     def test_run_restart_too_many_fails(self):
     ###########################################################################
         os.environ["NODEFAIL_NUM_FAILS"] = "5"
-        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} NODEFAIL_P1.f09_g16.X".format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name),
+        run_cmd_assert_result(self, "{}/create_test --test-root {} --output-root {} -t {} --compiler {} --mpilib {} NODEFAIL_P1.f09_g16.X".
+                              format(SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name,
+                                     self._compiler, self._mpilib),
                               expected_stat=(0 if self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
         if self._hasbatch:
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
@@ -1085,12 +1131,12 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             extra_args += " --no-batch"
 
         if " -n " in extra_args:
-            run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s"
-                                  % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, extra_args),
+            run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s --compiler %s --mpilib %s"
+                                  % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, extra_args, self._compiler, self._mpilib),
                                   expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
         else:
-            run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s"
-                                  % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, extra_args),
+            run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s --compiler %s --mpilib %s"
+                                  % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, extra_args, self._compiler, self._mpilib),
                                   expected_stat=(0 if expect_works or self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
 
             if self._hasbatch:
@@ -1308,8 +1354,8 @@ class Z_FullSystemTest(TestCreateTestCommon):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        create_test_cmd =  "%s/create_test cime_developer --test-root %s --output-root %s --walltime 0:15:00 -t %s" \
-            % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name)
+        create_test_cmd =  "%s/create_test cime_developer --test-root %s --output-root %s --walltime 0:15:00 -t %s --compiler %s --mpilib %s" \
+            % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name, self._compiler, self._mpilib)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
@@ -1359,8 +1405,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
-                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --compiler %s --mpilib %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT, self._compiler, self._mpilib))
 
         self.assertEqual(type(MACHINE.get_value("MAX_TASKS_PER_NODE")), int)
         self.assertTrue(type(MACHINE.get_value("PROJECT_REQUIRED")) in [type(None) , bool])
@@ -1401,8 +1447,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_build_threaded_1(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1x1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
-                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1x1.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --compiler %s --mpilib %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT, self._compiler, self._mpilib))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1x1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1423,8 +1469,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_build_threaded_2(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1x2.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
-                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_P1x2.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --compiler %s --mpilib %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT, self._compiler, self._mpilib))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1x2.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1440,8 +1486,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_mpi_serial(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
-                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --compiler %s"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1458,8 +1504,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_force_pecount(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8"
-                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8 --compiler %s"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1473,8 +1519,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_xmlchange_append(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8"
-                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8 --compiler %s"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot, self._compiler))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1496,7 +1542,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s" %
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s " %
                               (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
 
         casedir = os.path.join(self._testroot,
@@ -1517,7 +1563,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P64.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s" %
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s " %
                               (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
 
         casedir = os.path.join(self._testroot,
@@ -1538,7 +1584,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P64.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='0:10:00'" %
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='0:10:00' " %
                               (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
 
         casedir = os.path.join(self._testroot,
@@ -1559,7 +1605,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "blues", "gnu"
-        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='2:00:00'" %
+        run_cmd_assert_result(self, "unset CIME_GLOBAL_WALLTIME && %s/create_test --no-setup --machine %s %s -t %s --test-root %s --output-root %s --walltime='2:00:00' " %
                               (SCRIPT_DIR, machine, test_name, self._baseline_name, self._testroot, self._testroot))
 
         casedir = os.path.join(self._testroot,
@@ -1594,7 +1640,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertEqual(result, "slartibartfast")
 
     def test_create_test_longname(self):
-        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s" % (SCRIPT_DIR, TEST_ROOT)
+        create_test_cmd =  "%s/create_test SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV --no-build --output-root %s --compiler %s --mpilib %s" % (SCRIPT_DIR, TEST_ROOT, self._compiler, self._mpilib)
         run_cmd_assert_result(self, create_test_cmd)
 
 ###############################################################################
@@ -1614,8 +1660,8 @@ class X_TestSingleSubmit(TestCreateTestCommon):
 
         # Keep small enough for now that we don't have to worry about load balancing
         run_cmd_assert_result(self,
-                              "unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit --test-root %s --output-root %s "
-                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
+                              "unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit --test-root %s --output-root %s --compiler %s --mpilib %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT, self._compiler, self._mpilib))
         run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                               from_dir=self._testroot)
 
@@ -1627,8 +1673,9 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def simple_test(self, manual_timing=False):
     ###########################################################################
         timing_flag = "" if manual_timing else "--save-timing"
-        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s --test-root %s --output-root %s " \
-            % (SCRIPT_DIR, timing_flag, self._baseline_name, TEST_ROOT, TEST_ROOT)
+        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s --test-root %s --output-root %s --compiler %s --mpilib %s " \
+            % (SCRIPT_DIR, timing_flag, self._baseline_name, TEST_ROOT, TEST_ROOT,
+               self._compiler, self._mpilib)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
@@ -2364,6 +2411,10 @@ def write_provenance_info():
     cime_model = CIME.utils.get_model()
     logging.info("Using cime_model = %s" % cime_model)
     logging.info("Testing machine = %s" % MACHINE.get_machine_name())
+    if TEST_COMPILER is not None:
+        logging.info("Testing compiler = %s"% TEST_COMPILER)
+    if TEST_MPILIB is not None:
+        logging.info("Testing mpilib = %s"% TEST_MPILIB)
     logging.info("Test root: %s\n" % TEST_ROOT)
 
 def _main_func():
@@ -2389,6 +2440,20 @@ def _main_func():
         mach_name = sys.argv[midx + 1]
         MACHINE = Machines(machine=mach_name)
         os.environ["CIME_MACHINE"] = mach_name
+        del sys.argv[midx + 1]
+        del sys.argv[midx]
+
+    if "--compiler" in sys.argv:
+        global TEST_COMPILER
+        midx = sys.argv.index("--compiler")
+        TEST_COMPILER = sys.argv[midx + 1]
+        del sys.argv[midx + 1]
+        del sys.argv[midx]
+
+    if "--mpilib" in sys.argv:
+        global TEST_MPILIB
+        midx = sys.argv.index("--mpilib")
+        TEST_MPILIB = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
 
