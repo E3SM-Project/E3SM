@@ -25,7 +25,23 @@ the test.
 ======================= =====================================================================================
 TESTTYPE                Description
 ======================= =====================================================================================
-   DAE                  Data assimilation test, default 1 day, two DA cycles, no data modification.
+   ERS                  Exact restart from startup (default 6 days + 5 days) 
+                         Do an 11 day initial test - write a restart at day 6.    (suffix: base) 
+
+                         Do a 5 day restart test, starting from restart at day 6. (suffix: rest) 
+
+                         Compare component history files '.base' and '.rest' at day 11.
+   ERS2                 Exact restart from startup  (default 6 days + 5 days).
+                         Do an 11 day initial test without making restarts.     (suffix: base)
+ 
+                         Do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6. (suffix: rest)
+ 
+                         Compare component history files ".base" and ".rest" at day 11.
+   ERT                  Exact restart from startup, default 2 month + 1 month (ERS with info DBUG = 1).
+   IRT                  Exact restart from startup, (default 4 days + 7 days) with restart from interim file.
+   ERIO                 Exact restart from startup with different PIO methods, (default 6 days + 5 days).
+   ERR                  Exact restart from startup with resubmit, (default 4 days + 3 days).
+   ERRI                 Exact restart from startup with resubmit, (default 4 days + 3 days). Tests incomplete logs option for st_archive.
    ERI                  hybrid/branch/exact restart test, default (by default STOP_N is 22 days) 
 
                         (1) ref1case
@@ -61,7 +77,6 @@ TESTTYPE                Description
                             Compare component history files '.base' and '.hybrid' at day 19.
 
                             Short term archiving is off.
-
    ERP                  PES counts hybrid (OPENMP/MPI) restart bit for bit test from startup, (default 6 days + 5 days).
                          Initial PES set up out of the box
 
@@ -74,44 +89,18 @@ TESTTYPE                Description
                          Compare component history files '.base' and '.rest' at day 11.
 
                          This is just like an ERS test but the tasks/threading counts are modified on restart
-
-   ERS                  Exact restart from startup (default 6 days + 5 days) 
-                         Do an 11 day initial test - write a restart at day 6.    (suffix: base) 
-
-                         Do a 5 day restart test, starting from restart at day 6. (suffix: rest) 
-
-                         Compare component history files '.base' and '.rest' at day 11.
-
-   ERS2                 Exact restart from startup  (default 6 days + 5 days).
-                         Do an 11 day initial test without making restarts.     (suffix: base)
- 
-                         Do an 11 day restart test stopping at day 6 with a restart, then resuming from restart at day 6. (suffix: rest)
- 
-                         Compare component history files ".base" and ".rest" at day 11.
-
-   IRT                  Exact restart from startup, (default 4 days + 7 days) with restart from interim file.
-   ERIO                 Exact restart from startup with different PIO methods, (default 6 days + 5 days).
-   ERR                  Exact restart from startup with resubmit, (default 4 days + 3 days).
-   ERRI                 Exact restart from startup with resubmit, (default 4 days + 3 days). Tests incomplete logs option for st_archive.
-   ERT                  Exact restart from startup, default 2 month + 1 month (ERS with info DBUG = 1).
-   PRE                  Pause-resume test: by default a bit for bit test of pause-resume cycling.
-                         Default 5 hours, five pause/resume cycles, no data modification.
-
-   ICP                  CICE performance test.
    PEA                  Single PE bit for bit test (default 5 days)
                          Do an initial run on 1 PE with mpi library.     (suffix: base)
 
                          Do the same run on 1 PE with mpiserial library. (suffix: mpiserial)
 
                          Compare base and mpiserial.
-
    PEM                  Modified PE counts for MPI(NTASKS) bit for bit test (default 5 days)
                          Do an initial run with default PE layout                               (suffix: base)
 
                          Do another initial run with modified PE layout (NTASKS_XXX => NTASKS_XXX/2)  (suffix: modpes)
 
                          Compare base and modpes
-
    PET                  Modified threading OPENMP bit for bit test (default 5 days)
                          Do an initial run where all components are threaded by default. (suffix: base)
 
@@ -120,6 +109,9 @@ TESTTYPE                Description
                          Compare base and single_thread.
 
    PFS                  Performance test setup. (default 20 days)
+   ICP                  CICE performance test.
+   OCP                  POP performance test. (default 10 days)
+
    MCC                  Multi-driver validation vs single-instance. (default 5 days)
    NCK                  Multi-instance validation vs single instance - sequential PE for instances (default length)
                          Do an initial run test with NINST 1. (suffix: base)
@@ -128,18 +120,20 @@ TESTTYPE                Description
 
                          Compare base and _0001 and _0002.
 
-   OCP                  POP performance test. (default 10 days)
    REP                  Reproducibility: Two identical runs are bit for bit. (default 5 days)
    SBN                  Smoke build-namelist test (just run preview_namelist and check_input_data).
+   SMS                  Smoke startup test (default 5 days)
+                         Do a 5 day initial test. (suffix: base)
    SEQ                  Different sequencing bit for bit test. (default 10 days)
                          Do an initial run test with out-of-box PE-layout. (suffix: base)
 
                          Do a second run where all root pes are at pe-0.   (suffix: seq)
 
                          Compare base and seq.
+   DAE                  Data assimilation test, default 1 day, two DA cycles, no data modification.
+   PRE                  Pause-resume test: by default a bit for bit test of pause-resume cycling.
+                         Default 5 hours, five pause/resume cycles, no data modification.
 
-   SMS                  Smoke startup test (default 5 days)
-                         Do a 5 day initial test. (suffix: base)
 ======================= =====================================================================================
 
 
