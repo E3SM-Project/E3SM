@@ -2,7 +2,8 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal, traceback, warnings
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import errno, signal, traceback, warnings, filecmp
 import stat as statlib
 import six
 from contextlib import contextmanager
@@ -1460,6 +1461,22 @@ def resolve_mail_type_args(args):
                    "Unsupported mail-type '{}'".format(mail_type))
 
         args.mail_type = resolved_mail_types
+
+def file_len(fname):
+    """ Number of lines in file fname """
+    i=0
+    with open(fname) as f:
+        for i, _ in enumerate(f):
+            pass
+    return i + 1
+
+def copyifnewer(src, dest):
+    """ if dest does not exist or is older than src copy src to dest """
+    if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
+        shutil.copy2(src, dest)
+
+
+
 
 class SharedArea(object):
     """
