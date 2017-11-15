@@ -246,9 +246,9 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
     $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
   endif
 
-  # Get the "PETSC_LIB" list an env var 
+  # Get the "PETSC_LIB" list an env var
   include $(PETSC_PATH)/lib/petsc/conf/variables
-  
+
 endif
 
 # Set Trilinos info if it is being used
@@ -456,8 +456,8 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/src/share/util \
-		-I$(CIMEROOT)/src/share/include -I$(CIMEROOT)/src/share/RandNum/include
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
+
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
