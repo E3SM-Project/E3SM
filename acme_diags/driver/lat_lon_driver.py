@@ -69,7 +69,7 @@ def run_diag(parameter):
         
         try:
             yrs_averaged =  f_mod.getglobal('yrs_averaged')
-            parameter.test_name_yrs = parameter.test_name_yrs + ' yrs(' + yrs_averaged +')'
+            parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
 
         except:
             print('No yrs_averaged exists in global attributes')
