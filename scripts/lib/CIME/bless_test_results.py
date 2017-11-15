@@ -5,7 +5,7 @@ from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
 
-import os, glob, time
+import os, glob, time, six
 
 ###############################################################################
 def bless_namelists(test_name, report_only, force, baseline_name, baseline_root):
@@ -17,7 +17,7 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     # Update namelist files
     print("Test '{}' had namelist diff".format(test_name))
     if (not report_only and
-        (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
+        (force or six.moves.input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
         stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
         if stat != 0:
@@ -38,11 +38,12 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
 
         result, comments = compare_baseline(case, baseline_dir=baseline_full_dir, outfile_suffix=None)
         if result:
+            logging.info("Diff appears to have been already resolved.")
             return True, None
         else:
             print(comments)
             if (not report_only and
-                (force or raw_input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
+                (force or six.moves.input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
                 result, comments = generate_baseline(case, baseline_dir=baseline_full_dir)
                 if not result:
                     logging.warning("Hist file bless FAILED for test {}".format(test_name))
@@ -65,6 +66,14 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
         test_dir = os.path.dirname(test_status_file)
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
+        if test_name is None:
+            case_dir = os.path.basename(os.path.dirname(test_status_file))
+            test_name = CIME.utils.normalize_case_id(case_dir)
+            if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
+                broken_blesses.append((test_name, "test had invalid TestStatus file: '{}'".format(test_status_file)))
+            else:
+                continue
+
         if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
             overall_result = ts.get_overall_test_status()
 

@@ -7,7 +7,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "utils", "python"))
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "fortran_unit_testing", "python"))
 
 from standard_script_setup import *
-from CIME.BuildTools.configure import configure
+from CIME.BuildTools.configure import configure, FakeCase
 from CIME.utils import run_cmd_no_fail, stringify_bool, expect
 from CIME.XML.machines import Machines
 from CIME.XML.compilers import Compilers
@@ -146,7 +146,7 @@ override the command provided by Machines."""
         args.use_openmp, args.xml_test_list, args.verbose
 
 
-def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_command, output,
+def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_command, output, pfunit_path,
                 cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
     """Run cmake in the current working directory.
 
@@ -178,10 +178,12 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
 
         cmake_command = [
             "cmake",
+            "-C Macros.cmake",
             test_spec_dir,
-            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","externals","CMake")),
+            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
+            "-DPFUNIT_PATH="+pfunit_path
             ]
         if use_mpiserial:
             cmake_command.append("-DUSE_MPI_SERIAL=ON")
@@ -241,6 +243,7 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
            """PFUNIT_PATH not found for this machine and compiler, with MPILIB={} and compile_threaded={}.
 You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded.""".format(mpilib, attrs['compile_threaded']))
     logger.info("Using PFUNIT_PATH: {}".format(pfunit_path.text))
+    return pfunit_path.text
 
 #=================================================
 # Iterate over input suite specs, building the tests.
@@ -306,7 +309,7 @@ def _main():
 
     compilerobj = Compilers(machobj, compiler=compiler, mpilib=mpilib)
 
-    find_pfunit(compilerobj, mpilib=mpilib, use_openmp=use_openmp)
+    pfunit_path = find_pfunit(compilerobj, mpilib=mpilib, use_openmp=use_openmp)
 
     debug = not build_optimized
     os_ = machobj.get_value("OS")
@@ -318,7 +321,8 @@ def _main():
               unit_testing=True)
     machspecific = EnvMachSpecific(build_dir, unit_testing=True)
 
-    machspecific.load_env(compiler, debug, mpilib)
+    fake_case = FakeCase(compiler, mpilib, debug)
+    machspecific.load_env(fake_case)
     os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)
@@ -375,7 +379,7 @@ def _main():
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
             use_mpiserial = not use_mpi
-            cmake_stage(name, directory, build_optimized, use_mpiserial, mpirun_command, output, verbose=verbose,
+            cmake_stage(name, directory, build_optimized, use_mpiserial, mpirun_command, output, pfunit_path, verbose=verbose,
                         enable_genf90=enable_genf90, cmake_args=cmake_args)
             make_stage(name, output, make_j, clean=clean, verbose=verbose)
 
@@ -397,9 +401,6 @@ def _main():
                 ctest_command.extend(ctest_args.split(" "))
 
             run_cmd_no_fail(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
-
-
-
 
 
 if __name__ == "__main__":

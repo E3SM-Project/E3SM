@@ -18,6 +18,7 @@
 ! !REVISION HISTORY:
 !     2005-Nov-11 - E. Kluzek - creation of shr_inputinfo_mod
 !     2007-Nov-15 - T. Craig - refactor for ccsm4 system and move to seq_infodata_mod
+!     2016-Dec-08 - R. Montuoro - updated for multiple driver instances
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
@@ -285,7 +286,7 @@ CONTAINS
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
+SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid, cpl_tag)
 
 ! !USES:
 
@@ -302,6 +303,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
    character(len=*),        intent(IN)    :: nmlfile   ! Name-list filename
    integer(SHR_KIND_IN),    intent(IN)    :: ID        ! seq_comm ID
    type(file_desc_T) :: pioid
+   character(len=*), optional, intent(IN) :: cpl_tag   ! cpl instance suffix
 !EOP
 
     !----- local -----
@@ -588,6 +590,20 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%brnch_retain_casename = brnch_retain_casename
        infodata%restart_pfile         = restart_pfile
        infodata%restart_file          = restart_file
+       if (present(cpl_tag)) then
+          if (len(cpl_tag) > 0) then
+             if (trim(restart_file) /= trim(sp_str)) then
+                write(logunit,*) trim(subname),' ERROR: restart_file can '//&
+                'only be read from restart pointer files when using multiple couplers '
+                call shr_sys_abort(subname//' ERROR: invalid settings for restart_file ')
+             end if
+          end if
+          infodata%restart_file       = restart_file
+          infodata%restart_pfile      = trim(restart_pfile) // trim(cpl_tag)
+       else
+          infodata%restart_pfile      = restart_pfile
+          infodata%restart_file       = restart_file
+       end if
        infodata%single_column         = single_column
        infodata%scmlat                = scmlat
        infodata%scmlon                = scmlon

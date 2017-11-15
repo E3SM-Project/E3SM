@@ -8,7 +8,7 @@ import shutil, glob
 
 logger = logging.getLogger(__name__)
 
-def apply_user_mods(caseroot, user_mods_path):
+def apply_user_mods(caseroot, user_mods_path, keepexe=None):
     '''
     Recursivlely apply user_mods to caseroot - this includes updating user_nl_xxx,
     updating SourceMods and creating case shell_commands and xmlchange_cmds files
@@ -17,6 +17,9 @@ def apply_user_mods(caseroot, user_mods_path):
 
     If this function is called multiple times, settings from later calls will
     take precedence over earlier calls, if there are conflicts.
+
+    keepexe is an optional argument that is needed for cases where apply_user_mods is
+    called from create_clone
     '''
     case_shell_command_files = [os.path.join(caseroot,"shell_commands"),
                            os.path.join(caseroot,"xmlchange_cmnds")]
@@ -50,13 +53,16 @@ def apply_user_mods(caseroot, user_mods_path):
         # update SourceMods in caseroot
         for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
             if "src" in os.path.basename(root):
+                if keepexe is not None:
+                    expect(False,
+                           "cannot have any source mods in {} if keepexe is an option".format(user_mods_path))
                 for sfile in files:
                     source_mods = os.path.join(root,sfile)
                     case_source_mods = source_mods.replace(include_dir, caseroot)
                     # We overwrite any existing SourceMods file so that later
                     # include_dirs take precedence over earlier ones
                     if os.path.isfile(case_source_mods):
-                        logger.warn("WARNING: Overwriting existing SourceMods in {}".format(case_source_mods))
+                        logger.warning("WARNING: Overwriting existing SourceMods in {}".format(case_source_mods))
                     else:
                         logger.info("Adding SourceMod to case {}".format(case_source_mods))
                     try:
@@ -75,7 +81,7 @@ def apply_user_mods(caseroot, user_mods_path):
             # Note that use of xmlchange_cmnds has been deprecated and will soon
             # be removed altogether, so new tests should rely on shell_commands
             if shell_commands_file.endswith("xmlchange_cmnds"):
-                logger.warn("xmlchange_cmnds is deprecated and will be removed " +\
+                logger.warning("xmlchange_cmnds is deprecated and will be removed " +\
                             "in a future release; please rename {} shell_commands".format(shell_commands_file))
             with open(shell_commands_file,"r") as fd:
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
@@ -86,7 +92,7 @@ def apply_user_mods(caseroot, user_mods_path):
 
     for shell_command_file in case_shell_command_files:
         if os.path.isfile(shell_command_file):
-            os.chmod(shell_command_file, 0777)
+            os.chmod(shell_command_file, 0o777)
             run_cmd_no_fail(shell_command_file)
 
 
@@ -124,6 +130,6 @@ def build_include_dirs_list(user_mods_path, include_dirs=None):
                     if os.path.isabs(newpath):
                         build_include_dirs_list(newpath, include_dirs)
                     else:
-                        logger.warn("Could not resolve path '{}' in file '{}'".format(newpath, include_file))
+                        logger.warning("Could not resolve path '{}' in file '{}'".format(newpath, include_file))
 
     return include_dirs

@@ -66,6 +66,14 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
             if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
                 shutil.copyfile(dfile, outputdfile)
 
+class FakeCase(object):
+
+    def __init__(self, compiler, mpilib, debug):
+        self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug}
+
+    def get_value(self, attrib):
+        expect(attrib in self._vals, "FakeCase does not support getting value of '%s'" % attrib)
+        return self._vals[attrib]
 
 def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
                                 sysos, unit_testing):
@@ -74,13 +82,15 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
     """
     ems_path = os.path.join(output_dir, "env_mach_specific.xml")
     if os.path.exists(ems_path):
-        logger.warn("{} already exists, delete to replace".format(ems_path))
+        logger.warning("{} already exists, delete to replace".format(ems_path))
         return
     ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)
     ems_file.write()
+    fake_case = FakeCase(compiler, mpilib, debug)
+    ems_file.load_env(fake_case)
     for shell in ('sh', 'csh'):
-        ems_file.make_env_mach_specific_file(compiler, debug, mpilib, shell)
+        ems_file.make_env_mach_specific_file(shell, fake_case)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
         with open(shell_path, 'a') as shell_file:
             if shell == 'sh':

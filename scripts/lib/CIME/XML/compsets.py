@@ -7,7 +7,6 @@ from CIME.XML.generic_xml import GenericXML
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
 
-
 logger = logging.getLogger(__name__)
 
 class Compsets(GenericXML):
@@ -85,6 +84,20 @@ class Compsets(GenericXML):
         logger.info("       --------------------------------------")
         logger.info("       Compset Alias: Compset Long Name ")
         logger.info("       --------------------------------------")
-        for v in compsets_text.iteritems():
-            label, definition = v
-            logger.info("   {:20} : {}".format(label, definition))
+        for key in sorted(compsets_text.keys()):
+            logger.info("   {:20} : {}".format(key, compsets_text[key]))
+
+    def return_all_values(self):
+        all_compsets = dict()
+        science_compsets = dict()
+        help_text = self.get_value(name="help")
+        compsets_text = self.get_value("names")
+        for key in sorted(compsets_text.keys()):
+            all_compsets[key] = compsets_text[key]
+
+        # get the matching science support grids
+        for alias in all_compsets.keys():
+            science_compsets[alias] = self.get_compset_match(alias)
+            
+        return help_text, all_compsets
+

@@ -38,14 +38,19 @@ class EnvArchive(GenericXML):
     def get_entries(self):
         return self.get_nodes('comp_archive_spec')
 
+    def get_entry(self, compname):
+        return self.get_optional_node('comp_archive_spec', attributes={"compname":compname})
+
     def get_entry_info(self, archive_entry):
-        compname = archive_entry.attrib['compname']
-        compclass = archive_entry.attrib['compclass']
+        compname = archive_entry.get('compname')
+        compclass = archive_entry.get('compclass')
         return compname,compclass
 
     def get_entry_value(self, name, archive_entry):
         node = self.get_optional_node(name, root=archive_entry)
-        return node.text
+        if node is not None:
+            return node.text
+        return None
 
     def get_rest_file_extensions(self, archive_entry):
         file_extensions = []

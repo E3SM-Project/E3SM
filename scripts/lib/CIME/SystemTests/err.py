@@ -2,40 +2,51 @@
 CIME ERR test  This class inherits from ERS
 ERR tests short term archiving and restart capabilities
 """
+import glob, os, shutil
 from CIME.XML.standard_module_setup import *
-from CIME.SystemTests.ers import ERS
-
-import shutil, glob
+from CIME.SystemTests.restart_tests import RestartTest
+from CIME.case_st_archive import restore_from_archive
+from CIME.utils import ls_sorted_by_mtime
 
 logger = logging.getLogger(__name__)
 
-class ERR(ERS):
-
-    def __init__(self, case):
+class ERR(RestartTest):
+    def __init__(self, case): # pylint: disable=super-init-not-called
         """
         initialize an object interface to the ERR system test
         """
-        ERS.__init__(self, case)
+        super(ERR, self).__init__(case,
+                             separate_builds = False,
+                             run_two_suffix = 'rest',
+                             run_one_description = 'initial',
+                             run_two_description = 'restart',
+                             multisubmit = True)
 
-    def run_phase(self):
-        first_phase = self._case.get_value("RESUBMIT") == 1
+    def _case_one_setup(self):
+        super(ERR, self)._case_one_setup()
+        self._case.set_value("DOUT_S", True)
 
-        if first_phase:
-            self._case.set_value("DOUT_S", True)
-            self._case.flush()
-            self._ers_first_phase()
-        else:
-            dout_s_root = self._case.get_value("DOUT_S_ROOT")
-            rundir = self._case.get_value("RUNDIR")
-            case = self._case.get_value("CASE")
-            # First remove restart, history and rpointer files from the run directory
-            for item in glob.iglob(os.path.join(rundir, "{}.*".format(case))):
-                if not item.endswith("base"):
-                    os.remove(item)
-            for item in glob.iglob(os.path.join(rundir, "rpointer.*")):
-                os.remove(item)
-            # Then replace them from the restart directory
-            for item in glob.iglob(os.path.join(dout_s_root,"rest","*","*")):
-                shutil.copy(item, rundir)
+    def _case_two_setup(self):
+        super(ERR, self)._case_two_setup()
+        self._case.set_value("DOUT_S", False)
 
-            self._ers_second_phase()
+
+    def _case_two_custom_prerun_action(self):
+        dout_s_root = self._case1.get_value("DOUT_S_ROOT")
+        rest_root = os.path.abspath(os.path.join(dout_s_root,"rest"))
+        restart_list = ls_sorted_by_mtime(rest_root)
+        expect(len(restart_list) >= 1, "No restart files found in {}".format(rest_root))
+        restore_from_archive(self._case, rest_dir=
+            os.path.join(rest_root, restart_list[0]))
+
+    def _case_two_custom_postrun_action(self):
+        # Link back to original case1 name
+        # This is needed so that the necessary files are present for
+        # baseline comparison and generation,
+        # since some of them may have been moved to the archive directory
+        for case_file in glob.iglob(os.path.join(self._case1.get_value("RUNDIR"),
+                                                 "*.nc.{}".format(self._run_one_suffix))):
+            orig_file = case_file[:-(1+len(self._run_one_suffix))]
+            if not os.path.isfile(orig_file):
+                shutil.copyfile(case_file, orig_file)
+

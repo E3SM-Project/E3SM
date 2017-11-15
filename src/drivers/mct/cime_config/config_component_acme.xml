@@ -32,6 +32,14 @@
 
   <entry id="TIMER_DETAIL">
     <type>integer</type>
+    <default_value>12</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer output depth</desc>
+  </entry>
+
+  <entry id="TIMER_LEVEL">
+    <type>integer</type>
     <default_value>20</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
@@ -170,9 +178,13 @@
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
-      <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
-      <value compset="20TR.*_DATM%(QIA|CRU)">CO2A</value>
-      <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
+      <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
+      <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
+      <value compset="_DATM%IAF*_MPASO%OECO" >CO2A</value>
+      <value compset="_DATM%IAF*_MPASO%OIECO" >CO2A</value>
+      <value compset="_DATM%IAF*_MPASO%TOIECO_" >CO2A</value>
+      <value compset="_DATM%IAF_SLND_MPASCICE%BGC_MPASO%TOIECO_" >CO2A</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -243,16 +255,16 @@
       <value compset="_DLND.*_MPASLI">1</value>
       <value compset="_SLND.*SOCN.*_MPASLI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oQU240">12</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oQU240wLI">12</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oQU120">24</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oEC60to30">48</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oEC60to30v3">48</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oEC60to30wLI">48</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS30to10v3">96</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS30to10wLI">96</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS18to6v3">96</value>
-      <value compset="_DATM.*_SLND.*MPASO" grid="oi%oRRS15to5">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30wLI">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10wLI">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
@@ -266,6 +278,8 @@
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
+      <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_twpx4v1">96</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
@@ -439,7 +453,6 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="DATM.+POP\d">TRUE</value>
-      <value compset="DATM.*_MPASO">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
@@ -482,7 +495,7 @@
 
   <entry id="AVGHIST_OPTION">
     <type>char</type>
-    <valid_values></valid_values>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
     <values match="last">
       <value compset="_DOCN%IAF">nmonths</value>
@@ -678,6 +691,74 @@
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
       compsets.</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file decomp type</desc>
   </entry>
 
   <entry id="CCSM_GCOST">

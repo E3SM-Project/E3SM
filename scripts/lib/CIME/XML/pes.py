@@ -56,6 +56,8 @@ class Pes(GenericXML):
         logger.info("Pes setting: grid          is {} ".format(grid))
         logger.info("Pes setting: compset       is {} ".format(compset))
         logger.info("Pes setting: tasks       is {} ".format(pes_ntasks))
+        logger.info("Pes setting: threads     is {} ".format(pes_nthrds))
+        logger.info("Pes setting: rootpe      is {} ".format(pes_rootpe))
 
         logger.info("Pes other settings: {}".format(other_settings))
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
@@ -112,11 +114,11 @@ class Pes(GenericXML):
                                         compset_choice = compset_match
                                         pesize_choice = pesize_match
                                     elif points == max_points:
-                                        logger.warn("mach_choice {} mach_match {}".format(mach_choice, mach_match))
-                                        logger.warn("grid_choice {} grid_match {}".format(grid_choice, grid_match))
-                                        logger.warn("compset_choice {} compset_match {}".format(compset_choice, compset_match))
-                                        logger.warn("pesize_choice {} pesize_match {}".format(pesize_choice, pesize_match))
-                                        logger.warn("points = {:d}".format(points))
+                                        logger.warning("mach_choice {} mach_match {}".format(mach_choice, mach_match))
+                                        logger.warning("grid_choice {} grid_match {}".format(grid_choice, grid_match))
+                                        logger.warning("compset_choice {} compset_match {}".format(compset_choice, compset_match))
+                                        logger.warning("pesize_choice {} pesize_match {}".format(pesize_choice, pesize_match))
+                                        logger.warning("points = {:d}".format(points))
                                         expect(False, "More than one PE layout matches given PE specs")
         if not override:
             for node in pe_select:

@@ -41,6 +41,23 @@
   -->
 
   <!-- =========================== -->
+  <!-- group cime_driver_inst              -->
+  <!-- =========================== -->
+
+  <entry id="ninst_driver" modify_via_xml="NINST_MAX">
+    <type>integer</type>
+    <category>cime_driver_inst</category>
+    <group>cime_driver_inst</group>
+    <desc>
+      Number of CESM driver instances.  Only used if MULTI_DRIVER is TRUE.
+    </desc>
+    <values>
+      <value>1</value>
+      <value MULTI_DRIVER=".true.">$NINST_MAX</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
   <!-- group seq_cplflds_inparm    -->
   <!-- =========================== -->
 
@@ -1626,13 +1643,13 @@
     <category>time</category>
     <group>seq_timemgr_inparm</group>
     <desc>
-      true => ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: true
+      true => ESP component runs after driver 'pause cycle' If any
+      component 'pauses' (see PAUSE_OPTION,
+      PAUSE_N and DATA_ASSIMILATION_XXX XML
+      variables), the ESP component (if present) will be run to
+      process the component 'pause' (restart) files and set any
+      required 'resume' signals.  If true, esp_cpl_dt and
+      esp_cpl_offset settings are ignored.  default: true
     </desc>
     <values>
       <value>.true.</value>
@@ -2039,20 +2056,6 @@
     </desc>
     <values>
       <value>$PAUSE_N</value>
-    </values>
-  </entry>
-
-  <entry id="pause_component_list" modify_via_xml="PAUSE_COMPONENT_LIST" skip_default_entry="true">
-    <type>char</type>
-    <category>time</category>
-    <group>seq_timemgr_inparm</group>
-    <desc>
-      A colon-separated list of component types (e.g., ocn,atm) to receive a
-      resume signal after a pause has happened. Special values "all" or "none"
-      may be used in place of a list
-    </desc>
-    <values>
-      <value>$PAUSE_COMPONENT_LIST</value>
     </values>
   </entry>
 
@@ -2669,24 +2672,6 @@
     </desc>
     <values>
       <value>$PSTRID_CPL</value>
-    </values>
-  </entry>
-
-  <entry id="esmf_logging" modify_via_xml="ESMF_LOGFILE_KIND">
-    <type>char</type>
-    <category>ccsm_pes</category>
-    <group>ccsm_pes</group>
-    <desc>
-      Determines what ESMF log files (if any) are generated when
-          USE_ESMF_LIB is TRUE.
-      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
-          all of the PETs. Not supported on some platforms.
-      ESMF_LOGKIND_MULTI: Use multiple log files — one per PET.
-      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
-      By default, no ESMF log files are generated.
-    </desc>
-    <values>
-      <value>$ESMF_LOGFILE_KIND</value>
     </values>
   </entry>
 
@@ -3932,6 +3917,102 @@
     </desc>
     <values>
       <value>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_atm" modify_via_xml="DATA_ASSIMILATION_ATM">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component atm
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ATM</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_cpl" modify_via_xml="DATA_ASSIMILATION_CPL">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component CPL
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_ocn" modify_via_xml="DATA_ASSIMILATION_OCN">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component ocn
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_OCN</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_wav" modify_via_xml="DATA_ASSIMILATION_WAV">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component wav
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_glc" modify_via_xml="DATA_ASSIMILATION_GLC">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component glc
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_GLC</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_rof" modify_via_xml="DATA_ASSIMILATION_ROF">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component rof
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ROF</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_ice" modify_via_xml="DATA_ASSIMILATION_ICE">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component ice
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_ICE</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_lnd" modify_via_xml="DATA_ASSIMILATION_LND">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component lnd
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_LND</value>
     </values>
   </entry>
 

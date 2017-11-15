@@ -76,17 +76,17 @@ def create_namelists(case, component=None):
             compname = "drv"
         else:
             compname = case.get_value("COMP_{}".format(model_str.upper()))
-
         if component is None or component == model_str:
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
             if os.path.isfile(cmd):
-                logger.warn("\nWARNING: Using local buildnml file {}\n".format(cmd))
+                logger.warning("\nWARNING: Using local buildnml file {}\n".format(cmd))
             else:
                 # otherwise look in the component config_dir
                 cmd = os.path.join(config_dir, "buildnml")
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
-            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
+            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case,
+                           combine_output=True)
 
     logger.info("Finished creating component namelists")
 

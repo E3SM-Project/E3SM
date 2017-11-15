@@ -13,7 +13,7 @@ from CIME.hist_utils import *
 
 import CIME.build as build
 
-import shutil, glob, gzip, time, traceback
+import shutil, glob, gzip, time, traceback, six
 
 logger = logging.getLogger(__name__)
 
@@ -88,16 +88,15 @@ class SystemTestsCommon(object):
                 try:
                     self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
-                except:
+                except BaseException as e:
                     success = False
-                    msg = sys.exc_info()[1].message
-
+                    msg = e.__str__()
                     if "BUILD FAIL" in msg:
                         # Don't want to print stacktrace for a model failure since that
                         # is not a CIME/infrastructure problem.
                         excmsg = msg
                     else:
-                        excmsg = "Exception during build:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
+                        excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
 
                     logger.warning(excmsg)
                     append_testlog(excmsg)
@@ -155,15 +154,15 @@ class SystemTestsCommon(object):
 
             self._check_for_memleak()
 
-        except:
+        except BaseException as e:
             success = False
-            msg = sys.exc_info()[1].message
+            msg = e.__str__()
             if "RUN FAIL" in msg:
                 # Don't want to print stacktrace for a model failure since that
                 # is not a CIME/infrastructure problem.
                 excmsg = msg
             else:
-                excmsg = "Exception during run:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
+                excmsg = "Exception during run:\n{}\n{}".format(msg, traceback.format_exc())
             logger.warning(excmsg)
             append_testlog(excmsg)
 
@@ -197,6 +196,7 @@ class SystemTestsCommon(object):
         Use for tests that have multiple cases
         """
         self._case = case
+        self._case.load_env(reset=True)
         self._caseroot = case.get_value("CASEROOT")
 
     def run_indv(self, suffix="base", st_archive=False):
@@ -234,15 +234,20 @@ class SystemTestsCommon(object):
             case_st_archive(self._case)
 
     def _coupler_log_indicates_run_complete(self):
-        newestcpllogfile = self._case.get_latest_cpl_log()
-        logger.debug("Latest Coupler log file is {}".format(newestcpllogfile))
+        newestcpllogfiles = self._get_latest_cpl_logs()
+        logger.debug("Latest Coupler log file(s) {}" .format(newestcpllogfiles))
         # Exception is raised if the file is not compressed
-        try:
-            if "SUCCESSFUL TERMINATION" in gzip.open(newestcpllogfile, 'rb').read():
-                return True
-        except:
-            logger.info("{} is not compressed, assuming run failed".format(newestcpllogfile))
-        return False
+        allgood = len(newestcpllogfiles)
+        for cpllog in newestcpllogfiles:
+            try:
+                if six.b("SUCCESSFUL TERMINATION") in gzip.open(cpllog, 'rb').read():
+                    allgood = allgood - 1
+            except BaseException as e:
+                msg = e.__str__()
+
+                logger.info("{} is not compressed, assuming run failed {}".format(cpllog, msg))
+
+        return allgood==0
 
     def _component_compare_copy(self, suffix):
         comments = copy(self._case, suffix)
@@ -254,7 +259,7 @@ class SystemTestsCommon(object):
         run case needs indirection based on success.
         If success_change is True, success requires some files to be different
         """
-        success, comments = compare_test(self._case, suffix1, suffix2)
+        success, comments = self._do_compare_test(suffix1, suffix2)
         if success_change:
             success = not success
 
@@ -263,6 +268,13 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, suffix1, suffix2), status)
         return success
+
+    def _do_compare_test(self, suffix1, suffix2):
+        """
+        Wraps the call to compare_test to facilitate replacement in unit
+        tests
+        """
+        return compare_test(self._case, suffix1, suffix2)
 
     def _get_mem_usage(self, cpllog):
         """
@@ -278,7 +290,7 @@ class SystemTestsCommon(object):
                 fopen = open
             with fopen(cpllog, "rb") as f:
                 for line in f:
-                    m = meminfo.match(line)
+                    m = meminfo.match(line.decode('utf-8'))
                     if m:
                         memlist.append((float(m.group(1)), float(m.group(2))))
         # Remove the last mem record, it's sometimes artificially high
@@ -293,7 +305,7 @@ class SystemTestsCommon(object):
         """
         if cpllog is not None and os.path.isfile(cpllog):
             with gzip.open(cpllog, "rb") as f:
-                cpltext = f.read()
+                cpltext = f.read().decode('utf-8')
                 m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext)
                 if m:
                     return float(m.group(1))
@@ -304,33 +316,33 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        cpllog = self._case.get_latest_cpl_log()
+        latestcpllogs = self._get_latest_cpl_logs()
+        for cpllog in latestcpllogs:
+            memlist = self._get_mem_usage(cpllog)
 
-        memlist = self._get_mem_usage(cpllog)
-
-        with self._test_status:
-            if len(memlist)<3:
-                self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
-            else:
-                finaldate = int(memlist[-1][0])
-                originaldate = int(memlist[0][0])
-                finalmem = float(memlist[-1][1])
-                originalmem = float(memlist[0][1])
-                memdiff = -1
-                if originalmem > 0:
-                    memdiff = (finalmem - originalmem)/originalmem
-                tolerance = self._case.get_value("TEST_MEMLEAK_TOLERANCE")
-                if tolerance is None:
-                    tolerance = 0.1
-                expect(tolerance > 0.0, "Bad value for memleak tolerance in test")
-                if memdiff < 0:
+            with self._test_status:
+                if len(memlist)<3:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
-                elif memdiff < tolerance:
-                    self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
-                    comment = "memleak detected, memory went from {:f} to {:f} in {:d} days".format(originalmem, finalmem, finaldate-originaldate)
-                    append_testlog(comment)
-                    self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
+                    finaldate = int(memlist[-1][0])
+                    originaldate = int(memlist[0][0])
+                    finalmem = float(memlist[-1][1])
+                    originalmem = float(memlist[0][1])
+                    memdiff = -1
+                    if originalmem > 0:
+                        memdiff = (finalmem - originalmem)/originalmem
+                    tolerance = self._case.get_value("TEST_MEMLEAK_TOLERANCE")
+                    if tolerance is None:
+                        tolerance = 0.1
+                    expect(tolerance > 0.0, "Bad value for memleak tolerance in test")
+                    if memdiff < 0:
+                        self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
+                    elif memdiff < tolerance:
+                        self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
+                    else:
+                        comment = "memleak detected, memory went from {:f} to {:f} in {:d} days".format(originalmem, finalmem, finaldate-originaldate)
+                        append_testlog(comment)
+                        self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
         """
@@ -342,12 +354,32 @@ class SystemTestsCommon(object):
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:
-                logging.warn("  Resetting {} for test".format(key))
+                logging.warning("  Resetting {} for test".format(key))
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
                 print("WARNING: Found difference in test {}: case: {} original value {}".format(key, diffs[key][0], diffs[key][1]))
                 return False
         return True
+
+    def _get_latest_cpl_logs(self):
+        """
+        find and return the latest cpl log file in the run directory
+        """
+        coupler_log_path = self._case.get_value("RUNDIR")
+        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl*.log.*'))
+        lastcpllogs = []
+        if cpllogs:
+            lastcpllogs.append(max(cpllogs, key=os.path.getctime))
+            basename = os.path.basename(lastcpllogs[0])
+            suffix = basename.split('.',1)[1]
+            for log in cpllogs:
+                if log in lastcpllogs:
+                    continue
+
+                if log.endswith(suffix):
+                    lastcpllogs.append(log)
+
+        return lastcpllogs
 
     def _compare_baseline(self):
         """
@@ -364,42 +396,44 @@ class SystemTestsCommon(object):
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
 
             # compare memory usage to baseline
-            newestcpllogfile = self._case.get_latest_cpl_log()
-            memlist = self._get_mem_usage(newestcpllogfile)
-            baselog = os.path.join(basecmp_dir, "cpl.log.gz")
-            if not os.path.isfile(baselog):
-                # for backward compatibility
-                baselog = os.path.join(basecmp_dir, "cpl.log")
-
-            if os.path.isfile(baselog) and len(memlist) > 3:
-                blmem = self._get_mem_usage(baselog)
-                blmem = 0 if blmem == [] else blmem[-1][1]
-                curmem = memlist[-1][1]
-                if blmem != 0:
-                    diff = (curmem - blmem) / blmem
-                    if diff < 0.1:
+            newestcpllogfiles = self._get_latest_cpl_logs()
+            if len(newestcpllogfiles) > 0:
+                memlist = self._get_mem_usage(newestcpllogfiles[0])
+            for cpllog in newestcpllogfiles:
+                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
+                if m is not None:
+                    baselog = os.path.join(basecmp_dir, m.group(1))+".gz"
+                if baselog is None or not os.path.isfile(baselog):
+                    # for backward compatibility
+                    baselog = os.path.join(basecmp_dir, "cpl.log")
+                if os.path.isfile(baselog) and len(memlist) > 3:
+                    blmem = self._get_mem_usage(baselog)
+                    blmem = 0 if blmem == [] else blmem[-1][1]
+                    curmem = memlist[-1][1]
+                    diff = (curmem-blmem)/blmem
+                    if diff < 0.1 and self._test_status.get_status(MEMCOMP_PHASE) is None:
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
-                    else:
+                    elif self._test_status.get_status(MEMCOMP_PHASE) != TEST_FAIL_STATUS:
                         comment = "Error: Memory usage increase > 10% from baseline"
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                         append_testlog(comment)
-                else:
-                    comment = "Error: Could not determine baseline memory usage"
-                    self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_testlog(comment)
 
-            # compare throughput to baseline
-            current = self._get_throughput(newestcpllogfile)
-            baseline = self._get_throughput(baselog)
-            #comparing ypd so bigger is better
-            if baseline is not None and current is not None:
-                diff = (baseline - current)/baseline
-                if(diff < 0.25):
-                    self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
-                else:
-                    comment = "Error: Computation time increase > 25% from baseline"
-                    self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_testlog(comment)
+                    # compare throughput to baseline
+                    current = self._get_throughput(cpllog)
+                    baseline = self._get_throughput(baselog)
+                    #comparing ypd so bigger is better
+                    if baseline is not None and current is not None:
+                        diff = (baseline - current)/baseline
+                        tolerance = self._case.get_value("TEST_TPUT_TOLERANCE")
+                        if tolerance is None:
+                            tolerance = 0.25
+                        expect(tolerance > 0.0, "Bad value for throughput tolerance in test")
+                        if diff < tolerance and self._test_status.get_status(THROUGHPUT_PHASE) is None:
+                            self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
+                        elif self._test_status.get_status(THROUGHPUT_PHASE) != TEST_FAIL_STATUS:
+                            comment = "Error: Computation time increase > {:d} pct from baseline".format(int(tolerance*100))
+                            self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
+                            append_testlog(comment)
 
     def _generate_baseline(self):
         """
@@ -412,6 +446,16 @@ class SystemTestsCommon(object):
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASEGEN_CASE")
             self._test_status.set_status("{}".format(GENERATE_PHASE), status, comments=os.path.dirname(baseline_name))
+            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+            # copy latest cpl log to baseline
+            # drop the date so that the name is generic
+            newestcpllogfiles = self._get_latest_cpl_logs()
+            for cpllog in newestcpllogfiles:
+                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
+                if m is not None:
+                    baselog = os.path.join(basegen_dir, m.group(1))+".gz"
+                    shutil.copyfile(cpllog,
+                                    os.path.join(basegen_dir,baselog))
 
 class FakeTest(SystemTestsCommon):
     """
@@ -434,7 +478,7 @@ class FakeTest(SystemTestsCommon):
                 f.write("#!/bin/bash\n")
                 f.write(self._script)
 
-            os.chmod(modelexe, 0755)
+            os.chmod(modelexe, 0o755)
 
             build.post_build(self._case, [])
 
@@ -512,12 +556,20 @@ class TESTRUNFAIL(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
         script = \
 """
-echo Insta fail
-echo model failed > {}/cpl.log.$LID
-exit -1
-""".format(rundir)
+if [ -z "$TESTRUNFAIL_PASS" ]; then
+  echo Insta fail
+  echo model failed > {}/cpl.log.$LID
+  exit -1
+else
+  echo Insta pass
+  echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
+  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+fi
+""".format(rundir, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)

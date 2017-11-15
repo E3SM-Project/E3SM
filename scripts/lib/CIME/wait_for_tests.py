@@ -1,11 +1,14 @@
-import os, time, threading, Queue, socket, signal, distutils.spawn, shutil, glob
+#pylint: disable=import-error
+from six.moves import queue
+import os, time, threading, socket, signal, distutils.spawn, shutil, glob
 import logging
 import xml.etree.ElementTree as xmlet
 
 import CIME.utils
-from CIME.utils import expect
+from CIME.utils import expect, Timeout, run_cmd_no_fail
 from CIME.XML.machines import Machines
 from CIME.test_status import *
+
 
 SIGNAL_RECEIVED           = False
 ACME_MAIN_CDASH           = "ACME_Climate"
@@ -49,14 +52,22 @@ def get_test_output(test_path):
 ###############################################################################
 def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
-    git_commit = CIME.utils.get_current_commit(repo=CIME.utils.get_cime_root())
+    # We assume all cases were created from the same code repo
+    first_result_case = os.path.dirname(results.iteritems().next()[1][0])
+    try:
+        srcroot = run_cmd_no_fail("./xmlquery --value SRCROOT", from_dir=first_result_case)
+    except:
+        # Use repo containing this script as last resort
+        srcroot = CIME.utils.get_cime_root()
+
+    git_commit = CIME.utils.get_current_commit(repo=srcroot)
 
     data_rel_path = os.path.join("Testing", utc_time)
 
     site_elem = xmlet.Element("Site")
 
     if ("JENKINS_START_TIME" in os.environ):
-        time_info_str = "Total testing time: {:d} seconds".format(current_time - int(os.environ["JENKINS_START_TIME"]))
+        time_info_str = "Total testing time: {:d} seconds".format(int(current_time) - int(os.environ["JENKINS_START_TIME"]))
     else:
         time_info_str = ""
 
@@ -146,7 +157,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
 
         need_to_upload = False
 
-        for test_name, test_data in results.iteritems():
+        for test_name, test_data in results.items():
             test_path, test_status = test_data
 
             if (test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]):
@@ -157,7 +168,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                 baseline_status = ts.get_status(BASELINE_PHASE)
                 if ( build_status == TEST_FAIL_STATUS or run_status == TEST_FAIL_STATUS or baseline_status == TEST_FAIL_STATUS):
                     param = "EXEROOT" if build_status == TEST_FAIL_STATUS else "RUNDIR"
-                    log_src_dir = CIME.utils.run_cmd_no_fail("./xmlquery {} --value".format(param), from_dir=os.path.dirname(test_path))
+                    log_src_dir = run_cmd_no_fail("./xmlquery {} --value".format(param), from_dir=os.path.dirname(test_path))
 
                     log_dst_dir = os.path.join(log_dir, "{}_{}_logs".format(test_name, param))
                     os.makedirs(log_dst_dir)
@@ -174,8 +185,8 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (os.path.exists(tarball)):
                 os.remove(tarball)
 
-            CIME.utils.run_cmd_no_fail("tar -cf - {} | gzip -c".format(log_dir), arg_stdout=tarball)
-            base64 = CIME.utils.run_cmd_no_fail("base64 {}".format(tarball))
+            run_cmd_no_fail("tar -cf - {} | gzip -c".format(log_dir), arg_stdout=tarball)
+            base64 = run_cmd_no_fail("base64 {}".format(tarball))
 
             xml_text = \
 r"""<?xml version="1.0" encoding="UTF-8"?>
@@ -259,7 +270,7 @@ NightlyStartTime: {5} UTC
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
 
-    CIME.utils.run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
+    run_cmd_no_fail("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
 def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists, ignore_memleak):
@@ -299,7 +310,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
 ###############################################################################
 def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False, ignore_memleak=False):
 ###############################################################################
-    results = Queue.Queue()
+    results = queue.Queue()
 
     for test_path in test_paths:
         t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak))
@@ -337,22 +348,24 @@ def wait_for_tests(test_paths,
                    ignore_memleak=False,
                    cdash_build_name=None,
                    cdash_project=ACME_MAIN_CDASH,
-                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP):
+                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
+                   timeout=None):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
     set_up_signal_handlers()
 
-    test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak)
+    with Timeout(timeout, action=signal_handler):
+        test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists, ignore_memleak)
 
     all_pass = True
-    for test_name, test_data in sorted(test_results.iteritems()):
+    for test_name, test_data in sorted(test_results.items()):
         test_path, test_status = test_data
         logging.info("Test '{}' finished with status '{}'".format(test_name, test_status))
         logging.info("    Path: {}".format(test_path))
         all_pass &= test_status == TEST_PASS_STATUS
 
-    if (cdash_build_name):
+    if cdash_build_name:
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)
 
     return all_pass

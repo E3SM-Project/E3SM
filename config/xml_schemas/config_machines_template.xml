@@ -27,8 +27,17 @@
     <MPILIBS>mpt,openmpi,impi</MPILIBS>
 
     <!-- PROJECT: A project or account number used for batch jobs
+         This value is used for directory names. If different from
+         actual accounting project id, use CHARGE_ACCOUNT
 	 can be overridden in environment or $HOME/.cime/config -->
     <PROJECT>couldbethis</PROJECT>
+
+    <!-- CHARGE_ACCOUNT: A project or account number used for batch jobs
+	 This is the actual project used for cost accounting set in
+         the batch script (ex. #PBS -A charge_account). Will default
+         to PROJECT if not set.
+	 can be overridden in environment or $HOME/.cime/config -->
+    <CHARGE_ACCOUNT></CHARGE_ACCOUNT>
 
     <!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
@@ -75,12 +84,12 @@
 
     <!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
 	 shared memory node on this machine,
-	 should always be >= PES_PER_NODE -->
+	 should always be >= MAX_MPITASKS_PER_NODE -->
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 
-    <!-- PES_PER_NODE: number of physical PES per shared node on
+    <!-- MAX_MPITASKS_PER_NODE: number of physical PES per shared node on
 	 this machine, in practice the MPI tasks per node will not exceed this value -->
-    <PES_PER_NODE>36</PES_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
 
     <!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
 	 the batch system?  See PROJECT above -->
@@ -103,6 +112,7 @@
     <!-- module system: allowed module_system type values are:
 	 module  http://www.tacc.utexas.edu/tacc-projects/mclay/lmod
 	 soft http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html
+         none
       -->
     <module_system type="module">
       <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/perl</init_path>
@@ -142,5 +152,9 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
+    <!-- resource settings as defined in https://docs.python.org/2/library/resource.html -->
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 </config_machines>

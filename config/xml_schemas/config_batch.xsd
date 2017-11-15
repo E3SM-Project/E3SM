@@ -10,16 +10,20 @@
 
   <!-- simple elements -->
   <xs:element name="batch_submit" type="xs:string"/>
+  <xs:element name="batch_cancel" type="xs:string"/>
   <xs:element name="batch_redirect" type="xs:string"/>
+  <xs:element name="batch_env" type="xs:string"/>
   <xs:element name="batch_directive" type="xs:string"/>
   <xs:element name="jobid_pattern" type="xs:string"/>
   <xs:element name="depend_string" type="xs:string"/>
+  <xs:element name="depend_separator" type="xs:string"/>
   <xs:element name="walltime_format" type="xs:string"/>
   <xs:element name="batch_mail_flag" type="xs:string"/>
   <xs:element name="batch_mail_type_flag" type="xs:string"/>
   <xs:element name="batch_mail_type" type="xs:string"/>
+  <xs:element name="batch_mail_default" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
-  <xs:element name="task_count" type="xs:NMTOKEN"/>
+  <xs:element name="task_count" type="xs:integer"/>
   <xs:element name="dependency" type="xs:string"/>
   <xs:element name="prereq" type="xs:string"/>
 
@@ -45,9 +49,15 @@
   <!-- batch_submit: The command used to submit jobs in this batch_system. -->
         <xs:element minOccurs="0" ref="batch_submit"/>
 
+  <!-- batch_cancel: The command used to cancel jobs in this batch_system. -->
+        <xs:element minOccurs="0" ref="batch_cancel"/>
+
   <!-- batch_redirect: some batch systems (lsf) require the script to be read from stdin,
        this is the shell redirect to handle that -->
         <xs:element minOccurs="0" ref="batch_redirect"/>
+
+  <!-- batch_env: The flag passed to submit command to set environment variable; only use if batch system doesn't support normal option passing -->
+        <xs:element minOccurs="0" ref="batch_env"/>
 
   <!-- batch_directive: The prefix used for batch directives in script comments -->
         <xs:element minOccurs="0" ref="batch_directive"/>
@@ -60,6 +70,9 @@
        a previous job has completed successfully -->
         <xs:element minOccurs="0" ref="depend_string"/>
 
+  <!-- depend_separator: How to separate multiple batch job dependencies -->
+        <xs:element minOccurs="0" ref="depend_separator"/>
+
   <!-- walltime_format: time format expected by batch system for the wall clock time field -->
         <xs:element minOccurs="0" ref="walltime_format"/>
 
@@ -69,6 +82,8 @@
         <xs:element minOccurs="0" ref="batch_mail_type_flag"/>
   <!-- batch_mail_flag: user email type expected by batch system -->
         <xs:element minOccurs="0" ref="batch_mail_type"/>
+  <!-- batch_mail_flag: default user email type -->
+        <xs:element minOccurs="0" ref="batch_mail_default"/>
 
   <!-- submit_args: A list of arguments to pass when submitting a job, queue, wallclock time
        and project are typical sub fields -->
@@ -79,7 +94,7 @@
         <xs:element minOccurs="0" ref="directives"/>
 
   <!-- queues: The list of queue options for this machine, not all system queues need be listed
-       attributes of this field include walltimemin, walltimemax, jobmin and jobmax and strict
+       attributes of this field include walltimemin, walltimemax, nodemin and nodemax and strict
     default wallclock time for a job is the walltimemax in this field -->
         <xs:element minOccurs="0" ref="queues"/>
       </xs:sequence>
@@ -142,8 +157,8 @@
         <xs:extension base="xs:NCName">
           <xs:attribute name="default" type="xs:boolean"/>
           <xs:attribute name="strict" type="xs:boolean"/>
-          <xs:attribute name="jobmax" type="xs:integer"/>
-          <xs:attribute name="jobmin" type="xs:integer"/>
+          <xs:attribute name="nodemax" type="xs:integer"/>
+          <xs:attribute name="nodemin" type="xs:integer"/>
           <xs:attribute name="jobname" type="xs:NCName"/>
           <xs:attribute name="walltimemax"/>
           <xs:attribute name="walltimemin"/>
@@ -164,7 +179,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="template"/>
-        <xs:element ref="task_count"/>
+        <xs:element minOccurs="0" ref="task_count"/>
         <xs:element minOccurs="0" ref="dependency"/>
         <xs:element ref="prereq"/>
       </xs:sequence>

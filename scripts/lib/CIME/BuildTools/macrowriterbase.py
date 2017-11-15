@@ -13,6 +13,9 @@ more.
 import os
 from abc import ABCMeta, abstractmethod
 from CIME.XML.standard_module_setup import *
+from CIME.utils import get_cime_root
+from six import add_metaclass
+
 logger = logging.getLogger(__name__)
 
 def _get_components(value):
@@ -68,6 +71,7 @@ def _get_components(value):
 
     return components
 
+@add_metaclass(ABCMeta)
 class MacroWriterBase(object):
 
     """Abstract base class for macro file writers.
@@ -100,8 +104,6 @@ class MacroWriterBase(object):
     end_ifeq
     """
 
-    __metaclass__ = ABCMeta
-
     indent_increment = 2
 
     def __init__(self, output):
@@ -131,7 +133,7 @@ class MacroWriterBase(object):
 
         A trailing newline is added, whether or not the input has one.
         """
-        self.output.write(unicode(self.indent_string() + line + "\n"))
+        self.output.write(str(self.indent_string() + line + "\n"))
 
     @abstractmethod
     def environment_variable_string(self, name):
@@ -206,7 +208,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:
         if not item in macros and item in os.environ:
-            logger.warn("Setting {} from Environment".format(item))
+            logger.warning("Setting {} from Environment".format(item))
             macros[item] = os.environ[item]
 
     with open(macros_file, "w") as fd:
@@ -221,7 +223,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
             fd.write("#\n# Makefile Macros \n")
 
             # print the settings out to the Macros file
-            for key, value in sorted(macros.iteritems()):
+            for key, value in sorted(macros.items()):
                 if key == "_COND_":
                     pass
                 elif key.startswith("ADD_"):
@@ -234,6 +236,7 @@ def write_macros_file_v1(macros, compiler, os_, machine, macros_file="Macros", o
 '''#
 # cmake Macros generated from $compiler_file
 #
+set(CMAKE_MODULE_PATH %s)
 include(Compilers)
 set(CMAKE_C_FLAGS_RELEASE "" CACHE STRING "Flags used by c compiler." FORCE)
 set(CMAKE_C_FLAGS_DEBUG "" CACHE STRING "Flags used by c compiler." FORCE)
@@ -241,12 +244,12 @@ set(CMAKE_Fortran_FLAGS_RELEASE "" CACHE STRING "Flags used by Fortran compiler.
 set(CMAKE_Fortran_FLAGS_DEBUG "" CACHE STRING "Flags used by Fortran compiler." FORCE)
 set(all_build_types "None Debug Release RelWithDebInfo MinSizeRel")
 set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: ${all_build_types}." FORCE)
-''')
+''' % os.path.join(get_cime_root(), "src", "CMake"))
 
             # print the settings out to the Macros file, do it in
             # two passes so that path values appear first in the
             # file.
-            for key, value in sorted(macros.iteritems()):
+            for key, value in sorted(macros.items()):
                 if key == "_COND_":
                     pass
                 else:
@@ -254,10 +257,13 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                     if key.endswith("_PATH"):
                         if value.startswith("$"):
                             value = "$ENV{}".format(value[1:])
-                        fd.write("set({} {})\n".format(key, value))
+
+
+                        cmake_var = key.replace("NETCDF_PATH", "NetCDF_PATH").replace("PNETCDF_PATH", "Pnetcdf_PATH")
+                        fd.write("set({} {})\n".format(cmake_var, value))
                         fd.write("list(APPEND CMAKE_PREFIX_PATH {})\n\n".format(value))
 
-            for key, value in sorted(macros.iteritems()):
+            for key, value in sorted(macros.items()):
                 if key == "_COND_":
                     pass
                 else:
@@ -268,6 +274,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
 
                             idx = 0
                             for is_shell, component in components:
+                                component = component.replace("NETCDF", "NetCDF").replace("PNETCDF_PATH", "Pnetcdf_PATH")
                                 if is_shell:
                                     fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
                                     fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "${{TEMP{:d}}}")\n'.format(idx, idx))
@@ -281,13 +288,13 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                             fd.write('set(TEMP "{}")\n'.format(value))
 
                         if "CFLAGS" in key:
-                            fd.write("add_flags(CMAKE_C_FLAGS ${TEMP})\n\n")
+                            fd.write("add_flags(CFLAGS ${TEMP})\n\n")
                         elif "FFLAGS" in key:
-                            fd.write("add_flags(CMAKE_Fortran_FLAGS ${TEMP})\n\n")
+                            fd.write("add_flags(FFLAGS ${TEMP})\n\n")
                         elif "CPPDEFS" in key:
-                            fd.write("list(APPEND COMPILE_DEFINITIONS ${TEMP})\n\n")
+                            fd.write("list(APPEND CPPDEFS ${TEMP})\n\n")
                         elif "SLIBS" in key or "LDFLAGS" in key:
-                            fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS ${TEMP})\n\n")
+                            fd.write("add_flags(LDFLAGS ${TEMP})\n\n")
 
         # Recursively print the conditionals, combining tests to avoid repetition
         _parse_hash(macros["_COND_"], fd, 0, output_format)
@@ -295,10 +302,10 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
 
 def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
     width = 2 * depth
-    for key, value in macros.iteritems():
+    for key, value in macros.items():
         if type(value) is dict:
             if output_format == "make" or "DEBUG" in key:
-                for key2, value2 in value.iteritems():
+                for key2, value2 in value.items():
                     if output_format == "make":
                         fd.write("{}ifeq ($({}), {}) \n".format(" " * width, key, key2))
 

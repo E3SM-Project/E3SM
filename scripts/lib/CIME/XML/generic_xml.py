@@ -4,9 +4,8 @@ be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
-from xml.dom import minidom
-
 import getpass
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +46,12 @@ class GenericXML(object):
         Read and parse an xml file into the object
         """
         logger.debug("read: " + infile)
-        if self.tree:
-            self.root.append(ET.parse(infile).getroot())
-        else:
-            self.tree = ET.parse(infile)
-            self.root = self.tree.getroot()
+        with open(infile, 'r') as fd:
+            if self.tree:
+                self.root.append(ET.parse(fd).getroot())
+            else:
+                self.tree = ET.parse(fd)
+                self.root = self.tree.getroot()
 
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
@@ -79,9 +79,8 @@ class GenericXML(object):
         if xmllint is not None:
             run_cmd_no_fail("{} --format --output {} -".format(xmllint, outfile), input_str=xmlstr)
         else:
-            doc = minidom.parseString(xmlstr)
             with open(outfile,'w') as xmlout:
-                doc.writexml(xmlout,addindent='  ')
+                xmlout.write(xmlstr)
 
     def get_node(self, nodename, attributes=None, root=None, xpath=None):
         """
@@ -124,9 +123,9 @@ class GenericXML(object):
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
 
-            for key, value in attributes.iteritems():
+            for key, value in attributes.items():
                 if value is not None:
-                    expect(isinstance(value, basestring),
+                    expect(isinstance(value, six.string_types),
                            " Bad value passed for key {}".format(key))
                     xpath = ".//{}[@{}=\'{}\']".format(nodename, key, value)
                     logger.debug("xpath is {}".format(xpath))
@@ -197,8 +196,8 @@ class GenericXML(object):
         '4'
         >>> obj.get_resolved_value("0001-01-01")
         '0001-01-01'
-        >>> obj.get_resolved_value("$SHELL{echo hi}")
-        'hi'
+        >>> obj.get_resolved_value("$SHELL{echo hi}") == 'hi'
+        True
         """
         logger.debug("raw_value {}".format(raw_value))
         reference_re = re.compile(r'\${?(\w+)}?')
@@ -210,7 +209,7 @@ class GenericXML(object):
         if item_data is None:
             return None
 
-        if type(item_data) is not str:
+        if not isinstance(item_data, six.string_types):
             return item_data
 
         for m in env_ref_re.finditer(item_data):
@@ -268,7 +267,7 @@ class GenericXML(object):
             logger.debug("Checking file {} against schema {}".format(filename, schema))
             run_cmd_no_fail("{} --noout --schema {} {}".format(xmllint, schema, filename))
         else:
-            logger.warn("xmllint not found, could not validate file {}".format(filename))
+            logger.warning("xmllint not found, could not validate file {}".format(filename))
 
     def get_element_text(self, element_name, attributes=None, root=None, xpath=None):
         element_node = self.get_optional_node(element_name, attributes, root, xpath)
@@ -284,6 +283,7 @@ class GenericXML(object):
         return None
 
     def get_raw_record(self, root=None):
+        logger.debug("writing file {}".format(self.filename))
         if root is None:
             root = self.root
         try:

@@ -1348,13 +1348,13 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
          if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
          if (trim(cime_model) == 'acme') then
-            if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
+            if = f_wfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
          else if (trim(cime_model) == 'cesm') then
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
          end if
       end do
       if (trim(cime_model) == 'acme') then
-         budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX * shr_const_rhoice * shr_const_latice
+         budg_dataL(f_hfrz,ic,ip) = -budg_dataL(f_wfrz,ic,ip) * shr_const_latice
       else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
       end if
@@ -1689,7 +1689,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
          if (trim(cime_model) == 'acme') then
-            if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
+            if = f_wfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
          else if (trim(cime_model) == 'cesm') then
             if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
          end if
@@ -1719,7 +1719,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       if (trim(cime_model) == 'acme') then
-         budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
+         budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
       else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
@@ -1728,7 +1728,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       if (trim(cime_model) == 'acme') then
-         budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
+         budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
       else if (trim(cime_model) == 'cesm') then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if

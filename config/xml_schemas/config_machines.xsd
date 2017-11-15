@@ -5,7 +5,7 @@
   <xs:attribute name="MACH" type="xs:NCName"/>
   <xs:attribute name="compiler" type="xs:string"/>
   <xs:attribute name="mpilib" type="xs:string"/>
-  <xs:attribute name="debug" type="xs:boolean"/>
+  <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
   <xs:attribute name="unit_testing" type="xs:boolean"/>
   <xs:attribute name="type" type="xs:NCName"/>
@@ -13,12 +13,19 @@
   <xs:attribute name="name" type="xs:NCName"/>
 
   <!-- simple elements -->
+  <xs:simpleType name="upperBoolean">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="TRUE"/>
+      <xs:enumeration value="FALSE"/>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:element name="NODENAME_REGEX" type="xs:string"/>
   <xs:element name="DESC" type="xs:string"/>
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
   <xs:element name="PROJECT" type="xs:NCName" />
+  <xs:element name="CHARGE_ACCOUNT" type="xs:NCName" />
   <xs:element name="COMPILERS" type="xs:string"/>
   <xs:element name="MPILIBS" type="xs:string"/>
   <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
@@ -32,7 +39,8 @@
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
-  <xs:element name="PES_PER_NODE" type="xs:integer"/>
+  <xs:element name="MAX_MPITASKS_PER_NODE" type="xs:integer"/>
+  <xs:element name="COSTPES_PER_NODE" type="xs:integer"/>
   <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
   <xs:element name="GMAKE" type="xs:string"/>
   <xs:element name="TESTS" type="xs:string"/>
@@ -71,6 +79,9 @@
 	<!-- PROJECT: A project or account number used for batch jobs
 	  can be overridden in environment or $HOME/.cime/config -->
 	<xs:element ref="PROJECT" minOccurs="0" maxOccurs="1"/>
+	<!-- CHARGE_ACCOUNT: The name of the account to charge for batch jobs
+	  can be overridden in environment or $HOME/.cime/config -->
+	<xs:element ref="CHARGE_ACCOUNT" minOccurs="0" maxOccurs="1"/>
 	<!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
 	<xs:element ref="SAVE_TIMING_DIR" minOccurs="0" maxOccurs="1"/>
 	<!-- CIME_OUTPUT_ROOT: Base directory for case output,
@@ -101,9 +112,11 @@
 	<!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
 	     shared memory node on this machine-->
         <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
-	<!-- PES_PER_NODE: number of physical PES per shared node on
+	<!-- MAX_MPITASKS_PER_NODE: number of physical PES per shared node on
 	     this machine, in practice the MPI tasks per node will not exceed this value -->
-        <xs:element ref="PES_PER_NODE" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="MAX_MPITASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
+	<!-- Optional cost factor per node unit -->
+        <xs:element ref="COSTPES_PER_NODE" minOccurs="0" maxOccurs="1"/>
 	<!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
 	     the batch system?  See PROJECT above -->
         <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>
@@ -116,6 +129,7 @@
 	<!-- environment_variables: environment_variables to set on this system,
 	  see detail below-->
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
       </xs:sequence>
       <xs:attribute ref="MACH" use="required"/>
     </xs:complexType>
@@ -167,7 +181,7 @@
         <xs:element maxOccurs="unbounded" ref="command"/>
       </xs:sequence>
       <xs:attribute ref="compiler" />
-      <xs:attribute ref="debug" />
+      <xs:attribute ref="DEBUG" />
       <xs:attribute ref="mpilib"/>
     </xs:complexType>
   </xs:element>
@@ -181,13 +195,27 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
-      <xs:attribute ref="debug"/>
+      <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="resource_limits">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="resource"/>
+      </xs:sequence>
+      <xs:attribute ref="DEBUG"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
+
   <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="resource">
     <xs:complexType mixed="true">
       <xs:attribute ref="name" use="required"/>
     </xs:complexType>

@@ -75,24 +75,32 @@ end subroutine shr_mem_init
 
 !===============================================================================
 
-subroutine shr_mem_getusage(r_msize,r_mrss)
+subroutine shr_mem_getusage(r_msize,r_mrss,prt)
 
    implicit none
 
    !----- arguments ---
    real(shr_kind_r8) :: r_msize,r_mrss
+   logical, optional :: prt
 
    !----- local ---
    integer :: msize,mrss
    integer :: mshare,mtext,mdatastack
    integer :: ierr
-   integer :: GPTLget_memusage
+   integer :: GPTLget_memusage, GPTLprint_memusage
 
    !---------------------------------------------------
 
    ierr = GPTLget_memusage (msize, mrss, mshare, mtext, mdatastack)
    r_msize = msize*mb_blk
    r_mrss  = mrss*mb_blk
+
+   if (present(prt)) then
+      if (prt) then
+         ierr = GPTLprint_memusage(' ')
+      endif
+   endif
+
 
 end subroutine shr_mem_getusage
 

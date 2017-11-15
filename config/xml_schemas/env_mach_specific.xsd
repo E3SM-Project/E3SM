@@ -5,7 +5,7 @@
 <xs:attribute name="version" type="xs:decimal"/>
 <xs:attribute name="lang" type="xs:NCName"/>
 <xs:attribute name="compiler" type="xs:string"/>
-<xs:attribute name="debug" type="xs:boolean"/>
+<xs:attribute name="DEBUG" type="upperBoolean"/>
 <xs:attribute name="mpilib" type="xs:string"/>
 <xs:attribute name="SMP_PRESENT" type="xs:string"/>
 <xs:attribute name="value" type="xs:string"/>
@@ -17,6 +17,17 @@
 <xs:element name="type" type="xs:NCName"/>
 <xs:element name="desc" type="xs:string"/>
 
+<!--  simple types -->
+<!-- For historical and user-interface reasons, we have uppercase TRUE and
+            FALSE all over the place. This means we have to define an enumeration
+     instead of using "xs:boolean". -->
+<xs:simpleType name="upperBoolean">
+  <xs:restriction base="xs:token">
+    <xs:enumeration value="TRUE"/>
+    <xs:enumeration value="FALSE"/>
+  </xs:restriction>
+</xs:simpleType>
+
 <!-- complex elements -->
 
   <xs:element name="file">
@@ -25,6 +36,7 @@
         <xs:element ref="header"/>
         <xs:element ref="module_system"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="entry"/>
       </xs:sequence>
@@ -62,14 +74,14 @@
         <xs:element maxOccurs="unbounded" ref="command"/>
       </xs:sequence>
       <xs:attribute ref="compiler" />
-      <xs:attribute ref="debug" />
+      <xs:attribute ref="DEBUG" />
       <xs:attribute ref="mpilib"/>
     </xs:complexType>
   </xs:element>
 
   <xs:element name="command">
     <xs:complexType mixed="true">
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="name" use="required" type="xs:string"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="environment_variables">
@@ -77,14 +89,28 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
-      <xs:attribute ref="debug"/>
+      <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="resource_limits">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="resource"/>
+      </xs:sequence>
+      <xs:attribute ref="DEBUG"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="unit_testing"/>
       <xs:attribute ref="SMP_PRESENT"/>
     </xs:complexType>
   </xs:element>
-  <xs:element name="env">
+  <xs:element name="resource">
     <xs:complexType mixed="true">
       <xs:attribute name="name" use="required" type="xs:NCName"/>
     </xs:complexType>

@@ -113,10 +113,10 @@ def print_pelayout(case, ntasks, nthreads, rootpes, arg_format, header):
     comp_classes = case.get_values("COMP_CLASSES")
 
     if (header is not None):
-        print header
+        print(header)
     # End if
     for comp in comp_classes:
-        print format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], arg_format)
+        print(format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], arg_format))
     # End for
 
 # End def print_pelayout

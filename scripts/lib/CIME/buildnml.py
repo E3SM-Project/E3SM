@@ -78,7 +78,7 @@ def build_xcpl_nml(case, caseroot, compname):
         if ninst == 1:
             filename = os.path.join(rundir, "{}_in".format(compname))
         else:
-            filename = os.path.join(rundir, "{}_in_{:4.4d}".format(compname, i))
+            filename = os.path.join(rundir, "{}_in_{:04d}".format(compname, i))
 
         with open(filename, 'w') as infile:
             infile.write("{:<20d} ! i-direction global dimension\n".format(nx))
@@ -98,7 +98,7 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
         with open(user_nl_file, "r") as file_usernl:
             lines_input = file_usernl.readlines()
     else:
-        logger.warn("WARNING: No file {} found in case directory".format(user_nl_file))
+        logger.warning("WARNING: No file {} found in case directory".format(user_nl_file))
 
     lines_output = []
     lines_output.append("&comp_inparm \n")

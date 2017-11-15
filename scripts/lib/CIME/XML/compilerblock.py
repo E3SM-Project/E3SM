@@ -201,7 +201,7 @@ class CompilerBlock(object):
         variables that this setting depends on.
         """
         # Attributes on an element are the conditions on that element.
-        conditions = dict(elem.items())
+        conditions = dict(list(elem.items()))
         if self._compiler is not None:
             conditions["COMPILER"] = self._compiler
         # Deal with internal markup.

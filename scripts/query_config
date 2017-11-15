@@ -18,10 +18,10 @@ import CIME.XML.machines
 
 import re, argparse, doctest
 
-###############################################################################
 def query_grids(long_output):
-###############################################################################
-
+    """
+    query all grids.
+    """
     files = Files()
     config_file = files.get_value("GRIDS_SPEC_FILE")
     expect(os.path.isfile(config_file),
@@ -33,10 +33,10 @@ def query_grids(long_output):
     else:
         grids.print_values()
 
-###############################################################################
 def query_machines(machine_name='all'):
-###############################################################################
-
+    """
+    query machines. Defaule: all
+    """
     files = Files()
     config_file = files.get_value("MACHINES_SPEC_FILE")
     expect(os.path.isfile(config_file),
@@ -45,10 +45,10 @@ def query_machines(machine_name='all'):
     machines = Machines(config_file, machine="Query")
     machines.print_values(machine_name=machine_name)
 
-###############################################################################
 def query_compsets(name):
-###############################################################################
-
+    """
+    query compset definition give a compset name
+    """
     # Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
     files, components = get_compsets()
     match_found = None
@@ -74,10 +74,10 @@ def query_compsets(name):
         print_compset(name, files)
 
 def print_compset(name, files, all_components=False):
-    '''
+    """
     print compsets associated with the component name, but if all_components is true only
     print the details if the associated component is available
-    '''
+    """
 
     # Determine the config_file for the target component
     config_file = files.get_value("COMPSETS_SPEC_FILE", attribute={"component":name})
@@ -92,7 +92,7 @@ def print_compset(name, files, all_components=False):
     elif config_file is None or not os.path.isfile(config_file):
         return
 
-    print "\nActive component: {}".format(name)
+    print("\nActive component: {}".format(name))
     # Now parse the compsets file and write out the compset alias and longname as well as the help text
     # determine component xml content
     compsets = Compsets(config_file)
@@ -100,6 +100,9 @@ def print_compset(name, files, all_components=False):
     compsets.print_values(arg_help=False)
 
 def query_all_components():
+    """
+    query all components
+    """
     files, components = get_components()
     # Loop through the elements for each component class (in config_files.xml)
     for comp in components:
@@ -110,10 +113,10 @@ def query_all_components():
         for item in components:
             query_component(item, all_components=True)
 
-###############################################################################
 def query_component(name, all_components=False):
-###############################################################################
-
+    """
+    query a component by name
+    """
     # Determine the valid component classes (e.g. atm) for the driver/cpl
     # These are then stored in comps_array
     files, components = get_components()
@@ -141,7 +144,7 @@ def query_component(name, all_components=False):
         expect(config_exists,
                "Cannot find config_file {} on disk".format(config_file))
     elif all_components and not config_exists:
-        print "WARNING: Couldn't find config_file {} on disk".format(config_file)
+        print("WARNING: Couldn't find config_file {} on disk".format(config_file))
         return
     # If name is not a valid argument - exit with error
     expect(match_found,
@@ -155,10 +158,10 @@ def query_component(name, all_components=False):
     component = Component(config_file, "CPL")
     component.print_values()
 
-###############################################################################
 def parse_command_line(args, description):
-###############################################################################
-
+    """
+    parse command line arguments
+    """
     cime_model = CIME.utils.get_model()
 
     parser = ArgumentParser(description=description)
@@ -220,26 +223,27 @@ def parse_command_line(args, description):
     return args
 
 def get_compsets():
-    '''
+    """
     Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
-    '''
+    """
     files = Files()
     return files, files.get_components("COMPSETS_SPEC_FILE")
 
 def get_components():
-    '''
+    """
     Determine the valid component classes (e.g. atm) for the driver/cpl
     These are then stored in comps_array
-    '''
+    """
     files = Files()
     infile = files.get_value("CONFIG_CPL_FILE")
     config_drv = Component(infile, "CPL")
     return files, config_drv.get_valid_model_components()
 
-# we override the error message from ArgumentParser to have a more helpful
-# message in the case of missing arguments
 class ArgumentParser(argparse.ArgumentParser):
-
+    """
+    we override the error message from ArgumentParser to have a more helpful
+    message in the case of missing arguments
+    """
     def error(self, message):
         self.print_usage(sys.stderr)
         # missing argument
@@ -264,9 +268,10 @@ class ArgumentParser(argparse.ArgumentParser):
         # for all other errors
         self.exit(2, '{}: error: {}\n'.format(self.prog, message))
 
-# we overide print_values from Machines to add current in machine description
 class Machines(CIME.XML.machines.Machines):
-
+    """
+    we overide print_values from Machines to add current in machine description
+    """
     def print_values(self, machine_name='all'): # pylint: disable=arguments-differ
         # set flag to look for single machine
         if 'all' not in machine_name:
@@ -280,41 +285,41 @@ class Machines(CIME.XML.machines.Machines):
         if single_machine and machine_name is None:
             files = Files()
             config_file = files.get_value("MACHINES_SPEC_FILE")
-            print "Machine is not listed in config file: {}".format(config_file)
+            print("Machine is not listed in config file: {}".format(config_file))
         else:  # write out machines
             machines = self.get_nodes(nodename="machine")
-            print  "Machine(s)"
+            print("Machine(s)")
             for machine in machines:
                 name = machine.get("MACH")
                 desc = machine.find("DESC")
                 os_  = machine.find("OS")
                 compilers = machine.find("COMPILERS")
                 max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-                pes_per_node = machine.find("PES_PER_NODE")
+                max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
 
                 current_machine = self.probe_machine_name(warn=False)
                 if not single_machine:
                     name += " (current)" if current_machine and current_machine in name else ""
-                    print  "  {} : {} ".format(name, desc.text)
-                    print  "      os             ", os_.text
-                    print  "      compilers      ",compilers.text
-                    if pes_per_node is not None:
-                        print  "      pes/node       ",pes_per_node.text
+                    print("  {} : {} ".format(name, desc.text))
+                    print("      os             ", os_.text)
+                    print("      compilers      ",compilers.text)
+                    if max_mpitasks_per_node is not None:
+                        print("      pes/node       ",max_mpitasks_per_node.text)
                     if max_tasks_per_node is not None:
-                        print  "      max_tasks/node ",max_tasks_per_node.text
+                        print("      max_tasks/node ",max_tasks_per_node.text)
                 elif single_machine and machine_name in name:
-                    print  "  {} : {} ".format(name, desc.text)
-                    print  "      os             ", os_.text
-                    print  "      compilers      ",compilers.text
-                    if pes_per_node is not None:
-                        print  "      pes/node       ",pes_per_node.text
+                    print("  {} : {} ".format(name, desc.text))
+                    print("      os             ", os_.text)
+                    print("      compilers      ",compilers.text)
+                    if max_mpitasks_per_node is not None:
+                        print("      pes/node       ",max_mpitasks_per_node.text)
                     if max_tasks_per_node is not None:
-                        print  "      max_tasks/node ",max_tasks_per_node.text
+                        print("      max_tasks/node ",max_tasks_per_node.text)
 
-###############################################################################
 def _main_func(description):
-###############################################################################
-
+    """
+    main function
+    """
     args = parse_command_line(sys.argv, description)
 
     if args.grids:
@@ -332,8 +337,6 @@ def _main_func(description):
     if args.machines is not None:
         query_machines(machine_name=args.machines)
 
-
-###############################################################################
-
+# main entry point
 if __name__ == "__main__":
     _main_func(__doc__)

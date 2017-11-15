@@ -9,6 +9,7 @@ they can be run outside the context of TestScheduler.
 """
 
 import traceback, stat, threading, time, glob
+from collections import OrderedDict
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
@@ -87,7 +88,7 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None):
     ###########################################################################
         self._cime_root       = CIME.utils.get_cime_root()
         self._cime_model      = get_model()
@@ -99,6 +100,9 @@ class TestScheduler(object):
         self._input_dir       = input_dir
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
+
+        self._mail_user = mail_user
+        self._mail_type = mail_type
 
         self._machobj = Machines(machine=machine_name)
 
@@ -192,13 +196,13 @@ class TestScheduler(object):
         # Each test has it's own value and setting/retrieving items from a dict
         # is atomic, so this should be fine to use without mutex.
         # name -> (phase, status)
-        self._tests = {}
+        self._tests = OrderedDict()
         for test_name in test_names:
             self._tests[test_name] = (TEST_START, TEST_PASS_STATUS)
 
         # Oversubscribe by 1/4
         if proc_pool is None:
-            pes = int(self._machobj.get_value("PES_PER_NODE"))
+            pes = int(self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
             self._proc_pool = int(pes * 1.25)
         else:
             self._proc_pool = int(proc_pool)
@@ -217,15 +221,27 @@ class TestScheduler(object):
 
         if use_existing:
             for test in self._tests:
-                ts = TestStatus(self._get_test_dir(test))
-                for phase, status in ts:
-                    if phase in CORE_PHASES:
-                        if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
-                            # We need to pick up here
-                            break
-                        else:
-                            self._update_test_status(test, phase, TEST_PEND_STATUS)
-                            self._update_test_status(test, phase, status)
+                with TestStatus(self._get_test_dir(test)) as ts:
+                    for phase, status in ts:
+                        if phase in CORE_PHASES:
+                            if status in [TEST_PEND_STATUS, TEST_FAIL_STATUS]:
+                                if status == TEST_FAIL_STATUS:
+                                    # Import for potential subsequent waits
+                                    ts.set_status(phase, TEST_PEND_STATUS)
+
+                                # We need to pick up here
+                                break
+
+                            else:
+                                if phase != SUBMIT_PHASE:
+                                    # Somewhat subtle. Create_test considers submit/run to be the run phase,
+                                    # so don't try to update test status for a passed submit phase
+                                    self._update_test_status(test, phase, TEST_PEND_STATUS)
+                                    self._update_test_status(test, phase, status)
+
+                                    if phase == RUN_PHASE:
+                                        logger.info("Test {} passed and will not be re-run".format(test))
+
                 logger.info("Using existing test directory {}".format(self._get_test_dir(test)))
         else:
             # None of the test directories should already exist.
@@ -238,6 +254,10 @@ class TestScheduler(object):
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
+
+    ###########################################################################
+    def get_testnames(self):
+        return list(self._tests.keys())
 
     ###########################################################################
     def _log_output(self, test, output):
@@ -356,9 +376,13 @@ class TestScheduler(object):
         _, case_opts, grid, compset,\
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
 
-        create_newcase_cmd = "{} --case {} --res {} --mach {} --compiler {} --compset {}"\
-                               " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
-                                                test_dir, grid, machine, compiler, compset)
+        create_newcase_cmd = "{} --case {} --res {} --compset {}"\
+                             " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
+                                              test_dir, grid, compset)
+        if machine is not None:
+            create_newcase_cmd += " --machine {}".format(machine)
+        if compiler is not None:
+            create_newcase_cmd += " --compiler {}".format(compiler)
         if self._project is not None:
             create_newcase_cmd += " --project {} ".format(self._project)
         if self._output_root is not None:
@@ -387,19 +411,30 @@ class TestScheduler(object):
             create_newcase_cmd += " --user-mods-dir {}".format(test_mod_file)
 
         mpilib = None
+        ninst = 1
+        ncpl = 1
         if case_opts is not None:
             for case_opt in case_opts: # pylint: disable=not-an-iterable
                 if case_opt.startswith('M'):
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib {}".format(mpilib)
                     logger.debug (" MPILIB set to {}".format(mpilib))
-                if case_opt.startswith('N'):
+                elif case_opt.startswith('N'):
+                    expect(ncpl == 1,"Cannot combine _C and _N options")
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst {}".format(ninst)
                     logger.debug (" NINST set to {}".format(ninst))
-                if case_opt.startswith('P'):
+                elif case_opt.startswith('C'):
+                    expect(ninst == 1,"Cannot combine _C and _N options")
+                    ncpl = case_opt[1:]
+                    create_newcase_cmd += " --ninst {} --multi-driver" .format(ncpl)
+                    logger.debug (" NCPL set to {}" .format(ncpl))
+                elif case_opt.startswith('P'):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
+                elif case_opt.startswith('V'):
+                    driver = case_opt[1:]
+                    create_newcase_cmd += " --driver {}".format(driver)
 
         # create_test mpilib option overrides default but not explicitly set case_opt mpilib
         if mpilib is None and self._mpilib is not None:
@@ -468,6 +503,8 @@ class TestScheduler(object):
         envtest.set_value("GENERATE_BASELINE", self._baseline_gen_name is not None)
         envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
+        tput_tolerance = self._machobj.get_value("TEST_TPUT_TOLERANCE", resolved=False)
+        envtest.set_value("TEST_TPUT_TOLERANCE", 0.25 if tput_tolerance is None else tput_tolerance)
 
         # Add the test instructions from config_test to env_test in the case
         config_test = Tests()
@@ -502,22 +539,28 @@ class TestScheduler(object):
                     envtest.set_test_parameter("STOP_OPTION",stop_option[opt])
                     opti = match.group(2)
                     envtest.set_test_parameter("STOP_N", opti)
+
                     logger.debug (" STOP_OPTION set to {}".format(stop_option[opt]))
                     logger.debug (" STOP_N      set to {}".format(opti))
 
-                elif opt.startswith('M'):
-                    # M option handled by create newcase
-                    continue
+                elif opt.startswith('R'):
+                    # R option is for testing in PTS_MODE or Single Column Model
+                    #  (SCM) mode
+                    envtest.set_test_parameter("PTS_MODE", "TRUE")
 
-                elif opt.startswith('P'):
-                    # P option handled by create newcase
-                    continue
+                    # For PTS_MODE, compile with mpi-serial
+                    envtest.set_test_parameter("MPILIB", "mpi-serial")
 
-                elif opt.startswith('N'):
-                    # handled in create_newcase
-                    continue
+                elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
+                      opt.startswith('M') or # handled in create_newcase
+                      opt.startswith('P') or # handled in create_newcase
+                      opt.startswith('N') or # handled in create_newcase
+                      opt.startswith('C') or # handled in create_newcase
+                      opt.startswith('V')):  # handled in create_newcase
+                    pass
+
                 elif opt.startswith('IOP'):
-                    logger.warn("IOP test option not yet implemented")
+                    logger.warning("IOP test option not yet implemented")
                 else:
                     expect(False, "Could not parse option '{}' ".format(opt))
 
@@ -572,10 +615,14 @@ class TestScheduler(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
+
+        cmd = "./case.submit --skip-preview-namelist"
         if self._no_batch:
-            cmd = "./case.submit --no-batch --skip-preview-namelist"
-        else:
-            cmd = "./case.submit --skip-preview-namelist"
+            cmd += " --no-batch"
+        if self._mail_user:
+            cmd += " --mail-user={}".format(self._mail_user)
+        if self._mail_type:
+            cmd += " -M={}".format(",".join(self._mail_type))
 
         return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
@@ -630,7 +677,7 @@ class TestScheduler(object):
         expect(len(threads_in_flight) <= self._parallel_jobs, "Oversubscribed?")
         finished_tests = []
         while not finished_tests:
-            for test, thread_info in threads_in_flight.iteritems():
+            for test, thread_info in threads_in_flight.items():
                 if not thread_info[0].is_alive():
                     finished_tests.append((test, thread_info[1]))
 
@@ -701,12 +748,14 @@ class TestScheduler(object):
             num_threads_launched_this_iteration = 0
             for test in self._tests:
                 logger.debug("test_name: " + test)
-                # If we have no workers available, immediately wait
-                if len(threads_in_flight) == self._parallel_jobs:
-                    self._wait_for_something_to_finish(threads_in_flight)
 
                 if self._work_remains(test):
                     work_to_do = True
+
+                    # If we have no workers available, immediately break out of loop so we can wait
+                    if len(threads_in_flight) == self._parallel_jobs:
+                        break
+
                     if test not in threads_in_flight:
                         test_phase, test_status = self._get_test_data(test)
                         expect(test_status != TEST_PEND_STATUS, test)

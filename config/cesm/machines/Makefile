@@ -413,7 +413,7 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   # The following is for the COSP simulator code:
-  COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
 endif
 
 ifeq ($(MODEL),cam)
@@ -427,7 +427,7 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 
 
 ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE)
 $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
 	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
@@ -557,7 +557,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
 	      -D PIO_ENABLE_TESTS:BOOL=OFF \
-	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/externals/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
+	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
@@ -792,6 +792,39 @@ endif
 
 %.F90: %.F90.in
 	$(CIMEROOT)/src/externals/genf90/genf90.pl $< > $@
+
+clean_dependsatm:
+	$(RM) -f $(EXEROOT)/atm/obj/Srcfiles
+
+clean_dependscpl:
+	$(RM) -f $(EXEROOT)/cpl/obj/Srcfiles
+
+clean_dependsocn:
+	$(RM) -f $(EXEROOT)/ocn/obj/Srcfiles
+
+clean_dependswav:
+	$(RM) -f $(EXEROOT)/wav/obj/Srcfiles
+
+clean_dependsglc:
+	$(RM) -f $(EXEROOT)/glc/obj/Srcfiles
+
+clean_dependsice:
+	$(RM) -f $(EXEROOT)/ice/obj/Srcfiles
+
+clean_dependsrof:
+	$(RM) -f $(EXEROOT)/rof/obj/Srcfiles
+
+clean_dependsesp:
+	$(RM) -f $(EXEROOT)/esp/obj/Srcfiles
+
+clean_dependslnd:
+	$(RM) -f $(LNDOBJDIR)/Srcfiles
+
+clean_dependscsmshare:
+	$(RM) -f $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/Srcfiles
+
+clean_depends: clean_dependsatm clean_dependscpl clean_dependswav clean_dependsglc clean_dependsice clean_dependsrof clean_dependslnd clean_dependscsmshare clean_dependsesp
+
 
 cleanatm:
 	$(RM) -f $(LIBROOT)/libatm.a

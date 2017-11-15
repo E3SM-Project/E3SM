@@ -32,7 +32,7 @@ Here are two examples of how to invoke **xmlchange**:
    xmlchange <entry id>=<value>
    -- OR --
    xmlchange -id <entry id> -val <name> -file <filename>
-   
+
 The ``-id`` argument identifies the variable to be changed, and ``-val`` is the intended value of that variable. See the **help** text for more usage information:
 ::
 
@@ -47,30 +47,37 @@ Customizing the PE layout
 
 Settings in the **env_mach_pes.xml** file determine:
 
-- the number of processors and OpenMP threads for each component.
+- the number of MPI tasks and OpenMP threads for each component.
 - the number of instances of each component.
 - the layout of the components across the hardware processors.
 
 Optimizing the throughput and efficiency of a CIME experiment often involves customizing the processor (PE) layout. (See :ref:`load balancing <optimizing-processor-layout>`.)
 CIME provides significant flexibility with respect to the layout of components across different hardware processors. In general, the CIME components -- atm, lnd, ocn, and so on -- can run on overlapping or mutually unique processors. While each component is associated with a unique MPI communicator, the CIME driver runs on the union of all processors and controls the sequencing and hardware partitioning.
 
-The component processor layout is determined by three settings:
+The component processor layout is determined by the following settings:
 
 - the number of MPI tasks.
 - the number of OpenMP threads per task.
-- the total MPI processor number from the global set.
+- the root MPI task number from the global communicator.
+- the maximum number of MPI tasks per node.
 
 The entries in **env_mach_pes.xml** have the following meanings:
 
-   ========  ====================================================================================
-   NTASKS    Total number of MPI tasks; a negative value indicates nodes rather than tasks.
-   NTHRDS    Number of OpenMP threads per MPI task.
-   ROOTPE    The global MPI task of the component root task; if negative, indicates nodes rather than tasks.
-   PSTRID    The stride of MPI tasks across the global set of pes (for now set to 1).
-   NINST     The number of component instances, which are spread evenly across NTASKS.
-   ========  ====================================================================================
+.. csv-table:: "Entries in env_mach_pes.xml"
+   :header: "xml variable", "description"
+   :widths: 25, 75
 
-**Example**
+   "MAX_TASKS_PER_MODE",  "The total number of (MPI tasks) * (OpenMP threads) allowed on a node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified."
+   "MAX_MPITASKS_PER_NODE", "The maximum number of MPI tasks per node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified."
+   "NTASKS", "Total number of MPI tasks. A negative value indicates nodes rather than tasks, where MAX_MPITASKS_PER_NODE * -NTASKS equals the number of MPI tasks."
+   "NTHRDS", "Number of OpenMP threads per MPI task."
+   "ROOTPE", "The global MPI task of the component root task; if negative, indicates nodes rather than tasks."
+   "PSTRID", "The stride of MPI tasks across the global set of pes (for now set to 1)."
+   "NINST", "The number of component instances, which are spread evenly across NTASKS."
+
+----------------
+**Example 1**
+----------------
 
 If a component has **NTASKS=16**, **NTHRDS=4** and **ROOTPE=32**, it will run on 64 hardware processors using 16 MPI tasks and 4 threads per task starting at global MPI task 32.
 
@@ -102,11 +109,20 @@ The first 16 tasks are each threaded 4 ways for the atmosphere. CIME ensures tha
 
 If you had set ``ROOTPE_OCN`` to 64 in this example, a total of 176 processors would be requested, the atmosphere would be laid out on the first 64 hardware processors in 16x4 fashion, and the ocean model would be laid out on hardware processors 113-176. Hardware processors 65-112 would be allocated but completely idle.
 
+----------------
+**Example 2**
+----------------
+
+If a component has **NTASKS=-2**, **NTHRDS=4** and **ROOTPE=0**, **MAX_MPITASKS_PER_NODE=4**, **MAX_TASKS_PER_NODE=4**, it will run on (8 MPI tasks * 4 threads) = 32 hardware processors on 8 nodes.
+
+If you intended 2 nodes INSTEAD of 8 nodes, then you would change **MAX_MPITASKS_PER_NODE=1** (using **xmlchange**).
+
+
 **Note**: **env_mach_pes.xml** *cannot* be modified after **case.setup** has been invoked without first running the following:
 ::
 
    case.setup --clean
-   
+
 .. _changing-driver-namelists:
 
 ===================================================
@@ -148,7 +164,7 @@ The namelist file for DATM is **datm_in** (or **datm_in_NNN** for multiple insta
 - To modify the contents of a DATM stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
   1. Make a *copy* of the file with the string *"user_"* prepended.
-        ``> cp datm.streams.txt.[extension] user_datm.streams.txt[extension.`` 
+        ``> cp datm.streams.txt.[extension] user_datm.streams.txt[extension.``
   2. **Change the permissions of the file to be writeable.** (chmod 644)
         ``chmod 644 user_datm.streams.txt[extension``
   3. Edit the **user_datm.streams.txt.*** file.
@@ -171,7 +187,7 @@ The namelist file for DOCN is **docn_in** (or **docn_in_NNN** for multiple insta
 - To modify the contents of a DOCN stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
   1. Make a *copy* of the file with the string *"user_"* prepended.
-        ``> cp docn.streams.txt.[extension] user_docn.streams.txt[extension.`` 
+        ``> cp docn.streams.txt.[extension] user_docn.streams.txt[extension.``
   2. **Change the permissions of the file to be writeable.** (chmod 644)
         ``chmod 644 user_docn.streams.txt[extension``
   3. Edit the **user_docn.streams.txt.*** file.
@@ -194,7 +210,7 @@ The namelist file for DICE is ``dice_in`` (or ``dice_in_NNN`` for multiple insta
 - To modify the contents of a DICE stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
   1. Make a *copy* of the file with the string *"user_"* prepended.
-        ``> cp dice.streams.txt.[extension] user_dice.streams.txt[extension.`` 
+        ``> cp dice.streams.txt.[extension] user_dice.streams.txt[extension.``
   2. **Change the permissions of the file to be writeable.** (chmod 644)
         ``chmod 644 user_dice.streams.txt[extension``
   3. Edit the **user_dice.streams.txt.*** file.
@@ -212,7 +228,7 @@ The namelist file for DLND is ``dlnd_in`` (or ``dlnd_in_NNN`` for multiple insta
 - To modify the contents of a DLND stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
   1. Make a *copy* of the file with the string *"user_"* prepended.
-        ``> cp dlnd.streams.txt.[extension] user_dlnd.streams.txt[extension.`` 
+        ``> cp dlnd.streams.txt.[extension] user_dlnd.streams.txt[extension.``
   2. **Change the permissions of the file to be writeable.** (chmod 644)
         ``chmod 644 user_dlnd.streams.txt[extension``
   3. Edit the **user_dlnd.streams.txt.*** file.
@@ -230,7 +246,7 @@ The namelist file for DROF is ``drof_in`` (or ``drof_in_NNN`` for multiple insta
 - To modify the contents of a DROF stream file, first run **preview_namelists** to list the *streams.txt* files in the **CaseDocs/** directory. Then, in the same directory:
 
   1. Make a *copy* of the file with the string *"user_"* prepended.
-        ``> cp drof.streams.txt.[extension] user_drof.streams.txt[extension.`` 
+        ``> cp drof.streams.txt.[extension] user_drof.streams.txt[extension.``
   2. **Change the permissions of the file to be writeable.** (chmod 644)
         ``chmod 644 user_drof.streams.txt[extension``
   3. Edit the **user_drof.streams.txt.*** file.
@@ -248,7 +264,7 @@ CAM's `configure <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ 
 
   `CAM_CONFIG_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_
   `CAM_NAMELIST_OPTS <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_
-  `CAM_NML_USECASE <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ 
+  `CAM_NML_USECASE <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_
 
 For complete documentation of namelist settings, see `CAM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_.
 
@@ -321,10 +337,8 @@ In addition, **cesm_setup** generates POP2's compile-time `block decomposition v
 
 CISM
 ----
-See `CISM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ for a complete description of the CISM runtime namelist variables. This includes variables that appear both in **cism_in** and in **cism.config**. 
+See `CISM namelist variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_ for a complete description of the CISM runtime namelist variables. This includes variables that appear both in **cism_in** and in **cism.config**.
 
 To modify any of these settings, add the appropriate keyword/value pair at the end of the **user_nl_cism** file. (See the documentation for each file at the top of that file.) To see the result of your change, call **preview_namelists** and verify that the changes appear correctly in **CaseDocs/cism_in** and **CaseDocs/cism.config**.
 
 Some CISM runtime settings are sets via **env_run.xml**, as documented in `CISM runtime variables <http://www.cesm.ucar.edu/models/cesm2.0/external-link-here>`_. The model resolution, for example, is set via ``CISM_GRID``. The value of ``CISM_GRID`` determines the default value of a number of other namelist parameters.
-
-
