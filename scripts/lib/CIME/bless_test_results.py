@@ -9,7 +9,7 @@ import os, glob, time, six
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def bless_namelists(test_name, report_only, force, baseline_name, baseline_root):
+def bless_namelists(test_name, test_dir, report_only, force, baseline_name, baseline_root):
 ###############################################################################
     # Be aware that restart test will overwrite the original namelist files
     # with versions of the files that should not be blessed. This forces us to
@@ -19,6 +19,15 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     logger.info("Test '{}' had namelist diff".format(test_name))
     if (not report_only and
         (force or six.moves.input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
+
+        if baseline_name is None:
+            baseline_name = run_cmd_no_fail("./xmlquery --value BASELINE_NAME_CMP", from_dir=test_dir)
+            if not baseline_name:
+                baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
+
+        if baseline_root is None:
+            baseline_root = run_cmd_no_fail("./xmlquery --value BASELINE_ROOT", from_dir=test_dir)
+
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
         stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
         if stat != 0:
@@ -29,13 +38,18 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
         return True, None
 
 ###############################################################################
-def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, compiler, report_only, force):
+def bless_history(test_name, test_dir, baseline_name, baseline_root, report_only, force):
 ###############################################################################
-    with Case(testcase_dir_for_test) as case:
-        if get_model() == "acme":
-            baseline_full_dir = os.path.join(baseline_root, compiler, baseline_name, case.get_value("CASEBASEID"))
-        else:
-            baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
+    with Case(test_dir) as case:
+        if baseline_name is None:
+            baseline_name = case.get_value("BASELINE_NAME_CMP")
+            if not baseline_name:
+                baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
+
+        if baseline_root is None:
+            baseline_root = case.get_value("BASELINE_ROOT")
+
+        baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
 
         cmp_result, cmp_comments = compare_baseline(case, baseline_dir=baseline_full_dir, outfile_suffix=None)
         if cmp_result:
@@ -59,7 +73,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
 def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False,
                        report_only=False, force=False, bless_tests=None, no_skip_pass=False):
 ###############################################################################
-    test_id_glob = "*{}*{}*".format(compiler, baseline_name) if test_id is None else "*{}".format(test_id)
+    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}".format(test_id)
     test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
     expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
 
@@ -119,7 +133,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
                 # Bless namelists
                 if nl_bless:
-                    success, reason = bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
+                    success, reason = bless_namelists(test_name, test_dir, report_only, force, baseline_name, baseline_root)
                     if not success:
                         broken_blesses.append((test_name, reason))
 
@@ -129,7 +143,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
                         success = False
                         reason = "HOMME tests cannot be blessed with bless_for_tests"
                     else:
-                        success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, compiler, report_only, force)
+                        success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, report_only, force)
 
                     if (not success):
                         broken_blesses.append((test_name, reason))
