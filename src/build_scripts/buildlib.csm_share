@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from standard_script_setup import *
-from CIME.utils import run_cmd_no_fail
+from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging
 from CIME.case import Case
-import shutil, glob, filecmp
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -42,20 +42,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-def file_len(fname):
-    """ Number of lines in file fname """
-    i=0
-    with open(fname) as f:
-        for i, _ in enumerate(f):
-            pass
-    return i + 1
-
-def copyifnewer(src, dest):
-    """ if dest does not exist or is older than src copy src to dest """
-    if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
-        shutil.copy2(src, dest)
-
-
 
 def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
@@ -85,8 +71,11 @@ def buildlib(bldroot, installpath, caseroot):
 
         filepathfile = os.path.join(libdir, "Filepath")
         # if the filepathfile has a different number of lines than filepath, replace it
+        file_len = 0
+        if os.path.isfile(filepathfile):
+            file_len = len(open(filepathfile).readlines())
 
-        if not os.path.isfile(filepathfile) or len(filepath) != file_len(filepathfile):
+        if len(filepath) != file_len:
             with open(filepathfile, "w") as fd:
                 for path in filepath:
                     fd.write("{}\n".format(path))
@@ -127,14 +116,11 @@ def buildlib(bldroot, installpath, caseroot):
         gmake_cmd = case.get_value("GMAKE")
 
         cmd = "{} {}".format(gmake_cmd, gmake_opts)
-        logger.info("make cmd is {}".format(cmd))
-        output = run_cmd_no_fail(cmd)
-        logger.info(output)
+        run_bld_cmd_ensure_logging(cmd, logger)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
     buildlib(bldroot, installpath, caseroot)
-
 
 if (__name__ == "__main__"):
     if ("--test" in sys.argv):

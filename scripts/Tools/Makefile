@@ -61,11 +61,13 @@ endif
 
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
-# trilinos library.
+# trilinos library or the Albany library.
+USE_CXX = false
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
    USE_CXX = true
-else
-   USE_CXX = false
+endif
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+   USE_CXX = true
 endif
 
 ifndef MOD_SUFFIX
@@ -76,7 +78,7 @@ endif
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
 
-CPPDEFS := $(USER_CPPDEFS)
+CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifneq ($(strip $(DEBUG)),TRUE)
@@ -88,6 +90,8 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
+CPPDEFS += -DMCT_INTERFACE
+
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
 else
@@ -98,37 +102,35 @@ ifeq ($(compile_threaded), true)
 endif
 
 ifeq (,$(EXEROOT))
-  EXEROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
+  EXEROOT = $(shell ./xmlquery EXEROOT -value)
 endif
 ifeq (,$(BUILD_THREADED))
-  BUILD_THREADED = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+  BUILD_THREADED = $(shell ./xmlquery BUILD_THREADED -value)
 endif
 
 ifeq (,$(LIBROOT))
-  LIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
+  LIBROOT = $(shell ./xmlquery LIBROOT -value)
 endif
 ifeq (,$(SHAREDLIBROOT))
-  SHAREDLIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
+  SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
 endif
 ifeq (,$(COMPILER))
-  COMPILER = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
+  COMPILER = $(shell ./xmlquery COMPILER -value)
 endif
 ifeq (,$(NINST_VALUE))
-  NINST_VALUE = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) NINST_VALUE --value)
+  NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
 endif
 ifeq (,$(MPILIB))
-  MPILIB = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
+  MPILIB = $(shell ./xmlquery MPILIB -value)
 endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
 endif
 
-
-
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
-INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 
 include $(CASEROOT)/Macros.make
 # Decide whether to use a C++ or Fortran linker, based on whether we
@@ -218,9 +220,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-  ifdef PNETCDF_PATH
-    undefine PNETCDF_PATH
-  endif
+	ifdef PNETCDF_PATH
+		undefine PNETCDF_PATH
+	endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)
@@ -231,6 +233,25 @@ else
     endif
   endif
 endif
+# Set PETSc info if it is being used
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  ifdef PETSC_PATH
+    ifndef INC_PETSC
+      INC_PETSC:=$(PETSC_PATH)/include
+    endif
+    ifndef LIB_PETSC
+      LIB_PETSC:=$(PETSC_PATH)/lib
+    endif
+  else
+    $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
+  endif
+
+  # Get the "PETSC_LIB" list an env var
+  include $(PETSC_PATH)/lib/petsc/conf/variables
+
+endif
+
+# Set Trilinos info if it is being used
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
     ifndef INC_TRILINOS
@@ -248,6 +269,41 @@ ifeq ($(strip $(USE_TRILINOS)), TRUE)
   include $(INC_TRILINOS)/Makefile.export.Trilinos
 endif
 
+# Set Albany info if it is being used
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  ifdef ALBANY_PATH
+    ifndef INC_ALBANY
+      INC_ALBANY:=$(ALBANY_PATH)/include
+    endif
+    ifndef LIB_ALBANY
+      LIB_ALBANY:=$(ALBANY_PATH)/lib
+    endif
+  else
+    $(error ALBANY_PATH must be defined when USE_ALBANY is TRUE)
+  endif
+
+  # get the "ALBANY_LINK_LIBS" list as an env var
+  include $(ALBANY_PATH)/export_albany.in
+endif
+
+# Set MOAB info if it is being used
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  ifdef MOAB_PATH
+    CPPDEFS += -DHAVE_MOAB
+    ifndef INC_MOAB
+      INC_MOAB:=$(MOAB_PATH)/include
+    endif
+    ifndef LIB_MOAB
+      LIB_MOAB:=$(MOAB_PATH)/lib
+    endif
+  else
+    $(error MOAB_PATH must be defined when USE_MOAB is TRUE)
+  endif
+
+  # get the "IMESH_LIBS" list as an env var
+  include $(LIB_MOAB)/iMesh-Defs.inc
+
+endif
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 
@@ -259,13 +315,23 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
   endif
 endif
 
+# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
+# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
+ifeq ($(PIO_VERSION),2)
+  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
+else
+  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
+  EXTRA_PIO_FPPDEFS := $(subst $(comma),\\$(comma),$(EXTRA_PIO_CPPDEFS))
+  EXTRA_PIO_FPPDEFS := $(patsubst -D%,$(CPRE)%,$(EXTRA_PIO_FPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
+  EXTRA_PIO_FPPDEFS := $(EXTRA_PIO_CPPDEFS)
 endif
-
 
 #===============================================================================
 # Set config args for pio and mct to blank and then enable serial
@@ -273,7 +339,6 @@ endif
 ifndef CONFIG_ARGS
   CONFIG_ARGS :=
 endif
-
 ifeq  ($(findstring pio,$(MODEL)),pio)
   CONFIG_ARGS+= --enable-timing
   ifeq ($DEBUG,TRUE)
@@ -301,7 +366,7 @@ ifeq ($(strip $(MPILIB)), mpi-serial)
   MPIFC   := $(SFC)
   MPICC   := $(SCC)
   MPICXX  := $(SCXX)
-  CONFIG_ARGS +=  MCT_PATH=$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial
+  CONFIG_ARGS += MCT_PATH=$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial
 else
   CC  := $(MPICC)
   FC  := $(MPIFC)
@@ -311,13 +376,11 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
-CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
-# This is needed so that dependancies are found
-VPATH+=$(CSM_SHR_INCLUDE)
+
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(CSM_SHR_INCLUDE)
+INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 
 ifeq ($(NETCDF_SEPARATE), false)
   INCLDIR += -I$(INC_NETCDF)
@@ -333,9 +396,46 @@ endif
 ifdef INC_PNETCDF
   INCLDIR += -I$(INC_PNETCDF)
 endif
+ifdef INC_PETSC
+  INCLDIR += -I$(INC_PETSC)
+endif
 ifdef INC_TRILINOS
   INCLDIR += -I$(INC_TRILINOS)
 endif
+ifdef INC_ALBANY
+  INCLDIR += -I$(INC_ALBANY)
+endif
+ifdef INC_MOAB
+  INCLDIR += -I$(INC_MOAB)
+endif
+
+ifeq ($(MODEL),driver)
+  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
+# nagfor and gcc have incompatible LDFLAGS.
+# nagfor requires the weird "-Wl,-Wl,," syntax.
+# If done in config_compilers.xml, we break MCT.
+  ifeq ($(strip $(COMPILER)),nag)
+     ifeq ($(NETCDF_SEPARATE), false)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
+     else ifeq ($(NETCDF_SEPARATE), true)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
+     endif
+  endif
+else
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(DEBUG), TRUE)
+      ifeq ($(strip $(MACH)),hobart)
+       # GCC needs to be able to link to
+       # nagfor runtime to get autoconf
+       # tests to work.
+         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+       endif
+    endif
+  endif
+endif
+
 
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
@@ -356,34 +456,7 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR += -I$(INSTALL_SHAREDPATH)/include
-
-ifeq ($(MODEL),driver)
-  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
-# nagfor and gcc have incompatible LDFLAGS.
-# nagfor requires the weird "-Wl,-Wl,," syntax.
-# If done in config_compilers.xml, we break MCT.
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(NETCDF_SEPARATE), false)
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
-    else ifeq ($(NETCDF_SEPARATE), true)
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
-    endif
-  endif
-else
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
-       # GCC needs to be able to link to
-       # nagfor runtime to get autoconf
-       # tests to work.
-	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
-       endif
-    endif
-  endif
-endif
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
@@ -392,8 +465,9 @@ CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
 
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
-		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
-		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" LDFLAGS="$(LDFLAGS)"
+                MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
+                CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
+                LDFLAGS="$(LDFLAGS)"
 
 ifeq ($(NETCDF_SEPARATE), false)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
@@ -410,23 +484,25 @@ FFLAGS += $(FPPDEFS)
 FFLAGS_NOOPT += $(FPPDEFS)
 
 
+
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-  # The following is for the COSP simulator code:
-  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+# The following is for the COSP simulator code:
+COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
 endif
 
 ifeq ($(MODEL),cam)
-   # These RRTMG files take an extraordinarily long time to compile with optimization.
-   # Until mods are made to read the data from files, just remove optimization from
-   # their compilation.
+  # These RRTMG files take an extraordinarily long time to compile with optimization.
+  # Until mods are made to read the data from files, just remove optimization from
+  # their compilation.
 rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+
 rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
 ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE)
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
 $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
 	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
@@ -448,11 +524,12 @@ endif
 
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
-
-ifeq ($(NETCDF_SEPARATE), false)
-  SLIBS += -L$(LIB_NETCDF) -lnetcdff -lnetcdf
-else ifeq ($(NETCDF_SEPARATE), true)
-  SLIBS += -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+ifndef SLIBS
+  ifeq ($(NETCDF_SEPARATE), false)
+    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+  else ifeq ($(NETCDF_SEPARATE), true)
+    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+  endif
 endif
 
 ifdef LIB_PNETCDF
@@ -481,10 +558,25 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
+# Add PETSc libraries
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  SLIBS += ${PETSC_LIB}
+endif
+
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
 # as well as all necessary third-party libraries
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   SLIBS += -L$(LIB_TRILINOS) $(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARIES)
+endif
+
+# Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
+# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_MOAB)), TRUE)
+  SLIBS += $(IMESH_LIBS)
 endif
 
 # Add libraries and flags that we need on the link line when C++ code is included
@@ -532,6 +624,7 @@ else
     PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1/pio
   endif
 endif
+#endif
 
 MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a
 
@@ -550,35 +643,29 @@ endif
 # FIXEDFLAGS, so that both free & fixed code can be built (cmake
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
-CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
-	      -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
-	      -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
-	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
-	      -D PIO_ENABLE_TESTS:BOOL=OFF \
+CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(INCLDIR)" \
+              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
+              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
+              -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+              -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
+              -D PIO_ENABLE_TESTS:BOOL=OFF \
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
   CMAKE_OPTS += -D NetCDF_PATH:PATH=$(NETCDF_PATH)
 else ifeq ($(NETCDF_SEPARATE), true)
+  # NETCDF_Fortran_DIR points to the separate
+  # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
-                -D NetCDF_Fortran_DIR:PATH=$(NETCDF_FORTRAN_PATH)
+                -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PnetCDF_PATH:STRING="$(PNETCDF_PATH)"
 else
-	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
-
-# NAG doesn't get along too nicely with PnetCDF Fortran interfaces.
-ifeq ($(COMPILER),nag)
-  ifeq ($(PIO_VERSION),1)
-	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
-  endif
-endif
-
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
 endif
@@ -593,9 +680,9 @@ ifndef CMAKE_ENV_VARS
   CMAKE_ENV_VARS :=
 endif
 CMAKE_ENV_VARS += CC=$(CC) \
-		  CXX=$(CXX) \
-		  FC=$(FC) \
-		  LDFLAGS="$(LDFLAGS)"
+                  CXX=$(CXX) \
+                  FC=$(FC) \
+                  LDFLAGS="$(LDFLAGS)"
 
 
 # We declare $(GLC_DIR)/Makefile to be a phony target so that cmake is
@@ -625,7 +712,7 @@ BASENAMES := $(basename $(basename $(SOURCES)))
 OBJS    := $(addsuffix .o, $(BASENAMES))
 INCS    := $(foreach dir,$(cpp_dirs),-I$(dir))
 
-CASETOOLS := $(CASEROOT)/Tools
+CURDIR := $(shell pwd)
 
 Depends: Srcfiles Deppath
 	$(CASETOOLS)/mkDepends $(USER_MKDEPENDS_OPTS) Deppath Srcfiles > $@
@@ -679,30 +766,25 @@ test_esmf: test_esmf.o
 	$(LD) -o $@ test_esmf.o $(LDFLAGS)
 
 #-------------------------------------------------------------------------------
-# create list of component libraries
-#------------------------------------------------------------------------------
-CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
-ifeq ($(CLMVER),$(null))
-  LNDOBJDIR = $(EXEROOT)/lnd/obj
-  LNDLIBDIR=$(LIBROOT)
-  LNDLIB := liblnd.a
-  INCLDIR += -I$(LNDOBJDIR)
-else
-  LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
-  LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
-  LNDLIB := libclm.a
-  INCLDIR += -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
-  ifeq ($(MODEL),clm)
-    INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
-  endif
-endif
-
+# create list of component libraries - hard-wired for current ccsm components
+#-------------------------------------------------------------------------------
 
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
      ULIBDEP += $(LIBROOT)/libatm.a
      ULIBDEP += $(LIBROOT)/libice.a
-     ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
+     ifeq ($(findstring clm5_0,$(CLM_CONFIG_OPTS)),clm5_0)
+          LNDLIB := libclm.a
+     else
+          ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
+               LNDLIB := libclm.a
+          else
+               LNDLIB := liblnd.a
+          endif
+     endif
+
+     ULIBDEP += $(LIBROOT)/$(LNDLIB)
+     INCLDIR += -I$(EXEROOT)/lnd/obj
      ULIBDEP += $(LIBROOT)/libocn.a
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
@@ -711,7 +793,7 @@ ifeq ($(ULIBDEP),$(null))
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
        ifeq ($(CISM_USE_TRILINOS), TRUE)
-	 ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
        endif
      endif
      ifeq ($(OCN_SUBMODEL),moby)
@@ -727,8 +809,8 @@ endif
 
 ifndef CLIBS
    ifdef ULIBDEP
-     # For each occurrence of something like /path/../foo/libbar.a in ULIBDEP,
-     # CLIBS will contain -L/path/../foo -lbar
+     # For each occurrence of something like /path/to/foo/libbar.a in ULIBDEP,
+     # CLIBS will contain -L/path/to/foo -lbar
      CLIBS := $(foreach LIBDEP,$(strip $(ULIBDEP)), -L$(dir $(LIBDEP)) $(patsubst lib%.a,-l%,$(notdir $(LIBDEP))))
    endif
 endif
@@ -785,7 +867,6 @@ endif
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
 .F90.o:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(CONTIGUOUS_FLAG) $<
-
 .cpp.o:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
@@ -840,13 +921,13 @@ cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
 	$(RM) -fr $(EXEROOT)/wav/obj
 
-cleanglc:
-	$(RM) -f $(LIBROOT)/libglc.a
-	$(RM) -fr $(EXEROOT)/glc
-
 cleanesp:
 	$(RM) -f $(LIBROOT)/libesp.a
 	$(RM) -fr $(EXEROOT)/esp/obj
+
+cleanglc:
+	$(RM) -f $(LIBROOT)/libglc.a
+	$(RM) -fr $(EXEROOT)/glc
 
 cleanice:
 	$(RM) -f $(LIBROOT)/libice.a
@@ -857,8 +938,8 @@ cleanrof:
 	$(RM) -fr $(EXEROOT)/rof/obj
 
 cleanlnd:
-	$(RM) -f $(LNDLIBDIR)/$(LNDLIB)
-	$(RM) -fr $(LNDOBJDIR)
+	$(RM) -f $(LIBROOT)/$(LNDLIB)
+	$(RM) -fr $(EXEROOT)/lnd/obj
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)
@@ -876,7 +957,7 @@ cleangptl:
 	$(RM) -f $(GPTLLIB)
 	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/gptl
 
-clean: cleanatm cleanocn cleanwav cleanglc cleanesp cleanice cleanrof cleanlnd
+clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd cleanesp
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 
@@ -884,7 +965,7 @@ realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH)
+    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
 endif
