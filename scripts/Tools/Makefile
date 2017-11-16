@@ -90,8 +90,6 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-CPPDEFS += -DMCT_INTERFACE
-
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
 else
@@ -100,28 +98,31 @@ endif
 ifeq ($(compile_threaded), true)
   CPPDEFS += -DTHREADED_OMP
 endif
+ifeq (,$(CIME_MODEL))
+  CIME_MODEL = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
+endif
 
 ifeq (,$(EXEROOT))
-  EXEROOT = $(shell ./xmlquery EXEROOT -value)
+  EXEROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
 endif
 ifeq (,$(BUILD_THREADED))
-  BUILD_THREADED = $(shell ./xmlquery BUILD_THREADED -value)
+  BUILD_THREADED = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
 endif
 
 ifeq (,$(LIBROOT))
-  LIBROOT = $(shell ./xmlquery LIBROOT -value)
+  LIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
 endif
 ifeq (,$(SHAREDLIBROOT))
-  SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
+  SHAREDLIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
 endif
 ifeq (,$(COMPILER))
-  COMPILER = $(shell ./xmlquery COMPILER -value)
+  COMPILER =  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 endif
 ifeq (,$(NINST_VALUE))
-  NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
+  NINST_VALUE =  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 endif
 ifeq (,$(MPILIB))
-  MPILIB = $(shell ./xmlquery MPILIB -value)
+  MPILIB = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
 endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
@@ -487,7 +488,7 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
 # The following is for the COSP simulator code:
-COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
+COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
 endif
 
 ifeq ($(MODEL),cam)
@@ -502,7 +503,7 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 
 
 ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE)
 $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
 	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
@@ -768,23 +769,40 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-
+CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
+ifeq ($(CIME_MODEL),cesm)
+  ifneq ($(CLMVER),$(null))
+    USE_SHARED_CLM=TRUE
+  else
+    USE_SHARED_CLM=FALSE
+  endif
+else
+  USE_SHARED_CLM=FALSE
+endif
+ifeq ($(USE_SHARED_CLM),FALSE)
+  LNDOBJDIR = $(EXEROOT)/lnd/obj
+  LNDLIBDIR=$(LIBROOT)
+  ifeq ($(CLMVER),$(null))
+    LNDLIB := liblnd.a
+  else
+    LNDLIB := libclm.a
+  endif
+  INCLDIR += -I$(LNDOBJDIR)
+else
+  LNDLIB := libclm.a
+  LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
+  LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
+  INCLDIR += -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  ifeq ($(MODEL),clm)
+    INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  endif
+endif
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
      ULIBDEP += $(LIBROOT)/libatm.a
      ULIBDEP += $(LIBROOT)/libice.a
-     ifeq ($(findstring clm5_0,$(CLM_CONFIG_OPTS)),clm5_0)
-          LNDLIB := libclm.a
-     else
-          ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
-               LNDLIB := libclm.a
-          else
-               LNDLIB := liblnd.a
-          endif
-     endif
-
-     ULIBDEP += $(LIBROOT)/$(LNDLIB)
-     INCLDIR += -I$(EXEROOT)/lnd/obj
+     ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
+     INCLDIR += -I$(LNDOBJDIR)
      ULIBDEP += $(LIBROOT)/libocn.a
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
