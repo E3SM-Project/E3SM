@@ -3,7 +3,7 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
-import errno, signal, traceback, warnings, filecmp
+import errno, signal, warnings, filecmp
 import stat as statlib
 import six
 from contextlib import contextmanager
@@ -249,15 +249,6 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
     except AttributeError:
         do_run_cmd = True
 
-    except BaseException as e:
-        if logfile:
-            msg = e.__str__()
-            excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
-            with open(logfile, "a") as fd:
-                fd.write(excmsg)
-
-        raise
-
     if do_run_cmd:
         logger.info("   Running {} ".format(cmd))
         if case is not None:
@@ -275,6 +266,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         # refresh case xml object from file
         if case is not None:
             case.read_xml()
+
     return stat, output, errput
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
@@ -1502,3 +1494,16 @@ class Timeout(object):
     def __exit__(self, *_):
         if self._seconds is not None:
             signal.alarm(0)
+
+def filter_unicode(unistr):
+    """
+    Sometimes unicode chars can cause problems
+    """
+    return "".join([i if ord(i) < 128 else ' ' for i in unistr])
+
+def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
+    arg_logger.info(cmd)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir)
+    arg_logger.info(output)
+    arg_logger.info(errput)
+    expect(stat == 0, filter_unicode(errput))
