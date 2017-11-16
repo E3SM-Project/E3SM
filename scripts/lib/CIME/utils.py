@@ -42,8 +42,6 @@ def redirect_stdout_stderr(new_target):
 
 @contextmanager
 def redirect_logger(new_target, logger_name):
-    old_stdout = sys.stdout
-    sys.stdout = new_target
     ch = logging.StreamHandler(stream=new_target)
     ch.setLevel(logging.DEBUG)
     log = logging.getLogger(logger_name)
@@ -58,7 +56,6 @@ def redirect_logger(new_target, logger_name):
     finally:
         root_log.handlers = orig_root_loggers
         log.handlers = orig_handlers
-        sys.stdout = old_stdout
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -1464,21 +1461,10 @@ def resolve_mail_type_args(args):
 
         args.mail_type = resolved_mail_types
 
-def file_len(fname):
-    """ Number of lines in file fname """
-    i=0
-    with open(fname) as f:
-        for i, _ in enumerate(f):
-            pass
-    return i + 1
-
 def copyifnewer(src, dest):
     """ if dest does not exist or is older than src copy src to dest """
     if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
         shutil.copy2(src, dest)
-
-
-
 
 class SharedArea(object):
     """

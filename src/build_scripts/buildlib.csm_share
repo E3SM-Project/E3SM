@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from standard_script_setup import *
-from CIME.utils import run_cmd_no_fail, file_len, copyifnewer
+from CIME.utils import run_cmd_no_fail, copyifnewer
 from CIME.case import Case
 import glob
 
@@ -71,8 +71,11 @@ def buildlib(bldroot, installpath, caseroot):
 
         filepathfile = os.path.join(libdir, "Filepath")
         # if the filepathfile has a different number of lines than filepath, replace it
+        file_len = 0
+        if os.path.isfile(filepathfile):
+            file_len = len(open(filepathfile).readlines())
 
-        if not os.path.isfile(filepathfile) or len(filepath) != file_len(filepathfile):
+        if len(filepath) != file_len:
             with open(filepathfile, "w") as fd:
                 for path in filepath:
                     fd.write("{}\n".format(path))
