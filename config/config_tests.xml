@@ -348,6 +348,19 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="LDSTA">
+    <DESC>Tests the short term archiver's last date functionality.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <HIST_OPTION>ndays</HIST_OPTION>
+    <REST_OPTION>ndays</REST_OPTION>
+    <STOP_N>10</STOP_N>
+    <HIST_N>1</HIST_N>
+    <REST_N>1</REST_N>
+    <RUN_STARTDATE>0001-12-29</RUN_STARTDATE>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="PRE">
     <DESC>pause/resume test, default 5 hours, five pause/resume cycles, no data modification</DESC>
     <INFO_DBUG>1</INFO_DBUG>
