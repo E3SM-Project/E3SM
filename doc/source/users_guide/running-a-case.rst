@@ -457,9 +457,9 @@ long-term archiver tool that supported mass tape storage and HPSS systems.
 However, with the industry migration away from tape archives, it is no longer
 feasible for CIME to support all the possible archival schemes available.
 
-============================
+================================================
 Data Assimilation and other External Processing
-============================
+================================================
 
 CIME provides a capability to run a task on the compute nodes either
 before or after the model run.  CIME also provides a data assimilation
@@ -467,9 +467,9 @@ capability which will cycle the model and then a user defined task for
 a user determined number of cycles.
 
 
----------------------
+-------------------------
 Pre and Post run scripts
----------------------
+-------------------------
 
 Variables ``PRERUN_SCRIPT`` and ``POSTRUN_SCRIPT`` can each be used to name
 a script which should be exectuted immediately prior starting or
@@ -480,9 +480,9 @@ directory.  If the script is written in python and contains a
 subroutine with the same name as the script, it will be called as a
 subroutine rather than as an external shell script.
 
----------------------
-Data Assimilatin scripts
----------------------
+-------------------------
+Data Assimilation scripts
+-------------------------
 
 Variables ``DATA_ASSIMILATION``, ``DATA_ASSIMILATION_SCRIPT``, and
 ``DATA_ASSIMILATION_CYCLES`` may also be used to externally control
