@@ -166,15 +166,15 @@ end subroutine prescribed_volcaero_readnl
 
     if (has_prescribed_volcaero) then
        if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
-          call pbuf_add_field(ext_sun_name,     'physpkg',dtype_r8,(/nswbands,pcols,pver/),idx) !BALLI- change hardwired 14 16 etc...
-          call pbuf_add_field(omega_sun_name,   'physpkg',dtype_r8,(/nswbands,pcols,pver/),idx)
-          call pbuf_add_field(g_sun_name,       'physpkg',dtype_r8,(/nswbands,pcols,pver/),idx)
+          call pbuf_add_field(ext_sun_name,     'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+          call pbuf_add_field(omega_sun_name,   'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+          call pbuf_add_field(g_sun_name,       'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
           
-          call pbuf_add_field(ext_earth_name,   'physpkg',dtype_r8,(/nlwbands,pcols,pver/),idx)
+          call pbuf_add_field(ext_earth_name,   'physpkg',dtype_r8,(/pcols,pver,nlwbands/),idx)
        endif
 
        call pbuf_add_field(volcaero_name,'physpkg',dtype_r8,(/pcols,pver/),idx) !BALLI- we have to initialize it for radiation codes....but why????
-       call pbuf_add_field(volcrad_name, 'physpkg',dtype_r8,(/pcols,pver/),idx)
+       call pbuf_add_field(volcrad_name, 'physpkg',dtype_r8,(/pcols,pver/),idx) !is it for reading rad properties which we don't need?
 
     endif
 

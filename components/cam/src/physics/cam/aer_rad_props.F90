@@ -254,7 +254,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(idx_sw_diag,:,:), trop_level, &
+      call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
                          tau, tau_w, tau_w_g, tau_w_f)
    else
       tau    (1:ncol,:,:) = 0._r8
@@ -462,7 +462,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
       do icol = 1, ncol
          ilev_tropp = trop_level(icol) !tropopause level
          lyr_thk    = state%zi(icol,ilev_tropp) - state%zi(icol,ilev_tropp+1)! in meters                                                                      
-         odap_aer(icol,ilev_tropp,:) = 0.5_r8*( odap_aer(icol,ilev_tropp,:) + (lyr_thk * ext_cmip6_lw(:,icol,ilev_tropp)) )
+         odap_aer(icol,ilev_tropp,:) = 0.5_r8*( odap_aer(icol,ilev_tropp,:) + (lyr_thk * ext_cmip6_lw(icol,ilev_tropp,:)) )
       enddo
       !As it will be more efficient for FORTRAN to loop over levels and then columns, the following loops
       !are nested keeping that in mind
@@ -471,7 +471,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
             ilev_tropp = trop_level(icol) !tropopause level
             if (ipver < ilev_tropp) then !BALLI: see if this is right!
                lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
-               odap_aer(icol,ipver,:) = lyr_thk * ext_cmip6_lw(:,icol,ipver)
+               odap_aer(icol,ipver,:) = lyr_thk * ext_cmip6_lw(icol,ipver,:)
             endif
          enddo
       enddo
@@ -733,7 +733,7 @@ subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, 
   type(physics_buffer_desc), pointer :: pbuf(:)
   
   integer,  intent(in) :: trop_level(pcols)
-  real(r8), intent(in) :: ext_cmip6_sw(nswbands,pcols,pver)
+  real(r8), intent(in) :: ext_cmip6_sw(pcols,pver,nswbands)
 
   !Intent-inout
   real(r8), intent(inout) :: tau    (pcols,0:pver,nswbands) ! aerosol extinction optical depth
@@ -773,15 +773,15 @@ subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, 
      
      lyr_thk = state%zi(icol,ilev_tropp) - state%zi(icol,ilev_tropp+1)
      
-     ext_unitless(:)  = lyr_thk * ext_cmip6_sw(:,icol,ilev_tropp)
-     asym_unitless(:) = af_cmip6_sw (:,icol,ilev_tropp)
-     ext_ssa(:)       = ext_unitless(:) * ssa_cmip6_sw(:,icol,ilev_tropp)
+     ext_unitless(:)  = lyr_thk * ext_cmip6_sw(icol,ilev_tropp,:)
+     asym_unitless(:) = af_cmip6_sw (icol,ilev_tropp,:)
+     ext_ssa(:)       = ext_unitless(:) * ssa_cmip6_sw(icol,ilev_tropp,:)
      ext_ssa_asym(:)  = ext_ssa(:) * asym_unitless(:)
      
      tau    (icol,ilev_tropp,:) = 0.5_r8 * ( tau    (icol,ilev_tropp,:) + ext_unitless(:) )
      tau_w  (icol,ilev_tropp,:) = 0.5_r8 * ( tau_w  (icol,ilev_tropp,:) + ext_ssa(:))
      tau_w_g(icol,ilev_tropp,:) = 0.5_r8 * ( tau_w_g(icol,ilev_tropp,:) + ext_ssa_asym(:))
-     tau_w_f(icol,ilev_tropp,:) = 0.5_r8 * ( tau_w_g(icol,ilev_tropp,:) + ext_ssa_asym(:) * asym_unitless(:))
+     tau_w_f(icol,ilev_tropp,:) = 0.5_r8 * ( tau_w_f(icol,ilev_tropp,:) + ext_ssa_asym(:) * asym_unitless(:))
   enddo
 
   !As it will be more efficient for FORTRAN to loop over levels and then columns, the following loops
@@ -793,9 +793,9 @@ subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, 
            
            lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
            
-           ext_unitless(:)  = lyr_thk * ext_cmip6_sw(:,icol,ipver)
-           asym_unitless(:) = af_cmip6_sw(:,icol,ipver)
-           ext_ssa(:)       = ext_unitless(:) * ssa_cmip6_sw(:,icol,ipver)
+           ext_unitless(:)  = lyr_thk * ext_cmip6_sw(icol,ipver,:)
+           asym_unitless(:) = af_cmip6_sw(icol,ipver,:)
+           ext_ssa(:)       = ext_unitless(:) * ssa_cmip6_sw(icol,ipver,:)
            ext_ssa_asym(:)  = ext_ssa(:) * asym_unitless(:)
            
            tau    (icol,ipver,:) = ext_unitless(:)

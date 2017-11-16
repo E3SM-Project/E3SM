@@ -29,7 +29,7 @@ module volc_rad_data
   integer :: cyc_ndx_beg, cyc_ndx_end, cyc_tsize, cyc_yr_in
   integer, allocatable :: pbuf_idx_sw(:), pbuf_idx_lw(:) !buffer index of all the radiation fields in pbuf
 
-  real(r8) :: neg_huge                                   !largest possible negative number
+  real(r8) :: neg_huge, one_yr                                   !largest possible negative number
 
   real(r8), allocatable :: lats(:), alts(:), alts_int(:), times(:) !input file dimension values
   
@@ -62,6 +62,8 @@ contains
     integer :: nswbnds_prscb, nlwbnds_prscb, year, month, day, idates
 
     integer, allocatable :: dates(:)
+
+    real(r8) :: time1, time2
 
 
     !BALLI- add comment
@@ -108,6 +110,20 @@ contains
 
     ierr = pio_inq_varid( piofile, 'month', old_dimid )
     ierr = pio_get_var( piofile, old_dimid, dates )
+    
+    call set_time_float_from_date( time2, 2, 1, 1, 0 )
+    call set_time_float_from_date( time1, 1, 1, 1, 0 )
+    one_yr = time2-time1
+
+    if (iscyclic) then
+       cyc_ndx_beg = -1
+       cyc_ndx_end = -1
+       if ( cyc_yr /= 0 ) then
+          call set_time_float_from_date( time1, cyc_yr  , 1, 1, 0 )
+          call set_time_float_from_date( time2, cyc_yr+1, 1, 1, 0 )
+          one_yr = time2-time1
+       endif
+    endif
     
     !compute times array
     need_first_ndx = .true. !for cyclic year only
@@ -174,7 +190,7 @@ contains
     lw_dimid = old_dimid
     ierr = pio_inq_dimlen( piofile, old_dimid, nlwbnds_prscb)
 
-    if(nswbands .ne. nswbnds_prscb .and. nlwbands .ne. nlwbnds_prscb) then
+    if(nswbands .ne. nswbnds_prscb .or. nlwbands .ne. nlwbnds_prscb) then
        write(iulog,*)'Bands in volc input file do not match the model bands'
        write(iulog,*)'Bands in volc input file:nswbands,nlwbands:',nswbnds_prscb,nlwbnds_prscb
        write(iulog,*)'Bands in model:nswbands,nlwbands:',nswbands,nlwbands
@@ -215,18 +231,9 @@ contains
     integer :: errcode, yr, mon, day, ncsec, it, itp1, banddim
 
     real(r8) :: datatimem, datatimep, curr_mdl_time, deltat, fact1, fact2
+    real(r8) :: wrk_sw(2,nalts,nlats,nswbands)  !PMC identified a bug here with a wrong order of dims, fixed now
+    real(r8) :: wrk_lw(2,nalts,nlats,nlwbands)
 
-!PMC bugfix: netcdf data being read in has dims (nalts,nlats,nbands)
-!(double-checked this 11/11/17 w/ pio_inquire_dimension) but was being 
-!assigned to arrays with dims (nbands,nlats,nalts). As a quick fix, read
-!in correct dims, then copy data to arrays with order used in rest of code.
-!In the longer term, the code should be modified to use the netcdf order.
-    real(r8) :: read_wrk_sw(2,nalts,nlats,nswbands)
-    real(r8) :: read_wrk_lw(2,nalts,nlats,nlwbands)
-    !dims expected by this code
-    real(r8) :: wrk_sw(2,nswbands,nlats,nalts) 
-    real(r8) :: wrk_lw(2,nlwbands,nlats,nalts)
-    integer :: i,j !for indexing in temporary bugfix
 
   !------------------------------------------------------------------------------------------------
 
@@ -257,17 +264,8 @@ contains
        !Get netcdf variable id for the field
        ierr = pio_inq_varid(piofile, trim(adjustl(specifier_sw(ifld))),var_id) !get id of the variable to read from iput file
 
-       ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, read_wrk_sw(1,:,:,:) )!BALLI: handle error?
-       ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, read_wrk_sw(2,:,:,:) )!BALLI: handle error?
-
-       !PMC bugfix: swap dimension order
-       !Note: read_wrk has dim=(time,nalts,nlats,nswbands) while wrk has dims=(time,nbands,nlats,nalts)
-       do i=1,nalts
-          do j=1,nlats
-             wrk_sw(:,:,j,i) = read_wrk_sw(:,i,j,:)
-             wrk_lw(:,:,j,i) = read_wrk_lw(:,i,j,:)
-          end do !for j=lats
-       end do !for i=alts
+       ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, wrk_sw(1,:,:,:) )!BALLI: handle error?
+       ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, wrk_sw(2,:,:,:) )!BALLI: handle error?
 
        !interpolate in lats, time and vertical
        call interpolate_lats_time_vert(state, wrk_sw, nswbands, pbuf_idx_sw(ifld), fact1, fact2, pbuf2d )
@@ -367,7 +365,7 @@ contains
     !--intent(in)
     type(physics_state), intent(in) :: state(begchunk:endchunk)
     integer,  intent(in) :: banddim, pbuf_idx
-    real(r8), intent(in) :: fact1, fact2, wrk(ntslc,banddim,nlats,nalts)
+    real(r8), intent(in) :: fact1, fact2, wrk(ntslc,nalts,nlats,banddim)
 
     !--intent (out)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -379,8 +377,8 @@ contains
     real(r8), parameter :: m2km  = 1.e-3_r8
 
     real(r8) :: wrk_1d(ntslc,pcols), to_lats(pcols)
-    real(r8) :: loc_arr(ntslc,banddim,pcols,nalts), datain(banddim,pcols,nalts)
-    real(r8) :: model_z(pverp),data_out_tmp(banddim,pcols,pver)    
+    real(r8) :: datain(pcols,nalts,banddim)
+    real(r8) :: model_z(pverp),data_out_tmp(pcols,pver,banddim)    
 
     real(r8), pointer :: data_out(:,:,:)
 
@@ -389,25 +387,25 @@ contains
        ncols = get_ncols_p(ichnk)
        call get_rlat_all_p(ichnk, pcols, to_lats)
        call lininterp_init(lats, nlats, to_lats, ncols, 1, lat_wgts)
-       do k = 1, nalts
-          do iband = 1 , banddim 
+       do iband = 1 , banddim 
+          do k = 1, nalts
              !lats interpolation
-             call lininterp(wrk(1,iband,:,k), nlats, wrk_1d(1,1:ncols), ncols, lat_wgts)
-             call lininterp(wrk(2,iband,:,k), nlats, wrk_1d(2,1:ncols), ncols, lat_wgts)
-             loc_arr(1,iband,1:ncols,k) = wrk_1d(1,1:ncols)
-             loc_arr(2,iband,1:ncols,k) = wrk_1d(2,1:ncols)
-             !time interpolation                                                                                                                                                                                              
-             datain(iband,1:ncols,k) = fact1*loc_arr(1,iband,1:ncols,k) + fact2*loc_arr(2,iband,1:ncols,k)
+             call lininterp(wrk(1,k,:,iband), nlats, wrk_1d(1,1:ncols), ncols, lat_wgts)
+             call lininterp(wrk(2,k,:,iband), nlats, wrk_1d(2,1:ncols), ncols, lat_wgts)
+
+             !time interpolation
+             datain(1:ncols,k,iband) = fact1*wrk_1d(1,1:ncols) + fact2*wrk_1d(2,1:ncols)
           end do
        enddo       
        call lininterp_finish(lat_wgts)
-       !vertical interpolation                                                                                                                                                                                 
-       do icol = 1, ncols
-          model_z(1:pverp) = m2km * state(ichnk)%zi(icol,pverp:1:-1)
-          do iband = 1, banddim
-             call rebin( nalts, pver, alts_int, model_z, datain(iband,icol,:), data_out_tmp(iband,icol,:) )
-             !flip in vertical
-             data_out(iband,icol,:) = data_out_tmp(iband,icol,pver:1:-1)
+       !vertical interpolation
+       do iband = 1, banddim
+          do icol = 1, ncols
+             !convert model's vertical coordinate from m to km and flip it to match data
+             model_z(1:pverp) = m2km * state(ichnk)%zi(icol,pverp:1:-1)
+             call rebin( nalts, pver, alts_int, model_z, datain(icol,:,iband), data_out_tmp(icol,:,iband) )
+             !flip in vertical to match model
+             data_out(icol,:,iband) = data_out_tmp(icol,pver:1:-1,iband)
           enddo
        enddo
     end do
