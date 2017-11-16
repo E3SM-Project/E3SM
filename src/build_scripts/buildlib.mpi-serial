@@ -71,8 +71,9 @@ def buildlib(bldroot, installpath, caseroot):
         logger.info(output)
 
         copyifnewer(os.path.join(bldroot, "libmpi-serial.a"), os.path.join(installpath, "lib", "libmpi-serial.a"))
-        for _file in ("mpi.h", "mpif.h", "mpi.mod"):
-            copyifnewer(os.path.join(bldroot, _file), os.path.join(installpath, "include", _file))
+        for _file in ("mpi.h", "mpif.h", "mpi.mod", "MPI.mod"):
+            if os.path.isfile(os.path.join(bldroot,_file)):
+                copyifnewer(os.path.join(bldroot, _file), os.path.join(installpath, "include", _file))
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
