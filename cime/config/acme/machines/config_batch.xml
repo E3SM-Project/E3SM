@@ -472,8 +472,9 @@
    <batch_system MACH="summitdev" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
-       <!-- <directive>-alloc_flags gpumps</directive> -->
+       <directive>-alloc_flags gpumps</directive>
      </directives>
+
      <queues>
        <queue walltimemax="01:00" nodemin="0" nodemax="54" default="true">batch</queue>
 	   <!--
