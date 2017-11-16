@@ -480,6 +480,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
          if (ocn_present) then
             gsmap         => component_get_gsmap_cx(ocn(1))
             x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+            dummy_pgibugfix = associated(x2oacc_ox)
             x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
             xao_ox        => prep_aoflux_get_xao_ox()
             call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
