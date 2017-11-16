@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from standard_script_setup import *
-from CIME.utils import run_cmd_no_fail, copyifnewer, file_len
+from CIME.utils import run_cmd_no_fail, copyifnewer
 from CIME.case import Case
 import glob
 
@@ -44,7 +44,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
-    my_installpath = os.path.join(installpath,"mct","mpi-serial")
     with Case(caseroot, read_only=False) as case:
         cimeroot = case.get_value("CIMEROOT")
         mct_dir = os.path.join(cimeroot,"src","externals","mct")
