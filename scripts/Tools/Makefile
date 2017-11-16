@@ -848,9 +848,14 @@ endif
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS)
+ifdef INCLUDE_DIR
+  $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-
+	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+else
+  $(COMPLIB): $(OBJS)
+	$(AR) -r $(COMPLIB) $(OBJS)
+endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
