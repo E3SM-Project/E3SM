@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+"""
+A script to split-off ACME's cime development and make it into a PR for ESMCI
+"""
+
+from standard_script_setup import *
+from acme_cime_mgmt import *
+from CIME.utils import expect
+
+import sys, os, argparse
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--verbose]
+OR
+{0} --help
+""".format(os.path.basename(args[0])),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("repo", nargs="?",
+                        help="Location of repo to use, default is based on current location")
+
+    parser.add_argument("--resume-one", action="store_true",
+                        help="Resume split after fixing conflicts at point one")
+
+    parser.add_argument("--resume-two", action="store_true",
+                        help="Resume split after fixing conflicts at point two")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    expect(not (args.resume_one and args.resume_two), "Makes no sense to have two resume points")
+
+    return args.repo, args.resume_one, args.resume_two
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    repo, resume_one, resume_two = parse_command_line(sys.argv, description)
+
+    if repo is not None:
+        os.chdir(repo)
+
+    acme_cime_split(resume_one, resume_two)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
