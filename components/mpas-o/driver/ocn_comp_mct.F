@@ -811,14 +811,15 @@ contains
       integer :: ymd, tod, ihour, iminute, isecond
       integer :: iyear, imonth, iday, curr_ymd, curr_tod
       integer :: shrloglev, shrlogunit
-      real (kind=RKIND) :: dt
+      real (kind=RKIND) :: dt, current_wallclock_time
+
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, forcingPool, averagePool, scratchPool
 
       type (MPAS_Time_Type) :: currTime
       type (domain_type), pointer :: domain_ptr
-      character(len=StrKIND) :: timeStamp, streamName
+      character(len=StrKIND) :: timeStamp, streamName, WCstring
       type (MPAS_timeInterval_type) :: timeStep
       integer :: iam, ierr, streamDirection
       logical :: streamActive, debugOn
@@ -897,7 +898,9 @@ contains
          currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          ! write time stamp at every step
-         call mpas_log_write('Doing timestep ' // trim(timeStamp))
+         call mpas_dmpar_get_time(current_wallclock_time)
+         write (WCstring,'(F18.3)') current_wallclock_time
+         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
          ! Build forcing arrays.
          if (debugOn) call mpas_log_write('   Building forcing arrays')
