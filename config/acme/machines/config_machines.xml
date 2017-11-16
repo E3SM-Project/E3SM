@@ -2826,10 +2826,9 @@
 <machine MACH="summitdev">
 	 <DESC>ORNL pre-Summit testbed. Node: 2x POWER8 + 4x Tesla P100, 20 cores/node, 8 HW threads/core.</DESC>
 	 <NODENAME_REGEX>summitdev-*</NODENAME_REGEX>
-	 <NODE_FAIL_REGEX>Received node event ec_node</NODE_FAIL_REGEX>
 	 <TESTS>acme_developer</TESTS>
-	 <COMPILERS>ibm,pgi</COMPILERS>
-	 <MPILIBS>openmpi,mpi_serial</MPILIBS>
+	 <COMPILERS>ibm,pgi,pgiacc</COMPILERS>
+	 <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
 	 <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
 	 <RUNDIR>/lustre/atlas/scratch/$ENV{USER}/$PROJECT/$CASE/run</RUNDIR>
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -2851,26 +2850,22 @@
 	 <CHARGE_ACCOUNT>CSC249ADSE15</CHARGE_ACCOUNT>
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
-	 <mpirun mpilib="openmpi">
+	 <mpirun mpilib="spectrum-mpi">
 	 <executable>jsrun</executable>
 	 <arguments>
 	     <!-- Useful jsrun options:
 		-n	(hyphen-hyphen)nrs	Number of resource sets
-		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set Avail Oct 17
+		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set 
 		-c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
 		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
 		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
-		 This will request nnodes resource sets (-n nnodes), each with p processes (-a p), and 1 resource set per node (-r 1).
-		 $ENV{NUM_NODES} -a p -r1 
 		 -->
-		 <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE -c $ENV{OMP_NUM_THREADS} </arg>
-		 <arg name="thread_count"> -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-		 <!-- <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg> -->
+		 <!-- <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE -c $ENV{OMP_NUM_THREADS} </arg> -->
+		 <arg name="num_tasks" > -n ALL_HOSTS -p $TOTALPES </arg>
+		 <arg name="thread_count"> -c $ENV{OMP_NUM_THREADS} -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+		 <!--Old options: <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg> -->
 		 <!-- <arg name="show-binding"> report-bindings </arg> -->
 		 <!-- <arg name="show-processmap"> display-map </arg> -->
-		 <!--
-		 <arg name="tasks_per_node"> map-by ppr:$MAX_MPITASKS_PER_NODE:node</arg>
-		 -->
 	 </arguments>
 	 </mpirun>
 
@@ -2922,13 +2917,13 @@
       <modules compiler="ibm" mpilib="!mpi-serial">
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">parallel-netcdf/1.7.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules> 
  	  <modules compiler="pgi" mpilib="!mpi-serial">
         <command name="load">netcdf/4.4.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.0</command>
+        <command name="load">parallel-netcdf/1.7.0</command>
         <command name="load">hdf5/1.10.0-patch1</command>
       </modules>
     </module_system>
@@ -2941,7 +2936,11 @@
 		  <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
 		  <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
 		  <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
+		  <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       </environment_variables>
+      <!-- <environment_variables compiler="ibm"> -->
+		 <!-- <env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4-xl-20170914-beta</env> -->
+      <!-- </environment_variables> -->
       <environment_variables mpilib="!mpi-serial">
         <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       </environment_variables>
