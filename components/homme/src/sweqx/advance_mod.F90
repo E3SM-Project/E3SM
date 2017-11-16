@@ -285,7 +285,7 @@ contains
        ! ===================================
 
 !group optimal based on iteration
-       if (( limiter_option == 8 ).or.(limiter_option == 81 )) then
+       if (( limiter_option == 8 ).or.(limiter_option == 81 ).or.(limiter_option == 9)) then
           call neighbor_minmax(elem,hybrid,edge3,nets,nete,n0,pmin,pmax,kmass=kmass)
        endif
 
@@ -411,6 +411,11 @@ contains
           
           if ((limiter_option == 8))then
              call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
+                  pmin(:,ie),pmax(:,ie),kmass)
+          endif
+
+          if ((limiter_option == 9))then
+             call limiter_optim_wrap_lim9(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass)
           endif
 
@@ -555,6 +560,30 @@ contains
     call limiter_optim_iter_full(ptens,sphweights,minp,maxp,ptens_mass)
     ptens(:,:,kmass) = ptens_mass(:,:,1)
   end subroutine
+
+
+  subroutine limiter_optim_wrap_lim9(ptens,sphweights,minp,maxp,kmass)
+!THIS IS A NEW VERSION OF LIM9, from 3D code
+
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, np, nlev
+    use derivative_mod, only : limiter_clip_and_sum
+
+    real (kind=real_kind), dimension(nlev), intent(inout)   :: minp, maxp
+    real (kind=real_kind), dimension(np,np,nlev), intent(inout)   :: ptens
+    real (kind=real_kind), dimension(np,np), intent(in)   :: sphweights
+    integer, intent(in) :: kmass
+    ! local variables
+    real (kind=real_kind), dimension(np,np,nlev) :: ptens_mass
+    integer :: k
+
+    do k=1,nlev
+       ptens_mass(:,:,k)=ptens(:,:,kmass)
+    enddo
+    call limiter_clip_and_sum(ptens,sphweights,minp,maxp,ptens_mass)
+    ptens(:,:,kmass) = ptens_mass(:,:,1)
+  end subroutine limiter_optim_wrap_lim9
+
 
 
 
