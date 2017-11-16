@@ -171,6 +171,7 @@ contains
 
        atm2lnd_vars%volr_grc(g)   = x2l(index_x2l_Flrr_volr,i) * (ldomain%area(g) * 1.e6_r8)
        atm2lnd_vars%volrmch_grc(g)= x2l(index_x2l_Flrr_volrmch,i) * (ldomain%area(g) * 1.e6_r8)
+       atm2lnd_vars%supply_grc(g) = x2l(index_x2l_Flrr_supply,i)
 
        ! Determine required receive fields
 

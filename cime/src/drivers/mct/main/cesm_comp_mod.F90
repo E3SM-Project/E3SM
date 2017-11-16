@@ -352,6 +352,7 @@ module cesm_comp_mod
    logical  :: esp_prognostic         ! .true.  => esp comp expects input
 
    logical  :: atm_c2_lnd             ! .true.  => atm to lnd coupling on
+   logical  :: atm_c2_rof             ! .true.  => atm to rof coupling on
    logical  :: atm_c2_ocn             ! .true.  => atm to ocn coupling on
    logical  :: atm_c2_ice             ! .true.  => atm to ice coupling on
    logical  :: atm_c2_wav             ! .true.  => atm to wav coupling on
@@ -1375,6 +1376,7 @@ subroutine cesm_init()
    ! derive coupling connection flags
 
    atm_c2_lnd = .false.
+   atm_c2_rof = .false.
    atm_c2_ocn = .false.
    atm_c2_ice = .false.
    atm_c2_wav = .false.
@@ -1397,6 +1399,7 @@ subroutine cesm_init()
 
    if (atm_present) then
       if (lnd_prognostic) atm_c2_lnd = .true.
+      if (rof_prognostic) atm_c2_rof = .true.
       if (ocn_prognostic) atm_c2_ocn = .true.
       if (ocn_present   ) atm_c2_ocn = .true. ! needed for aoflux calc if aoflux=ocn
       if (ice_prognostic) atm_c2_ice = .true.
@@ -1486,6 +1489,7 @@ subroutine cesm_init()
       write(logunit,F0L)'esp model prognostic  = ',esp_prognostic
 
       write(logunit,F0L)'atm_c2_lnd            = ',atm_c2_lnd
+      write(logunit,F0L)'atm_c2_rof            = ',atm_c2_rof
       write(logunit,F0L)'atm_c2_ocn            = ',atm_c2_ocn
       write(logunit,F0L)'atm_c2_ice            = ',atm_c2_ice
       write(logunit,F0L)'atm_c2_wav            = ',atm_c2_wav
@@ -1624,7 +1628,7 @@ subroutine cesm_init()
 
       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
 
-      call prep_rof_init(infodata, lnd_c2_rof)
+      call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof)
 
       call prep_glc_init(infodata, lnd_c2_glc)
 
@@ -2595,6 +2599,10 @@ end subroutine cesm_init
                call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
             endif
 
+            if (atm_c2_rof) then
+               call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
+            endif
+
             call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r')
 
             call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
@@ -2890,7 +2898,7 @@ end subroutine cesm_init
 
             ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
             if (lnd_c2_rof) then
-               call prep_rof_accum(timer='CPL:lndpost_accl2r')
+               call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
             endif
             if (lnd_c2_glc) then
                call prep_glc_accum(timer='CPL:lndpost_accl2g' )
@@ -3483,6 +3491,10 @@ end subroutine cesm_init
             call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
             call t_drvstartf ('CPL:ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+            if (atm_c2_rof) then
+               call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
+            endif
 
             call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
                  info_debug=info_debug, timer_diag='CPL:atmpost_diagav')

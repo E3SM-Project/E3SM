@@ -28,17 +28,28 @@ module rof_comp_esmf
   use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet
+                                inst_index, inst_suffix, inst_name, RtmVarSet, &
+                                wrmflag
   use RtmSpmd          , only : masterproc, iam, npes, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
+#ifdef INCLUDE_WRM
+  use WRM_type_mod     , only : StorWater
+#endif
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_x2r_Flrl_rofi, index_x2r_Flrl_rofsur, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
                                 index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
+                                index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
+                                index_x2r_Sa_u   , index_x2r_Sa_v   , &
+                                index_x2r_Sa_shum, &
+                                index_x2r_Faxa_lwdn , &
+                                index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
+                                index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
                                 index_r2x_Flrr_flood, &
-                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
+                                index_r2x_Flrr_supply
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -697,6 +708,18 @@ contains
        rtmCTL%qdto(n,nfrz) = 0.0_r8
        rtmCTL%qdem(n,nfrz) = 0.0_r8
 
+       ! tcxcpl
+       !?? = x2r_r%rAttr(index_x2r_Sa_tbot,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_pbot,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_u   ,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_v   ,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_shum,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swvdr,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swvdf,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swndr,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
+
     enddo
 
   end subroutine rof_import_esmf
@@ -797,6 +820,12 @@ contains
        fptr(index_r2x_Flrr_flood,ni) = -rtmCTL%flood(n)/(rtmCTL%area(n)*0.001_r8)
        fptr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        fptr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+       fptr(index_r2x_Flrr_supply,ni)  = 0._r8  ! tcxcpl
+#ifdef INCLUDE_WRM
+       if (wrmflag) then
+          fptr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n)    ! tcxcpl
+       endif
+#endif
     end do
 
   end subroutine rof_export_esmf
