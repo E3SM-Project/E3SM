@@ -128,7 +128,7 @@
       <directive                       > -N  </directive>
       <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
       <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
-      <directive                       > -J {{ job_id }} </directive>
+      <directive                       > -J {{ "job_id" }} </directive>
     </directives>
   </batch_system>
 
