@@ -2851,23 +2851,26 @@
 	 <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 
 	 <mpirun mpilib="spectrum-mpi">
-	 <executable>jsrun</executable>
+	 <executable>/lustre/atlas/world-shared/cli900/helper_scripts/mpirun.summitdev</executable>
+	 <!-- <executable>jsrun</executable> -->
 	 <arguments>
-	     <!-- Useful jsrun options:
+	     <arg name="num_tasks" > -n $TOTALPES -N $MAX_MPITASKS_PER_NODE </arg>
+	     <!-- <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE </arg> -->
+		 <!-- <arg name="thread_count"> -c $ENV{OMP_NUM_THREADS} -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg> -->
+	 </arguments>
+	 </mpirun>
+		<!-- Useful jsrun options:
 		-n	(hyphen-hyphen)nrs	Number of resource sets
 		-a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set 
 		-c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
 		-g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
 		-r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
-		 -->
-		 <!-- <arg name="num_tasks" > -n ALL_HOSTS -a $MAX_MPITASKS_PER_NODE -c $ENV{OMP_NUM_THREADS} </arg> -->
+
 		 <arg name="num_tasks" > -n ALL_HOSTS -p $TOTALPES </arg>
-		 <arg name="thread_count"> -c $ENV{OMP_NUM_THREADS} -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-		 <!--Old options: <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg> -->
-		 <!-- <arg name="show-binding"> report-bindings </arg> -->
-		 <!-- <arg name="show-processmap"> display-map </arg> -->
-	 </arguments>
-	 </mpirun>
+		 Old options: <arg name="binding_core"> map-by core:PE=$ENV{OMP_NUM_THREADS} bind-to core </arg>
+		 <arg name="show-binding"> report-bindings </arg>
+		 <arg name="show-processmap"> display-map </arg>
+		-->
 
     <module_system type="module_lmod">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
