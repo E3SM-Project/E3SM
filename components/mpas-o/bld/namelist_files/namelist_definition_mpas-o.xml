@@ -1145,6 +1145,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_nonlocal_with_implicit_mix" type="logical"
+	category="cvmix" group="cvmix">
+flag that moves the non-local computation and application of tendency to after main timestep loop
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- forcing -->
 
@@ -2142,6 +2150,7 @@ Valid values: an positive value
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- tracer_forcing_activeTracers -->
 
 <entry id="config_use_activeTracers" type="logical"
@@ -2205,6 +2214,14 @@ Default: Defined in namelist_defaults.xml
 if true, apply monthly salinity restoring
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_surface_salinity_monthly_restoring_compute_interval" type="char*1024"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+interval to compute salinity restoring tendency
+
+Valid values: Any valid time stamp or 'dt'
 Default: Defined in namelist_defaults.xml
 </entry>
 

@@ -68,8 +68,8 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
 	$moc_mask_file .= 'oEC60to30v3_Atlantic_region_and_southern_transect.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
-        $ic_date .= '170905';
-        $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0824';
+        $ic_date .= '171101';
+        $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0926';
         $decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
 	$moc_mask_file .= 'oEC60to30v3_Atlantic_region_and_southern_transect.nc';
@@ -125,15 +125,15 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '160830';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS18to6v3' ) {
-	$ic_date .= '170111';
+	$ic_date .= '171116';
 	$ic_prefix .= 'oRRS18to6v3';
 	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 	$restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc';
 	$moc_mask_file .= 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc';
 } elsif ( $OCN_GRID eq 'oRRS18to6v3_ICG' ) {
-	$ic_date .= '170622';
-	$ic_prefix .= 'oRRS18to6v3.restartFrom_titan0228';
+	$ic_date .= '171031';
+        $ic_prefix .= 'oRRS18to6v3_80Layer.restartFromAnvil';
 	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 	$moc_mask_file .= 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc';
