@@ -812,6 +812,7 @@ contains
     character(len=128)                       :: errormsg
     integer                                  :: num_patches
     integer                                  :: i
+    integer                                  :: uid
     type(io_desc_t),        pointer          :: iodesc
     integer                                  :: ierr, nfdims
     integer                                  :: fdimlens(7), dimids(7)
@@ -833,7 +834,17 @@ contains
     end do
 
     ! We have the right grid, write the hbuf
-    call cam_pio_var_info(File, varid, nfdims, dimids, fdimlens)
+    call cam_pio_var_info(File, varid, nfdims, dimids, fdimlens,unlimDimID=uid)
+    ierr = i
+    do i = 1, nfdims
+      if (i > ierr) then
+        dimids(ierr) = dimids(i)
+      end if
+      if (dimids(i) /= uid) then
+        ierr = ierr + 1
+      end if
+    end do
+    nfdims = nfdims - COUNT(dimids(1:nfdims) == uid)
     call patchptr%get_decomp(adims, fdimlens(1:nfdims), dtype, iodesc)
     if (size(adims) == 2) then
       call pio_write_darray(File, varid, iodesc, hbuf(:,1,:), ierr)
