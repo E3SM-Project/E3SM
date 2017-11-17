@@ -5,8 +5,12 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
+from CIME.utils import get_current_commit, get_timestamp, get_model
+
 import logging, glob, os, shutil, re, stat, filecmp
 logger = logging.getLogger(__name__)
+
+BLESS_LOG_NAME = "bless_log"
 
 def _iter_model_file_substrs(case):
     models = case.get_compset_components()
@@ -317,7 +321,14 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
-    return _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
+    success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
+    if not success and get_model() == "acme":
+        bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
+        if os.path.exists(bless_log):
+            last_line = open(bless_log, "r").readlines()[-1]
+            comments += "\n  Most recent bless: {}".format(last_line)
+
+    return success, comments
 
 def get_extension(model, filepath):
     """
@@ -423,5 +434,11 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             except OSError:
                 # We tried. Not worth hard failure here.
                 pass
+
+    if get_model() == "acme":
+        bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
+        with open(bless_log, "a") as fd:
+            fd.write("sha:{} date:{}\n".format(get_current_commit(repo=case.get_value("CIMEROOT")),
+                                               get_timestamp(timestamp_format="%Y-%m-%d_%H:%M:%S")))
 
     return True, comments
