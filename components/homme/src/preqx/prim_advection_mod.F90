@@ -30,13 +30,12 @@ contains
 !     eulerian code or the semi-Lagrangian code
 !
 
-  subroutine Prim_Advec_Init1(par, elem, n_domains)
+  subroutine Prim_Advec_Init1(par, elem)
     type(parallel_t) :: par
-    integer, intent(in) :: n_domains
     type (element_t) :: elem(:)
 
-    call prim_advec_init1_rk2(par, elem, n_domains)
-    call sl_init1(par,elem, n_domains)
+    call prim_advec_init1_rk2(par, elem)
+    call sl_init1(par,elem)
 
   end subroutine Prim_Advec_Init1
 

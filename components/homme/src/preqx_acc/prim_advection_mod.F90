@@ -244,13 +244,12 @@ contains
     call t_stopf('prim_advec_tracers_remap_rk2')
   end subroutine prim_advec_tracers_remap_rk2
 
-  subroutine prim_advec_init1(par, elem, n_domains)
+  subroutine prim_advec_init1(par, elem)
     use edge_mod    , only: initEdgeBuffer,initEdgeSBuffer
     use parallel_mod, only: parallel_t
     use element_mod , only: element_t
     implicit none
     type(parallel_t), intent(in) :: par
-    integer         , intent(in) :: n_domains
     type (element_t), intent(in) :: elem(:)
     call initEdgeBuffer (par,edgeAdvQ3 ,elem(:),max(nlev,qsize*nlev*3))
     call initEdgeBuffer (par,edgeAdv1  ,elem(:),nlev                  )

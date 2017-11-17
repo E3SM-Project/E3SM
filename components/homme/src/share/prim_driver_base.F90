@@ -20,8 +20,6 @@ module prim_driver_base
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
-  use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
-
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
@@ -139,7 +137,6 @@ contains
 
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
-    integer :: n_domains
     type (quadrature_t)   :: gp                     ! element GLL points
 
 
@@ -350,13 +347,13 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    n_domains = min(Nthreads,nelemd)
+    Nthreads = min(Nthreads,nelemd)
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
     if(par%masterproc) write(iulog,*) 'init shared boundary_exchange buffers'
-    call InitReductionBuffer(red,3*nlev,n_domains)
+    call InitReductionBuffer(red,3*nlev,Nthreads)
     call InitReductionBuffer(red_sum,5)
     call InitReductionBuffer(red_sum_int,1)
     call InitReductionBuffer(red_max,1)
@@ -468,15 +465,13 @@ contains
     ! =====================================
     ! Set number of threads...
     ! =====================================
-    nthreads = n_domains
     if(par%masterproc) then
        write(iulog,*) "Main:NThreads=",NThreads
-       write(iulog,*) "Main:n_domains = ",n_domains
     endif
 
-    allocate(dom_mt(0:n_domains-1))
-    do ith=0,n_domains-1
-       dom_mt(ith)=decompose(1,nelemd,n_domains,ith)
+    allocate(dom_mt(0:Nthreads-1))
+    do ith=0,Nthreads-1
+       dom_mt(ith)=decompose(1,nelemd,Nthreads,ith)
     end do
     ith=0
     nets=1
@@ -487,7 +482,7 @@ contains
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
-    call Prim_Advec_Init1(par, elem,n_domains)
+    call Prim_Advec_Init1(par, elem)
 
 
     if ( use_semi_lagrange_transport) then

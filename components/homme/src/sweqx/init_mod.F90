@@ -8,7 +8,7 @@ contains
   subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
-    use thread_mod, only : nthreads, nThreadsHoriz, omp_set_num_threads
+    use thread_mod, only : nthreads, omp_set_num_threads
     ! --------------------------------
     use control_mod, only : restartfreq, topology, partmethod, cubed_sphere_map
     ! --------------------------------
@@ -114,7 +114,6 @@ contains
     integer :: nlyr
     integer :: iMv
     integer :: nxyp, istartP
-    integer :: n_domains
     real(kind=real_kind) :: et,st
 
     real(kind=real_kind), allocatable       :: mass(:,:,:)
@@ -330,13 +329,11 @@ contains
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
 
-    n_domains = min(Nthreads,nelemd)
-    call omp_set_num_threads(n_domains)
-    allocate(dom_mt(0:n_domains-1))
+    Nthreads = min(Nthreads,nelemd)
+    allocate(dom_mt(0:Nthreads-1))
     do ithr=0,NThreads-1
        dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
     end do
-    nThreadsHoriz = NThreads
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
