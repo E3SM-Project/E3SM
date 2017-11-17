@@ -839,6 +839,56 @@
                 {
                         "sets": ["lat_lon"],
                         "case_id": "MERRA2",
+                        "variables": ["SHFLX"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [-100, -75, -50, -25, -10, 0, 10, 25, 50, 75, 100, 125, 150],
+                        "diff_levels": [-100, -80, -60, -40, -20, -10, -5, 5, 10, 20, 40, 60, 80, 100]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "MERRA2",
+                        "variables": ["PSL"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [955, 965, 975,980, 985, 990, 995, 1000, 1005, 1010, 1015, 1020, 1025, 1035],
+                        "diff_levels": [ -16, -12, -8, -4, -2, -1, -0.5, 0.5, 1, 2, 4, 8, 12, 16]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "MERRA2",
+                        "variables": ["FSNS"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 50, 100, 150, 200, 250, 300, 350, 400],
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "MERRA2",
+                        "variables": ["FLNS"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [0, 20, 40, 60, 80, 100, 120, 140, 160],
+                        "diff_levels": [-50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "MERRA2",
+                        "variables": ["NET_FLUX_SRF"],
+                        "ref_name": "MERRA2",
+                        "reference_name": "MERRA2 Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "contour_levels": [-200, -160, -120, -80, -40, 0, 40, 80, 120, 160, 200],
+                        "diff_levels": [-75, -50, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 50, 75]
+                },
+                {
+                        "sets": ["lat_lon"],
+                        "case_id": "MERRA2",
                         "variables": ["PRECT"],
                         "ref_name": "MERRA2",
                         "reference_name": "MERRA2 Reanalysis 1980-2016",
