@@ -272,10 +272,11 @@ def case_run(case, skip_pnl=False):
     prerun_script = case.get_value("PRERUN_SCRIPT")
     postrun_script = case.get_value("POSTRUN_SCRIPT")
 
-    data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
-
+    data_assimilation = (data_assimilation_cycles > 0 and
+                         len(data_assimilation_script) > 0 and
+                         os.path.isfile(data_assimilation_script))
     # set up the LID
     lid = new_lid()
 
