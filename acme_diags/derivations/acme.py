@@ -268,15 +268,15 @@ def netlw(rlds, rlus):
     return var
 
 def netflux4(fsns, flns, lhflx, shflx):
-    """Surface Net Radiative flux"""
+    """Surface Net flux"""
     var = fsns - flns - lhflx - shflx
-    var.long_name = "Surface Net Radiative flux"
+    var.long_name = "Surface Net flux"
     return var
     
 def netflux6(rsds, rsus, rlds, rlus, hfls, hfss):
-    """Surface Net Radiative flux"""
+    """Surface Net flux"""
     var = rsds - rsus + (rlds - rlus) - hfls - hfss
-    var.long_name = "Surface Net Radiative flux"
+    var.long_name = "Surface Net flux"
     return var
     
 def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
