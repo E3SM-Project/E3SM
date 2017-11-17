@@ -1,0 +1,19 @@
+#!/bin/bash -l
+
+#SBATCH -p regular
+#SBATCH --qos=normal
+#SBATCH --tasks-per-node=48
+#SBATCH -N 60
+#SBATCH -t 08:00:00
+#SBATCH -J thwaites
+#SBATCH --mail-type=all
+#SBATCH --mail-user=wyeast@gmail.com
+#SBATCH -A m1795
+
+
+##### These are shell commands
+
+source ~/setup_mpas_environment.sh
+
+date
+
