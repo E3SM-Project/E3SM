@@ -255,7 +255,30 @@ def restoa(fsnt, flnt):
     var.long_name = "TOA(top of atmosphere) Radiative flux"
     return var
 
+def netsw(rsds, rsus):
+    """Surface SW Radiative flux"""
+    var = rsds - rsus
+    var.long_name = "Surface SW Radiative flux"
+    return var
+    
+def netlw(rlds, rlus):
+    """Surface LW Radiative flux"""
+    var = - (rlds - rlus)
+    var.long_name = "Surface LW Radiative flux"
+    return var
 
+def netflux4(fsns, flns, lhflx, shflx):
+    """Surface Net Radiative flux"""
+    var = fsns - flns - lhflx - shflx
+    var.long_name = "Surface Net Radiative flux"
+    return var
+    
+def netflux6(rsds, rsus, rlds, rlus, hfls, hfss):
+    """Surface Net Radiative flux"""
+    var = rsds - rsus + (rlds - rlus) - hfls - hfss
+    var.long_name = "Surface Net Radiative flux"
+    return var
+    
 def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
     """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and
     cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
@@ -456,7 +479,8 @@ derived_variables = {
     ]),
 
     'FLNS': OrderedDict([
-        (('sfc_net_lw_all_mon'), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon)
+        (('sfc_net_lw_all_mon'), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon),
+        (('rlds','rlus'), lambda rlds, rlus: netlw(rlds, rlus))
     ]),
     'FLNSC': OrderedDict([
         (('sfc_net_lw_clr_mon'), lambda sfc_net_lw_clr_mon: -sfc_net_lw_clr_mon)
@@ -469,7 +493,8 @@ derived_variables = {
         (('TS', 'FLNSC'), lambda ts, flnsc: fldsc(ts, flnsc))
     ]),
     'FSNS': OrderedDict([
-        (('sfc_net_sw_all_mon'), rename)
+        (('sfc_net_sw_all_mon'), rename),
+	(('rsds','rsus'), lambda rsds, rsus: netsw(rsds, rsus))
     ]),
     'FSNSC': OrderedDict([
         (('sfc_net_sw_clr_mon'), rename)
@@ -480,6 +505,10 @@ derived_variables = {
     'FSDSC': OrderedDict([
         (('rsdscs'), rename),
         (('rsdsc'), rename)
+    ]),
+    'NET_FLUX_SRF': OrderedDict([
+        (('FSNS','FLNS','LHFLX','SHFLX'), lambda fsns, flns, lhflx, shflx: netflux4(fsns, flns, lhflx, shflx)),
+        (('rsds','rsus','rlds','rlus','hfls','hfss'), lambda rsds, rsus, rlds, rlus, hfls, hfss: netflux6(rsds, rsus, rlds, rlus, hfls, hfss))
     ]),
     'FLUT': OrderedDict([
         (('rlut'), rename)
