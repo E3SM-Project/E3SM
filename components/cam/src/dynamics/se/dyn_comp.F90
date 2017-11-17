@@ -157,9 +157,8 @@ CONTAINS
 #endif
 #ifdef COLUMN_OPENMP
     call omp_set_nested(.true.)
-    if (vthreads > nthreads .or. vthreads < 1) &
-         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
-    nthreads = nthreads / vthreads
+    if (vthreads < 1) &
+         call endrun('Error: vthreads<1')
     if(par%masterproc) then
        write(iulog,*) " "
        write(iulog,*) "dyn_init1: using OpenMP across and within elements"
