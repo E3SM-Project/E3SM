@@ -173,8 +173,8 @@
 		            description="period of the periodic depth adjustment applied to the Seroussi subglacial melt param."
 		            possible_values="any positive real value"
 		/>
-                <nml_option name="config_basal_mass_bal_seroussi_phase" type="real" default_value="0.0" units="a"
-		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt param."
+                <nml_option name="config_basal_mass_bal_seroussi_phase" type="real" default_value="0.0" units="cycles"
+		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt param. Units are cycles, i.e., 0-1"
 		            possible_values="any positive real value"
 		/>
 		<nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"

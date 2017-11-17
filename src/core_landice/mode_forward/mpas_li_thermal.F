@@ -3014,9 +3014,9 @@ module li_thermal
          !   * a maximum melt rate (Circumpolar Deep Water saturation)
          !   * a depth below which melt stops increasing (minimum sill height)
 
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_amplitude', config_basal_mass_bal_seroussi_amplitude)
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_period', config_basal_mass_bal_seroussi_period)
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_phase', config_basal_mass_bal_seroussi_phase)
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_amplitude', config_basal_mass_bal_seroussi_amplitude) ! meters
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_period', config_basal_mass_bal_seroussi_period) ! years
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_seroussi_phase', config_basal_mass_bal_seroussi_phase) ! cycles
 
          slopeSer = 0.088_RKIND ! slope of relation between depth and melt rate (melt (m/yr) per depth (m))
          interceptSer = -100.0_RKIND  ! depth (m) at which melting goes to 0 (negative meaning below sea level)
@@ -3030,8 +3030,8 @@ module li_thermal
 
          ! Modify intercept height for variability parameters
          interceptSer = interceptSer + config_basal_mass_bal_seroussi_amplitude * &
-                 sin( (2.0_RKIND * pii / config_basal_mass_bal_seroussi_period) * &
-                 (daysSinceStart/365.0_RKIND - config_basal_mass_bal_seroussi_phase) )
+                 sin( (2.0_RKIND * pii / config_basal_mass_bal_seroussi_period) * (daysSinceStart/365.0_RKIND) &
+                     + 2.0_RKIND * pii * config_basal_mass_bal_seroussi_phase)
 
          ! Initialize before computing
          floatingBasalMassBal(:) = 0.0_RKIND

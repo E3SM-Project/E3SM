@@ -13,9 +13,9 @@ SUBMIT_RUN=0
 BASE_DIR=`pwd`   # Path in which all the versions will be set up
 TEMPLATE_DIR=/scratch1/scratchdirs/hoffman2/thwaites_variability/1-8km_smoketest_template
 
-amplitudes='150 300'
-periods='02 20 70'
-phases="0.0 1.0 2.0"  # Note this has to be customized for each period, b/c units are years
+amplitudes='150 300'  # Units meters
+periods='02 20 70'  # units years
+phases="0.00 0.08 0.17 0.25 0.33 0.42 0.50 0.58 0.67 0.75 0.83 0.92" # set of 12  # units=cycles (0-1)
 
 #  ==========================
 
