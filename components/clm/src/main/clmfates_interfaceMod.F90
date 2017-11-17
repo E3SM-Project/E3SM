@@ -2224,7 +2224,7 @@ contains
     
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
-       waterflux_inst%qflx_rootsoi_col(c,:) = this%fates(nc)%bc_out(s)%qflx_soil2root_sisl(:)
+       waterflux_inst%qflx_rootsoi_col(c,1:nlevsoi) = this%fates(nc)%bc_out(s)%qflx_soil2root_sisl(1:nlevsoi)
     end do
     
  end subroutine ComputeRootSoilFlux
