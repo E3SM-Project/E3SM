@@ -53,7 +53,8 @@ _TEST_SUITES = {
                              "SMS.T42_T42.S",
                              "PRE.f19_f19.ADESP",
                              "PRE.f19_f19.ADESP_TEST",
-                             "MCC_P1.f19_g16_rx1.A")
+                             "MCC_P1.f19_g16_rx1.A",
+                             "LDSTA.f45_g37_rx1.A")
                             ),
 
     #
