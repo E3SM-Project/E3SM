@@ -17,7 +17,7 @@
       <add_link source_path="script_configuration_dir" source="ais30to1.20160713.nc" dest="ais_input_data.nc"/>
         <add_link source_path="script_configuration_dir" source="thwaites_minimal.geojson" dest="."/>
         <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
-        <add_link source_path="script_configuration_dir" source="finalize_thwaites_initial_conditions.sh" dest="."/>
+        <add_link source_path="script_configuration_dir" source="finalize_thwaites_initial_conditions.py" dest="."/>
         <add_link source_path="script_test_dir" source="thwaites_jigsaw_mesh.msh" dest="."/>
         <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
 
@@ -98,7 +98,7 @@
                 </step>
 
                 <!-- Set up SMB and beta modifications -->
-                <step executable="./finalize_thwaites_initial_conditions.sh">
+                <step executable="./finalize_thwaites_initial_conditions.py">
                         <argument flag="">thwaites_1-8km_resolution.nc</argument>
                 </step>
 
