@@ -525,7 +525,8 @@ derived_variables = {
         (('Z3'), lambda z3: convert_units(z3, target_units="hectometer"))
     ]),
     'PSL': OrderedDict([
-        (('PSL'), lambda psl: convert_units(psl, target_units="mbar"))
+        (('PSL'), lambda psl: convert_units(psl, target_units="mbar")),
+        (('psl'), lambda psl: convert_units(psl, target_units="mbar"))
     ]),
     'T': OrderedDict([
         (('ta'), rename),
@@ -549,7 +550,7 @@ derived_variables = {
         (('hfls'), rename)
     ]),
     'SHFLX': OrderedDict([
-        (('SHFLX'), rename)
+        (('hfss'), rename)
     ]),
     'TGCLDLWP_OCN': OrderedDict([
         (('TGCLDLWP_OCEAN'), lambda x: convert_units(x, target_units='g/m^2')),
