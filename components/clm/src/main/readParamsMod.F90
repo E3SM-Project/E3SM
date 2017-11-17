@@ -96,6 +96,7 @@ contains
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
     use tracer_varcon            , only : is_active_betr_bgc                                         
     use clm_instMod              , only : ep_betr
+    use decompMod                , only : bounds_type, get_proc_bounds 
     
     !
     ! !ARGUMENTS:
@@ -107,6 +108,7 @@ contains
     type(file_desc_t)  :: ncid  ! pio netCDF file id
     integer            :: dimid ! netCDF dimension id
     integer            :: npft  ! number of pfts on pft-physiology file
+    type(bounds_type) :: bounds_proc 
     !-----------------------------------------------------------------------
 
     if (masterproc) then
@@ -122,7 +124,8 @@ contains
     if(use_betr)then
     !  the following will be replaced with something more general. Jinyun Tang
     !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
-      call ep_betr%readParams(ncid)
+     call get_proc_bounds(bounds_proc)
+     call ep_betr%readParams(ncid, bounds_proc)
     endif
 
     !
