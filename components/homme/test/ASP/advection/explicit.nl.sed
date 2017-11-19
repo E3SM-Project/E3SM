@@ -22,7 +22,6 @@ limiter_option = 4
 hypervis_order = 2
 hypervis_subcycle= 1
 prescribed_wind = 1
-energy_fixer = -1
 /
 &solver_nl
 precon_method = "identity"

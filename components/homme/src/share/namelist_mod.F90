@@ -41,7 +41,6 @@ module namelist_mod
     LFTfreq,       &
     prescribed_wind, &
     ftype,         &
-    energy_fixer,  &
     limiter_option,&
     fine_ne,       &
     max_hypervis_courant, &
@@ -224,7 +223,6 @@ module namelist_mod
       disable_diagnostics, &
       prescribed_wind, &
       se_ftype,        &           ! forcing type
-      energy_fixer,    &
       fine_ne,         &
       max_hypervis_courant, &
       nu,            &

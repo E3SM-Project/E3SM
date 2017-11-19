@@ -7,7 +7,7 @@ module prim_driver_mod
     prim_finalize,&
     smooth_topo_datasets
 
-  use control_mod,        only: energy_fixer, statefreq, ftype, qsplit, rsplit
+  use control_mod,        only: statefreq, ftype, qsplit, rsplit
   use dimensions_mod,     only: np, nlev, nlevp, nelem, nelemd, qsize
   use element_mod,        only: element_t, allocate_element_desc
   use element_state,      only: timelevels
@@ -242,14 +242,14 @@ subroutine prim_step(elem,hybrid,nets,nete,dt,tl,hvcoord,compute_diagnostics,rst
 
     ! enable or disable scalar and energy diagnostics for this timestep
 
-    use control_mod, only: energy_fixer, disable_diagnostics
+    use control_mod, only: disable_diagnostics
 
     logical,              intent(out) :: compute_diagnostics, compute_energy
     type (TimeLevel_t),   intent(in)  :: tl
     integer,              intent(in)  :: nstep_end
 
     ! activate energy diagnostics if using an energy fixer
-    compute_energy = energy_fixer > 0
+    compute_energy = .false.
 
     ! activate diagnostics periodically for display to stdout
     compute_diagnostics   = .false.
