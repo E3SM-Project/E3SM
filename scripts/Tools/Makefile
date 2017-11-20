@@ -124,6 +124,9 @@ endif
 ifeq (,$(MPILIB))
   MPILIB = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
 endif
+ifeq (,$(PIO_VERSION))
+  PIO_VERSION = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
+endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
 endif
@@ -377,6 +380,9 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
+CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+# This is needed so that dependancies are found
+VPATH+=$(CSM_SHR_INCLUDE)
 
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
