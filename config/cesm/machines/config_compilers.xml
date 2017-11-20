@@ -1110,4 +1110,15 @@ using a fortran linker.
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="modex">
+  <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
+  <SLIBS>
+    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_HOME}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
+  </SLIBS>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
+</compiler>
+
 </config_compilers>
