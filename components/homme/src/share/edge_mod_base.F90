@@ -134,7 +134,7 @@ contains
   ! create an Real based communication buffer
   ! =========================================
 !IDEA   subroutine initEdgeBuffer(par,edge,elem,nlyr,buf_ptr, receive_ptr, NewMethod)
-  subroutine initEdgeBuffer(par,edge,elem,nlyr, NewMethod, numthreads_in )
+  subroutine initEdgeBuffer(par,edge,elem,nlyr, NewMethod)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     use schedtype_mod, only : cycle_t, schedule_t, schedule
     implicit none
@@ -143,15 +143,12 @@ contains
     type (element_t),intent(in)  :: elem(:)
     integer,intent(in)                :: nlyr
     logical (kind=log_kind), intent(in), optional :: NewMethod
-    integer,intent(in), optional :: numthreads_in
     !
     ! Note: this routine is now thread safe.  but 'edge' should be shared by 
     ! all threads and should be instantiated outside the threaded region
     !
     ! edge buffer must be intialized for the number of threads that will be
     ! active when calling bndry_exchange.  
-    ! default is 'nthreadshoriz', which can be overriden with the optional
-    ! numthreads argument.  
     !
     ! 
     ! Local variables
@@ -176,11 +173,7 @@ contains
         nbuf=nlyr*4*(np+max_corner_elem)*nelemd
     endif
 
-    if (present(numthreads_in)) then
-       numthreads = numthreads_in
-    else
-       numthreads = nthreadshoriz
-    end if
+    numthreads = nthreadshoriz
 
 ! DO NOT REMOVE THIS NEXT BARRIER
 ! MT: This initial barrier fixes a long standing issue with Intel compilers on
