@@ -1970,18 +1970,15 @@
       <DIN_LOC_ROOT>/data/Model_Data/cesm_input_datasets/</DIN_LOC_ROOT>
       <DIN_LOC_ROOT_CLMFORC>/data/Model_Data/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-      <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
       <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
       <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
       <GMAKE_J>4</GMAKE_J>
       <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
       <SUPPORTED_BY>rgknox at lbl dot gov and sserbin at bnl gov</SUPPORTED_BY>
       <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-      <PES_PER_NODE>12</PES_PER_NODE>
+      <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
+      <COSTPES_PER_NODE>12</COSTPES_PER_NODE>
       <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-      <mpirun mpilib="mpi-serial">
-          <executable></executable>
-      </mpirun>
       <mpirun mpilib="default">
           <executable>mpirun</executable>
           <arguments>
