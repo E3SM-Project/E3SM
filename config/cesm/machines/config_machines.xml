@@ -2015,7 +2015,7 @@
       </module_system>
        <environment_variables>
          <env name="HDF5_HOME">/data/software/hdf5/1.8.19fates</env>
-         <env name="NETCDF_HOME">/data/software/netcdf/4.4.1.1-gnu540-fates</env>
+         <env name="NETCDF_PATH">/data/software/netcdf/4.4.1.1-gnu540-fates</env>
        </environment_variables>
 
   </machine>
