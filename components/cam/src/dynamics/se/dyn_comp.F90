@@ -192,7 +192,7 @@ CONTAINS
        appname="HM_COARSE"//CHAR(0)
        ATM_ID1 = 19
        ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, MHID)
-       if (ierr > 0 )  & 
+       if (ierr > 0 )  &
            call endrun('Error: cannot register moab app')
 #endif
        call prim_init1(elem,par,dom_mt,TimeLevel)
