@@ -11,7 +11,9 @@ from CIME.case_st_archive import case_st_archive, get_file_date
 
 import datetime
 import glob
+import os
 import random
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +26,13 @@ class LDSTA(SystemTestsCommon):
         SystemTestsCommon.__init__(self, case)
 
     def run_phase(self):
+        archive_dir = self._case.get_value('DOUT_S_ROOT')
+        if os.path.isdir(archive_dir):
+            shutil.rmtree(archive_dir)
         self.run_indv()
         # finished running, so all archive files should exist
         start_date = get_file_date(self._case.get_value('RUN_STARTDATE'))
-        rest_dir = os.path.join(self._case.get_value('DOUT_S_ROOT'), 'rest')
+        rest_dir = os.path.join(archive_dir, 'rest')
         delta_day = datetime.timedelta(1)
         current_date = start_date + delta_day
         next_datecheck = current_date
