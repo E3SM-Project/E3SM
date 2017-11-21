@@ -7,7 +7,7 @@ module edge_mod_base
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
-  use thread_mod, only: nthreadshoriz, omp_get_num_threads, omp_get_thread_num
+  use thread_mod, only: hthreads, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &
@@ -173,7 +173,7 @@ contains
         nbuf=nlyr*4*(np+max_corner_elem)*nelemd
     endif
 
-    numthreads = nthreadshoriz
+    numthreads = hthreads
 
 ! DO NOT REMOVE THIS NEXT BARRIER
 ! MT: This initial barrier fixes a long standing issue with Intel compilers on

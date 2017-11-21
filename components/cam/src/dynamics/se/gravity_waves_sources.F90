@@ -6,7 +6,7 @@ module gravity_waves_sources
   use hybrid_mod, only     : hybrid_t
   use kinds, only          : real_kind
   use shr_kind_mod, only   : r8 => shr_kind_r8
-  use thread_mod, only   : nthreads
+  use thread_mod, only   : hthreads
 
   implicit none
   private
@@ -40,7 +40,7 @@ CONTAINS
     
     ! Set up variables similar to dyn_comp and prim_driver_mod initializations
     call initEdgeBuffer(par,edge3,elem,3*nlev)
-    allocate(deriv(0:Nthreads-1))
+    allocate(deriv(0:hthreads-1))
     
     psurf_ref = hypi(plev+1)
 
@@ -67,11 +67,11 @@ CONTAINS
     real(kind=real_kind), allocatable  ::  frontgf_thr(:,:,:,:)
     real(kind=real_kind), allocatable  ::  frontga_thr(:,:,:,:)
     
-    !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
+    !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
     ithr=omp_get_thread_num()
     nets=dom_mt(ithr)%start
     nete=dom_mt(ithr)%end
-    hybrid = hybrid_create(par,ithr,NThreads)
+    hybrid = hybrid_create(par,ithr,hthreads)
     call derivinit(deriv(hybrid%ithr))
     allocate(frontgf_thr(np,np,nlev,nets:nete))
     allocate(frontga_thr(np,np,nlev,nets:nete))

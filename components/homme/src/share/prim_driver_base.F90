@@ -41,7 +41,7 @@ contains
   subroutine prim_init1(elem, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, nThreadsHoriz
+    use thread_mod, only : nthreads, hthreads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
          partmethod, use_semi_lagrange_transport, z2_map_method, cubed_sphere_map
@@ -347,13 +347,13 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    Nthreads = min(Nthreads,nelemd)
+    hthreads = min(nthreads,nelemd)
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
     if(par%masterproc) write(iulog,*) 'init shared boundary_exchange buffers'
-    call InitReductionBuffer(red,3*nlev,Nthreads)
+    call InitReductionBuffer(red,3*nlev,hthreads)
     call InitReductionBuffer(red_sum,5)
     call InitReductionBuffer(red_sum_int,1)
     call InitReductionBuffer(red_max,1)
@@ -466,18 +466,17 @@ contains
     ! Set number of threads...
     ! =====================================
     if(par%masterproc) then
-       write(iulog,*) "Main:NThreads=",NThreads
+       write(iulog,*) "Main:nthreads=",nthreads
+       write(iulog,*) "Main:hthreads=",hthreads
     endif
 
-    allocate(dom_mt(0:Nthreads-1))
-    do ith=0,Nthreads-1
-       dom_mt(ith)=decompose(1,nelemd,Nthreads,ith)
+    allocate(dom_mt(0:hthreads-1))
+    do ith=0,hthreads-1
+       dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
     end do
     ith=0
     nets=1
     nete=nelemd
-    ! set the actual number of threads which will be used in the horizontal
-    nThreadsHoriz = nthreads
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)

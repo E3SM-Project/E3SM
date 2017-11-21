@@ -8,7 +8,7 @@ contains
   subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
-    use thread_mod, only : nthreads, omp_set_num_threads
+    use thread_mod, only : nthreads, hthreads, omp_set_num_threads
     ! --------------------------------
     use control_mod, only : restartfreq, topology, partmethod, cubed_sphere_map
     ! --------------------------------
@@ -329,10 +329,10 @@ contains
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
 
-    Nthreads = min(Nthreads,nelemd)
-    allocate(dom_mt(0:Nthreads-1))
-    do ithr=0,NThreads-1
-       dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
+    hthreads = min(nthreads,nelemd)
+    allocate(dom_mt(0:hthreads-1))
+    do ithr=0,hthreads-1
+       dom_mt(ithr)=decompose(1,nelemd,hthreads,ithr)
     end do
 
     ! =================================================================
@@ -344,7 +344,7 @@ contains
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
 
-    call InitReductionBuffer(red,3*nlev,nthreads)
+    call InitReductionBuffer(red,3*nlev,hthreads)
     call InitReductionBuffer(red_sum,1)
     call InitReductionBuffer(red_sum_int,1)
     call InitReductionBuffer(red_max,1)

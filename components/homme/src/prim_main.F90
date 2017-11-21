@@ -10,7 +10,7 @@ program prim_main
 
   use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
   use hybrid_mod,       only: hybrid_t
-  use thread_mod,       only: nthreads, vthreads, omp_get_thread_num, &
+  use thread_mod,       only: nthreads, hthreads, vthreads, omp_get_thread_num, &
                               omp_set_num_threads, omp_get_nested, &
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
@@ -88,7 +88,8 @@ program prim_main
   ! Begin threaded region so each thread can print info
   ! =====================================
 #if (defined HORIZ_OPENMP)
-  !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  hthreads = nthreads / vthreads
+  !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
   call omp_set_num_threads(vthreads)
 #endif
   ithr=omp_get_thread_num()
@@ -139,11 +140,11 @@ program prim_main
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)
-  !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
   call omp_set_num_threads(vthreads)
 #endif
   ithr=omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,nthreads)
+  hybrid = hybrid_create(par,ithr,hthreads)
   nets=dom_mt(ithr)%start
   nete=dom_mt(ithr)%end
 
@@ -211,11 +212,11 @@ program prim_main
   call t_startf('prim_main_loop')
   do while(tl%nstep < nEndStep)
 #if (defined HORIZ_OPENMP)
-     !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+     !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
      call omp_set_num_threads(vthreads)
 #endif
      ithr=omp_get_thread_num()
-     hybrid = hybrid_create(par,ithr,nthreads)
+     hybrid = hybrid_create(par,ithr,hthreads)
      nets=dom_mt(ithr)%start
      nete=dom_mt(ithr)%end
      
