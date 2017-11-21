@@ -294,10 +294,10 @@ contains
 
     !Get current model date. 
     call get_curr_date(yr, mon, day, ncsec)
-    !if cyclic yes, set year to cyclic year
+    !if cyclic year, set year to cyclic year
     if(iscyclic) yr = cyc_yr_in
  
-    !get current model time in daynote: (year will be cyclic year is iscyclic is TRUE)
+    !get current model time in "days".Note: (year will be cyclic year if iscyclic is TRUE)
     !Output from the following call is "curr_mdl_time", which is in days, it can be fraction 
     !based on how far we are in a given day
     call set_time_float_from_date( curr_mdl_time, yr, mon, day, ncsec )
@@ -306,21 +306,21 @@ contains
     !"times" variable has all the times (day,month,year) for which we have data in the file.
     !Note that values of "times" array are also "number of days" starting from 0001/01/01
 
-    !We only need to read data whn we are at a "data time boundary" where we need next
+    !We only need to read data when we are at a "data time boundary" where we need next
     !time slice to interpolate
 
     !"datatimep" below is "plus" end of 2 time slices (i.e. 2nd time slice) to interpolate
-    !Lets assign "data_time" to "datatimep" and check latter if "curr_mdl_time" is greater
+    !Lets assign "data_time" to "datatimep" and check later if "curr_mdl_time" is greater
     ! that this slice or not. If it is, we would like to read next time sslice
     data_time = datatimep  
-    !if cyclic, we might need to treat the yearly boundaries specially
+    !if cyclic, we might need to treat the yearly boundaries in a special manner
     if ( iscyclic) then
        ! wrap around                                                                                                                                              
        if ( (datatimep<datatimem) .and. (curr_mdl_time>datatimem) ) then
-          !This if condition is here so that we DON'T read data when it isn't necessary at the
+          !This "if" condition is here so that we DON'T read data when it isn't necessary at the
           !yearly boundary. To understand it, lets assume, we start from year 1 and we have data
           !at every 15th of the month in the file. At 12/15, we will read data from slices 12/15 and 01/15 of year 1 
-          !and interpolate. Note that at 12/15, this if condition will not be executed as curr_mdl_time
+          !and interpolate. Note that at 12/15, this "if" condition will not be executed as curr_mdl_time
           !is == datatimem (not greater than). At 12/16, we DO NOT want to read next time slice, so this
           !if condition will be executed to increment "data_time" by "one_yr" so that curr_mdl_time is
           !NOT greater than data_time (see next if condition). NOTE: from 12/16 to 12/31, this if 
@@ -328,8 +328,8 @@ contains
           ! is also TRUE. Here datatimep and datatimem are days at 01/15 and 12/15 for year 1 respectively. 
           ! At 01/01, curr_mdl_time will start from 0, therefore, (curr_mdl_time>datatimem) condition
           ! will be false, so this if condition will not be executed. Note that next time slice will 
-          !still not be read (as it should be) at 01/01 as curr_mdl_time is 0 and data_time is 
-          !datatimep, which is 01/15 (see next if condition). Therefore curr_mdl_time is NOT greater tha
+          !still not be read (as it should not be) at 01/01 as curr_mdl_time is 0 and data_time is 
+          !datatimep, which is 01/15 (see next if condition). Therefore curr_mdl_time is NOT greater than
           !data_time through 01/01 to 01/14
           data_time = data_time + one_yr
        endif
@@ -365,7 +365,7 @@ contains
        else
           ! if datatimep is less than curr_mdl_time, we are between 12/15 to 12/31, we have to add
           ! one_yr to datatimep so that fact1 is positive and interpolation is done assuming datatimep
-          !is in next year (if it makes sense). Divide by deltat_cyc
+          !is in next year (if it makes sense). Divide by deltat_cyc here as well
           fact1 = (datatimep+one_yr - curr_mdl_time)/deltat_cyc
        endif
     endif
