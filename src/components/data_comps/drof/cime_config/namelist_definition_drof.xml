@@ -65,7 +65,7 @@
     <values>
       <value stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.iaf_jra">/glade/p/cesm/omwg_dev/JRA55/domain</value>
+      <value stream="rof.iaf_jra">$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.cplhist">null</value>
     </values>
   </entry>
@@ -121,7 +121,7 @@
     <values>
       <value stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.iaf_jra">/glade/p/cesm/omwg_dev/JRA55/inputdata/IAF</value>
+      <value stream="rof.iaf_jra">$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.cplhist">$DROF_CPLHIST_DIR</value>
     </values>
   </entry>
