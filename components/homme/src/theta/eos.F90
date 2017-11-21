@@ -98,7 +98,9 @@ contains
         exner_i_out(:,:,1) = (pi_i(:,:,1)/p0)**kappa_star(:,:,1)
         exner_i_out(:,:,nlev+1) = (pi_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev)
      endif
-     if (present(pnh_i_out)) pnh_i_out=pnh_i
+     if (present(pnh_i_out)) then  
+       pnh_i_out=pnh_i 
+     endif
   else
 
 !  this will be input 
@@ -147,8 +149,8 @@ contains
    do k=1,nlev
       dpnh(:,:,k)=pnh_i(:,:,k+1)-pnh_i(:,:,k)
    enddo
-   if present(pnh_i_out) then 
-    pnh_i_out=pnh_i    
+   if (present(pnh_i_out)) then 
+     pnh_i_out=pnh_i    
    endif
 
   if (present(exner_i_out)) then
@@ -195,12 +197,13 @@ contains
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(out) :: phi_i(np,np,nlevp) ! geopotential 
+  real (kind=real_kind), intent(out) :: phi(np,np,nlevp) ! geopotential 
  
   !   local
   real (kind=real_kind) :: p(np,np,nlev) ! pressure at cell centers 
   real (kind=real_kind) :: p_i(np,np,nlevp)  ! pressure on interfaces
-  real (kind=real_kind) :: phi_i(:,:,nlevp)
+  real (kind=real_kind) :: phi_i(np,np,nlevp)
+  real (kind=real_kind) :: exner(np,np,nlev)
 
   integer :: k
 
@@ -221,7 +224,7 @@ contains
 
   phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
   do k=2,nlev
-     phi(:,:,k) = 2*phinh_i(:,:,k) - phi(:,:,k-1) 
+     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1) 
   enddo
     
   end subroutine
@@ -257,7 +260,9 @@ contains
   real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
   
 ! local variables
-  real (kind=real_kind) :: p_i(np,np,nlev+1) 
+  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: p_i(np,np,nlevp)
   real (kind=real_kind) :: phi_i(np,np,nlevp)
 
   integer :: k
@@ -280,7 +285,7 @@ contains
 
   phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
   do k=2,nlev
-     phi(:,:,k) = 2*phinh_i(:,:,k) - phi(:,:,k-1) 
+     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1) 
   enddo
 
 
