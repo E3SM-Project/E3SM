@@ -360,8 +360,11 @@ def create_viewer(root_dir, parameters, ext):
 
                         if set_num in ['lat_lon', '5']:
                             metrics_path = os.path.join(parameter.results_dir, '{}'.format(set_num), parameter.case_id, fnm)
-                            _add_to_lat_lon_metrics_table(metrics_path, season, row_name)
-
+                            if os.path.exists(metrics_path + '.json'):
+                                _add_to_lat_lon_metrics_table(metrics_path, season, row_name)
+                            else:
+                                print('JSON does not exist: {}'.format(metrics_path + '.json'))
+                                continue
                         for row_name, fnm in row_name_and_fnm:
                             if parameter.case_id not in ROW_INFO[set_num]:
                                 ROW_INFO[set_num][parameter.case_id] = collections.OrderedDict(
