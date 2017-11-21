@@ -75,6 +75,7 @@ subroutine aer_rad_props_init()
    
    !For testing puposes only, the following addfld call should be removed before merging to master
    call addfld ('extinct_lw_bnd7',(/ 'lev' /),    'A','/m','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
+   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','/km','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
 
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
@@ -443,6 +444,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
       
       !Obtain read in values for ext from the volcanic input file                                                                                              
       call pbuf_get_field(pbuf, idx_ext_lw, ext_cmip6_lw)
+      call outfld('extinct_lw_inp',ext_cmip6_lw(:,:,idx_lw_diag), pcols, lchnk)
       ext_cmip6_lw = ext_cmip6_lw * km_inv_to_m_inv  !convert from 1/km to 1/m
       !Above the tropopause, the read in values from the file include both the stratospheric
       !and volcanic aerosols. Therefore, we need to zero out odap_aer above the tropopause                                                                   
