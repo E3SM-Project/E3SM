@@ -2,7 +2,7 @@ module read_volc_radiation_data
 
 !To do list:
 !1. Handle ALL allocate errors
-!2. Add checks for bands so that model and read in inout file bands match!
+!2. Add checks for bands so that model and read in input file bands match!
 !3. Logic for cyclic time interpolation where we substracted "one_yr" should be generalized
 !4. cleanup
 !5. TESTING TESTING TESTING!!
@@ -286,35 +286,57 @@ contains
     integer :: ifld, ierr, var_id
     integer :: errcode, yr, mon, day, ncsec, it, itp1, banddim
 
-    real(r8) :: data_time, curr_mdl_time, fact1, fact2
+    real(r8) :: data_time, curr_mdl_time, fact1, fact2, deltat_cyc
 
   !------------------------------------------------------------------------------------------------
 
-    !find time indices to read data for two consecutive time indices to interpolate in time
-    !get current model date. 
+    !The pupose here is to find time indices to read data for two consecutive time indices to interpolate in time
+
+    !Get current model date. 
     call get_curr_date(yr, mon, day, ncsec)
+    !if cyclic yes, set year to cyclic year
     if(iscyclic) yr = cyc_yr_in
  
-    !PMC 11/11/17 note: curr_mdl_time is always in DAYS, so attempts to be general
-    !about time units in find_times_to_interpolate are unneeded. In light of this  
-    !and the fact that ACME always uses 365 day calendar, I'm subtracting 365 days 
-    !from left-hand side of time interval for interpolation for cyclic times to fix 
-    !a bug. If curr_mdl_time changes units, this bugfix needs to be generalized.
+    !get current model time in daynote: (year will be cyclic year is iscyclic is TRUE)
+    !Output from the following call is "curr_mdl_time", which is in days, it can be fraction 
+    !based on how far we are in a given day
     call set_time_float_from_date( curr_mdl_time, yr, mon, day, ncsec )
 
-    !see if we need to read data (i.e. we are at a time where new data is needed)
-    data_time = datatimep  !get time for second index ("plus" index)
-    
-    !if cyclic, we might need to add "one year" is we are at yearly boundary
+    !Generally data files has data for each month (it can also be more of less frequent)
+    !"times" variable has all the times (day,month,year) for which we have data in the file.
+    !Note that values of "times" array are also "number of days" starting from 0001/01/01
+
+    !We only need to read data whn we are at a "data time boundary" where we need next
+    !time slice to interpolate
+
+    !"datatimep" below is "plus" end of 2 time slices (i.e. 2nd time slice) to interpolate
+    !Lets assign "data_time" to "datatimep" and check latter if "curr_mdl_time" is greater
+    ! that this slice or not. If it is, we would like to read next time sslice
+    data_time = datatimep  
+    !if cyclic, we might need to treat the yearly boundaries specially
     if ( iscyclic) then
        ! wrap around                                                                                                                                              
        if ( (datatimep<datatimem) .and. (curr_mdl_time>datatimem) ) then
+          !This if condition is here so that we DON'T read data when it isn't necessary at the
+          !yearly boundary. To understand it, lets assume, we start from year 1 and we have data
+          !at every 15th of the month in the file. At 12/15, we will read data from slices 12/15 and 01/15 of year 1 
+          !and interpolate. Note that at 12/15, this if condition will not be executed as curr_mdl_time
+          !is == datatimem (not greater than). At 12/16, we DO NOT want to read next time slice, so this
+          !if condition will be executed to increment "data_time" by "one_yr" so that curr_mdl_time is
+          !NOT greater than data_time (see next if condition). NOTE: from 12/16 to 12/31, this if 
+          !condition will be executed because (datatimep<datatimem) is TRUE and (curr_mdl_time>datatimem)
+          ! is also TRUE. Here datatimep and datatimem are days at 01/15 and 12/15 for year 1 respectively. 
+          ! At 01/01, curr_mdl_time will start from 0, therefore, (curr_mdl_time>datatimem) condition
+          ! will be false, so this if condition will not be executed. Note that next time slice will 
+          !still not be read (as it should be) at 01/01 as curr_mdl_time is 0 and data_time is 
+          !datatimep, which is 01/15 (see next if condition). Therefore curr_mdl_time is NOT greater tha
+          !data_time through 01/01 to 01/14
           data_time = data_time + one_yr
        endif
     endif
 
     !if current model time is greater than or equal to second time index, we must move forward 
-    !to increment time indices (first and second) and read the inout file again
+    !to increment time indices (first and second) and read the input file again
     read_data = .false.
     if (curr_mdl_time >= data_time ) then
        !Move forward and get new values for datatimep,datatimem, it and itp1
@@ -328,7 +350,27 @@ contains
        read_data = .true.
     endif
 
-    fact1 = (datatimep - curr_mdl_time)/deltat
+    fact1 = (datatimep - curr_mdl_time)/deltat    
+    if (iscyclic .and. deltat < 0.0_r8) then
+       !if deltat is negative (it generally happens at yearly boundaries or at start of the simulation)
+       ! recompute deltat (as deltat_cyc) and fact1:
+
+       !Add a year, this will make deltat_cyc positive and it will be exact numder of days difference between
+       !two time slices at yearly boundary (say between 12/15 to 01/15)
+       deltat_cyc = deltat + one_yr
+       if ( datatimep >= curr_mdl_time ) then
+          ! if datatimep is greater than curr_mdl_time, it will be true between 01/01 to 01/15 (considering
+          ! the example above), compute the fact1 using following similar formula except use deltat_cyc
+          fact1 = (datatimep - curr_mdl_time)/deltat_cyc
+       else
+          ! if datatimep is less than curr_mdl_time, we are between 12/15 to 12/31, we have to add
+          ! one_yr to datatimep so that fact1 is positive and interpolation is done assuming datatimep
+          !is in next year (if it makes sense). Divide by deltat_cyc
+          fact1 = (datatimep+one_yr - curr_mdl_time)/deltat_cyc
+       endif
+    endif
+
+
     fact2 = 1._r8-fact1
 
     do ifld = 1,mxnflds_sw
@@ -399,27 +441,15 @@ contains
        if ( cyc_tsize > 1 ) then
           call findplb(times(cyc_ndx_beg:cyc_ndx_end),cyc_tsize, curr_mdl_time, n_out )
           if (n_out == cyc_tsize) then
-             !PMC bugfix: in this case, target x is smaller than the 1st source x,
-             !so it=1 and itp1=cyc_tsize. This was causing weird values for interpolation
-             !solution: allow datatimep to be a negative number.
-             !BALLI- Needs to be generalized!
-             it   = n_out + cyc_ndx_beg-1
-             itp1 = cyc_ndx_beg          
-             datatimem = times(it)
-             datatimep = times(itp1) - one_yr
-             !KLUDGE: line above hardcodes assumption that times are in days. This is 
-             !probably ok since curr_mdl_time is also hardcoded to return time in days, 
-             !but it would be good to generalize this fix later.
-             times_found = .true.
+             np1 = 1
           else
              np1 = n_out+1
-             it   = n_out + cyc_ndx_beg-1
-             itp1 = n_out  + cyc_ndx_beg          
-             datatimem = times(it)
-             datatimep = times(itp1)
-             times_found = .true.
           endif
-
+          it   = n_out + cyc_ndx_beg-1
+          itp1 = np1   + cyc_ndx_beg-1
+          datatimem = times(it)
+          datatimep = times(itp1)
+          times_found = .true.
        else
           call endrun('cyclic method for cyc_tsize<=1 not implemented yet')
        endif
