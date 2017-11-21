@@ -197,7 +197,7 @@ contains
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(out) :: phi(np,np,nlevp) ! geopotential 
+  real (kind=real_kind), intent(out) :: phi(np,np,nlev) ! geopotential 
  
   !   local
   real (kind=real_kind) :: p(np,np,nlev) ! pressure at cell centers 

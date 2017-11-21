@@ -561,8 +561,7 @@ contains
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
      call get_cp_star(cp_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
      call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
-          elem(ie)%state%phinh(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,&
-          pnh,dpnh,exner)
+          elem(ie)%state%phinh(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner)
 
      elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
           *dp(:,:,:)/exner(:,:,:)
@@ -1539,6 +1538,7 @@ contains
 
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
+
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
   real (kind=real_kind), pointer, dimension(:,:)   :: phis
