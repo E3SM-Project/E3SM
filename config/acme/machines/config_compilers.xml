@@ -262,7 +262,7 @@ for mct, etc.
   <ADD_FFLAGS MODEL="dwav"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="dice"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="docn"> -Mnovect </ADD_FFLAGS>
-  <LDFLAGS> -time -Wl,--allow-multiple-definition -acc -ta=tesla,pinned,cuda7.5,cc35 </LDFLAGS>
+  <LDFLAGS> -time -Wl,--allow-multiple-definition -acc</LDFLAGS> 
   <SCC> pgcc </SCC>
   <SFC> pgf95 </SFC>
   <SCXX> pgc++ </SCXX>
@@ -981,6 +981,7 @@ for mct, etc.
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <ADD_LDFLAGS>-ta=tesla,pinned,cuda7.5,cc35</ADD_LDFLAGS>
 </compiler>
 
 <compiler COMPILER="ibm" OS="AIX">
@@ -1061,30 +1062,44 @@ for mct, etc.
 
 <compiler COMPILER="ibm" MACH="summitdev">
   <SFC> xlf_r </SFC>
-  <MPIFC> mpixlf </MPIFC>
   <SCC> xlc_r </SCC>
+  <MPIFC> mpixlf </MPIFC>
   <MPICC> mpixlc </MPICC>
-  <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
-  <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
+  <MPICXX> mpixlC </MPICXX>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib64 -llapack</ADD_SLIBS>
+  <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib64 -llapack</ADD_LDFLAGS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="summitdev">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_LDFLAGS> $(shell nc-config --libs) $(shell nf-config --flibs) -L$OLCF_NETLIB_LAPACK_ROOT/lib -lblas -llapack </ADD_LDFLAGS>
-  <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>
+  <SFC> pgfortran </SFC>
+  <SCC> pgcc </SCC>
   <MPIFC> mpif90 </MPIFC>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
 </compiler>
 
+<compiler COMPILER="pgiacc" MACH="summitdev">
+  <SFC> pgfortran </SFC>
+  <SCC> pgcc </SCC>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <!-- Specifying cc60 implies cuda8.0, just making sure -->
+  <ADD_LDFLAGS>-ta=tesla:cc60,cuda8.0,pinned</ADD_LDFLAGS>
+  <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
+</compiler>
 
 <compiler COMPILER="ibm" MACH="cetus">
   <SFC> mpixlf2003_r </SFC>
