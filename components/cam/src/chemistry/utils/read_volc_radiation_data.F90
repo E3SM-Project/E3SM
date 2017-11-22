@@ -125,6 +125,9 @@ contains
     
     datatimem     = neg_huge
     datatimep     = neg_huge
+
+    strt_t   = (/ -1, -1, -1, -1 /)
+    strt_tp1 = (/ -1, -1, -1, -1 /)
     
     mxnflds_sw = size( specifier_sw )!size of sw fields in input file
     mxnflds_lw = size( specifier_lw )!size of lw fields in input file
@@ -275,6 +278,7 @@ contains
     use physics_buffer,   only: physics_buffer_desc
     use physics_types,    only: physics_state
     use time_manager,     only: get_curr_date
+    use spmd_utils,       only: masterproc
 
     !Arguments    
     character(len=*),    intent(in)    :: specifier_sw(:),specifier_lw(:)
@@ -284,7 +288,7 @@ contains
     !Local variables
     logical :: read_data
     integer :: ifld, ierr, var_id
-    integer :: errcode, yr, mon, day, ncsec, it, itp1, banddim
+    integer :: errcode, yr, mon, day, ncsec, it, itp1, itp1_old, banddim
 
     real(r8) :: data_time, curr_mdl_time, fact1, fact2, deltat_cyc
 
@@ -339,10 +343,12 @@ contains
     !to increment time indices (first and second) and read the input file again
     read_data = .false.
     if (curr_mdl_time >= data_time ) then
-       !Move forward and get new values for datatimep,datatimem, it and itp1
+       ! Save previous itp1 (will be -1 the first time step)
+       itp1_old = strt_tp1(1)
+       ! Move forward and get new values for datatimep,datatimem, it and itp1
        call find_times_to_interpolate(curr_mdl_time, datatimem, datatimep, it, itp1)
        deltat = datatimep - datatimem
-       !Two time indices for reading data for time interpolation
+       ! Two time indices for reading data for time interpolation
        strt_t   = (/ it,   1, 1, 1 /) !index for first time stamp
        strt_tp1 = (/ itp1, 1, 1, 1 /) !index for second time stamp
 
@@ -377,8 +383,12 @@ contains
        if (read_data) then
           !Get netcdf variable id for the field
           ierr = pio_inq_varid(piofile, trim(adjustl(specifier_sw(ifld))),var_id) !get id of the variable to read from iput file
-          
-          ierr = pio_get_var( piofile, var_id, strt_t  , cnt_sw, wrk_sw(1,ifld,:,:,:) )!BALLI: handle error?
+          ! If current itp matches previous itp1, copy rather than reading from file
+          if (it == itp1_old) then
+             wrk_sw(1,ifld,:,:,:) = wrk_sw(2,ifld,:,:,:)
+          else
+             ierr = pio_get_var( piofile, var_id, strt_t, cnt_sw, wrk_sw(1,ifld,:,:,:) )!BALLI: handle error?
+          endif
           ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, wrk_sw(2,ifld,:,:,:) )!BALLI: handle error?
        endif
 
@@ -391,14 +401,22 @@ contains
        !Note that we have to reverse (compared with how they are mentioned in the netcdf file) the array dim sizes
        if(read_data) then
           ierr = pio_inq_varid(piofile, trim(adjustl(specifier_lw(ifld))),var_id) !get id of the variable to read from iput file
-          ierr = pio_get_var( piofile, var_id, strt_t  , cnt_lw, wrk_lw(1,ifld,:,:,:) )!BALLI: handle error?
+          ! If current itp matches previous itp1, copy rather than reading from file
+          if (it == itp1_old) then
+             wrk_lw(1,ifld,:,:,:) = wrk_lw(2,ifld,:,:,:)
+          else
+             ierr = pio_get_var( piofile, var_id, strt_t, cnt_lw, wrk_lw(1,ifld,:,:,:) )!BALLI: handle error?
+          endif
           ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, wrk_lw(2,ifld,:,:,:) )!BALLI: handle error?
        endif
        !we always have to do interpolation as current model time changes time factors-fact1 and fact2 
        !interpolate in lats, time and vertical
        call interpolate_lats_time_vert(state, wrk_lw(:,ifld,:,:,:), nlwbands, pbuf_idx_lw(ifld), fact1, fact2, pbuf2d )
     enddo
-    
+
+    ! Chris Golaz: for debugging
+    !if (masterproc) write(iulog,'(a,i5,2i3,i6,3f9.2,l2,2f8.4)')'advance_volc_radiation_data:', &
+    !  yr,mon,day,ncsec,curr_mdl_time,datatimem,datatimep,read_data,fact1,fact2
         
   end subroutine advance_volc_radiation_data
 
