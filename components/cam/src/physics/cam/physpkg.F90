@@ -1810,6 +1810,7 @@ subroutine tphysbc (ztodt,               &
     use microp_driver,   only: microp_driver_tend
     use microp_aero,     only: microp_aero_run
     use macrop_driver,   only: macrop_driver_tend
+    use simple_condensation_model, only: simple_RKZ_tend
     use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_update, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
@@ -1904,6 +1905,12 @@ subroutine tphysbc (ztodt,               &
     ! physics buffer fields to compute tendencies for stratiform package
     integer itim_old, ifld
     real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
+
+    real(r8), pointer, dimension(:,:) :: ast        ! cloud fraction
+    real(r8), pointer, dimension(:,:) :: qcwat
+    real(r8), pointer, dimension(:,:) :: lcwat
+    real(r8), pointer, dimension(:,:) :: tcwat
+
 
 !<songxl 2011-09-20----------------------------
 ! physics buffer fields to compute tendencies for deep convection scheme
@@ -2005,6 +2012,8 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mac
     logical :: l_st_mic
     logical :: l_rad
+
+    logical :: use_simple_condensation = .true.
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
 
@@ -2228,6 +2237,9 @@ if (l_bc_energy_fix) then
 
     call t_stopf('energy_fixer')
 
+else
+    call cnst_get_ind('CLDLIQ', ixcldliq)
+    call cnst_get_ind('CLDICE', ixcldice)
 end if
     !
     !===================================================
@@ -2378,6 +2390,7 @@ end if
      end if !l_st_mac
 
     elseif( microp_scheme == 'MG' ) then
+
        ! Start co-substepping of macrophysics and microphysics
        cld_macmic_ztodt = ztodt/cld_macmic_num_steps
 
@@ -2412,8 +2425,40 @@ end if
 
           call t_startf('macrop_tend')
 
-          ! don't call Park macrophysics if CLUBB is called
+          ! call Park macrophysics if CLUBB is not turned on
           if (macrop_scheme .ne. 'CLUBB_SGS') then
+
+            if (use_simple_condensation ) then ! simple condensation model
+
+               if (masterproc) write(*,iulog) "use_simple_condensation = .true."
+
+               itim_old  = pbuf_old_tim_idx()
+
+               ifld = pbuf_get_index('TCWAT')
+               call pbuf_get_field(pbuf, ifld, tcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+               
+               ifld = pbuf_get_index('QCWAT')
+               call pbuf_get_field(pbuf, ifld, qcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+               ifld = pbuf_get_index('LCWAT')
+               call pbuf_get_field(pbuf, ifld, lcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+               ifld = pbuf_get_index('AST')
+               call pbuf_get_field(pbuf, ifld, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+               call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast,  &
+                                     cld_macmic_ztodt, ixcldliq, smpl_frc_schm=1, &
+                                     lclearsky_liqadv=.false., lcloudysky_qme=.true., ldfdt_qme=.true. &
+                                     ,idfdt_qme_opt=16, &
+                                     lqme_lmt_2=.true., lqme_lmt_3=.true., lqme_lmt_4=.true. &
+                                     )
+
+               call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
+               call physics_update(state, ptend, ztodt, tend)
+               call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
+                    zero, zero, zero, zero)
+
+            else ! Park macrophysics
 
              call macrop_driver_tend( &
                   state,           ptend,          cld_macmic_ztodt, &
@@ -2439,7 +2484,9 @@ end if
              call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-       
+      
+            end if ! simple condensation or Park macrophysics
+
           else ! Calculate CLUBB macrophysics
 
 
@@ -2564,6 +2611,26 @@ end if
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
+
+          if (l_st_mac.and.use_simple_condensation) then 
+          !save tcwat, qcwat, lcwat for the next call of macrophysics
+
+             itim  = pbuf_old_tim_idx()
+
+             ifld = pbuf_get_index('TCWAT')
+             call pbuf_get_field(pbuf, ifld, tcwat, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+     
+             ifld = pbuf_get_index('QCWAT')
+             call pbuf_get_field(pbuf, ifld, qcwat, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+
+             ifld = pbuf_get_index('LCWAT')
+             call pbuf_get_field(pbuf, ifld, lcwat, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+
+             tcwat(:ncol,:pver) = state%t(:ncol,:pver)
+             qcwat(:ncol,:pver) = state%q(:ncol,:pver,1)
+             lcwat(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
+
+         end if
 
        end do ! end substepping over macrophysics/microphysics
 
