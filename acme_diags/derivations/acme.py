@@ -477,6 +477,14 @@ derived_variables = {
         (('FSNTOA', 'FSNTOAC', 'FLNTOA', 'FLNTOAC'),
          lambda fsntoa, fsntoac, flntoa, flntoac: netcf4(fsntoa, fsntoac, flntoa, flntoac))
     ]),
+    'NETCF_SRF': OrderedDict([
+        (('sfc_net_sw_all_mon', 'sfc_net_sw_clr_mon', 'sfc_net_lw_all_mon', 'sfc_net_lw_clr_mon'),
+         lambda sw_all, sw_clr, lw_all, lw_clr: netcf4(sw_all, sw_clr, lw_all, lw_clr)),
+        (('sfc_cre_sw_mon', 'sfc_cre_lw_mon'),
+         lambda swcf, lwcf: netcf2(swcf, lwcf)),
+        (('FSNS', 'FSNSC', 'FLNSC', 'FLNS'),
+         lambda fsns, fsnsc, flnsc, flns: netcf4(fsns, fsnsc, flnsc, flns))
+    ]),
 
     'FLNS': OrderedDict([
         (('sfc_net_lw_all_mon'), lambda sfc_net_lw_all_mon: -sfc_net_lw_all_mon),
