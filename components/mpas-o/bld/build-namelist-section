@@ -251,6 +251,7 @@ add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
 add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
+add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
 
 ###########################
 # Namelist group: forcing #
@@ -458,6 +459,7 @@ add_default($nl, 'config_use_activeTracers_exponential_decay');
 add_default($nl, 'config_use_activeTracers_idealAge_forcing');
 add_default($nl, 'config_use_activeTracers_ttd_forcing');
 add_default($nl, 'config_use_surface_salinity_monthly_restoring');
+add_default($nl, 'config_surface_salinity_monthly_restoring_compute_interval');
 add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
 add_default($nl, 'config_salinity_restoring_max_difference');
 add_default($nl, 'config_salinity_restoring_under_sea_ice');

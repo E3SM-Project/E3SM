@@ -739,9 +739,9 @@ contains
     ! read initial data required for ecosys forcing
     call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
     if (config_use_ecosysTracers) then
-      call mpas_timer_start('io_ecosys',.false.)
-      call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
-      call mpas_timer_stop('io_ecosys')
+        call mpas_timer_start('io_ecosys',.false.)
+        call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_ecosys')
     endif
 
     ! read initial data required for monthly surface salinity restoring
@@ -750,9 +750,9 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
                                                  config_use_surface_salinity_monthly_restoring)
     if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
-      call mpas_timer_start('io_monthly_surface_salinity',.false.)
-      call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
-      call mpas_timer_stop('io_monthly_surface_salinity')
+        call mpas_timer_start('io_monthly_surface_salinity',.false.)
+        call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_monthly_surface_salinity')
     endif
 
     itimestep = 0
@@ -946,9 +946,12 @@ contains
          call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
                                                       config_use_surface_salinity_monthly_restoring)
          if (config_use_activeTracers_surface_restoring .and.  config_use_surface_salinity_monthly_restoring) then
-           call mpas_timer_start('io_monthly_surface_salinity',.false.)
-           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain_ptr % clock, .false.)
-           call mpas_timer_stop('io_monthly_surface_salinity')
+             if ( mpas_is_alarm_ringing(domain % clock, 'salinityDataReadAlarm', ierr=ierr) ) then
+                 call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=ierr)
+                 call mpas_timer_start('io_monthly_surface_salinity',.false.)
+                 call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain_ptr % clock, .false.)
+                 call mpas_timer_stop('io_monthly_surface_salinity')
+             endif
          endif
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished reading forcing streams')

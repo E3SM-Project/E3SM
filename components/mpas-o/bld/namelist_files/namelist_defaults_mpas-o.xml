@@ -227,6 +227,7 @@
 <configure_cvmix_kpp_minimum_OBL_under_sea_ice>10.0</configure_cvmix_kpp_minimum_OBL_under_sea_ice>
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
+<config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 
 <!-- forcing -->
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
@@ -403,7 +404,8 @@
 <config_use_activeTracers_idealAge_forcing>.false.</config_use_activeTracers_idealAge_forcing>
 <config_use_activeTracers_ttd_forcing>.false.</config_use_activeTracers_ttd_forcing>
 <config_use_surface_salinity_monthly_restoring>.false.</config_use_surface_salinity_monthly_restoring>
-<config_salinity_restoring_constant_piston_velocity>0.0</config_salinity_restoring_constant_piston_velocity>
+<config_surface_salinity_monthly_restoring_compute_interval>'0000-00-01_00:00:00'</config_surface_salinity_monthly_restoring_compute_interval>
+<config_salinity_restoring_constant_piston_velocity>1.585e-5</config_salinity_restoring_constant_piston_velocity>
 <config_salinity_restoring_max_difference>0.5</config_salinity_restoring_max_difference>
 <config_salinity_restoring_under_sea_ice>.false.</config_salinity_restoring_under_sea_ice>
 
@@ -468,7 +470,6 @@
 
 <!-- AM_surfaceAreaWeightedAverages -->
 <config_AM_surfaceAreaWeightedAverages_enable>.true.</config_AM_surfaceAreaWeightedAverages_enable>
-<config_AM_surfaceAreaWeightedAverages_enable ocn_grid="oRRS18to6v3">.false.</config_AM_surfaceAreaWeightedAverages_enable>
 <config_AM_surfaceAreaWeightedAverages_compute_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_compute_on_startup>
 <config_AM_surfaceAreaWeightedAverages_write_on_startup>.false.</config_AM_surfaceAreaWeightedAverages_write_on_startup>
 <config_AM_surfaceAreaWeightedAverages_compute_interval>'0000-00-00_01:00:00'</config_AM_surfaceAreaWeightedAverages_compute_interval>
@@ -520,7 +521,6 @@
 
 <!-- AM_meridionalHeatTransport -->
 <config_AM_meridionalHeatTransport_enable>.true.</config_AM_meridionalHeatTransport_enable>
-<config_AM_meridionalHeatTransport_enable ocn_grid="oRRS18to6v3">.false.</config_AM_meridionalHeatTransport_enable>
 <config_AM_meridionalHeatTransport_compute_interval>'0000-00-00_01:00:00'</config_AM_meridionalHeatTransport_compute_interval>
 <config_AM_meridionalHeatTransport_compute_on_startup>.true.</config_AM_meridionalHeatTransport_compute_on_startup>
 <config_AM_meridionalHeatTransport_write_on_startup>.false.</config_AM_meridionalHeatTransport_write_on_startup>
@@ -539,7 +539,6 @@
 
 <!-- AM_highFrequencyOutput -->
 <config_AM_highFrequencyOutput_enable>.true.</config_AM_highFrequencyOutput_enable>
-<config_AM_highFrequencyOutput_enable ocn_grid="oRRS18to6v3">.false.</config_AM_highFrequencyOutput_enable>
 <config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
 <config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
 <config_AM_highFrequencyOutput_compute_on_startup>.false.</config_AM_highFrequencyOutput_compute_on_startup>
@@ -585,7 +584,6 @@
 
 <!-- AM_mixedLayerDepths -->
 <config_AM_mixedLayerDepths_enable>.true.</config_AM_mixedLayerDepths_enable>
-<config_AM_mixedLayerDepths_enable ocn_grid="oRRS18to6v3">.false.</config_AM_mixedLayerDepths_enable>
 <config_AM_mixedLayerDepths_compute_interval>'0000-00-00_01:00:00'</config_AM_mixedLayerDepths_compute_interval>
 <config_AM_mixedLayerDepths_output_stream>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_output_stream>
 <config_AM_mixedLayerDepths_write_on_startup>.false.</config_AM_mixedLayerDepths_write_on_startup>
