@@ -1,5 +1,40 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 11-22-2017 
+Tag: cime5.4.0-alpha.11
+Answer Changes: None
+Tests: scripts_regression_tests.pr 
+Dependencies:
+
+Brief Summary:
+    - GPTL build threaded, makefile cleanup.
+    - Changes in merged Makefile to satisfy dependancies thus making rebuild faster.
+    - Fix run_sub_or_cmd in the case where a cmd is run and log is None.
+    - Enable ldsta case.submit to be run twice.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5ea8d6b Merge pull request #2092 from jedwards4b/gptl_build_threaded
+4361a51 Merge pull request #2090 from jedwards4b/makefaster
+ca4c1f9 Merge pull request #2086 from ESMCI/jgfouca/run_sub_no_log
+5791d32 Merge pull request #2084 from ESMCI/mfdeakin-sandia/ldsta/rerun
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/Makefile
+M       scripts/lib/CIME/SystemTests/ldsta.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/case_run.py
+M       scripts/lib/CIME/preview_namelists.py
+M       scripts/lib/CIME/utils.py
+M       src/build_scripts/buildlib.gptl
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 11-17-2017
 Tag: cime5.4.0-alpha.10
