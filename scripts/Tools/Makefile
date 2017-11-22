@@ -30,16 +30,24 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
+CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
+EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
+BUILD_THREADED ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
+LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
+COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
+NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
+MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
+PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
+
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
-compile_threaded = false
 ifeq ($(strip $(SMP)),TRUE)
-   compile_threaded = true
    THREADDIR = threads
 else
    ifeq ($(strip $(BUILD_THREADED)),TRUE)
-      compile_threaded = true
       THREADDIR = threads
    else
       THREADDIR = nothreads
@@ -95,38 +103,7 @@ ifeq ($(strip $(MPILIB)),mpi-serial)
 else
   CPPDEFS += -DHAVE_MPI
 endif
-ifeq ($(compile_threaded), true)
-  CPPDEFS += -DTHREADED_OMP
-endif
-ifeq (,$(CIME_MODEL))
-  CIME_MODEL = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
-endif
 
-ifeq (,$(EXEROOT))
-  EXEROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
-endif
-ifeq (,$(BUILD_THREADED))
-  BUILD_THREADED = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
-endif
-
-ifeq (,$(LIBROOT))
-  LIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
-endif
-ifeq (,$(SHAREDLIBROOT))
-  SHAREDLIBROOT = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
-endif
-ifeq (,$(COMPILER))
-  COMPILER =  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-endif
-ifeq (,$(NINST_VALUE))
-  NINST_VALUE =  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-endif
-ifeq (,$(MPILIB))
-  MPILIB = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
-endif
-ifeq (,$(PIO_VERSION))
-  PIO_VERSION = $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
-endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
 endif
