@@ -211,20 +211,39 @@ ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
 IF (CPRNC_DIR)
-  # user specifed CPRNC binary - dont build
   ADD_EXECUTABLE( cprnc IMPORTED)
   find_program(CPRNC_BINARY cprnc ${CPRNC_DIR})
   IF ( CPRNC_BINARY )
+     message("-- CPRNC: found in user specified CPRNC_DIR")
      message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
   ELSE()
      message(WARNING "cprnc not found - cannot check regression test output")
   ENDIF ()
 ELSE ()
-  # compile CPRNC from CIME source code. Requires CIME support for machine
-  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
-  SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
-  SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+  # if HOMME is being built in CIME, check if we can use CIME's CPRNC:
+  # xmlquery returns code:    CPRNC_STATUS = 0  
+  # xmlquery doesn't exist    CPRNC_STATUS = No such file or directory  
+  # xmlquery query doesn't exist:  CPRNC_STATUS = 1 
+  EXECUTE_PROCESS (COMMAND ./xmlquery -value CCSM_CPRNC
+                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/..
+                   OUTPUT_VARIABLE CPRNC_BINARY
+                   RESULT_VARIABLE CPRNC_STATUS
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  #IF ( ${CPRNC_BINARY} STREQUAL "" )
+  IF ( ${CPRNC_STATUS} STREQUAL "0" )
+    string(STRIP    CPRNC_BINARY ${CPRNC_BINARY})
+    message("-- CPRNC: using executable from CIME config_machines.xml")
+    message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
+  ELSE()
+    # compile CPRNC from CIME source code. Requires CIME support for machine
+    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
+    SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+    SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+    message("-- CPRNC: will configure/build from source")
+    message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
+  ENDIF()
 ENDIF ()
 
 
