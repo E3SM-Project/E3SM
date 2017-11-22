@@ -2430,7 +2430,7 @@ end if
 
             if (use_simple_condensation ) then ! simple condensation model
 
-               if (masterproc) write(*,iulog) "use_simple_condensation = .true."
+               if (masterproc) write(iulog,*) "use_simple_condensation = .true."
 
                itim_old  = pbuf_old_tim_idx()
 
@@ -2615,16 +2615,16 @@ end if
           if (l_st_mac.and.use_simple_condensation) then 
           !save tcwat, qcwat, lcwat for the next call of macrophysics
 
-             itim  = pbuf_old_tim_idx()
+             itim_old  = pbuf_old_tim_idx()
 
              ifld = pbuf_get_index('TCWAT')
-             call pbuf_get_field(pbuf, ifld, tcwat, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+             call pbuf_get_field(pbuf, ifld, tcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
      
              ifld = pbuf_get_index('QCWAT')
-             call pbuf_get_field(pbuf, ifld, qcwat, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+             call pbuf_get_field(pbuf, ifld, qcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
              ifld = pbuf_get_index('LCWAT')
-             call pbuf_get_field(pbuf, ifld, lcwat, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+             call pbuf_get_field(pbuf, ifld, lcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
              tcwat(:ncol,:pver) = state%t(:ncol,:pver)
              qcwat(:ncol,:pver) = state%q(:ncol,:pver,1)
