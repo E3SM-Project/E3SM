@@ -15,6 +15,7 @@ module cplcomp_exchange_mod
 
 #ifdef HAVE_MOAB
   use semoab_mod, only : MHID
+  use mpas_moabmesh, only : MPOID
 #endif
 
   implicit none
@@ -1023,7 +1024,6 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
     ! this works now for atmosphere only;
-    ! it should work for mpas ocean soon
     if (comp%oneletterid == 'a') then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -1033,16 +1033,37 @@ contains
         ierr = iMOAB_SendMesh(MHID, mpicom_join, mpigrp_cplid, id_new);
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_HM"//CHAR(0)
+        appname = "COUPLE_ATM"//CHAR(0)
         ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target)
         ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
         ! debug test
-        outfile = 'recMesh.h5m'//CHAR(0)
-        wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+        outfile = 'recMeshAtm.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0)
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
       endif
     endif !  only for atm for the time being
+    ! this works now for atmosphere only;
+    if (comp%oneletterid == 'o') then
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+        !  send mesh to coupler
+        ierr = iMOAB_SendMesh(MPOID, mpicom_join, mpigrp_cplid, id_new);
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_MPASO"//CHAR(0)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target)
+        ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
+        ! debug test
+        outfile = 'recMeshOcn.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+!      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(pid_target, trim(outfile), trim(wopts))
+      endif
+    endif !  only for atm for the time being
+
 
 
   end subroutine cplcomp_moab_Init
