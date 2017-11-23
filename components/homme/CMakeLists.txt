@@ -180,10 +180,11 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 
 
 #
-# Bug in PIO: PIO1 calls TARGET_LINK_LIBRARIES uses all caps variables, 
-# instead of the mixed case variables computed by PIO's findNetCDF.  
-# 2017/6 PR submitted to pio1
-# workaround until this makes it back into ACME:
+# HOMME uses PIO and does not call netcdf/pnetcdf directly.  So cmake should
+# only configure the PIO library.  But there is a typo when PIO1 sets up 
+# TARGET_LINK_LIBRARIES 
+# Fixed: https://github.com/NCAR/ParallelIO/pull/1067
+# Until this makes it back into ACME, we need to FIND_PACKAGE here...
 #
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
