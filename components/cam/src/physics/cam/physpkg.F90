@@ -2449,8 +2449,8 @@ end if
                call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast,  &
                                      cld_macmic_ztodt, ixcldliq, smpl_frc_schm=1, &
                                      lclearsky_liqadv=.false., lcloudysky_qme=.true., ldfdt_qme=.true. &
-                                     ,idfdt_qme_opt=16, &
-                                     lqme_lmt_2=.true., lqme_lmt_3=.true., lqme_lmt_4=.true. &
+                                     ,idfdt_qme_opt=17, &
+                                     lqme_lmt_2=.false., lqme_lmt_3=.false., lqme_lmt_4=.true. &
                                      )
 
                call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          

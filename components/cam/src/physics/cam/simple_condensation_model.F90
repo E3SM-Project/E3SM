@@ -234,7 +234,8 @@ contains
 
           zql_incld(:,:) = 0._r8
           where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-4)
+          !zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-4)
+           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-3)
           end where
           zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
 
