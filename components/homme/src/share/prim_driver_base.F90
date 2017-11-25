@@ -41,7 +41,7 @@ contains
   subroutine prim_init1(elem, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, hthreads
+    use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
          partmethod, use_semi_lagrange_transport, z2_map_method, cubed_sphere_map
@@ -347,7 +347,16 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    hthreads = min(nthreads,nelemd)
+    if (vthreads == 0) then
+       ! vthreads was NOT SET in namelist 
+       hthreads = min(nthreads,nelemd)  ! use max possible for hthreads
+       vthreads = nthreads/max(hthreads,1)  
+    else
+       ! vthreads was SET in namelist. impose:
+       hthreads = nthreads/max(vthreads,1)
+       hthreads = min(hthreads,nelemd)  ! hthreads cant exceed nelemd
+    endif
+
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
@@ -468,6 +477,17 @@ contains
     if(par%masterproc) then
        write(iulog,*) "Main:nthreads=",nthreads
        write(iulog,*) "Main:hthreads=",hthreads
+       write(iulog,*) "Main:vthreads=",hthreads
+#ifdef HORIZ_OPENMP
+       write(iulog,*) "Main:HORIZ_OPENMP enabled"
+#else
+       write(iulog,*) "Main:HORIZ_OPENMP disabled, hthreads ignored"
+#endif
+#ifdef COLUMN_OPENMP
+       write(iulog,*) "Main:COLUMN_OPENMP enabled"
+#else
+       write(iulog,*) "Main:COLUMN_OPENMP disabled, vthreads ignored"
+#endif
     endif
 
     allocate(dom_mt(0:hthreads-1))

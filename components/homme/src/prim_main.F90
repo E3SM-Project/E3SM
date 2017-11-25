@@ -88,7 +88,6 @@ program prim_main
   ! Begin threaded region so each thread can print info
   ! =====================================
 #if (defined HORIZ_OPENMP)
-  hthreads = nthreads / vthreads
   !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
   call omp_set_num_threads(vthreads)
 #endif

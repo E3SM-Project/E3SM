@@ -733,6 +733,10 @@ module namelist_mod
        if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
        call abortmp('stopping')
     endif
+    if (vthreads > nthreads) then
+       if(par%masterproc) print *,'requested vthreads exceeds nthreads'
+       call abortmp('stopping')
+    endif
     call omp_set_num_threads(NThreads)
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula

@@ -16,9 +16,9 @@ module thread_mod
   implicit none
   private
 
-  integer, public :: NThreads
-  integer, public :: hthreads
-  integer, public :: vthreads
+  integer, public :: NThreads   ! from namelist
+  integer, public :: hthreads   ! computed based on nthreads, vthreads,nelemd
+  integer, public :: vthreads = 0   ! compute, unless set in namelist
 
   public :: omp_get_thread_num
   public :: omp_in_parallel
