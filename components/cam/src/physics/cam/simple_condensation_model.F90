@@ -6,9 +6,9 @@
 !
 ! Multiple versions of the third term was included for testing.
 !
-! History: Hui Wan (PNNL, 2015)
-! The original file name was simple_condensation_model.F90_Hui 
-! (from Hui's git repo 2014_micro_Hui, subdir code/cam/cam5_3_07_mods/)
+! History: 
+!  - first version by Hui Wan (PNNL, 2014-2015)
+!  - revised for the SciDAC Convergence project, Hui Wan (PNNL, 2017)
 !-----------------------------------------------------------------------------------------
 module simple_condensation_model
 
@@ -16,13 +16,22 @@ module simple_condensation_model
   private
   public :: simple_RKZ_tend
 
+  use cam_logfile,    only: iulog
+  use cam_abortutils, only: endrun
+
 contains
 
-  subroutine simple_RKZ_tend(   state, ptend, tcwat, qcwat, lcwat, ast,  &
-                                dtime, ixcldliq, &
-                                smpl_frc_schm, lclearsky_liqadv, lcloudysky_qme, ldfdt_qme, &
-                                idfdt_qme_opt, lqme_lmt_2, lqme_lmt_3, lqme_lmt_4 &
-                                )
+  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast,  &
+                             dtime, ixcldliq, &
+                             rkz_cldfrc_opt, &
+                             rkz_term_A_opt, &
+                             rkz_term_B_opt, &
+                             rkz_term_C_opt, &
+                             rkz_term_C_ql_opt, & 
+                             l_rkz_lmt_2, &
+                             l_rkz_lmt_3, &
+                             l_rkz_lmt_4 
+                             )
 
   use shr_kind_mod, only: r8=>shr_kind_r8
   use ppgrid,       only: pver, pcols
@@ -48,14 +57,16 @@ contains
 
   real(r8), intent(in) :: dtime               ! Set model physics timestep
   integer,  intent(in) :: ixcldliq            ! constituent index 
-  integer,  intent(in) :: smpl_frc_schm       ! cloud fraction scheme 
-  logical,  intent(in) :: lclearsky_liqadv    ! consider ql adv when calculating clear-sky qme
-  logical,  intent(in) :: lcloudysky_qme      ! consider in-cloud condensation 
-  logical,  intent(in) :: ldfdt_qme           ! consider qme associated with cloud fraction change 
-  integer,  intent(in) :: idfdt_qme_opt
-  logical,  intent(in) :: lqme_lmt_2
-  logical,  intent(in) :: lqme_lmt_3
-  logical,  intent(in) :: lqme_lmt_4
+
+  integer,  intent(in) :: rkz_cldfrc_opt       ! cloud fraction scheme 
+  integer,  intent(in) :: rkz_term_A_opt
+  integer,  intent(in) :: rkz_term_B_opt
+  integer,  intent(in) :: rkz_term_C_opt
+  integer,  intent(in) :: rkz_term_C_ql_opt
+
+  logical,  intent(in) :: l_rkz_lmt_2
+  logical,  intent(in) :: l_rkz_lmt_3
+  logical,  intent(in) :: l_rkz_lmt_4
 
   real(r8) :: rdtime
   integer  :: ncol, itim, ifld, nstep, lchnk
@@ -96,35 +107,29 @@ contains
   ncol  = state%ncol
   nstep = get_nstep()
 
-  lchnk = state%lchnk  ! for "call outfld"
+  lchnk = state%lchnk  ! needed for "call outfld"
 
-  ! Specific humidity at saturation, and its derivative wrt temperature
+  ! Calculate qsat and its derivative wrt temperature
+
   do k=1,pver
   do i=1,ncol
-    !! Option 1: use the old temperature, and updated pressure.
-    !call qsat_water( tcwat(i,k), state%pmid(i,k), esl(i,k), qsat(i,k), gam(i,k), dqsdt(i,k) )
-
-     ! Option 2: use the new temperature and pressure.
      call qsat_water( state%t(i,k), state%pmid(i,k), esl(i,k), qsat(i,k), gam(i,k), dqsdt(i,k) )
   end do
   end do
 
-  ! Grid-box-mean relative humidity
+  ! Calculate the grid-box-mean relative humidity
+
   rhgbm(:ncol,:pver) = state%q(:ncol,:pver,1)/qsat(:ncol,:pver)
 
 !!call outfld('RKS_RH', rhgbm,  pcols, lchnk)
 
-  ! cloud fraction: save old values, diagnose new values
+  ! Cloud fraction: save old values, diagnose new values
 
   if (nstep > 1) ast_old(:ncol,:pver) = ast(:ncol,:pver)
 
- !call  smpl_frc( qcwat, lcwat, qsat, ast, smpl_frc_schm, 0.5_r8, 0.5_r8, pcols, pver, ncol )
   call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,     &! in
                   ast, rhu00, dastdRH,                             &! inout, out
-                  smpl_frc_schm, 0.5_r8, 0.5_r8, pcols, pver, ncol )! in
-
-  !------------
-  ! diagnostics
+                  rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! in
 
 !!call outfld('RKS_ast', ast,  pcols, lchnk)
 !!call outfld('RKS_qs0', qsat, pcols, lchnk)
@@ -137,30 +142,53 @@ contains
   qme(:ncol,:pver) = 0._r8
 
   if (nstep > 1) then
-
+     !------------------------------------------------------------------
      ! Diagose "other forcing" on qv and temperature
+
      qtend(:ncol,:pver) = ( state%q(:ncol,:pver,1) - qcwat(:ncol,:pver) )*rdtime
      ttend(:ncol,:pver) = ( state%t(:ncol,:pver)   - tcwat(:ncol,:pver) )*rdtime
 
      !------------------------------------------------------------------
-     ! qme in cloudy portion of a grid box, weighted by cloud fraction
+     ! Term A: qme in cloudy portion of a grid box, weighted by cloud fraction
 
-     if (lcloudysky_qme) then
-
-       !qme(:ncol,:pver) = ast_old(:ncol,:pver) &
+     select case (rkz_term_A_opt) 
+     case(0)
+        continue  ! omit this term
+case(1)
         qme(:ncol,:pver) = qme(:ncol,:pver) + ast(:ncol,:pver)     &
                            *( qtend(:ncol,:pver) - dqsdt(:ncol,:pver)*ttend(:ncol,:pver) ) &
                            /( 1._r8 + gam(:ncol,:pver) )
-     end if
+     case default
+         write(iulog,*) "Unrecognized value of rkz_term_A_opt:",rkz_term_A_opt,". Abort."
+         call endrun
+     end select
    !!call outfld('RKS_qme_c', qme,  pcols, lchnk)
 
-     !--------------------------------------------------------------------------
-     ! qme in cloud-free portion of a grid box, related to cloud expansion/erosion 
+     !--------------------------------------------------------------------------------------
+     ! Term B: qme in cloud-free portion of a grid box in response to cloud liquid tencendy
+     ! caused by other processes.
+
+     select case (rkz_term_B_opt) 
+     case(0)
+        continue  ! omit this term
+
+     case default
+         write(iulog,*) "Unrecognized value of rkz_term_B_opt:",rkz_term_B_opt,". Abort."
+         call endrun
+     end select
+
+     !------------------------------------------------------------------------------------
+     ! Term C: qme in cloud-free portion of a grid box, related to cloud expansion/erosion 
 
      ztmp(:ncol,:pver) = 0._r8
 
      ! Do the calculation only if this term is turned on and cloud fraction is time-dependent
-     if (ldfdt_qme .and. smpl_frc_schm.ne.0) then  
+     select case (rkz_term_C_opt) 
+     case(0)
+        continue  ! omit this term
+
+     case(2)
+     if (rkz_cldfrc_opt.ne.0) then  
 
         ! zforcing is the "forcing" term, i.e., grid box cooling and/or moistening caused by 
         ! processes other than condensation. It appears on the nominator of the expression 
@@ -255,70 +283,78 @@ contains
                           *ztmp(:ncol,:pver) 
 
      end if
+
+     case default
+         write(iulog,*) "Unrecognized value of rkz_term_C_opt:",rkz_term_C_opt,". Abort."
+         call endrun
+     end select
   !! call outfld('RKS_qme_e_dfdt', ztmp,  pcols, lchnk)
   !! call outfld('RKS_qme_1', qme,  pcols, lchnk)
 
      !-----------
      ! limiting
      !-----------
-     if (lqme_lmt_2) then
+     if (l_rkz_lmt_2) then
 
-     ! Check the sign of qme:
-     ! If other forcing leads to strong cooling or moistening,
-     ! then condensation might happen, evaporate should not happen
+        ! Check the sign of qme:
+        ! If other forcing leads to strong cooling or moistening,
+        ! then condensation might happen, evaporate should not happen
 
-    !where ( rhgbm(:ncol,:pver) >= 1._r8 ) 
-     where ( rhgbm(:ncol,:pver) > 1._r8 ) 
-       qme(:ncol,:pver) = max( qme(:ncol,:pver), 0._r8 )
+       !where ( rhgbm(:ncol,:pver) >= 1._r8 ) 
+        where ( rhgbm(:ncol,:pver) > 1._r8 ) 
+          qme(:ncol,:pver) = max( qme(:ncol,:pver), 0._r8 )
 
-     ! If other forcing dries/warms the atmos a lot, 
-     ! evaporation might happen, condensation should not happen. 
+        ! If other forcing dries/warms the atmos a lot, 
+        ! evaporation might happen, condensation should not happen. 
 
-     elsewhere ( rhgbm(:ncol,:pver) < rhu00 ) 
-    !elsewhere ( rhgbm(:ncol,:pver) < 1._r8 ) 
-       qme(:ncol,:pver) = min( qme(:ncol,:pver), 0._r8 )
+        elsewhere ( rhgbm(:ncol,:pver) < rhu00 ) 
+       !elsewhere ( rhgbm(:ncol,:pver) < 1._r8 ) 
+          qme(:ncol,:pver) = min( qme(:ncol,:pver), 0._r8 )
 
-     end where
+        end where
      end if
 
   !! call outfld('RKS_qme_2', qme,  pcols, lchnk)
 
      !-----------------------------
      ! Check the magnitude of qme:
-     if (lqme_lmt_3) then
+     if (l_rkz_lmt_3) then
 
-     ! What qme would be needed to bring the whole grid cell to a new saturation equilibrium?
-     zlim(:ncol,:pver) = ( state%q(:ncol,:pver,1)-qsat(:ncol,:pver) ) &
-                        /( 1._r8 + (latvap/cpair)*dqsdt(:ncol,:pver) )*rdtime
+        ! What qme would be needed to bring the whole grid cell to a new saturation equilibrium?
+        zlim(:ncol,:pver) = ( state%q(:ncol,:pver,1)-qsat(:ncol,:pver) ) &
+                           /( 1._r8 + (latvap/cpair)*dqsdt(:ncol,:pver) )*rdtime
 
-     ! Condensation should not lead to sub-saturation
-     where ( qme(:ncol,:pver) > 0._r8 ) 
-       qme(:ncol,:pver) = min( qme(:ncol,:pver), zlim(:ncol,:pver) )
+        ! Condensation should not lead to sub-saturation
+        where ( qme(:ncol,:pver) > 0._r8 ) 
+          qme(:ncol,:pver) = min( qme(:ncol,:pver), zlim(:ncol,:pver) )
 
-     ! Evaporation should not lead to supersaturation
-     elsewhere ( qme(:ncol,:pver) < 0._r8 ) 
-       qme(:ncol,:pver) = max( qme(:ncol,:pver), zlim(:ncol,:pver) )
-     end where
+        ! Evaporation should not lead to supersaturation
+        elsewhere ( qme(:ncol,:pver) < 0._r8 ) 
+          qme(:ncol,:pver) = max( qme(:ncol,:pver), zlim(:ncol,:pver) )
+        end where
 
      end if
   !! call outfld('RKS_qme_3', qme,  pcols, lchnk)
 
-     !-------------------
-     ! Avoid negative qv
 
-     if (lqme_lmt_4) then
+     !---------------------------------------------------------------------------
+     ! Limit condensation/evaporation rate to avoid negative water concentrations
+     !---------------------------------------------------------------------------
+     if (l_rkz_lmt_4) then
 
-     zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
-     where( zqvnew(:ncol,:pver).lt.zsmall )
-        qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
-     end where
+        ! Avoid negative qv
 
-     ! Avoid negative ql
+        zqvnew(:ncol,:pver) = state%q(:ncol,:pver,1) - dtime*qme(:ncol,:pver)
+        where( zqvnew(:ncol,:pver).lt.zsmall )
+           qme(:ncol,:pver) = ( state%q(:ncol,:pver,1) - zsmall )*rdtime
+        end where
 
-     zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
-     where( zqlnew(:ncol,:pver).lt.zsmall )
-        qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
-     end where
+        ! Avoid negative ql
+
+        zqlnew(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + dtime*qme(:ncol,:pver)
+        where( zqlnew(:ncol,:pver).lt.zsmall )
+           qme(:ncol,:pver) = ( zsmall - state%q(:ncol,:pver,ixcldliq) )*rdtime
+        end where
 
      end if
   !! call outfld('RKS_qme_4', qme,  pcols, lchnk)
@@ -331,7 +367,7 @@ contains
    lq(:) = .FALSE.
    lq(1) = .TRUE.
    lq(ixcldliq) = .TRUE.
-   call physics_ptend_init(ptend,state%psetcols, "Rasch macro simplified", ls=.true., lq=lq)
+   call physics_ptend_init(ptend,state%psetcols, "RKZ macro simplified", ls=.true., lq=lq)
 
    ptend%q(:ncol,:pver,1)        = -qme(:ncol,:pver)
    ptend%q(:ncol,:pver,ixcldliq) =  qme(:ncol,:pver)

@@ -2447,10 +2447,15 @@ end if
                call pbuf_get_field(pbuf, ifld, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
                call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast,  &
-                                     cld_macmic_ztodt, ixcldliq, smpl_frc_schm=1, &
-                                     lclearsky_liqadv=.false., lcloudysky_qme=.true., ldfdt_qme=.true. &
-                                     ,idfdt_qme_opt=17, &
-                                     lqme_lmt_2=.false., lqme_lmt_3=.false., lqme_lmt_4=.true. &
+                                     cld_macmic_ztodt, ixcldliq, &
+                                     rkz_cldfrc_opt=1, &
+                                     rkz_term_A_opt=1, &
+                                     rkz_term_B_opt=0, &
+                                     rkz_term_C_opt=2, &
+                                     rkz_term_C_ql_opt=17, &
+                                     l_rkz_lmt_2=.false., &
+                                     l_rkz_lmt_3=.false., &
+                                     l_rkz_lmt_4=.true. &
                                      )
 
                call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
