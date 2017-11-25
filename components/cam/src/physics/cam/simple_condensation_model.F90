@@ -12,12 +12,12 @@
 !-----------------------------------------------------------------------------------------
 module simple_condensation_model
 
+  use cam_logfile,    only: iulog
+  use cam_abortutils, only: endrun
+
   implicit none
   private
   public :: simple_RKZ_tend
-
-  use cam_logfile,    only: iulog
-  use cam_abortutils, only: endrun
 
 contains
 
@@ -30,7 +30,7 @@ contains
                              rkz_term_C_ql_opt, & 
                              l_rkz_lmt_2, &
                              l_rkz_lmt_3, &
-                             l_rkz_lmt_4 
+                             l_rkz_lmt_4  &
                              )
 
   use shr_kind_mod, only: r8=>shr_kind_r8
@@ -229,7 +229,7 @@ case(1)
         ! 6,16 (ql_incloud=0 if f<0.01%)   
         ! 7,17 (ql_incloud=ql/max(f,0.01%) 
 
-        SELECT CASE (idfdt_qme_opt)
+        SELECT CASE (rkz_term_C_ql_opt)
         CASE (1,11)
           zqlf(:ncol,:pver) = 1e-5_r8
 
@@ -271,7 +271,7 @@ case(1)
 
         ! Now calculate the denominator of the grid-box mean condensation rate
 
-        if (idfdt_qme_opt < 10 ) then
+        if (rkz_term_C_ql_opt < 10 ) then
            ztmp(:ncol,:pver) = 1._r8
         else
            ztmp(:ncol,:pver) = 1._r8/( 1.+ zqlf(:ncol,:pver)*zc3(:ncol,:pver) )
