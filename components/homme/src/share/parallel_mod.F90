@@ -21,7 +21,6 @@ module parallel_mod
   integer, parameter, public :: MAX_ACTIVE_MSG = (MPI_TAG_UB/2**THREAD_TAG_BITS) - 1
   integer, parameter, public :: HME_status_size = MPI_STATUS_SIZE
   integer,      public            :: MaxNumberFrames, numframes
-  integer,      public            :: useframes 
   logical,      public            :: PartitionForNodes
   integer,      public :: MPIreal_t,MPIinteger_t,MPIChar_t,MPILogical_t
   integer,      public :: iam

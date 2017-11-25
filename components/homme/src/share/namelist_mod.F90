@@ -18,7 +18,6 @@ module namelist_mod
     topology,      &       ! Mesh topology
     test_case,     &       ! test case
     uselapi,       &
-    multilevel,    &
     numnodes,      &
     sub_case,      &
     tasknum,       &       ! used dg model in AIX machine
@@ -101,7 +100,7 @@ module namelist_mod
   use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit, phys_tscale
 #endif
   use parallel_mod,   only: parallel_t,  iam, abortmp, &
-       partitionfornodes, useframes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
+       partitionfornodes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
   use cg_mod,         only: cg_no_debug
 
 #ifndef CAM
@@ -202,8 +201,6 @@ module namelist_mod
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
       uselapi,       &
-      multilevel,    &
-      useframes,     &
       numnodes,      &
       ne,            &             ! element resolution factor
       tasknum,       &
@@ -326,8 +323,6 @@ module namelist_mod
     COORD_TRANSFORM_METHOD = SPHERE_COORDS
     Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
-    useframes     = 0
-    multilevel    = 1
     uselapi       = .TRUE.
 #ifdef CAM
     ! set all CAM defaults
@@ -603,8 +598,6 @@ module namelist_mod
     call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(multilevel,      1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(useframes,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
 
 #ifdef CAM
@@ -846,13 +839,8 @@ module namelist_mod
     if(nu_div<0)  nu_div= nu
     if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
 
-    if (multilevel <= 0) then
-      nmpi_per_node = 1
-    endif
-
     nnodes = npart/nmpi_per_node
-
-    if(numnodes > 0 .and. multilevel .eq. 1) then
+    if(numnodes > 0 ) then
         nnodes = numnodes
         nmpi_per_node = npart/nnodes
     endif
@@ -889,8 +877,6 @@ module namelist_mod
 
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
        write(iulog,*)"readnl: vthreads      = ",vthreads
-       write(iulog,*)'readnl: multilevel    = ',multilevel
-       write(iulog,*)'readnl: useframes     = ',useframes
        write(iulog,*)'readnl: nnodes        = ',nnodes
        write(iulog,*)'readnl: npart         = ',npart
 
