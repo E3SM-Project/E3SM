@@ -477,7 +477,7 @@ contains
     if(par%masterproc) then
        write(iulog,*) "Main:nthreads=",nthreads
        write(iulog,*) "Main:hthreads=",hthreads
-       write(iulog,*) "Main:vthreads=",hthreads
+       write(iulog,*) "Main:vthreads=",vthreads
 #ifdef HORIZ_OPENMP
        write(iulog,*) "Main:HORIZ_OPENMP enabled"
 #else
