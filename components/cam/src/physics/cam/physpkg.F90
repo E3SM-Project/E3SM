@@ -2013,7 +2013,7 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mic
     logical :: l_rad
 
-    logical :: use_simple_condensation = .true.
+    integer :: simple_macrop_opt = -1   ! -1 = NOT using simple macrophysics schemes
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
 
@@ -2425,12 +2425,13 @@ end if
 
           call t_startf('macrop_tend')
 
-          ! call Park macrophysics if CLUBB is not turned on
+          ! call Park macrophysics or a simple condensation model if CLUBB is not turned on
           if (macrop_scheme .ne. 'CLUBB_SGS') then
 
-            if (use_simple_condensation ) then ! simple condensation model
+            select(simple_macrop_opt) ! simple condensation models
+           !case (1) ! saturation adjustment scheme from Reed and Jablonowski
 
-               if (masterproc) write(iulog,*) "use_simple_condensation = .true."
+            case (2) ! simplified Rasch-Kristjansson-Zhang scheme
 
                itim_old  = pbuf_old_tim_idx()
 
@@ -2451,7 +2452,7 @@ end if
                                      rkz_cldfrc_opt=1, &
                                      rkz_term_A_opt=1, &
                                      rkz_term_B_opt=0, &
-                                     rkz_term_C_opt=2, &
+                                     rkz_term_C_opt=0, &
                                      rkz_term_C_ql_opt=17, &
                                      l_rkz_lmt_2=.false., &
                                      l_rkz_lmt_3=.false., &
@@ -2463,7 +2464,7 @@ end if
                call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                     zero, zero, zero, zero)
 
-            else ! Park macrophysics
+            case(-1) ! Park macrophysics
 
              call macrop_driver_tend( &
                   state,           ptend,          cld_macmic_ztodt, &
@@ -2490,7 +2491,10 @@ end if
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
       
-            end if ! simple condensation or Park macrophysics
+            case default 
+                 write(iulog,*) "Unrecognized value of simple_macrop_opt:",simple_macrop_opt,". Abort."
+                 call  endrun
+            end select ! simple condensation or Park macrophysics
 
           else ! Calculate CLUBB macrophysics
 
@@ -2617,7 +2621,7 @@ end if
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
 
-          if (l_st_mac.and.use_simple_condensation) then 
+          if (l_st_mac.and. simple_macrop_opt==2) then 
           !save tcwat, qcwat, lcwat for the next call of macrophysics
 
              itim_old  = pbuf_old_tim_idx()
