@@ -152,6 +152,18 @@ logical :: l_st_mac        = .true.
 logical :: l_st_mic        = .true.
 logical :: l_rad           = .true.
 
+! Options for configuring a simple macrophysics scheme 
+
+integer :: simple_macrop_opt = -1   ! -1 = NOT using simple macrophysics schemes
+integer :: rkz_cldfrc_opt    = 1
+integer :: rkz_term_A_opt    = 1
+integer :: rkz_term_B_opt    = 0
+integer :: rkz_term_C_opt    = 2
+integer :: rkz_term_C_ql_opt = 17
+
+logical :: l_rkz_lmt_2       = .false.
+logical :: l_rkz_lmt_3       = .false.
+logical :: l_rkz_lmt_4       = .true.
 
 !======================================================================= 
 contains
@@ -187,7 +199,10 @@ subroutine phys_ctl_readnl(nlfile)
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, &
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
-      l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
+      l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, &
+      simple_macrop_opt, rkz_cldfrc_opt, rkz_term_A_opt, rkz_term_B_opt, rkz_term_C_opt, &
+      rkz_term_C_ql_opt, l_rkz_lmt_2, l_rkz_lmt_3, l_rkz_lmt_4, &
+      prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
       rrtmg_temp_fix
    !-----------------------------------------------------------------------------
 
@@ -256,6 +271,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(liqcf_fix,                       1 , mpilog,  0, mpicom)
    call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)
    call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)
+
    call mpibcast(l_tracer_aero,                   1 , mpilog,  0, mpicom)
    call mpibcast(l_vdiff,                         1 , mpilog,  0, mpicom)
    call mpibcast(l_rayleigh,                      1 , mpilog,  0, mpicom)
@@ -266,6 +282,17 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(l_st_mac,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_st_mic,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_rad,                           1 , mpilog,  0, mpicom)
+
+   call mpibcast(simple_macrop_opt,               1 , mpiint,  0, mpicom)
+   call mpibcast(rkz_cldfrc_opt,                  1 , mpiint,  0, mpicom)
+   call mpibcast(rkz_term_A_opt,                  1 , mpiint,  0, mpicom)
+   call mpibcast(rkz_term_B_opt,                  1 , mpiint,  0, mpicom)
+   call mpibcast(rkz_term_C_opt,                  1 , mpiint,  0, mpicom)
+   call mpibcast(rkz_term_C_ql_opt,               1 , mpiint,  0, mpicom)
+   call mpibcast(l_rkz_lmt_2,                     1 , mpilog,  0, mpicom)
+   call mpibcast(l_rkz_lmt_3,                     1 , mpilog,  0, mpicom)
+   call mpibcast(l_rkz_lmt_4,                     1 , mpilog,  0, mpicom)
+
    call mpibcast(cld_macmic_num_steps,            1 , mpiint,  0, mpicom)
    call mpibcast(prc_coef1,                       1 , mpir8,   0, mpicom)
    call mpibcast(prc_exp,                         1 , mpir8,   0, mpicom)
@@ -416,6 +443,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
+                       ,simple_macrop_opt_out, rkz_cldfrc_opt_out, rkz_term_A_opt_out, rkz_term_B_opt_out &
+                       ,rkz_term_C_opt_out, rkz_term_C_ql_opt_out &
+                       ,l_rkz_lmt_2_out, l_rkz_lmt_3_out, l_rkz_lmt_4_out &
                        ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out)
 
 !-----------------------------------------------------------------------
@@ -482,6 +512,17 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: l_st_mac_out
    logical,           intent(out), optional :: l_st_mic_out
    logical,           intent(out), optional :: l_rad_out
+
+   integer,           intent(out), optional :: simple_macrop_opt_out
+   integer,           intent(out), optional :: rkz_cldfrc_opt_out
+   integer,           intent(out), optional :: rkz_term_A_opt_out
+   integer,           intent(out), optional :: rkz_term_B_opt_out
+   integer,           intent(out), optional :: rkz_term_C_opt_out
+   integer,           intent(out), optional :: rkz_term_C_ql_opt_out
+   logical,           intent(out), optional :: l_rkz_lmt_2_out
+   logical,           intent(out), optional :: l_rkz_lmt_3_out
+   logical,           intent(out), optional :: l_rkz_lmt_4_out
+
    logical,           intent(out), optional :: mg_prc_coeff_fix_out
    logical,           intent(out), optional :: rrtmg_temp_fix_out
    integer,           intent(out), optional :: cld_macmic_num_steps_out
@@ -544,6 +585,15 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(l_st_mac_out            ) ) l_st_mac_out          = l_st_mac
    if ( present(l_st_mic_out            ) ) l_st_mic_out          = l_st_mic
    if ( present(l_rad_out               ) ) l_rad_out             = l_rad
+   if ( present(simple_macrop_opt_out   ) ) simple_macrop_opt_out = simple_macrop_opt
+   if ( present(rkz_cldfrc_opt_out      ) ) rkz_cldfrc_opt_out    = rkz_cldfrc_opt
+   if ( present(rkz_term_A_opt_out      ) ) rkz_term_A_opt_out    = rkz_term_A_opt
+   if ( present(rkz_term_B_opt_out      ) ) rkz_term_B_opt_out    = rkz_term_B_opt
+   if ( present(rkz_term_C_opt_out      ) ) rkz_term_C_opt_out    = rkz_term_C_opt
+   if ( present(rkz_term_C_ql_opt_out   ) ) rkz_term_C_ql_opt_out = rkz_term_C_ql_opt
+   if ( present(l_rkz_lmt_2_out         ) ) l_rkz_lmt_2_out       = l_rkz_lmt_2
+   if ( present(l_rkz_lmt_3_out         ) ) l_rkz_lmt_3_out       = l_rkz_lmt_3
+   if ( present(l_rkz_lmt_4_out         ) ) l_rkz_lmt_4_out       = l_rkz_lmt_4
    if ( present(cld_macmic_num_steps_out) ) cld_macmic_num_steps_out = cld_macmic_num_steps
    if ( present(prc_coef1_out           ) ) prc_coef1_out            = prc_coef1
    if ( present(prc_exp_out             ) ) prc_exp_out              = prc_exp

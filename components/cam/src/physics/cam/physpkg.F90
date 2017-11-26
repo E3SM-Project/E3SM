@@ -2013,8 +2013,17 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mic
     logical :: l_rad
 
-    integer :: simple_macrop_opt = -1   ! -1 = NOT using simple macrophysics schemes
     !HuiWan (2014/15): added for a short-term time step convergence test ==
+
+    integer :: simple_macrop_opt = -1   ! -1 = NOT using simple macrophysics schemes
+    integer :: rkz_cldfrc_opt
+    integer :: rkz_term_A_opt
+    integer :: rkz_term_B_opt
+    integer :: rkz_term_C_opt
+    integer :: rkz_term_C_ql_opt
+    logical :: l_rkz_lmt_2
+    logical :: l_rkz_lmt_3
+    logical :: l_rkz_lmt_4
 
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
@@ -2028,6 +2037,15 @@ subroutine tphysbc (ztodt,               &
                       ,l_st_mac_out           = l_st_mac           &
                       ,l_st_mic_out           = l_st_mic           &
                       ,l_rad_out              = l_rad              &
+                      ,simple_macrop_opt_out  = simple_macrop_opt  &
+                      ,rkz_cldfrc_opt_out     = rkz_cldfrc_opt &
+                      ,rkz_term_A_opt_out     = rkz_term_A_opt &
+                      ,rkz_term_B_opt_out     = rkz_term_B_opt &
+                      ,rkz_term_C_opt_out     = rkz_term_C_opt &
+                      ,rkz_term_C_ql_opt_out  = rkz_term_C_ql_opt &
+                      ,l_rkz_lmt_2_out        = l_rkz_lmt_2 &
+                      ,l_rkz_lmt_3_out        = l_rkz_lmt_3 &
+                      ,l_rkz_lmt_4_out        = l_rkz_lmt_4 &
                       )
     
     !-----------------------------------------------------------------------
@@ -2449,14 +2467,14 @@ end if
 
                call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast,  &
                                      cld_macmic_ztodt, ixcldliq, &
-                                     rkz_cldfrc_opt=1, &
-                                     rkz_term_A_opt=1, &
-                                     rkz_term_B_opt=0, &
-                                     rkz_term_C_opt=0, &
-                                     rkz_term_C_ql_opt=17, &
-                                     l_rkz_lmt_2=.false., &
-                                     l_rkz_lmt_3=.false., &
-                                     l_rkz_lmt_4=.true. &
+                                     rkz_cldfrc_opt, &
+                                     rkz_term_A_opt, &
+                                     rkz_term_B_opt, &
+                                     rkz_term_C_opt, &
+                                     rkz_term_C_ql_opt, &
+                                     l_rkz_lmt_2, &
+                                     l_rkz_lmt_3, &
+                                     l_rkz_lmt_4  &
                                      )
 
                call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          

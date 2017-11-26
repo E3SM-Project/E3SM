@@ -2615,6 +2615,61 @@ Do radiative transfer and heating/cooling calculation.
 Default: TRUE
 </entry>
 
+<entry id="simple_macrop_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of simple cloud macrophysics scheme
+Default: -1
+</entry>
+
+<entry id="rkz_cldfrc_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of cloud fraction scheme for simple macrophysics
+Default: 1
+</entry>
+
+<entry id="rkz_term_A_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of numerical implementation for term A in the RKZ simple macrophysics scheme 
+Default: 1
+</entry>
+
+<entry id="rkz_term_B_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of numerical implementation for term B in the RKZ simple macrophysics scheme 
+Default: 0
+</entry>
+
+<entry id="rkz_term_C_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of numerical implementation for term C in the RKZ simple macrophysics scheme 
+Default: 2
+</entry>
+
+<entry id="rkz_term_C_ql_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Choice of numerical implementation for in-cloud ql for term C 
+in the RKZ simple macrophysics scheme 
+Default: 17
+</entry>
+
+<entry id="l_rkz_lmt_2" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Turn on limiter 2 for condensation
+Default: FALSE
+</entry>
+
+<entry id="l_rkz_lmt_3" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Turn on limiter 3 for condensation
+Default: FALSE
+</entry>
+
+<entry id="l_rkz_lmt_4" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Turn on limiter 4 for condensation
+Default: FALSE
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"
