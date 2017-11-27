@@ -6,15 +6,15 @@
 
 # Manually set/check these variables before running!
 
-SETUP=1
-ENABLE_RESTART=0
+SETUP=0
+ENABLE_RESTART=1
 SUBMIT_RUN=0
 
 BASE_DIR=`pwd`   # Path in which all the versions will be set up
-TEMPLATE_DIR=/scratch1/scratchdirs/hoffman2/thwaites_variability/1-8km_smoketest_template
+TEMPLATE_DIR=/scratch1/scratchdirs/hoffman2/thwaites_variability/1-8km_smoketest_template_yr6Restart
 
 amplitudes='150 300'  # Units meters
-periods='02 20 70'  # units years
+periods='05 20 70'  # units years
 phases="0.00 0.08 0.17 0.25 0.33 0.42 0.50 0.58 0.67 0.75 0.83 0.92" # set of 12  # units=cycles (0-1)
 
 #  ==========================
@@ -77,7 +77,7 @@ for amp in $amplitudes; do
           if [ $ENABLE_RESTART = 1 ]; then
              cd ${BASE_DIR}/${dirname}  # redundant if also setting up, but needed otherwise
              sed -i.SEDBACKUP "s/config_do_restart.*/config_do_restart = .true./" $nlfile
-             sed -i.SEDBACKUP "s/config_do_restart.*/config_start_time = 'file'/" $nlfile
+             sed -i.SEDBACKUP "s/config_start_time.*/config_start_time = 'file'/" $nlfile
              rm $nlfile.SEDBACKUP
           fi
 

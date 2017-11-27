@@ -38,7 +38,7 @@ for r in special_runs:
       runs.insert(0, r)
 
 # optionally exclude some subset
-#runs[:] = [r for r in runs if not 'per70' in r]
+#runs[:] = [r for r in runs if not 'amp300_per02' in r]
 
 print "Will process the following directories: ", runs
 
@@ -86,49 +86,51 @@ fig = plt.figure(1, facecolor='w')
 nrow=4
 ncol=2
 
+xtickSpacing = 20.0
+
 # melt forcing
 axMeanMelt = fig.add_subplot(nrow, ncol, 1)
 plt.xlabel('Year')
 plt.ylabel('mean melt (m/yr)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 axTotalMelt = fig.add_subplot(nrow, ncol, 3, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('total melt (Gt/yr)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 axCumuMelt = fig.add_subplot(nrow, ncol, 5, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('cumulative melt (Gt)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 # VAF
 axVAF = fig.add_subplot(nrow, ncol, 2, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF (Gt)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 axVAFrate = fig.add_subplot(nrow, ncol, 4, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 # grounded area
 axGA = fig.add_subplot(nrow, ncol, 6, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('Grounded area (km^2)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 axGArate = fig.add_subplot(nrow, ncol, 8, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('Grounded area rate (km^2/yr)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 
@@ -144,38 +146,39 @@ ncol=1
 ax2MeanMelt = fig2.add_subplot(nrow, ncol, 1)
 plt.xlabel('Year')
 plt.ylabel('mean melt (m/yr)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 # VAF
-ax2VAF = fig2.add_subplot(nrow, ncol, 2, sharex=axMeanMelt)
+ax2VAF = fig2.add_subplot(nrow, ncol, 2, sharex=ax2MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF (Gt)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
-ax2VAFrate = fig2.add_subplot(nrow, ncol, 3, sharex=axMeanMelt)
+ax2VAFrate = fig2.add_subplot(nrow, ncol, 3, sharex=ax2MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
-plt.xticks(np.arange(22)*20.0)
+plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 
 
 #colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
-n200 = sum("amp200" in r for r in runs)
-colors = [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n200) ]
-n500 = sum("amp500" in r for r in runs)
-colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n500) ] )
+n150 = sum("amp150" in r for r in runs)
+colors = [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n150) ]
+n300 = sum("amp300" in r for r in runs)
+colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n300) ] )
 color_index = 0
 
 for run in runs:
    print "Processing run: " + run
 
    # optional rules about coloring
-   if run=="steady":
+   if "steady" in run:
       lw = 3
       color = 'k'
+      #colors = [ cm.jet(x) for x in np.linspace(0.0, 1.0, len(runs)) ];  color = colors[color_index];  color_index += 1; lw=1
    elif run=="no-melt":
       lw = 2
       color = [0.7, 0.7, 0.7]  # gray
@@ -207,13 +210,14 @@ for run in runs:
 
    VAF = f.variables['volumeAboveFloatation'][:] / 1.0e12 * rhoi
    resampVAF = np.interp(resampYrs, yrs, VAF) # generate y values for each x
-   VAFsmooth = scipy.signal.savgol_filter(resampVAF, window_length=7, polyorder=1)
+   wl = 7
+   VAFsmooth = scipy.signal.savgol_filter(resampVAF, window_length=wl, polyorder=1)
    #VAFrate = (VAF[1:]-VAF[0:-1] ) / dyrs
    VAFsmoothrate = (VAFsmooth[1:]-VAFsmooth[0:-1] ) / dresampYrs
 
    GA = f.variables['groundedIceArea'][:] / 1.0e3**2
    resampGA = np.interp(resampYrs, yrs, GA) # generate y values for each x
-   GAsmooth = scipy.signal.savgol_filter(resampGA, window_length=7, polyorder=1)
+   GAsmooth = scipy.signal.savgol_filter(resampGA, window_length=wl, polyorder=1)
    GArate = (GAsmooth[1:] - GAsmooth[0:-1]) / dresampYrs
 
    # actual plotting begins here
@@ -233,7 +237,9 @@ for run in runs:
    ax2MeanMelt.plot(yrs, melt, color=color, linewidth=lw)
    ax2VAF.plot(yrs, VAF, label = run, color=color, linewidth=lw)
    #ax2VAFrate.plot(yrs[1:], VAFrate, color=color, linewidth=lw)
-   ax2VAFrate.plot(resampYrs[1:], VAFsmoothrate, color=color, linewidth=lw)
+   #ax2VAFrate.plot(resampYrs[1:], VAFsmoothrate, color=color, linewidth=lw)
+   ax2VAFrate.plot(resampYrs[wl:], VAFsmoothrate[wl-1:], color=color, linewidth=lw)
+   #ax2VAFrate.plot(resampYrs[:wl], VAFsmoothrate[0:wl-1], 'x', color=color)  # used to see what values we are throwing away
 
 
    f.close()
@@ -268,7 +274,7 @@ axSLRrate.set_xlim(x1, x2)
 # ===================  for figure 2
 handles, labels = ax2VAF.get_legend_handles_labels()
 l1 = ax2VAF.legend(handles[0:2], labels[0:2], loc='lower left', ncol=1)  # control runs
-l2 = ax2VAF.legend(handles[2:], labels[2:], loc='lower center', ncol=2)  # variability runs
+#l2 = ax2VAF.legend(handles[2:], labels[2:], loc='lower center', ncol=2)  # variability runs
 ax2VAF.add_artist(l1)
 
 ax2SLR=ax2VAF.twinx()
