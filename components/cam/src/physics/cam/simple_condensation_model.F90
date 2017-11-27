@@ -41,7 +41,7 @@ contains
   use wv_saturation, only: qsat_water
   use physconst,     only: latvap, cpair
   use simple_cloud_fraction, only: smpl_frc
-  use cam_history,   only: outfld
+ !use cam_history,   only: outfld
 
   implicit none
   !
@@ -107,7 +107,7 @@ contains
   ncol  = state%ncol
   nstep = get_nstep()
 
-  lchnk = state%lchnk  ! needed for "call outfld"
+ !lchnk = state%lchnk  ! needed for "call outfld"
 
   ! Calculate qsat and its derivative wrt temperature
 
@@ -121,8 +121,6 @@ contains
 
   rhgbm(:ncol,:pver) = state%q(:ncol,:pver,1)/qsat(:ncol,:pver)
 
-!!call outfld('RKS_RH', rhgbm,  pcols, lchnk)
-
   ! Cloud fraction: save old values, diagnose new values
 
   if (nstep > 1) ast_old(:ncol,:pver) = ast(:ncol,:pver)
@@ -130,11 +128,6 @@ contains
   call  smpl_frc( state%q(:,:,1), state%q(:,:,ixcldliq), qsat,     &! in
                   ast, rhu00, dastdRH,                             &! inout, out
                   rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! in
-
-!!call outfld('RKS_ast', ast,  pcols, lchnk)
-!!call outfld('RKS_qs0', qsat, pcols, lchnk)
-!!call outfld('RKS_qv0', state%q(:,:,1),        pcols, lchnk)
-!!call outfld('RKS_ql0', state%q(:,:,ixcldliq), pcols, lchnk)
 
   !===================================================================
   ! Condensation/evaporation rate
@@ -154,7 +147,7 @@ contains
      select case (rkz_term_A_opt) 
      case(0)
         continue  ! omit this term
-case(1)
+     case(1)
         qme(:ncol,:pver) = qme(:ncol,:pver) + ast(:ncol,:pver)     &
                            *( qtend(:ncol,:pver) - dqsdt(:ncol,:pver)*ttend(:ncol,:pver) ) &
                            /( 1._r8 + gam(:ncol,:pver) )
@@ -162,7 +155,6 @@ case(1)
          write(iulog,*) "Unrecognized value of rkz_term_A_opt:",rkz_term_A_opt,". Abort."
          call endrun
      end select
-   !!call outfld('RKS_qme_c', qme,  pcols, lchnk)
 
      !--------------------------------------------------------------------------------------
      ! Term B: qme in cloud-free portion of a grid box in response to cloud liquid tencendy
@@ -288,8 +280,6 @@ case(1)
          write(iulog,*) "Unrecognized value of rkz_term_C_opt:",rkz_term_C_opt,". Abort."
          call endrun
      end select
-  !! call outfld('RKS_qme_e_dfdt', ztmp,  pcols, lchnk)
-  !! call outfld('RKS_qme_1', qme,  pcols, lchnk)
 
      !-----------
      ! limiting
@@ -300,7 +290,6 @@ case(1)
         ! If other forcing leads to strong cooling or moistening,
         ! then condensation might happen, evaporate should not happen
 
-       !where ( rhgbm(:ncol,:pver) >= 1._r8 ) 
         where ( rhgbm(:ncol,:pver) > 1._r8 ) 
           qme(:ncol,:pver) = max( qme(:ncol,:pver), 0._r8 )
 
@@ -308,13 +297,10 @@ case(1)
         ! evaporation might happen, condensation should not happen. 
 
         elsewhere ( rhgbm(:ncol,:pver) < rhu00 ) 
-       !elsewhere ( rhgbm(:ncol,:pver) < 1._r8 ) 
           qme(:ncol,:pver) = min( qme(:ncol,:pver), 0._r8 )
 
         end where
      end if
-
-  !! call outfld('RKS_qme_2', qme,  pcols, lchnk)
 
      !-----------------------------
      ! Check the magnitude of qme:
@@ -334,8 +320,6 @@ case(1)
         end where
 
      end if
-  !! call outfld('RKS_qme_3', qme,  pcols, lchnk)
-
 
      !---------------------------------------------------------------------------
      ! Limit condensation/evaporation rate to avoid negative water concentrations
@@ -357,7 +341,6 @@ case(1)
         end where
 
      end if
-  !! call outfld('RKS_qme_4', qme,  pcols, lchnk)
 
   end if !nstep > 1
 
