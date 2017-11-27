@@ -306,7 +306,16 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
     character(SHR_KIND_CS)  :: pause_option          ! Pause option units
     integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
-    character(SHR_KIND_CS)  :: pause_component_list  ! Pause - resume components
+
+    logical :: data_assimilation_atm
+    logical :: data_assimilation_cpl
+    logical :: data_assimilation_ocn
+    logical :: data_assimilation_wav
+    logical :: data_assimilation_glc
+    logical :: data_assimilation_ice
+    logical :: data_assimilation_rof
+    logical :: data_assimilation_lnd
+
     character(SHR_KIND_CS)  :: history_option        ! History option units
     integer(SHR_KIND_IN)    :: history_n             ! Number until history interval
     integer(SHR_KIND_IN)    :: history_ymd           ! History date (YYYYMMDD)
@@ -353,7 +362,16 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     namelist /seq_timemgr_inparm/  calendar, curr_ymd, curr_tod,  &
          stop_option, stop_n, stop_ymd, stop_tod,                &
          restart_option, restart_n, restart_ymd,                 &
-         pause_option,   pause_n,   pause_component_list,        &
+         pause_option,   &
+         pause_n,           &
+         data_assimilation_atm, &
+         data_assimilation_cpl, &
+         data_assimilation_ocn, &
+         data_assimilation_wav, &
+         data_assimilation_glc, &
+         data_assimilation_ice, &
+         data_assimilation_rof, &
+         data_assimilation_lnd, &
          history_option, history_n, history_ymd,                 &
          histavg_option, histavg_n, histavg_ymd,                 &
          barrier_option, barrier_n, barrier_ymd,                 &
@@ -399,7 +417,15 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        restart_ymd      = -1
        pause_option     = seq_timemgr_optNever
        pause_n          = -1
-       pause_component_list = ' '
+       data_assimilation_atm = .false.
+       data_assimilation_cpl = .false.
+       data_assimilation_ocn = .false.
+       data_assimilation_wav = .false.
+       data_assimilation_glc = .false.
+       data_assimilation_ice = .false.
+       data_assimilation_rof = .false.
+       data_assimilation_lnd = .false.
+
        history_option   = seq_timemgr_optNever
        history_n        = -1
        history_ymd      = -1
@@ -541,9 +567,10 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' restart_n      = ',restart_n
        write(logunit,F0I) trim(subname),' restart_ymd    = ',restart_ymd
        write(logunit,F0L) trim(subname),' end_restart    = ',end_restart
-       write(logunit,F0A) trim(subname),' pause_option   = ',trim(pause_option)
-       write(logunit,F0I) trim(subname),' pause_n        = ',pause_n
-       write(logunit,F0A) trim(subname),' pause_component_list = ',trim(pause_component_list)
+       write(logunit,F0A) trim(subname),' pause_option   = ',&
+            trim(pause_option)
+       write(logunit,F0I) trim(subname),' pause_n        = ',&
+            pause_n
        write(logunit,F0L) trim(subname),' esp_run_on_pause = ',esp_run_on_pause
        write(logunit,F0A) trim(subname),' history_option = ',trim(history_option)
        write(logunit,F0I) trim(subname),' history_n      = ',history_n
@@ -632,7 +659,15 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( restart_ymd,          mpicom )
     call shr_mpi_bcast( pause_n,              mpicom )
     call shr_mpi_bcast( pause_option,         mpicom )
-    call shr_mpi_bcast( pause_component_list, mpicom )
+    call shr_mpi_bcast(data_assimilation_atm, mpicom)
+    call shr_mpi_bcast(data_assimilation_cpl, mpicom)
+    call shr_mpi_bcast(data_assimilation_ocn, mpicom)
+    call shr_mpi_bcast(data_assimilation_wav, mpicom)
+    call shr_mpi_bcast(data_assimilation_glc, mpicom)
+    call shr_mpi_bcast(data_assimilation_ice, mpicom)
+    call shr_mpi_bcast(data_assimilation_rof, mpicom)
+    call shr_mpi_bcast(data_assimilation_lnd, mpicom)
+
     call shr_mpi_bcast( history_n,            mpicom )
     call shr_mpi_bcast( history_option,       mpicom )
     call shr_mpi_bcast( history_ymd,          mpicom )
@@ -701,45 +736,31 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     ! --- Figure out which components (if any) are doing pause this run
     rc = 1
     i = 1
-    if (trim(pause_component_list) == 'all') then
-      pause_active = .true.
-    else if (trim(pause_component_list) == 'none') then
-      pause_active = .false.
-    else
-      do
-        i = scan(trim(pause_component_list(rc:)), ':') - 1
-        if ((i < 0) .and. (len_trim(pause_component_list) >= rc)) then
-          i = len_trim(pause_component_list(rc:))
-        end if
-        if (i > 0) then
-          found = .false.
-          do n = 1, max_clocks
-            if (pause_component_list(rc:rc+i-1) == trim(seq_timemgr_clocks(n))) then
-              pause_active(n) = .true.
-              found = .true.
-              exit
-            end if
-          end do
-          ! Special case for cpl -- synonym for drv
-          if ((.not. found) .and. (pause_component_list(rc:rc+i-1) == 'cpl')) then
-            pause_active(seq_timemgr_nclock_drv) = .true.
-            found = .true.
-          end if
-          if (.not. found) then
-            call shr_sys_abort(subname//': unknown pause component, '//pause_component_list(rc:rc+i-1))
-          end if
-          rc = rc + i
-          if (pause_component_list(rc:rc) == ':') then
-            rc = rc + 1
-          end if
-          if (rc >= len_trim(pause_component_list)) then
-            exit
-          end if
-        else
-          exit
-        end if
-      end do
-    end if
+    if (data_assimilation_atm) then
+       pause_active(seq_timemgr_nclock_atm) = .true.
+    endif
+    if (data_assimilation_cpl) then
+       pause_active(seq_timemgr_nclock_drv) = .true.
+    endif
+    if (data_assimilation_ocn) then
+       pause_active(seq_timemgr_nclock_ocn) = .true.
+    endif
+    if (data_assimilation_wav) then
+       pause_active(seq_timemgr_nclock_wav) = .true.
+    endif
+    if (data_assimilation_glc) then
+       pause_active(seq_timemgr_nclock_glc) = .true.
+    endif
+    if (data_assimilation_ice) then
+       pause_active(seq_timemgr_nclock_ice) = .true.
+    endif
+    if (data_assimilation_rof) then
+       pause_active(seq_timemgr_nclock_rof) = .true.
+    endif
+    if (data_assimilation_lnd) then
+       pause_active(seq_timemgr_nclock_lnd) = .true.
+    endif
+
     if ( ANY(pause_active) .and.                                              &
          (trim(pause_option) /= seq_timemgr_optNONE)  .and.                   &
          (trim(pause_option) /= seq_timemgr_optNever)) then
