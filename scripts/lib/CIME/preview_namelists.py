@@ -85,8 +85,7 @@ def create_namelists(case, component=None):
                 # otherwise look in the component config_dir
                 cmd = os.path.join(config_dir, "buildnml")
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
-            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case,
-                           combine_output=True)
+            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
 
     logger.info("Finished creating component namelists")
 

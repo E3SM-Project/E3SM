@@ -381,21 +381,6 @@
     </desc>
   </entry>
 
-  <entry id="PAUSE_COMPONENT_LIST">
-    <type>char</type>
-    <default_value>none</default_value>
-    <values match="last">
-      <value compset="_DESP">cpl</value>
-    </values>
-    <group>run_begin_stop_restart</group>
-    <file>env_run.xml</file>
-    <desc>
-      A colon-separated list of components to receive pause and resume signals
-      A value of 'all' means all components will pause and resume
-      A value of 'none' means that no components will pause or resume
-    </desc>
-  </entry>
-
   <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
@@ -424,13 +409,13 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      ESP component runs after driver 'pause cycle'
-      If any component 'pauses' (see PAUSE_OPTION, PAUSE_N and
-      PAUSE_COMPONENT_LIST XML variables), the ESP component (if
-      present) will be run to process the component 'pause' (restart)
-      files and set any required 'resume' signals.
-      If true, esp_cpl_dt and esp_cpl_offset settings are ignored.
-      default: false
+      ESP component runs after driver 'pause cycle' If any component
+      'pauses' (see PAUSE_OPTION,
+      PAUSE_N and DATA_ASSIMILATION XML variables),
+      the ESP component (if present) will be run to process the
+      component 'pause' (restart) files and set any required 'resume'
+      signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
+      ignored.  default: false
     </desc>
   </entry>
 
@@ -2583,11 +2568,21 @@
   <entry id="DATA_ASSIMILATION">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
     <group>external_tools</group>
     <file>env_run.xml</file>
     <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+    </values>
   </entry>
+
   <entry id="DATA_ASSIMILATION_CYCLES">
     <type>integer</type>
     <valid_values></valid_values>

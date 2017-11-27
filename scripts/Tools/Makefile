@@ -30,16 +30,24 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
+CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
+EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
+BUILD_THREADED ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
+LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) BUILD_THREADED --value)
+SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
+COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
+NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
+MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
+PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
+
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
-compile_threaded = false
 ifeq ($(strip $(SMP)),TRUE)
-   compile_threaded = true
    THREADDIR = threads
 else
    ifeq ($(strip $(BUILD_THREADED)),TRUE)
-      compile_threaded = true
       THREADDIR = threads
    else
       THREADDIR = nothreads
@@ -90,39 +98,12 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-CPPDEFS += -DMCT_INTERFACE
-
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
 else
   CPPDEFS += -DHAVE_MPI
 endif
-ifeq ($(compile_threaded), true)
-  CPPDEFS += -DTHREADED_OMP
-endif
 
-ifeq (,$(EXEROOT))
-  EXEROOT = $(shell ./xmlquery EXEROOT -value)
-endif
-ifeq (,$(BUILD_THREADED))
-  BUILD_THREADED = $(shell ./xmlquery BUILD_THREADED -value)
-endif
-
-ifeq (,$(LIBROOT))
-  LIBROOT = $(shell ./xmlquery LIBROOT -value)
-endif
-ifeq (,$(SHAREDLIBROOT))
-  SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
-endif
-ifeq (,$(COMPILER))
-  COMPILER = $(shell ./xmlquery COMPILER -value)
-endif
-ifeq (,$(NINST_VALUE))
-  NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
-endif
-ifeq (,$(MPILIB))
-  MPILIB = $(shell ./xmlquery MPILIB -value)
-endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
 endif
@@ -246,9 +227,9 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
     $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
   endif
 
-  # Get the "PETSC_LIB" list an env var 
+  # Get the "PETSC_LIB" list an env var
   include $(PETSC_PATH)/lib/petsc/conf/variables
-  
+
 endif
 
 # Set Trilinos info if it is being used
@@ -376,6 +357,9 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
+CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+# This is needed so that dependancies are found
+VPATH+=$(CSM_SHR_INCLUDE)
 
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
@@ -456,8 +440,8 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/src/share/util \
-		-I$(CIMEROOT)/src/share/include -I$(CIMEROOT)/src/share/RandNum/include
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
+
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
@@ -487,7 +471,7 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
 # The following is for the COSP simulator code:
-COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
+COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
 endif
 
 ifeq ($(MODEL),cam)
@@ -502,7 +486,7 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 
 
 ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE)
 $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
 	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
@@ -768,23 +752,40 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-
+CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
+ifeq ($(CIME_MODEL),cesm)
+  ifneq ($(CLMVER),$(null))
+    USE_SHARED_CLM=TRUE
+  else
+    USE_SHARED_CLM=FALSE
+  endif
+else
+  USE_SHARED_CLM=FALSE
+endif
+ifeq ($(USE_SHARED_CLM),FALSE)
+  LNDOBJDIR = $(EXEROOT)/lnd/obj
+  LNDLIBDIR=$(LIBROOT)
+  ifeq ($(CLMVER),$(null))
+    LNDLIB := liblnd.a
+  else
+    LNDLIB := libclm.a
+  endif
+  INCLDIR += -I$(LNDOBJDIR)
+else
+  LNDLIB := libclm.a
+  LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
+  LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
+  INCLDIR += -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  ifeq ($(MODEL),clm)
+    INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  endif
+endif
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
      ULIBDEP += $(LIBROOT)/libatm.a
      ULIBDEP += $(LIBROOT)/libice.a
-     ifeq ($(findstring clm5_0,$(CLM_CONFIG_OPTS)),clm5_0)
-          LNDLIB := libclm.a
-     else
-          ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
-               LNDLIB := libclm.a
-          else
-               LNDLIB := liblnd.a
-          endif
-     endif
-
-     ULIBDEP += $(LIBROOT)/$(LNDLIB)
-     INCLDIR += -I$(EXEROOT)/lnd/obj
+     ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
+     INCLDIR += -I$(LNDOBJDIR)
      ULIBDEP += $(LIBROOT)/libocn.a
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
@@ -848,9 +849,14 @@ endif
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS)
+ifdef INCLUDE_DIR
+  $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-
+	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+else
+  $(COMPLIB): $(OBJS)
+	$(AR) -r $(COMPLIB) $(OBJS)
+endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
