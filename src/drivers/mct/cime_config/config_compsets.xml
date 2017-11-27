@@ -100,4 +100,11 @@
     <lname>2000_XATM_XLND_XICE_XOCN_XROF_XGLC_XWAV</lname>
   </compset>
 
+  <entries>
+    <entry id="DATA_ASSIMILATION_CPL">
+      <values match="last">
+	<value compset="DESP">TRUE</value>
+      </values>
+    </entry>
+  </entries>
 </compsets>

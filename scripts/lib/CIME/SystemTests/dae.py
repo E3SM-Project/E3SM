@@ -50,7 +50,7 @@ class DAE(SystemTestsCompareTwo):
         expect(os.path.isfile(da_file), "ERROR: da_file, '{}', does not exist".format(da_file))
 
         # Set up two data assimilation cycles each half of the full run
-        self._case.set_value("DATA_ASSIMILATION", "TRUE")
+        self._case.set_value("DATA_ASSIMILATION_ATM", "TRUE")
         self._case.set_value("DATA_ASSIMILATION_SCRIPT", da_file)
         self._case.set_value("DATA_ASSIMILATION_CYCLES", 2)
         stopn = self._case.get_value("STOP_N")

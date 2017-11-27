@@ -1030,9 +1030,9 @@ class Case(object):
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
-                     os.path.join(machines_dir,"Makefile"),
-                     os.path.join(machines_dir,"mkSrcfiles"),
-                     os.path.join(machines_dir,"mkDepends")]
+                     os.path.join(toolsdir,"Makefile"),
+                     os.path.join(toolsdir,"mkSrcfiles"),
+                     os.path.join(toolsdir,"mkDepends")]
 
         # used on Titan
         if os.path.isfile( os.path.join(toolsdir,"mdiag_reduce.csh") ):
