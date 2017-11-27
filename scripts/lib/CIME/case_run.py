@@ -244,7 +244,7 @@ def do_external(script_name, caseroot, rundir, lid, prefix):
     expect(os.path.isfile(script_name), "External script {} not found".format(script_name))
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(script_name, [caseroot], os.path.basename(script_name), [caseroot], logfile=outfile,combine_output=True)
+    run_sub_or_cmd(script_name, [caseroot], os.path.basename(script_name), [caseroot], logfile=outfile)
 
 ###############################################################################
 def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
@@ -252,7 +252,7 @@ def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     expect(os.path.isfile(da_script), "Data Assimilation script {} not found".format(da_script))
     filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile,combine_output=True)
+    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile)
 
 ###############################################################################
 def case_run(case, skip_pnl=False):
@@ -272,10 +272,11 @@ def case_run(case, skip_pnl=False):
     prerun_script = case.get_value("PRERUN_SCRIPT")
     postrun_script = case.get_value("POSTRUN_SCRIPT")
 
-    data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
-
+    data_assimilation = (data_assimilation_cycles > 0 and
+                         len(data_assimilation_script) > 0 and
+                         os.path.isfile(data_assimilation_script))
     # set up the LID
     lid = new_lid()
 
