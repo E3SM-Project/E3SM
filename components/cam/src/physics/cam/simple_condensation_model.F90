@@ -131,7 +131,7 @@ contains
   ! Condensation/evaporation rate
   !===================================================================
   ! qme is the array to store the grid-box mean condensation/evaporation rate.
-  ! Here it is initialized with zeros.
+  ! Here it is initialized with zeros. 
   ! Later we will accumulate the contribution from various terms.
 
   qme(:ncol,:pver) = 0._r8
@@ -166,7 +166,7 @@ contains
      case(0)
         continue  ! omit this term
 
-     case(1)
+     case(1) 
      ! Following Zhang et al. (2003), assume the in-cloud A_l equals the grid-box mean A_l.
      ! Hence - (\overline{A_l} - f \hat{A_l}) = - (1-f)\overline{A_l}.
      ! First derive A_l:
@@ -186,13 +186,59 @@ contains
 
      ztmp(:ncol,:pver) = 0._r8
 
-     ! Do the calculation only if this term is turned on and cloud fraction is time-dependent
-     select case (rkz_term_C_opt) 
+     select case (rkz_term_C_opt)
      case(0)
         continue  ! omit this term
 
+     case(1) ! Use simple finite-difference to approximate df/dt
+     if (rkz_cldfrc_opt.ne.0) then ! Calculation is done only when cloud fraction is time-dependent
+
+        ! Calculate in-cloud liquid concentration
+
+        SELECT CASE (rkz_term_C_ql_opt)
+        CASE (1)
+          zql_incld(:ncol,:pver) = 1e-5_r8
+
+        CASE (3)
+          zql_incld(:ncol,:pver) = state%q(:ncol,:pver,1)
+
+        CASE (4)
+          zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
+
+        CASE (5)
+          zql_incld(:,:) = 0._r8
+          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
+           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/ast(:ncol,:pver)
+          end where
+
+        CASE (6)
+          zql_incld(:,:) = 0._r8
+          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-4_r8)
+           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/ast(:ncol,:pver)
+          end where
+
+        CASE (7)
+          zql_incld(:,:) = 0._r8
+          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
+           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-3)
+          end where
+
+        CASE DEFAULT
+          write(iulog,*) "Unrecognized value of rkz_term_C_ql_opt:",rkz_term_C_ql_opt,". Abort."
+          call endrun
+        END SELECT
+
+        ! Contribution to condensation rate = ! ql_incloud * df/dt
+
+        ztmp(:ncol,:pver) = rdtime*( ast(:ncol,:pver) - ast_old(:ncol,:pver) ) &
+                           *zql_incld(:ncol,:pver)
+
+        qme(:ncol,:pver) = qme(:ncol,:pver) + ztmp(:ncol,:pver)
+
+     end if
+
      case(2)
-     if (rkz_cldfrc_opt.ne.0) then  
+     if (rkz_cldfrc_opt.ne.0) then ! Calculation is done only when cloud fraction is time-dependent
 
         ! zforcing is the "forcing" term, i.e., grid box cooling and/or moistening caused by 
         ! processes other than condensation. It appears on the nominator of the expression 
@@ -234,19 +280,19 @@ contains
         ! 7,17 (ql_incloud=ql/max(f,0.01%) 
 
         SELECT CASE (rkz_term_C_ql_opt)
-        CASE (1,11)
+        CASE (11)
           zqlf(:ncol,:pver) = 1e-5_r8
 
-        CASE (2,12)
+        CASE (12)
           zqlf(:ncol,:pver) = 1e-5_r8*dastdRH(:ncol,:pver)
 
-        CASE (3,13)
+        CASE (13)
           zqlf(:ncol,:pver) = state%q(:ncol,:pver,1)*dastdRH(:ncol,:pver)
 
-        CASE (4,14)
+        CASE (14)
           zqlf(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)*dastdRH(:ncol,:pver)
 
-        CASE (5,15)
+        CASE (15)
 
           zql_incld(:,:) = 0._r8
           where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
@@ -254,7 +300,7 @@ contains
           end where
           zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
 
-        CASE (6,16)
+        CASE (16)
 
           zql_incld(:,:) = 0._r8
           where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-4_r8)
@@ -262,24 +308,22 @@ contains
           end where
           zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
 
-        CASE (7,17)
+        CASE (17)
 
           zql_incld(:,:) = 0._r8
           where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
-          !zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-4)
            zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-3)
           end where
           zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
 
+        CASE DEFAULT
+          write(iulog,*) "Unrecognized value of rkz_term_C_ql_opt:",rkz_term_C_ql_opt,". Abort."
+          call endrun
         END SELECT
 
         ! Now calculate the denominator of the grid-box mean condensation rate
 
-        if (rkz_term_C_ql_opt < 10 ) then
-           ztmp(:ncol,:pver) = 1._r8
-        else
-           ztmp(:ncol,:pver) = 1._r8/( 1.+ zqlf(:ncol,:pver)*zc3(:ncol,:pver) )
-        end if
+        ztmp(:ncol,:pver) = 1._r8/( 1.+ zqlf(:ncol,:pver)*zc3(:ncol,:pver) )
 
         ! Add the contribution of cloud growth to the grid-box mean condensation rate
 
