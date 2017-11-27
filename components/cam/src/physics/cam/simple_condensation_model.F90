@@ -84,8 +84,6 @@ contains
   real(r8) :: qtend(pcols,pver)        ! Moisture tendencies
   real(r8) :: ltend(pcols,pver)        ! liquid condensate tendencies
   real(r8) :: ttend(pcols,pver)        ! Temperature tendencies
-  real(r8) :: ftend(pcols,pver)        ! stratiform cloud fraction tendency
-  real(r8) :: mtend(pcols,pver)
   real(r8) :: zforcing(pcols,pver)
   real(r8) :: zc3(pcols,pver)
   real(r8) :: zqlf(pcols,pver)
@@ -132,6 +130,10 @@ contains
   !===================================================================
   ! Condensation/evaporation rate
   !===================================================================
+  ! qme is the array to store the grid-box mean condensation/evaporation rate.
+  ! Here it is initialized with zeros.
+  ! Later we will accumulate the contribution from various terms.
+
   qme(:ncol,:pver) = 0._r8
 
   if (nstep > 1) then
@@ -163,6 +165,16 @@ contains
      select case (rkz_term_B_opt) 
      case(0)
         continue  ! omit this term
+
+     case(1)
+     ! Following Zhang et al. (2003), assume the in-cloud A_l equals the grid-box mean A_l.
+     ! Hence - (\overline{A_l} - f \hat{A_l}) = - (1-f)\overline{A_l}.
+     ! First derive A_l:
+
+        ltend(:ncol,:pver) = ( state%q(:ncol,:pver,ixcldliq) - lcwat(:ncol,:pver) )*rdtime
+
+       ztmp(:ncol,:pver) = - (1._r8 - ast(:ncol,:pver))*ltend(:ncol,:pver)
+        qme(:ncol,:pver) = qme(:ncol,:pver) + ztmp(:ncol,:pver)
 
      case default
          write(iulog,*) "Unrecognized value of rkz_term_B_opt:",rkz_term_B_opt,". Abort."
