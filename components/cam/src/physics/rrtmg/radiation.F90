@@ -765,6 +765,7 @@ end function radiation_nextsw_cday
     real(r8) fsntoa(pcols)        ! Net solar flux at TOA
     real(r8) fsutoa(pcols)        ! Upwelling solar flux at TOA
     real(r8) fsntoac(pcols)       ! Clear sky net solar flux at TOA
+    real(r8) fsutoac(pcols)       ! Clear sky upwelling solar flux at TOA
     real(r8) fsnirt(pcols)        ! Near-IR flux absorbed at toa
     real(r8) fsnrtc(pcols)        ! Clear sky near-IR flux absorbed at toa
     real(r8) fsnirtsq(pcols)      ! Near-IR flux absorbed at toa >= 0.7 microns
@@ -1096,6 +1097,7 @@ end function radiation_nextsw_cday
 
                   do i=1,ncol
                      swcf(i)=fsntoa(i) - fsntoac(i)
+                     fsutoac(i) = solin(i) - fsntoac(i)
                   end do
 
                   if(do_aerocom_ind3) then
@@ -1150,7 +1152,7 @@ end function radiation_nextsw_cday
                   call outfld('FSNTOA'//diag(icall),fsntoa,pcols,lchnk)
                   call outfld('FSUTOA'//diag(icall),fsutoa,pcols,lchnk)
                   call outfld('FSNTOAC'//diag(icall),fsntoac,pcols,lchnk)
-                  call outfld('FSUTOAC'//diag(icall),fsntoac,pcols,lchnk)
+                  call outfld('FSUTOAC'//diag(icall),fsutoac,pcols,lchnk)
                   call outfld('SOLS'//diag(icall),cam_out%sols  ,pcols,lchnk)
                   call outfld('SOLL'//diag(icall),cam_out%soll  ,pcols,lchnk)
                   call outfld('SOLSD'//diag(icall),cam_out%solsd ,pcols,lchnk)
