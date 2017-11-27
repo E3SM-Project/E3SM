@@ -571,7 +571,6 @@ contains
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
        if (present(drv_comm_id)) then
-          print *,__FILE__,__LINE__,drv_comm_id
           call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, drv_comm_id)
        else
           call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)

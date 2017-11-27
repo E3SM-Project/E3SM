@@ -2,7 +2,7 @@
 functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp
+from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd
 from CIME.provenance            import save_build_provenance
 from CIME.preview_namelists     import create_namelists, create_dirs
 from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
@@ -237,13 +237,10 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(lib, lid))
         my_file = os.path.join(cimeroot, "src", "build_scripts", "buildlib.{}".format(lib))
-        if lib == "pio":
-            my_file = "PYTHONPATH={}:{}:$PYTHONPATH {}".format(os.path.join(cimeroot,"scripts","Tools"),
-                                                          os.path.join(cimeroot,"scripts","lib"), my_file)
         logger.info("Building {} with output to file {}".format(lib,file_build))
-        stat = run_cmd("{} {} {} {}"
-                       .format(my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
-                       from_dir=exeroot, combine_output=True, arg_stdout=file_build)[0]
+
+        stat,_,_ = run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
+                                  [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
 
         analyze_build_log(lib, file_build, compiler)
         expect(stat == 0, "BUILD FAIL: buildlib.{} failed, cat {}".format(lib, file_build))
