@@ -344,13 +344,13 @@ module seq_flds_mod
      logical :: flds_co2b
      logical :: flds_co2c
      logical :: flds_co2_dmsa
-     logical :: flds_bgc
+     logical :: flds_bgc_oi
      logical :: flds_wiso
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
           flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
-          ice_ncat, seq_flds_i2o_per_cat, flds_bgc, nan_check_component_fields
+          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, nan_check_component_fields
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -379,7 +379,7 @@ module seq_flds_mod
         flds_co2b = .false.
         flds_co2c = .false.
         flds_co2_dmsa = .false.
-        flds_bgc  = .false.
+        flds_bgc_oi   = .false.
         flds_wiso = .false.
         glc_nec   = 0
         ice_ncat  = 1
@@ -405,7 +405,7 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2b    , mpicom)
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
-     call shr_mpi_bcast(flds_bgc     , mpicom)
+     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
      call shr_mpi_bcast(flds_wiso    , mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
      call shr_mpi_bcast(ice_ncat     , mpicom)
@@ -1522,7 +1522,7 @@ module seq_flds_mod
      !------------------------------
      ! ice<->ocn only exchange - BGC
      !------------------------------
-     if (trim(cime_model) == 'acme' .and. flds_bgc) then
+     if (trim(cime_model) == 'acme' .and. flds_bgc_oi) then
 
         ! Ocean algae concentration 1 - diatoms?
         call seq_flds_add(o2x_states,"So_algae1")
