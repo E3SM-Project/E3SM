@@ -7,25 +7,11 @@ import sys
 import os
 import netCDF4
 import datetime
-from math import sqrt
 import numpy as np
-from collections import Counter
 import matplotlib.pyplot as plt
 import scipy.signal
 from matplotlib import cm
 
-#runs=[
-#'no-melt',
-#'amp0',
-#'amp200per2',
-#'amp200per20',
-#'amp200per70',
-#'amp500per2',
-#'amp500per20',
-#'amp500per70'
-#]
-
-#outfname = 'globalStats.nc.clean'
 outfname = 'globalStats.nc'
 runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and os.path.isfile(os.path.join(adir, outfname)))]
 print "Original run list:", runs
@@ -42,7 +28,10 @@ for r in special_runs:
 
 print "Will process the following directories: ", runs
 
-rhoi = 910.0
+# --- Define some needed parameters
+rhoi = 910.0  # ice density
+windowLength = 7      # window length for smoothing some time series
+# ----------------
 
 # ------ Needed functions ------
 
@@ -77,9 +66,57 @@ def xtime2numtimeMy(xtime):
   return numtime
 
 
+# --- Define data structures ---
+
+#class variabilitySet:
+
+class modelRun:
+   def __init__(self, run):
+      '''
+      This reads results from a model run and saves and analyzes the needed results.
+
+      run = name of subdir in which the run was performed
+      '''
+      f = netCDF4.Dataset(run + '/' + outfname, 'r')
+      self.nt = len(f.dimensions['Time'])
+      self.yrs = np.zeros((self.nt,))
+      #yrs = f.variables['daysSinceStart'][:] / 365.0
+      self.xtimes = f.variables['xtime'][:]
+   
+   
+      self.yrs = xtime2numtimeMy(self.xtimes)
+      self.dyrs = self.yrs[1:] - self.yrs[0:-1]
+   
+      # resampled version of time array - needed for filtering.
+      # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
+      self.resampYrs = np.linspace(0.0, self.yrs.max(), len(self.yrs)*2)
+      self.dresampYrs = self.resampYrs[1:] - self.resampYrs[0:-1]
+   
+      self.melt = f.variables['avgSubshelfMelt'][:]
+      self.totalmelt = f.variables['totalFloatingBasalMassBal'][:] / 1.0e12
+      self.cumumelt = self.totalmelt*0.0
+      for t in np.arange(self.nt-1)+1:
+         self.cumumelt[t] = self.cumumelt[t-1] + self.totalmelt[t-1] * self.dyrs[t-1]
+   
+      self.VAF = f.variables['volumeAboveFloatation'][:] / 1.0e12 * rhoi
+      self.resampVAF = np.interp(self.resampYrs, self.yrs, self.VAF) # generate y values for each x
+      self.VAFsmooth = scipy.signal.savgol_filter(self.resampVAF, window_length=windowLength, polyorder=1)
+      #VAFrate = (VAF[1:]-VAF[0:-1] ) / dyrs
+      self.VAFsmoothrate = (self.VAFsmooth[1:] - self.VAFsmooth[0:-1] ) / self.dresampYrs
+   
+      self.GA = f.variables['groundedIceArea'][:] / 1.0e3**2
+      self.resampGA = np.interp(self.resampYrs, self.yrs, self.GA) # generate y values for each x
+      self.GAsmooth = scipy.signal.savgol_filter(self.resampGA, window_length=windowLength, polyorder=1)
+      self.GArate = (self.GAsmooth[1:] - self.GAsmooth[0:-1]) / self.dresampYrs
+
+
+      f.close()
+
 
 
 # --- set up figure axes ---
+
+print "Setting up figure axes."
 
 fig = plt.figure(1, facecolor='w')
 
@@ -163,7 +200,11 @@ plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 
+# =========
+print "Done setting up figure axes."
+# =========
 
+# --- Define colors for lines ---
 #colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
 n150 = sum("amp150" in r for r in runs)
 colors = [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n150) ]
@@ -171,8 +212,37 @@ n300 = sum("amp300" in r for r in runs)
 colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n300) ] )
 color_index = 0
 
+
+# ================
+# Loop over runs and collect needed data
+# ================
+runData = {}  # init empty dictionary
 for run in runs:
    print "Processing run: " + run
+
+   # Build a list that contains all run data objects
+   runData[run] = modelRun(run)
+
+print "Processing complete.\n"
+
+# ================
+# Loop over runs and plot data
+# ================
+for run in runs:
+   print "Plotting run: " + run
+
+   thisRun = runData[run]
+   # Pull needed data for plotting from this run
+   # TODO: replace local variables below in plotting commands with reference to object variables
+   yrs=thisRun.yrs
+   melt=thisRun.melt
+   totalmelt=thisRun.totalmelt
+   cumumelt=thisRun.cumumelt
+   VAF=thisRun.VAF
+   resampYrs=thisRun.resampYrs
+   VAFsmoothrate=thisRun.VAFsmoothrate
+   GA=thisRun.GA
+   GArate=thisRun.GArate
 
    # optional rules about coloring
    if "steady" in run:
@@ -187,38 +257,6 @@ for run in runs:
       color = colors[color_index]
       color_index += 1
 
-   f = netCDF4.Dataset(run + '/' + outfname, 'r')
-   nt = len(f.dimensions['Time'])
-   yrs = np.zeros((nt,))
-   #yrs = f.variables['daysSinceStart'][:] / 365.0
-   xtimes = f.variables['xtime'][:]
-
-
-   yrs = xtime2numtimeMy(xtimes)
-   dyrs = yrs[1:]-yrs[0:-1]
-
-   # resampled version of time array - needed for filtering.
-   # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
-   resampYrs = np.linspace(0.0, yrs.max(), len(yrs)*2)
-   dresampYrs = resampYrs[1:]-resampYrs[0:-1]
-
-   melt = f.variables['avgSubshelfMelt'][:]
-   totalmelt = f.variables['totalFloatingBasalMassBal'][:] / 1.0e12
-   cumumelt = totalmelt*0.0
-   for t in np.arange(nt-1)+1:
-      cumumelt[t] = cumumelt[t-1] + totalmelt[t-1] * dyrs[t-1]
-
-   VAF = f.variables['volumeAboveFloatation'][:] / 1.0e12 * rhoi
-   resampVAF = np.interp(resampYrs, yrs, VAF) # generate y values for each x
-   wl = 7
-   VAFsmooth = scipy.signal.savgol_filter(resampVAF, window_length=wl, polyorder=1)
-   #VAFrate = (VAF[1:]-VAF[0:-1] ) / dyrs
-   VAFsmoothrate = (VAFsmooth[1:]-VAFsmooth[0:-1] ) / dresampYrs
-
-   GA = f.variables['groundedIceArea'][:] / 1.0e3**2
-   resampGA = np.interp(resampYrs, yrs, GA) # generate y values for each x
-   GAsmooth = scipy.signal.savgol_filter(resampGA, window_length=wl, polyorder=1)
-   GArate = (GAsmooth[1:] - GAsmooth[0:-1]) / dresampYrs
 
    # actual plotting begins here
    axMeanMelt.plot(yrs, melt, color=color, linewidth=lw)
@@ -238,11 +276,10 @@ for run in runs:
    ax2VAF.plot(yrs, VAF, label = run, color=color, linewidth=lw)
    #ax2VAFrate.plot(yrs[1:], VAFrate, color=color, linewidth=lw)
    #ax2VAFrate.plot(resampYrs[1:], VAFsmoothrate, color=color, linewidth=lw)
-   ax2VAFrate.plot(resampYrs[wl:], VAFsmoothrate[wl-1:], color=color, linewidth=lw)
-   #ax2VAFrate.plot(resampYrs[:wl], VAFsmoothrate[0:wl-1], 'x', color=color)  # used to see what values we are throwing away
+   ax2VAFrate.plot(resampYrs[windowLength:], VAFsmoothrate[windowLength-1:], color=color, linewidth=lw)
+   #ax2VAFrate.plot(resampYrs[:windowLength], VAFsmoothrate[0:windowLength-1], 'x', color=color)  # used to see what values we are throwing away
 
 
-   f.close()
 
 axVAF.legend(loc='best', ncol=2)
 
