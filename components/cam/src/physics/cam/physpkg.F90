@@ -2446,7 +2446,7 @@ end if
           ! call Park macrophysics or a simple condensation model if CLUBB is not turned on
           if (macrop_scheme .ne. 'CLUBB_SGS') then
 
-            select(simple_macrop_opt) ! simple condensation models
+            select case (simple_macrop_opt) ! simple condensation models
            !case (1) ! saturation adjustment scheme from Reed and Jablonowski
 
             case (2) ! simplified Rasch-Kristjansson-Zhang scheme
