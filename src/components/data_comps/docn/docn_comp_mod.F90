@@ -70,24 +70,14 @@ module docn_comp_mod
   real(R8), pointer      :: xc(:), yc(:) ! arryas of model latitudes and longitudes
 
   !--------------------------------------------------------------------------
-  character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
-
-  integer(IN),parameter :: ktrans = 29
-  character(12),parameter  :: avifld(1:ktrans) = &
-       (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
-       "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
-       "melth       ","salt        ","prec        ","snow        ","rain        ", &
-       "evap        ","meltw       ","rofl        ","rofi        ",                &
-       "t           ","u           ","v           ","dhdx        ","dhdy        ", &
-       "s           ","q           ","h           ","qbot        ","fswpen      "  /)
-
-  character(12),parameter  :: avofld(1:ktrans) = &
-       (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
-       "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
-       "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
-       "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
-       "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
-       "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   ","So_fswpen   "  /)
+  integer(IN)     , parameter :: ktrans = 8
+  character(12)   , parameter :: avifld(1:ktrans) = &
+       (/ "t           ","u           ","v           ","dhdx        ",&
+          "dhdy        ","s           ","h           ","qbot        "/)
+  character(12)   , parameter  :: avofld(1:ktrans) = &
+       (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
+          "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
+  character(len=*), parameter :: flds_strm = 'strm_h:strm_qbot'
   !--------------------------------------------------------------------------
 
   save
