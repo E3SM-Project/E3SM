@@ -58,17 +58,16 @@ def xtime2numtimeMy(xtime):
 
   numtime = np.zeros( (len(xtimestr),) )
   ii = 0
+  dayOfMonthStart = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
   for stritem in xtimestr:
       itemarray = stritem.strip().replace('_', '-').replace(':', '-').split('-')  # Get an array of strings that are Y,M,D,h,m,s
       results = [int(i) for i in itemarray]
-      numtime[ii] = results[0] + results[1]/12.0 + results[2]/365.0  # approximate years
+      numtime[ii] = results[0] + (dayOfMonthStart[results[1]-1]-1 + results[2]) / 365.0  # decimal year
       ii += 1
   return numtime
 
 
 # --- Define data structures ---
-
-#class variabilitySet:
 
 class modelRun:
    def __init__(self, run):
@@ -77,6 +76,19 @@ class modelRun:
 
       run = name of subdir in which the run was performed
       '''
+
+      # some metadata about run
+      if 'amp' in run:
+         self.amp = float(run[3:6])
+         self.per = float(run[10:12])
+         self.pha = float(run[16:])
+      else:
+         self.amp = 0.0
+         self.per = 0.0
+         self.pha = 0.0
+
+      #print self.amp, self.per, self.pha
+
       f = netCDF4.Dataset(run + '/' + outfname, 'r')
       self.nt = len(f.dimensions['Time'])
       self.yrs = np.zeros((self.nt,))
@@ -87,12 +99,16 @@ class modelRun:
       self.yrs = xtime2numtimeMy(self.xtimes)
       self.dyrs = self.yrs[1:] - self.yrs[0:-1]
    
+
       # resampled version of time array - needed for filtering.
       # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
-      self.resampYrs = np.linspace(0.0, self.yrs.max(), len(self.yrs)*2)
+      resampEndtime = self.yrs.max()
+      resampEndtime = 210.0
+      self.resampYrs = np.linspace(0.0, resampEndtime, num=resampEndtime*12*2)
       self.dresampYrs = self.resampYrs[1:] - self.resampYrs[0:-1]
    
       self.melt = f.variables['avgSubshelfMelt'][:]
+      self.resampMelt = np.interp(self.resampYrs, self.yrs, self.melt) # generate y values for each x
       self.totalmelt = f.variables['totalFloatingBasalMassBal'][:] / 1.0e12
       self.cumumelt = self.totalmelt*0.0
       for t in np.arange(self.nt-1)+1:
@@ -112,6 +128,31 @@ class modelRun:
 
       f.close()
 
+
+# ================
+# Loop over runs and collect needed data
+# ================
+runData = {}  # init empty dictionary
+groups = {} # groups are a dictionary of dictionaries.  May want to changes this to a dictionary of custom objects that can include metadata about the group alongside the group's data children.  KISS for now.
+for run in runs:
+   print "Processing run: " + run
+
+   # Build a list that contains all run data objects
+   runData[run] = modelRun(run)
+
+   # Populate each run into its group for ensemble runs (not for controls)
+   if 'amp' in run:
+      groupName = run[0:12]  # this is the amp and per
+      #print groupName
+      phase = run[13:]
+      #print phase
+      if groupName not in groups:
+         groups[groupName] = {} # init an empty dict to add group members
+      groups[groupName][phase] = runData[run]  # stick the run object into this group
+
+print "Processing complete.\n"
+
+#print groups
 
 
 # --- set up figure axes ---
@@ -172,7 +213,7 @@ plt.grid()
 
 
 
-# =================== repeat cleaner for presentation ===========
+# =================== repeat cleaner version for presentation ===========
 
 fig2 = plt.figure(2, facecolor='w')
 
@@ -200,6 +241,11 @@ plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
 
+# this figure shows the time levels in each run
+figTimes = plt.figure(30, facecolor='w')
+axTimes = figTimes.add_subplot(1, 1, 1)
+plt.xlabel('Year')
+
 # =========
 print "Done setting up figure axes."
 # =========
@@ -214,20 +260,9 @@ color_index = 0
 
 
 # ================
-# Loop over runs and collect needed data
-# ================
-runData = {}  # init empty dictionary
-for run in runs:
-   print "Processing run: " + run
-
-   # Build a list that contains all run data objects
-   runData[run] = modelRun(run)
-
-print "Processing complete.\n"
-
-# ================
 # Loop over runs and plot data
 # ================
+runNumber = 0
 for run in runs:
    print "Plotting run: " + run
 
@@ -279,7 +314,8 @@ for run in runs:
    ax2VAFrate.plot(resampYrs[windowLength:], VAFsmoothrate[windowLength-1:], color=color, linewidth=lw)
    #ax2VAFrate.plot(resampYrs[:windowLength], VAFsmoothrate[0:windowLength-1], 'x', color=color)  # used to see what values we are throwing away
 
-
+   axTimes.plot(yrs, yrs*0+runNumber, '.')
+   runNumber += 1
 
 axVAF.legend(loc='best', ncol=2)
 
@@ -330,6 +366,114 @@ ax2SLRrate.set_ylim(GTtoSL(y1), GTtoSL(y2))
 ax2SLRrate.set_ylabel('S.L. equiv. (mm/yr)')
 ax2SLRrate.set_xlim(x1, x2)
 
+# ================
+# Loop over ensemble groups
+# ================
+
+# =================== repeat clean version for ensemble plots ===========
+# (could make a function to repeat these steps, but they may diverge eventually
+
+fig3 = plt.figure(3, facecolor='w')
+
+nrow=3
+ncol=1
+
+# melt forcing
+ax3MeanMelt = fig3.add_subplot(nrow, ncol, 1)
+plt.xlabel('Year')
+plt.ylabel('mean melt (m/yr)')
+plt.xticks(np.arange(22)*xtickSpacing)
+plt.grid()
+
+# VAF
+ax3VAF = fig3.add_subplot(nrow, ncol, 2, sharex=ax3MeanMelt)
+plt.xlabel('Year')
+plt.ylabel('VAF (Gt)')
+plt.xticks(np.arange(22)*xtickSpacing)
+plt.grid()
+
+ax3VAFrate = fig3.add_subplot(nrow, ncol, 3, sharex=ax3MeanMelt)
+plt.xlabel('Year')
+plt.ylabel('VAF rate (Gt/yr)')
+plt.xticks(np.arange(22)*xtickSpacing)
+plt.grid()
+
+
+# define colors to use
+#colors = [ cm.jet(x) for x in np.linspace(0.0, 1.0, len(groups)) ]
+n150 = sum(1 for g in groups if 'amp150' in g)
+colors = [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n150) ]
+n300 = sum(1 for g in groups if 'amp300' in g)
+colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n300) ] )
+
+
+# ref value
+steadyVAF = runData['steady'].VAFsmooth
+
+groupNumber = 0
+for groupName in sorted(groups):  # sorted puts them in alpha order
+   print "Plotting group: " + groupName
+   group = groups[groupName] # gets the actual dictionary that this group is made of
+   nMembers = len(group)
+
+   # Init aggregate stats arrays for this group
+   # (could eventually store them in the group if the group was turned into a custom object instead of a dict)
+   nEntries = len(group.values()[0].resampYrs)
+   yrsGroup = np.zeros((nMembers,))
+   meltGroup = np.zeros((nMembers, nEntries))
+   VAFgroup = np.zeros((nMembers, nEntries))
+   VAFrateGroup = np.zeros((nMembers, nEntries-1))
+#   VAFmean = np.zeros((nMembers,))
+#   VAFmin= np.zeros((nMembers,))
+#   VAFmax= np.zeros((nMembers,))
+
+   # Loop through group members
+   runNumber = 0
+   for run in group:
+
+      thisRun = group[run]
+
+      # use the resampled versions so they all are on the same axis
+      yrsGroup = thisRun.resampYrs  # (only need this once)
+      meltGroup[runNumber, :] = thisRun.resampMelt
+      VAFgroup[runNumber, :] = thisRun.VAFsmooth
+#      VAFgroup[runNumber, :] = steadyVAF - thisRun.VAFsmooth # this version plots difference from control
+      VAFrateGroup[runNumber, :] = thisRun.VAFsmoothrate
+      runNumber += 1
+   
+   # melt plot
+   ax3MeanMelt.plot(yrsGroup[windowLength:], meltGroup.mean(0)[windowLength:], '-', color = colors[groupNumber], label=groupName)
+   ax3MeanMelt.plot(yrsGroup[windowLength:], meltGroup.max(0)[windowLength:], '--', color = colors[groupNumber], linewidth=0.5)
+   ax3MeanMelt.plot(yrsGroup[windowLength:], meltGroup.min(0)[windowLength:], '--', color = colors[groupNumber], linewidth=0.5)
+
+   # VAF plot
+   ax3VAF.plot(yrsGroup, VAFgroup.mean(0), '-', color = colors[groupNumber], label=groupName)
+   ax3VAF.plot(yrsGroup, VAFgroup.max(0), '--', color = colors[groupNumber], linewidth=0.5)
+   ax3VAF.plot(yrsGroup, VAFgroup.min(0), '--', color = colors[groupNumber], linewidth=0.5)
+
+   # VAF rate plot
+   ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.mean(0)[windowLength-1:], '-', color = colors[groupNumber], label=groupName)
+   ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.max(0)[windowLength-1:], '--', color = colors[groupNumber], linewidth=0.5)
+   ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.min(0)[windowLength-1:], '--', color = colors[groupNumber], linewidth=0.5)
+
+   groupNumber += 1
+
+# add control run
+if 'steady' in runData:
+   ax3MeanMelt.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].resampMelt[windowLength:], 'k', label='steady')
+   ax3VAF.plot(runData['steady'].resampYrs, runData['steady'].VAFsmooth, 'k', label='steady')
+   ax3VAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:], 'k', label='steady')
+
+# show legend   
+legend = ax3VAF.legend(loc='best')
+
+axSLR=ax3VAF.twinx()
+y1, y2=ax3VAF.get_ylim()
+x1, x2=ax3VAF.get_xlim()
+axSLR.set_ylim(GTtoSL(y1) - GTtoSL(runData['steady'].VAFsmooth[0]), GTtoSL(y2) - GTtoSL(runData['steady'].VAFsmooth[0]))
+#axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
+axSLR.set_ylabel('S.L. equiv. (mm)')
+axSLR.set_xlim(x1, x2)
 
 
 plt.show()
