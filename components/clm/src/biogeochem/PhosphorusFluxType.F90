@@ -45,7 +45,7 @@ module PhosphorusFluxType
      real(r8), pointer :: m_retransp_to_litter_patch                (:)     ! patch retranslocated P pool mortality (gP/m2/s)
      real(r8), pointer :: m_ppool_to_litter_patch                   (:)     ! patch storage P pool mortality (gP/m2/s)
      real(r8), pointer :: supplement_to_sminp_surf_patch            (:)     ! patch surface layer (diagnostic) supplemental P supply (gP/m2/s)
-
+     real(r8), pointer :: supplement_to_sminp_surf_col              (:)     ! patch surface layer (diagnostic) supplemental P supply (gP/m2/s)
      ! harvest fluxes
      real(r8), pointer :: hrv_leafp_to_litter_patch                 (:)     ! patch leaf P harvest mortality (gP/m2/s)
      real(r8), pointer :: hrv_frootp_to_litter_patch                (:)     ! patch fine root P harvest mortality (gP/m2/s)
@@ -516,6 +516,7 @@ contains
     allocate(this%fert_p_patch                      (begp:endp)) ; this%fert_p_patch                      (:) = nan
     allocate(this%fert_p_counter_patch                (begp:endp)) ; this%fert_p_counter_patch                (:) = nan
     allocate(this%supplement_to_sminp_surf_patch    (begp:endp)) ; this%supplement_to_sminp_surf_patch    (:) = nan
+    allocate(this%supplement_to_sminp_surf_col  (begc:endc));   this%supplement_to_sminp_surf_col(:) = nan
 
     allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col     (:) = nan
     allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col     (:) = nan
@@ -2069,7 +2070,7 @@ contains
        this%poutputs_col(i)                  = value_column
        this%fire_ploss_col(i)                = value_column
        this%som_p_leached_col(i)             = value_column
-
+       this%supplement_to_sminp_surf_col(i)  = value_column
        ! Zero p2c column fluxes
        this%fire_ploss_col(i) = value_column
        this%wood_harvestp_col(i) = value_column
@@ -2224,6 +2225,9 @@ contains
            this%sminp_to_plant_patch(bounds%begp:bounds%endp), &
            this%sminp_to_plant_col(bounds%begc:bounds%endc))
 
+      call p2c(bounds, num_soilc, filter_soilc, &
+             this%supplement_to_sminp_surf_patch(bounds%begp:bounds%endp),&
+             this%supplement_to_sminp_surf_col(bounds%begc:bounds%endc))
      ! total column-level fire P losses
      do fc = 1,num_soilc
         c = filter_soilc(fc)

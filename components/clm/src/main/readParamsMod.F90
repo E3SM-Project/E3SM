@@ -81,11 +81,9 @@ contains
     use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
     use CNDecompCascadeCNMod     , only : readCNDecompCnParams
     use CNPhenologyMod           , only : readCNPhenolParams
-    use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use CNMRespMod               , only : readCNMRespParams
     use CNNDynamicsMod           , only : readCNNDynamicsParams
     use CNGapMortalityMod        , only : readCNGapMortParams 
-    use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
     use CNSoilLittVertTranspMod  , only : readCNSoilLittVertTranspParams
     use ch4Mod                   , only : readCH4Params
@@ -97,7 +95,7 @@ contains
     use tracer_varcon            , only : is_active_betr_bgc                                         
     use clm_instMod              , only : ep_betr
     use decompMod                , only : bounds_type, get_proc_bounds 
-    
+    use CNAllocationBetrMod      , only : readCNAllocBeTRParams 
     !
     ! !ARGUMENTS:
     implicit none
@@ -126,6 +124,8 @@ contains
     !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
      call get_proc_bounds(bounds_proc)
      call ep_betr%readParams(ncid, bounds_proc)
+     print*,'read readCNAllocBeTRParams'
+     call readCNAllocBeTRParams(ncid)
     endif
 
     !
@@ -156,18 +156,10 @@ contains
     end if
 
     if (use_cn) then
-       if(is_active_betr_bgc)then
-         call readCNPhenolBeTRParams(ncid)
-       else
-         call readCNPhenolParams(ncid)
-       endif
+       call readCNPhenolParams(ncid)
        call readCNMRespParams (ncid)
        call readCNNDynamicsParams (ncid)
-       if(is_active_betr_bgc)then
-         call readCNGapMortBeTRParams (ncid)
-       else
-         call readCNGapMortParams (ncid)
-       endif
+       call readCNGapMortParams (ncid)
     end if
 
     !

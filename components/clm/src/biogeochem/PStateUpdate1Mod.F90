@@ -240,10 +240,6 @@ contains
          if (nu_com .ne. 'RD') ps%ppool_patch(p) = ps%ppool_patch(p) + pf%supplement_to_plantp(p)*dt
          if (NFIX_PTASE_plant) ps%ppool_patch(p) = ps%ppool_patch(p) + pf%biochem_pmin_to_plant_patch(p)*dt
 
-         ! update from surface layer supp phosphorus
-         ps%ppool_patch(p) = &
-              ps%ppool_patch(p) + pf%supplement_to_sminp_surf_patch(p)*dt
-
          ! deployment from retranslocation pool
          ps%ppool_patch(p)    = ps%ppool_patch(p)    + pf%retransp_to_ppool_patch(p)*dt
          ps%retransp_patch(p) = ps%retransp_patch(p) - pf%retransp_to_ppool_patch(p)*dt
@@ -312,10 +308,50 @@ contains
             ps%grainp_xfer_patch(p)        = ps%grainp_xfer_patch(p)       + pf%grainp_storage_to_xfer_patch(p)*dt
          end if
 
+         ! update from surface layer supp phosphorus
+         if(pf%supplement_to_sminp_surf_patch(p)>0._r8)then
+           if(ps%ppool_patch(p)<0._r8)then
+             pf%supplement_to_sminp_surf_patch(p) = -ps%ppool_patch(p)/dt
+             ps%ppool_patch(p) = 0._r8
+           else
+             pf%supplement_to_sminp_surf_patch(p) = 0._r8
+           endif
+         endif
       end do
 
     end associate
 
   end subroutine PStateUpdate1
 
+!----------------------------------------------------------------------
+  subroutine ppool_diag(pf, p, dt)
+
+  implicit none
+  type(phosphorusflux_type)  , intent(inout) :: pf
+  integer, intent(in) :: p
+  real(r8), intent(in) :: dt
+
+  print*,'----------------------------------------------------------------------'
+  print*,'pft',p
+  print*,'sminp_to_ppool',                pf%sminp_to_ppool_patch(p)*dt
+  print*,'supplement_to_sminp_surf',      pf%supplement_to_sminp_surf_patch(p)*dt
+  print*,'retransp_to_ppool_patch',       pf%retransp_to_ppool_patch(p)*dt
+  print*,'ppool_to_leafp',               - pf%ppool_to_leafp_patch(p)*dt
+  print*,'ppool_to_leafp_storage',       - pf%ppool_to_leafp_storage_patch(p)*dt
+  print*,'ppool_to_frootp',              - pf%ppool_to_frootp_patch(p)*dt
+  print*,'ppool_to_frootp_storage',      - pf%ppool_to_frootp_storage_patch(p)*dt
+  print*,'ppool_to_livestemp',           - pf%ppool_to_livestemp_patch(p)*dt
+  print*,'ppool_to_livestemp_storage',   - pf%ppool_to_livestemp_storage_patch(p)*dt
+  print*,'ppool_to_deadstemp',           - pf%ppool_to_deadstemp_patch(p)*dt
+  print*,'ppool_to_deadstemp_storage',   - pf%ppool_to_deadstemp_storage_patch(p)*dt
+  print*,'ppool_to_livecrootp',          - pf%ppool_to_livecrootp_patch(p)*dt
+  print*,'ppool_to_livecrootp_storage',  - pf%ppool_to_livecrootp_storage_patch(p)*dt
+  print*,'ppool_to_deadcrootp',          - pf%ppool_to_deadcrootp_patch(p)*dt
+  print*,'ppool_to_deadcrootp_storage',  - pf%ppool_to_deadcrootp_storage_patch(p)*dt
+  print*,'ppool_to_livestemp',           - pf%ppool_to_livestemp_patch(p)*dt
+  print*,'ppool_to_livestemp_storage',   - pf%ppool_to_livestemp_storage_patch(p)*dt
+  print*,'ppool_to_grainp',              - pf%ppool_to_grainp_patch(p)*dt
+  print*,'ppool_to_grainp_storage',      - pf%ppool_to_grainp_storage_patch(p)*dt
+  
+  end subroutine ppool_diag
 end module PStateUpdate1Mod

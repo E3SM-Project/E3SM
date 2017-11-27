@@ -73,7 +73,7 @@ module CNEcosystemDynBetrMod
     use CNGRespMod                , only : CNGResp
     use CNCStateUpdate1Mod        , only : CStateUpdate1,CStateUpdate0
     use CNNStateUpdate1BeTRMod    , only : NStateUpdate1
-    use CNGapMortalityBeTRMod     , only : CNGapMortality
+    use CNGapMortalityMod         , only : CNGapMortality
     use CNCStateUpdate2Mod        , only : CStateUpdate2, CStateUpdate2h
     use CNNStateUpdate2BeTRMod    , only : NStateUpdate2, NStateUpdate2h
     use CNFireMod                 , only : CNFireArea, CNFireFluxes

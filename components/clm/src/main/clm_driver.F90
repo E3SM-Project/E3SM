@@ -982,7 +982,7 @@ contains
           call t_startf('betr drainage')
           call ep_betr%StepWithDrainage(bounds_clump, col_pp)
           call t_stopf('betr drainage')
-          if (nstep < 2 )then
+          if (nstep < 2 .or. ep_betr%skip_balcheck())then
             if (masterproc) then
               write(iulog,*) '--WARNING-- skipping BeTR balance check for first timestep'
             end if
@@ -1093,28 +1093,52 @@ contains
        if (.not. use_fates)then
           if (use_cn) then
              nstep = get_nstep()
-
-             if (nstep < 2 )then
-                if (masterproc) then
+             if(use_betr .and. is_active_betr_bgc)then
+               if (nstep < 2 .or. ep_betr%skip_balcheck())then
+                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-                end if
-             else
-                call t_startf('cnbalchk')
+                 end if
+               else
+                 call t_startf('cnbalchk')
 
-                call CBalanceCheck(bounds_clump, &
+                 call CBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      carbonstate_vars, carbonflux_vars)
 
-                call NBalanceCheck(bounds_clump, &
+                 call NBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      nitrogenstate_vars, nitrogenflux_vars)
 
 
-                call PBalanceCheck(bounds_clump, &
+                 call PBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      phosphorusstate_vars, phosphorusflux_vars)
 
-                call t_stopf('cnbalchk')
+                 call t_stopf('cnbalchk')
+               end if
+             else
+               if (nstep < 2 )then
+                 if (masterproc) then
+                   write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
+                 end if
+               else
+                 call t_startf('cnbalchk')
+
+                 call CBalanceCheck(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     carbonstate_vars, carbonflux_vars)
+
+                 call NBalanceCheck(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     nitrogenstate_vars, nitrogenflux_vars)
+
+
+                 call PBalanceCheck(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     phosphorusstate_vars, phosphorusflux_vars)
+
+                 call t_stopf('cnbalchk')
+               end if
              end if
           end if
        end if
