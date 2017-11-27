@@ -1034,7 +1034,7 @@ contains
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, pid_target)
         ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
         ! debug test
         outfile = 'recMeshAtm.h5m'//CHAR(0)
@@ -1054,7 +1054,7 @@ contains
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASO"//CHAR(0)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_new, pid_target)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, pid_target)
         ierr = iMOAB_ReceiveMesh(pid_target, mpicom_join, mpigrp_old, id_old)
         ! debug test
         outfile = 'recMeshOcn.h5m'//CHAR(0)
