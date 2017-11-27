@@ -1,126 +1,129 @@
-#!/usr/bin/env perl
-use strict;
-use File::Path;
+#!/usr/bin/env python
+from standard_script_setup import *
+from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging
+from CIME.case import Case
+import glob
 
-#===============================================================================
-# Purpose: Build csm_share library
-#===============================================================================
+logger = logging.getLogger(__name__)
 
-if ($#ARGV < 2) {
-    die " ERROR buildlib_csm_share: must specify a caseroot input argument @ARGV";
-}
-my ($sharedlibroot, $installroot, $CASEROOT) = @ARGV;
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
+OR
+{0} --test
 
-print "$sharedlibroot <> $installroot <> $CASEROOT\n";
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
 
-chdir "${CASEROOT}" or die "Could not cd to \"$CASEROOT\"";
+description=description,
 
-my $CIMEROOT		= `./xmlquery CIMEROOT		--value`;
-my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	--value`;
-my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	--value`;
-my $GMAKE_J		= `./xmlquery GMAKE_J		--value`;
-my $GMAKE		= `./xmlquery GMAKE		--value`;
-my $CASETOOLS		= `./xmlquery CASETOOLS		--value`;
-my $multi_driver  	= `./xmlquery MULTI_DRIVER       --value`;
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-my $NINST_ATM		= 1;
-my $NINST_ICE		= 1;
-my $NINST_GLC		= 1;
-my $NINST_LND		= 1;
-my $NINST_OCN		= 1;
-my $NINST_ROF		= 1;
-my $NINST_WAV		= 1;
-my $NINST_ESP		= 1;
+    CIME.utils.setup_standard_logging_options(parser)
 
-if ($multi_driver eq "FALSE") {
-    $NINST_ATM		= `./xmlquery NINST_ATM		--value`;
-    $NINST_ICE	        = `./xmlquery NINST_ICE		--value`;
-    $NINST_GLC		= `./xmlquery NINST_GLC		--value`;
-    $NINST_LND		= `./xmlquery NINST_LND		--value`;
-    $NINST_OCN		= `./xmlquery NINST_OCN		--value`;
-    $NINST_ROF		= `./xmlquery NINST_ROF		--value`;
-    $NINST_WAV		= `./xmlquery NINST_WAV		--value`;
-    $NINST_ESP		= `./xmlquery NINST_ESP		--value`;
-}
-my $NINST_VALUE		= `./xmlquery NINST_VALUE	--value`;
-$ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	--value`;
-#--------------------------------------------------------------------
-# Filepath: list of source code directories (in order of importance).
-#--------------------------------------------------------------------
+    parser.add_argument("buildroot",
+                        help="build path root")
 
-my $useesmf = "noesmf";
-$useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
+    parser.add_argument("installpath",
+                        help="install path ")
 
-my $libdir = "$sharedlibroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}/csm_share";
-my $installdir = "$installroot/$COMP_INTERFACE/$useesmf/${NINST_VALUE}";
-print "installdir is $installdir\nlibdir is $libdir\n";
-mkpath($libdir) unless -d $libdir;
-chdir($libdir) or die "Could not cd to $libdir: $!\n";
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
 
-my @filepath = ( "$CASEROOT/SourceMods/src.share",
-		 "$CIMEROOT/src/drivers/mct/shr",
-		 "$CIMEROOT/src/components/xcpl_models/xshare",
-		 "$CIMEROOT/src/share/streams",
-		 "$CIMEROOT/src/share/util",
-		 "$CIMEROOT/src/share/RandNum/src",
-		 "$CIMEROOT/src/share/RandNum/src/dsfmt_f03",
-		 "$CIMEROOT/src/share/RandNum/src/kissvec",
-		 "$CIMEROOT/src/share/RandNum/src/mt19937",
-		 );
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-if($useesmf eq "noesmf"){
-    push(@filepath,"$CIMEROOT/src/share/esmf_wrf_timemgr");
-}else{
-    push(@filepath,"$CIMEROOT/src/drivers/mct/shr_esmf");
-}
+    return args.buildroot, args.installpath, args.caseroot
 
-my @fp;
-if (-e "Filepath"){
-    open(F,"Filepath");
-    @fp = <F>;
-    close(F);
-}
-# if the number of lines in @filepath is different than the number of lines in @fp then create a new Filepath file
-if($#fp != $#filepath){
-    open(F,">Filepath");
-    foreach(@filepath){
-	print F "$_\n";
-    }
-    close(F);
-}
-my $multiinst_cppdefs = "";
 
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ATM=$NINST_ATM";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_LND=$NINST_LND";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_OCN=$NINST_OCN";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ICE=$NINST_ICE";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_GLC=$NINST_GLC";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_WAV=$NINST_WAV";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ROF=$NINST_ROF";
-$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ESP=$NINST_ESP";
+def buildlib(bldroot, installpath, caseroot):
+###############################################################################
+    with Case(caseroot, read_only=False) as case:
+        cimeroot = case.get_value("CIMEROOT")
+        filepath = [os.path.join(caseroot,"SourceMods","src.share"),
+                    os.path.join(cimeroot,"src","drivers","mct","shr"),
+                    os.path.join(cimeroot,"src","components","xcpl_models","xshare"),
+                    os.path.join(cimeroot,"src","share","streams"),
+                    os.path.join(cimeroot,"src","share","util"),
+                    os.path.join(cimeroot,"src","share","RandNum","src"),
+                    os.path.join(cimeroot,"src","share","RandNum","src","dsfmt_f03"),
+                    os.path.join(cimeroot,"src","share","RandNum","src","kissvec"),
+                    os.path.join(cimeroot,"src","share","RandNum","src","mt19937")]
+        if case.get_value("USE_ESMF_LIB"):
+            use_esmf = "esmf"
+        else:
+            use_esmf = "noesmf"
+            filepath.append(os.path.join(cimeroot, "src", "share", "esmf_wrf_timemgr"))
 
-my $bld = "$GMAKE complib -j $GMAKE_J MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $CASETOOLS/Makefile ";
+        comp_interface = case.get_value("COMP_INTERFACE")
+        ninst_value = case.get_value("NINST_VALUE")
 
-my $rc = system($bld);
-if ($rc==0xff00){
-    die "$bld failed with: $!\n";
-} elsif($rc > 0x80) {
-    $rc >>= 8;
-    die "$bld returned non-zero exit status $rc\n";
-} elsif($rc != 0) {
-    print "$bld ran with ";
-    if ($rc & 0x80){
-	$rc &= ~0x80;
-	print "coredump from ";
-    }
-    die "signal $rc\n";
-}
-if ( ! -d "$installdir/lib"){
-    print "Creating installdir in $installdir\n";
-    mkpath("$installdir/lib");
-    mkpath("$installdir/include");
-}
-print "Copying libcsm_share.a to $installdir/lib\n";
-system("cp -p -f libcsm_share.a $installdir/lib/");
-print "Copying modules to $installdir/include\n";
-system("cp -p -f *.mod $installdir/include/");
+        libdir = os.path.join(bldroot,comp_interface,use_esmf, ninst_value,"csm_share")
+        if not os.path.isdir(libdir):
+            os.makedirs(libdir)
+
+        filepathfile = os.path.join(libdir, "Filepath")
+        # if the filepathfile has a different number of lines than filepath, replace it
+        file_len = 0
+        if os.path.isfile(filepathfile):
+            file_len = len(open(filepathfile).readlines())
+
+        if len(filepath) != file_len:
+            with open(filepathfile, "w") as fd:
+                for path in filepath:
+                    fd.write("{}\n".format(path))
+
+        components = case.get_values("COMP_CLASSES")
+        multiinst_cppdefs = ""
+        multi_driver = case.get_value("MULTI_DRIVER")
+        for comp in components:
+            if comp == "CPL":
+                continue
+            if multi_driver:
+                ninst_comp = 1
+            else:
+                ninst_comp = case.get_value("NINST_{}".format(comp))
+            multiinst_cppdefs += " -DNUM_COMP_INST_{}={}".format(comp, ninst_comp)
+
+        installdir = os.path.join(installpath, comp_interface,
+                                  use_esmf, ninst_value)
+        for ndir in ("lib", "include"):
+            if not os.path.isdir(os.path.join(installdir,ndir)):
+                os.makedirs(os.path.join(installdir,ndir))
+        # copy some header files
+        for _file in glob.iglob(os.path.join(cimeroot,"src","share","include","*")):
+            copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
+        for _file in glob.iglob(os.path.join(cimeroot,"src","share","RandNum","include","*")):
+            copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
+
+        # This runs the gptl make command
+        gmake_opts = "-f {}/Makefile complib MODEL=csm_share ".format(os.path.join(caseroot,"Tools"))
+        gmake_opts += "-j {} ".format(case.get_value("GMAKE_J"))
+        gmake_opts += " COMPLIB={} ".format(os.path.join(installdir,"lib","libcsm_share.a"))
+        gmake_opts += " USER_CPPDEFS=\"{}\" ".format(multiinst_cppdefs)
+        gmake_opts += " CASEROOT={} ".format(caseroot)
+        gmake_opts += " CIMEROOT={} ".format(cimeroot)
+        gmake_opts += "INCLUDE_DIR={} ".format(os.path.join(installdir, "include"))
+        gmake_opts += " -C {}".format(libdir)
+
+        gmake_cmd = case.get_value("GMAKE")
+
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger)
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    buildlib(bldroot, installpath, caseroot)
+
+if (__name__ == "__main__"):
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+    _main(sys.argv, __doc__)

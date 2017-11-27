@@ -1,5 +1,220 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 11-22-2017 
+Tag: cime5.4.0-alpha.11
+Answer Changes: None
+Tests: scripts_regression_tests.pr 
+Dependencies:
+
+Brief Summary:
+    - GPTL build threaded, makefile cleanup.
+    - Changes in merged Makefile to satisfy dependancies thus making rebuild faster.
+    - Fix run_sub_or_cmd in the case where a cmd is run and log is None.
+    - Enable ldsta case.submit to be run twice.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5ea8d6b Merge pull request #2092 from jedwards4b/gptl_build_threaded
+4361a51 Merge pull request #2090 from jedwards4b/makefaster
+ca4c1f9 Merge pull request #2086 from ESMCI/jgfouca/run_sub_no_log
+5791d32 Merge pull request #2084 from ESMCI/mfdeakin-sandia/ldsta/rerun
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/Makefile
+M       scripts/lib/CIME/SystemTests/ldsta.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/case_run.py
+M       scripts/lib/CIME/preview_namelists.py
+M       scripts/lib/CIME/utils.py
+M       src/build_scripts/buildlib.gptl
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 11-17-2017
+Tag: cime5.4.0-alpha.10
+Answer Changes: None
+Tests: cime_developer, scripts_regression_test
+       code_checker, create_test cime_developer
+       SMS.f09_g17.B1850.yellowstone_intel
+       cime_tiny
+Dependencies:
+
+Brief Summary:
+    - Add LDSTA to cime_developer test suite.
+    - Major refactor of baseline handling.
+    - Add bless logging capability.
+    - Fix clm build.
+    - Add function to ensure correct bld logging.
+    - Short term archiver last date option test.
+    - Redo mct and mpi-serial buildlib scripts in python.
+    - Add a list of test types to the users guide.
+    - Fix MCC test on master.
+    - Fix csm_build, remove debug print statement.
+    - Cleanup gptl build, replace perl buildlib.csm_share with python.
+    - Convert buildlib.gptl to python and call it and the buildlib.pio as subroutines.
+    - Run sub logging fixes.
+    - Fix redirection for run_sub to include stderr.
+    - Separate DATA_ASSIMILATION flag by component and add to Fortran infodata.
+    - Add unit tests of compare_two's handling of pass/fail in comparison.
+    - Fixes incorrect timer event name in data runoff model.
+    - Update from ACME 11-13-2017.
+    - Fix pylint issue.
+    - Locked files handled BUILD_COMPLETE better.
+    - Add optional COSTPES_PER_NODE.
+    - Switch melvin to use officially supported pfunit.
+    - USER_REQUESTED_ vars should go in env_batch.
+    - Use_existing needs to set FAIL states back to PEND.
+    - Add create_test options to config for user tuned defaults.
+    - Jgfouca/branch for acme split 11-07-2017 pr.
+    - Improve email handling.
+    - Add retry capability to create_test.
+    - Convert line to utf-8.
+    - Change paths to case2 rundir and exeroot.
+
+User interface changes: 
+    - Better defaults for bless_test_results and compare_test_results.
+    - New bless_log file in baseline dirs.
+    - Allow multiple -m args to case.submit. Allows user to put email settings in .cime/config.
+    - New --retry option to create_test.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6dd002f Merge pull request #2074 from ESMCI/mfdeakin-sandia/cime_developer/ldsta
+0c4ffa7 Merge pull request #2079 from ESMCI/jgfouca/major_baseline_refactor
+5ac2f90 Merge pull request #2069 from ESMCI/jgfouca/add_bless_logs_2
+c80333f Merge pull request #2076 from jedwards4b/clmbuildfix
+09e6061 Merge pull request #2073 from ESMCI/jgfouca/fix_bld_logging
+09aadd0 Merge pull request #2071 from ESMCI/mfdeakin-sandia/test_sta_last_date
+8765c9c Merge pull request #2072 from jedwards4b/rebuildmct
+92f74f8 Merge pull request #2062 from ESMCI/fischer/testtype_doc 
+690e7f7 fix MCC test on master
+a3d1554 fix csm_build, remove debug print statement
+71fbd56 Merge pull request #2067 from jedwards4b/rebuildlibs
+27fbbbd Merge pull request #2065 from jedwards4b/run_sub_logging_demo
+9bea9a4 Merge pull request #2064 from ESMCI/jgfouca/run_sub_logging_fixes
+7e1c8b5 Merge pull request #2055 from ESMCI/jgfouca/run_sub_logging_fixes
+53e1ddf Merge pull request #2039 from jedwards4b/data_assimilation_to_fortran_try1
+559c50a Merge pull request #2060 from billsacks/compare_two_comparison_unit_tests
+da29a73 Merge pull request #2054 from ESMCI/bishtgautam/drof
+9442c93 Merge pull request #2052 from ESMCI/jgfouca/branch-for-acme-split-11-13-2017-pr
+93461b6 fix pylint issue
+52c1ad4 Merge pull request #2051 from jedwards4b/rebuild_after_error
+d713717 Merge pull request #2050 from jedwards4b/COST_PER_NODE
+134cb8f Merge pull request #2049 from ESMCI/jgfouca/switch_melvin_to_offical_pfunit
+5de7b7e Merge pull request #2047 from jedwards4b/fix_for_user_requested_flags
+04e56d2 Merge pull request #2045 from ESMCI/jgfouca/fix_use_existing
+e091e2a Merge pull request #2042 from jedwards4b/create_test_options_in_config
+c44fce4 Merge pull request #2033 from ESMCI/jgfouca/branch-for-acme-split-11-07-2017-pr
+d03cde1 Merge pull request #2035 from ESMCI/jgfouca/improve_email_handling
+426f61c Merge pull request #2034 from ESMCI/jgfouca/create_test_retry
+7c54009 Merge pull request #2038 from jedwards4b/fix_dae_test
+daee7ac Merge pull request #2036 from billsacks/compare2_fix_dirs
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/config_archive.xml
+M	config/acme/machines/Depends.cetus
+M	config/acme/machines/Depends.intel
+A	config/acme/machines/Depends.intel18
+M	config/acme/machines/Depends.mira
+M	config/acme/machines/Depends.summitdev.ibm
+M	config/acme/machines/Depends.titan.pgi
+M	config/acme/machines/Depends.titan.pgiacc
+D	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+D	config/acme/machines/mkDepends
+D	config/acme/machines/mkSrcfiles
+M	config/acme/machines/syslog.cori-haswell
+M	config/acme/machines/syslog.cori-knl
+M	config/acme/machines/syslog.edison
+M	config/acme/testmods_dirs/allactive/cam/cosplite/xmlchange_cmnds
+D	config/cesm/machines/Makefile
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_machines.xml
+D	config/cesm/machines/mkDepends
+D	config/cesm/machines/mkSrcfiles
+M	config/config_tests.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/env_mach_specific.xsd
+M	doc/source/users_guide/testing.rst
+A	scripts/Tools/Makefile
+A	scripts/Tools/acme_cime_merge
+M	scripts/Tools/acme_cime_split
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.submit
+M	scripts/Tools/case_diff
+M	scripts/Tools/compare_test_results
+A	scripts/Tools/mkDepends
+A	scripts/Tools/mkSrcfiles
+M	scripts/Tools/xmlchange
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/dae.py
+A	scripts/lib/CIME/SystemTests/ldsta.py
+M	scripts/lib/CIME/SystemTests/pre.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/check_lockedfiles.py
+M	scripts/lib/CIME/compare_test_results.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/case_fake.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+A	scripts/lib/acme_cime_mgmt.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/run_acme_ctest/runAcmeTest_template.sh
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/desp/cime_config/namelist_definition_desp.xml
+M	src/components/data_comps/drof/drof_comp_mod.F90
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_compsets.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/cime_driver.F90
+M	src/drivers/mct/main/component_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+M	src/share/timing/ChangeLog
+M	src/share/timing/Makefile
+M	src/share/timing/f_wrappers.c
+M	src/share/timing/gptl.c
+M	src/share/timing/gptl.inc
+M	src/share/timing/perf_mod.F90
+M	src/share/timing/private.h
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 11-08-2017
 Tag: cime5.4.0-alpha.09
