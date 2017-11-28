@@ -145,40 +145,10 @@ CONTAINS
     fullgrid=.true.
 
 #ifdef _OPENMP    
-!   Set by driver
+!   Total number of threads available to dycore, as set by driver
     nthreads = omp_get_max_threads()
-    hthreads = nthreads
-    if(par%masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
-       write(iulog,*) " "
-    endif
-#ifndef HORIZ_OPENMP
-    call endrun('Error: threaded runs require -DHORIZ_OPENMP')
 #endif
-#ifdef COLUMN_OPENMP
-    call omp_set_nested(.true.)
-    if (vthreads > nthreads .or. vthreads < 1) &
-         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
-    hthreads = nthreads / vthreads
-    if(par%masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "dyn_init1: using OpenMP across and within elements"
-       write(iulog,*) "dyn_init1: hthreads=",hthreads,"vthreads=",vthreads
-       write(iulog,*) " "
-    endif
-#else
-    if (vthreads>1) &
-         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
-#endif
-#else
-    nthreads = 1
-    if(par%masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "dyn_init1: openmp not activated"
-       write(iulog,*) " "
-    endif
-#endif
+
     if(par%dynproc) then
        call prim_init1(elem,par,dom_mt,TimeLevel)
 

@@ -16,9 +16,11 @@ module thread_mod
   implicit none
   private
 
-  integer, public :: NThreads   ! from namelist
+  integer, public :: NThreads   ! total number of threads
+                                ! standalone HOMME: from namelist
+                                ! in CAM: set by driver
   integer, public :: hthreads   ! computed based on nthreads, vthreads,nelemd
-  integer, public :: vthreads = 0   ! compute, unless set in namelist
+  integer, public :: vthreads = 1   ! not used unless set in namelist
 
   public :: omp_get_thread_num
   public :: omp_in_parallel

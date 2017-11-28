@@ -732,10 +732,6 @@ module namelist_mod
        if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
        call abortmp('stopping')
     endif
-    if (vthreads > nthreads) then
-       if(par%masterproc) print *,'requested vthreads exceeds nthreads'
-       call abortmp('stopping')
-    endif
     call omp_set_num_threads(NThreads)
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
@@ -754,6 +750,28 @@ module namelist_mod
        endif
     endif
 #endif
+
+    ! more thread error checks:  
+#ifdef _OPENMP
+#ifndef HORIZ_OPENMP
+    call abortmp('Error: threaded runs require -DHORIZ_OPENMP')
+#endif
+#endif
+#ifndef COLUMN_OPENMP
+    if (vthreads>1) call abortmp('Error: vthreads>1 requires -DCOLUMN_OPENMP')
+#endif
+    
+#ifdef HORIZ_OPENMP
+    if(par%masterproc) print *,'-DHORIZ_OPENMP enabled'
+#else
+    if(par%masterproc) print *,'-DHORIZ_OPENMP disabled'
+#endif
+#ifdef COLUMN_OPENMP
+    if(par%masterproc) print *,'-DCOLUMN_OPENMP enabled'
+#else
+    if(par%masterproc) print *,'-DCOLUMN_OPENMP disabled'
+#endif
+
 
     if (ne /=0) then
     if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then

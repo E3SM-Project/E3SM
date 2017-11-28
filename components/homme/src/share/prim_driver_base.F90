@@ -347,14 +347,21 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    if (vthreads == 0) then
-       ! vthreads was NOT SET in namelist 
-       hthreads = min(nthreads,nelemd)  ! use max possible for hthreads
-       vthreads = nthreads/max(hthreads,1)  
-    else
-       ! vthreads was SET in namelist. impose:
-       hthreads = nthreads/max(vthreads,1)
-       hthreads = min(hthreads,nelemd)  ! hthreads cant exceed nelemd
+    !
+    ! At this point, we can assume: 
+    ! nthreads was set by CAM driver, or in namelist and error checked
+    ! vthreads=1 or read from namelist and verified consistent with COLUMN_OPENMP
+    ! 
+    ! set hthreads, and check that vthreads was not set too large
+    if (vthreads > nthreads .or. vthreads < 1) &
+         call abortmp('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+    if (vthreads>1) call omp_set_nested(.true.)
+    hthreads = nthreads / vthreads
+    hthreads = min(nthreads,nelemd)
+    if(par%masterproc) then
+       write(iulog,*) "prim_init1: total threads: nthreads = ",nthreads
+       write(iulog,*) "threads across elements    hthreads = ",hthreads
+       write(iulog,*) "threading within elements  vthreads = ",vthreads
     endif
 
 
