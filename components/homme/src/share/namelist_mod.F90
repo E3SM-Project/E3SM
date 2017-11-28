@@ -752,11 +752,6 @@ module namelist_mod
 #endif
 
     ! more thread error checks:  
-#ifdef _OPENMP
-#ifndef HORIZ_OPENMP
-    call abortmp('Error: threaded runs require -DHORIZ_OPENMP')
-#endif
-#endif
 #ifndef COLUMN_OPENMP
     if (vthreads>1) call abortmp('Error: vthreads>1 requires -DCOLUMN_OPENMP')
 #endif
