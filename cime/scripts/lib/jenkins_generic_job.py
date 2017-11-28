@@ -71,7 +71,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         shutil.rmtree("Testing")
 
     # Remove the old build/run dirs
-    test_id_root = "jenkins_{}".format(baseline_name)
+    test_id_root = "jenkins_{}_{}".format(baseline_name, test_suite)
     for old_dir in glob.glob("{}/*{}*{}*".format(scratch_root, mach_comp, test_id_root)):
         shutil.rmtree(old_dir)
 
