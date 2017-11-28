@@ -74,7 +74,12 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type(error_prefix + " " + error_msg)
+        try:
+            msg = str(error_prefix + " " + error_msg)
+        except UnicodeEncodeError:
+            msg = (error_prefix + " " + error_msg).encode('utf-8')
+        raise exc_type(msg)
+
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
