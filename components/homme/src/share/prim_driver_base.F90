@@ -478,25 +478,6 @@ contains
     deallocate(HeadPartition)
 
 
-    ! =====================================
-    ! Set number of threads...
-    ! =====================================
-    if(par%masterproc) then
-       write(iulog,*) "Main:nthreads=",nthreads
-       write(iulog,*) "Main:hthreads=",hthreads
-       write(iulog,*) "Main:vthreads=",vthreads
-#ifdef HORIZ_OPENMP
-       write(iulog,*) "Main:HORIZ_OPENMP enabled"
-#else
-       write(iulog,*) "Main:HORIZ_OPENMP disabled, hthreads ignored"
-#endif
-#ifdef COLUMN_OPENMP
-       write(iulog,*) "Main:COLUMN_OPENMP enabled"
-#else
-       write(iulog,*) "Main:COLUMN_OPENMP disabled, vthreads ignored"
-#endif
-    endif
-
     allocate(dom_mt(0:hthreads-1))
     do ith=0,hthreads-1
        dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
