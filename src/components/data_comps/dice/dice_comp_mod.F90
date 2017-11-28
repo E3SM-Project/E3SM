@@ -54,6 +54,7 @@ module dice_comp_mod
   logical       :: firstcall = .true.    ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
 
+  real(R8),parameter  :: aerodep_spval = shr_const_spval_aerodep ! special aerosol deposition
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
   real(R8),parameter  :: tFrz   = shr_const_tkfrz   ! temp of freezing
@@ -618,12 +619,21 @@ CONTAINS
 
        ! Compute outgoing aerosol fluxes
        do n = 1,lsize
-          i2x%rAttr(kbcpho ,n) = x2i%rAttr(kbcphodry,n)
-          i2x%rAttr(kbcphi ,n) = x2i%rAttr(kbcphidry,n) + x2i%rAttr(kbcphiwet,n)
-          i2x%rAttr(kflxdst,n) = x2i%rAttr(kdstdry1,n) + x2i%rAttr(kdstwet1,n) &
-                               + x2i%rAttr(kdstdry2,n) + x2i%rAttr(kdstwet2,n) &
-                               + x2i%rAttr(kdstdry3,n) + x2i%rAttr(kdstwet3,n) &
-                               + x2i%rAttr(kdstdry4,n) + x2i%rAttr(kdstwet4,n)
+          i2x%rAttr(kbcpho ,n) = 0.0_r8
+          i2x%rAttr(kbcphi ,n) = 0.0_r8
+          i2x%rAttr(kflxdst,n) = 0.0_r8
+          if (i2x%rAttr(kbcpho ,n) > 1.e26_r8) then
+             i2x%rAttr(kbcpho ,n) = x2i%rAttr(kbcphodry,n)
+          end if
+          if (i2x%rAttr(kbcphi ,n) > 1.e26_r8) then
+             i2x%rAttr(kbcphi ,n) = x2i%rAttr(kbcphidry,n) + x2i%rAttr(kbcphiwet,n)
+          end if
+          if (i2x%rAttr(kbcpho ,n) > 1.e26_r8) then
+             i2x%rAttr(kflxdst,n) = x2i%rAttr(kdstdry1,n) + x2i%rAttr(kdstwet1,n) &
+                                  + x2i%rAttr(kdstdry2,n) + x2i%rAttr(kdstwet2,n) &
+                                  + x2i%rAttr(kdstdry3,n) + x2i%rAttr(kdstwet3,n) &
+                                  + x2i%rAttr(kdstdry4,n) + x2i%rAttr(kdstwet4,n)
+          end if
        end do
 
     end select
