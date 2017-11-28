@@ -86,7 +86,7 @@ contains
 
   if (theta_hydrostatic_mode) then
      ! hydrostatic pressure
-     exner  = (pnh/p0)**kappa_star
+     exner  = (pi/p0)**kappa_star
      dpnh = dp3d
      pnh = pi ! copy hydrostatic pressure into output variable
      if (present(exner_i_out)) then
@@ -204,28 +204,46 @@ contains
   real (kind=real_kind) :: p_i(np,np,nlevp)  ! pressure on interfaces
   real (kind=real_kind) :: phi_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: rho_R_theta(np,np,nlev)
 
   integer :: k
 
   ! compute pressure on interfaces
-  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-  do k=1,nlev
-     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
-  enddo
-  do k=1,nlev
-     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
-     exner(:,:,k) = (p(:,:,k)/p0)**kappa
-  enddo
-  phi_i(:,:,nlevp) = phis(:,:)
-  do k=nlev,1,-1
+!  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+!  do k=1,nlev
+!     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
+!  enddo
+!  do k=1,nlev
+!     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
+!     exner(:,:,k) = (p(:,:,k)/p0)**kappa
+!  enddo
+!  phi_i(:,:,nlevp) = phis(:,:)
+!  do k=nlev,1,-1
   ! phi = -theta* d exner /dp = -theta * exner / p
-     phi_i(:,:,k) = phi_i(:,:,k+1)-theta_dp_cp(:,:,k)*kappa*(exner(:,:,k)/p(:,:,k))
+!     phi_i(:,:,k) = phi_i(:,:,k+1)-theta_dp_cp(:,:,k)*kappa*(exner(:,:,k)/p(:,:,k))
+!  enddo
+
+!  phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
+!  do k=2,nlev
+!     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1) 
+!  enddo
+
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev
+     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
 
-  phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
-  do k=2,nlev
-     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1) 
+!  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
+  phi(:,:,nlev) = phis(:,:) + (&
+    kappa*theta_dp_cp(:,:,nlev)*p_i(:,:,nlev+1)**(kappa-1)*p0**(-kappa) )/2
+
+  do k=nlev,2,-1
+     rho_R_theta(:,:,k) = &
+          (theta_dp_cp(:,:,k)*kappa + theta_dp_cp(:,:,k-1)*kappa)/2
+     phi(:,:,k-1) = phi(:,:,k) +&
+          rho_R_theta(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
   enddo
+
     
   end subroutine
 
