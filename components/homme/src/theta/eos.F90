@@ -118,7 +118,8 @@ contains
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     rho_R_theta(:,:,k) =theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k+1)-phinh_i(:,:,k)) 
+     ! rho_R_theta = -kappa * Theta / dphi/ds
+     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k)-phinh_i(:,:,k+1)) 
 
      if (minval(rho_R_theta(:,:,k))<0) then
         print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
