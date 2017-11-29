@@ -350,14 +350,15 @@ contains
     !
     ! At this point, we can assume: 
     ! nthreads was set by CAM driver, or in namelist and error checked
+    ! if CAM is running w/o threads, nthreads=0 
     ! vthreads=1 or read from namelist and verified consistent with COLUMN_OPENMP
     ! 
     ! set hthreads, and check that vthreads was not set too large
-    if (vthreads > nthreads .or. vthreads < 1) &
+    if (vthreads > max(nthreads,1) .or. vthreads < 1) &
          call abortmp('Error: vthreads<1 or vthreads > NTHRDS_ATM')
     if (vthreads>1) call omp_set_nested(.true.)
-    hthreads = nthreads / vthreads
-    hthreads = min(nthreads,nelemd)
+    hthreads = max(nthreads,1) / vthreads
+    hthreads = min(max(nthreads,1),nelemd)
     if(par%masterproc) then
        write(iulog,*) "prim_init1: total threads: nthreads = ",nthreads
        write(iulog,*) "threads across elements    hthreads = ",hthreads
