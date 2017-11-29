@@ -63,7 +63,12 @@ outfile.createDimension('time', None)  # None=unlimited
 outfile.createDimension('dim', 2) # spatial dimensions
 outfile.createDimension('n_nodes_ch', 2) # how many nodes to make a channel edge.  Fixed(?) at 2
 outfile.createDimension('index1', len(infile.dimensions['nCells']))
-outfile.createDimension('index2', len(infile.dimensions['nEdges']))
+angleEdge = infile.variables['angleEdge'][:]
+#outfile.createDimension('index2', len(infile.dimensions['nEdges']))
+indNSEdges = np.nonzero(np.logical_or(angleEdge<0.1, angleEdge>3.0))[0]
+nNSEdges = indNSEdges.shape[0]
+print nNSEdges, len(infile.dimensions['nEdges'])
+outfile.createDimension('index2', nNSEdges)
 outfile.createDimension('index_ch', len(infile.dimensions['nEdges']))
 
 
@@ -105,8 +110,10 @@ setattr(thevar, 'units', 'm')
 setattr(thevar, 'long_name', 'node coordinates')
 
 thevar = outfile.createVariable('coords2', 'd', ('dim','index2'))
-thevar[0,:] = infile.variables['xEdge'][:]
-thevar[1,:] = infile.variables['yEdge'][:]
+xEdge = infile.variables['xEdge'][:]
+yEdge = infile.variables['yEdge'][:]
+thevar[0,:] = xEdge[indNSEdges]
+thevar[1,:] = yEdge[indNSEdges]
 setattr(thevar, 'units', 'm')
 setattr(thevar, 'long_name', 'cell midpoint coordinates')
 
@@ -152,7 +159,9 @@ setattr(thevar, 'units', 'm')
 # Edge variables
 
 thevar = outfile.createVariable('q', 'd', ('time', 'index2',))
-thevar[times-times.min(),:] = np.absolute(infile.variables['waterFlux'][times,:])
+waterFlux = infile.variables['waterFlux'][times,:]
+XwaterFlux = waterFlux[:, indNSEdges]
+thevar[times-times.min(),:] = np.absolute(XwaterFlux)
 setattr(thevar, 'long_name', 'water sheet discharge')
 setattr(thevar, 'units', 'm^2/s')
 
