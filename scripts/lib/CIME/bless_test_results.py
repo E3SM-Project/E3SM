@@ -21,12 +21,14 @@ def bless_namelists(test_name, test_dir, report_only, force, baseline_name, base
         (force or six.moves.input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
 
         if baseline_name is None:
-            baseline_name = run_cmd_no_fail("./xmlquery --value BASELINE_NAME_CMP", from_dir=test_dir)
-            if not baseline_name:
+            stat, baseline_name, _ = run_cmd("./xmlquery --value BASELINE_NAME_CMP", from_dir=test_dir)
+            if stat != 0 or not baseline_name:
                 baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
 
         if baseline_root is None:
-            baseline_root = run_cmd_no_fail("./xmlquery --value BASELINE_ROOT", from_dir=test_dir)
+            stat, baseline_root, _ = run_cmd("./xmlquery --value BASELINE_ROOT", from_dir=test_dir)
+            if stat != 0 or not baseline_root:
+                return False, "Could not determine baseline root"
 
         create_test_gen_args = " -g {} ".format(baseline_name if get_model() == "cesm" else " -g -b {} ".format(baseline_name))
         stat, _, err = run_cmd("{}/create_test {} -n {} --baseline-root {} -o".format(get_scripts_root(), test_name, create_test_gen_args, baseline_root))
