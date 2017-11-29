@@ -443,7 +443,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file"
 						. '"' . "\n";
 		print $stream_file '        input_interval="initial_only"' . "\n";
-		print $stream_file '        packages="mocStreamfunctionAMPKG">' . "\n";
 		print $stream_file '' . "\n";
 		print $stream_file '        <var name="transectEdgeMasks"/>' . "\n";
 		print $stream_file '        <var name="transectNames"/>' . "\n";
@@ -461,7 +460,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file"
 						. '"' . "\n";
 		print $stream_file '        input_interval="initial_only"' . "\n";
-		print $stream_file '        packages="mocStreamfunctionAMPKG">' . "\n";
 		print $stream_file '' . "\n";
 		print $stream_file '        <var name="regionCellMasks"/>' . "\n";
 		print $stream_file '        <var name="regionNames"/>' . "\n";
@@ -609,6 +607,24 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="meridionalHeatTransportLat"/>' . "\n";
 	print $stream_file '    <var name="refZMid"/>' . "\n";
 	print $stream_file '    <var name="refBottomDepth"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<stream name="eddyProductVariablesOutput"' . "\n";
+	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '        filename_template="mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        packages="eddyProductVariablesAMPKG">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '    <var name="xtime"/>' . "\n";
+	print $stream_file '    <var name="SSHSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalTimesTemperature"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalTimesTemperature"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
@@ -779,6 +795,11 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="mocStreamvalLatAndDepth"/>' . "\n";
 	print $stream_file '    <var name="mocStreamvalLatAndDepthRegion"/>' . "\n";
 	print $stream_file '    <var name="binBoundaryMocStreamfunction"/>' . "\n";
+	print $stream_file '    <var name="SSHSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalTimesTemperature"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalTimesTemperature"/>' . "\n";
         if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
         	print $stream_file '    <var_struct name="ecosysDiagFieldsLevel1"/>' . "\n";
         	print $stream_file '    <var_struct name="ecosysAuxiliary"/>' . "\n";
