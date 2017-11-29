@@ -1542,7 +1542,6 @@ if (l_tracer_aero) then
 
 end if ! l_tracer_aero
 
-if (l_vdiff) then
     !===================================================
     ! Vertical diffusion/pbl calculation
     ! Call vertical diffusion code (pbl, free atmosphere and molecular)
@@ -1559,6 +1558,7 @@ if (l_vdiff) then
        call physics_update(state, ptend, ztodt, tend)
 
     else
+    if (l_vdiff) then
 
        call t_startf('vertical_diffusion_tend')
        call vertical_diffusion_tend (ztodt ,state ,cam_in%wsx, cam_in%wsy,   &
@@ -1576,9 +1576,9 @@ if (l_vdiff) then
        call physics_update(state, ptend, ztodt, tend)
        call t_stopf ('vertical_diffusion_tend')
     
+    end if ! l_vdiff
     endif
 
-end if ! l_vdiff
 
 if (l_rayleigh) then
     !===================================================
