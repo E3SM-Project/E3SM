@@ -2582,6 +2582,15 @@ end if
                snow_str(:ncol)/cld_macmic_num_steps, zero)
 
           call t_stopf('microp_tend')
+
+        else 
+        ! If microphysics is off, set surface cloud liquid/ice and rain/snow fluxes to zero
+
+          prec_sed = 0._r8
+          snow_sed = 0._r8
+          prec_pcw = 0._r8
+          snow_pcw = 0._r8
+
         end if ! l_st_mic
 
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
