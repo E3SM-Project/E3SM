@@ -64,6 +64,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-b", "--baseline-name", default=CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root()),
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
+    parser.add_argument("-O", "--override-baseline-name",
+                        help="Force comparison with these baseines without impacting dashboard or test-id.")
+
     parser.add_argument("-t", "--test-suite",
                         help="Override default acme test suite that will be run")
 
@@ -112,8 +115,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args.scratch_root = machine.get_value("CIME_OUTPUT_ROOT") if args.scratch_root is None else args.scratch_root
     args.compiler = machine.get_default_compiler() if args.compiler is None else args.compiler
 
+    if args.override_baseline_name is None:
+        args.override_baseline_name = args.baseline_name
+
     return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, \
-        args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs, args.walltime, args.machine, args.compiler
+        args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs, args.walltime, args.machine, args.compiler, args.override_baseline_name
 
 ###############################################################################
 def _main_func(description):
@@ -122,10 +128,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler = \
+    generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

@@ -28,7 +28,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
                         scratch_root, parallel_jobs, walltime,
-                        machine, compiler):
+                        machine, compiler, real_baseline_name):
 ###############################################################################
     """
     Return True if all tests passed
@@ -89,9 +89,9 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     test_id = "%s_%s" % (test_id_root, CIME.utils.get_timestamp())
     create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
     if (generate_baselines):
-        create_test_args.append("-g -b " + baseline_name)
+        create_test_args.append("-g -b " + real_baseline_name)
     elif (baseline_compare):
-        create_test_args.append("-c -b " + baseline_name)
+        create_test_args.append("-c -b " + real_baseline_name)
 
     if scratch_root != machine.get_value("CIME_OUTPUT_ROOT"):
         create_test_args.append("--output-root=" + scratch_root)
