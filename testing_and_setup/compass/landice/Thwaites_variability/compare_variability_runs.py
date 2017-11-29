@@ -103,7 +103,7 @@ class modelRun:
       # resampled version of time array - needed for filtering.
       # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
       resampEndtime = self.yrs.max()
-      resampEndtime = 210.0
+      resampEndtime = 264.0
       self.resampYrs = np.linspace(0.0, resampEndtime, num=resampEndtime*12*2)
       self.dresampYrs = self.resampYrs[1:] - self.resampYrs[0:-1]
    
@@ -240,11 +240,13 @@ plt.ylabel('VAF rate (Gt/yr)')
 plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
-
+# ======
 # this figure shows the time levels in each run
 figTimes = plt.figure(30, facecolor='w')
 axTimes = figTimes.add_subplot(1, 1, 1)
 plt.xlabel('Year')
+axTimesYlabels = []
+
 
 # =========
 print "Done setting up figure axes."
@@ -315,6 +317,7 @@ for run in runs:
    #ax2VAFrate.plot(resampYrs[:windowLength], VAFsmoothrate[0:windowLength-1], 'x', color=color)  # used to see what values we are throwing away
 
    axTimes.plot(yrs, yrs*0+runNumber, '.')
+   axTimesYlabels.append(run)
    runNumber += 1
 
 axVAF.legend(loc='best', ncol=2)
@@ -341,7 +344,9 @@ axSLRrate.set_ylabel('S.L. equiv. (mm/yr)')
 axSLRrate.set_xlim(x1, x2)
 
 
-
+# Label the progress plot with each run
+axTimes.set_yticks(range(runNumber))
+axTimes.set_yticklabels(axTimesYlabels) 
 
 
 # ===================  for figure 2
@@ -375,7 +380,7 @@ ax2SLRrate.set_xlim(x1, x2)
 
 fig3 = plt.figure(3, facecolor='w')
 
-nrow=3
+nrow=4
 ncol=1
 
 # melt forcing
@@ -392,7 +397,15 @@ plt.ylabel('VAF (Gt)')
 plt.xticks(np.arange(22)*xtickSpacing)
 plt.grid()
 
-ax3VAFrate = fig3.add_subplot(nrow, ncol, 3, sharex=ax3MeanMelt)
+# VAF diff
+ax3VAFdiff = fig3.add_subplot(nrow, ncol, 3, sharex=ax3MeanMelt)
+plt.xlabel('Year')
+plt.ylabel('VAF difference (Gt)')
+plt.xticks(np.arange(22)*xtickSpacing)
+plt.grid()
+
+# VAF rate
+ax3VAFrate = fig3.add_subplot(nrow, ncol, 4, sharex=ax3MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
 plt.xticks(np.arange(22)*xtickSpacing)
@@ -422,6 +435,7 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    yrsGroup = np.zeros((nMembers,))
    meltGroup = np.zeros((nMembers, nEntries))
    VAFgroup = np.zeros((nMembers, nEntries))
+   VAFdiffGroup = np.zeros((nMembers, nEntries))
    VAFrateGroup = np.zeros((nMembers, nEntries-1))
 #   VAFmean = np.zeros((nMembers,))
 #   VAFmin= np.zeros((nMembers,))
@@ -437,7 +451,7 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
       yrsGroup = thisRun.resampYrs  # (only need this once)
       meltGroup[runNumber, :] = thisRun.resampMelt
       VAFgroup[runNumber, :] = thisRun.VAFsmooth
-#      VAFgroup[runNumber, :] = steadyVAF - thisRun.VAFsmooth # this version plots difference from control
+      VAFdiffGroup[runNumber, :] = thisRun.VAFsmooth - steadyVAF # this version plots difference from control
       VAFrateGroup[runNumber, :] = thisRun.VAFsmoothrate
       runNumber += 1
    
@@ -450,6 +464,11 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    ax3VAF.plot(yrsGroup, VAFgroup.mean(0), '-', color = colors[groupNumber], label=groupName)
    ax3VAF.plot(yrsGroup, VAFgroup.max(0), '--', color = colors[groupNumber], linewidth=0.5)
    ax3VAF.plot(yrsGroup, VAFgroup.min(0), '--', color = colors[groupNumber], linewidth=0.5)
+
+   # VAF diff plot
+   ax3VAFdiff.plot(yrsGroup, VAFdiffGroup.mean(0), '-', color = colors[groupNumber], label=groupName)
+   ax3VAFdiff.plot(yrsGroup, VAFdiffGroup.max(0), '--', color = colors[groupNumber], linewidth=0.5)
+   ax3VAFdiff.plot(yrsGroup, VAFdiffGroup.min(0), '--', color = colors[groupNumber], linewidth=0.5)
 
    # VAF rate plot
    ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.mean(0)[windowLength-1:], '-', color = colors[groupNumber], label=groupName)
@@ -465,7 +484,7 @@ if 'steady' in runData:
    ax3VAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:], 'k', label='steady')
 
 # show legend   
-legend = ax3VAF.legend(loc='best')
+legend = ax3VAF.legend(loc='lower left')
 
 axSLR=ax3VAF.twinx()
 y1, y2=ax3VAF.get_ylim()
@@ -474,6 +493,15 @@ axSLR.set_ylim(GTtoSL(y1) - GTtoSL(runData['steady'].VAFsmooth[0]), GTtoSL(y2) -
 #axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
 axSLR.set_ylabel('S.L. equiv. (mm)')
 axSLR.set_xlim(x1, x2)
+
+axSLR=ax3VAFdiff.twinx()
+y1, y2=ax3VAFdiff.get_ylim()
+x1, x2=ax3VAFdiff.get_xlim()
+axSLR.set_ylim(GTtoSL(y1) , GTtoSL(y2) )
+#axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
+axSLR.set_ylabel('S.L. equiv. (mm)')
+axSLR.set_xlim(x1, x2)
+
 
 
 plt.show()
