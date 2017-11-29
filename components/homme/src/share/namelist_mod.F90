@@ -727,9 +727,9 @@ module namelist_mod
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
-       if(par%masterproc) write(iulog,*) "Main:NThreads=",NThreads
-       if(par%masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()
-       if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
+       if(par%masterproc) print *, "Main:NThreads=",NThreads
+       if(par%masterproc) print *, 'omp_get_max_threads() = ',OMP_get_max_threads()
+       if(par%masterproc) print *, 'requested threads exceeds OMP_get_max_threads()'
        call abortmp('stopping')
     endif
     call omp_set_num_threads(NThreads)
@@ -757,14 +757,14 @@ module namelist_mod
 #endif
     
 #ifdef HORIZ_OPENMP
-    if(par%masterproc) print *,'-DHORIZ_OPENMP enabled'
+    if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP enabled'
 #else
-    if(par%masterproc) print *,'-DHORIZ_OPENMP disabled'
+    if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP disabled'
 #endif
 #ifdef COLUMN_OPENMP
-    if(par%masterproc) print *,'-DCOLUMN_OPENMP enabled'
+    if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP enabled'
 #else
-    if(par%masterproc) print *,'-DCOLUMN_OPENMP disabled'
+    if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP disabled'
 #endif
 
 
