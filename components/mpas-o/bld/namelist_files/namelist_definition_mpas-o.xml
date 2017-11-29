@@ -4778,7 +4778,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_transectTransport_transect_group" type="char*1024"
 	category="AM_transectTransport" group="AM_transectTransport">
-The name of the transect group that holds the transects for which the transport should be caclulated.
+The name of the transect group that holds the transects for which the transport should be calculated.
 
 Valid values: Either of '', 'all' or any valid transect group name.
 Default: Defined in namelist_defaults.xml
