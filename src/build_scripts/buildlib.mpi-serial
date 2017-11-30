@@ -49,7 +49,7 @@ def buildlib(bldroot, installpath, caseroot):
         cimeroot = case.get_value("CIMEROOT")
         mct_dir = os.path.join(cimeroot,"src","externals","mct")
         for _file in glob.iglob(os.path.join(mct_dir, "mpi-serial","*.h")):
-            copyifnewer(_file, os.path.join(my_installpath,os.path.basename(_file)))
+            copyifnewer(_file, os.path.join(bldroot,os.path.basename(_file)))
 
         gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
         gmake_opts += " -C {} ".format(bldroot)

@@ -74,7 +74,12 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type(error_prefix + " " + error_msg)
+        try:
+            msg = str(error_prefix + " " + error_msg)
+        except UnicodeEncodeError:
+            msg = (error_prefix + " " + error_msg).encode('utf-8')
+        raise exc_type(msg)
+
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -225,8 +230,7 @@ def _convert_to_fd(filearg, from_dir):
 
 _hack=object()
 
-def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
-                   from_dir=None, combine_output=False):
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
 
     # This code will try to import and run each buildnml as a subroutine
     # if that fails it will run it as a program in a seperate shell
@@ -253,14 +257,19 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
+
         fullcmd = cmd
         if isinstance(cmdargs, list):
             for arg in cmdargs:
                 fullcmd += " " + str(arg)
         else:
             fullcmd += " " + cmdargs
-        output = run_cmd_no_fail("{} 1> {} 2>&1".format(fullcmd, logfile),
-                                 combine_output=combine_output,
+
+        if logfile:
+            fullcmd += " > {} ".format(logfile)
+
+        output = run_cmd_no_fail("{}".format(fullcmd),
+                                 combine_output=True,
                                  from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
