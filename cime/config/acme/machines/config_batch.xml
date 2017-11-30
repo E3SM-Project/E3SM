@@ -360,14 +360,7 @@
      </queues>
    </batch_system>
 
-  <batch_system MACH="skybridge" type="slurm" >
-    <queues>
-      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
-      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="chama" type="slurm" >
+  <batch_system MACH="sandiatoss3" type="slurm" >
     <queues>
       <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
       <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
