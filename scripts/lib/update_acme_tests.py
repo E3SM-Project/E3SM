@@ -316,10 +316,10 @@ def get_recommended_test_time(test_full_name):
     >>> get_recommended_test_time("ERP_Ln9.ne30_ne30.FC5.melvin_gun.cam-outfrq9s")
     '0:45:00'
 
-    >>> get_recommended_test_time("PET_Ln9.ne30_ne30.FC5.skybridge_intel.cam-outfrq9s")
+    >>> get_recommended_test_time("PET_Ln9.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
     '03:00:00'
 
-    >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.skybridge_intel.cam-outfrq9s")
+    >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
     >>>
     """
     _, _, _, _, machine, compiler, _ = CIME.utils.parse_test_name(test_full_name)
