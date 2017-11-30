@@ -823,7 +823,7 @@ endif
 if ( `lowercase $debug_queue` == true ) then
   if ( $machine == cab || $machine == sierra ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
-  else if ($machine != skybridge && $machine != bebop && $machine != blues) then
+  else if ($machine != sandiatoss3 && $machine != bebop && $machine != blues) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
   endif
 endif
