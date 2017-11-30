@@ -770,7 +770,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <MPI_PATH MPILIB="openmpi">/opt/openmpi-1.8-intel</MPI_PATH>
+  <MPI_PATH MPILIB="openmpi">$(MPIHOME)</MPI_PATH>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX -L$ENV{MKL_LIBS} -lmkl_rt</ADD_SLIBS>
