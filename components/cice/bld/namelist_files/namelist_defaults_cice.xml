@@ -139,7 +139,7 @@
 
 <histfreq    >'m','x','x','x','x' </histfreq> 
 <histfreq_n  >1,1,1,1,1           </histfreq_n>
-<hist_avg    >.false.  </hist_avg> 
+<hist_avg    >.true.  </hist_avg> 
 
 <!--- diagnostic information --->
 
