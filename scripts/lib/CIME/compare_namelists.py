@@ -444,7 +444,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     >>> teststr1 = '''&rad_cnst_nl
     ... icecldoptics           = 'mitchell'
     ... logfile                = 'cpl.log.150514-001533'
-    ... case_name              = 'ERB.f19_g16.B1850C5.skybridge_intel.C.150513-230221'
+    ... case_name              = 'ERB.f19_g16.B1850C5.sandiatoss3_intel.C.150513-230221'
     ... runid                  = 'FOO'
     ... model_version          = 'cam5_3_36'
     ... username               = 'jgfouca'
@@ -468,7 +468,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     >>> teststr2 = '''&rad_cnst_nl
     ... icecldoptics           = 'mitchell'
     ... logfile                = 'cpl.log.150514-2398745'
-    ... case_name              = 'ERB.f19_g16.B1850C5.skybridge_intel.C.150513-1274213'
+    ... case_name              = 'ERB.f19_g16.B1850C5.sandiatoss3_intel.C.150513-1274213'
     ... runid                  = 'BAR'
     ... model_version          = 'cam5_3_36'
     ... username               = 'hudson'
@@ -489,7 +489,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     ...   'N:CFC11:CFC11', 'N:CFC12:CFC12', 'M:mam3_mode1:/something/else/inputdata/atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc',
     ...   'M:mam3_mode2:/something/else/inputdata/atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc', 'M:mam3_mode3:/something/else/inputdata/atm/cam/physprops/mam3_mode3_rrtmg_c110318.nc'
     ... /'''
-    >>> _compare_namelists(_parse_namelists(teststr1.splitlines(), 'foo'), _parse_namelists(teststr2.splitlines(), 'bar'), 'ERB.f19_g16.B1850C5.skybridge_intel')
+    >>> _compare_namelists(_parse_namelists(teststr1.splitlines(), 'foo'), _parse_namelists(teststr2.splitlines(), 'bar'), 'ERB.f19_g16.B1850C5.sandiatoss3_intel')
     ''
     """
     different_namelists = OrderedDict()
