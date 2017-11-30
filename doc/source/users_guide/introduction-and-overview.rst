@@ -135,7 +135,7 @@ directory structure.
    :widths: 150, 300
 
    "config/cesm/", "CESM-specific configuration options"
-   "config/acme/", "ACME-specific configuration options"
+   "config/acme/", "E3SM-specific configuration options"
    "src/components/", "CIME-provided components including data and stub models"
    "src/drivers/", "CIME-provided main driver for a climate model"
    "src/externals/", "Software provided with CIME for building a climate model"

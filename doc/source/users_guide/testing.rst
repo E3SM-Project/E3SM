@@ -171,10 +171,10 @@ A cs.status.$testid script will be put in the test root. This script will allow 
 current status of all your tests.
 
 ========================
-Using create_test (ACME)
+Using create_test (E3SM)
 ========================
 
-Usage will differ slightly depending on if you're using ACME or CESM.
+Usage will differ slightly depending on if you're using E3SM or CESM.
 
 Using examples to illustrate common use cases
 
