@@ -322,7 +322,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
     success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
-    if not success and get_model() == "acme":
+    if get_model() == "acme":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
             last_line = open(bless_log, "r").readlines()[-1]
