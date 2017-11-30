@@ -442,7 +442,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file "        filename_template=" . '"'
 						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file"
 						. '"' . "\n";
-		print $stream_file '        input_interval="initial_only"' . "\n";
+		print $stream_file '        input_interval="initial_only">' . "\n";
 		print $stream_file '' . "\n";
 		print $stream_file '        <var name="transectEdgeMasks"/>' . "\n";
 		print $stream_file '        <var name="transectNames"/>' . "\n";
@@ -459,7 +459,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file "        filename_template=" . '"'
 						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file"
 						. '"' . "\n";
-		print $stream_file '        input_interval="initial_only"' . "\n";
+		print $stream_file '        input_interval="initial_only">' . "\n";
 		print $stream_file '' . "\n";
 		print $stream_file '        <var name="regionCellMasks"/>' . "\n";
 		print $stream_file '        <var name="regionNames"/>' . "\n";
