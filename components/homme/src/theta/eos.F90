@@ -119,21 +119,22 @@ contains
 #endif
   do k=1,nlev
      ! rho_R_theta = -kappa * Theta / dphi/ds
-     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k)-phinh_i(:,:,k+1)) 
+!     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k)-phinh_i(:,:,k+1)) 
 
      if (minval(rho_R_theta(:,:,k))<0) then
-        print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
-        print *,'phinh_i(k+1)-phi(k)',minval(phinh_i(:,:,k+1)-phinh_i(:,:,k))
-        call abortmp('error: rho<0')
+ !       print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
+ !       print *,'phinh_i(k+1)-phi(k)',minval(phinh_i(:,:,k+1)-phinh_i(:,:,k))
+ !       call abortmp('error: rho<0')
      endif
     
-     ! theta = T/e
-     ! exner = (p/p0)**kappa         p = p0*exner**(1/kappa)
-     ! p/exner = rho* Rstar * theta 
-     ! use this formula which only has 1 exponential:
-     exner(:,:,k) = (rho_R_theta(:,:,k)/p0)**&
-          ( kappa_star(:,:,k)/ ( 1-kappa_star(:,:,k)))
-     pnh(:,:,k) = rho_R_theta(:,:,k)*exner(:,:,k)
+     ! p/exner = rho* Rstar * theta and  (p/p0)^(1-kappa) = rho * Rstar * theta / p0
+     ! form p = p0 * (rho * Rstar * theta / p0)^(1/(1-kappa))
+     ! then exner = rho * Rstar * theta / p
+  !   pnh(:,:,k) = p0 * (rho_R_theta(:,:,k) / p0)**(1/(1-kappa_star(:,:,k)))
+  !   exner(:,:,k) =  (pnh(:,:,k)/p0)**kappa_star(:,:,k) !pnh(:,:,k)/ rho_R_theta(:,:,k)
+      pnh(:,:,k) = p0 * (theta_dp_cp(:,:,k)*kappa_star(:,:,k)&
+        /(p0*(phinh_i(:,:,k)-phinh_i(:,:,k+1)) ) )**(1/(1-kappa_star(:,:,k)))
+      exner(:,:,k) =  (pnh(:,:,k)/p0)**kappa_star(:,:,k)
   enddo
 ! step 1:  compute pnh_i at interfaces
 ! step 2: is to compute other quantities at interfaces using pnh_i
@@ -216,12 +217,12 @@ contains
   enddo
   do k=1,nlev
      p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
-     exner(:,:,k) = (p(:,:,k)/p0)**kappa
+   !  exner(:,:,k) = (p(:,:,k)/p0)**kappa
   enddo
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
  ! phi = -theta* d exner /dp = -theta * exner / p
-     phi_i(:,:,k) = phi_i(:,:,k+1)+theta_dp_cp(:,:,k)*kappa*(exner(:,:,k)/p(:,:,k))
+     phi_i(:,:,k) = phi_i(:,:,k+1)+(theta_dp_cp(:,:,k)*kappa*(p(:,:,k)/p0)**(kappa-1))/p0
   enddo
 
   phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
