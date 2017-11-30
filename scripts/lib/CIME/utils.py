@@ -387,14 +387,14 @@ def normalize_case_id(case_id):
     """
     Given a case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
-    'ERT.ne16_g37.B1850C5.skybridge_intel'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod')
-    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.G.20151121')
-    'ERT.ne16_g37.B1850C5.skybridge_intel'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod.G.20151121')
-    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.G.20151121')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod.G.20151121')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod'
     """
     sep_count = case_id.count(".")
     expect(sep_count >= 3 and sep_count <= 6,
