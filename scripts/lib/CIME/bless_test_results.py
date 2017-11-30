@@ -75,7 +75,7 @@ def bless_history(test_name, test_dir, baseline_name, baseline_root, report_only
 def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False,
                        report_only=False, force=False, bless_tests=None, no_skip_pass=False):
 ###############################################################################
-    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}".format(test_id)
+    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}*".format(test_id)
     test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
     expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
 
