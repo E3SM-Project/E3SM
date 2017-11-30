@@ -749,8 +749,7 @@
         <machine compiler="intel" testtype="acme_integration">mustang</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="gnu" testtype="acme_integration">penn</machine>
-        <machine compiler="intel" testtype="acme_integration">redsky</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">sandiatoss3</machine>
         <machine compiler="intel" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">wolf</machine>
@@ -901,8 +900,7 @@
         <machine compiler="intel" testtype="acme_integration">mustang</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="gnu" testtype="acme_integration">penn</machine>
-        <machine compiler="intel" testtype="acme_integration">redsky</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">sandiatoss3</machine>
         <machine compiler="intel" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">wolf</machine>
