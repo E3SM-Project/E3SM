@@ -89,9 +89,7 @@
 
   <entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
-      <value MACH="skybridge">1</value>
-      <value MACH="chama">1</value>
-      <value MACH="redsky">1</value>
+      <value MACH="sandiatoss3">1</value>
     </values>
   </entry>
 

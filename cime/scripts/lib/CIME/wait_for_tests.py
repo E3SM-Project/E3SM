@@ -55,7 +55,7 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     # We assume all cases were created from the same code repo
     first_result_case = os.path.dirname(results.iteritems().next()[1][0])
     try:
-        srcroot = run_cmd_no_fail("./xmlquery --value SRCROOT", from_dir=first_result_case)
+        srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
     except:
         # Use repo containing this script as last resort
         srcroot = CIME.utils.get_cime_root()

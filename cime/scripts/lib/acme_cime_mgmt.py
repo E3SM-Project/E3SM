@@ -92,7 +92,7 @@ def do_subtree_pull():
 def make_pr_branch(branch, branch_head):
 ###############################################################################
     pr_branch = "{}-pr".format(branch)
-    run_cmd_no_fail("git checkout -b {} {}".format(pr_branch, branch_head))
+    run_cmd_no_fail("git checkout --no-track -b {} {}".format(pr_branch, branch_head))
 
     return pr_branch
 

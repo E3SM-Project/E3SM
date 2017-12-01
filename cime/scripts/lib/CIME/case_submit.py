@@ -123,7 +123,7 @@ def check_case(case):
     logger.info("Check case OK")
 
 def check_DA_settings(case):
-    if case.get_value("DATA_ASSIMILATION"):
-        script = case.get_value("DATA_ASSIMILATION_SCRIPT")
-        cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+    script = case.get_value("DATA_ASSIMILATION_SCRIPT")
+    cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+    if len(script) > 0 and os.path.isfile(script) and cycles > 0:
         logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))
