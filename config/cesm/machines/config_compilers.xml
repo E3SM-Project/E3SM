@@ -875,7 +875,7 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
-<compiler MACH="skybridge" COMPILER="intel">
+<compiler MACH="sandiatoss3" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>

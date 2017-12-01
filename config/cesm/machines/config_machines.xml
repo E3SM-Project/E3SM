@@ -1513,15 +1513,15 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="skybridge">
+  <machine MACH="sandiatoss3">
     <DESC>SNL clust</DESC>
-    <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>
+    <NODENAME_REGEX>(skybridge|chama)-login</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
-    <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/skybridge</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/$MACH</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->

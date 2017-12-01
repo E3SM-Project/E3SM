@@ -144,20 +144,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     # Set up the pause_component_list if pause is active
     pauseo = case.get_value('PAUSE_OPTION')
-    if pauseo != 'never' and pauseo != 'none':
+    if pauseo is not None and pauseo != 'never' and pauseo != 'none':
         pausen = case.get_value('PAUSE_N')
-        pcl = nmlgen.get_default('pause_component_list')
-        nmlgen.add_default('pause_component_list', pcl)
-        # Check to make sure pause_component_list is valid
-        pcl = nmlgen.get_value('pause_component_list')
-        if pcl != 'none' and pcl != 'all':
-            pause_comps = pcl.split(':')
-            comp_classes = case.get_values("COMP_CLASSES")
-            for comp in pause_comps:
-                expect(comp == 'drv' or comp.upper() in comp_classes,
-                       "Invalid PAUSE_COMPONENT_LIST, {} is not a valid component type".format(comp))
-            # End for
-        # End if
         # Set esp interval
         if 'nstep' in pauseo:
             esp_time = mindt
