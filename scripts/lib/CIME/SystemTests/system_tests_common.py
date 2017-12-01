@@ -259,7 +259,7 @@ class SystemTestsCommon(object):
         run case needs indirection based on success.
         If success_change is True, success requires some files to be different
         """
-        success, comments = compare_test(self._case, suffix1, suffix2)
+        success, comments = self._do_compare_test(suffix1, suffix2)
         if success_change:
             success = not success
 
@@ -268,6 +268,13 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, suffix1, suffix2), status)
         return success
+
+    def _do_compare_test(self, suffix1, suffix2):
+        """
+        Wraps the call to compare_test to facilitate replacement in unit
+        tests
+        """
+        return compare_test(self._case, suffix1, suffix2)
 
     def _get_mem_usage(self, cpllog):
         """
