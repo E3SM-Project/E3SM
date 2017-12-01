@@ -844,7 +844,11 @@ class TestScheduler(object):
             logger.warning("FAILED to set up cs files: {}".format(str(e)))
 
     ###########################################################################
-    def run_tests(self, wait=False):
+    def run_tests(self, wait=False,
+                  wait_check_throughput=False,
+                  wait_check_memory=False,
+                  wait_ignore_namelists=False,
+                  wait_ignore_memleak=False):
     ###########################################################################
         """
         Main API for this class.
@@ -869,7 +873,11 @@ class TestScheduler(object):
         if not self._no_run and not self._no_batch:
             if wait:
                 logger.info("Waiting for tests to finish")
-                rv = wait_for_tests(glob.glob(os.path.join(self._test_root, "*{}/TestStatus".format(self._test_id))))
+                rv = wait_for_tests(glob.glob(os.path.join(self._test_root, "*{}/TestStatus".format(self._test_id))),
+                                    check_throughput=wait_check_throughput,
+                                    check_memory=wait_check_memory,
+                                    ignore_namelists=wait_ignore_namelists,
+                                    ignore_memleak=wait_ignore_memleak)
                 wait_handles_report = True
             else:
                 logger.info("Due to presence of batch system, create_test will exit before tests are complete.\n" \
