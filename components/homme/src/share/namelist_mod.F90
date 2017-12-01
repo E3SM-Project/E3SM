@@ -752,10 +752,6 @@ module namelist_mod
 #endif
 
     ! more thread error checks:  
-#ifndef COLUMN_OPENMP
-    if (vthreads>1) call abortmp('Error: vthreads>1 requires -DCOLUMN_OPENMP')
-#endif
-    
 #ifdef HORIZ_OPENMP
     if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP enabled'
 #else

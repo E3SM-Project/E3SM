@@ -367,6 +367,14 @@ contains
        write(iulog,*) "threading within elements  vthreads = ",vthreads
     endif
 
+#ifndef COLUMN_OPENMP
+    if (vthreads>1) call abortmp('Error: vthreads>1 requires -DCOLUMN_OPENMP')
+#endif
+#ifndef HORIZ_OPENMP
+    if (hthreads>1) call abortmp('Error: hthreads>1 requires -DHORIZ_OPENMP')
+#endif
+    
+
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
