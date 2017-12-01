@@ -77,7 +77,7 @@ program prim_main
   ! =====================================
 #if (defined HORIZ_OPENMP && defined COLUMN_OPENMP)
 #ifndef __bg__
-   if (.not. omp_get_nested()) then
+   if (vthreads>1 .and. (.not. omp_get_nested())) then
      call haltmp("Nested threading required but not available. Set OMP_NESTED=true")
    endif
 #endif
