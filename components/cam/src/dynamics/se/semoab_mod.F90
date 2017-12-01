@@ -49,16 +49,18 @@ contains
 
 ! do we really need this?
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
-        iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities
+        iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, iMOAB_DefineTagStorage, &
+        iMOAB_SetIntTagStorage
 
     integer(iMap), dimension(:), allocatable :: gdofv
     integer, dimension(:), allocatable :: indx  !  this will be ordered 
     
     !  this will be moab vertex handle locally
-    integer, target, allocatable :: moabvh(:), moabconn(:), vdone(:)
+    integer, target, allocatable :: moabvh(:), moabconn(:), vdone(:), elemids(:)
     integer  currentval, dimcoord, dimen, num_el, mbtype, nve
 
-    character*100 outfile, wopts, localmeshfile, lnum
+    character*100 outfile, wopts, localmeshfile, lnum, tagname
+    integer  tagtype, numco, tag_sto_len, ent_type, tagindex
 
 
      nelemd = nete-nets+1
@@ -70,12 +72,14 @@ contains
 !
 !     allocate(moab_fvm_coords(moab_dims_fvc))
      allocate(moab_corner_quads(moab_dim_cquads))
+     allocate(elemids(nelemd))
      do ie=nets,nete
        ix = ie-nets
        moab_corner_quads(ix*4+1) = elem(ie)%gdofP(1,1)
        moab_corner_quads(ix*4+2) = elem(ie)%gdofP(np,1)
        moab_corner_quads(ix*4+3) = elem(ie)%gdofP(np,np)
        moab_corner_quads(ix*4+4) = elem(ie)%gdofP(1,np)
+       elemids(ix) = ie
      enddo
 ! now original order
      allocate(gdofv(moab_dim_cquads))
@@ -141,6 +145,25 @@ contains
         call endrun('Error: fail to create MOAB elements')
       ! idx: num vertices; vdone will store now the markers used in global resolve
       ! for this particular problem, markers are the global dofs at corner nodes
+! set the global id for vertices
+!   first, retrieve the tag
+      tagname='GLOBAL_ID'//CHAR(0)
+      tagtype = 0  ! dense, integer
+      numco = 1
+      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to retrieve global id tag')
+      ! now set the values
+      ent_type = 0 ! vertex type
+      ierr = iMOAB_SetIntTagStorage ( MHID, tagname, idx , ent_type, vdone)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to set global id tag for vertices')
+      ! set global id tag for coarse elements, too; they will start at nets, end at nete
+      ent_type = 1 ! now set the global id tag on elements
+      ierr = iMOAB_SetIntTagStorage ( MHID, tagname, nelemd , ent_type, elemids)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to set global id tag for vertices')
+
       ierr = iMOAB_ResolveSharedEntities( MHID, idx, vdone );
       if (ierr > 0 )  &
         call endrun('Error: fail to resolve shared entities')
@@ -156,7 +179,7 @@ contains
       endif
 
 !     write out the mesh file to disk, in parallel
-      outfile = 'whole.h5m'//CHAR(0)
+      outfile = 'wholeATM.h5m'//CHAR(0)
       wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
       ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
       if (ierr > 0 )  &
@@ -187,6 +210,7 @@ contains
      deallocate(moabconn)
      deallocate(vdone)
      deallocate(indx)
+     deallocate(elemids)
 
   end subroutine create_moab_mesh_coarse
   
