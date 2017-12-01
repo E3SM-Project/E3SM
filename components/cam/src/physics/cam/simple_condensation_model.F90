@@ -176,6 +176,12 @@ contains
        ztmp(:ncol,:pver) = - (1._r8 - ast(:ncol,:pver))*ltend(:ncol,:pver)
         qme(:ncol,:pver) = qme(:ncol,:pver) + ztmp(:ncol,:pver)
 
+     case(2) 
+     ! For testing only: term B = - 0.5*\overline{A_l}
+
+       ztmp(:ncol,:pver) = - 0.5_r8*ltend(:ncol,:pver)
+        qme(:ncol,:pver) = qme(:ncol,:pver) + ztmp(:ncol,:pver)
+
      case default
          write(iulog,*) "Unrecognized value of rkz_term_B_opt:",rkz_term_B_opt,". Abort."
          call endrun
