@@ -12,7 +12,6 @@ ifeq ($(strip $(SMP)),TRUE)
    compile_threaded = true
 endif
 
-
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
