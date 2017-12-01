@@ -76,7 +76,6 @@ program prim_main
   ! Begin threaded region so each thread can print info
   ! =====================================
 #if (defined HORIZ_OPENMP && defined COLUMN_OPENMP)
-   call omp_set_nested(.true.)
 #ifndef __bg__
    if (.not. omp_get_nested()) then
      call haltmp("Nested threading required but not available. Set OMP_NESTED=true")

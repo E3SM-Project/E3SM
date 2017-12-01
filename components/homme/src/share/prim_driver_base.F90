@@ -356,7 +356,9 @@ contains
     ! set hthreads, and check that vthreads was not set too large
     if (vthreads > max(nthreads,1) .or. vthreads < 1) &
          call abortmp('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+#if defined(HORIZ_OPENMP) && defined (COLUMN_OPENMP)
     if (vthreads>1) call omp_set_nested(.true.)
+#endif
     hthreads = max(nthreads,1) / vthreads
     hthreads = min(max(nthreads,1),nelemd)
     if(par%masterproc) then
