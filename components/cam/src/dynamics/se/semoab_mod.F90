@@ -79,7 +79,7 @@ contains
        moab_corner_quads(ix*4+2) = elem(ie)%gdofP(np,1)
        moab_corner_quads(ix*4+3) = elem(ie)%gdofP(np,np)
        moab_corner_quads(ix*4+4) = elem(ie)%gdofP(1,np)
-       elemids(ix) = ie
+       elemids(ix+1) = ie
      enddo
 ! now original order
      allocate(gdofv(moab_dim_cquads))

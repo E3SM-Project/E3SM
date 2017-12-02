@@ -523,6 +523,7 @@ contains
     end if
 #ifdef HAVE_MOAB
     call mpas_moab_instance(domain_ptr) ! should return MPOID ..
+    call mpas_log_write('initialized MOAB MPAS ocean instance... ')
 #endif
     call t_stopf('mpas-o_init2')
 
