@@ -106,7 +106,7 @@ def _save_prerun_timing_acme(case, lid):
         logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to archive timing data.".format(timing_dir))
         return
 
-    logger.warning("Archiving timing data and associated provenance in {}.".format(timing_dir))
+    logger.info("Archiving timing data and associated provenance in {}.".format(timing_dir))
     rundir = case.get_value("RUNDIR")
     blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
