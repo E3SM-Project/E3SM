@@ -79,6 +79,7 @@
   <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
   <mpirun mpilib="default">
     <executable>srun</executable>
@@ -204,6 +205,7 @@
   <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -348,6 +350,7 @@
   <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -564,6 +567,7 @@
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/sems-data-store/ACME/baselines/$COMPILER</BASELINE_ROOT>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>ANY</SAVE_TIMING_DIR_PROJECTS>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build.new/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
@@ -764,6 +768,7 @@
   <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
   <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR_PROJECTS>ANY</SAVE_TIMING_DIR_PROJECTS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
@@ -1003,6 +1008,7 @@
          <MPILIBS>mvapich,openmpi</MPILIBS>
          <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR_PROJECTS>ANY</SAVE_TIMING_DIR_PROJECTS>
 	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
 	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
@@ -1449,6 +1455,7 @@
          <BASELINE_ROOT>/projects/ccsm/ccsm_baselines//$COMPILER</BASELINE_ROOT>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_2</SAVE_TIMING_DIR_PROJECTS>
          <OS>BGQ</OS>
 	 <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
@@ -1511,7 +1518,8 @@
     <DOUT_L_MSROOT>$CIME_OUTPUT_ROOT/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/projects/$PROJECT/acme/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/$PROJECT/acme/tools/cprnc/cprnc</CCSM_CPRNC>
-    <SAVE_TIMING_DIR>/projects/OceanClimate</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>OceanClimate</SAVE_TIMING_DIR_PROJECTS>
     <OS>CNL</OS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -2010,6 +2018,7 @@
     <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
     <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
     <OS>CNL</OS>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <ALLOCATE_SPARE_NODES>TRUE</ALLOCATE_SPARE_NODES>
@@ -2191,6 +2200,7 @@
          <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines/$COMPILER</BASELINE_ROOT>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.eos</CCSM_CPRNC>
          <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
          <OS>CNL</OS>
          <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
@@ -2785,6 +2795,7 @@
 	 <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines/$COMPILER</BASELINE_ROOT>
 	 <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
 	 <SAVE_TIMING_DIR>/lustre/atlas/proj-shared/$PROJECT</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
 	 <OS>LINUX</OS>
 	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
 	 <SUPPORTED_BY>acme</SUPPORTED_BY>

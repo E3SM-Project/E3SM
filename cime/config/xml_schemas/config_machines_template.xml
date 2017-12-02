@@ -42,6 +42,9 @@
     <!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
 
+    <!-- SAVE_TIMING_DIR_PROJECTS: (Acme only) projects with directory to write timing output to -->
+    <SAVE_TIMING_DIR_PROJECTS> </SAVE_TIMING_DIR_PROJECTS>
+
     <!-- CIME_OUTPUT_ROOT: Base directory for case output,
 	 the case/bld and case/run directories are written below here -->
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
