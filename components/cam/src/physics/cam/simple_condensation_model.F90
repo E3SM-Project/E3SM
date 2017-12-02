@@ -33,7 +33,17 @@ contains
 
     implicit none
 
+    ! The arguements of subroutine addfld are:
+    !  -  variable name (character, max length = 24)
+    !  -  dimension names (character, for variables that have the shape of (pcols,pver), use "(/'lev'/)")
+    !  -  time averaging flag (character, 'I' for instantaneous, 'A' for average)
+    !  -  unit (character)
+    !  -  long name (character)
+
     call addfld ('RKZ_qsat',(/'lev'/), 'I','kg/kg','saturation specific humidity in the simple RKZ scheme')
+
+    call addfld ('RKZ_f',    (/'lev'/), 'I','1','cloud fraction')
+    call addfld ('RKZ_dfdRH',(/'lev'/), 'I','1','derivative of cloud fraction wrt relative humidity')
 
   end subroutine simple_RKZ_init
 
@@ -73,7 +83,7 @@ contains
   real(r8), intent(inout) :: tcwat(:,:)
   real(r8), intent(inout) :: qcwat(:,:)
   real(r8), intent(inout) :: lcwat(:,:)
-  real(r8), intent(inout) ::   ast(:,:)
+  real(r8), intent(inout) ::   ast(:,:)       ! cloud fraction
 
   real(r8), intent(in) :: dtime               ! Set model physics timestep
   integer,  intent(in) :: ixcldliq            ! constituent index 
@@ -149,6 +159,8 @@ contains
                   ast, rhu00, dastdRH,                             &! inout, out
                   rkz_cldfrc_opt, 0.5_r8, 0.5_r8, pcols, pver, ncol )! in
 
+  call outfld('RKZ_f',     ast,      pcols, lchnk)
+  call outfld('RKZ_dfdRH', dastdRH,  pcols, lchnk)
   !===================================================================
   ! Condensation/evaporation rate
   !===================================================================
