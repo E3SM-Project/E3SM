@@ -28,6 +28,7 @@ contains
                              rkz_term_B_opt, &
                              rkz_term_C_opt, &
                              rkz_term_C_ql_opt, & 
+                             rkz_term_C_fmin,   & 
                              l_rkz_lmt_2, &
                              l_rkz_lmt_3, &
                              l_rkz_lmt_4  &
@@ -63,6 +64,7 @@ contains
   integer,  intent(in) :: rkz_term_B_opt
   integer,  intent(in) :: rkz_term_C_opt
   integer,  intent(in) :: rkz_term_C_ql_opt
+  real(r8), intent(in) :: rkz_term_C_fmin
 
   logical,  intent(in) :: l_rkz_lmt_2
   logical,  intent(in) :: l_rkz_lmt_3
@@ -200,6 +202,10 @@ contains
      if (rkz_cldfrc_opt.ne.0) then ! Calculation is done only when cloud fraction is time-dependent
 
         ! Calculate in-cloud liquid concentration
+        ! 1: ql_incloud=constant       
+        ! 3: ql_incloud=qv      
+        ! 4: ql_incloud=ql      
+        ! 7: ql_incloud=ql/max(f,fmin)
 
         SELECT CASE (rkz_term_C_ql_opt)
         CASE (1)
@@ -211,23 +217,8 @@ contains
         CASE (4)
           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
 
-        CASE (5)
-          zql_incld(:,:) = 0._r8
-          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/ast(:ncol,:pver)
-          end where
-
-        CASE (6)
-          zql_incld(:,:) = 0._r8
-          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-4_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/ast(:ncol,:pver)
-          end where
-
         CASE (7)
-          zql_incld(:,:) = 0._r8
-          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-3)
-          end where
+          zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver),rkz_term_C_fmin)
 
         CASE DEFAULT
           write(iulog,*) "Unrecognized value of rkz_term_C_ql_opt:",rkz_term_C_ql_opt,". Abort."
@@ -277,13 +268,11 @@ contains
         ! The next block of code tests different expressions for the (ql/f * df/dRH) term. 
         ! The value of that term is stored in the array zqlf.
         ! 
-        ! 1,11 (ql_incloud=constant, df/dRH=constant)       
-        ! 2,12 (ql_incloud=constant, df/dRH=calculated)       
-        ! 3,14 (ql_incloud=qv,       df/dRH=calculated)      
-        ! 4,14 (ql_incloud=ql,       df/dRH=calculated)      
-        ! 5,15 (ql_incloud=ql/f,     df/dRH=calculated)             
-        ! 6,16 (ql_incloud=0 if f<0.01%)   
-        ! 7,17 (ql_incloud=ql/max(f,0.01%) 
+        ! 11: ql_incloud=constant,       df/dRH=constant       
+        ! 12: ql_incloud=constant,       df/dRH=calculated       
+        ! 13: ql_incloud=qv,             df/dRH=calculated      
+        ! 14: ql_incloud=ql,             df/dRH=calculated      
+        ! 17: ql_incloud=ql/max(f,fmin), df/dRH=calculated
 
         SELECT CASE (rkz_term_C_ql_opt)
         CASE (11)
@@ -298,28 +287,8 @@ contains
         CASE (14)
           zqlf(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)*dastdRH(:ncol,:pver)
 
-        CASE (15)
-
-          zql_incld(:,:) = 0._r8
-          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/ast(:ncol,:pver)
-          end where
-          zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
-
-        CASE (16)
-
-          zql_incld(:,:) = 0._r8
-          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-4_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/ast(:ncol,:pver)
-          end where
-          zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
-
         CASE (17)
-
-          zql_incld(:,:) = 0._r8
-          where ( state%q(:ncol,:pver,ixcldliq) > zsmall .and. ast(:ncol,:pver) > 1e-8_r8)
-           zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver), 1e-3)
-          end where
+          zql_incld(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)/max(ast(:ncol,:pver),rkz_term_C_fmin)
           zqlf(:ncol,:pver) = zql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)
 
         CASE DEFAULT
