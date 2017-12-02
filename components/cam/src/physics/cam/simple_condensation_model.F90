@@ -14,13 +14,33 @@ module simple_condensation_model
 
   use cam_logfile,    only: iulog
   use cam_abortutils, only: endrun
+  use ppgrid,       only: pver, pcols
 
   implicit none
   private
   public :: simple_RKZ_tend
+  public :: simple_RKZ_init
 
 contains
 
+  !------------------------------------------------------------------------
+  ! Initialization of the RKZ simple condensation model.
+  ! Currently this contains just registration of output variables.
+  !------------------------------------------------------------------------
+  subroutine simple_RKZ_init()
+
+    use cam_history,    only: addfld
+
+    implicit none
+
+    call addfld ('RKZ_qsat',(/'lev'/), 'I','kg/kg','saturation specific humidity in the simple RKZ scheme')
+
+  end subroutine simple_RKZ_init
+
+  !------------------------------------------------------------------------
+  ! Calculate condensation rate and the resulting tendencies of the model 
+  ! state variables
+  !------------------------------------------------------------------------
   subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast,  &
                              dtime, ixcldliq, &
                              rkz_cldfrc_opt, &
@@ -35,14 +55,13 @@ contains
                              )
 
   use shr_kind_mod, only: r8=>shr_kind_r8
-  use ppgrid,       only: pver, pcols
   use constituents, only: pcnst
   use physics_types,only: physics_state, physics_ptend, physics_ptend_init
   use time_manager,  only: get_nstep
   use wv_saturation, only: qsat_water
   use physconst,     only: latvap, cpair
   use simple_cloud_fraction, only: smpl_frc
- !use cam_history,   only: outfld
+  use cam_history,   only: outfld
 
   implicit none
   !
@@ -107,7 +126,7 @@ contains
   ncol  = state%ncol
   nstep = get_nstep()
 
- !lchnk = state%lchnk  ! needed for "call outfld"
+  lchnk = state%lchnk  ! needed by "call outfld"
 
   ! Calculate qsat and its derivative wrt temperature
 
@@ -116,6 +135,7 @@ contains
      call qsat_water( state%t(i,k), state%pmid(i,k), esl(i,k), qsat(i,k), gam(i,k), dqsdt(i,k) )
   end do
   end do
+  call outfld('RKZ_qsat', qsat,  pcols, lchnk)
 
   ! Calculate the grid-box-mean relative humidity
 

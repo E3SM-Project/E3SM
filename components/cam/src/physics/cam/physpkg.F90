@@ -90,6 +90,7 @@ module physpkg
   logical           :: clim_modal_aero     ! climate controled by prognostic or prescribed modal aerosols
   logical           :: prog_modal_aero     ! Prognostic modal aerosols present
   logical           :: micro_do_icesupersat
+  integer           :: simple_macrop_opt
 
   !======================================================================= 
 contains
@@ -718,6 +719,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
 
+    use simple_condensation_model, only: simple_RKZ_init
+
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -857,6 +860,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
+
+    call phys_getopts(simple_macrop_opt_out=simple_macrop_opt)
+    if (simple_macrop_opt.eq.2) then
+       call simple_RKZ_init()
+    end if
 
     call qbo_init
 
