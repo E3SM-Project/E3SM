@@ -5,6 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
+from CIME.XML.machines      import Machines
 from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask
 
 import tarfile, getpass, signal, glob, shutil
@@ -94,7 +95,13 @@ def save_build_provenance(case, lid=None):
             _save_build_provenance_cesm(case, lid)
 
 def _save_prerun_timing_acme(case, lid):
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
+    mach = case.get_value("MACH")
+    machobj = Machines(machine=mach)
+    project = case.get_value("PROJECT", subgroup="case.run")
+    if not machobj.is_save_timing_dir_project(project):
+        return
+
+    timing_dir = machobj.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
         logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data.".format(timing_dir))
         return
@@ -116,7 +123,6 @@ def _save_prerun_timing_acme(case, lid):
         logger.warning("{} cannot be created. Skipping archive of timing data and associated provenance.".format(full_timing_dir))
         return
 
-    mach = case.get_value("MACH")
     compiler = case.get_value("COMPILER")
 
     # For some batch machines save queue info
@@ -258,7 +264,6 @@ def _save_postrun_provenance_cesm(case, lid):
     save_timing = case.get_value("SAVE_TIMING")
     if save_timing:
         rundir = case.get_value("RUNDIR")
-        timing_dir = case.get_value("SAVE_TIMING_DIR")
         timing_dir = os.path.join(timing_dir, case.get_value("CASE"))
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
@@ -266,7 +271,6 @@ def _save_postrun_provenance_cesm(case, lid):
 def _save_postrun_timing_acme(case, lid):
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
 
     # tar timings
     rundir_timing_dir = os.path.join(rundir, "timing." + lid)
@@ -282,10 +286,16 @@ def _save_postrun_timing_acme(case, lid):
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
+    mach = case.get_value("MACH")
+    machobj = Machines(machine=mach)
+    project = case.get_value("PROJECT", subgroup="case.run")
+    if not machobj.is_save_timing_dir_project(project):
+        return
+
+    timing_dir = machobj.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
         return
 
-    mach = case.get_value("MACH")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
 
