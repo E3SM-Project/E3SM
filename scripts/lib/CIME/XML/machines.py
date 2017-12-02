@@ -227,7 +227,7 @@ class Machines(GenericXML):
         lists and return the first value if reqval is not provided and reqval
         if it is a valid setting for the machine. If the list does not exist
         then return None whether reqval is provided or not. If the first element
-        of the list is ANY, then return reqval if it provided and ANY otherwise.
+        of the list is ANY, then return reqval if it is provided and ANY otherwise.
         """
         expect(self.machine_node is not None, "Machine object has no machine defined")
         supported_values = self.get_value(listname, attributes=attributes)
