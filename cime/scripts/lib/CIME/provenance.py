@@ -103,10 +103,10 @@ def _save_prerun_timing_acme(case, lid):
 
     timing_dir = machobj.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data.".format(timing_dir))
+        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to archive timing data.".format(timing_dir))
         return
 
-    logger.info("timing dir is {}".format(timing_dir))
+    logger.warning("Archiving timing data and associated provenance in {}.".format(timing_dir))
     rundir = case.get_value("RUNDIR")
     blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
