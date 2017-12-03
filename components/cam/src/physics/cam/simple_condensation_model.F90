@@ -213,6 +213,7 @@ contains
      case(2) 
      ! For testing only: term B = - 0.5*\overline{A_l}
 
+        ltend(:ncol,:pver) = ( state%q(:ncol,:pver,ixcldliq) - lcwat(:ncol,:pver) )*rdtime
        ztmp(:ncol,:pver) = - 0.5_r8*ltend(:ncol,:pver)
         qme(:ncol,:pver) = qme(:ncol,:pver) + ztmp(:ncol,:pver)
 
