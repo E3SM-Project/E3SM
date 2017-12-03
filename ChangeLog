@@ -8,6 +8,7 @@ Tests: scripts_regression_tests.py
 Dependencies:
 
 Brief Summary:
+    - Fix gptl threaded build, batch change for cheyenne.
     - Update CIME RST documentation.
     - Correct path for includes used in build.
     - Check for unicode in expect().
