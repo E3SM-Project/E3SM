@@ -177,7 +177,6 @@ subroutine modal_aer_opt_init()
    ! Add diagnostic fields to history output.
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
-   call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','/m','Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
@@ -441,7 +440,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8) :: palb(pcols)     ! parameterized single scattering albedo
 
    ! Diagnostics
-   real(r8) :: extinct(pcols,pver), extinct_sw_inp(pcols,pver), tropopause_m(pcols)
+   real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
    real(r8) :: aodabs(pcols)               ! absorption optical depth
@@ -537,7 +536,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
    ! diagnostics for visible band summed over modes
    extinct(1:ncol,:)     = 0.0_r8
-   extinct_sw_inp(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
    aodabs(1:ncol)        = 0.0_r8
@@ -1068,7 +1066,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       enddo
       do k = 1, pver
          do i = 1, ncol            
-            extinct_sw_inp(i,k) = ext_cmip6_sw(i,k)
             ilev_tropp = trop_level(i)
             if (k < ilev_tropp) then
                !extinction is assigned read in values only for visible band above tropopause
@@ -1089,7 +1086,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    end do
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
-   call outfld('extinct_sw_inp', extinct_sw_inp, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
