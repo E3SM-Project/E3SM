@@ -60,8 +60,5 @@
 /* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
 #cmakedefine01 TRILINOS_HAVE_ZOLTAN2
 
-/* Enable persistent MPI comm */
-#cmakedefine MPI_PERSISTENT
-
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4

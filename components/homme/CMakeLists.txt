@@ -96,10 +96,6 @@ ENDIF ()
 INCLUDE(SetCompilerFlags)
 
 
-OPTION(ENABLE_PERSISTENT_MPI "Enable persistent MPI" OFF)
-IF (${ENABLE_PERSISTENT_MPI})
-  SET(MPI_PERSISTENT TRUE)
-ENDIF ()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(${HOMME_USE_MKL})
@@ -184,10 +180,11 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 
 
 #
-# Bug in PIO: PIO1 calls TARGET_LINK_LIBRARIES uses all caps variables, 
-# instead of the mixed case variables computed by PIO's findNetCDF.  
-# 2017/6 PR submitted to pio1
-# workaround until this makes it back into ACME:
+# HOMME uses PIO and does not call netcdf/pnetcdf directly.  So cmake should
+# only configure the PIO library.  But there is a typo when PIO1 sets up 
+# TARGET_LINK_LIBRARIES 
+# Fixed: https://github.com/NCAR/ParallelIO/pull/1067
+# Until this makes it back into ACME, we need to FIND_PACKAGE here...
 #
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
@@ -215,20 +212,27 @@ ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 # CPRNC locations
 IF (CPRNC_DIR)
-  # user specifed CPRNC binary - dont build
-  ADD_EXECUTABLE( cprnc IMPORTED)
+  # location of CPRNC binary passed in from CIME or specified in machine file. skip build
   find_program(CPRNC_BINARY cprnc ${CPRNC_DIR})
   IF ( CPRNC_BINARY )
+     ADD_EXECUTABLE( cprnc IMPORTED)
      message("-- CPRNC_BINARY = ${CPRNC_BINARY}")
   ELSE()
-     message(WARNING "cprnc not found - cannot check regression test output")
+     message(WARNING "cprnc not found in CPRNC_DIR")
+     SET(CPRNC_DIR "")
   ENDIF ()
-ELSE ()
+ENDIF ()
+
+IF (NOT (CPRNC_DIR))
   # compile CPRNC from CIME source code. Requires CIME support for machine
+  message("-- CPRNC_BINARY = will compile from source")
+  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
   SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
   SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 ENDIF ()
+
+
 
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")

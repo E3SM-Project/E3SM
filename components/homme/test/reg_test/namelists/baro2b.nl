@@ -23,7 +23,6 @@ nu_s                         = -1        ! use same value as nu
 nu_q                         = 1e16    
 nu_p                         = 1e16
 limiter_option               = 4 
-energy_fixer                 = -1
 hypervis_order               = 2
 hypervis_subcycle            = -1
 u_perturb                    = 1

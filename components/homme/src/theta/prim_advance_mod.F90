@@ -1605,13 +1605,6 @@ contains
      Fn(:,:,1:nlev,1) = phi_np1-elem(ie)%state%phinh(:,:,:,n0) &
        - dt2*g*elem(ie)%state%w(:,:,:,n0) + (dt2*g)**2 * (1.0-dpnh_dp(:,:,:))
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-       kappa_star_i(:,:,k+1) = 0.5D0* (kappa_star(:,:,k+1)+kappa_star(:,:,k))
-     end do
-
      norminfr0=0.d0
      norminfJ0=0.d0
      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,1)

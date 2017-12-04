@@ -14,7 +14,6 @@ tstep         =  30
 tstep_type    = 5
 integration   = "explicit"
 smooth        = 0.0000
-energy_fixer  = 0
 nu            = 4e16
 nu_s          = 4e16
 nu_p          = 0

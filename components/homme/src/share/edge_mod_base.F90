@@ -360,36 +360,6 @@ endif
 !    edge%buf    (:)=0.0D0
 !    edge%receive(:)=0.0D0
 
-#ifdef MPI_PERSISTENT
-!JMD
-!JMD  This is old 2D message buffer stuff
-!JMD
-!    pSchedule => Schedule(1)
-!    nSendCycles = pSchedule%nSendCycles
-!    nRecvCycles = pSchedule%nRecvCycles
-!!    print *,'iam: ',iam, ' nSendCycles: ',nSendCycles, ' nRecvCycles: ',
-!!    nRecvCycles
-!    allocate(edge%Rrequest(nRecvCycles))
-!    allocate(edge%Srequest(nSendCycles))
-!    do icycle=1,nSendCycles
-!       pCycle => pSchedule%SendCycle(icycle)
-!       dest   = pCycle%dest -1
-!       length = nlyr * pCycle%lengthP
-!       tag    = pCycle%tag
-!       iptr   = pCycle%ptrP
-!!       print *,'IAM: ',iam, ' length: ',length,' dest: ',dest,' tag: ',tag
-!       call MPI_Send_init(edge%buf(1,iptr),length,MPIreal_t,dest,tag,par%comm, edge%Srequest(icycle),ierr)
-!    enddo
-!    do icycle=1,nRecvCycles
-!       pCycle => pSchedule%RecvCycle(icycle)
-!       source   = pCycle%source -1
-!       length = nlyr * pCycle%lengthP
-!       tag    = pCycle%tag
-!       iptr   = pCycle%ptrP
-!!       print *,'IAM: ',iam, 'length: ',length,' dest: ',source,' tag: ',tag
-!       call MPI_Recv_init(edge%receive(1,iptr),length,MPIreal_t,source,tag,par%comm, edge%Rrequest(icycle),ierr)
-!    enddo
-#endif
 
 !    call t_stopf('initedgebuffer')
 !    call t_adj_detailf(-3)

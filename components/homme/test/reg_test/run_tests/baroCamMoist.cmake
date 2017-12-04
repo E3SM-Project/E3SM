@@ -27,7 +27,6 @@ SET(NC_OUTPUT_FILES
 )
 
 
-SET(OMP_SUB_TESTS true)
 SET(OMP_NUM_THREADS 4)
 SET(OMP_NAMELIST_FILES 
 ${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp3.nl
@@ -42,11 +41,13 @@ SET(NC_OUTPUT_REF
   camBaroMoist-asp_baroclinic1.nc 
   camBaroMoist-asp_baroclinic2.nc
 )
+
+IF (${ENABLE_HORIZ_OPENMP})
 SET(NC_OUTPUT_CHECKREF    
   camBaroMoist-omp3-asp_baroclinic1.nc 
   camBaroMoist-omp3-asp_baroclinic2.nc
   camBaroMoist-omp4-asp_baroclinic1.nc 
   camBaroMoist-omp4-asp_baroclinic2.nc
 )
-
+ENDIF ()
 
