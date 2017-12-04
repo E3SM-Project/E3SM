@@ -1,5 +1,28 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 12-04-2017
+Tag: cime5.4.0-alpha.13
+Answer Changes: None
+Tests: scripts_regression_tests.py, SMS_P8x2.f19_g16.X.yellowstone_intel
+Dependencies:
+
+Brief Summary:
+    - BUILD_THREADED needs to be set if any nthrds > 1.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+307251e Merge pull request #2106 from jedwards4b/nthrds_sets_build_threaded
+
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/case_setup.py
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer	 
 Date: 12-03-2017
 Tag: cime5.4.0-alpha.12
