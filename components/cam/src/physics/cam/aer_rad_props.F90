@@ -75,7 +75,8 @@ subroutine aer_rad_props_init()
    
    !For testing puposes only, the following addfld call should be removed before merging to master
    call addfld ('extinct_lw_bnd7',(/ 'lev' /),    'A','/m','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
-   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','/km','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
+   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','/km','EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
+   call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','/km','Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
 
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
@@ -238,6 +239,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
       !converting it from 1/km to 1/m 
 
       call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
+      call outfld('extinct_sw_inp',ext_cmip6_sw(:,:,idx_sw_diag), pcols, lchnk)
       ext_cmip6_sw = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m  
       
       !Find tropopause as extinction should be applied only above tropopause

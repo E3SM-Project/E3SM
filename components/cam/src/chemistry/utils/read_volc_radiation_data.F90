@@ -148,14 +148,14 @@ contains
 
 
     !Polulate dates from the volc file, dates stamps are stored in variable "month" in the file
-    ierr = pio_inq_dimid( piofile, 'month', old_dimid)
+    ierr = pio_inq_dimid( piofile, 'date', old_dimid)
     ! Hack to work with weird netCDF and old gcc or NAG bug.
     tim_dimid = old_dimid
     ierr = pio_inq_dimlen( piofile, old_dimid, ntimes)
     allocate(dates(ntimes))
     allocate(times(ntimes))
 
-    ierr = pio_inq_varid( piofile, 'month', old_dimid )
+    ierr = pio_inq_varid( piofile, 'date', old_dimid )
     ierr = pio_get_var( piofile, old_dimid, dates )
     
     call set_time_float_from_date( time2, 2, 1, 1, 0 )
