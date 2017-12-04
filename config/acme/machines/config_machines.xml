@@ -576,6 +576,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -613,6 +614,8 @@
     <environment_variables>
       <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
