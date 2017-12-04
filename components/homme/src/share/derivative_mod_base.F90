@@ -84,6 +84,7 @@ private
   public  :: element_boundary_integral
   public  :: edge_flux_u_cg
   public  :: limiter_optim_iter_full
+  public  :: limiter_clip_and_sum
 
 contains
 
@@ -1860,8 +1861,92 @@ contains
 
   end subroutine limiter_optim_iter_full
 
+  subroutine limiter_clip_and_sum(ptens,sphweights,minp,maxp,dpmass)
+    ! Prototype limiter. This is perhaps the fastest limiter that (i) is assured
+    ! to find x in the constraint set if that set is not empty and (ii) is such
+    ! that the 1-norm of the update, norm(x*c - ptens*sphweights, 1), is
+    ! minimal. It does not require iteration. However, its solution quality is
+    ! not established.
+    use kinds         , only : real_kind
+    use dimensions_mod, only : np, np, nlev
+    implicit none
 
+    real (kind=real_kind), dimension(np,np,nlev), intent(inout) :: ptens
+    real (kind=real_kind), dimension(np,np),      intent(in)    :: sphweights
+    real (kind=real_kind), dimension(nlev),       intent(inout) :: minp, maxp
+    real (kind=real_kind), dimension(np,np,nlev), intent(in), optional :: dpmass
 
+    real (kind=real_kind), parameter :: zero = 0.0d0
 
+    integer :: k1, k, i, j
+    logical :: modified
+    real (kind=real_kind) :: addmass, mass, sumc, den
+    real (kind=real_kind) :: x(np*np),c(np*np),v(np*np)
+
+    do k=1,nlev
+
+       k1 = 1
+       do j = 1, np
+          do i = 1, np
+             c(k1) = sphweights(i,j)*dpmass(i,j,k)
+             x(k1) = ptens(i,j,k)/dpmass(i,j,k)
+             k1 = k1+1
+          enddo
+       enddo
+
+       sumc = sum(c)
+       mass = sum(c*x)
+       ! This should never happen, but if it does, don't limit.
+       if (sumc <= 0) cycle
+       ! Relax constraints to ensure limiter has a solution; this is only needed
+       ! if running with the SSP CFL>1 or due to roundoff errors.
+       if (mass < minp(k)*sumc) then
+          minp(k) = mass / sumc
+       endif
+       if (mass > maxp(k)*sumc) then
+          maxp(k) = mass / sumc
+       endif
+
+       addmass = zero
+
+       ! Clip.
+       modified = .false.
+       do k1 = 1, np*np
+          if (x(k1) > maxp(k)) then
+             modified = .true.
+             addmass = addmass + (x(k1) - maxp(k))*c(k1)
+             x(k1) = maxp(k)
+          elseif (x(k1) < minp(k)) then
+             modified = .true.
+             addmass = addmass + (x(k1) - minp(k))*c(k1)
+             x(k1) = minp(k)
+          end if
+       end do
+       if (.not. modified) cycle
+
+       if (addmass /= zero) then
+          ! Determine weights.
+          if (addmass > zero) then
+             v(:) = maxp(k) - x(:)
+          else
+             v(:) = x(:) - minp(k)
+          end if
+          den = sum(v*c)
+          if (den > zero) then
+             ! Update.
+             x(:) = x(:) + (addmass/den)*v(:)
+          end if
+       end if
+
+       k1 = 1
+       do j = 1,np
+          do i = 1,np
+             ptens(i,j,k) = x(k1)*dpmass(i,j,k)
+             k1 = k1+1
+          end do
+       end do
+
+    enddo
+  end subroutine limiter_clip_and_sum
 
 end module derivative_mod_base
