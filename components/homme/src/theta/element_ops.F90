@@ -372,9 +372,9 @@ contains
        elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
   do k=1,nlev
      if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
-        write(iulog,*),'WARNING: hydrostatic inverse FAILED!'
-        write(iulog,*), minval(dpnh(:,:,k)), minval(dp(:,:,k))
-        write(iulog,*),k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+        write(iulog,*) 'WARNING: hydrostatic inverse FAILED!'
+        write(iulog,*) minval(dpnh(:,:,k)), minval(dp(:,:,k))
+        write(iulog,*) k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
      endif
   enddo
 
