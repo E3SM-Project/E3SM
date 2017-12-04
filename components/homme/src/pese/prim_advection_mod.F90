@@ -258,13 +258,12 @@ module prim_advection_mod
 	end subroutine
 
   !_____________________________________________________________________
-  subroutine prim_advec_init1(par, elem, n_domains)
+  subroutine prim_advec_init1(par, elem)
 
     type(parallel_t)    :: par
-    integer, intent(in) :: n_domains
     type (element_t)    :: elem(:)
 
-    call prim_advec_init1_rk2(par, elem, n_domains)
+    call prim_advec_init1_rk2(par, elem)
 
   end subroutine prim_advec_init1
 

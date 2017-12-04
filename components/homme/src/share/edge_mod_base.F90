@@ -7,7 +7,7 @@ module edge_mod_base
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
-  use thread_mod, only: nthreadshoriz, omp_get_num_threads, omp_get_thread_num
+  use thread_mod, only: hthreads, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &
@@ -134,7 +134,7 @@ contains
   ! create an Real based communication buffer
   ! =========================================
 !IDEA   subroutine initEdgeBuffer(par,edge,elem,nlyr,buf_ptr, receive_ptr, NewMethod)
-  subroutine initEdgeBuffer(par,edge,elem,nlyr, NewMethod, numthreads_in )
+  subroutine initEdgeBuffer(par,edge,elem,nlyr, NewMethod)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     use schedtype_mod, only : cycle_t, schedule_t, schedule
     implicit none
@@ -143,15 +143,12 @@ contains
     type (element_t),intent(in)  :: elem(:)
     integer,intent(in)                :: nlyr
     logical (kind=log_kind), intent(in), optional :: NewMethod
-    integer,intent(in), optional :: numthreads_in
     !
     ! Note: this routine is now thread safe.  but 'edge' should be shared by 
     ! all threads and should be instantiated outside the threaded region
     !
     ! edge buffer must be intialized for the number of threads that will be
     ! active when calling bndry_exchange.  
-    ! default is 'nthreadshoriz', which can be overriden with the optional
-    ! numthreads argument.  
     !
     ! 
     ! Local variables
@@ -176,11 +173,7 @@ contains
         nbuf=nlyr*4*(np+max_corner_elem)*nelemd
     endif
 
-    if (present(numthreads_in)) then
-       numthreads = numthreads_in
-    else
-       numthreads = nthreadshoriz
-    end if
+    numthreads = hthreads
 
 ! DO NOT REMOVE THIS NEXT BARRIER
 ! MT: This initial barrier fixes a long standing issue with Intel compilers on

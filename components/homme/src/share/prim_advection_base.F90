@@ -94,12 +94,11 @@ module prim_advection_base
 
 contains
 
-  subroutine Prim_Advec_Init1_rk2(par, elem, n_domains)
+  subroutine Prim_Advec_Init1_rk2(par, elem)
     use dimensions_mod, only : nlev, qsize, nelemd
     use control_mod, only : use_semi_lagrange_transport
     use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
-    integer, intent(in) :: n_domains
     type (element_t) :: elem(:)
     type (EdgeDescriptor_t), allocatable :: desc(:)
 

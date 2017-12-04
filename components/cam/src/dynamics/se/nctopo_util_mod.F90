@@ -123,7 +123,7 @@ contains
     end do
     
     ! update non-unique points:
-    call initEdgeBuffer(par, edge, elem, 3, numthreads_in=1)
+    call initEdgeBuffer(par, edge, elem, 3)
     do ie=1,nelemd
        kptr=0
        call edgeVpack(edge, SGH30dyn(:,:,ie),1,kptr,ie)
