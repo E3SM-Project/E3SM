@@ -148,7 +148,7 @@ contains
 
 
     !Polulate dates from the volc file, dates stamps are stored in variable "month" in the file
-    ierr = pio_inq_dimid( piofile, 'date', old_dimid)
+    ierr = pio_inq_dimid( piofile, 'month', old_dimid)
     ! Hack to work with weird netCDF and old gcc or NAG bug.
     tim_dimid = old_dimid
     ierr = pio_inq_dimlen( piofile, old_dimid, ntimes)
