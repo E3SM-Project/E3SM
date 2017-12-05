@@ -3389,6 +3389,7 @@ static int merge_thread_data()
     }
   }
 
+  free(newtimers);
   free(sort[0]);
   /* don't free timerlist[0], since needed for subsequent steps in gathering global statistics */
   for (t = 1; t < nthreads; t++) {
