@@ -9,7 +9,8 @@ module prescribed_volcaero
   use spmd_utils,   only : masterproc
   use tracer_data,  only : trfld, trfile
   use cam_logfile,  only : iulog
-
+  use radconstants,   only: nswbands, nlwbands
+  use read_volc_radiation_data,  only: read_volc_radiation_data_init, advance_volc_radiation_data
   implicit none
   private
   save 
@@ -33,17 +34,27 @@ module prescribed_volcaero
   character(len=9), parameter :: volcmass_name = 'VOLC_MASS'
   character(len=11), parameter :: volcmass_column_name = 'VOLC_MASS_C'
 
+  character(len=32) :: specifier_sw(3), specifier_lw(1)
+
   ! These variables are settable via the namelist (with longer names)
   character(len=16)  :: fld_name = 'MMRVOLC'
   character(len=256) :: filename = ''
   character(len=256) :: filelist = ''
   character(len=256) :: datapath = ''
   character(len=32)  :: data_type = 'SERIAL'
+  character(len=32)  :: file_type = 'VOLC_MIXING_RATIO'
   logical            :: rmv_file = .false.
   integer            :: cycle_yr  = 0
   integer            :: fixed_ymd = 0
   integer            :: fixed_tod = 0
   integer            :: radius_ndx
+
+  ! Variables settable via the namelist for CMIP6 style volcanic aerosols file
+  character(len=16)  :: ext_sun_name     = 'ext_sun'
+  character(len=16)  :: omega_sun_name   = 'omega_sun'
+  character(len=16)  :: g_sun_name       = 'g_sun'
+
+  character(len=16)  :: ext_earth_name   = 'ext_earth'
 
 contains
 
@@ -66,21 +77,25 @@ subroutine prescribed_volcaero_readnl(nlfile)
    character(len=256) :: prescribed_volcaero_filelist
    character(len=256) :: prescribed_volcaero_datapath
    character(len=32)  :: prescribed_volcaero_type
+   character(len=32)  :: prescribed_volcaero_filetype
    logical            :: prescribed_volcaero_rmfile
    integer            :: prescribed_volcaero_cycle_yr
    integer            :: prescribed_volcaero_fixed_ymd
    integer            :: prescribed_volcaero_fixed_tod
 
-   namelist /prescribed_volcaero_nl/ &
-      prescribed_volcaero_name,      &
-      prescribed_volcaero_file,      &
-      prescribed_volcaero_filelist,  &
-      prescribed_volcaero_datapath,  &
-      prescribed_volcaero_type,      &
-      prescribed_volcaero_rmfile,    &
-      prescribed_volcaero_cycle_yr,  &
-      prescribed_volcaero_fixed_ymd, &
-      prescribed_volcaero_fixed_tod      
+   namelist /prescribed_volcaero_nl/    &
+      prescribed_volcaero_name,         &
+      prescribed_volcaero_file,         &
+      prescribed_volcaero_filelist,     &
+      prescribed_volcaero_datapath,     &
+      prescribed_volcaero_type,         &
+      prescribed_volcaero_rmfile,       &
+      prescribed_volcaero_cycle_yr,     &
+      prescribed_volcaero_fixed_ymd,    &
+      prescribed_volcaero_fixed_tod,    &
+      prescribed_volcaero_filetype
+
+
    !-----------------------------------------------------------------------------
 
    ! Initialize namelist variables from local module variables.
@@ -89,6 +104,7 @@ subroutine prescribed_volcaero_readnl(nlfile)
    prescribed_volcaero_filelist = filelist
    prescribed_volcaero_datapath = datapath
    prescribed_volcaero_type     = data_type
+   prescribed_volcaero_filetype = file_type
    prescribed_volcaero_rmfile   = rmv_file
    prescribed_volcaero_cycle_yr = cycle_yr
    prescribed_volcaero_fixed_ymd= fixed_ymd
@@ -116,6 +132,7 @@ subroutine prescribed_volcaero_readnl(nlfile)
    call mpibcast(prescribed_volcaero_filelist, len(prescribed_volcaero_filelist), mpichar, 0, mpicom)
    call mpibcast(prescribed_volcaero_datapath, len(prescribed_volcaero_datapath), mpichar, 0, mpicom)
    call mpibcast(prescribed_volcaero_type,     len(prescribed_volcaero_type),     mpichar, 0, mpicom)
+   call mpibcast(prescribed_volcaero_filetype, len(prescribed_volcaero_filetype), mpichar, 0, mpicom)
    call mpibcast(prescribed_volcaero_rmfile,   1, mpilog,  0, mpicom)
    call mpibcast(prescribed_volcaero_cycle_yr, 1, mpiint,  0, mpicom)
    call mpibcast(prescribed_volcaero_fixed_ymd,1, mpiint,  0, mpicom)
@@ -128,6 +145,7 @@ subroutine prescribed_volcaero_readnl(nlfile)
    filelist   = prescribed_volcaero_filelist
    datapath   = prescribed_volcaero_datapath
    data_type  = prescribed_volcaero_type
+   file_type  = prescribed_volcaero_filetype
    rmv_file   = prescribed_volcaero_rmfile
    cycle_yr   = prescribed_volcaero_cycle_yr
    fixed_ymd  = prescribed_volcaero_fixed_ymd
@@ -147,8 +165,16 @@ end subroutine prescribed_volcaero_readnl
     integer :: idx
 
     if (has_prescribed_volcaero) then
-       call pbuf_add_field(volcaero_name,'physpkg',dtype_r8,(/pcols,pver/),idx)
-       call pbuf_add_field(volcrad_name, 'physpkg',dtype_r8,(/pcols,pver/),idx)
+       if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
+          call pbuf_add_field(ext_sun_name,     'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+          call pbuf_add_field(omega_sun_name,   'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+          call pbuf_add_field(g_sun_name,       'physpkg',dtype_r8,(/pcols,pver,nswbands/),idx)
+          
+          call pbuf_add_field(ext_earth_name,   'physpkg',dtype_r8,(/pcols,pver,nlwbands/),idx)
+       endif
+
+       call pbuf_add_field(volcaero_name,'physpkg',dtype_r8,(/pcols,pver/),idx) !BALLI- we have to initialize it for radiation codes....but why????
+       call pbuf_add_field(volcrad_name, 'physpkg',dtype_r8,(/pcols,pver/),idx) !is it for reading rad properties which we don't need?
 
     endif
 
@@ -156,7 +182,7 @@ end subroutine prescribed_volcaero_readnl
 
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
-  subroutine prescribed_volcaero_init()
+  subroutine prescribed_volcaero_init(is_cmip6_volc)
 
     use tracer_data, only : trcdata_init
     use cam_history, only : addfld, horiz_only
@@ -167,9 +193,13 @@ end subroutine prescribed_volcaero_readnl
     use physics_buffer, only : physics_buffer_desc, pbuf_get_index
 
     implicit none
+    
+    !Arguments
+    logical, intent(out):: is_cmip6_volc
 
+    !Local variables
     integer :: ndx, istat
-    integer :: errcode
+    integer :: errcode, ispf
     character(len=32) :: specifier(1)
     
     if ( has_prescribed_volcaero ) then
@@ -179,22 +209,42 @@ end subroutine prescribed_volcaero_readnl
     else
        return
     endif
+    is_cmip6_volc = .false.
+    if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
+       is_cmip6_volc = .true.
+       ispf = 1
+       specifier_sw(ispf) = trim(adjustl(ext_sun_name))
+       ispf = ispf + 1
 
-    specifier(1) = trim(volcaero_name)//':'//trim(fld_name)
+       specifier_sw(ispf) = trim(adjustl(omega_sun_name))
+       ispf = ispf + 1
 
+       specifier_sw(ispf) = trim(adjustl(g_sun_name))
+       
+       ispf = 1
+       specifier_lw(ispf) = trim(adjustl(ext_earth_name))
+       
+       !BALLI-add comments!!
+       call read_volc_radiation_data_init(specifier_sw, specifier_lw, filename, datapath, data_type, cycle_yr)
 
-    allocate(file%in_pbuf(size(specifier)))
-    file%in_pbuf(:) = .true.
-    call trcdata_init( specifier, filename, filelist, datapath, fields, file, &
-                       rmv_file, cycle_yr, fixed_ymd, fixed_tod, data_type)
+    else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
 
-
-    call addfld(volcaero_name, (/ 'lev' /), 'I','kg/kg', 'prescribed volcanic aerosol dry mass mixing ratio' )
-    call addfld(volcrad_name, (/ 'lev' /), 'I','m', 'volcanic aerosol geometric-mean radius' )
-    call addfld(volcmass_name, (/ 'lev' /), 'I','kg/m^2', 'volcanic aerosol vertical mass path in layer' )
-    call addfld(volcmass_column_name, horiz_only, 'I','kg/m^2', 'volcanic aerosol column mass' )
-
-    radius_ndx = pbuf_get_index(volcrad_name, errcode)
+       specifier(1) = trim(volcaero_name)//':'//trim(fld_name)
+       
+       allocate(file%in_pbuf(size(specifier)))
+       file%in_pbuf(:) = .true.
+       call trcdata_init( specifier, filename, filelist, datapath, fields, file, &
+            rmv_file, cycle_yr, fixed_ymd, fixed_tod, data_type)
+       
+       call addfld(volcaero_name, (/ 'lev' /), 'I','kg/kg', 'prescribed volcanic aerosol dry mass mixing ratio' )
+       call addfld(volcrad_name, (/ 'lev' /), 'I','m', 'volcanic aerosol geometric-mean radius' )
+       call addfld(volcmass_name, (/ 'lev' /), 'I','kg/m^2', 'volcanic aerosol vertical mass path in layer' )
+       call addfld(volcmass_column_name, horiz_only, 'I','kg/m^2', 'volcanic aerosol column mass' )
+       
+       radius_ndx = pbuf_get_index(volcrad_name, errcode)
+    else
+       call endrun('prescribed_volcaero_init: Invalid volcanic file type')
+    endif
 
   end subroutine prescribed_volcaero_init
 
@@ -241,53 +291,60 @@ end subroutine prescribed_volcaero_readnl
 
     if( .not. has_prescribed_volcaero ) return
 
-    call advance_trcdata( fields, file, state, pbuf2d )
+    if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
 
-    ! copy prescribed tracer fields into state svariable with the correct units
-    do c = begchunk,endchunk
-       pbuf_chnk => pbuf_get_chunk(pbuf2d, c)
-       call pbuf_get_field(pbuf_chnk, radius_ndx, radius)
-       radius(:,:) = 0._r8
-       ncol = state(c)%ncol
-       select case ( to_lower(trim(fields(1)%units(:GLC(fields(1)%units)))) )
-       case ("molec/cm3","/cm3","molecules/cm3","cm^-3","cm**-3")
-          to_mmr(:ncol,:) = (molmass*1.e6_r8*boltz*state(c)%t(:ncol,:))/(mwdry*state(c)%pmiddry(:ncol,:))
-       case ('kg/kg','mmr','kg kg-1')
-          to_mmr(:ncol,:) = 1._r8
-       case ('mol/mol','mole/mole','vmr','fraction')
-          to_mmr(:ncol,:) = molmass/mwdry
-       case default
-          write(iulog,*) 'prescribed_volcaero_adv: units = ',trim(fields(1)%units) ,' are not recognized'
-          call endrun('prescribed_volcaero_adv: units are not recognized')
-       end select
+       call advance_volc_radiation_data (specifier_sw, specifier_lw, state, pbuf2d)
 
-       call pbuf_get_field(pbuf_chnk, fields(1)%pbuf_ndx, data)
-       data(:ncol,:) = to_mmr(:ncol,:) * data(:ncol,:) ! mmr
+    else if(trim(adjustl(file_type))== 'VOLC_MIXING_RATIO') then
 
-       call tropopause_find(state(c), tropLev, primary=TROP_ALG_TWMO, backup=TROP_ALG_CLIMATE)
-       do i = 1,ncol
-          do k = 1,pver
-             ! set to zero below tropopause
-             if ( k >= tropLev(i) ) then
-                data(i,k) = 0._r8
-             endif
-             mmrvolc = data(i,k)
-             if (mmrvolc > 0._r8) then
-                concvolc = (mmrvolc * state(c)%pdel(i,k))/(gravit * state(c)%zm(i,k))
-                radius(i,k) = radius_conversion*(concvolc**(1._r8/3._r8))
-             endif
+       call advance_trcdata( fields, file, state, pbuf2d )
+       
+       ! copy prescribed tracer fields into state svariable with the correct units
+       do c = begchunk,endchunk
+          pbuf_chnk => pbuf_get_chunk(pbuf2d, c)
+          call pbuf_get_field(pbuf_chnk, radius_ndx, radius)
+          radius(:,:) = 0._r8
+          ncol = state(c)%ncol
+          select case ( to_lower(trim(fields(1)%units(:GLC(fields(1)%units)))) )
+          case ("molec/cm3","/cm3","molecules/cm3","cm^-3","cm**-3")
+             to_mmr(:ncol,:) = (molmass*1.e6_r8*boltz*state(c)%t(:ncol,:))/(mwdry*state(c)%pmiddry(:ncol,:))
+          case ('kg/kg','mmr','kg kg-1')
+             to_mmr(:ncol,:) = 1._r8
+          case ('mol/mol','mole/mole','vmr','fraction')
+             to_mmr(:ncol,:) = molmass/mwdry
+          case default
+             write(iulog,*) 'prescribed_volcaero_adv: units = ',trim(fields(1)%units) ,' are not recognized'
+             call endrun('prescribed_volcaero_adv: units are not recognized')
+          end select
+          
+          call pbuf_get_field(pbuf_chnk, fields(1)%pbuf_ndx, data)
+          data(:ncol,:) = to_mmr(:ncol,:) * data(:ncol,:) ! mmr
+          
+          call tropopause_find(state(c), tropLev, primary=TROP_ALG_TWMO, backup=TROP_ALG_CLIMATE)
+          do i = 1,ncol
+             do k = 1,pver
+                ! set to zero below tropopause
+                if ( k >= tropLev(i) ) then
+                   data(i,k) = 0._r8
+                endif
+                mmrvolc = data(i,k)
+                if (mmrvolc > 0._r8) then
+                   concvolc = (mmrvolc * state(c)%pdel(i,k))/(gravit * state(c)%zm(i,k))
+                   radius(i,k) = radius_conversion*(concvolc**(1._r8/3._r8))
+                endif
+             enddo
           enddo
+          
+          volcmass(:ncol,:) = data(:ncol,:)*state(c)%pdel(:ncol,:)/gravit
+          columnmass(:ncol) = sum(volcmass(:ncol,:), 2)
+          
+          call outfld( volcaero_name,        data(:,:),     pcols, state(c)%lchnk)
+          call outfld( volcrad_name,         radius(:,:),   pcols, state(c)%lchnk)
+          call outfld( volcmass_name,        volcmass(:,:), pcols, state(c)%lchnk)
+          call outfld( volcmass_column_name, columnmass(:), pcols, state(c)%lchnk)
+          
        enddo
-
-       volcmass(:ncol,:) = data(:ncol,:)*state(c)%pdel(:ncol,:)/gravit
-       columnmass(:ncol) = sum(volcmass(:ncol,:), 2)
-
-       call outfld( volcaero_name,        data(:,:),     pcols, state(c)%lchnk)
-       call outfld( volcrad_name,         radius(:,:),   pcols, state(c)%lchnk)
-       call outfld( volcmass_name,        volcmass(:,:), pcols, state(c)%lchnk)
-       call outfld( volcmass_column_name, columnmass(:), pcols, state(c)%lchnk)
-
-    enddo
+    endif
 
   end subroutine prescribed_volcaero_adv
 
