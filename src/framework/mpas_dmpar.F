@@ -7276,6 +7276,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       integer :: iHalo, iTimeLevel
       integer :: threadNum
+      integer :: commListPosition
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
@@ -7449,6 +7450,20 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
             commListPtr % bufferOffset = 0
 
             commListPtr => commListPtr % next
+         end do
+
+         ! count items in commList
+         commListPtr => exchangeGroup % sendList
+         commListPosition = 0
+         do while ( associated(commListPtr) )
+           commListPosition = commListPosition + 1
+           commListPtr => commListPtr % next
+         end do
+         ! populate total list length to each item
+         commListPtr => exchangeGroup % sendList
+         do while ( associated(commListPtr) )
+           commListPtr % commListSize = commListPosition      
+           commListPtr => commListPtr % next
          end do
 
          commListPtr => exchangeGroup % recvList
@@ -8241,40 +8256,41 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     iBuffer = exchListPtr % destList(iExch) + bufferOffset
-                     commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(exchListPtr % srcList(iExch)), &
-                                                               commListPtr % rbuffer(1))
-                  end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                 iBuffer = exchListPtr % destList(iExch) + bufferOffset
+                 commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(exchListPtr % srcList(iExch)), commListPtr % rbuffer(1))
+              end do
+              nAdded = nAdded + exchListPtr % nList
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field1d_integer!}}}
 
@@ -8304,42 +8320,43 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
       integer :: j
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(1)
-                        iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
-                        commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(j, exchListPtr % srcList(iExch)), &
-                                                                  commListPtr % rbuffer(1))
-                     end do
-                  end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, j, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                do j = 1, fieldCursor % dimSizes(1)
+                  iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
+                  commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(j, exchListPtr % srcList(iExch)), commListPtr % rbuffer(1))
+                end do
+              end do
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field2d_integer!}}}
 
@@ -8369,45 +8386,45 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
       integer :: j, k
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(2)
-                        do k = 1, fieldCursor % dimSizes(1)
-                           iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                   + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
-                           commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(k, j, exchListPtr % srcList(iExch)), &
-                                                                     commListPtr % rbuffer(1))
-                        end do
-                     end do
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, j, k, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                do j = 1, fieldCursor % dimSizes(2)
+                  do k = 1, fieldCursor % dimSizes(1)
+                    iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                    commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(k, j, exchListPtr % srcList(iExch)), commListPtr % rbuffer(1))
                   end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2)
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+                end do
+              end do
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2)
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field3d_integer!}}}
 
@@ -8436,39 +8453,41 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     iBuffer = exchListPtr % destList(iExch) + bufferOffset
-                     commListPtr % rbuffer(iBuffer) = fieldCursor % array(exchListPtr % srcList(iExch))
-                  end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                iBuffer = exchListPtr % destList(iExch) + bufferOffset
+                commListPtr % rbuffer(iBuffer) = fieldCursor % array(exchListPtr % srcList(iExch))
+              end do
+              nAdded = nAdded + exchListPtr % nList
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field1d_real!}}}
 
@@ -8498,41 +8517,43 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
       integer :: j
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(1)
-                        iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
-                        commListPtr % rbuffer(iBuffer) = fieldCursor % array(j, exchListPtr % srcList(iExch))
-                     end do
-                  end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, j, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                do j = 1, fieldCursor % dimSizes(1)
+                  iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
+                  commListPtr % rbuffer(iBuffer) = fieldCursor % array(j, exchListPtr % srcList(iExch))
+                end do
+              end do
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field2d_real!}}}
 
@@ -8562,44 +8583,45 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
       integer :: j, k
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, j, k, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
          bufferOffset = commListPtr % bufferOffset
          nAdded = 0
          fieldCursor => field
          do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(2)
-                        do k = 1, fieldCursor % dimSizes(1)
-                           iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                   + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
-                           commListPtr % rbuffer(iBuffer) = fieldCursor % array(k, j, exchListPtr % srcList(iExch))
-                        end do
-                     end do
-                  end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2)
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+           exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+           do while ( associated(exchListPtr) )
+             if ( exchListPtr % endPointID == commListPtr % procID ) then
+               do iExch = 1, exchListPtr % nList
+                 do j = 1, fieldCursor % dimSizes(2)
+                   do k = 1, fieldCursor % dimSizes(1)
+                     iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                     commListPtr % rbuffer(iBuffer) = fieldCursor % array(k, j, exchListPtr % srcList(iExch))
+                   end do
+                end do
+              end do
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2)
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field3d_real!}}}
 
@@ -8629,49 +8651,47 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
       integer :: j, k, l
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, l, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(3)
-                        do k = 1, fieldCursor % dimSizes(2)
-                           do l = 1, fieldCursor % dimSizes(1)
-                              iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) &
-                                      * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) &
-                                      + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                      + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
-                              commListPtr % rbuffer(iBuffer) = fieldCursor % array(l, k, j, exchListPtr % srcList(iExch))
-                           end do
-                        end do
-                     end do
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, j, k, l, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                do j = 1, fieldCursor % dimSizes(3)
+                  do k = 1, fieldCursor % dimSizes(2)
+                    do l = 1, fieldCursor % dimSizes(1)
+                      iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
+                      commListPtr % rbuffer(iBuffer) = fieldCursor % array(l, k, j, exchListPtr % srcList(iExch))
+                    end do
                   end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                         * fieldCursor % dimSizes(3)
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+                end do
+              end do
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3)
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
+      !$omp end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field4d_real!}}}
 
@@ -8701,52 +8721,47 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: iExch, iBuffer, bufferOffset
       integer :: nAdded
       integer :: j, k, l, m
+      integer :: listPosition, listItem, commListSize
 
       if ( present(iErr) ) then
          iErr = MPAS_DMPAR_NOERR
       end if
 
       commListPtr => exchangeGroup % sendList
-      do while ( associated(commListPtr) )
-         bufferOffset = commListPtr % bufferOffset
-         nAdded = 0
-         fieldCursor => field
-         do while ( associated(fieldCursor) )
-            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
-            do while ( associated(exchListPtr) )
-               if ( exchListPtr % endPointID == commListPtr % procID ) then
-                  !$omp do schedule(runtime) private(j, k, l, m, iBuffer)
-                  do iExch = 1, exchListPtr % nList
-                     do j = 1, fieldCursor % dimSizes(4)
-                        do k = 1, fieldCursor % dimSizes(3)
-                           do l = 1, fieldCursor % dimSizes(2)
-                              do m = 1, fieldCursor % dimSizes(1)
-                                 iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) &
-                                         * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)&
-                                         + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                                   * fieldCursor % dimSizes(3) &
-                                         + (k - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                                         + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
-                                 commListPtr % rbuffer(iBuffer) = fieldCursor % array(m, l, k, j, exchListPtr % srcList(iExch))
-                              end do
-                           end do
-                        end do
-                     end do
+      commListSize = commListPtr % commListSize
+      !$omp do private(commListPtr, listPosition, bufferOffset, nAdded, fieldCursor, exchListPtr, iExch, j, k, l, m, iBuffer) 
+      do listItem = 1, commListSize
+        commListPtr => exchangeGroup % sendList
+        do listPosition = 2, listItem
+          commListPtr => commListPtr % next
+        end do
+        bufferOffset = commListPtr % bufferOffset
+        nAdded = 0
+        fieldCursor => field
+        do while ( associated(fieldCursor) )
+          exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+          do while ( associated(exchListPtr) )
+            if ( exchListPtr % endPointID == commListPtr % procID ) then
+              do iExch = 1, exchListPtr % nList
+                do j = 1, fieldCursor % dimSizes(4)
+                  do k = 1, fieldCursor % dimSizes(3)
+                    do l = 1, fieldCursor % dimSizes(2)
+                      do m = 1, fieldCursor % dimSizes(1)
+                        iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4) + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) + (k - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
+                        commListPtr % rbuffer(iBuffer) = fieldCursor % array(m, l, k, j, exchListPtr % srcList(iExch))
+                      end do
+                    end do
                   end do
-                  !$omp end do
-                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
-                         * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)
-               end if
-               exchListPtr => exchListPtr % next
-            end do
-            fieldCursor => fieldCursor % next
-         end do
-         bufferOffset = bufferOffset + nAdded
-         !$omp master
-         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
-         !$omp end master
-         call mpas_threading_barrier()
-         commListPtr => commListPtr % next
+                end do
+              end do
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)
+            end if
+            exchListPtr => exchListPtr % next
+          end do
+          fieldCursor => fieldCursor % next
+        end do
+        commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+        commListPtr => commListPtr % next
       end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field5d_real!}}}

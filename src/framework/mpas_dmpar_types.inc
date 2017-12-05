@@ -49,6 +49,7 @@
      integer, dimension(:), pointer :: ibuffer => null()
      integer :: reqID
      type (mpas_communication_list), pointer :: next => null()
+     integer :: commListSize
      logical :: received
      logical :: unpacked
    end type mpas_communication_list
