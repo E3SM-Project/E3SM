@@ -287,7 +287,7 @@ def _create_lat_lon_table_index(viewer, root_dir):
     """Create an index in the viewer that links the individual htmls for the lat-lon table."""
     seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
     viewer.add_page('Table', seasons)
-    viewer.add_group('Something Table')
+    viewer.add_group('Summary Table')
     viewer.add_row('All variables')
 
     for s in seasons:
@@ -298,12 +298,10 @@ def _create_lat_lon_table_index(viewer, root_dir):
 
 def _add_lat_lon_table_to_viewer_index(root_dir):
     """Move the link to Table next to the link to Latitude-Longitude contour maps"""
-
     index_page = os.path.join(root_dir, 'index.html')
     soup = BeautifulSoup(open(index_page), "lxml")
 
     # append the new tag underneath the old one, so add it to the parent of the old one
-    
     td_to_move = None
     for tr in soup.find_all("tr"):
         for td in tr.find_all("td"):
@@ -316,62 +314,12 @@ def _add_lat_lon_table_to_viewer_index(root_dir):
         for tr in soup.find_all("tr"):
             for td in tr.find_all("td"):
                 for a in td.find_all("a"):
-                    print 'a'
-                    print a
-                    print "_better_page_name('lat_lon')"
-                    print _better_page_name('lat_lon')
                     if _better_page_name('lat_lon') in a.string:
-                        print 'moving shit!'
-                        print 'moving shit!'
-                        print 'moving shit!'
                         td.append(td_to_move)
 
     html = soup.prettify("utf-8")
     with open(index_page, "wb") as f:
         f.write(html)
-
-    '''
-    for a in soup.find_all('a'):
-        if _better_page_name('lat_lon') in a:
-            parent = a.parent
-            parent.append(table_a)
-
-    # Remove the tr with the Table in it
-    html = soup.prettify("utf-8")
-    with open(index_page, "wb") as f:
-        f.write(html)
-    '''
-
-
-
-    '''
-    # Add this to index.html:
-
-    # <a href="table/index.html" style="padding-left:1em">
-    #   Latitiude-Longitude Table
-    # </a>
-    # underneath this, which is already in index.html:
-    # <a href="latitude-longitude/index.html">
-    #   Latitude-Longitude contour maps
-    # </a>
-
-    index_page = os.path.join(root_dir, 'index.html')
-    soup = BeautifulSoup(open(index_page), "lxml")
-
-    table_index_path = 'table/index.html'
-    table_a = soup.new_tag("a", href=table_index_path, style="padding-left:1em")
-    table_a.append("Latitiude-Longitude Table")
-
-    # append the new tag underneath the old one, so add it to the parent of the old one
-    for a in soup.find_all('a'):
-        if _better_page_name('lat_lon') in a:
-            parent = a.parent
-            parent.append(table_a)
-
-    html = soup.prettify("utf-8")
-    with open(index_page, "wb") as f:
-        f.write(html)
-    '''
 
 def generate_lat_lon_metrics_table(viewer, root_dir):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
