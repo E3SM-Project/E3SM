@@ -119,12 +119,12 @@ contains
 #endif
   do k=1,nlev
      ! rho_R_theta = -kappa * Theta / dphi/ds
-!     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k)-phinh_i(:,:,k+1)) 
+     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k)-phinh_i(:,:,k+1)) 
 
      if (minval(rho_R_theta(:,:,k))<0) then
- !       print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
- !       print *,'phinh_i(k+1)-phi(k)',minval(phinh_i(:,:,k+1)-phinh_i(:,:,k))
- !       call abortmp('error: rho<0')
+        print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
+        print *,'phinh_i(k+1)-phi(k)',minval(phinh_i(:,:,k+1)-phinh_i(:,:,k))
+        call abortmp('error: rho<0')
      endif
     
      ! p/exner = rho* Rstar * theta and  (p/p0)^(1-kappa) = rho * Rstar * theta / p0
@@ -132,8 +132,7 @@ contains
      ! then exner = rho * Rstar * theta / p
   !   pnh(:,:,k) = p0 * (rho_R_theta(:,:,k) / p0)**(1/(1-kappa_star(:,:,k)))
   !   exner(:,:,k) =  (pnh(:,:,k)/p0)**kappa_star(:,:,k) !pnh(:,:,k)/ rho_R_theta(:,:,k)
-      pnh(:,:,k) = p0 * (theta_dp_cp(:,:,k)*kappa_star(:,:,k)&
-        /(p0*(phinh_i(:,:,k)-phinh_i(:,:,k+1)) ) )**(1/(1-kappa_star(:,:,k)))
+      pnh(:,:,k) = p0 * (rho_R_theta(:,:,k)/p0)**(1/(1-kappa_star(:,:,k)))
       exner(:,:,k) =  (pnh(:,:,k)/p0)**kappa_star(:,:,k)
   enddo
 ! step 1:  compute pnh_i at interfaces
@@ -144,10 +143,13 @@ contains
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop    
-   do k=1,nlev-1
-     pnh_i(:,:,k+1) = (pnh(:,:,k+1)+pnh(:,:,k))/2
+   do k=2,nlevp-1
+     pnh_i(:,:,k) = (pnh(:,:,k)+pnh(:,:,k-1))/2
    enddo
-   pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
+   pnh_i(:,:,nlevp) = 2*pnh(:,:,nlev) - pnh_i(:,:,nlev)
+
+ !  this might be right for conservation, maybe not right for eos inverse
+ !  pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
    do k=1,nlev
       dpnh(:,:,k)=pnh_i(:,:,k+1)-pnh_i(:,:,k)
    enddo
@@ -210,15 +212,17 @@ contains
 
   integer :: k
 
-  ! compute pressure on interfaces
+  ! compute pressure on interfaces                                                                                   
   p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
-  do k=1,nlev
-     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
-   !  exner(:,:,k) = (p(:,:,k)/p0)**kappa
+  p(:,:,nlev) = (p_i(:,:,nlevp)+p_i(:,:,nlev))/2
+  do k=nlev-1,1,-1
+    p(:,:,k) = 2*p_i(:,:,k+1)-p(:,:,k+1)
+   !  exner(:,:,k) = (p(:,:,k)/p0)**kappa                                                                            
   enddo
+
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
  ! phi = -theta* d exner /dp = -theta * exner / p
@@ -270,27 +274,28 @@ contains
   real (kind=real_kind) :: phi_i(np,np,nlevp)
 
   integer :: k
-
-
-  ! compute pressure on interfaces
   p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
-  do k=1,nlev
-     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
-     exner(:,:,k) = (p(:,:,k)/p0)**kappa_star(:,:,k)
-  enddo
-  phi_i(:,:,nlevp) = phis(:,:)
-  do k=nlev,1,-1
-  ! phi = -theta* d exner /dp = -theta * exner / p
-     phi_i(:,:,k) = phi_i(:,:,k+1)+theta_dp_cp(:,:,k)*kappa_star(:,:,k)*(exner(:,:,k)/p(:,:,k))
+  p(:,:,nlev) = (p_i(:,:,nlevp)+p_i(:,:,nlev))/2
+  do k=nlev-1,1,-1
+    p(:,:,k) = 2*p_i(:,:,k+1)-p(:,:,k+1)
+   !  exner(:,:,k) = (p(:,:,k)/p0)**kappa                                                                            
   enddo
 
-  phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
-  do k=2,nlev
-     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1) 
+  phi_i(:,:,nlevp) = phis(:,:)
+  do k=nlev,1,-1
+ ! phi = -theta* d exner /dp = -theta * exner / p                                                    
+     phi_i(:,:,k) = phi_i(:,:,k+1)+ &
+       (theta_dp_cp(:,:,k)*kappa_star(:,:,k)*(p(:,:,k)/p0)**(kappa_star(:,:,k)-1))/p0
   enddo
+
+  phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2
+  do k=2,nlev
+     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1)
+  enddo
+
 
 
   end subroutine
