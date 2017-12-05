@@ -221,41 +221,6 @@ class Machines(GenericXML):
                 return reqval
         return None
 
-    def get_field_from_list_nofail(self, listname, reqval=None, attributes=None):
-        """
-        Some of the fields have lists of valid values in the xml. Parse these
-        lists and return the first value if reqval is not provided and reqval
-        if it is a valid setting for the machine. If the list does not exist
-        then return None whether reqval is provided or not. If the first element
-        of the list is ANY, then return reqval if it is provided and ANY otherwise.
-        """
-        expect(self.machine_node is not None, "Machine object has no machine defined")
-        supported_values = self.get_value(listname, attributes=attributes)
-
-        # if no match with attributes, try without
-        if supported_values is None:
-            supported_values = self.get_value(listname, attributes=None)
-
-        # if still no match, return None
-        if supported_values is None:
-            return None
-
-        supported_values = supported_values.split(",") #pylint: disable=no-member
-
-        if supported_values[0] == "ANY":
-            if reqval is None or reqval == "UNSET":
-                return supported_values[0]
-            else:
-                return reqval
-
-        if reqval is None or reqval == "UNSET":
-            return supported_values[0]
-
-        for val in supported_values:
-            if val == reqval:
-                return reqval
-        return None
-
     def get_default_compiler(self):
         """
         Get the compiler to use from the list of COMPILERS
@@ -305,7 +270,17 @@ class Machines(GenericXML):
         >>> machobj.is_save_timing_dir_project("ccsm1")
         False
         """
-        return self.get_field_from_list_nofail("SAVE_TIMING_DIR_PROJECTS", reqval=project) is not None
+        save_timing_dir_projects = self.get_value("SAVE_TIMING_DIR_PROJECTS")
+        if not save_timing_dir_projects:
+            return False
+        else:
+            save_timing_dir_projects = save_timing_dir_projects.split(",")
+            for save_timing_dir_project in save_timing_dir_projects:
+                regex = re.compile(save_timing_dir_project)
+                if regex.match(project):
+                    return True
+
+            return False
 
     def has_batch_system(self):
         """
