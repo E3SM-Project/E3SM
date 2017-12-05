@@ -1274,7 +1274,6 @@ contains
     logical           :: varpresent         ! if true, variable is on tape
     logical           :: found              ! if true, found lat/lon dims on file
     character(len=32) :: vname              ! variable error checking
-    character(len=1)  :: tmpString(128)     ! temp for manipulating output string
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     {VTYPE} :: temp(1)
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_{TYPE}_glob'
@@ -1373,7 +1372,7 @@ contains
     integer           :: start(4), count(4) ! output bounds
     integer           :: status             ! error code
     logical           :: varpresent         ! if true, variable is on tape
-    character(len=1)  :: tmpString(128)     ! temp for manipulating output string
+    character(len=1)  :: tmpString(max_string_len)     ! temp for manipulating output string
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_{TYPE}_glob'
     !-----------------------------------------------------------------------
