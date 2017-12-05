@@ -8344,7 +8344,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
               do iExch = 1, exchListPtr % nList
                 do j = 1, fieldCursor % dimSizes(1)
                   iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
-                  commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(j, exchListPtr % srcList(iExch)), commListPtr % rbuffer(1))
+                  commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(j, exchListPtr % srcList(iExch)), &
+                                                   commListPtr % rbuffer(1))
                 end do
               end do
               nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
@@ -8410,8 +8411,10 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
               do iExch = 1, exchListPtr % nList
                 do j = 1, fieldCursor % dimSizes(2)
                   do k = 1, fieldCursor % dimSizes(1)
-                    iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
-                    commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(k, j, exchListPtr % srcList(iExch)), commListPtr % rbuffer(1))
+                    iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) & 
+                              + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                    commListPtr % rbuffer(iBuffer) = transfer(fieldCursor % array(k, j, exchListPtr % srcList(iExch)), &
+                                                     commListPtr % rbuffer(1))
                   end do
                 end do
               end do
@@ -8607,7 +8610,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                do iExch = 1, exchListPtr % nList
                  do j = 1, fieldCursor % dimSizes(2)
                    do k = 1, fieldCursor % dimSizes(1)
-                     iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                     iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                               + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
                      commListPtr % rbuffer(iBuffer) = fieldCursor % array(k, j, exchListPtr % srcList(iExch))
                    end do
                 end do
@@ -8676,7 +8680,9 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                 do j = 1, fieldCursor % dimSizes(3)
                   do k = 1, fieldCursor % dimSizes(2)
                     do l = 1, fieldCursor % dimSizes(1)
-                      iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
+                      iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                              * fieldCursor % dimSizes(3) + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) & 
+                              + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
                       commListPtr % rbuffer(iBuffer) = fieldCursor % array(l, k, j, exchListPtr % srcList(iExch))
                     end do
                   end do
@@ -8747,14 +8753,18 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
                   do k = 1, fieldCursor % dimSizes(3)
                     do l = 1, fieldCursor % dimSizes(2)
                       do m = 1, fieldCursor % dimSizes(1)
-                        iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4) + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) + (k - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
+                        iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4) + (j - 1) * fieldCursor % dimSizes(1) &
+                                * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) + (k - 1) * fieldCursor % dimSizes(1) &
+                                * fieldCursor % dimSizes(2) + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
                         commListPtr % rbuffer(iBuffer) = fieldCursor % array(m, l, k, j, exchListPtr % srcList(iExch))
                       end do
                     end do
                   end do
                 end do
               end do
-              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)
+              nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                     * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)
             end if
             exchListPtr => exchListPtr % next
           end do
