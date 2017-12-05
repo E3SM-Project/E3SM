@@ -1504,7 +1504,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         with Case(casedir, read_only=False) as case:
             build_threaded = case.get_value("BUILD_THREADED")
-            self.assertFalse(build_threaded)
+            self.assertTrue(build_threaded)
 
             build_threaded = case.get_build_threaded()
             self.assertTrue(build_threaded)
