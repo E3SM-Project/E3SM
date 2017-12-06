@@ -783,7 +783,7 @@
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
-  <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
+  <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/ghost</CESMSCRATCHROOT>
   <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>

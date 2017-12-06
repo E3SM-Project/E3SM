@@ -41,7 +41,7 @@ module cospsimulator_intr
    use spmd_utils,      only: masterproc
    use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk 
    use cam_history,     only: addfld, horiz_only, add_default, outfld
-   use cam_history_support,     only: max_fieldname_len, max_chars
+   use cam_history_support, only: max_fieldname_len
    use perf_mod,        only: t_startf, t_stopf
    use cam_abortutils,  only: endrun
    use phys_control,    only: cam_physpkg_is
@@ -173,6 +173,14 @@ module cospsimulator_intr
    integer :: cosp_ncolumns = 50             ! CAM namelist variable default
    integer :: cosp_histfile_num =1           ! CAM namelist variable default, not in COSP namelist 
    integer :: cosp_histfile_aux_num =-1      ! CAM namelist variable default, not in COSP namelist
+
+   ! Flag to specify whether or not to separate stratiform and convective cloud
+   ! and precipitation properties. When using CLUBB-SILHS to handle deep
+   ! convection instead of using the Zhang-McFarlane scheme, many of the
+   ! separate convective mixing ratios are not defined, so we will pass all
+   ! cloud and precipitation as stratiform in this case. Set default to true
+   ! here, and then set false later if we cannot find the needed fields.
+   logical :: cosp_separate_convection = .true.
 
 !! COSP Namelist variables from cosp_output_nl.txt
    ! Simulator flags
@@ -361,7 +369,6 @@ module cospsimulator_intr
     integer :: shcldliq_idx, shcldice_idx, shcldliq1_idx, shcldice1_idx, dpflxprc_idx
     integer :: dpflxsnw_idx, shflxprc_idx, shflxsnw_idx, lsflxprc_idx, lsflxsnw_idx
     integer:: rei_idx, rel_idx
-
 
 
 CONTAINS
@@ -553,7 +560,8 @@ subroutine cospsimulator_intr_readnl(nlfile)
     namelist /cospsimulator_nl/ docosp, cosp_active, cosp_amwg, cosp_atrainorbitdata, cosp_cfmip_3hr, cosp_cfmip_da, &
         cosp_cfmip_mon, cosp_cfmip_off, cosp_histfile_num, cosp_histfile_aux, cosp_histfile_aux_num, cosp_isccp, cosp_lfrac_out, &
         cosp_lite, cosp_lradar_sim, cosp_llidar_sim, cosp_lisccp_sim,  cosp_lmisr_sim, cosp_lmodis_sim, cosp_ncolumns, &
-        cosp_nradsteps, cosp_passive, cosp_sample_atrain, cosp_runall
+        cosp_nradsteps, cosp_passive, cosp_sample_atrain, cosp_runall, &
+        cosp_separate_convection
    !-----------------------------------------------------------------------------
 
    !! read in the namelist
@@ -598,6 +606,7 @@ subroutine cospsimulator_intr_readnl(nlfile)
    call mpibcast(cosp_histfile_aux_num,1,  mpiint, 0, mpicom)
    call mpibcast(cosp_histfile_aux,    1,  mpilog, 0, mpicom)
    call mpibcast(cosp_nradsteps,       1,  mpiint, 0, mpicom)
+   call mpibcast(cosp_separate_convection, 1, mpilog, 0, mpicom)
 #endif
 
    !! reset COSP namelist variables based on input from cam namelist variables
@@ -894,6 +903,7 @@ subroutine cospsimulator_intr_init
    real(r8),parameter :: R_UNDEF = -1.0E30_r8
 #endif
    integer ncid,latid,lonid,did,hrid,minid,secid, istat
+   integer idx, error_code
    !------------------------------------------------------------------------------
 
 #ifdef COSP_ATRAIN
@@ -1451,35 +1461,70 @@ endif
       call add_default ('DEM_S_COSP_SNOW',cosp_histfile_aux_num,' ')
    end if
 
+   ! Get indices to fields on physics buffer
+   ! TODO: why do we read these ahead of time? Is there any performance benefit?
+   ! It would be  more transparent to read these as we need them in 
+   ! cospsimulator_intr_run
    rei_idx = pbuf_get_index('REI')
    rel_idx = pbuf_get_index('REL')
    cld_idx = pbuf_get_index('CLD')
-   concld_idx = pbuf_get_index('CONCLD')
 
-   if( cam_physpkg_is('cam5') ) then
-      lsreffrain_idx = pbuf_get_index('LS_REFFRAIN')
-      lsreffsnow_idx = pbuf_get_index('LS_REFFSNOW')
-      cvreffliq_idx  = pbuf_get_index('CV_REFFLIQ')
-      cvreffice_idx  = pbuf_get_index('CV_REFFICE')
+   ! Determine whether or not we should separate stratiform and convective cloud
+   ! and precipitation condensate. This is important because when CLUBB-SILHS is
+   ! active we need to turn off the ZM deep convective scheme, which defines the
+   ! convection-specific condensate fields that were previously passed to COSP.
+   ! Because these fields will not be active on the physics buffer when ZM is
+   ! turned off, we can just check for their existence to determine whether or
+   ! not to separate out stratiform and convective condensate.
+   idx = pbuf_get_index('DP_CLDLIQ', error_code)
+   if (idx <= 0) then
+      if (cosp_separate_convection) then
+         write(iulog,*) 'Warning: resetting cosp_separate_convection = .false. ' &
+                      //'because convective fields not found.' 
+      end if
+      cosp_separate_convection = .false.
    end if
 
-   dpcldliq_idx  = pbuf_get_index('DP_CLDLIQ')
-   dpcldice_idx  = pbuf_get_index('DP_CLDICE')
-   shcldliq_idx  = pbuf_get_index('SH_CLDLIQ')
-   shcldice_idx  = pbuf_get_index('SH_CLDICE')
-   shcldliq1_idx = pbuf_get_index('SH_CLDLIQ1')
-   shcldice1_idx = pbuf_get_index('SH_CLDICE1')
-   dpflxprc_idx  = pbuf_get_index('DP_FLXPRC')
-   dpflxsnw_idx  = pbuf_get_index('DP_FLXSNW')
-   shflxprc_idx  = pbuf_get_index('SH_FLXPRC')
-   shflxsnw_idx  = pbuf_get_index('SH_FLXSNW')
+   ! index for convective cloud fraction
+   if (cosp_separate_convection) then
+      concld_idx = pbuf_get_index('CONCLD')
+   end if
+
+   ! indices for effective particle sizes
+   if(cam_physpkg_is('cam5')) then
+      lsreffrain_idx = pbuf_get_index('LS_REFFRAIN')
+      lsreffsnow_idx = pbuf_get_index('LS_REFFSNOW')
+      if (cosp_separate_convection) then
+         cvreffliq_idx  = pbuf_get_index('CV_REFFLIQ')
+         cvreffice_idx  = pbuf_get_index('CV_REFFICE')
+      end if
+   end if
+
+   ! indices for convective condensate amounts
+   if (cosp_separate_convection) then
+      dpcldliq_idx  = pbuf_get_index('DP_CLDLIQ')
+      dpcldice_idx  = pbuf_get_index('DP_CLDICE')
+      shcldliq_idx  = pbuf_get_index('SH_CLDLIQ')
+      shcldice_idx  = pbuf_get_index('SH_CLDICE')
+      shcldliq1_idx = pbuf_get_index('SH_CLDLIQ1')
+      shcldice1_idx = pbuf_get_index('SH_CLDICE1')
+   end if
+
+   ! indices for precipitation fluxes
    lsflxprc_idx  = pbuf_get_index('LS_FLXPRC')
    lsflxsnw_idx  = pbuf_get_index('LS_FLXSNW')
+   if (cosp_separate_convection) then
+      dpflxprc_idx  = pbuf_get_index('DP_FLXPRC')
+      dpflxsnw_idx  = pbuf_get_index('DP_FLXSNW')
+      shflxprc_idx  = pbuf_get_index('SH_FLXPRC')
+      shflxsnw_idx  = pbuf_get_index('SH_FLXSNW')
+   end if
 
-    allocate(first_run_cosp(begchunk:endchunk))
-    first_run_cosp(begchunk:endchunk)=.true.
-    allocate(run_cosp(1:pcols,begchunk:endchunk))
-    run_cosp(1:pcols,begchunk:endchunk)=.false.
+   allocate(first_run_cosp(begchunk:endchunk))
+   first_run_cosp(begchunk:endchunk)=.true.
+
+   allocate(run_cosp(1:pcols,begchunk:endchunk))
+   run_cosp(1:pcols,begchunk:endchunk)=.false.
 
 end subroutine cospsimulator_intr_init
 
@@ -1797,6 +1842,12 @@ subroutine cospsimulator_intr_run(state,pbuf, cam_in,emis,coszrs,cliqwp_in,cicew
    real(r8), pointer, dimension(:,:) :: ls_reffsnow    ! snow effective drop size (microns)
    real(r8), pointer, dimension(:,:) :: cv_reffliq     ! convective cld liq effective drop radius (microns)
    real(r8), pointer, dimension(:,:) :: cv_reffice     ! convective cld ice effective drop size (microns)
+
+   ! dummy pointer target to hold zeros for convective cloud and precipitation
+   ! properties when we are not separating out stratiform and convective clouds
+   ! and precip (i.e. will pass all properties through stratiform variables and
+   ! set convective fields to zero)
+   real(r8), target :: zeros_2d(pcols,pver) = 0._r8
 
    !! precip flux pointers (use for cam4 or cam5)
    ! Added pointers;  pbuff in zm_conv_intr.F90, calc in zm_conv.F90 
@@ -2241,67 +2292,95 @@ end if
     call rad_cnst_get_gas(0,'N2O', state, pbuf,  n2o)
 
 ! 4) get variables from physics buffer
+
+   ! TODO: why do we need to use pbuf_old_tim_idx here?
    itim_old = pbuf_old_tim_idx()
-
-   call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-   call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-
-   call pbuf_get_field(pbuf, rel_idx, rel  )
-
+   call pbuf_get_field(pbuf, cld_idx, cld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   call pbuf_get_field(pbuf, rel_idx, rel)
    call pbuf_get_field(pbuf, rei_idx, rei)
 
-!added some more sizes to physics buffer in stratiform.F90 for COSP inputs
-   if( cam_physpkg_is('cam5') ) then
-     call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
-     call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
-     call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
-     call pbuf_get_field(pbuf, cvreffice_idx,  cv_reffice   )
+   ! get convective cloud fraction
+   if (cosp_separate_convection) then
+      ! read from physics buffer if we are separating out stratiform and
+      ! convective cloud
+      call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+   else
+      ! if not separating out statiform and convective cloud, then point concld
+      ! to a dummy target that holds zeros. This prevents us from having to 
+      ! modify a lot more code later that assumes that concld is meaningful
+      concld => zeros_2d
    end if
 
-   ! Variables I added to physics buffer in other interfaces (not radiation.F90)
-   ! all "1" at the end ok as is because radiation/intr after when these were added to physics buffer
-
-   !!! convective cloud mixing ratios (use for cam4 and cam5)
-
-   call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
-   call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
-   if( cam_physpkg_is('cam3') .or. cam_physpkg_is('cam4') ) then
-      !!! get from pbuf in convect_shallow.F90
-      call pbuf_get_field(pbuf, shcldliq_idx, sh_cldliq  )
-      call pbuf_get_field(pbuf, shcldice_idx, sh_cldice  )
-   elseif( cam_physpkg_is('cam5') ) then
-      !!! get from pbuf in stratiform.F90
-      call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq  )
-      call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice  )
+   ! more particle sizes from stratiform.F90
+   if (cam_physpkg_is('cam5')) then
+      call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
+      call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
+      if (cosp_separate_convection) then
+         call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
+         call pbuf_get_field(pbuf, cvreffice_idx,  cv_reffice   )
+      else
+         ! if not separating out statiform and convective cloud, then point
+         ! convective effective particle sizes to a dummy target that holds 
+         ! zeros.
+         cv_reffliq => zeros_2d
+         cv_reffice => zeros_2d
+      end if
    end if
 
-   !!! precipitation fluxes (use for both cam4 and cam5 for now....)
-   call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
-   call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
-   call pbuf_get_field(pbuf, shflxprc_idx, sh_flxprc  )
-   call pbuf_get_field(pbuf, shflxsnw_idx, sh_flxsnw  )
+   ! convective cloud mixing ratios (use for cam4 and cam5)
+   if (cosp_separate_convection) then
+      call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
+      call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
+      if (cam_physpkg_is('cam3') .or. cam_physpkg_is('cam4')) then
+         ! get from pbuf in convect_shallow.F90
+         call pbuf_get_field(pbuf, shcldliq_idx, sh_cldliq)
+         call pbuf_get_field(pbuf, shcldice_idx, sh_cldice)
+      else if(cam_physpkg_is('cam5')) then
+         ! get from pbuf in stratiform.F90
+         call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq)
+         call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice)
+      end if
+   else
+      dp_cldliq => zeros_2d
+      dp_cldice => zeros_2d
+      sh_cldliq => zeros_2d
+      sh_cldice => zeros_2d
+   end if
+
+   ! precipitation fluxes (use for both cam4 and cam5 for now....)
    call pbuf_get_field(pbuf, lsflxprc_idx, ls_flxprc  )
    call pbuf_get_field(pbuf, lsflxsnw_idx, ls_flxsnw  )
+   if (cosp_separate_convection) then
+      call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
+      call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
+      call pbuf_get_field(pbuf, shflxprc_idx, sh_flxprc  )
+      call pbuf_get_field(pbuf, shflxsnw_idx, sh_flxsnw  )
+   else
+      dp_flxprc => zeros_2d
+      dp_flxsnw => zeros_2d
+      sh_flxprc => zeros_2d
+      sh_flxsnw => zeros_2d
+   end if
 
-!!! precipitation mixing ratios (NOT WORKING, LEAVE COMMENTED OUT)
-!   if ( CAM5 ) then
-        !!! large-scale total and snow mixing ratios
-        !!! exist as local fields in stratiform_tend subsroutine in stratiform.F90 (will become microp_driver_tend.F90)
-        !ifld = pbuf_get_fld_idx('LS_MRPRC')
-        !ls_mrprc  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
-        !ifld = pbuf_get_fld_idx('LS_MRSNW')
-        !ls_mrsnw  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
-        !!! shallow convective total and snow mixing ratios (NOT IN PHYSICS BUFFER)
-        !ifld = pbuf_get_fld_idx('SH_MRPRC')
-        !sh_mrprc  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
-        !ifld = pbuf_get_fld_idx('SH_MRSNW')
-        !sh_mrsnw  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
-        !!! deep convective total and snow mixing ratios (NOT IN PHYSICS BUFFER)
-        !ifld = pbuf_get_fld_idx('DP_MRPRC')
-        !dp_mrprc  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
-        !ifld = pbuf_get_fld_idx('DP_MRSNW')
-        !dp_mrsnw  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
-!   end if
+!  ! precipitation mixing ratios (NOT WORKING, LEAVE COMMENTED OUT)
+!  if ( CAM5 ) then
+!     !!! large-scale total and snow mixing ratios
+!     !!! exist as local fields in stratiform_tend subsroutine in stratiform.F90 (will become microp_driver_tend.F90)
+!     !ifld = pbuf_get_fld_idx('LS_MRPRC')
+!     !ls_mrprc  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+!     !ifld = pbuf_get_fld_idx('LS_MRSNW')
+!     !ls_mrsnw  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+!     !!! shallow convective total and snow mixing ratios (NOT IN PHYSICS BUFFER)
+!     !ifld = pbuf_get_fld_idx('SH_MRPRC')
+!     !sh_mrprc  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+!     !ifld = pbuf_get_fld_idx('SH_MRSNW')
+!     !sh_mrsnw  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+!     !!! deep convective total and snow mixing ratios (NOT IN PHYSICS BUFFER)
+!     !ifld = pbuf_get_fld_idx('DP_MRPRC')
+!     !dp_mrprc  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+!     !ifld = pbuf_get_fld_idx('DP_MRSNW')
+!     !dp_mrsnw  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+!  end if
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! CALCULATE COSP INPUT VARIABLES FROM CAM VARIABLES, done for all columns within chunk
@@ -2372,10 +2451,10 @@ end if
         if (cam_in%landfrac(i).gt.0.01_r8) landmask(i)= 1
    end do
 
-! 4) calculate necessary input cloud/precip variables
-! CAM4 note: don't take the cloud water from the hack shallow convection scheme or the deep convection.  
-! cloud water values for convection are the same as the stratiform value. (Sungsu)
-! all precip fluxes are mid points, all values are grid-box mean ("gbm") (Yuying)
+   ! 4) calculate necessary input cloud/precip variables
+   ! CAM4 note: don't take the cloud water from the hack shallow convection scheme or the deep convection.  
+   ! cloud water values for convection are the same as the stratiform value. (Sungsu)
+   ! all precip fluxes are mid points, all values are grid-box mean ("gbm") (Yuying)
 
    ! initialize local variables
    mr_ccliq(1:ncol,1:pver)=0._r8
@@ -2394,52 +2473,73 @@ end if
    ! note: reff_cosp dimensions should be same as cosp (reff_cosp has 9 hydrometeor dimension)
    ! Reff(Npoints,Nlevels,N_HYDRO)
 
-   if( cam_physpkg_is('cam3') .or. cam_physpkg_is('cam4') ) then
+   if (cam_physpkg_is('cam3') .or. cam_physpkg_is('cam4')) then
 
       ! CAM4 settings, using precipitation fluxes as COSP inputs
       use_precipitation_fluxes = .true.
 
-      ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
-      rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
-                                (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
-      snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
+      ! add together deep and shallow convection precipitation fluxes, 
+      ! recall *_flxprc variables are rain+snow
+      if (cosp_separate_convection) then
+         rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
+                                   (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
+         snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
+      else
+         rain_cv(1:ncol,1:pverp) = 0._r8
+         snow_cv(1:ncol,1:pverp) = 0._r8
+      end if
 
       ! interpolate interface precip fluxes to mid points
       ! rain_cv_interp (pver) from rain_cv (pverp), snow_cv_interp from snow_cv, 
       ! rain_ls_interp from ls_flxprc-ls_flxsnw, snow_ls_interp from ls_flxsnw
       ! interpolate, loop over columns (can also put ":" but this gives less information)
       ! use interpolate_data.F90 in atm/cam/src/control
-      do i=1,ncol
-              ! find weights (pressure weighting?)
-              call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
-              ! interpolate  lininterp1d(arrin, nin, arrout, nout, interp_wgts)
-              ! note: lininterp is an interface, contains lininterp1d -- code figures out to use lininterp1d.
-              call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
-              call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
-              call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
-              call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
-              call lininterp_finish(interp_wgts)
-              !! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
-              rain_ls_interp(i,1:pver)=rain_ls_interp(i,1:pver)-snow_ls_interp(i,1:pver)
+      do i = 1,ncol
+         ! find weights (pressure weighting?)
+         call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
+
+         ! interpolate 
+         ! note: lininterp is an interface, contains lininterp1d -- code figures out to use lininterp1d.
+         ! arguments: lininterp1d(arrin, nin, arrout, nout, interp_wgts)
+         if (cosp_separate_convection) then
+            call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
+            call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
+         end if
+         call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
+         call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
+         call lininterp_finish(interp_wgts)
+
+         !! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
+         rain_ls_interp(i,1:pver) = rain_ls_interp(i,1:pver) - snow_ls_interp(i,1:pver)
       end do
 
-      !! CAM4 mixing ratio calculations
-      do k=1,pver
-      do i=1,ncol
-           if (cld(i,k) .gt. 0._r8) then
-              !! note: cld and grid-box cloud water contents in state vector includes both the stratiform and the convective cloud fractions.
-              !! note: convective cloud fraction is used in the radiation, convective water contents are the same as the stratiform scheme.
-              mr_ccliq(i,k) = (state%q(i,k,ixcldliq)/cld(i,k))*concld(i,k)
-              mr_ccice(i,k) = (state%q(i,k,ixcldice)/cld(i,k))*concld(i,k)
-              mr_lsliq(i,k) = (state%q(i,k,ixcldliq)/cld(i,k))*(cld(i,k)-concld(i,k))   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid (kg/kg)  
-              mr_lsice(i,k) = (state%q(i,k,ixcldice)/cld(i,k))*(cld(i,k)-concld(i,k))   ! mr_lsice - mixing_ratio_large_scale_cloud_ice (kg/kg)
-           else
-              mr_ccliq(i,k) = 0._r8
-              mr_ccice(i,k) = 0._r8
-              mr_lsliq(i,k) = 0._r8
-              mr_lsice(i,k) = 0._r8
-           end if
-      end do
+      ! CAM4 mixing ratio calculations
+      do k = 1,pver
+         do i = 1,ncol
+            if (cld(i,k) .gt. 0._r8) then
+               ! TODO: do we have separate concld when using CLUBB-SILHS?
+               ! note: cld and grid-box cloud water contents in state vector 
+               ! includes both the stratiform and the convective cloud fractions.
+               ! note: convective cloud fraction is used in the radiation, 
+               ! convective water contents are the same as the stratiform scheme.
+               if (cosp_separate_convection) then
+                  mr_ccliq(i,k) = (state%q(i,k,ixcldliq)/cld(i,k))*concld(i,k)
+                  mr_ccice(i,k) = (state%q(i,k,ixcldice)/cld(i,k))*concld(i,k)
+                  mr_lsliq(i,k) = (state%q(i,k,ixcldliq)/cld(i,k))*(cld(i,k)-concld(i,k))  ! (kg/kg)  
+                  mr_lsice(i,k) = (state%q(i,k,ixcldice)/cld(i,k))*(cld(i,k)-concld(i,k))  ! (kg/kg)
+               else
+                  mr_ccliq(i,k) = 0._r8
+                  mr_ccice(i,k) = 0._r8
+                  mr_lsliq(i,k) = state%q(i,k,ixcldliq)  ! (kg/kg)  
+                  mr_lsice(i,k) = state%q(i,k,ixcldice)  ! (kg/kg)
+               end if
+            else
+               mr_ccliq(i,k) = 0._r8
+               mr_ccice(i,k) = 0._r8
+               mr_lsliq(i,k) = 0._r8
+               mr_lsice(i,k) = 0._r8
+            end if
+         end do
       end do
  
       !!! Previously, I had set use_reff=.false.
@@ -2455,6 +2555,7 @@ end if
       !!! large-scale cloud sizes just to have the same reasonablish values entering both the radar and lidar simulator.
 
       !!! All of the values that I have assembled in the code are in microns... convert to meters here since that is what COSP wants.
+      ! TODO: do not use magic numbers here; use COSP index names
       use_reff = .true.
       reff_cosp(1:ncol,1:pver,1) = rel(1:ncol,1:pver)*1.e-6_r8  !! LSCLIQ
       reff_cosp(1:ncol,1:pver,2) = rei(1:ncol,1:pver)*1.e-6_r8  !! LSCICE
@@ -2486,44 +2587,61 @@ end if
    if( cam_physpkg_is('cam5') ) then
       use_precipitation_fluxes = .true.      !!! consistent with cam4 implementation.
 
-      ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
-      rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
-                                (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
-      snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
+      ! add together deep and shallow convection precipitation fluxes, 
+      ! recall *_flxprc variables are rain+snow
+      if (cosp_separate_convection) then
+         rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
+                                   (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
+         snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
+      else
+         rain_cv(1:ncol,1:pverp) = 0._r8
+         snow_cv(1:ncol,1:pverp) = 0._r8
+      end if
 
       ! interpolate interface precip fluxes to mid points
       do i=1,ncol
-              ! find weights (pressure weighting?)
-              call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
-              ! interpolate  lininterp1d(arrin, nin, arrout, nout, interp_wgts)
-              ! note: lininterp is an interface, contains lininterp1d -- code figures out to use lininterp1d.
-              call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
-              call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
-              call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
-              call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
-              call lininterp_finish(interp_wgts)
-              !! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
-              rain_ls_interp(i,1:pver)=rain_ls_interp(i,1:pver)-snow_ls_interp(i,1:pver)
+         ! find weights (pressure weighting?)
+         call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
+
+         ! interpolate 
+         ! note: lininterp is an interface, contains lininterp1d -- code figures out to use lininterp1d.
+         ! arguments: lininterp1d(arrin, nin, arrout, nout, interp_wgts)
+         call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
+         call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
+         call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
+         call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
+         call lininterp_finish(interp_wgts)
+
+         ! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
+         rain_ls_interp(i,1:pver)=rain_ls_interp(i,1:pver)-snow_ls_interp(i,1:pver)
       end do
 
-      !! CAM5 cloud mixing ratio calculations
-      !! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
-      !! Convective cloud water is NOT part of radiation calculations.
+      ! CAM5 cloud mixing ratio calculations
+      ! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
+      ! Convective cloud water is NOT part of radiation calculations.
       do k=1,pver
-      do i=1,ncol
-           if (cld(i,k) .gt. 0._r8) then
-              !! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
-              mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
-              mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
-              mr_lsliq(i,k)=state%q(i,k,ixcldliq)   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid, state only includes stratiform (kg/kg)  
-              mr_lsice(i,k)=state%q(i,k,ixcldice)   ! mr_lsice - mixing_ratio_large_scale_cloud_ice, state only includes stratiform (kg/kg)
-           else
-              mr_ccliq(i,k) = 0._r8
-              mr_ccice(i,k) = 0._r8
-              mr_lsliq(i,k) = 0._r8
-              mr_lsice(i,k) = 0._r8
-           end if
-      end do
+         do i=1,ncol
+            if (cld(i,k) .gt. 0._r8) then
+               ! Note that state fields only include stratiform mixing ratios (kg/kg)  
+               mr_lsliq(i,k)=state%q(i,k,ixcldliq)
+               mr_lsice(i,k)=state%q(i,k,ixcldice)
+
+               ! note: convective mixing ratio is the sum of shallow and deep 
+               ! convective clouds in CAM5
+               if (cosp_separate_convection) then
+                  mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
+                  mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
+               else
+                  mr_ccliq(i,k) = 0._r8
+                  mr_ccice(i,k) = 0._r8
+               end if
+            else
+               mr_lsliq(i,k) = 0._r8
+               mr_lsice(i,k) = 0._r8
+               mr_ccliq(i,k) = 0._r8
+               mr_ccice(i,k) = 0._r8
+            end if
+         end do
       end do
 
       !! Previously, I had set use_reff=.false.
@@ -2536,8 +2654,13 @@ end if
       reff_cosp(1:ncol,1:pver,2) = rei(1:ncol,1:pver)*1.e-6_r8          !! LSCICE  (same as effi and effice in stratiform.F90)
       reff_cosp(1:ncol,1:pver,3) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! LSRAIN  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
       reff_cosp(1:ncol,1:pver,4) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! LSSNOW  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-      reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
-      reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
+      if (cosp_separate_convection) then
+         reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
+         reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
+      else
+         reff_cosp(1:ncol,1:pver,5) = 0._r8
+         reff_cosp(1:ncol,1:pver,6) = 0._r8
+      end if
       reff_cosp(1:ncol,1:pver,7) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! CVRAIN (same as stratiform per Andrew)
       reff_cosp(1:ncol,1:pver,8) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! CVSNOW (same as stratiform per Andrew)
       reff_cosp(1:ncol,1:pver,9) = 0._r8                                !! LSGRPL (using radar default reff)
@@ -2601,20 +2724,20 @@ end if
    !! ----- WARNING: COSP_CHECK_INPUT_2D: minimum value of rain_ls set to:      0.000000000000000 
    !! So I set negative values to zero here...
    do k=1,pver
-   do i=1,ncol
-           if (rain_ls_interp(i,k) .lt. 0._r8) then
-                rain_ls_interp(i,k)=0._r8
-           end if
-           if (snow_ls_interp(i,k) .lt. 0._r8) then
-                snow_ls_interp(i,k)=0._r8
-           end if
-           if (rain_cv_interp(i,k) .lt. 0._r8) then
-                rain_cv_interp(i,k)=0._r8
-           end if
-           if (snow_cv_interp(i,k) .lt. 0._r8) then
-                snow_cv_interp(i,k)=0._r8
-           end if
-   end do
+      do i=1,ncol
+         if (rain_ls_interp(i,k) .lt. 0._r8) then
+            rain_ls_interp(i,k)=0._r8
+         end if
+         if (snow_ls_interp(i,k) .lt. 0._r8) then
+            snow_ls_interp(i,k)=0._r8
+         end if
+         if (rain_cv_interp(i,k) .lt. 0._r8) then
+            rain_cv_interp(i,k)=0._r8
+         end if
+         if (snow_cv_interp(i,k) .lt. 0._r8) then
+            snow_cv_interp(i,k)=0._r8
+         end if
+      end do
    end do
 
 ! 5) assign optical depths and emissivities needed for isccp simulator
