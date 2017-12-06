@@ -2104,6 +2104,19 @@ This default logical is set in cospsimulator_intr.F90
 Default: FALSE
 </entry>
 
+<entry id="cosp_separate_convection" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+Whether or not to distinguish between convective and stratiform clouds when
+generating subcolumns for COSP. If false, all cloud properties are passed as
+stratiform. If true, stratiform and convective cloud properties are passed
+separately, and SCOPS will maximally overlap convective cloud and apply
+maximum-random overlap to the stratiform cloud. We set the default to true to
+preserve backwards compatibility, and if convective cloud properties are not
+found then the code will set this to false and throw a warning.
+Default: TRUE 
+</entry>
+
+
 <!-- Cloud Macro/Micro-physics -->
 
 <entry id="cld_macmic_num_steps" type="integer" category="conv"
