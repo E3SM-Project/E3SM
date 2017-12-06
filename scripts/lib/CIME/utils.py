@@ -74,7 +74,12 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type(error_prefix + " " + error_msg)
+        try:
+            msg = str(error_prefix + " " + error_msg)
+        except UnicodeEncodeError:
+            msg = (error_prefix + " " + error_msg).encode('utf-8')
+        raise exc_type(msg)
+
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -1415,7 +1420,10 @@ def stringify_bool(val):
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
 
-def run_and_log_case_status(func, phase, caseroot='.'):
+def verbatim_success_msg(return_val):
+    return return_val
+
+def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
     try:
@@ -1425,7 +1433,8 @@ def run_and_log_case_status(func, phase, caseroot='.'):
         append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
-        append_case_status(phase, "success", caseroot=caseroot)
+        custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
+        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 

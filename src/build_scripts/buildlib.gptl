@@ -51,7 +51,7 @@ def buildlib(bldroot, installpath, caseroot):
                     gptl_dir, bldroot, installpath)
         build_threaded = case.get_value("SMP") or case.get_value("BUILD_THREADED")
         if build_threaded:
-            gmake_opts += " GPTL_CPPDEFS=-DTHREADED_OMP"
+            gmake_opts += " compile_threaded=true "
 
         gmake_cmd = case.get_value("GMAKE")
 
