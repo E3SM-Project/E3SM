@@ -3546,20 +3546,20 @@
     </values>
   </entry>
 
-  <entry id="glc2ocn_rmapname"    modify_via_xml="GLC2OCN_RMAPNAME">
+  <entry id="glc2ocn_liq_rmapname"    modify_via_xml="GLC2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      glc to ocn runoff conservative mapping file
+      glc to ocn runoff conservative mapping file for liquid runoff
     </desc>
     <values>
-      <value>$GLC2OCN_RMAPNAME</value>
+      <value>$GLC2OCN_LIQ_RMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="glc2ocn_rmaptype"    modify_via_xml="GLC2OCN_RMAPTYPE">
+  <entry id="glc2ocn_liq_rmaptype"    modify_via_xml="GLC2OCN_LIQ_RMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -3571,7 +3571,37 @@
       grid.
     </desc>
     <values>
-      <value>$GLC2OCN_RMAPTYPE</value>
+      <value>$GLC2OCN_LIQ_RMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_ice_rmapname"    modify_via_xml="GLC2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn runoff conservative mapping file for ice runoff
+    </desc>
+    <values>
+      <value>$GLC2OCN_ICE_RMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_ice_rmaptype"    modify_via_xml="GLC2OCN_ICE_RMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_ICE_RMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>

@@ -201,7 +201,8 @@ def write_seq_maps_file(case, nmlgen, confdir):
     # The following is only approriate for config_grids.xml version 2.0 or later
     grid_version = Grids().get_version()
     if grid_version >= 2.0:
-        ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname", "glc2ocn_rmapname"]
+        ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname",
+                         "glc2ocn_liq_rmapname", "glc2ocn_ice_rmapname"]
         group_variables = nmlgen.get_group_variables("seq_maps")
         for name in group_variables:
             value = group_variables[name]
