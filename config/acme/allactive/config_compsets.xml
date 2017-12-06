@@ -39,15 +39,22 @@
 
   </help>
 
+<!-- ACME CMIP6 COMPSETS science compsets -->
+
+<compset>
+  <alias>A_WCYCL1850S_CMIP6</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- ACME v1 science compsets -->
 
 <compset>
-  <alias>A_WCYCL2000</alias >
+  <alias>A_WCYCL2000</alias>
   <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
-  <alias>A_WCYCL2000S</alias >
+  <alias>A_WCYCL2000S</alias>
   <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>
 
