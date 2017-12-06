@@ -5,8 +5,8 @@ buildnmlc
 # Ignore emacs backup files
 *~
 
-# Ignore doc/build/doctrees
-##doc/build/doctrees 
 # ignore for the merge to master and orphaning of the gh-pages branch
 doc/build
 
+# ignore the JENKINS files created when make html is run
+scripts/Tools/JENKINS*

@@ -2138,7 +2138,8 @@
     <!-- MPASO / MPASLI -->
 
     <gridmap glc_grid="mpas.gis20km" ocn_grid="mpas120">
-      <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_mpas120_nnsmooth_150924.nc</GLC2OCN_RMAPNAME>
+      <GLC2OCN_LIQ_RMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_mpas120_nnsmooth_150924.nc</GLC2OCN_LIQ_RMAPNAME>
+      <GLC2OCN_ICE_RMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_mpas120_nnsmooth_150924.nc</GLC2OCN_ICE_RMAPNAME>
     </gridmap>
 
     <gridmap ocn_grid="oEC60to30" glc_grid="mpas.ais20km">
@@ -2254,7 +2255,8 @@
       <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_aave.151209.nc</GLC2OCN_FMAPNAME>
       <OCN2GLC_FMAPNAME>cpl/gridmaps/oQU240/map_oQU240_to_ais20km_aave.151209.nc</OCN2GLC_FMAPNAME>
       <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</GLC2OCN_SMAPNAME>
-      <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</GLC2OCN_RMAPNAME>
+      <GLC2OCN_LIQ_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</GLC2OCN_LIQ_RMAPNAME>
+      <GLC2OCN_ICE_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</GLC2OCN_ICE_RMAPNAME>
       <OCN2GLC_SMAPNAME>cpl/gridmaps/oQU240/map_oQU240_to_ais20km_nearestdtos.151209.nc</OCN2GLC_SMAPNAME>
     </gridmap>
 
@@ -2262,7 +2264,8 @@
       <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_aave.160331.nc</GLC2OCN_FMAPNAME>
       <OCN2GLC_FMAPNAME>cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</OCN2GLC_FMAPNAME>
       <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</GLC2OCN_SMAPNAME>
-      <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</GLC2OCN_RMAPNAME>
+      <GLC2OCN_LIQ_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</GLC2OCN_LIQ_RMAPNAME>
+      <GLC2OCN_ICE_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</GLC2OCN_ICE_RMAPNAME>
       <OCN2GLC_SMAPNAME>cpl/gridmaps/oQU120/map_oQU120_to_ais20km_nearestdtos.160331.nc</OCN2GLC_SMAPNAME>
     </gridmap>
 
