@@ -590,6 +590,7 @@
       <value compset="^2000.+AV1C-L"				>368.865</value>
       <value compset="^2000.+AV1C-H01A"				>368.865</value>
       <value compset="^2000.+AV1C-H01B"				>368.865</value>
+      <value compset="^1850.+CMIP6"                             >284.317</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
@@ -792,6 +793,7 @@
     <desc compset="1850_">pre-industrial:</desc>
     <desc compset="2000_">present day:</desc>
     <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
+    <desc compset="20TR_">Historical 1850 to 2000 transient:</desc>
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
     <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
     <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
@@ -812,6 +814,7 @@
     <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
     <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
     <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="20TR_CLM4[05]%CN">CLM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
       -----------------------------WARNING ------------------------------------------------
