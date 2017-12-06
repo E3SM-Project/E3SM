@@ -153,6 +153,7 @@ module pdf_closure_module
       sclrprtp,    & ! sclr' r_t'                 [units vary]
       sclrpthlp      ! sclr' th_l'                [units vary]
 
+
 #ifdef  GFDL
     ! critial relative humidity for nucleation
     real( kind = core_rknd ), dimension( min(1,sclr_dim), 2 ), intent(in) ::  & ! h1g, 2010-06-15
@@ -315,6 +316,27 @@ module pdf_closure_module
                                             t2_combined = 268.16, &
                                             t3_combined = 238.16 
 #endif
+
+      !dir$ assume_aligned sclrprtp:64
+      !dir$ assume_aligned sclrprcp:64
+      !dir$ assume_aligned sclrm:64
+      !dir$ assume_aligned sclrpthvp:64
+      !dir$ assume_aligned sclrpthlp:64
+!dir$ assume_aligned alpha_sclr:64
+!dir$ assume_aligned rsclrrt:64
+!dir$ assume_aligned rsclrthl:64
+!dir$ assume_aligned sclr1:64
+!dir$ assume_aligned sclr2:64
+!dir$ assume_aligned sclr_tol:64
+!dir$ assume_aligned sclrp2:64
+!dir$ assume_aligned varnce_sclr1:64
+!dir$ assume_aligned varnce_sclr2:64
+!dir$ assume_aligned wp2sclrp:64
+!dir$ assume_aligned wpsclrp:64
+!dir$ assume_aligned wpsclrp2:64
+!dir$ assume_aligned wpsclrprtp:64
+!dir$ assume_aligned wpsclrpthlp:64
+
 
 !------------------------ Code Begins ----------------------------------
 
@@ -511,6 +533,7 @@ module pdf_closure_module
             sclr2(i) = sclrm(i)  & 
                      - ( wpsclrp(i) / sqrt_wp2 ) / w_1_n
 
+            !dir$ assume_aligned alpha_sclr:64
             alpha_sclr(i) = one_half * ( one - wpsclrp(i)*wpsclrp(i) & 
                     / ((one-sigma_sqd_w)*wp2*sclrp2(i)) )
 
@@ -560,6 +583,7 @@ module pdf_closure_module
               rsclrthl(i) = one
             end if
           else
+            !dir$ assume_aligned rsclrthl:64
             rsclrthl(i) = 0.0_core_rknd
           end if
 
@@ -578,6 +602,7 @@ module pdf_closure_module
               rsclrrt(i) = one
             end if
           else
+            !dir$ assume_aligned rsclrrt:64
             rsclrrt(i) = 0.0_core_rknd
           end if
         end do ! i=1, sclr_dim
@@ -692,8 +717,14 @@ module pdf_closure_module
 #endif
 
     ! SD's beta (eqn. 8)
-    beta1 = ep * ( Lv/(Rd*tl1) ) * ( Lv/(Cp*tl1) )
-    beta2 = ep * ( Lv/(Rd*tl2) ) * ( Lv/(Cp*tl2) )
+    ! beta_coeff = ep * (Lv/Rd)  * (Lv / Cp)
+    ! beta_coeff is constant
+    ! beta1 = beta_coeff / tl1**2
+    ! beta2 = beta_coeff / tl2**2
+    beta1 = ep * Lv**2 / (tl1**2 * Rd * Cp )
+    beta2 = ep * Lv**2 / (tl2**2 * Rd * Cp )
+    !beta1 = ep * ( Lv/(Rd*tl1) ) * ( Lv/(Cp*tl1) )
+    !beta2 = ep * ( Lv/(Rd*tl2) ) * ( Lv/(Cp*tl2) )
 
     ! s from Lewellen and Yoh 1993 (LY) eqn. 1
     chi_1 = ( rt_1 - rsatl_1 ) / ( one + beta1 * rsatl_1 )

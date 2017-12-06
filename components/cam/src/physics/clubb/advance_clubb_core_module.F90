@@ -100,6 +100,11 @@ module advance_clubb_core_module
     !-----------------------------------------------------------------------
 
     ! Modules to be included
+#ifdef PROFILE_VTUNE
+    use ITT_SDE_FORTRAN
+    use OMP_LIB
+#endif
+
 
     use constants_clubb, only: & 
       em_min, & 
@@ -801,7 +806,16 @@ module advance_clubb_core_module
        tmp_sclrprcp, &
        tmp_wp2sclrp_zm
 
+#ifdef MATHIAS_OPT
+  real( kind = core_rknd ), dimension(gr%nz) :: vec_Skw_zm
+  !dir$ attributes align: 64:: vec_Skw_zm
+#endif
+
     !----- Begin Code -----
+#ifdef PROFILE_VTUNE
+    call start_collection()
+
+#endif
 
     ! Determine the maximum allowable value for Lscale (in meters).
     call set_Lscale_max( l_implemented, host_dx, host_dy, & ! intent(in)
@@ -932,17 +946,37 @@ module advance_clubb_core_module
     ! and then compute Skw for m & t grid
     !---------------------------------------------------------------------------
 
+#ifdef MATHIAS_OPT
+!dir$ assume_aligned Skw_zt(1):64
+!dir$ assume_aligned Skw_zm(1):64
+!dir$ assume_aligned wp2_zt(1):64
+!dir$ assume_aligned wp2(1):64
+!dir$ assume_aligned wp3(1):64
+!dir$ assume_aligned wp3_zm(1):64
+!dir$ assume_aligned gamma_Skw_fnc(1):64
+    vec_Skw_zm = Skw_zm;
+#endif
+
     wp2_zt = max( zm2zt( wp2 ), w_tol_sqd ) ! Positive definite quantity
     wp3_zm = zt2zm( wp3 )
 
     Skw_zt(1:gr%nz) = Skw_func( wp2_zt(1:gr%nz), wp3(1:gr%nz) )
+#ifdef MATHIAS_OPT
+    vec_Skw_zm(1:gr%nz) = Skw_func( wp2(1:gr%nz), wp3_zm(1:gr%nz) )
+#else
     Skw_zm(1:gr%nz) = Skw_func( wp2(1:gr%nz), wp3_zm(1:gr%nz) )
+#endif
 
     if ( l_stats_samp ) then
       call stat_update_var( iSkw_zt, Skw_zt, & ! In
                             stats_zt ) ! In/Out
+#ifdef MATHIAS_OPT
+      call stat_update_var( iSkw_zm, vec_Skw_zm, &
+                            stats_zm ) ! In/Out
+#else
       call stat_update_var( iSkw_zm, Skw_zm, &
                             stats_zm ) ! In/Out
+#endif
     end if
 
     ! The right hand side of this conjunction is only for reducing cpu time,
@@ -951,10 +985,16 @@ module advance_clubb_core_module
       !----------------------------------------------------------------
       ! Compute gamma as a function of Skw  - 14 April 06 dschanen
       !----------------------------------------------------------------
-
+#ifdef MATHIAS_OPT
+!This needs to be validated as it violates the fp-model source
+ !DIR$ SIMD
+      gamma_Skw_fnc = gamma_coefb + (gamma_coef-gamma_coefb) &
+            *exp( -(1.0_core_rknd/2.0_core_rknd) * (vec_Skw_zm/gamma_coefc)**2 )
+      Skw_zm(1:gr%nz) = vec_Skw_zm(1:gr%nz);
+#else
       gamma_Skw_fnc = gamma_coefb + (gamma_coef-gamma_coefb) &
             *exp( -(1.0_core_rknd/2.0_core_rknd) * (Skw_zm/gamma_coefc)**2 )
-
+#endif
     else
 
       gamma_Skw_fnc = gamma_coef
@@ -1196,7 +1236,11 @@ module advance_clubb_core_module
       ! Clip pressure if the extrapolation leads to a negative value of pressure
       p_in_Pa_zm(gr%nz) = max( p_in_Pa_zm(gr%nz), 0.5_core_rknd*p_in_Pa(gr%nz) )
       ! Set exner at momentum levels, exner_zm, based on p_in_Pa_zm.
+#if MATHIAS_OPT
+      call vdPowx(size(exner_zm),p_in_Pa_zm(:)/p0,kappa,exner_zm(:))
+#else
       exner_zm(:) = (p_in_Pa_zm(:)/p0)**kappa
+#endif
 
       rtm_zm = zt2zm( rtm )
       ! Clip if extrapolation at the top level causes rtm_zm to be < rt_tol
@@ -2031,7 +2075,7 @@ module advance_clubb_core_module
         thlm(:) = edsclrm(:,edsclr_dim-1)
 	rtm(:) = edsclrm(:,edsclr_dim)
       endif	
-      
+     
       do ixind=1,edsclr_dim
         call fill_holes_vertical(2,0.0_core_rknd,"zt",rho_ds_zt,rho_ds_zm,edsclrm(:,ixind))
       enddo  				  
@@ -2192,6 +2236,9 @@ module advance_clubb_core_module
                                  stats_sfc )                               ! intent(inout)
       end if
 
+#ifdef PROFILE_VTUNE
+    call stop_collection()
+#endif
       return
     end subroutine advance_clubb_core
 

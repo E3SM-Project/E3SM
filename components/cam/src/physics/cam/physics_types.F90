@@ -89,12 +89,28 @@ module physics_types
      real(r8), dimension(:,:,:),allocatable      :: &
           q         ! constituent mixing ratio (kg/kg moist or dry air depending on type)
 
+#ifdef MATHIAS_OPT
      real(r8), dimension(:,:),allocatable        :: &
           pint,    &! interface pressure (Pa)
           pintdry, &! interface pressure dry (Pa) 
           lnpint,  &! ln(pint)
           lnpintdry,&! log interface pressure dry (Pa) 
           zi        ! geopotential height above surface at interfaces (m)
+
+
+          !dir$ attributes align: 64:: zi
+          !dir$ attributes align:64 :: pint
+          !dir$ attributes align:64 :: pintdry
+          !dir$ attributes align:64 :: lnpint
+          !dir$ attributes align:64 :: lnpintdry
+#else
+     real(r8), dimension(:,:),allocatable        :: &
+          pint,    &! interface pressure (Pa)
+          pintdry, &! interface pressure dry (Pa) 
+          lnpint,  &! ln(pint)
+          lnpintdry,&! log interface pressure dry (Pa) 
+          zi        ! geopotential height above surface at interfaces (m)
+#endif
 
      real(r8), dimension(:),allocatable          :: &
           te_ini,  &! vertically integrated total (kinetic + static) energy of initial state
@@ -142,12 +158,27 @@ module physics_types
           top_level,        &! top level index for which nonzero tendencies have been set
           bot_level          ! bottom level index for which nonzero tendencies have been set
 
+#ifdef MATHIAS_OPT
      real(r8), dimension(:,:),allocatable   :: &
           s,                &! heating rate (J/kg/s)
           u,                &! u momentum tendency (m/s/s)
           v                  ! v momentum tendency (m/s/s)
+          !dir$ attributes align:64 :: s
+          !dir$ attributes align:64 :: u
+          !dir$ attributes align:64 :: v
+
      real(r8), dimension(:,:,:),allocatable :: &
           q                  ! consituent tendencies (kg/kg/s)
+          !dir$ attributes align:64 :: q
+#else
+     real(r8), dimension(:,:),allocatable   :: &
+          s,                &! heating rate (J/kg/s)
+          u,                &! u momentum tendency (m/s/s)
+          v                  ! v momentum tendency (m/s/s)
+
+     real(r8), dimension(:,:,:),allocatable :: &
+          q                  ! consituent tendencies (kg/kg/s)
+#endif
 
 ! boundary fluxes
      real(r8), dimension(:),allocatable     ::&

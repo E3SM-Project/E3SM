@@ -71,6 +71,8 @@ module variables_prognostic_module
 #endif
 ! <--- h1g, 2010-06-16
 
+
+
 !$omp   threadprivate(um, vm, upwp, vpwp, up2, vp2)
 !$omp   threadprivate(thlm, rtm, wprtp, wpthlp, wprcp)
 !$omp   threadprivate(wp2, wp3, rtp2, thlp2, rtpthlp)

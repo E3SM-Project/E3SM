@@ -13,6 +13,9 @@ module sigma_sqd_w_module
 !---------------------------------------------------------------------------------------------------
   elemental function compute_sigma_sqd_w( gamma_Skw_fnc, wp2, thlp2, rtp2, wpthlp, wprtp ) &
     result( sigma_sqd_w )
+#ifdef MATHIAS_OPT
+!DIR$ ATTRIBUTES VECTOR  :: compute_sigma_sqd_w
+#endif
 ! Description:
 !   Compute the variable sigma_sqd_w (PDF width parameter)
 !

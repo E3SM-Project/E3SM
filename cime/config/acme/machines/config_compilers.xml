@@ -622,10 +622,19 @@ for mct, etc.
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <ADD_FFLAGS  > -g -dynamic </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT  > -g -dynamic </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS > -g -dynamic </ADD_LDFLAGS>
+  <ADD_CFLAGS  > -g -dynamic </ADD_CFLAGS>
+  <ADD_LDFLAGS > -g -Wl,-upthread_create -Wl,-upthread_key_create -Wl,-upthread_setspecific -Wl,-upthread_getspecific -Wl,-upthread_self -Wl,-upthread_getattr_np -Wl,-upthread_attr_destroy -Wl,-upthread_attr_setstack -Wl,-upthread_attr_getstack -Wl,-upthread_attr_getstacksize -Wl,-upthread_attr_setstacksize -Wl,-u_pthread_cleanup_push -Wl,-u_pthread_cleanup_pop -Wl,-u_pthread_cleanup_push -Wl,-u_pthread_cleanup_pop -Wl,-usetenv -Wl,-ugetenv -Wl,-u__errno_location -Wl,-urecv -Wl,-upoll -Wl,-usleep -Wl,-uusleep -Wl,-unanosleep -Wl,-udlopen -Wl,-udlsym -Wl,-udlclose -Wl,-upthread_spin_trylock </ADD_LDFLAGS>
+  <ADD_FFLAGS  >       -I/global/project/projectdirs/acme/mjac/api_itt/</ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT  > -I/global/project/projectdirs/acme/mjac/api_itt/</ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS  >      -I/global/project/projectdirs/acme/mjac/api_itt/ -litt -L/opt/intel/vtune_amplifier_xe_2017.2.0.499904/lib64/ -littnotify</ADD_LDFLAGS>
+  <ADD_CFLAGS  >       -L/global/project/projectdirs/acme/mjac/api_itt/ -litt -L/opt/intel/vtune_amplifier_xe_2017.2.0.499904/lib64/ -littnotify</ADD_CFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
-  <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DMATHIAS_OPT -DPROFILE_VTUNE -DARCH_MIC_KNL </ADD_CPPDEFS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>

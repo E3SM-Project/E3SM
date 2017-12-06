@@ -14,6 +14,9 @@ module Skw_module
 !-------------------------------------------------------------------------------
   elemental function Skw_func( wp2, wp3 )  &
     result( Skw )
+#ifdef MATHIAS_OPT
+!DIR$ ATTRIBUTES VECTOR  :: Skw_func
+#endif
 
 ! Description:
 !   Calculate the skewness of w, Skw.
