@@ -43,5 +43,5 @@ Python Module Indices and Search
 
 
 CIME is developed by the 
-`ACME <https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy>`_ and 
+`E3SM <https://climatemodeling.science.energy.gov/projects/energy-exascale-earth-system-model>`_ and 
 `CESM <http://www.cesm.ucar.edu/>`_ projects.

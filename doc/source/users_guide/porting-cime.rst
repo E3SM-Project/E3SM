@@ -28,7 +28,7 @@ Steps for porting
 Porting CIME involves several steps in which you create, at a minimum, a **config_machines.xml** file in your **$HOME/.cime** directory.
 In addition, if you have a batch system, you will also need to add a **config_batch.xml** file to your **$HOME/.cime** directory.
 
-All files in **$HOME/.cime/** are appended to the xml objects that are read into memory from the **$CIME/config/[model]**, where **[model]** is either ``acme`` or ``cesm``.
+All files in **$HOME/.cime/** are appended to the xml objects that are read into memory from the **$CIME/config/[model]**, where **[model]** is either ``e3sm`` or ``cesm``.
 
 Follow these steps:
 
@@ -45,7 +45,7 @@ Follow these steps:
    ::
 
       [main]
-      CIME_MODEL=acme
+      CIME_MODEL=e3sm
 
 #. Create a **config_machines.xml** file in the same directory.
 
@@ -69,13 +69,13 @@ Follow these steps:
 
 #. If you have compiler settings that are specific to your machine, create a **$HOME/.cime/config_compilers.xml** file.
 
-   The default compiler settings are set in **$CIME/config/[model]/machines/config_compilers.xml**, where **[model]** can be either ``acme`` or ``cesm``.
+   The default compiler settings are set in **$CIME/config/[model]/machines/config_compilers.xml**, where **[model]** can be either ``e3sm`` or ``cesm``.
 
    There is no template for **config_compilers.xml**.
 
 #.  If you have a batch system, create a **$HOME/.cime/config_batch.xml** file.
 
-   Out-of-the-box batch settings are set in **$CIME/config/[model]/machines/config_batch.xml**, where **[model]** can be either ``acme`` or ``cesm``.
+   Out-of-the-box batch settings are set in **$CIME/config/[model]/machines/config_batch.xml**, where **[model]** can be either ``e3sm`` or ``cesm``.
 
 #. Once you have defined a basic configuration for your machine in your **$HOME/.cime** xml files, run **scripts_regression_test.py** interactively from the **$CIME/scripts/tests** directory.
    This performs a number of basic unit tests starting from the simplest and working toward more complicated ones.
@@ -103,7 +103,7 @@ Each ``<machine>`` tag requires the following input:
 - ``COMPILERS``: compilers supported on the machine, in comma-separated list, default first
 - ``MPILIBS``: mpilibs supported on the machine, in comma-separated list, default first
 - ``PROJECT``: a project or account number used for batch jobs; can be overridden in environment or in **$HOME/.cime/config**
-- ``SAVE_TIMING_DIR``: (ACME only) target directory for writing timing output
+- ``SAVE_TIMING_DIR``: (E3SM only) target directory for writing timing output
 - ``CIME_OUTPUT_ROOT``: Base directory for case output; the **bld** and **run** directories are written below here
 - ``DIN_LOC_ROOT``: location of the input data directory
 - ``DIN_LOC_ROOT_CLMFORC``: optional input location for clm forcing data
@@ -113,7 +113,7 @@ Each ``<machine>`` tag requires the following input:
 - ``CCSM_CPRNC``: location of the cprnc tool, which compares model output in testing
 - ``GMAKE``: gnu-compatible make tool; default is "gmake"
 - ``GMAKE_J``: optional number of threads to pass to the gmake flag
-- ``TESTS``: (ACME only) list of tests to run on the machine
+- ``TESTS``: (E3SM only) list of tests to run on the machine
 - ``BATCH_SYSTEM``: batch system used on this machine (none is okay)
 - ``SUPPORTED_BY``: contact information for support for this system
 - ``MAX_TASKS_PER_NODE``: maximum number of threads/tasks per shared memory node on the machine
@@ -151,7 +151,7 @@ Each ``<machine>`` tag requires the following input:
 config_compilers.xml - compiler paths and options
 =================================================
 
-The **config_compilers.xml** file defines compiler flags for building CIME (and also CESM and ACME prognostic CIME-driven components).
+The **config_compilers.xml** file defines compiler flags for building CIME (and also CESM and E3SM prognostic CIME-driven components).
 
 #. General compiler flags (e.g., for the gnu compiler) that are machine- and componen-independent are listed first.
 
