@@ -1535,6 +1535,7 @@
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
+      <env name="MPAS_TOOL_DIR">/projects/$ENV{PROJECT}/acme/tools/mpas</env>
       <env name="SMP_VARS"></env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
