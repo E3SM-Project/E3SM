@@ -1457,3 +1457,20 @@ class Case(object):
                                  project=project, cime_output_root=cime_output_root,
                                  exeroot=exeroot, rundir=rundir,
                                  user_mods_dir=user_mods_dir)
+
+    def is_save_timing_dir_project(self,project):
+        """
+        Check whether the project is permitted to archive performance data in the location 
+        specified for the current machine
+        """
+        save_timing_dir_projects = self.get_value("SAVE_TIMING_DIR_PROJECTS")
+        if not save_timing_dir_projects:
+            return False
+        else:
+            save_timing_dir_projects = save_timing_dir_projects.split(",")
+            for save_timing_dir_project in save_timing_dir_projects:
+                regex = re.compile(save_timing_dir_project)
+                if regex.match(project):
+                    return True
+
+            return False
