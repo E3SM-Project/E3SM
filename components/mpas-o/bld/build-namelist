@@ -1493,13 +1493,28 @@ for my $var ($nl->get_variable_names('derived')) {
   $nl->set_variable_value($broken[1], $broken[0], $val);
 }
 
-# Write out all groups  to mpas-o_in
+# Write out all groups to mpas-o_in
 my $outfile = "./mpas-o_in";
 $nl->write($outfile, 'groups'=>\@groups);
 if ($print>=2) { print "Writing mpas-o ocean component namelist to $outfile $eol"; }
 
+#--------------------------------------------------------------------
+# Append namelist specified files to input data file
+#     currently just the graph file -- which is complicated because the prefix
+#     is set in the namelist and the suffix comes from the number of tasks
+#--------------------------------------------------------------------
+
+open(my $input_list, ">>", "$CASEBUILD/mpas-o.input_data_list") or
+     die "** can't open filepath file: mpas-o.input_data_list\n";
+my $block_decomp_file_prefix = $nl->get_value( 'config_block_decomp_file_prefix' );
+# remove quotes for concatenation
+$block_decomp_file_prefix =~ s/['"]//g;
+my $block_decomp_file = $block_decomp_file_prefix . $NTASKS_OCN;
+print $input_list "graph$NTASKS_OCN = $block_decomp_file\n";
+$input_list->close;
+
 # Write input dataset list.
-check_input_files($DIN_LOC_ROOT, "../mpas-o.input_data_list");
+check_input_files($DIN_LOC_ROOT, "$CASEBUILD/mpas-o.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT

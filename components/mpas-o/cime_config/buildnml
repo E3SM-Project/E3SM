@@ -159,7 +159,7 @@ if ($OCN_FORCING eq 'core_forced') {
 }
 
 #--------------------------------------------------------------------
-# Generate input data file
+# Generate input data file with stream-specified files
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
@@ -171,8 +171,6 @@ if ($analysis_mask_file ne '') {
 if ( $OCN_FORCING eq 'core_forced_restoring' ) {
 	print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
 }
-#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$decomp_date\n";
-print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$decomp_date.part.$NTASKS_OCN\n";
 close($input_list);
 
 #--------------------------------------------------------------------
