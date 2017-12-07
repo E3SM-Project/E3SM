@@ -381,6 +381,14 @@ class J_TestCreateNewcase(unittest.TestCase):
             cmd = xmlquery + " BUILD_COMPLETE --value"
             output = run_cmd_no_fail(cmd, from_dir=casedir)
             self.assertTrue(output == "TRUE", msg="%s != %s"%(output, BUILD_COMPLETE))
+            # we expect DOCN_MODE to be undefined in this X compset
+            # this test assures that we do not try to resolve this as a compvar
+            cmd = xmlquery + " DOCN_MODE --value"
+            _, output, error = run_cmd(cmd, from_dir=casedir)
+            self.assertTrue(error == "ERROR:  No results found for variable DOCN_MODE",
+                            msg="unexpected result for DOCN_MODE, output {}, error {}".
+                            format(output, error))
+
             for comp in COMP_CLASSES:
                 caseresult = case.get_value("NTASKS_%s"%comp)
                 cmd = xmlquery + " NTASKS_%s --value"%comp
@@ -1496,7 +1504,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         with Case(casedir, read_only=False) as case:
             build_threaded = case.get_value("BUILD_THREADED")
-            self.assertFalse(build_threaded)
+            self.assertTrue(build_threaded)
 
             build_threaded = case.get_build_threaded()
             self.assertTrue(build_threaded)
@@ -2499,7 +2507,7 @@ def _main_func():
         MACHINE = Machines(machine=mach_name)
     else:
         MACHINE = Machines()
-        
+
 
     if "--compiler" in sys.argv:
         global TEST_COMPILER
