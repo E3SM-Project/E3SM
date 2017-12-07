@@ -94,12 +94,16 @@ def save_build_provenance(case, lid=None):
             _save_build_provenance_cesm(case, lid)
 
 def _save_prerun_timing_acme(case, lid):
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
-    if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data.".format(timing_dir))
+    project = case.get_value("PROJECT", subgroup="case.run")
+    if not case.is_save_timing_dir_project(project):
         return
 
-    logger.info("timing dir is {}".format(timing_dir))
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
+    if timing_dir is None or not os.path.isdir(timing_dir):
+        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to archive timing data.".format(timing_dir))
+        return
+
+    logger.info("Archiving timing data and associated provenance in {}.".format(timing_dir))
     rundir = case.get_value("RUNDIR")
     blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
@@ -258,7 +262,6 @@ def _save_postrun_provenance_cesm(case, lid):
     save_timing = case.get_value("SAVE_TIMING")
     if save_timing:
         rundir = case.get_value("RUNDIR")
-        timing_dir = case.get_value("SAVE_TIMING_DIR")
         timing_dir = os.path.join(timing_dir, case.get_value("CASE"))
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
@@ -266,7 +269,6 @@ def _save_postrun_provenance_cesm(case, lid):
 def _save_postrun_timing_acme(case, lid):
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
 
     # tar timings
     rundir_timing_dir = os.path.join(rundir, "timing." + lid)
@@ -282,6 +284,11 @@ def _save_postrun_timing_acme(case, lid):
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
+    project = case.get_value("PROJECT", subgroup="case.run")
+    if not case.is_save_timing_dir_project(project):
+        return
+
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
         return
 
