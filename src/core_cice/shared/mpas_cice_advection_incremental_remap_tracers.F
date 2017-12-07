@@ -30,7 +30,8 @@ module cice_advection_incremental_remap_tracers
 
    public :: cice_add_tracers_to_linked_list, &
              cice_set_tracer_array_pointers,  &
-             cice_update_tracer_halo
+             cice_update_tracer_halo, &
+             cice_init_update_tracer_halo_exch_group
 
    ! the type that makes up each element in the linked list
    type, public :: tracer_type
@@ -1127,6 +1128,44 @@ contains
 
     integer, intent(in), optional :: timeLevelIn
 
+    logical, pointer :: &
+         config_aggregate_halo_exch
+
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       call update_tracer_halo_exch_group(tracersHead, domain, timeLevelIn)
+
+    else
+
+       call update_tracer_halo(tracersHead, domain, timeLevelIn)
+
+    endif
+
+  end subroutine cice_update_tracer_halo
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine cice_update_tracer_halo
+!
+!> \brief  halo update for tracers
+!> \author William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine does a halo update for each tracer in the linked list.
+!-----------------------------------------------------------------------
+
+  subroutine update_tracer_halo(tracersHead, domain, timeLevelIn)
+
+    use mpas_dmpar
+
+    type(tracer_type), pointer, intent(in) :: &
+         tracersHead ! do not alter this pointer - it should always point to the first element
+
+    type(domain_type), intent(inout) :: domain
+
+    integer, intent(in), optional :: timeLevelIn
+
     type(tracer_type), pointer :: &
          thisTracer
 
@@ -1149,7 +1188,119 @@ contains
 
     enddo  ! associated(thisTracer)
 
-  end subroutine cice_update_tracer_halo
+  end subroutine update_tracer_halo
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine cice_init_update_tracer_halo_exch_group
+!
+!> \brief  halo update for tracers
+!> \author William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine does a halo update for each tracer in the linked list.
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_update_tracer_halo_exch_group(tracersHead, domain)
+
+    use mpas_dmpar
+
+    type(tracer_type), pointer, intent(in) :: &
+         tracersHead ! do not alter this pointer - it should always point to the first element
+
+    type(domain_type), intent(inout) :: domain
+
+    type(tracer_type), pointer :: &
+         thisTracer
+
+    character(len=strKIND) :: &
+         exchangeGroupName
+
+    integer :: &
+         iTimeLevel, &
+         ierr
+
+    logical, pointer :: &
+         config_aggregate_halo_exch
+
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       do iTimeLevel = 1, 2
+
+          write(exchangeGroupName,fmt='(a,i1)') 'tracerAdvectionHaloExchangeGroup_', iTimeLevel
+
+          call mpas_dmpar_exch_group_create(domain, trim(exchangeGroupName), iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to create "//trim(exchangeGroupName), MPAS_LOG_CRIT)
+          endif
+
+          thisTracer => tracersHead   ! point to first element of linked list
+          do while(associated(thisTracer))
+
+             if (verboseTracers) call mpas_log_write('Halo update:'//trim(thisTracer % tracerName))
+
+             call mpas_dmpar_exch_group_add_field(domain, trim(exchangeGroupName), trim(thisTracer % tracerName), iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to add "//trim(thisTracer % tracerName)//" to "//trim(exchangeGroupName), MPAS_LOG_CRIT)
+             endif
+
+             thisTracer => thisTracer % next
+
+          enddo  ! associated(thisTracer)
+
+       enddo ! iTimeLevel
+
+    endif ! config_aggregate_halo_exch
+
+  end subroutine cice_init_update_tracer_halo_exch_group
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine cice_update_tracer_halo
+!
+!> \brief  halo update for tracers
+!> \author William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine does a halo update for each tracer in the linked list.
+!-----------------------------------------------------------------------
+
+  subroutine update_tracer_halo_exch_group(tracersHead, domain, timeLevelIn)
+
+    use mpas_dmpar
+
+    type(tracer_type), pointer, intent(in) :: &
+         tracersHead ! do not alter this pointer - it should always point to the first element
+
+    type(domain_type), intent(inout) :: domain
+
+    integer, intent(in), optional :: timeLevelIn
+
+    integer :: timeLevel
+
+    character(len=strKIND) :: &
+         exchangeGroupName
+
+    integer :: &
+         ierr
+
+    if (present(timeLevelIn)) then
+       timeLevel = timeLevelIn
+    else
+       timeLevel = 1
+    endif
+
+    write(exchangeGroupName,fmt='(a,i1)') 'tracerAdvectionHaloExchangeGroup_', timeLevel
+
+    if (verboseTracers) call mpas_log_write('Halo group update:'//trim(exchangeGroupName))
+
+    call mpas_dmpar_exch_group_full_halo_exch(domain, trim(exchangeGroupName), iErr=ierr)
+    if (ierr /= MPAS_DMPAR_NOERR) then
+       call MPAS_log_write("failure to perform halo exchange for "//trim(exchangeGroupName), MPAS_LOG_CRIT)
+    endif
+
+  end subroutine update_tracer_halo_exch_group
 
   !-----------------------------------------------
 
