@@ -781,7 +781,11 @@ class TestScheduler(object):
                                 self._update_test_status(test, next_phase, TEST_PEND_STATUS)
                                 self._update_test_status(test, next_phase, TEST_FAIL_STATUS)
                                 self._log_output(test, msg)
-                                self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                if next_phase == RUN_PHASE:
+                                    self._update_test_status_file(test, SUBMIT_PHASE, TEST_PASS_STATUS)
+                                    self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                else:
+                                    self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
                                 num_threads_launched_this_iteration += 1
 
             if not work_to_do:
