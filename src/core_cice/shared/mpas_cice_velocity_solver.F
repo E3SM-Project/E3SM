@@ -79,7 +79,8 @@ contains
     logical, pointer :: &
          config_use_velocity_solver, &
          config_rotate_cartesian_grid, &
-         config_include_metric_terms
+         config_include_metric_terms, &
+         config_aggregate_halo_exch
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -98,6 +99,9 @@ contains
          config_dynamics_subcycle_number, &
          config_elastic_subcycle_number, &
          config_wachspress_integration_order
+
+    integer :: &
+         ierr
 
     ! set up the dynamically locked cell mask
     call dynamically_locked_cell_mask(domain)
@@ -181,6 +185,82 @@ contains
 
     ! initialize the land ice shelve mask
     call init_ice_shelve_vertex_mask(domain)
+
+    ! prep for aggregated halo exchanges
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       ! create the velocity aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'velocityHaloExchangeGroup', 'uVelocity', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add uVelocity to velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'velocityHaloExchangeGroup', 'vVelocity', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add vVelocity to velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+       ! create the iceAreaTotalMassExchangeGroup aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'iceAreaTotalMassExchangeGroup', 'iceAreaCellInitial', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add iceAreaCellInitial to iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'iceAreaTotalMassExchangeGroup', 'totalMassCell', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add totalMassCell to iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+       ! create the airStressHaloExchangeGroup aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'airStressHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'airStressHaloExchangeGroup', 'airStressCellU', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add airStressCellU to airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'airStressHaloExchangeGroup', 'airStressCellV', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add airStressCellV to airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+       ! create the seaSurfaceTiltHaloExchangeGroup aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'seaSurfaceTiltHaloExchangeGroup', 'seaSurfaceTiltU', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add seaSurfaceTiltU to seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'seaSurfaceTiltHaloExchangeGroup', 'seaSurfaceTiltV', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add seaSurfaceTiltV to seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+       ! create the oceanStressHaloExchangeGroup aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'oceanStressHaloExchangeGroup', 'oceanStressU', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add oceanStressU to oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'oceanStressHaloExchangeGroup', 'oceanStressV', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add oceanStressV to oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+    endif ! config_aggregate_halo_exch
 
   end subroutine cice_init_velocity_solver!}}}
 
@@ -579,7 +659,11 @@ contains
 
     logical, pointer :: &
          config_use_column_package, &
-         config_use_column_vertical_thermodynamics
+         config_use_column_vertical_thermodynamics, &
+         config_aggregate_halo_exch
+
+    integer :: &
+         ierr
 
     ! set initial ice area if not have column physics
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
@@ -607,8 +691,20 @@ contains
     ! halo exchange of initial ice area of cell
     call mpas_timer_start("ice area halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCellInitial')
-    call MPAS_dmpar_field_halo_exch(domain, 'totalMassCell')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       call mpas_dmpar_exch_group_full_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+    else
+
+       call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCellInitial')
+       call MPAS_dmpar_field_halo_exch(domain, 'totalMassCell')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("ice area halo")
 
@@ -904,7 +1000,11 @@ contains
          nVerticesSolve
 
     integer :: &
-         iVertex
+         iVertex, &
+         ierr
+
+    logical, pointer :: &
+         config_aggregate_halo_exch
 
     block => domain % blocklist
     do while (associated(block))
@@ -978,8 +1078,20 @@ contains
     ! halo exchange velocities
     call mpas_timer_start("velocity halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
-    call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+    else
+
+       call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+       call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("velocity halo")
 
@@ -1148,7 +1260,8 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_vertical_thermodynamics, &
-         config_use_air_stress
+         config_use_air_stress, &
+         config_aggregate_halo_exch
 
     type(MPAS_pool_type), pointer :: &
          meshPool, &
@@ -1159,6 +1272,9 @@ contains
          airStressVertexV, &
          airStressCellU, &
          airStressCellV
+
+    integer :: &
+         ierr
 
     ! calculate the air stress
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
@@ -1187,8 +1303,20 @@ contains
     ! halo exchange air stress
     call mpas_timer_start("air stress halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'airStressCellU')
-    call MPAS_dmpar_field_halo_exch(domain, 'airStressCellV')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       call mpas_dmpar_exch_group_full_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+    else
+
+       call MPAS_dmpar_field_halo_exch(domain, 'airStressCellU')
+       call MPAS_dmpar_field_halo_exch(domain, 'airStressCellV')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("air stress halo")
 
@@ -1629,13 +1757,29 @@ contains
          nVerticesSolve
 
     integer :: &
-         iVertex
+         iVertex, &
+         ierr
+
+    logical, pointer :: &
+         config_aggregate_halo_exch
 
     ! halo exchange surface tilt
     call mpas_timer_start("sea surface tilt halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltU')
-    call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltV')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       call mpas_dmpar_exch_group_full_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+    else
+
+       call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltU')
+       call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltV')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("sea surface tilt halo")
 
@@ -1998,7 +2142,11 @@ contains
          config_stress_divergence_scheme
 
     logical, pointer :: &
-         config_revised_evp
+         config_revised_evp, &
+         config_aggregate_halo_exch
+
+    integer :: &
+         ierr
 
     call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
     call MPAS_pool_get_config(domain % configs, "config_revised_evp", config_revised_evp)
@@ -2041,8 +2189,20 @@ contains
     ! halo exchange
     call mpas_timer_start("Velocity solver halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
-    call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+    else
+
+       call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+       call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("Velocity solver halo")
 
@@ -2718,13 +2878,15 @@ contains
          solveVelocity
 
     logical, pointer :: &
-         configUseOceanStress
+         configUseOceanStress, &
+         config_aggregate_halo_exch
 
     integer, pointer :: &
          nVerticesSolve
 
     integer :: &
-         iVertex
+         iVertex, &
+         ierr
 
     ! get ocean stress coefficient
     call ocean_stress_coefficient(domain)
@@ -2804,8 +2966,20 @@ contains
        ! halo exchange ocean stress
        call mpas_timer_start("ocean stress halo")
 
-       call MPAS_dmpar_field_halo_exch(domain, 'oceanStressU')
-       call MPAS_dmpar_field_halo_exch(domain, 'oceanStressV')
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
+
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          call MPAS_dmpar_field_halo_exch(domain, 'oceanStressU')
+          call MPAS_dmpar_field_halo_exch(domain, 'oceanStressV')
+
+       endif ! config_aggregate_halo_exch
 
        call mpas_timer_stop("ocean stress halo")
 
