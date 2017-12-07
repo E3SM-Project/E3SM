@@ -30,6 +30,15 @@
     <desc>Where to auto archive timing data</desc>
   </entry>
 
+  <entry id="SAVE_TIMING_DIR_PROJECTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc> A comma-separated list of projects that are allowed to auto archive timing data in SAVE_TIMING_DIR</desc>
+  </entry>
+
   <entry id="TIMER_DETAIL">
     <type>integer</type>
     <default_value>12</default_value>
