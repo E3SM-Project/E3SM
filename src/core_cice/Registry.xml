@@ -1612,6 +1612,10 @@
 			description=""
 			possible_values="'free' or 'non-free'"
 		/>
+		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
+			description=""
+			possible_values="true or false"
+		/>
 	</nml_record>
 
 	<nml_record name="diagnostics" in_defaults="true">
