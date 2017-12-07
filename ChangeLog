@@ -1,5 +1,85 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 12-04-2017
+Tag: cime5.4.0-alpha.13
+Answer Changes: None
+Tests: scripts_regression_tests.py, SMS_P8x2.f19_g16.X.yellowstone_intel
+Dependencies:
+
+Brief Summary:
+    - BUILD_THREADED needs to be set if any nthrds > 1.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+307251e Merge pull request #2106 from jedwards4b/nthrds_sets_build_threaded
+
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/case_setup.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer	 
+Date: 12-03-2017
+Tag: cime5.4.0-alpha.12
+Answer Changes: None
+Tests: scripts_regression_tests.py 
+Dependencies:
+
+Brief Summary:
+    - Fix gptl threaded build, batch change for cheyenne.
+    - Update CIME RST documentation.
+    - Correct path for includes used in build.
+    - Check for unicode in expect().
+    - Separate liq and ice in glc2ocn mapping, and fix glc2ocn mapping bug.
+
+User interface changes: 
+    -Splits GLC2OCN_RMAPNAME xml variable into
+     GLC2OCN_LIQ_RMAPNAME and GLC2OCN_ICE_RMAPNAME, and similarly for
+     GLC2OCN_RMAPTYPE
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6dd6f09 Merge pull request #2105 from jedwards4b/gptl_threaded_build_fix
+92f73e3 Merge pull request #2078 from bertinia/master
+5dc7e19 Merge pull request #2101 from jedwards4b/mpiserial_bldfix
+486efd6 Merge pull request #2097 from ESMCI/sarich/fix-buildexe-unicode
+dd525f9 Merge pull request #2066 from billsacks/glc2ocn_separate_liq_ice
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+M	config/acme/config_grids.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	doc/source/conf.py
+M	doc/source/data_models/data-ocean.rst
+M	doc/source/index.rst
+M	doc/source/misc_tools/index.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	doc/source/users_guide/introduction-and-overview.rst
+M	doc/source/users_guide/optimizing-processor-layout.rst
+M	doc/source/users_guide/porting-cime.rst
+M	doc/source/users_guide/running-a-case.rst
+M	doc/source/users_guide/testing.rst
+M	doc/source/xml_files/acme.rst
+M	doc/source/xml_files/drivers.rst
+M	scripts/Tools/Makefile
+M	scripts/lib/CIME/utils.py
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.mpi-serial
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/prep_ocn_mod.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer	 
 Date: 11-22-2017 
 Tag: cime5.4.0-alpha.11
