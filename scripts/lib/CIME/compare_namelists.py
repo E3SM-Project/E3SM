@@ -337,7 +337,7 @@ def _compare_values(name, gold_value, comp_value, case):
     comments = ""
     if (type(gold_value) != type(comp_value)):
         comments += "  variable '{}' did not have expected type '{}', instead is type '{}'\n".format(name, type(gold_value), type(comp_value))
-        return (False, comments)
+        return comments
 
     if (type(gold_value) is list):
         # Note, list values remain order sensitive

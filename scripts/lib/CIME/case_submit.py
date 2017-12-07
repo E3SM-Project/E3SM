@@ -7,7 +7,7 @@ jobs.
 """
 import socket
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
@@ -82,6 +82,8 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
     if xml_jobid_text:
         case.set_value("JOB_IDS", xml_jobid_text)
 
+    return xml_jobid_text
+
 def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if case.get_value("TEST"):
@@ -102,7 +104,8 @@ def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
                                   resubmit=resubmit, skip_pnl=skip_pnl,
                                   mail_user=mail_user, mail_type=mail_type,
                                   batch_args=batch_args)
-        run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"))
+        run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"),
+                                custom_success_msg_functor=verbatim_success_msg)
     except:
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
