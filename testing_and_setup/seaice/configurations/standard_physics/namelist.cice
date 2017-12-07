@@ -309,6 +309,8 @@
     config_min_friction_velocity = 0.0005
     config_ocean_heat_transfer_type = 'constant'
     config_sea_freezing_temperature_type = 'mushy'
+    config_ocean_surface_type = 'free'
+    config_couple_biogeochemistry_fields = false
 /
 &diagnostics
     config_check_state = false
