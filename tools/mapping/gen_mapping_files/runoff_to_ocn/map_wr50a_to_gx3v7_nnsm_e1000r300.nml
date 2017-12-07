@@ -1,0 +1,14 @@
+&input_nml
+   gridtype     = 'scrip'
+   file_roff    = '/glade/p/cesm/cseg/mapping/grids/wr50a_090614.nc'
+   file_ocn     = '/glade/p/cesm/cseg/mapping/grids/gx3v7_120309.nc'
+   file_nn      = 'map_wr50a_to_gx3v7_nearestdtos_170324.nc'
+   file_smooth  = 'map_gx3v7_to_gx3v7_sm_e1000r300_170324.nc'
+   file_new     = 'map_wr50a_to_gx3v7_nnsm_e1000r300_170324.nc'
+   title        = 'runoff map: wr50a -> gx3v7, nearest neighbor and smoothed'
+   eFold        = 1000000.0
+   rMax         =  300000.0
+   step1 = .true.
+   step2 = .true.
+   step3 = .true.
+/
