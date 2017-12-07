@@ -35,6 +35,8 @@ set namelist = v1-tiny.nl ; set name = tiny
 
 # NE30
 # good nodes:   3 5 9  15 25 45  75 113 225
+# elem/node                          48  24
+# elem/core                           2  1
 # 135 nodes =1,2 elem per core, better  use 113 nodes
 #set namelist = v1-ne30.nl  ; set name = ne30
 
@@ -52,6 +54,14 @@ set namelist = v1-tiny.nl ; set name = tiny
 setenv OMP_NUM_THREADS 1
 setenv OMP_STACKSIZE 64M     #  Edison has 64GB per node
 setenv PER_NODE  24          # 24 or 48 for hyperthreading
+
+if ( $PER_NODE == 48 ) then
+   setenv KMP_AFFINITY granularity=thread,scatter
+   set bind = --cpu_bind=thread
+else
+   setenv KMP_AFFINITY granularity=core,scatter
+   set bind = --cpu_bind=core
+endif
 
 # compute number of MPI tasks
 if (! ${?SLURM_NNODES} ) then 
@@ -76,8 +86,8 @@ set VC_PER_MPI = 48
 echo NODES =            $NNODES
 echo NMPI_PER_NODE =    $PER_NODE
 echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
-set mpirun = "srun -n $NMPI -c $VC_PER_MPI "
-echo mpirun args:  -n NMPI  -c virtual_cores/MPItask 
+set mpirun = "srun -n $NMPI -c $VC_PER_MPI $bind"
+echo mpirun command:
 echo $mpirun
 
 
