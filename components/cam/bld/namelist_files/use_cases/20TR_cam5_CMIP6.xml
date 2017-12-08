@@ -2,6 +2,9 @@
 
 <namelist_defaults>
 
+<!-- Set default output options for CMIP6 simulations -->
+<cosp_lite>.true.</cosp_lite>
+
 <!-- Solar constant from Lean (via Caspar Ammann) -->
 <solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1610-2140_ann_c100408.nc</solar_data_file>
 <solar_data_type>SERIAL</solar_data_type>
@@ -72,7 +75,7 @@
 <clubb_c_K10>        0.3    </clubb_c_K10>
 <effgw_beres>        0.4    </effgw_beres>
 <do_tms>             .false.</do_tms>
-<so4_sz_thresh_icenuc>0.075e-6</so4_sz_thresh_icenuc>
+<so4_sz_thresh_icenuc>0.050e-6</so4_sz_thresh_icenuc>
 <n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
 <micro_mg_accre_enhan_fac>1.5D0</micro_mg_accre_enhan_fac>
 <zmconv_tiedke_add       >0.8D0</zmconv_tiedke_add>
@@ -85,10 +88,14 @@
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
 <se_ftype                >2</se_ftype>
-<clubb_C14               >1.3D0</clubb_C14>
+<clubb_C14               >1.2D0</clubb_C14>
 <relvar_fix              >.true.</relvar_fix>
 <mg_prc_coeff_fix        >.true.</mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
+
+<!-- Energy fixer options -->
+<l_ieflx_fix> .true.</l_ieflx_fix>
+<ieflx_opt  > 2     </ieflx_opt>
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
 <ext_frc_type>INTERP_MISSING_MONTHS</ext_frc_type>
