@@ -11,7 +11,7 @@
 !
 ! Entity names all have the "C_" prefix, as with ISO-C-Binding, with a
 ! few exceptions.
-! 
+!
 module C_interface_mod
 #ifdef _COMPRESSION
   use, intrinsic :: ISO_C_Binding, &
@@ -45,7 +45,7 @@ module C_interface_mod
 ! have limited support for different character kinds. UTF encoding
 ! adds more complexity. This should be updated as Fortran compilers
 ! include support for more character types.
-! 
+!
 
 ! Fortran does not (yet) support unsigned types.
   integer, parameter :: &
@@ -262,7 +262,7 @@ module C_interface_mod
 
 contains
 
-  ! HACK: For some reason, C_associated was not defined as pure. 
+  ! HACK: For some reason, C_associated was not defined as pure.
   pure logical &
   function C_associated_pure(ptr) result(associated)
     type(C_ptr), intent(in) :: ptr

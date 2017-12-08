@@ -7,7 +7,7 @@ my $host;
 my $compiler;
 my $build;
 my $result = GetOptions("host=s"=>\$host,
-			                 "compiler=s"=>\$compiler,  
+			                 "compiler=s"=>\$compiler,
                                          "build=s"=>\$build);
 
 
@@ -55,7 +55,7 @@ $cmake_opts .= " -DPIO_BUILD_TIMING=ON --debug-trycompile ";
 mkdir "$scratch";
 
 chdir "$scratch" or die "Could not make directory $scratch";
-    
+
 system("cmake  $cmake_opts -DCMAKE_VERBOSE_MAKEFILE=1 $piosrc");
 system("gmake -j 4");
 

@@ -31,7 +31,7 @@ One-line : Add code for pio2 api compatability
 M        pio/nf_mod.F90
 M        pio/pio.F90
 M        pio/piolib_mod.F90
-	
+
 ===========================
 Originator: jedwards/santos
 Date: Nov 19, 2014
@@ -76,7 +76,7 @@ Originator: jedwards
 Date: Feb 20, 2014
 Model: pio
 Version: pio1_8_10
-One-line : add gptl timing library support 
+One-line : add gptl timing library support
 
 M              924   pio/CMakeLists.txt
 M              924   testpio/CMakeLists.txt
@@ -138,7 +138,7 @@ One-line summary: Get cmake utilities from external repository
 D pio/cmake
 D SVN_EXTERNAL_DIRECTORIES
 A pio/SVN_EXTERNAL_DIRECTORIES
- 
+
 ===========================
 Originator: jedwards
 Date: Dec 06, 2013
@@ -191,10 +191,10 @@ Model: pio
 Version: pio1_8_0
 One-line summary:  switch to a cmake build, updates for mira, fixes for netcdf4p
 
-	remove all autoconf support files, add cmake support files. 
+	remove all autoconf support files, add cmake support files.
 	it is currently required to run tests by hand, a cmake implimentation
-	of tests is planned but incomplete.   CESM tests have been run 
-	on this tag.   
+	of tests is planned but incomplete.   CESM tests have been run
+	on this tag.
 
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
@@ -211,7 +211,7 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
 M   Calcdecomp.F90  - only mark as converged if all iotasks are counted
 M   box_rearranger.F90.in - add code to avoid an infinate loop
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -226,11 +226,11 @@ Describe any substantial timing or memory changes:
 
 
 
-Code reviewed by:  Jim 
+Code reviewed by:  Jim
 
 Summary of pre-tag testing:
 
-  Regression tests:  
+  Regression tests:
 	testpio.693883.stdout:test complete on yellowstone 103 tests PASS, 0 tests FAIL
         testpio.696040.stdout:test complete on yellowstone_gnu 80 tests PASS, 0 tests FAIL
         testpio.696166.stdout:test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
@@ -251,14 +251,14 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
                M     calcdecomp.F90
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed: edge case in ROF model, problem was found in cesm test 
+Bugs fixed: edge case in ROF model, problem was found in cesm test
 	ERS_N2.f19_g16.B20TRC5CN.yellowstone_intel
 
 Describe any changes made to scripts/build system:
@@ -269,13 +269,13 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by: Self
 
-Summary of pre-tag testing:   
+Summary of pre-tag testing:
 
-  Regression tests:   
+  Regression tests:
 	testpio.693883.stdout:test complete on yellowstone 103 tests PASS, 0 tests FAIL
         testpio.696040.stdout:test complete on yellowstone_gnu 80 tests PASS, 0 tests FAIL
         testpio.696166.stdout:test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
-	cesm1_2_rel03 prebeta yellowstone intel tests all pass. 
+	cesm1_2_rel03 prebeta yellowstone intel tests all pass.
 
 
 ===============================================================
@@ -286,7 +286,7 @@ Tag name: pio1_7_0
 Originator(s): Jim
 Date: May 10, 2013
 One-line Summary: Bug fix in calcdecomp, remove parameters from mpi_bcast
-	and pass variables to satisfy f90 module issues.  
+	and pass variables to satisfy f90 module issues.
 
 List all subroutines eliminated:
 
@@ -298,11 +298,11 @@ List all existing files that have been modified, and describe the changes:
                pionfget_mod.F90.in
                pionfatt_mod.F90.in
                piodarray.F90.in
-                  Remove constant fields from mpi_bcast calls, these were not errors, but 
+                  Remove constant fields from mpi_bcast calls, these were not errors, but
 	          caused problems with the F90 interface in fujitsues mpi.mod
 	       calcdecomp.F90
 	           Every io task now computes all io tasks start and count and checks them
-	           for consistancy, if inconsistant reduce the number of io tasks by 1 and try 
+	           for consistancy, if inconsistant reduce the number of io tasks by 1 and try
 	           again.
 
 List all component tags that were used to create pio tag:
@@ -311,7 +311,7 @@ Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed: 
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -348,7 +348,7 @@ Tag name: pio1_6_8
 Originator(s): Jim
 Date: April 23, 2013
 One-line Summary: minor fix in box_rearrange.F90 for mpi-serial
-	
+
 M                 pio/box_rearrange.F90.in
 M                 pio/box_rearrange.F90
 
@@ -383,7 +383,7 @@ M                 pio/pionfput_mod.F90
 
 
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -396,10 +396,10 @@ Describe any changes made to scripts/build system:
 
 Describe any substantial timing or memory changes:
 
-Code reviewed by: Jim 
+Code reviewed by: Jim
 
 Summary of pre-tag testing: cesm prealpha testing
-	
+
 
   Regression tests:
 test complete on yellowstone 103 tests PASS, 0 tests FAIL
@@ -414,17 +414,17 @@ test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
 Tag name: pio1_6_6
 Originator(s): Jim, Alice
 Date: Apr 03, 2013
-One-line Summary: Documentation update, mv genf90.pl to external, bug fix in nfput for pnetcdf 
+One-line Summary: Documentation update, mv genf90.pl to external, bug fix in nfput for pnetcdf
 
 List all subroutines eliminated:  pio_quicksort.F90 (not used), dtypes.h (now autogenerated) genf90.pl (now external)
 
 List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
-	Many changes in documentation.   
+	Many changes in documentation.
 	pionfput_mod.F90.in: Made put_var_0d_{TYPE} explicit and seperate from put_var_{DIMS}d_{TYPE} to allow
 	for a bug fix in 0d vars written using pnetcdf and to allow some CPP code cleanup.
-	
+
 
 List all component tags that were used to create pio tag:
                     genf90: genf90_130402
@@ -446,14 +446,14 @@ Summary of pre-tag testing:
 	                    test complete on yellowstone_gnu 80 tests PASS, 0 tests FAIL
 	                    test complete on yellowstone 103 tests PASS, 0 tests FAIL
                             test complete on titan 102 tests PASS, 0 tests FAIL
-	 
+
 
 
 ===============================================================
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
-Tag name: pio1_6_5 
+Tag name: pio1_6_5
 Originator(s): Jim
 Date: 03-07-2013
 One-line Summary: minor change to work with mpi-serial
@@ -464,7 +464,7 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
     piolib_mod.F90 : add ifdef around MPI datatype calls (not supported by mpi-serial lib)
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -508,12 +508,12 @@ M             pio/box_rearrange.F90
 M             pio/box_rearrange.F90.in
                     Refactored search algorythm for ionodes significantly reducing the
 	            time required for this operation
-	
+
 M             testpio/build_defaults.xml
 A             testpio/ystest.sh
 	             Changes to allow yellowstone to run netcdf4 tests, requires
 	             a new script to submit compile to caldera.
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -535,7 +535,7 @@ Summary of pre-tag testing:
 
   Regression tests:    test complete on yellowstone 103 tests PASS, 0 tests FAIL
 	                       cesm yellowstone prealpha tests completed (cesm1_2_alpha03c)
-	
+
 ===============================================================
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
@@ -562,7 +562,7 @@ List all existing files that have been modified, and describe the changes:
 	 pio/calcdisplace_mod.F90 - remove intent from pointer argument
 	 pio/pionfput_mod.F90.in  - rework interface to pnetcdf to avoid indep_mode
 	 pio/pionfput_mod.F90
-	 pio/piolib_mod.F90 - add gensubarray routine to create subarray mpitype 
+	 pio/piolib_mod.F90 - add gensubarray routine to create subarray mpitype
 	 pio/piovdc.F90 - reindent file
 
 List all component tags that were used to create pio tag:
@@ -602,19 +602,19 @@ M              703   testpio/testpio_run.pl   - When using --twopass option do n
 	                    submit job unless build completes successfully
 M              700   testpio/gdecomp_mod.F90  - fix a dependancy issue
 M              700   pio/calcdisplace_mod.F90  - fail silently on overflow of displace
-	                          array, this data is not used for pnetcdf so by failing silently 
+	                          array, this data is not used for pnetcdf so by failing silently
 	                          here we defer the failure of mpiio i/o until the read or write call
-M              700   pio/configure.ac  -  change line length max to 132 to support nag 
+M              700   pio/configure.ac  -  change line length max to 132 to support nag
 	                          fortran compiler
 M              703   pio/piolib_mod.F90 - if displace array overflows in calcdisplace_mod
 	                          set filetype to mpi_datatype_null
 M              700   pio/configure
 M              700   pio/aclocal.m4
 M              700   pio/config.h.in
-                                                   these autoconf generated files are in the repo 
+                                                   these autoconf generated files are in the repo
 	                                           for convience
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -632,7 +632,7 @@ Code reviewed by:  Jim
 Summary of pre-tag testing:
 
   Regression tests: Tested on challenger, titan, yellowstone with xlf,
-  pgi, and intel compilers   
+  pgi, and intel compilers
 
 
 ===============================================================
@@ -652,7 +652,7 @@ List all existing files that have been modified, and describe the changes:
 M   pio/piolib_mod.F90 lenblocks was incorrectly set to 1 for 1D arrays
 M   testpio/Utils.pm updates for yellowstone_pgi
 M  testpio/testpio_run.pl match yellowstone_pgi to host yellowstone
-	  
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -691,9 +691,9 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
 	M   piolib_mod.F90
 	M   calcdisplace_mod.F90
-	M   pio_types.F90 
+	M   pio_types.F90
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -703,7 +703,7 @@ of new functionality and how user can use it):
 Bugs fixed:   mpas decomp issue when two leading non-decomposed dimensions.
 
 Describe any changes made to scripts/build system:
-                    Updated tests to reflect 
+                    Updated tests to reflect
 Describe any substantial timing or memory changes:
 
 Code reviewed by: self
@@ -774,7 +774,7 @@ List all existing files that have been modified, and describe the changes:
   Index: testpio/testpio_run.pl
   Index: testpio/build_defaults.xml
   Index: testpio/Utils.pm
-  Index: pio/pionfwrite_mod.F90 
+  Index: pio/pionfwrite_mod.F90
   Index: pio/pionfwrite_mod.F90.in
   Index: pio/pionfput_mod.F90
   Index: pio/pionfput_mod.F90.in
@@ -803,7 +803,7 @@ Summary of pre-tag testing:
 
   Regression tests:
                   bluefire 114 tests PASS, 0 tests FAIL
-		  yellowstone 80 tests PASS, 0 tests FAIL		  
+		  yellowstone 80 tests PASS, 0 tests FAIL
 
 
 ===============================================================
@@ -826,14 +826,14 @@ List all existing files that have been modified, and describe the changes:
 	 pio/box_rearrange.F90.in : promote some variables i4 to i8, remove debug prints
 	 pio/calcdecomp.F90 : correct product calculation to i8
 	 pio/topology.c : remove extra print statements (bluegene only)
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed: 
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -847,7 +847,7 @@ Summary of pre-tag testing:
 
   Regression tests:
                   bluefire 114 tests PASS, 0 tests FAIL
-		  yellowstone 80 tests PASS, 0 tests FAIL		  
+		  yellowstone 80 tests PASS, 0 tests FAIL
 
 ===============================================================
 ===============================================================
@@ -856,7 +856,7 @@ Summary of pre-tag testing:
 Tag name: pio1_5_4   (ChangeLog was not updated for pio1_5_3)
 Originator(s): Jim Edwards
 Date: 9-12-2012
-One-line Summary: move testlib to test directory make sure f95 compatible when 
+One-line Summary: move testlib to test directory make sure f95 compatible when
 	_COMPRESSION is not defined.  Clean up pionfput_mod.F90.in
 
 List all subroutines eliminated:
@@ -1016,14 +1016,14 @@ List all files added and what they do:
 	     Some helper functions for c_interoperability
      	  pio/test_lib.F90
 	     Another vdc2 developement test - this should probably be removed.
-	
+
 List all existing files that have been modified, and describe the changes:
 	 testpio/testpio.F90
 	 testpio/namelist_mod.F90
 	 testpio/testpio_run.pl
 	 testpio/gdecomp_mod.F90
    	   Updated dof arrays to be i8, added a vdc test
-	   
+
 	 testpio/testpio_build.pl
 	 testpio/build_defaults.xml
 	 testpio/Makefile
@@ -1052,14 +1052,14 @@ List all existing files that have been modified, and describe the changes:
 	 pio/pio_support.F90.in
 	 pio/box_rearrange.F90.in
 	     Changed several variables to be of type pio_offset and added a test to check the kind of this variable
-	
+
 	 pio/calcdecomp.F90
 	      Removed dead code
 
-	
+
 List all component tags that were used to create pio tag:
           https://parallelio.googlecode.com/svn/libpiovdc/trunk_tags/libpiovdc_1_0_1
-	
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
@@ -1079,7 +1079,7 @@ Summary of pre-tag testing:
                      Lynx:  80 tests pass, 0 fail
                      Lynx_intel: 80 pass, 0 fail
 	             Intrepid(Challenger) 74 pass, 0 fail (testpio_run.pl was modified to avoid tests that are expected to fail)
-	
+
 ===============================================================
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
@@ -1106,11 +1106,11 @@ List all existing files that have been modified, and describe the changes:
 	 pio/calcdisplace_mod.F90
 	    Fix GCD calculation bug
 	 pio/piolib_mod.F90
-	    Update Bluegene interface 
+	    Update Bluegene interface
 	 pio/topology.c
 
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1132,7 +1132,7 @@ Summary of pre-tag testing:
   Regression tests:  intrepid 74 tests PASS, 6 tests FAIL (expected)
                      Bluefire:  113 tests PASS, 0 tests FAIL
 	             lynx intel :  80 tests PASS, 0 tests FAIL
-	             lynx pgi : 80 tests PASS, 0 tests FAIL	
+	             lynx pgi : 80 tests PASS, 0 tests FAIL
 
 
 ===============================================================
@@ -1146,10 +1146,10 @@ tests:
    bluefire
    lynx pgi
    lynx intel
-   challenger (intrepid) 
+   challenger (intrepid)
 
 ===============================================================
-Tag name: pio1_4_4 
+Tag name: pio1_4_4
 Originator: Jim
 Date: 04-18-2012
 One-line Summary: Minor fixes for mpi-serial build and mpi_abort syntax
@@ -1186,13 +1186,13 @@ List all existing files that have been modified, and describe the changes:
        testpio/Utils.pm
        testpio/POPB.csh
 
-       pio/pio_types.F90      
+       pio/pio_types.F90
        pio/piolib_mod.F90
        pio/pio_kinds.F90
        pio/box_rearrange.F90.in
        pio/box_rearrange.F90
           Fix some minor issues including further protections against calling mpi with invalid (comm,info) handles.
-	
+
 
 List all component tags that were used to create pio tag:
 
@@ -1221,7 +1221,7 @@ Tag name: pio1_4_2
 Originator(s): Jim
 Date: 03-??-2012
 One-line Summary: Correct cppdef flags around use mpi call in pio_msg_callbackes.F90
-	
+
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
@@ -1240,38 +1240,38 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
 
-pio/calcdecomp.F90 
+pio/calcdecomp.F90
 	Add code allowing for runtime setting of blocksize with default 884736 bytes
 	Correct bug introduced in 1.4.0 which may cause index to exceed dimension bounds
 pio/calcdisplace_mod.F90
 	A few more variables need to be i8 for > 2GB array support
-pio/pio.F90 
+pio/pio.F90
 	Add new functions pio_set_buffer_size_limit and pio_set_blocksize to public entities
 
-pio/piolib_mod.F90 
-pio/pio_msg_callbacks.F90 
+pio/piolib_mod.F90
+pio/pio_msg_callbacks.F90
 	Add function freedecomp_handler for async interface (fixes longstanding expected test failure)
 pio/pio_msg_mod.F90
 	Correct handling of iodesc when io is async
-pio/pio_types.F90 
-pio/piodarray.F90.in 
-pio/pionfwrite_mod.F90.in 
+pio/pio_types.F90
+pio/piodarray.F90.in
+pio/pionfwrite_mod.F90.in
 	Add support for buffering IO fields written using pnetcdf async interface
 
 
 
 testpio/POPDv2.csh
-testpio/Utils.pm 
+testpio/Utils.pm
 testpio/build_defaults.xml
 testpio/namelists/testpio_in.pb06
   Update hopper interface, reduce size of arrays in pb06 to prevent memory blowout
-	
+
 
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
-     
-Bugs fixed: 
+
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -1286,7 +1286,7 @@ Summary of pre-tag testing:
   Regression tests:  Bluefire:  113 tests PASS, 0 tests FAIL
 	             lynx intel :  80 tests PASS, 0 tests FAIL
 	             Hopper pgi : 113 tests PASS, 0 tests FAIL
-                   
+
 
 ===============================================================
 ===============================================================
@@ -1295,7 +1295,7 @@ Summary of pre-tag testing:
 Tag name:  pio1_4_0
 Originator(s): Jim
 Date: 02-07-2012
-One-line Summary:  add i8 ldof support 
+One-line Summary:  add i8 ldof support
 
 List all subroutines eliminated:
 
@@ -1353,13 +1353,13 @@ List all existing files that have been modified, and describe the changes:
 	 pio/aclocal.m4
 	 pio/iompi_mod.F90.in
 
-         Added code to detect mpi.mod and use it if it exists, falling back to the 
+         Added code to detect mpi.mod and use it if it exists, falling back to the
 	 mpif.h if it does not.   With some mpi implemenations this gives strong type checking
-	 in the mpi interface.   Made all ldof related internals size i8 and added interfaces 
-	 to call pio_initdecomp with i8 dof's, corrected calcdecomp code to consider max block 
-	 size as well as min block size.   
-         
-	
+	 in the mpi interface.   Made all ldof related internals size i8 and added interfaces
+	 to call pio_initdecomp with i8 dof's, corrected calcdecomp code to consider max block
+	 size as well as min block size.
+
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1402,9 +1402,9 @@ List all existing files that have been modified, and describe the changes:
    box_rearranger.F90.in deallocate dest_ioproc and dest_ioindex after iodesc initialization.
      these are only needed for mpi-serial after this point.
    piodarray.F90.in allow for 7 possible dimensions on input arrays - this is the fortran limit.
-   
 
-	
+
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1432,7 +1432,7 @@ Summary of pre-tag testing:
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
 Tag name: pio1_3_12
-Originator(s): Jim 
+Originator(s): Jim
 Date:  10-31-2011
 One-line Summary:  Make flowcontrol default, add workaround for mpi_rsend bug in cray/gemini
 
@@ -1445,9 +1445,9 @@ List all existing files that have been modified, and describe the changes:
      pio_support.F90.in
      box_rearrange.F90.in
 
-	Added code to replace MPI_RSEND, MPI_IRSEND with MPI_SEND and MPI_ISEND when _NO_MPI_RSEND is 
+	Added code to replace MPI_RSEND, MPI_IRSEND with MPI_SEND and MPI_ISEND when _NO_MPI_RSEND is
 	defined.   Made _USE_FLOW_CONTROL the default by replacing the macro with its negative _NO_FLOW_CONTROL
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1483,10 +1483,10 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
    calcdecomp.F90 : After computing the optimal number of ioprocs we
-	adjust that number down to be a multiple of the last decomposed 
+	adjust that number down to be a multiple of the last decomposed
 	dimension.   This appears to be very robust, avoiding the edge cases
 	that all of these recent tags have tried to address.
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1529,9 +1529,9 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
        Calcdecomp.F90  - Added a correction for an unstanding edge
 	condition in this algorytm,  tested hopefully thoroghly
-       buildconf.xml  updated settings for netcdf on bluefire	
+       buildconf.xml  updated settings for netcdf on bluefire
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each comdponent above that was changed relative
@@ -1576,7 +1576,7 @@ List all existing files that have been modified, and describe the changes:
 	coverage for testing the validity of this algorythm.  I keep finding issues
 	with cesm
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1606,7 +1606,7 @@ Summary of pre-tag testing:
 Tag name: pio1_3_8
 Originator(s): Edwards
 Date: 8-9-2011
-One-line Summary: Update Cacldecomp.F90 
+One-line Summary: Update Cacldecomp.F90
 
 List all subroutines eliminated:
 
@@ -1615,7 +1615,7 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
      Corrected a further edge error in calcdecomp.F90, added startandcount
 	target to Makefile
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1643,7 +1643,7 @@ Summary of pre-tag testing:
 Tag name: pio1_3_7
 Originator(s): Edwards
 Date: 8-9-2011
-One-line Summary: Update Cacldecomp.F90 
+One-line Summary: Update Cacldecomp.F90
 
 List all subroutines eliminated:
 
@@ -1651,10 +1651,10 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
    Calcdecomp.F90 was generating bad start and count arrays when
-   gdims(n) was smaller than the number of io tasks.   
+   gdims(n) was smaller than the number of io tasks.
    Algorythm was changed to resolve this and a unit test was added in case
    of further issues.
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1689,7 +1689,7 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
   pio/Makefile
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1727,17 +1727,17 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
  Index: testpio/testpio.F90
  Index: testpio/build_defaults.xml
-	  Add code to use the AMPI compiler from the NCSA CHARM++ project, this 
+	  Add code to use the AMPI compiler from the NCSA CHARM++ project, this
 	  is not working yet.
  Index: pio/m4/acx_mpi.m4
           Updated to work on cray systems with ftn and cc
  Index: pio/m4/fortran.m4
-          Updated to latest autoconf 
+          Updated to latest autoconf
  Index: pio/alloc_mod.F90.in
  Index: pio/alloc_mod.F90
 	  Added Debug code
  Index: pio/pio_msg_callbacks.F90
-	  Added an impicit none statement	
+	  Added an impicit none statement
  Index: pio/Makefile
  Index: pio/config.h.in
  Index: pio/Makefile.conf.in
@@ -1765,7 +1765,7 @@ Code reviewed by:
 
 Summary of pre-tag testing:
 
-  Regression tests: bluefire: 74 tests PASS, 6 tests FAIL(expected)  
+  Regression tests: bluefire: 74 tests PASS, 6 tests FAIL(expected)
 	            edinburgh: 20 pass 2 fail (expected)
 	            lynx : test complete on lynx 74 tests PASS, 6 tests FAIL (expected)
 
@@ -1785,7 +1785,7 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
    Added some debug logging in alloc_mod.F90.in
    Added null initialization of some pointers in pio_types.F90, this is a f95 issue.
-	
+
 
 List all component tags that were used to create pio tag:
 
@@ -1824,11 +1824,11 @@ List all subroutines added and what they do:
   added m4 subdirectory with various autoconf tools
   config.h.in
   added calcdecomp as a replacement for getiostartandcount
-	
+
 List all existing files that have been modified, and describe the changes:
   configure.ac, Makefile.conf.in
-  Updated autoconf support 
-	
+  Updated autoconf support
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -1840,7 +1840,7 @@ Bugs fixed: http://bugs.cgd.ucar.edu/show_bug.cgi?id=1372
 Describe any changes made to scripts/build system:
      configure.ac was brought up to compatability with autoconf 2.63
      a macros subdirectory was added with additional fortran and netcdf macros
-	
+
 Describe any substantial timing or memory changes:
 
 
@@ -1853,8 +1853,8 @@ Summary of pre-tag testing:
 	            jaguar (pgi)     80 tests PASS, 0 tests FAIL
 	            lynx_gnu         80 tests PASS, 0 tests FAIL
 	            edinburgh (pgi)  22 pass 2 fail (expected)
-	            
-	
+
+
 
 
 ===============================================================
@@ -1868,7 +1868,7 @@ One-line Summary: Code Clean up, box rearranger bug fixes
 
 List all subroutines eliminated:  mct_rearrange.F90.in mct_rearrange.F90.in
 
-List all subroutines added and what they do: 
+List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
 	testpio/build_defaults.xml
@@ -1876,7 +1876,7 @@ List all existing files that have been modified, and describe the changes:
 	pio/configure.in
 	pio/configure
 	pio/rearrange.F90.in
-	pio/pio_types.F90	
+	pio/pio_types.F90
 	pio/Makefile
 	pio/pio.F90
 	   Remove support for mct rearranger
@@ -1888,7 +1888,7 @@ List all existing files that have been modified, and describe the changes:
 	   Remove calcdisplace code duplicated in calcdisplace_mod
 	pio/box_rearranger.F90.in
 	   Avoid 0 sized array errors
-	
+
 
 List all component tags that were used to create pio tag:
 
@@ -1902,7 +1902,7 @@ Describe any changes made to scripts/build system:
 	Removed references to mct in build
 
 Describe any substantial timing or memory changes:
-       
+
 
 Code reviewed by: Edwards
 
@@ -1911,7 +1911,7 @@ Summary of pre-tag testing: Cam regressions on bluefire and edinburgh with xlf, 
                      bluefire 80 tests PASS, 0 tests FAIL
                      edinburgh (lahey) 22 pass 2 fail (expected)
                      jaguar (pgi) 80 pass, 0 Fail
-  
+
 
 ===============================================================
 ===============================================================
@@ -1958,7 +1958,7 @@ Tag name: pio1_2_6
 Originator(s): Jim
 Date: 11-19-2010
 One-line Summary: Fix problems with single task run, cleanup mpi_info_set calls
-	make start and count args static 
+	make start and count args static
 
 List all subroutines eliminated:
 
@@ -1997,7 +1997,7 @@ Originator(s): Jim
 Date: 11-17-2010
 One-line Summary: Fixed problems with single task (mpi-serial) runs.
                   Improved lynx port
-	
+
 List all subroutines eliminated:
 
 List all subroutines added and what they do:
@@ -2005,8 +2005,8 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
   pio/piolib_mod.F90  force rearranger to none when total tasks = 1
   testpio/Utils.pm    added module support for lynx
-  
-	
+
+
 List all component tags that were used to create pio tag:
     MCT2_7_0_100228-mpiserial101109_tag02
 Describe the changes for each component above that was changed relative
@@ -2026,8 +2026,8 @@ Summary of pre-tag testing:
 
   Regression tests:   lynx      80 PASS 0  FAIL
 	              bluefire  107 PASS, 0 FAIL
-	              frost     74 PASS, 6 FAIL   (expected failures) 
-	              edinburgh 22 PASS, 2 FAIL   (expected failures) 
+	              frost     74 PASS, 6 FAIL   (expected failures)
+	              edinburgh 22 PASS, 2 FAIL   (expected failures)
 
 
 ===============================================================
@@ -2047,19 +2047,19 @@ List all existing files that have been modified, and describe the changes:
     Some compilers export symbols included with include 'mpif.h even though
     the module is default private, fixed by using only clause in pio_types
     include statements
-	
+
 List all component tags that were used to create pio tag:
     MCT2_7_0_100228-mpiserial101109_tag02
-	
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed:  
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
-     added test for mirage1 
-	
+     added test for mirage1
+
 Describe any substantial timing or memory changes:
 
 
@@ -2069,11 +2069,11 @@ Code reviewed by: self
 Summary of pre-tag testing:  CESM lnd serial build
 
   Regression tests
-        test complete on mirage1 11 tests PASS, 2 tests FAIL   (new system mpiserial intel compiler) 
+        test complete on mirage1 11 tests PASS, 2 tests FAIL   (new system mpiserial intel compiler)
 	Jaguarpf          80 tests pass
-        frost             74 PASS, 6 FAIL   (expected failures) 
-	bluefire          
-        edinburgh         22 pass, 2 fail   (expected failures) 
+        frost             74 PASS, 6 FAIL   (expected failures)
+	bluefire
+        edinburgh         22 pass, 2 fail   (expected failures)
 
 ===============================================================
 ===============================================================
@@ -2134,8 +2134,8 @@ List all existing files that have been modified, and describe the changes:
    piolib_mod.F90 : Removed NEED_MPI_ROOT ifdef and replaced with
 	NO_MPI2 and MPISERIAL wrappers
    pio_support.F90 : fixed bug in variable declaration (missing ::)
-   
-	
+
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2168,13 +2168,13 @@ Summary of pre-tag testing: cam stand alone and cesm tests
 Tag name: pio1_2_1
 Originator(s): Jim, Pat Worley
 Date: 11-04-2010
-One-line Summary:  bug fixes 
+One-line Summary:  bug fixes
 
-List all subroutines eliminated: 
+List all subroutines eliminated:
 
-List all subroutines added and what they do: 
+List all subroutines added and what they do:
 	 camlike_decomp_generator:   Adds a cam type deconfiguration generator for testing and performance studies
-	 
+
 
 List all existing files that have been modified, and describe the changes:
 	Index: testpio/testpio_build.pl
@@ -2185,19 +2185,19 @@ List all existing files that have been modified, and describe the changes:
 	Index: testpio/namelist_mod.F90
 	Index: testpio/gdecomp_mod.F90
 	Index: testpio/Utils.pm
-        Added support for a realistic cam-like decomp, added a new host edinburgh_openmpi, bug fix for 
+        Added support for a realistic cam-like decomp, added a new host edinburgh_openmpi, bug fix for
 	mpich-1 on edinburgh (MPI_ROOT is not defined in mpif.h)
         Updated intrepid flags to use netcdf-4
-	
+
 	Index: pio/aclocal.m4
 	Index: pio/configure
 	Index: pio/configure.ac
         Fixed a bug in getting mpif90 from the environment
-	
+
 	Index: pio/piolib_mod.F90
 	Index: pio/ionf_mod.F90
         Improved Debug print statements, code clean up
-	
+
 	Index: pio/nf_mod.F90
         Renamed some variables which had the same name as the fortran len intrensic
 
@@ -2209,8 +2209,8 @@ List all existing files that have been modified, and describe the changes:
 	piolib_mod
 	pio_support
 	Removed references to mpi_comm_world
-	
-	
+
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2229,17 +2229,17 @@ Code reviewed by: self
 
 Summary of pre-tag testing:
                      cam regressions on bluefire
-  Regression tests:  
+  Regression tests:
                      bluefire 107 tests PASS, 0 tests FAIL
         	     jaguar 80 tests PASS, 0 tests FAIL
-	             intrepid 60 tests PASS, 5 tests FAIL 
+	             intrepid 60 tests PASS, 5 tests FAIL
 	                 Support for async on bluegene is incomplete in this tag.
 		     test complete on edinburgh 22 tests PASS, 2 tests FAIL
-     	                snet asb01    FAIL 
-                        snet asb04    FAIL 
-                        These are expected failures due to mpich not 
-	                      supporting MPI-2 intercommunicators	  
-                      
+     	                snet asb01    FAIL
+                        snet asb04    FAIL
+                        These are expected failures due to mpich not
+	                      supporting MPI-2 intercommunicators
+
 
 ===============================================================
 ===============================================================
@@ -2250,7 +2250,7 @@ Originator(s):  Jim
 Date: 10-14-2010
 One-line Summary: Support for disjoint IO tasks
 
-List all subroutines eliminated: 
+List all subroutines eliminated:
 
 List all subroutines added and what they do:
 A  +            -   pio_msg_callbacks.F90
@@ -2258,15 +2258,15 @@ A  +            -   pio_msg_getput_callbacks.F90.in
       The subroutines in these files are the interface between the disjoint io tasks
 	and the pio functions, to avoid circular dependencies they are not written in
 	module form.   Each subroutine collects the input arguments from the compute
-	tasks and calls the requested function.  Communication of function outputs back to the 
+	tasks and calls the requested function.  Communication of function outputs back to the
 	compute tasks happens within the function so no post call clean up is required.
-	
-A  +            -   pio_msg_mod.F90
-       This module contains the loop in which the disjoint io tasks wait for requests from 
-	compute tasks.  Multiple compute communicators with distinct iosystem descripters are
-	supported.   
 
-	
+A  +            -   pio_msg_mod.F90
+       This module contains the loop in which the disjoint io tasks wait for requests from
+	compute tasks.  Multiple compute communicators with distinct iosystem descripters are
+	supported.
+
+
 A  +            -   dtypes.h
 	Move type macros to an include file to be shared by multiple pio internal files
 
@@ -2292,7 +2292,7 @@ List all existing files that have been modified, and describe the changes:
     mct_rearrange.F90
 
       Add support for disjoint io tasks.   Add tests for disjoint tasks to testsuite.
-      Improve support for netcdf4.  	
+      Improve support for netcdf4.
 
 
 List all component tags that were used to create pio tag:
@@ -2303,7 +2303,7 @@ of new functionality and how user can use it):
 
 Bugs fixed:
 
-Describe any changes made to scripts/build system:   Added new files to build 
+Describe any changes made to scripts/build system:   Added new files to build
 
 Describe any substantial timing or memory changes:
 
@@ -2331,7 +2331,7 @@ List all existing files that have been modified, and describe the changes:
      piolib_mod.F90: removed fanning functionality in getiostartandcount
 	this feature was not robust and was failing to converge in a number of cases.
         Fixed a case which allowed division by 0 if count(1)==0.
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2353,7 +2353,7 @@ Summary of pre-tag testing:
                      bluefire 107 tests PASS, 0 tests FAIL
         	     jaguar 74 tests PASS, 0 tests FAIL
 		     edinburg 22 tests PASS, 0 tests FAIL
-	
+
 ===============================================================
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
@@ -2369,7 +2369,7 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
   piolib_mod.F90 correct #enddef placement.
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2386,13 +2386,13 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by: Jim
 
-Summary of pre-tag testing:  
+Summary of pre-tag testing:
   Regression tests:  bluefire 107 tests PASS, 0 tests FAIL
         	     jaguar 80 tests PASS, 0 tests FAIL
 		     test complete on edinburgh 22 tests PASS, 2 tests FAIL
-     	                snet asb01    FAIL 
-                        snet asb04    FAIL 
-                        These are expected failures due to mpich not 
+     	                snet asb01    FAIL
+                        snet asb04    FAIL
+                        These are expected failures due to mpich not
 	                      supporting MPI-2 intercommunicators
 
 ===============================================================
@@ -2402,7 +2402,7 @@ Summary of pre-tag testing:
 Tag name: pio1_1_0
 Originator(s): Jim
 Date: 05-20-2010
-One-line Summary: code cleanup, improved netcdf4 performance 
+One-line Summary: code cleanup, improved netcdf4 performance
 
 List all subroutines eliminated:
 
@@ -2428,23 +2428,23 @@ List all existing files that have been modified, and describe the changes:
 	improved error message
    configure.ac
 	added HAVE_MPI flag needed by timing
-   pionfput_mod.F90.in 
+   pionfput_mod.F90.in
 	fixed a bug that created a potential race
 	condition in the pnetcdf interface
    piolib_mod.F90
-	Explicitly read input arguments on task 0 and ignore 
+	Explicitly read input arguments on task 0 and ignore
 	others in pio_init, pio_openfile and pio_createfile
 	calls.
    pio_kinds.F90
 	Increase default string length
-   box_rearrange.F90.in	
+   box_rearrange.F90.in
         Moved stdout info to debug mode only
    ionf_mod.F90
 	Improved error handling
-   
-  
 
-	
+
+
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2463,10 +2463,10 @@ Summary of pre-tag testing:
 
   Regression tests:
 	bluefire 107 tests PASS, 0 tests FAIL
-	edinburgh 22 tests PASS, 0 tests FAIL 
+	edinburgh 22 tests PASS, 0 tests FAIL
 	edinburgh_intel 22 tests PASS, 0 tests FAIL
-	intrepid 
-	jaguarpf 
+	intrepid
+	jaguarpf
 
 
 ===============================================================
@@ -2479,12 +2479,12 @@ Originator(s): John
 Date: 03-19-2010
 One-line Summary: Reworked testpio execution scripts
 
-List all subroutines eliminated: 
+List all subroutines eliminated:
 
 List all subroutines added and what they do:
 
-	* runString creates a 'mpirun' string for a particular system (Utils.pm)	
-	* submitString creates a 'qsub' string for a particular system (Utils.pm)	
+	* runString creates a 'mpirun' string for a particular system (Utils.pm)
+	* submitString creates a 'qsub' string for a particular system (Utils.pm)
 
 List all existing files that have been modified, and describe the changes:
 
@@ -2498,7 +2498,7 @@ Bugs fixed:  pgi compiler could not open large files with direct access thus cau
 
 Describe any changes made to scripts/build system:
 
-	Reworked the testpio execution scripts such that the number of cores is now a 
+	Reworked the testpio execution scripts such that the number of cores is now a
 	command line arguement.  Added preliminary support for columbia
 
 Describe any substantial timing or memory changes:
@@ -2509,7 +2509,7 @@ Summary of pre-tag testing:
 
   Regression tests:
 	     bluefire 107 tests PASS, 0 tests FAIL
-	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh 22 tests PASS, 0 tests FAIL
 	     edinburgh_intel 22 tests PASS, 0 tests FAIL
              frost 74 tests PASS, 0 tests FAIL
 	     kraken 74 tests PASS, 0 tests FAIL
@@ -2542,14 +2542,14 @@ Describe any changes made to scripts/build system:
 
 Describe any substantial timing or memory changes:
 
-Code reviewed by:  self 
+Code reviewed by:  self
 
 Summary of pre-tag testing:
 
   Regression tests:
                ccsm regression on jaguar
 	     bluefire 107 tests PASS, 0 tests FAIL
-	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh 22 tests PASS, 0 tests FAIL
 	     edinburgh_intel 22 tests PASS, 0 tests FAIL
              frost 75 tests PASS, 0 tests FAIL
 	     jaguar 75 tests PASS, 0 tests FAIL
@@ -2579,10 +2579,10 @@ List all existing files that have been modified, and describe the changes:
    - Moved some host specific code into Utils.pm
    - Marked code in the perl scripts that are host specific
    - Allowed the use of negative numIOprocs in namelist for BGL
-   - Removed the b14 benchmark.  This was only added as experimental 
-     code and it exceeds memory on Blue Genel/L when running on 
+   - Removed the b14 benchmark.  This was only added as experimental
+     code and it exceeds memory on Blue Genel/L when running on
      64 MPI tasks.
-   - Removed the 'bench' testsuite.  This was only added as 
+   - Removed the 'bench' testsuite.  This was only added as
      experimental code.
    - Added support for Kraken in PIO testsuite
    - Added script support in tesetpio_run.pl on Frost.
@@ -2609,7 +2609,7 @@ Summary of pre-tag testing:
   Regression tests:
              bluefire 107 tests PASS, 0 tests FAIL  **
              frost 74 tests PASS, 0 tests FAIL      **
-             kraken 74 tests PASS, 0 tests FAIL     
+             kraken 74 tests PASS, 0 tests FAIL
              CAM regression
              ccsm pretags
 
@@ -2650,7 +2650,7 @@ Summary of pre-tag testing:
 
   Regression tests:
 	     bluefire 119 tests PASS, 0 tests FAIL
-	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh 22 tests PASS, 0 tests FAIL
 	     edinburgh_intel 22 tests PASS, 0 tests FAIL
              frost 75 tests PASS, 0 tests FAIL
 	     jaguar 75 tests PASS, 0 tests FAIL
@@ -2676,7 +2676,7 @@ List all existing files that have been modified, and describe the changes:
 	internal start and count arrays were dependent on the lengths of
 	the start and count arrays passed in.  They should instead be dependent
 	on the number of dimensions of the variable being read or written.
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2696,7 +2696,7 @@ Summary of pre-tag testing:
 
   Regression tests:
 	     bluefire 119 tests PASS, 0 tests FAIL
-	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh 22 tests PASS, 0 tests FAIL
 	     edinburgh_intel 22 tests PASS, 0 tests FAIL
              frost 75 tests PASS, 0 tests FAIL
 	     jaguar 75 tests PASS, 0 tests FAIL
@@ -2718,7 +2718,7 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
 	piolib_mod : corrected assumptions about number of decomp dimensions and number of tasks in io.
-	
+
 
 List all component tags that were used to create pio tag:
 
@@ -2737,10 +2737,10 @@ Describe any substantial timing or memory changes:
 Code reviewed by: Jim
 
 Summary of pre-tag testing:
-         
+
   Regression tests:
 	     bluefire 119 tests PASS, 0 tests FAIL
-	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh 22 tests PASS, 0 tests FAIL
 	     edinburgh_intel 22 tests PASS, 0 tests FAIL
              frost 75 tests PASS, 0 tests FAIL
 	     jaguar 75 tests PASS, 0 tests FAIL
@@ -2754,51 +2754,51 @@ Summary of pre-tag testing:
 Tag name: pio1_0_11   (No changelog entry was made for pio1_0_10)
 Originator(s): Jim, John
 Date: 02-24-2010
-One-line Summary: Blue Gene specific optimization 
+One-line Summary: Blue Gene specific optimization
 
 List all subroutines eliminated:
-     Removed the Makefile.conf.bluefire and changed testpio_run.pl so that configure is 
+     Removed the Makefile.conf.bluefire and changed testpio_run.pl so that configure is
      run using the bash shell on bluefire.  (ksh is slow)
-	
-List all subroutines added and what they do: 
-   
-     PIO_getnumiotasks: This returns the actual number of IO tasks 
+
+List all subroutines added and what they do:
+
+     PIO_getnumiotasks: This returns the actual number of IO tasks
 	 used by PIO.
-    
+
      nextlarger: Calculates the next larger value which even divides an input arguement.
 
 
-     determineiotasks:  A special routine only for Blue Gene which will load balance 
+     determineiotasks:  A special routine only for Blue Gene which will load balance
 	io-tasks accross IO-nodes
 
      identity:	A Blue Gene specific routine which prints out node identity
-      
+
 List all existing files that have been modified, and describe the changes:
 
     pio/configure.ac
 
-	Added CFLAGS to configure stdout 
-   
+	Added CFLAGS to configure stdout
+
     pio/pio_types.F90
-	
-	Moved ioranks array into type declaration.  This is a 
-	necessary generalization because we no longer have even 
-	strides for the IO ranks.  
+
+	Moved ioranks array into type declaration.  This is a
+	necessary generalization because we no longer have even
+	strides for the IO ranks.
 
     pio/piolib_mod.F90
 
-        getiostartandcount has been generallized the provide more 
+        getiostartandcount has been generallized the provide more
 	functionality including:
 
-	   - Block decomposition in the z-dimension 
-	   - A fan-in/out limiter for the decomposition creation loop   	
-       
-        PIO_inidecomp_dof has been modified to call determineiotasks 
-	if on a Blue Gene system 
+	   - Block decomposition in the z-dimension
+	   - A fan-in/out limiter for the decomposition creation loop
+
+        PIO_inidecomp_dof has been modified to call determineiotasks
+	if on a Blue Gene system
 
 	add BGP and BGL ifdef
 
-    pio/Makefile 
+    pio/Makefile
 
 	Includes the Blue Gene specific topology.c file
 
@@ -2808,8 +2808,8 @@ List all existing files that have been modified, and describe the changes:
 
     pio/pio.F90
 
-	exported public PIO_getnumiotasks subroutine 
-	
+	exported public PIO_getnumiotasks subroutine
+
 
     testpio/testpio_build.pl
 
@@ -2818,20 +2818,20 @@ List all existing files that have been modified, and describe the changes:
 
     testpio/tstpio.F90
 
-	Added test which only allocates arrays if they are used by the code.  
-	
-	Added the option to do 2-phase pass to measure performance.  The 
-	first phase writes out all files, while the second phase will read all 
-	files.  This 2-phase approach does a better job of filtering out the 
-	impact of read-caching on performance measurements. 
+	Added test which only allocates arrays if they are used by the code.
+
+	Added the option to do 2-phase pass to measure performance.  The
+	first phase writes out all files, while the second phase will read all
+	files.  This 2-phase approach does a better job of filtering out the
+	impact of read-caching on performance measurements.
 
 	Fixed the diagnostic which prints out the location of the maximum memory usage
 
-     testpio/testpio_run.pl 
+     testpio/testpio_run.pl
 
 	Added the new testsuite 'bench'
 
-     testpio/build_defaults.xml 
+     testpio/build_defaults.xml
 
 	updated the version of pnetcdf on frost
 
@@ -2852,20 +2852,20 @@ Describe any changes made to scripts/build system:
 
 Describe any substantial timing or memory changes:
 
-	Blue Gene specific optimizations that balance the number of io-tasks to io-nodes. 
+	Blue Gene specific optimizations that balance the number of io-tasks to io-nodes.
 
-	Added test which only allocates arrays if they are used by the code.  
+	Added test which only allocates arrays if they are used by the code.
 
-	Added the option to do 2-phase pass to measure performance.  The 
-	first phase writes out all files, while the second phase will read all 
-	files.  This 2-phase approach does a better job of filtering out the 
-	impact of read-caching on performance measurements. 
+	Added the option to do 2-phase pass to measure performance.  The
+	first phase writes out all files, while the second phase will read all
+	files.  This 2-phase approach does a better job of filtering out the
+	impact of read-caching on performance measurements.
 
 Code reviewed by: John, Jim
 
 Summary of pre-tag testing:
 	     bluefire 119 tests PASS, 0 tests FAIL
-	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh 22 tests PASS, 0 tests FAIL
 	     edinburgh_intel 22 tests PASS, 0 tests FAIL
              frost 75 tests PASS, 0 tests FAIL
 	     jaguar 75 tests PASS, 0 tests FAIL
@@ -2881,7 +2881,7 @@ Originator(s): Jim, Pat Worley
 Date:
 One-line Summary: handshaking for cray
 
-List all subroutines eliminated: 
+List all subroutines eliminated:
 
 List all subroutines added and what they do:  pnetcdf_version_check
 	 check that the pnetcdf version is new enough for pio
@@ -2927,8 +2927,8 @@ List all existing files that have been modified, and describe the changes:
 	requirements (allocate/assignment/deallocate). Since this is
 	similar to what is used in USESPACE, I doubt that we will notice
 	any difference.
-     
-	
+
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2983,8 +2983,8 @@ M              58   configure.ac
 M              58   aclocal.m4
      Added support for netcdf4, two new iotypes are defined  PIO_IOTYPE_NETCDF4C and PIO_IOTYPE_NETCDF4P
 	for compressed and parallel options of netcdf4.   Files opened for read should open in the correct
-	format 
-	
+	format
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -2995,19 +2995,19 @@ Bugs fixed:
 
 Describe any changes made to scripts/build system:
     Added tests for netcdf4 on bluefire
-        
-	
+
+
 Describe any substantial timing or memory changes:
 
 
 
-Code reviewed by: Jim 
+Code reviewed by: Jim
 
 Summary of pre-tag testing:
        bluefire: 107 tests PASS, 0 tests FAIL
        frost   : 74 tests PASS, 0 tests FAIL
        dublin  : 22 tests PASS, 0 tests FAIL
-  Regression tests:   Tested in cam 
+  Regression tests:   Tested in cam
 
 
 ===============================================================
@@ -3026,7 +3026,7 @@ List all subroutines added and what they do:
 
 List all existing files that have been modified, and describe the changes:
    piolib_mod.F90 corrected case of cpp macros
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -3074,12 +3074,12 @@ Describe any changes made to scripts/build system:
 	Removed the mct requirement
         Removed OPT flags added by default in configure, no OPT flags are
 	included unless explicitly added by the user.
-	
+
 Describe any substantial timing or memory changes:
 
 Code reviewed by: Jim and John
 
-Summary of pre-tag testing:  
+Summary of pre-tag testing:
 
   Regression tests:  Bluefire, frost, dublin (pgi and intel) all tests pass
 
@@ -3089,7 +3089,7 @@ Summary of pre-tag testing:
 Tag name: pio60_prod
 Originator(s): Jim
 Date:  12-07-2009
-One-line Summary: Fix problems when using lahey compiler, fix last two 
+One-line Summary: Fix problems when using lahey compiler, fix last two
 	problems in testsuite.
 
 List all subroutines eliminated:
@@ -3105,15 +3105,15 @@ List all existing files that have been modified, and describe the changes:
 	with intrensic of same name.
   piolib_mod.F90 : Modified GenIndexedBlock to allow for 0 length writes
 	thus allowing tests bn01 and bn03 to pass.
-  pio_support.F90.in: Removed a #ifdef USEMPIIO that was unneeded.	
+  pio_support.F90.in: Removed a #ifdef USEMPIIO that was unneeded.
 
-  genf90.pl : Modified to print line numbers at the beginning of routines 
+  genf90.pl : Modified to print line numbers at the beginning of routines
 	instead of the end.  This should make line numbers from compilers and
 	debuggers more accurate.
-  iompi_mod.F90.in : 
+  iompi_mod.F90.in :
 
 
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -3122,7 +3122,7 @@ of new functionality and how user can use it):
 
 Bugs fixed:
    fixed the bn01 and bn03 tests.
-	
+
 Describe any changes made to scripts/build system:
 
 Describe any substantial timing or memory changes:
@@ -3132,9 +3132,9 @@ Code reviewed by: self
 Summary of pre-tag testing:
      all 74 tests PASS on bluefire, frost and Jaguar
      all 22 tests PASS on dublin using lahey and intel compilers.
-	
+
   Regression tests:
-     
+
 
 ===============================================================
 ===============================================================
@@ -3142,7 +3142,7 @@ Summary of pre-tag testing:
 
 Tag name: pio59_prod
 Originator(s): Jim
-Date: 10-20-2009 
+Date: 10-20-2009
 One-line Summary: bug fix in pio_get_var
 
 List all subroutines eliminated:
@@ -3152,7 +3152,7 @@ List all subroutines added and what they do:
 List all existing files that have been modified, and describe the changes:
      Renamed functions in nf_mod to avoid redirection, this was done for the intel compiler
      Updated ChangeLog_template
-	
+
 List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
@@ -3221,17 +3221,17 @@ of new functionality and how user can use it):
 
 pionf_mod.F90.in fixed a bug that caused text writes to fail if the text variable included the netcdf unlimited dimension
 
-genf90.pl fixed preprocessor line numbering to refer to correct .in 
+genf90.pl fixed preprocessor line numbering to refer to correct .in
 	file line numbers.  Debuggers and core files should now point back to
-	the correct source line.  
+	the correct source line.
 
 pio_spmd_utils.F90.in : Changed send to isend in handshaking algorythm to avoid potential deadlock should mpi buffers become filled.
 
 pio_types.F90 removed definition of MPI_INFO_NULL when compiled with mpi-serial, mpi-serial already defines this variable.
 
-	
+
 Bugs fixed:
-	
+
 Describe any changes made to scripts/build system:
 
 Describe any substantial timing or memory changes:
@@ -3284,29 +3284,29 @@ Originator(s): Jim
 Date: 09-29-09
 One-line Summary: New test scripts.  Added support for multidimensional darrays.
                   New documentation
-	
-List all component tags that were used to create pio tag: 
+
+List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
    There is no longer a need to flatten multidimensional arrays when calling
-   pio_read_darray and pio_write_darray.  
+   pio_read_darray and pio_write_darray.
 
 Bugs fixed:
 
-Describe any changes made to scripts/build system:  testpio_build.pl and testpio_run.pl 
-	replace individual csh scripts.  
+Describe any changes made to scripts/build system:  testpio_build.pl and testpio_run.pl
+	replace individual csh scripts.
 
 Describe any substantial timing or memory changes:
 
 Code reviewed by: self
 
 Summary of pre-tag testing:  Tested on bluefire, frost, dublin, athena, jaguar
-	70 tests now pass and 4 fail - (bn01 and bn03).   
+	70 tests now pass and 4 fail - (bn01 and bn03).
 	Tests were also run with the cam testsuite.
-	
+
   Regression tests:
 
 
@@ -3358,9 +3358,9 @@ of new functionality and how user can use it):
 
 Bugs fixed:
 
-Describe any changes made to scripts/build system:  
+Describe any changes made to scripts/build system:
 
-Describe any substantial timing or memory changes: 
+Describe any substantial timing or memory changes:
 
 Code reviewed by: self
 
@@ -3384,11 +3384,11 @@ Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Added a new variable to the testpio_in namelist: nvars 
+Added a new variable to the testpio_in namelist: nvars
 	which controls the number of variables written to the r4 and r8 files
 	also added an unlimited dimension to test file variables
 	moved setframe calls in testpio
-	
+
 Bugs fixed:
 
 Describe any changes made to scripts/build system:
@@ -3397,7 +3397,7 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by: self
 
-Summary of pre-tag testing: 
+Summary of pre-tag testing:
 
   Regression tests: bluefire test suite (12 failures expected)
 
@@ -3420,7 +3420,7 @@ to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
 
-Bugs fixed:  
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -3438,7 +3438,7 @@ Summary of pre-tag testing:   Cam regressions (all pass).  bluefire test suite (
 Tag name: pio50_prod
 Originator(s): Jim, Tony, Mariana, John
 Date: 7-1-2009
-One-line Summary: bug fix in piolib_mod to accept base=0.  
+One-line Summary: bug fix in piolib_mod to accept base=0.
 	          fixed intel compiler line length problem
 	          fixed getiostartandcount for large processor counts
 	          fixed problems and improved testing on bluegene platforms
@@ -3448,7 +3448,7 @@ List all component tags that were used to create pio tag:
     timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
     testpio/perl5lib https://svn-ccsm-models.cgd.ucar.edu/perl5lib/trunk_tags/perl5lib_090613/
 
-	
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
@@ -3459,14 +3459,14 @@ Bugs fixed:
 Describe any changes made to scripts/build system:
         Began working on improved test scripts using xml and perl - this is a
 	work in progress, your contribution would be welcome.
-	
+
 Describe any substantial timing or memory changes:
 
 Code reviewed by: Jim
 
 Summary of pre-tag testing:
 
-  Regression tests:  
+  Regression tests:
       bluefire: 62 PASS, 12 FAIL
 
 
@@ -3481,13 +3481,13 @@ One-line Summary: Improved boxrearranger performance
 
 List all component tags that were used to create pio tag:
    mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
-   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221	
-	
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-   Disabled timing tests in frost test suite - the timing library needs a few changes 
+   Disabled timing tests in frost test suite - the timing library needs a few changes
 	to work on frost
    Replaced getiostartandcount with an algorithm provided by Tony, this is doing a better
 	job of decomposing into optimal strips
@@ -3498,15 +3498,15 @@ of new functionality and how user can use it):
 	processor.   This reduces the number of expected failures from 13 to 12.
 
    Changed cpp formating in box_rearranger.F90.in to satisfy fussy cpp in intel compiler.
-	
+
 Bugs fixed:
 
 Describe any changes made to scripts/build system:
-   Disabled timing tests in frost test suite - the timing library needs a few changes 
+   Disabled timing tests in frost test suite - the timing library needs a few changes
 	to work on frost
 
 Describe any substantial timing or memory changes:
-    
+
 Code reviewed by: Jim, Mariana
 
 Summary of pre-tag testing:  testpio suite on bluefire and frost
@@ -3514,7 +3514,7 @@ Summary of pre-tag testing:  testpio suite on bluefire and frost
 
   Regression tests:
       bluefire: 62 PASS, 12 FAIL
-      frost   : 
+      frost   :
 
 ===============================================================
 
@@ -3529,9 +3529,9 @@ One-line Summary: Added support for benchmark and testsuite on frost
 
 List all component tags that were used to create pio tag:
    mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
-   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221	
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
 
-	Added support for the benchmark and testsuite on frost.  
+	Added support for the benchmark and testsuite on frost.
 
 Bugs fixed:
 
@@ -3545,7 +3545,7 @@ Summary of pre-tag testing:
 
   Regression tests:
      A total of 50 passed and 24 failures.
-	
+
 ===============================================================
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
@@ -3557,7 +3557,7 @@ One-line Summary: Added communications options to box_rearranger
 
 List all component tags that were used to create pio tag:
    mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
-   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221	
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
 
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
@@ -3575,7 +3575,7 @@ of new functionality and how user can use it):
       to enable the different options.
 
       1) Out of the box, the original cam3_6_39 algorithms
-      are used. 
+      are used.
 
       2) Compiling with
 
@@ -3620,7 +3620,7 @@ of new functionality and how user can use it):
 
 	and recompile.
 
-	
+
 
 Bugs fixed:
 
@@ -3635,7 +3635,7 @@ Summary of pre-tag testing:
   Regression tests:
       Passed all expected tests on bluefire and jaguar (13 expected failures on each)
       Passed cam regression tests
-	
+
 ===============================================================
 ===============================================================
 
@@ -3656,11 +3656,11 @@ of new functionality and how user can use it):
 
 	* Reduced the amount of memory used in gdecomp_DOF subroutine
 	* Added several new benchmark configurations
-	* Addressed bug in decomposition calculation algorithm 
+	* Addressed bug in decomposition calculation algorithm
 	* Added support for full specification of IO decomposition
-	  using namelist 
+	  using namelist
 	* Added output of maximum memory across processors in testpio code
-	
+
 
 
 Bugs fixed:
@@ -3685,20 +3685,20 @@ Originator(s): Jim, Pat Worley
 Date: 05-19-09
 One-line Summary: Changed send recv algorythm in pionfwrite_mod, minor bug fixes
 
-List all component tags that were used to create pio tag: 
+List all component tags that were used to create pio tag:
    mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
    timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
-	
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
-    
+
 	Added handshaking to make sure that irecv is posted prior to send in
 	communications for netcdf output method in pionfwrite_mod.
-	Replaced mpi_int with mpi_integer.  
+	Replaced mpi_int with mpi_integer.
 
-	
-Bugs fixed:  
+
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -3721,26 +3721,26 @@ Originator(s): Jim
 Date: 05-15-09
 One-line Summary: Rewrite getiostartandcount routine in piolib_mod.F90
 
-List all component tags that were used to create pio tag: 
+List all component tags that were used to create pio tag:
    mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
    timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
-	
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
-   
+
    A complete rewrite of thegetiostartandcount routine includes 3 options for
-	how arrays should be decomposed onto the io processors plus allows the 
-	user to specify start and count arrays at the application level.   
+	how arrays should be decomposed onto the io processors plus allows the
+	user to specify start and count arrays at the application level.
         The initdecomp interface therefor has three additional optional parameters
-	
+
 	initDecomp_1dof_nf_box(Iosystem,basepioTYPE,dims,compDOF, IOdesc, start, count, method_in)
 
 	where start and count are of type PIO_OFFSET and have the same number of dimensions as dims
 	and method_in is an integer with value 1 (inner dim first) ,2 (outer dim first), or 3 (largest to smallest)
 	If either start or count is provided both must be and method_in is ignored.
 
-Bugs fixed:  
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -3790,9 +3790,9 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by: self
 
-Summary of pre-tag testing: 
+Summary of pre-tag testing:
 
-  Regression tests: 
+  Regression tests:
 
 
 ===============================================================
@@ -3812,7 +3812,7 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by: self
 
-Summary of pre-tag testing: 
+Summary of pre-tag testing:
 
   Regression tests: bluefire all pass
 
@@ -3833,7 +3833,7 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by: self
 
-Summary of pre-tag testing: 
+Summary of pre-tag testing:
 
   Regression tests: bluefire all pass
 
@@ -3858,7 +3858,7 @@ Date: April 17, 2009
 One-line Summary: Fixed generated files, clarified procedure for commiting
 
 ===============================================================
- 
+
 Tag name: pio37_prod
 Originator(s): tcraig
 Date: 03/20/2009
@@ -3868,7 +3868,7 @@ add Makefile.conf.bluefire for ccsm build.  has no effect on
 standalone implementation.
 
 ===============================================================
- 
+
 Tag name: pio36_prod
 Originator(s): Jim
 Date: 03/20/2009
@@ -3888,7 +3888,7 @@ Describe any substantial timing or memory changes:
 
 Code reviewed by:
 
-Summary of pre-tag testing:  
+Summary of pre-tag testing:
 
   Regression tests: cam regression tests
 
@@ -3896,7 +3896,7 @@ Summary of pre-tag testing:
 ===============================================================
 
 ===============================================================
- 
+
 Tag name: pio35_prod
 Originator(s): tcraig
 Date: 03/05/09
@@ -3909,7 +3909,7 @@ One-line Summary: merge testdev11_pio34_prod to trunk
  - and more...
 
 ===============================================================
- 
+
 Tag name: pio34_prod
 Originator(s): tcraig
 Date: 03/05/09
@@ -3922,7 +3922,7 @@ One-line Summary: pio bug fixes
  - Fix fill value bug in piodarray.F90.in (tcraig)
 
 ===============================================================
- 
+
 Tag name: pio33_prod
 Originator(s): tcraig
 Date: 02/06/09
@@ -3938,7 +3938,7 @@ One-line Summary: testpio update, pio update
  - Extend testpio logic wrt test capabilities
 
 ===============================================================
- 
+
 Tag name: pio32_prod
 Originator(s): tcraig
 Date: 01/30/09
@@ -3952,20 +3952,20 @@ testpio_suite.bluefire.run
 testdecomp.bluefire.run
 
 all run to completion on bluefire
-	
+
 ===============================================================
- 
+
 Tag name: pio31_prod
 Originator(s): Jim Edwards
 Date: 01/30/09
 One-line Summary: Minor bug fix, update configure for mpiio
 
-  pio/configure    
-  pio/configure.ac 
+  pio/configure
+  pio/configure.ac
   pio/piolib_mod.F90
-	
+
 ===============================================================
- 
+
 Tag name: pio30_prod
 Originator(s): Jim Edwards
 Date: 01/30/09
@@ -3993,7 +3993,7 @@ Summary of pre-tag testing:  cam regression on bluefire and calgary
 ===============================================================
 
 ===============================================================
- 
+
 Tag name: pio29_prod
 Originator(s): John Dennis
 Date: 01/21/09
@@ -4020,7 +4020,7 @@ Summary of pre-tag testing:
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio28_prod
 Originator(s): Jim
 Date: 12/16/08
@@ -4047,7 +4047,7 @@ Summary of pre-tag testing:
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio27_prod
 Originator(s): Jim, Ray
 Date: 12/10/08
@@ -4055,18 +4055,18 @@ One-line Summary: configuration changes
 
 List all component tags that were used to create pio tag:
   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
-	
+
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 	Reconfigured to build as a standalone library in CCSM build.
-    
+
 Bugs fixed:
 
 Describe any changes made to scripts/build system:
    configuration tools moved to pio subdirectory to allow exporting
    pio lib without test directory and externals
-	
+
 Describe any substantial timing or memory changes:
 
 Code reviewed by: Jim
@@ -4078,7 +4078,7 @@ Summary of pre-tag testing:  tested using cam test suite on bluefire and calgary
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio26_prod
 Originator(s): Jim
 Date: 10/20/08
@@ -4090,7 +4090,7 @@ Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed: 
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -4105,7 +4105,7 @@ Summary of pre-tag testing: tested with homme/cam on bluefire and calgary
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio25_prod
 Originator(s): Jim
 Date: 10/03/08
@@ -4117,7 +4117,7 @@ Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed:  
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -4132,7 +4132,7 @@ Summary of pre-tag testing:  tested against cam on bluefire and bangkok
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio24_prod
 Originator(s): Jim
 Date: 8/28/08
@@ -4160,7 +4160,7 @@ Summary of pre-tag testing:  tested on bluefire and with cam and homme interface
 ===============================================================
 
 ===============================================================
- 
+
 Tag name: pio23_prod
 Originator(s): Jim
 Date: 4/24/08
@@ -4187,13 +4187,13 @@ Summary of pre-tag testing: tested on aix and with cam
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio22_prod
 Originator(s): Jim Edwards
 Date: 4/14/08
 One-line Summary:  Moved F90 generation from cpp to perl script genf90.pl
 
-List all component tags that were used to create pio tag: 
+List all component tags that were used to create pio tag:
 	mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_4_2_071026
 
 Describe the changes for each component above that was changed relative
@@ -4217,7 +4217,7 @@ Summary of pre-tag testing:   Tested on AIX
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio21_prod
 Originator(s): Jim Edwards
 Date: 4-9-2008
@@ -4244,7 +4244,7 @@ Summary of pre-tag testing:  tested on blueice
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio20_prod
 Originator(s): Jim Edwards
 Date: 3-26-2008
@@ -4271,13 +4271,13 @@ Summary of pre-tag testing: tested on blueice
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio18_prod
 Originator(s): Jim Edwards
 Date: 03-20-2008
 One-line Summary:  minor updates to netcdf attributes and put/get functions
 
-List all component tags that were used to create pio tag: 
+List all component tags that were used to create pio tag:
 
 Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
@@ -4286,7 +4286,7 @@ of new functionality and how user can use it):
 Bugs fixed:
 
 Describe any changes made to scripts/build system: none
- 
+
 Describe any substantial timing or memory changes: none
 
 Code reviewed by: me
@@ -4298,7 +4298,7 @@ Summary of pre-tag testing:  tested against cam on blueice
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio16_prod
 Originator(s): John Dennis
 Date: 03-14-2008
@@ -4308,11 +4308,11 @@ A	testpio/factor_mod.F90
 		Several factoring need by the new decompostion algorthm in testcode
 
 M	testpio/Makefile
-		
-		Added the source file factor_mod.F90 to build 
 
-M	testpio/check_mod.F90	
-	
+		Added the source file factor_mod.F90 to build
+
+M	testpio/check_mod.F90
+
 		Eliminated excessive error messages generation
 
 M	testpio/testPIO.F90
@@ -4337,19 +4337,19 @@ Describe any changes made to scripts/build system:
 
 Describe any substantial timing or memory changes:
 
-	See above. 
+	See above.
 
 Code reviewed by: John
 
 Summary of pre-tag testing:
 
   Regression tests:
-	tested on frost for binary files 
+	tested on frost for binary files
 
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio15_prod
 Originator(s): Jim Edwards
 Date: 03-07-2008
@@ -4390,7 +4390,7 @@ of new functionality and how user can use it):
  Change the arguments to PIO_OPENFILE and PIO_CREATEFILE  from (File, filename) to (PIO, FIle, iotype, filename)
  Change the first argument to PIO_INITDECOMP from file_desc_t to iosystem_desc_t
  Explicitly include the io_desc_t  in calls to pio_read_darray and pio_write_darray
-	
+
 Bugs fixed:
 
 Describe any changes made to scripts/build system:
@@ -4406,7 +4406,7 @@ Summary of pre-tag testing:
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio14_prod
 Originator(s): J. Dennis
 Date: 03/04/08
@@ -4414,13 +4414,13 @@ One-line Summary: Add rearranger support for binary files
 
 M	testPIO.F90
 
-	- Added code to use rearranger for binary files 
+	- Added code to use rearranger for binary files
 
 	- Added namelist variables to control number of IO processors (nprocsIO)
 
 M 	piolib_mod.F90
 
-	- Cleaned up some dead code in initDecomp_2dof_BIN 
+	- Cleaned up some dead code in initDecomp_2dof_BIN
 
 M	iompi_mod.F90
 
@@ -4447,16 +4447,16 @@ Summary of pre-tag testing:  tested on BGL
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio13_prod
 Originator(s): J. Dennis
 Date: 02/29/08
-One-line Summary: Changes to improve benchmarking of testpio code. 
+One-line Summary: Changes to improve benchmarking of testpio code.
 
 M	testPIO.F90
 
 	- Added ability to read/write to a other directories
-	
+
 	- Added support to flush buffer cache
 
 	- Added support to run performance test several iterations.
@@ -4489,7 +4489,7 @@ Summary of pre-tag testing:
 
 ===============================================================
 ===============================================================
- 
+
 Tag name: pio11_prod
 Originator(s):  Jim Edwards
 Date: 01/17/08
@@ -4508,7 +4508,7 @@ M            8542   pioread.inc
 A  +            -   pionfatt.inc
 	Moved from nf_mod and added support for calls using vdesc instead of vdesc%var_id
 M            8542   pionfwrite.inc
-	Added timing calls 
+	Added timing calls
 M            8542   nf_mod.F90
 	Added support for calls using vdesc instead of vdesc%var_id
 M            8542   rearrange.F90
@@ -4525,16 +4525,16 @@ M            8542   pionfput.inc
 	Added support for calls using vdesc instead of vdesc%var_id
 M            8542   rearrange.inc
         minor format changes
-	
+
 List all component tags that were used to create pio tag:
 
   mct MCT2_4_2_071026
 
-Describe the changes for each component above that was changed relative 
+Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed: 
+Bugs fixed:
 
 Describe any changes made to scripts/build system:
 
@@ -4557,9 +4557,9 @@ Changes since last tag
         use MCT_initialized to determine if need to start MCT
 	added timers to rearranger
 
-	
+
 ===============================================================
- 
+
 Tag name: pio10_prod
 Originator(s): Ray Loy
 Date: Jan 3, 2008
@@ -4567,19 +4567,19 @@ One-line Summary: changed initDecomp args from MPI types to PIO types
 
 List all component tags that were used to create pio tag:
 
-  mct 	MCT2_3_0_070524    
+  mct 	MCT2_3_0_070524
 
-Describe the changes for each component above that was changed relative 
+Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
 	all interfaces of PIO_initDecomp are now changed to use
-        PIO_{double,real,int,char} instead of 
+        PIO_{double,real,int,char} instead of
         MPI_{DOUBLE_PRECISION,REAL,INTEGER,CHAR}
 
         this is to be more consistent
-	
-Bugs fixed: 
+
+Bugs fixed:
 
 
 Summary of pre-tag testing:
@@ -4595,7 +4595,7 @@ Summary of pre-tag testing:
     Regression tests:
 
 ===============================================================
- 
+
 Tag name: pio09_prod
 Originator(s): Ray Loy
 Date: Dec 5, 2007
@@ -4603,9 +4603,9 @@ One-line Summary: added mp_alltoallw option to box rearrange
 
 List all component tags that were used to create pio tag:
 
-  mct 	MCT2_3_0_070524    
+  mct 	MCT2_3_0_070524
 
-Describe the changes for each component above that was changed relative 
+Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
@@ -4614,7 +4614,7 @@ of new functionality and how user can use it):
 
         on some platforms this might be faster.
 
-Bugs fixed: 
+Bugs fixed:
 
 
 Summary of pre-tag testing:
@@ -4630,7 +4630,7 @@ Summary of pre-tag testing:
     Regression tests:
 
 ===============================================================
- 
+
 Tag name: pio08_prod
 Originator(s): Ray Loy
 Date: Nov 30, 2007
@@ -4638,9 +4638,9 @@ One-line Summary: mpi type caching in box rearranger
 
 List all component tags that were used to create pio tag:
 
-  mct 	MCT2_3_0_070524    
+  mct 	MCT2_3_0_070524
 
-Describe the changes for each component above that was changed relative 
+Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
@@ -4651,9 +4651,9 @@ time of the rearrange.
 also was able to remove some of the data in IODesc because it is no
 longer needed after the type creation.
 
-	
 
-Bugs fixed: 
+
+Bugs fixed:
 
 
 Summary of pre-tag testing:
@@ -4669,7 +4669,7 @@ Summary of pre-tag testing:
     Regression tests:
 
 ===============================================================
- 
+
 Tag name: pio05_prod
 Originator(s): John Dennis
 Date: Oct 23, 2007
@@ -4677,17 +4677,17 @@ One-line Summary: Support for PIO in POP
 
 List all component tags that were used to create pio tag:
 
-  mct 	MCT2_3_0_070524    
+  mct 	MCT2_3_0_070524
 
-Describe the changes for each component above that was changed relative 
+Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
 PIO in POP
 
-	Several major changes were applied to PIO to enable use in 
-POP.  This included the porting of the old version of the subroutine 
-initDecomp_2dof_BIN.  The previous version of the subroutine does not 
+	Several major changes were applied to PIO to enable use in
+POP.  This included the porting of the old version of the subroutine
+initDecomp_2dof_BIN.  The previous version of the subroutine does not
 use the two separate IODOF properly.
 
 ChangeLog
@@ -4695,15 +4695,15 @@ ChangeLog
 	PIO now uses a changed log and new form of tags:  pio##_prod
 
 
-Bugs fixed: 
+Bugs fixed:
 
-	Binary writing with MPI-IO now works again.  
+	Binary writing with MPI-IO now works again.
 
 Summary of pre-tag testing:
 
   Regression tests:
 
-	Minor testing on BlueGene within LANL POP and CCSM POP in coupled system.  
+	Minor testing on BlueGene within LANL POP and CCSM POP in coupled system.
 
   Machine (frost):
     Regression tests:

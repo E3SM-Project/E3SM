@@ -1,5 +1,5 @@
 
-SET(SRC check_mod.F90  gdecomp_mod.F90  kinds_mod.F90  namelist_mod.F90  
+SET(SRC check_mod.F90  gdecomp_mod.F90  kinds_mod.F90  namelist_mod.F90
             testpio.F90  utils_mod.F90)
 
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})

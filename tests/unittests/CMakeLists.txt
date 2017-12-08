@@ -3,7 +3,7 @@ ADD_DEFINITIONS(${PIO_DEFINITIONS})
 
 # Use to trace hdf5 errors with a special netcdf build
 OPTION(HDF5_LOGGING "Turn on hdf5 logging (requires instrumented netcdf4)" OFF)
-if(HDF5_LOGGING) 
+if(HDF5_LOGGING)
   ADD_DEFINITIONS(-DLOGGING)
 endif()
 

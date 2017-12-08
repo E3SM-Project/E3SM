@@ -6,7 +6,7 @@
 
 module basic_tests
 
-  use pio 
+  use pio
   use global_vars
 
   Implicit None

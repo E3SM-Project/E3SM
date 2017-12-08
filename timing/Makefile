@@ -32,7 +32,7 @@ SRCS_C = GPTLget_memusage.c \
          threadutil.c \
 
 SRCS_F90 =  perf_mod.F90 \
-            perf_utils.F90  
+            perf_utils.F90
 
 OBJS=  $(SRCS_C:.c=.o) \
        $(SRCS_F90:.F90=.o)
@@ -61,7 +61,7 @@ SRCS_CPP= $(SRCS_F90:.F90=$(CPPSUF))
 .F90.o:
 	@if [ -w $*.f90 ] ; then echo "ERROR: file $*.f90 is writable - the .f90 suffix is reserved for temporary cpp output" ; exit 1; fi
 	$(RM) $*.f90
-	$(CPP) $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90 
+	$(CPP) $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90
 	chmod a-w $*.f90
 	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.f90
 else
@@ -78,7 +78,7 @@ $(LIB): $(OBJS)
 	$(RM) $@
 	$(AR) $(ARFLAGS) $@ $(OBJS)
 
-     
+
 clean:
 	$(RM) $(LIB) $(OBJS) $(MODFILES) $(SRCS_CPP)
 

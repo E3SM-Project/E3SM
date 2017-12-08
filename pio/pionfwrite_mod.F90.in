@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "pionfwrite_mod.F90"
 !>
-!! @file 
+!! @file
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Decomposed Write interface to NetCDF
@@ -35,7 +35,7 @@ contains
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_var_dims
     use pio_utils, only : check_netcdf, bad_iotype
     use alloc_mod, only: alloc_check
-    use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
+    use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
 
 #ifdef _NETCDF
     use netcdf, only : nf90_put_var, nf90_inquire_variable   !_EXTERNAL
@@ -90,7 +90,7 @@ contains
     if(file%iosystem%ioproc) then
        iotype = File%iotype
 
-       select case (iotype) 
+       select case (iotype)
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
 #ifdef DEBUG
@@ -114,7 +114,7 @@ contains
 
 #ifdef _NETCDF
 #ifdef _NETCDF4
-       case(PIO_iotype_netcdf4p)	
+       case(PIO_iotype_netcdf4p)
           ierr=nf90_var_par_access(File%fh, vardesc%varid, NF90_COLLECTIVE)
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
 #endif
@@ -138,12 +138,12 @@ contains
                 end if
              end if
           endif
-	
+
           if(File%iosystem%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)
           end if
           call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
-          
+
           temp_start(1:ndims)=int(start(1:ndims))
 
           temp_count(1:ndims)=int(count(1:ndims))
@@ -167,11 +167,11 @@ contains
                      {MPITYPE}, &
                      0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
                 call CheckMPIReturn(subName, mpierr)
-                
+
                 call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                      0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
                 call CheckMPIReturn(subName, mpierr)
-                
+
                 call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                      0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
 
@@ -179,7 +179,7 @@ contains
              endif
           endif
 
-          if (File%iosystem%io_rank==0) then 
+          if (File%iosystem%io_rank==0) then
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))

@@ -1,12 +1,12 @@
 /******************************************************************************
  *
- * 
+ *
  *
  * Copyright (C) 2013
  *
  * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
+ * documentation under the terms of the GNU General Public License is hereby
+ * granted. No representations are made about the suitability of this software
  * for any purpose. It is provided "as is" without express or implied warranty.
  * See the GNU General Public License for more details.
  *
@@ -24,9 +24,9 @@
 <li>Configure - PIO uses the gnu autoconf tools, for historical reasons the configure
 script is in the pio subdirectory.  A complete set of configure arguments, options and flags is available by running:
 
-> configure --help.   
+> configure --help.
 
-Before running configure, you will need to know the location of some supporting libraries. 
+Before running configure, you will need to know the location of some supporting libraries.
 
 - Set the NETCDF_PATH environment variable to the netcdf install directory or --disable-netcdf to
 disable serial NetCDF support.
@@ -46,14 +46,14 @@ One additional flag of interest is --enable-filesystem-hints which can
 be set to gpfs or lustre.  You should only use this flag if you are sure that the
 file system you are using is either gpfs or lustre respectively. If you are unsure, then do not use this flag. </li>
 
-<li>After configure completes use gmake in the pio subdirectory to complete the build.   
+<li>After configure completes use gmake in the pio subdirectory to complete the build.
 
 > gmake
 
 Note that although the user application only needs to 'use pio'  at least some compilers require that
 all of the module files be located in the install directory. If that is the case, then running
 
-> gmake install 
+> gmake install
 
 will move the compiled library and module files to the directory specified
 by $PREFIX.</li>

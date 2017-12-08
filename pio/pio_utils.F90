@@ -3,7 +3,7 @@ module pio_utils
   use pio_types, only : pio_int, pio_real, pio_double, pio_char
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, PIO_internal_error
   use pio_types, only : PIO_iotype_netcdf4p, pio_iotype_netcdf4c
-  use pio_types, only : PIO_bcast_error 
+  use pio_types, only : PIO_bcast_error
   use pio_kinds, only : i4, r4, r8
   use pio_support, only : checkmpireturn, piodie, Debug
 
@@ -27,10 +27,10 @@ module pio_utils
 #endif
 #endif
 
-  public :: check_netcdf 
-  public :: bad_iotype 
+  public :: check_netcdf
+  public :: bad_iotype
 
-  
+
 
 contains
 
@@ -48,7 +48,7 @@ contains
 !  3: do nothing - allow the user to handle it PIO_RETURN_ERROR
 !
     iotype = file%iotype
-    
+
     if(Debug) call mpi_barrier(file%iosystem%union_comm, mpierr)
 
     select case(iotype)
@@ -112,6 +112,6 @@ contains
 
   end subroutine bad_iotype
 
-  
+
 
 end module pio_utils

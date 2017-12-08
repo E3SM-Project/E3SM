@@ -21,7 +21,7 @@ module namelist_mod
     integer(kind=i4), public, parameter :: buffer_size_str_len = 20
     integer(kind=i4), public, parameter :: true_false_str_len = 6
     integer(kind=i4), public, parameter :: romio_str_len = 10
-    
+
     logical, public, save :: async
     integer(i4), public, save :: nx_global,ny_global,nz_global
     integer(i4), public, save :: rearr_type
@@ -49,9 +49,9 @@ module namelist_mod
 
     integer(kind=i4), public, save :: set_lustre_values = 0 !! Set to one for true
     integer(kind=i4), public, save :: lfs_ost_count = 1
-    
+
     character(len=80), save, public :: compdof_input
-    character(len=80), save, public :: iodof_input 
+    character(len=80), save, public :: iodof_input
     character(len=80), save, public :: compdof_output
     character(len=256), save, public :: part_input
     character(len=256), save, public :: casename
@@ -125,7 +125,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     character(len=*), parameter :: myname_=myname//'ReadPIO_Namelist'
 
     !-------------------------------------------------
-    ! set default values for namelist io_nml variables 
+    ! set default values for namelist io_nml variables
     !-------------------------------------------------
 
     async = .false.
@@ -175,14 +175,14 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
 
     open (device, file=filename,status='old',iostat=ierror)
 
-    if(ierror /= 0) then 
+    if(ierror /= 0) then
        write(*,*) caller,'->',myname_,':: Error opening file ',filename, &
             ' on device ',device,' with iostat=',ierror
        ierror = -1
     else
        ierror =  1
     endif
-    
+
     do while (ierror > 0)
        read(device, nml=io_nml, iostat=ierror)
     enddo
@@ -319,7 +319,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
           stride = (nprocs-base)/num_iotasks
        endif
     elseif (nprocsIO <= 0) then
-#ifdef BGx 
+#ifdef BGx
        ! A negative value for num_iotasks has a special meaning on Blue Gene
        num_iotasks = nprocsIO
 #else
@@ -334,7 +334,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     endif
 
     !------------------------------------------------
-    ! reset stride if there are not enough processors 
+    ! reset stride if there are not enough processors
     !------------------------------------------------
     if (base + num_iotasks * (stride-1) > nprocs-1) then
        stride = FLOOR(real((nprocs - 1 - base),kind=r8)/real(num_iotasks,kind=r8))
@@ -343,9 +343,9 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     !-------------------------------------------------------
     ! If rearrangement is 'none' reset to the proper values
     !-------------------------------------------------------
-    if(trim(rearr) == 'none') then  
+    if(trim(rearr) == 'none') then
         stride = 1
-        num_iotasks = nprocs	
+        num_iotasks = nprocs
     endif
 
     write(*,*) trim(string),' n_iotasks  = ',num_iotasks,'  (updated)'
@@ -382,7 +382,7 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   integer(i4) :: itmp
 
   !------------------------------------------
-  ! broadcast namelist info to all processors 
+  ! broadcast namelist info to all processors
   !------------------------------------------
 
   if(async) then

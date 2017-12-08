@@ -1,15 +1,15 @@
       module perf_utils
 
-C----------------------------------------------------------------------- 
-C 
+C-----------------------------------------------------------------------
+C
 C Purpose: This module supplies the csm_share and CAM utilities
 C          needed by perf_mod.F90 (when the csm_share and CAM utilities
 C          are not available).
-C 
+C
 C Author:  P. Worley, October 2007
 C
 C $Id$
-C 
+C
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -17,7 +17,7 @@ C- module boilerplate --------------------------------------------------
 C-----------------------------------------------------------------------
       implicit none
 C     Make the default access private
-      private                   
+      private
       save
 
 C-----------------------------------------------------------------------
@@ -31,9 +31,9 @@ C-----------------------------------------------------------------------
       public find_group_name
       public to_lower
       public shr_mpi_bcast
-   
-      interface shr_mpi_bcast ; module procedure 
-     &  shr_mpi_bcastl0, 
+
+      interface shr_mpi_bcast ; module procedure
+     &  shr_mpi_bcastl0,
      &  shr_mpi_bcasti0
       end interface
 
@@ -47,7 +47,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C- include statements --------------------------------------------------
 C-----------------------------------------------------------------------
-#include <mpif.h>  
+#include <mpif.h>
 #include "gptl.inc"
 
 C-----------------------------------------------------------------------
@@ -58,11 +58,11 @@ C-----------------------------------------------------------------------
    ! precision/kind constants (from csm_share/shr/shr_kind_mod.F90)
    !----------------------------------------------------------------------------
 C  8 byte real
-      integer,parameter,public :: SHR_KIND_R8 = selected_real_kind(12) 
+      integer,parameter,public :: SHR_KIND_R8 = selected_real_kind(12)
 C  native integer
-      integer,parameter,public :: SHR_KIND_IN = kind(1)                
+      integer,parameter,public :: SHR_KIND_IN = kind(1)
 C  long char
-      integer,parameter,public :: SHR_KIND_CL = 256                    
+      integer,parameter,public :: SHR_KIND_CL = 256
 C extra-long char
       integer,parameter,public :: SHR_KIND_CX = 512
 
@@ -71,7 +71,7 @@ C Private data ---------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C  default
-      integer, parameter :: def_pu_logunit = 6                   
+      integer, parameter :: def_pu_logunit = 6
 C  unit number for log output
       integer, private   :: pu_logunit = def_pu_logunit
 
@@ -83,14 +83,14 @@ C
 C========================================================================
 C
       subroutine perfutils_setunit(LogUnit)
-C----------------------------------------------------------------------- 
+C-----------------------------------------------------------------------
 C Purpose:  Set log unit number.
-C Author:   P. Worley 
+C Author:   P. Worley
 C-----------------------------------------------------------------------
 C---------------------------Input arguments-----------------------------
 C
 C  Unit number for log output
-      integer(SHR_KIND_IN), intent(IN) :: LogUnit  
+      integer(SHR_KIND_IN), intent(IN) :: LogUnit
 C-----------------------------------------------------------------------
       pu_logunit = LogUnit
 C
@@ -106,7 +106,7 @@ C=======================================================================
       IMPLICIT none
 
 C  error message string
-      character(*)        ,optional :: string  
+      character(*)        ,optional :: string
 
 C  !----- local -----
       integer(SHR_KIND_IN) :: ierr
@@ -122,7 +122,7 @@ C (dumbed down from original shr_sys_mod.F90 version for use in perf_mod)
 C-------------------------------------------------------------------------------
 
       call shr_sys_flush(pu_logunit)
-   
+
       if ( present(string) ) then
          if (len_trim(string) > 0) then
             write(pu_logunit,*) trim(subName),' ERROR: ',trim(string)
@@ -132,15 +132,15 @@ C-------------------------------------------------------------------------------
       else
          write(pu_logunit,*) trim(subName),' ERROR '
       endif
-   
+
       write(pu_logunit,F00) 'WARNING: calling mpi_abort() and stopping'
       call shr_sys_flush(pu_logunit)
       call mpi_abort(MPI_COMM_WORLD,0,ierr)
       call shr_sys_flush(pu_logunit)
       call abort()
-   
+
       stop
-   
+
       END SUBROUTINE shr_sys_abort
 
 C===============================================================================
@@ -152,7 +152,7 @@ C===============================================================================
 
 C  !----- arguments -----
 C  flush output buffer for this unit
-      integer(SHR_KIND_IN) :: unit  
+      integer(SHR_KIND_IN) :: unit
 
 C  !----- formats -----
       character(*),parameter :: subName =   '(shr_sys_flush) '
@@ -186,9 +186,9 @@ C===============================================================================
 
 C  !----- arguments ---
 C  input MPI error code
-      integer(SHR_KIND_IN), intent(in) :: rcode  
+      integer(SHR_KIND_IN), intent(in) :: rcode
 C  message
-      character(*),         intent(in) :: string 
+      character(*),         intent(in) :: string
 
 C  !----- local ---
       character(*),parameter           :: subName = '(shr_mpi_chkerr) '
@@ -217,9 +217,9 @@ C===============================================================================
 
 C  !----- arguments ---
 C  message
-      character(*),optional,intent(in)   :: string   
+      character(*),optional,intent(in)   :: string
 C  optional code
-      integer,optional,intent(in)        :: rcode    
+      integer,optional,intent(in)        :: rcode
 
 C  !----- local ---
       character(*),parameter             :: subName = '(shr_mpi_abort) '
@@ -233,7 +233,7 @@ C-------------------------------------------------------------------------------
          write(pu_logunit,*) trim(subName),":",trim(string),rcode
       endif
       call MPI_ABORT(MPI_COMM_WORLD,rcode,ierr)
-   
+
       END SUBROUTINE shr_mpi_abort
 
 C===============================================================================
@@ -246,7 +246,7 @@ C===============================================================================
 C  !----- arguments ---
       integer,intent(in)               :: comm
 C  message
-      character(*),optional,intent(in) :: string   
+      character(*),optional,intent(in) :: string
 
 C  !----- local ---
       character(*),parameter           :: subName = '(shr_mpi_barrier) '
@@ -262,23 +262,23 @@ C-------------------------------------------------------------------------------
       else
         call shr_mpi_chkerr(ierr,subName)
       endif
-   
+
       END SUBROUTINE shr_mpi_barrier
 
 C===============================================================================
 C===============================================================================
 
       SUBROUTINE shr_mpi_bcasti0(vec,comm,string)
-   
+
       IMPLICIT none
-   
+
 C  !----- arguments ---
 C  vector of 1
-      integer(SHR_KIND_IN), intent(inout):: vec      
+      integer(SHR_KIND_IN), intent(inout):: vec
 C  mpi communicator
-      integer(SHR_KIND_IN), intent(in)   :: comm     
+      integer(SHR_KIND_IN), intent(in)   :: comm
 C  message
-      character(*),optional,intent(in)   :: string   
+      character(*),optional,intent(in)   :: string
 
 C  !----- local ---
       character(*),parameter           :: subName = '(shr_mpi_bcasti0) '
@@ -290,14 +290,14 @@ C PURPOSE: Broadcast an integer
 C-------------------------------------------------------------------------------
 
       lsize = 1
-   
+
       call MPI_BCAST(vec,lsize,MPI_INTEGER,0,comm,ierr)
       if (present(string)) then
         call shr_mpi_chkerr(ierr,subName//trim(string))
       else
         call shr_mpi_chkerr(ierr,subName)
       endif
-   
+
       END SUBROUTINE shr_mpi_bcasti0
 
 C===============================================================================
@@ -309,11 +309,11 @@ C===============================================================================
 
 C  !----- arguments ---
 C  vector of 1
-      logical, intent(inout):: vec      
+      logical, intent(inout):: vec
 C  mpi communicator
-      integer(SHR_KIND_IN), intent(in)   :: comm     
+      integer(SHR_KIND_IN), intent(in)   :: comm
 C  message
-      character(*),optional,intent(in)   :: string   
+      character(*),optional,intent(in)   :: string
 
 C  !----- local ---
       character(*),parameter           :: subName = '(shr_mpi_bcastl0) '
@@ -332,7 +332,7 @@ C-------------------------------------------------------------------------------
       else
         call shr_mpi_chkerr(ierr,subName)
       endif
-   
+
       END SUBROUTINE shr_mpi_bcastl0
 
 C===============================================================================
@@ -349,7 +349,7 @@ C !REVISION HISTORY:
 C     2005-Dec-14 - E. Kluzek - creation
 C     2007-Oct-21 - P. Worley - dumbed down for use in perf_mod
 C
-C !INTERFACE: ------------------------------------------------------------------  
+C !INTERFACE: ------------------------------------------------------------------
 
       INTEGER FUNCTION shr_file_getUnit ()
 
@@ -359,15 +359,15 @@ CEOP
 
 C  !----- local parameters -----
 C  Min unit number to give
-      integer(SHR_KIND_IN),parameter :: shr_file_minUnit = 10      
+      integer(SHR_KIND_IN),parameter :: shr_file_minUnit = 10
 C  Max unit number to give
-      integer(SHR_KIND_IN),parameter :: shr_file_maxUnit = 99      
+      integer(SHR_KIND_IN),parameter :: shr_file_maxUnit = 99
 
 C  !----- local variables -----
 C  loop index
-      integer(SHR_KIND_IN)   :: n      
+      integer(SHR_KIND_IN)   :: n
 C  If unit opened or not
-      logical                :: opened 
+      logical                :: opened
 
    !----- formats -----
       character(*),parameter :: subName = '(shr_file_getUnit) '
@@ -386,9 +386,9 @@ C  ! --- Choose first available unit other than 0, 5, or 6  ------
          shr_file_getUnit = n
          return
       end do
-   
+
       call shr_sys_abort( subName//': Error: no available units found' )
-   
+
       END FUNCTION shr_file_getUnit
 C===============================================================================
 
@@ -403,7 +403,7 @@ C !REVISION HISTORY:
 C     2005-Dec-14 - E. Kluzek - creation
 C     2007-Oct-21 - P. Worley - dumbed down for use in perf_mod
 C
-C !INTERFACE: ------------------------------------------------------------------  
+C !INTERFACE: ------------------------------------------------------------------
 
       SUBROUTINE shr_file_freeUnit ( unit)
 
@@ -412,15 +412,15 @@ C !INTERFACE: ------------------------------------------------------------------
 C !INPUT/OUTPUT PARAMETERS:
 
 C  unit number to be freed
-      integer(SHR_KIND_IN),intent(in) :: unit  
+      integer(SHR_KIND_IN),intent(in) :: unit
 
 CEOP
 
 C  !----- local parameters -----
 C  Min unit number to give
-      integer(SHR_KIND_IN),parameter :: shr_file_minUnit = 10      
+      integer(SHR_KIND_IN),parameter :: shr_file_minUnit = 10
 C  Max unit number to give
-      integer(SHR_KIND_IN),parameter :: shr_file_maxUnit = 99      
+      integer(SHR_KIND_IN),parameter :: shr_file_maxUnit = 99
 
 C  !----- formats -----
       character(*), parameter :: subName = '(shr_file_freeUnit) '
@@ -433,7 +433,7 @@ C-------------------------------------------------------------------------------
       if (unit < 0 .or. unit > shr_file_maxUnit) then
 !pw   if (s_loglev > 0) write(pu_logunit,F00) 'invalid unit number request:', unit
       else if (unit == 0 .or. unit == 5 .or. unit == 6) then
-         call shr_sys_abort( 
+         call shr_sys_abort(
      &      subName//': Error: units 0, 5, and 6 must not be freed' )
       end if
 
@@ -448,12 +448,12 @@ C===============================================================================
       subroutine find_group_name(unit, group, status)
 
 C---------------------------------------------------------------------------------------
-C Purpose: 
+C Purpose:
 C Search a file that contains namelist input for the specified namelist group name.
 C Leave the file positioned so that the current record is the first record of the
 C input for the specified group.
-C 
-C Method: 
+C
+C Method:
 C Read the file line by line.  Each line is searched for an '&' which may only
 C be preceded by blanks, immediately followed by the group name which is case
 C insensitive.  If found then backspace the file so the current record is the
@@ -463,34 +463,34 @@ C Author:  B. Eaton, August 2007
 C---------------------------------------------------------------------------------------
 
 C  fortran unit attached to file
-      integer,          intent(in)  :: unit     
+      integer,          intent(in)  :: unit
 C  namelist group name
-      character(len=*), intent(in)  :: group    
+      character(len=*), intent(in)  :: group
 C  0 for success, -1 if group name not found
-      integer,          intent(out) :: status   
+      integer,          intent(out) :: status
 
 C  ! Local variables
 
       integer           :: len_grp
 C  io status
-      integer           :: ios    
+      integer           :: ios
 C  first 80 characters of input record
-      character(len=80) :: inrec  
+      character(len=80) :: inrec
 C  left adjusted input record
-      character(len=80) :: inrec2 
+      character(len=80) :: inrec2
       character(len=len(group)) :: lc_group
 
 C  !---------------------------------------------------------------------------
 
       len_grp = len_trim(group)
       lc_group = to_lower(group)
-   
+
       ios = 0
       do while (ios <= 0)
-   
+
          read(unit, '(a)', iostat=ios, end=102) inrec
-   
-         if (ios <= 0) then  
+
+         if (ios <= 0) then
 C           ios < 0  indicates an end of record condition
 
 C         ! look for group name in this record
@@ -508,13 +508,13 @@ C              ! found group name.  backspace to leave file position at this rec
                   backspace(unit)
                   status = 0
                   return
-   
+
                end if
             end if
          end if
-   
+
       end do
-   
+
 102   continue  ! end of file processing
       status = -1
 
@@ -526,33 +526,33 @@ C===============================================================================
 
       function to_lower(str)
 
-C----------------------------------------------------------------------- 
-C Purpose: 
+C-----------------------------------------------------------------------
+C Purpose:
 C Convert character string to lower case.
-C 
-C Method: 
+C
+C Method:
 C Use achar and iachar intrinsics to ensure use of ascii collating sequence.
 C
 C Author:  B. Eaton, July 2001
-C     
+C
 C $Id$
-C----------------------------------------------------------------------- 
+C-----------------------------------------------------------------------
       implicit none
 
 C  String to convert to lower case
-      character(len=*), intent(in) :: str      
+      character(len=*), intent(in) :: str
       character(len=len(str))      :: to_lower
 
 C Local variables
 
 C  Index
-      integer :: i                
+      integer :: i
 C  ascii collating sequence
-      integer :: aseq             
+      integer :: aseq
 C  integer to convert case
-      integer :: upper_to_lower   
+      integer :: upper_to_lower
 C  Character temporary
-      character(len=1) :: ctmp    
+      character(len=1) :: ctmp
 C-----------------------------------------------------------------------
       upper_to_lower = iachar("a") - iachar("A")
 
@@ -560,10 +560,10 @@ C-----------------------------------------------------------------------
          ctmp = str(i:i)
          aseq = iachar(ctmp)
          if ( aseq >= iachar("A") .and. aseq <= iachar("Z") )
-     &        ctmp = achar(aseq + upper_to_lower)	
+     &        ctmp = achar(aseq + upper_to_lower)
          to_lower(i:i) = ctmp
       end do
-   
+
       end function to_lower
 C===============================================================================
 
