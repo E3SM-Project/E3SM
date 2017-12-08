@@ -782,7 +782,7 @@
     <valid_values></valid_values>
     <default_value>gmake</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>GNU make command</desc>
   </entry>
 
@@ -791,7 +791,7 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>Number of processors for gmake</desc>
   </entry>
 
