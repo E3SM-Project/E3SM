@@ -18,7 +18,7 @@ setenv project       default
 
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
-set acme_tag       = master
+set eeesm_tag      = master
 set tag_name       = default
 
 ### CUSTOM CASE_NAME
@@ -47,14 +47,14 @@ set restart_files_dir = none
 
 ### DIRECTORIES
 set code_root_dir               = default
-set acme_simulations_dir        = default
+set eeesm_simulations_dir       = default
 set case_build_dir              = default
 set case_run_dir                = default
 set short_term_archive_root_dir = default
 
 ### LENGTH OF SIMULATION, RESTARTS, AND ARCHIVING
 set stop_units       = ndays
-set stop_num         = 5
+set stop_num         = 1
 set restart_units    = $stop_units
 set restart_num      = $stop_num
 set num_resubmits    = 0
@@ -82,7 +82,7 @@ set cpl_hist_num   = 1
 #compset: indicates which model components and forcings to use. List choices by typing `create_newcase -list compsets`.
 #    An (outdated?) list of options is available at http://www.cesm.ucar.edu/models/cesm1.0/cesm/cesm_doc_1_0_4/a3170.html
 #resolution: Model resolution to use. Type `create_newcase -list grids` for a list of options or see
-#    http://www.cesm.ucar.edu/models/cesm1.0/cesm/cesm_doc_1_0_4/a3714.htm. Note that ACME always uses ne30 or ne120 in the atmosphere.
+#    http://www.cesm.ucar.edu/models/cesm1.0/cesm/cesm_doc_1_0_4/a3714.htm. Note that E3SM always uses ne30 or ne120 in the atmosphere.
 #machine: what machine you are going to run on. This should be 'default' for most machines, and only changed for machines with multiple queues, such as cori.
 #    Valid machine names can also be listed via `create_newcase -list machines`
 #walltime: How long to reserve the nodes for. The format is HH:MM(:SS); ie 00:10 -> 10 minutes.
@@ -94,12 +94,12 @@ set cpl_hist_num   = 1
 ### SOURCE CODE OPTIONS (2)
 
 #fetch_code: If True, downloads code from github. If False, code is assumed to exist already.
-#    NOTE: it is assumed that you have access to the ACME git repository.  To get access, see:
+#    NOTE: it is assumed that you have access to the E3SM git repository.  To get access, see:
 #    https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
-#acme_tag: ACME tagname in github. Can be 'master', a git hash, a tag, or a branch name. Only used if fetch_code=True.
-#    NOTE: If acme_tag=master or master_detached, then this script will provide the latest master version, but detach from the head,
+#eeesm_tag: E3SM tagname in github. Can be 'master', a git hash, a tag, or a branch name. Only used if fetch_code=True.
+#    NOTE: If eeesm_tag=master or master_detached, then this script will provide the latest master version, but detach from the head,
 #          to minimize the risk of a user pushing something to master.
-#tag_name: Short name for the ACME branch used. If fetch_code=True, this is a shorter replacement for acme_tag
+#tag_name: Short name for the E3SM branch used. If fetch_code=True, this is a shorter replacement for eeesm_tag
 #    (which could be a very long hash!). Otherwise, this is a short name for the branch used. You can
 #    choose TAG_NAME to be whatever you want.
 
@@ -147,7 +147,7 @@ set cpl_hist_num   = 1
 #model_start_type:  Specify how this script should initialize the model:  initial, continue, branch.
 #    These options are not necessarily related to the CESM run_type options.
 #    'initial' means the intial files will be copied into the run directory,
-#    and the ACME run_type can be 'initial', 'hybrid', or 'restart', as specified by this script below.
+#    and the E3SM run_type can be 'initial', 'hybrid', or 'restart', as specified by this script below.
 #    'continue' will do a standard restart, and assumes the restart files are already in the run directory.
 #    'branch' is almost the same, but will set RUN_TYPE='branch', and other options as specified by this script below.
 #    NOTE: To continue an existing simulation, it may be easier to edit env_run and [case].run manually in the
@@ -217,8 +217,8 @@ set script_ver = 3.0.18
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
 alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercases any strings passed to it.
 
-alias acme_print 'echo run_acme: \!*'
-alias acme_newline "echo ''"
+alias eeesm_print 'echo run_e3sm: \!*'
+alias eeesm_newline "echo ''"
 
 #===========================================
 # ALERT THE USER IF THEY TRY TO PASS ARGUMENTS
@@ -227,15 +227,15 @@ set first_argument = $1
 if ( $first_argument != '' ) then
  echo 'This script does everything needed to configure/compile/run a case. As such, it'
  echo 'provides complete provenance for each run and makes sharing simulation configurations easy.'
- echo 'Users should make sure that everything required for a run is in this script, the ACME'
+ echo 'Users should make sure that everything required for a run is in this script, the E3SM'
  echo 'git repo, and/or the inputdata svn repo.'
  echo '** This script accepts no arguments. Please edit the script as needed and resubmit without arguments. **'
  exit 5
 endif
 
-acme_newline
-acme_print '++++++++ run_acme starting ('`date`'), version '$script_ver' ++++++++'
-acme_newline
+eeesm_newline
+eeesm_print '++++++++ run_e3sm starting ('`date`'), version '$script_ver' ++++++++'
+eeesm_newline
 
 #===========================================
 # DETERMINE THE LOCATION AND NAME OF THE SCRIPT
@@ -258,7 +258,7 @@ endif
 if ( `lowercase $tag_name` == default ) then
   set pwd_temp       = `pwd`
   set tag_name       = ${pwd_temp:t}
-  acme_print '$tag_name = '$tag_name
+  eeesm_print '$tag_name = '$tag_name
 endif
 
 #===========================================
@@ -269,54 +269,54 @@ set seconds_after_warning = 10
 
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
-    acme_newline
-    acme_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
-    acme_print '       Hence, this script will abort to avoid making a mistake.'
-    acme_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
+    eeesm_newline
+    eeesm_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
+    eeesm_print '       Hence, this script will abort to avoid making a mistake.'
+    eeesm_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
     exit 11
   endif
 
   if ( $seconds_before_delete_bld_dir >= 0 ) then
-    acme_newline
-    acme_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
-    acme_print '       Hence, this script will abort to avoid making a mistake.'
-    acme_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
+    eeesm_newline
+    eeesm_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
+    eeesm_print '       Hence, this script will abort to avoid making a mistake.'
+    eeesm_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
     exit 12
   endif
 endif
 
 if ( `lowercase $case_build_dir` == default && $seconds_before_delete_bld_dir >= 0 ) then
-  acme_print 'ERROR: run_acme cannot delete the build directory when CIME chooses it'
-  acme_print '       To remedy this, either set $case_build_dir to the path of the executables or disable deleting the directory'
+  eeesm_print 'ERROR: run_e3sm cannot delete the build directory when CIME chooses it'
+  eeesm_print '       To remedy this, either set $case_build_dir to the path of the executables or disable deleting the directory'
   exit 14
 endif
 
 if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0 ) then
-  acme_print 'ERROR: run_acme cannot delete the run directory when CIME chooses it'
-  acme_print '       To remedy this, either set $case_run_dir to the path of the executables or disable deleting the directory'
+  eeesm_print 'ERROR: run_e3sm cannot delete the run directory when CIME chooses it'
+  eeesm_print '       To remedy this, either set $case_run_dir to the path of the executables or disable deleting the directory'
   exit 15
 endif
 
 if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
-  acme_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
-  acme_print '       You should either use a different queue, or submit a single job without archiving.'
-  acme_print '       $debug_queue             = '$debug_queue
-  acme_print '       $num_resubmits           = '$num_resubmits
-  acme_print '       $do_short_term_archiving = '$do_short_term_archiving
+  eeesm_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
+  eeesm_print '       You should either use a different queue, or submit a single job without archiving.'
+  eeesm_print '       $debug_queue             = '$debug_queue
+  eeesm_print '       $num_resubmits           = '$num_resubmits
+  eeesm_print '       $do_short_term_archiving = '$do_short_term_archiving
   exit 16
 endif
 
 if ( $restart_num != 0 ) then
   @ remaining_periods = $stop_num - ( $stop_num / $restart_num ) * $restart_num
   if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $remaining_periods != 0 ) ) then
-    acme_print 'WARNING: run length is not divisible by the restart write frequency, or the units differ.'
-    acme_print 'If restart write frequency doesnt evenly divide the run length, restarts will simulate the same time period multiple times.'
-    acme_print '         $stop_units        = '$stop_units
-    acme_print '         $stop_num          = '$stop_num
-    acme_print '         $restart_units     = '$restart_units
-    acme_print '         $restart_num       = '$restart_num
-    acme_print '         $remaining_periods = '$remaining_periods
-    acme_print '         $num_resubmits     = '$num_resubmits
+    eeesm_print 'WARNING: run length is not divisible by the restart write frequency, or the units differ.'
+    eeesm_print 'If restart write frequency doesnt evenly divide the run length, restarts will simulate the same time period multiple times.'
+    eeesm_print '         $stop_units        = '$stop_units
+    eeesm_print '         $stop_num          = '$stop_num
+    eeesm_print '         $restart_units     = '$restart_units
+    eeesm_print '         $restart_num       = '$restart_num
+    eeesm_print '         $remaining_periods = '$remaining_periods
+    eeesm_print '         $num_resubmits     = '$num_resubmits
     sleep $seconds_after_warning
   endif
 endif
@@ -325,35 +325,35 @@ endif
 # DOWNLOAD SOURCE CODE IF NEEDED:
 #===========================================
 
-### NOTE: you must be setup with access to the ACME repository before you can clone the repository. For access, see
+### NOTE: you must be setup with access to the E3SM repository before you can clone the repository. For access, see
 ###       https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
 
 if ( `lowercase $fetch_code` == true ) then
-  acme_print 'Downloading code from the ACME git repository.'
+  eeesm_print 'Downloading code from the E3SM git repository.'
   if ( -d $code_root_dir/$tag_name ) then
     if ( $seconds_before_delete_source_dir >= 0 ) then
       set num_seconds_until_delete = $seconds_before_delete_source_dir
-      acme_print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
-      acme_print 'To abort, press ctrl-C'
+      eeesm_print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
+      eeesm_print 'To abort, press ctrl-C'
       while ( ${num_seconds_until_delete} > 0 )
-         acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+         eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
          sleep 1
          @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
       end
       rm -fr $code_root_dir/$tag_name
-      acme_print 'Deleted '$code_root_dir/$tag_name
+      eeesm_print 'Deleted '$code_root_dir/$tag_name
     else
-      acme_print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
-      acme_print '          You likely want to either set fetch_code=false, change $tag_name, or'
-      acme_print '          change seconds_before_delete_source_dir.'
-      acme_print '          Note: $fetch_code = '$fetch_code
-      acme_print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
-      acme_print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
+      eeesm_print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
+      eeesm_print '          You likely want to either set fetch_code=false, change $tag_name, or'
+      eeesm_print '          change seconds_before_delete_source_dir.'
+      eeesm_print '          Note: $fetch_code = '$fetch_code
+      eeesm_print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
+      eeesm_print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
       exit 20
     endif #$seconds_before_delete_source_dir >=0
   endif #$code_root_dir exists
 
-  acme_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
+  eeesm_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
   mkdir -p $code_root_dir
   git clone git@github.com:ACME-Climate/ACME.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
   ## Setup git hooks
@@ -365,43 +365,43 @@ if ( `lowercase $fetch_code` == true ) then
   ## Bring in MPAS ocean/ice repo
   git submodule update --init
 
-  if ( `lowercase $acme_tag` == master ) then
-    acme_newline
-    ##acme_print 'Detaching from the master branch to avoid accidental changes to master by user.'
+  if ( `lowercase $eeesm_tag` == master ) then
+    eeesm_newline
+    ##eeesm_print 'Detaching from the master branch to avoid accidental changes to master by user.'
     ##git checkout --detach
     echo 'KLUDGE: git version on anvil (1.7.1) is too old to be able to detach'
     echo 'edison uses git version 1.8.5.6 and it can git checkout --detach'
   else
-    acme_newline
-    acme_print 'Checking out branch ${acme_tag} = '${acme_tag}
-    git checkout ${acme_tag}
+    eeesm_newline
+    eeesm_print 'Checking out branch ${eeesm_tag} = '${eeesm_tag}
+    git checkout ${eeesm_tag}
   endif
 
 endif
 
-acme_newline
-acme_print '$case_name        = '$case_name
+eeesm_newline
+eeesm_print '$case_name        = '$case_name
 
 #============================================
 # DETERMINE THE SCRATCH DIRECTORY TO USE
 #============================================
 
-if ( $acme_simulations_dir == default ) then
+if ( $eeesm_simulations_dir == default ) then
   ### NOTE: csh doesn't short-circuit; so we can't check whether $SCRATCH exists or whether it's empty in the same condition
   if ( ! $?SCRATCH ) then
-    acme_newline
-    acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
-    acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
-    set acme_simulations_dir = ${HOME}/ACME_simulations
+    eeesm_newline
+    eeesm_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+    eeesm_print '         To avoid any issues, set $eeesm_simulations_dir to a scratch filesystem'
+    set eeesm_simulations_dir = ${HOME}/E3SM_simulations
   else
     ### Verify that $SCRATCH is not an empty string
     if ( "${SCRATCH}" == "" ) then
-      set acme_simulations_dir = ${HOME}/ACME_simulations
-      acme_newline
-      acme_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
-      acme_print '         To avoid any issues, set $acme_simulations_dir to a scratch filesystem'
+      set eeesm_simulations_dir = ${HOME}/E3SM_simulations
+      eeesm_newline
+      eeesm_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+      eeesm_print '         To avoid any issues, set $eeesm_simulations_dir to a scratch filesystem'
     else
-      set acme_simulations_dir = ${SCRATCH}/ACME_simulations
+      set eeesm_simulations_dir = ${SCRATCH}/E3SM_simulations
     endif
   endif
 endif
@@ -416,26 +416,26 @@ endif
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
-set case_scripts_dir = ${acme_simulations_dir}/${case_name}/case_scripts
+set case_scripts_dir = ${eeesm_simulations_dir}/${case_name}/case_scripts
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_case_dir
-    acme_newline
-    acme_print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    acme_print 'To abort, press ctrl-C'
+    eeesm_newline
+    eeesm_print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    eeesm_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-      acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+      eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
       sleep 1
       @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
     rm -fr $case_scripts_dir
-    acme_print ' Deleted $case_scripts_dir directory for : '${case_name}
+    eeesm_print ' Deleted $case_scripts_dir directory for : '${case_name}
   else
-    acme_print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
-    acme_print '         and is not being removed because seconds_before_delete_case_dir<0.'
-    acme_print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
-    acme_print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
+    eeesm_print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
+    eeesm_print '         and is not being removed because seconds_before_delete_case_dir<0.'
+    eeesm_print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
+    eeesm_print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
     exit 35
   endif
 endif
@@ -445,19 +445,19 @@ endif
 if ( `lowercase $case_build_dir` != default && -d $case_build_dir ) then
   if ( ${seconds_before_delete_bld_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_bld_dir
-    acme_newline
-    acme_print 'Removing old $case_build_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    acme_print 'To abort, press ctrl-C'
+    eeesm_newline
+    eeesm_print 'Removing old $case_build_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    eeesm_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-      acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+      eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
       sleep 1
       @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
     rm -fr $case_build_dir
-    acme_print ' Deleted $case_build_dir directory for '${case_name}
+    eeesm_print ' Deleted $case_build_dir directory for '${case_name}
   else
-    acme_print 'NOTE: $case_build_dir='$case_build_dir' exists '
-    acme_print '      and is not being removed because seconds_before_delete_bld_dir<0.'
+    eeesm_print 'NOTE: $case_build_dir='$case_build_dir' exists '
+    eeesm_print '      and is not being removed because seconds_before_delete_bld_dir<0.'
   endif
 endif
 
@@ -466,19 +466,19 @@ endif
 if ( `lowercase $case_run_dir` != default &&  -d $case_run_dir ) then
   if ( ${seconds_before_delete_run_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_run_dir
-    acme_newline
-    acme_print 'Removing old $case_run_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    acme_print 'To abort, press ctrl-C'
+    eeesm_newline
+    eeesm_print 'Removing old $case_run_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    eeesm_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-     acme_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+     eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
      sleep 1
      @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
     rm -fr $case_run_dir
-    acme_print ' Deleted $case_run_dir directory for '${case_name}
+    eeesm_print ' Deleted $case_run_dir directory for '${case_name}
   else
-    acme_print 'NOTE: $case_run_dir='$case_run_dir' exists '
-    acme_print '      and is not being removed because seconds_before_delete_run_dir<0.'
+    eeesm_print 'NOTE: $case_run_dir='$case_run_dir' exists '
+    eeesm_print '      and is not being removed because seconds_before_delete_run_dir<0.'
   endif
 endif
 
@@ -514,7 +514,7 @@ switch ( $lower_case )
     set std_proc_configuration = 'M'
     breaksw
   default:
-    acme_print 'ERROR: $processor_config='$processor_config' is not recognized'
+    eeesm_print 'ERROR: $processor_config='$processor_config' is not recognized'
     exit 40
     breaksw
 endsw
@@ -530,7 +530,7 @@ umask 022
 set cime_dir = ${code_root_dir}/${tag_name}/cime
 set create_newcase_exe = $cime_dir/scripts/create_newcase
 if ( -f ${create_newcase_exe} ) then
-  set acme_exe = acme.exe
+  set eeesm_exe = e3sm.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
   set case_run_exe = $case_scripts_dir/.case.run
@@ -539,9 +539,9 @@ if ( -f ${create_newcase_exe} ) then
   set xmlquery_exe = $case_scripts_dir/xmlquery
   set shortterm_archive_script = $case_scripts_dir/.case.st_archive
 else                                                                   # No version of create_newcase found
-  acme_print 'ERROR: ${create_newcase_exe} not found'
-  acme_print '       This is most likely because fetch_code should be true.'
-  acme_print '       At the moment, $fetch_code = '$fetch_code
+  eeesm_print 'ERROR: ${create_newcase_exe} not found'
+  eeesm_print '       This is most likely because fetch_code should be true.'
+  eeesm_print '       At the moment, $fetch_code = '$fetch_code
   exit 45
 endif
 
@@ -556,11 +556,11 @@ if ( `lowercase $machine` != default ) then
 endif
 
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${acme_simulations_dir}/${case_name}/build
+  set case_build_dir = ${eeesm_simulations_dir}/${case_name}/build
 endif
 
 if ( `lowercase $case_run_dir` == default ) then
-  set case_run_dir = ${acme_simulations_dir}/${case_name}/run
+  set case_run_dir = ${eeesm_simulations_dir}/${case_name}/run
 endif
 
 mkdir -p ${case_build_dir}
@@ -582,18 +582,18 @@ endif
 # CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
 #=============================================================
 
-acme_newline
-acme_print '-------- Starting create_newcase --------'
-acme_newline
+eeesm_newline
+eeesm_print '-------- Starting create_newcase --------'
+eeesm_newline
 
-acme_print ${create_newcase_exe} ${configure_options}
+eeesm_print ${create_newcase_exe} ${configure_options}
 ${create_newcase_exe} ${configure_options}
 
 cd ${case_scripts_dir}
 
-acme_newline
-acme_print '-------- Finished create_newcase --------'
-acme_newline
+eeesm_newline
+eeesm_print '-------- Finished create_newcase --------'
+eeesm_newline
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -606,7 +606,7 @@ endif
 set machine = `lowercase $machine`
 
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${acme_simulations_dir}/${case_name}/bld
+  set case_build_dir = ${eeesm_simulations_dir}/${case_name}/bld
 endif
 ${xmlchange_exe} EXEROOT=${case_build_dir}
 
@@ -623,7 +623,7 @@ else
   endif
 endif
 
-acme_print "Project used for submission: ${project}"
+eeesm_print "Project used for submission: ${project}"
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
@@ -705,7 +705,7 @@ if ( `lowercase $processor_config` == '1' ) then
 
 else if ( `lowercase $processor_config` == 'customknl' ) then
 
-  acme_print 'using custom layout for cori-knl because $processor_config = '$processor_config
+  eeesm_print 'using custom layout for cori-knl because $processor_config = '$processor_config
 
   ${xmlchange_exe} MAX_TASKS_PER_NODE="64"
   ${xmlchange_exe} PES_PER_NODE="256"
@@ -765,7 +765,7 @@ endif
 # NOTE: This code handles the case when the default location is wrong.
 #       If you want to use your own files then this code will need to be modified.
 
-# NOTE: For information on the ACME input data repository, see:
+# NOTE: For information on the E3SM input data repository, see:
 #       https://acme-climate.atlassian.net/wiki/display/WORKFLOW/ACME+Input+Data+Repository
 
 #set input_data_dir = 'input_data_dir_NOT_SET'
@@ -778,13 +778,13 @@ endif
 #if ( -d  $input_data_dir ) then
 #  $xmlchange_exe --id DIN_LOC_ROOT --val $input_data_dir
 #else
-#  echo 'run_acme ERROR: User specified input data directory does NOT exist.'
+#  echo 'run_e3sm ERROR: User specified input data directory does NOT exist.'
 #  echo '                $input_data_dir = '$input_data_dir
 #  exit 270
 #endif
 
 ### The following command extracts and stores the input_data_dir in case it is needed for user edits to the namelist later.
-### NOTE: The following line may be necessary if the $input_data_dir is not set above, and hence defaults to the ACME default.
+### NOTE: The following line may be necessary if the $input_data_dir is not set above, and hence defaults to the E3SM default.
 #NOTE: the following line can fail for old versions of the code (like v0.3) because
 #"-value" is a new option in xmlquery. If that happens, comment out the next line and
 #hardcode in the appropriate DIN_LOC_ROOT value for your machine.
@@ -806,13 +806,13 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
 
 if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
-  acme_newline
-  acme_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
-  acme_newline
+  eeesm_newline
+  eeesm_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
+  eeesm_newline
 else
-  acme_newline
-  acme_print 'Configuring ACME to use the COSP simulator.'
-  acme_newline
+  eeesm_newline
+  eeesm_print 'Configuring E3SM to use the COSP simulator.'
+  eeesm_newline
   $xmlchange_exe --id CAM_CONFIG_OPTS --append --val='-cosp'
 endif
 
@@ -834,23 +834,23 @@ endif
 
 #note configure -case turned into cesm_setup in cam5.2
 
-acme_newline
-acme_print '-------- Starting case.setup --------'
-acme_newline
+eeesm_newline
+eeesm_print '-------- Starting case.setup --------'
+eeesm_newline
 
-acme_print ${case_setup_exe}
+eeesm_print ${case_setup_exe}
 
 ${case_setup_exe} --reset
 
-acme_newline
-acme_print '-------- Finished case.setup  --------'
-acme_newline
+eeesm_newline
+eeesm_print '-------- Finished case.setup  --------'
+eeesm_newline
 
 #============================================================
 #MAKE GROUP PERMISSIONS to $PROJECT FOR THIS DIRECTORY
 #============================================================
 #this stuff, combined with the umask command above, makes
-#stuff in $run_root_dir readable by everyone in acme group.
+#stuff in $run_root_dir readable by everyone in e3sm group.
 
 set run_root_dir = `cd $case_run_dir/..; pwd -P`
 
@@ -865,20 +865,20 @@ set run_root_dir = `cd $case_run_dir/..; pwd -P`
 #NOTE: Starting the suffix wit 'a' helps to keep this near the script in ls
 #      (but in practice the behavior depends on the LC_COLLATE system variable).
 
-acme_print 'Creating logical links to make navigating easier.'
-acme_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
+eeesm_print 'Creating logical links to make navigating easier.'
+eeesm_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
 
 # Customizations from Chris Golaz
 # Link in this_script_dir case_dir
 set run_dir_link = $this_script_dir/$this_script_name=a_run_link
 
-acme_print ${run_dir_link}
+eeesm_print ${run_dir_link}
 
 if ( -l $run_dir_link ) then
   rm -f $run_dir_link
 endif
-acme_print "run_root ${run_root_dir}"
-acme_print "run_dir ${run_dir_link}"
+eeesm_print "run_root ${run_root_dir}"
+eeesm_print "run_dir ${run_dir_link}"
 
 ln -s $run_root_dir $run_dir_link
 
@@ -887,12 +887,12 @@ ln -s $run_root_dir $run_dir_link
 #============================================
 
 if ( `uppercase $debug_compile` != 'TRUE' && `uppercase $debug_compile` != 'FALSE' ) then
-  acme_print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
+  eeesm_print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
   exit 220
 endif
 
 if ( $machine == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
-  acme_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
+  eeesm_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
   exit 222
 endif
 
@@ -939,31 +939,31 @@ EOF
 #NOTE: This will either build the code (if needed and $old_executable=false) or copy an existing executable.
 
 if ( `lowercase $old_executable` == false ) then
-  acme_newline
-  acme_print '-------- Starting Build --------'
-  acme_newline
+  eeesm_newline
+  eeesm_print '-------- Starting Build --------'
+  eeesm_newline
 
-  acme_print ${case_build_exe}
+  eeesm_print ${case_build_exe}
   ${case_build_exe}
 
-  acme_newline
-  acme_print '-------- Finished Build --------'
-  acme_newline
+  eeesm_newline
+  eeesm_print '-------- Finished Build --------'
+  eeesm_newline
 else if ( `lowercase $old_executable` == true ) then
-  if ( -x $case_build_dir/$acme_exe ) then       #use executable previously generated for this case_name.
-    acme_print 'Skipping build because $old_executable='$old_executable
-    acme_newline
+  if ( -x $case_build_dir/$eeesm_exe ) then       #use executable previously generated for this case_name.
+    eeesm_print 'Skipping build because $old_executable='$old_executable
+    eeesm_newline
     #create_newcase sets BUILD_COMPLETE to FALSE. By using an old executable you're certifying
     #that you're sure the old executable is consistent with the new case... so be sure you're right!
     #NOTE: This is a risk to provenance, so this feature may be removed in the future [PJC].
     #      However the build system currently rebuilds several files every time which takes many minutes.
     #      When this gets fixed the cost of deleting this feature will be minor.
     #      (Also see comments for user options at top of this file.)
-    acme_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+    eeesm_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
     $xmlchange_exe --id BUILD_COMPLETE --val TRUE
   else
-    acme_print 'ERROR: $old_executable='$old_executable' but no executable exists for this case.'
-    acme_print '                Expected to find executable = '$case_build_dir/$acme_exe
+    eeesm_print 'ERROR: $old_executable='$old_executable' but no executable exists for this case.'
+    eeesm_print '                Expected to find executable = '$case_build_dir/$eeesm_exe
     exit 297
   endif
 else
@@ -978,11 +978,11 @@ else
     #NOTE: The alternative solution is to set EXEROOT in env_build.xml.
     #      That is cleaner and quicker, but it means that the executable is outside this directory,
     #      which weakens provenance if this directory is captured for provenance.
-    acme_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+    eeesm_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
     $xmlchange_exe --id BUILD_COMPLETE --val TRUE
     cp -fp $old_executable $case_build_dir/
   else
-    acme_print 'ERROR: $old_executable='$old_executable' does not exist or is not an executable file.'
+    eeesm_print 'ERROR: $old_executable='$old_executable' does not exist or is not an executable file.'
     exit 297
   endif
 endif
@@ -1040,8 +1040,8 @@ else if ( $machine == anvil ) then
     endif
 
 else
-    acme_print 'WARNING: This script does not have batch directives for $machine='$machine
-    acme_print '         Assuming default ACME values.'
+    eeesm_print 'WARNING: This script does not have batch directives for $machine='$machine
+    eeesm_print '         Assuming default E3SM values.'
 endif
 
 #============================================
@@ -1053,9 +1053,9 @@ endif
 #       qalter -lwalltime=00:29:00 <run_descriptor>
 #       qalter -W queue=debug <run_descriptor>
 
-### Only specially authorized people can use the special_acme qos on Cori or Edison. Don't uncomment unless you're one.
+### Only specially authorized people can use the special_e3sm qos on Cori or Edison. Don't uncomment unless you're one.
 #if ( `lowercase $debug_queue` == false && $machine == edison ) then
-#  set batch_options = "${batch_options} --qos=special_acme"
+#  set batch_options = "${batch_options} --qos=special_e3sm"
 #endif
 
 #============================================
@@ -1097,8 +1097,8 @@ $xmlchange_exe --id HIST_N      --val $cpl_hist_num
 # SETUP SIMULATION INITIALIZATION
 #============================================
 
-acme_newline
-acme_print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
+eeesm_newline
+eeesm_print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
 
 set model_start_type = `lowercase $model_start_type`
 #-----------------------------------------------------------------------------------------------
@@ -1138,24 +1138,24 @@ else if ( $model_start_type == 'branch' ) then
   ### the next lines attempt to automatically extract all needed info for setting up the branch run.
   set rpointer_filename = "${restart_files_dir}/rpointer.drv"
   if ( ! -f $rpointer_filename ) then
-    acme_print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
-    acme_print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
-    acme_print '       ${rpointer_filename} = '{rpointer_filename}
+    eeesm_print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
+    eeesm_print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
+    eeesm_print '       ${rpointer_filename} = '{rpointer_filename}
     exit 370
   endif
   set restart_coupler_filename = `cat $rpointer_filename`
   set restart_case_name = ${restart_coupler_filename:r:r:r:r}         # Extract out the case name for the restart files.
   set restart_filedate = ${restart_coupler_filename:r:e:s/-00000//}   # Extract out the date (yyyy-mm-dd).
-  acme_print '$restart_case_name = '$restart_case_name
-  acme_print '$restart_filedate  = '$restart_filedate
+  eeesm_print '$restart_case_name = '$restart_case_name
+  eeesm_print '$restart_filedate  = '$restart_filedate
 
   ### the next line gets the YYYY-MM of the month before the restart time. Needed for staging history files.
   ### NOTE: This is broken for cases that have run for less than a month
   set restart_prevdate = `date -d "${restart_filedate} - 1 month" +%Y-%m`
 
-  acme_print '$restart_prevdate  = '$restart_prevdate
+  eeesm_print '$restart_prevdate  = '$restart_prevdate
 
-  acme_print 'Copying stuff for branch run'
+  eeesm_print 'Copying stuff for branch run'
   cp -s ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
@@ -1180,7 +1180,7 @@ else if ( $model_start_type == 'branch' ) then
 
 else
 
-  acme_print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
+  eeesm_print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
   exit 380
 
 endif
@@ -1200,32 +1200,32 @@ endif
 #=================================================
 #note: to run the model in the totalview debugger,
 # cd $case_run_dir
-# totalview srun -a -n <number of procs> -p <name of debug queue> ../bld/$acme_exe
+# totalview srun -a -n <number of procs> -p <name of debug queue> ../bld/$eeesm_exe
 # where you may need to change srun to the appropriate submit command for your system, etc.
 
 
-acme_newline
-acme_print '-------- Starting Submission to Run Queue --------'
-acme_newline
+eeesm_newline
+eeesm_print '-------- Starting Submission to Run Queue --------'
+eeesm_newline
 
 if ( ${num_resubmits} > 0 ) then
   ${xmlchange_exe} --id RESUBMIT --val ${num_resubmits}
-  acme_print 'Setting number of resubmits to be '${num_resubmits}
+  eeesm_print 'Setting number of resubmits to be '${num_resubmits}
   @ total_submits = ${num_resubmits} + 1
-  acme_print 'This job will submit '${total_submits}' times after completion'
+  eeesm_print 'This job will submit '${total_submits}' times after completion'
 endif
 
 if ( `lowercase $submit_run` == 'true' ) then
-  acme_print '         SUBMITTING JOB:'
-  acme_print ${case_submit_exe} --batch-args " ${batch_options} "
+  eeesm_print '         SUBMITTING JOB:'
+  eeesm_print ${case_submit_exe} --batch-args " ${batch_options} "
   ${case_submit_exe} --batch-args " ${batch_options} "
 else
-    acme_print 'Run NOT submitted because $submit_run = '$submit_run
+    eeesm_print 'Run NOT submitted because $submit_run = '$submit_run
 endif
 
-acme_newline
-acme_print '-------- Finished Submission to Run Queue --------'
-acme_newline
+eeesm_newline
+eeesm_print '-------- Finished Submission to Run Queue --------'
+eeesm_newline
 
 #=================================================
 # DO POST-SUBMISSION THINGS (IF ANY)
@@ -1233,9 +1233,9 @@ acme_newline
 
 # Actions after the run submission go here.
 
-acme_newline
-acme_print '++++++++ run_acme Completed ('`date`') ++++++++'
-acme_newline
+eeesm_newline
+eeesm_print '++++++++ run_e3sm Completed ('`date`') ++++++++'
+eeesm_newline
 
 #**********************************************************************************
 ### --- end of script - there are no commands beyond here, just useful comments ---
@@ -1244,7 +1244,7 @@ acme_newline
 ### -------- Version information --------
 # 1.0.0    2015-11-19    Initial version.  Tested on Titan. (PJC)
 # 1.0.1    2015-11-19    Fixed bugs and added features  for Hopper. (PJC)
-# 1.0.2    2015-11-19    Modified to conform with ACME script standards. PJC)
+# 1.0.2    2015-11-19    Modified to conform with E3SM script standards. PJC)
 # 1.0.3    2015-11-23    Modified to include Peter's ideas (PMC)
 # 1.0.4    2015-11-23    Additional modification based on discusion with Peter and Chris Golaz. (PJC)
 # 1.0.5    2015-11-23    Tweaks for Titan (PJC)
@@ -1260,7 +1260,7 @@ acme_newline
 #                        for old_executable=true and seconds_before_delete_case_dir<0 because they were provenance-unsafe.(PMC)
 # 1.0.13   2015-11-25    Merged changes from PMC with cosmetic changes from PJC.
 #                        Also, reactivated old_executable=true, because the model recompiles many files unnecessarily.  (PJC)
-# 1.0.14   2015-11-25    Added custom PE configuration so the ACME pre-alpha code will work on Titan for Chris Golaz.   (PJC)
+# 1.0.14   2015-11-25    Added custom PE configuration so the E3SM pre-alpha code will work on Titan for Chris Golaz.   (PJC)
 #                        Fixed $cime_space bug introduced in 1.0.10 (PJC)
 # 1.0.15   2015-11-25    Fixed bug with old_executable=true (PJC)
 # 1.0.16   2015-11-30    Added $machine to the case_name (PJC)
@@ -1283,28 +1283,28 @@ acme_newline
 # 1.0.30   2015-12-23    Changed run.output dir to batch_output -- purpose is clearer, and better for filename completion. (PJC)
 #                        Added option to set PE configuration to sequential or concurrent for option '1'. (PJC)
 # 1.0.31   2016-01-07    Moved up the location where the input_data_dir is set, so it is availble to cesm_setup.    (PJC)
-#                        Checks case_name is 79 characters, or less, which is a requirement of the ACME scripts.
+#                        Checks case_name is 79 characters, or less, which is a requirement of the E3SM scripts.
 #                        Improved options for SLURM machines.
 #                        Added numbers for the ordering of options at top of file (in preperation for reordering).
 #                        Added xxdiff calls to fix known bugs in master> (need to generalize for other people)
 # 1.0.32   2016-01-07    Converted inputdata_dir to input_data_dir for consistency.      (PJC)
 #                        Cosmetic improvements.
 # 1.0.33   2016-01-08    Changed default tag to master_detached to improve clarity. (PJC)
-#                        Now sets up ACME git hooks when fetch_code=true.
-# 1.0.33p  2016-01-08    Changed compset from A_B1850CN to A_B1850 (pre-acme script only).  (PJC)
+#                        Now sets up E3SM git hooks when fetch_code=true.
+# 1.0.33p  2016-01-08    Changed compset from A_B1850CN to A_B1850 (pre-e3sm script only).  (PJC)
 #                        Added finidat = '' to user_nl_clm, which allows A_B1850 to run.
-# 1.0.34   2016-01-12    Commented out the input_data_dir user configuration, so it defaults to the ACME settings.   (PJC)
+# 1.0.34   2016-01-12    Commented out the input_data_dir user configuration, so it defaults to the E3SM settings.   (PJC)
 # 1.0.35   2016-01-13    Improved an error message.   (PJC)
 # 1.0.36   2016-01-21    Reordered options to better match workflow. (PJC)
 # 1.2.0    2016-01-21    Set options to settings for release. (PJC)
 # 1.2.1    2016-01-21    Reordered and refined comments to match new ordering of options. (PJC)
 # 1.2.2    2016-01-21    The batch submission problem on Cori has been repaired on master (#598),
 #                        so I have undone the workaround in this script. (PJC)
-# 1.2.3    2016-01-26    Commented out some of the workarounds for ACME bugs that are no longer needed.  (PJC)
-# 1.4.0    2016-03-23    A number of modifications to handle changes in machines and ACME. [version archived to ACME] (PJC)
+# 1.2.3    2016-01-26    Commented out some of the workarounds for E3SM bugs that are no longer needed.  (PJC)
+# 1.4.0    2016-03-23    A number of modifications to handle changes in machines and E3SM. [version archived to E3SM] (PJC)
 # 1.4.1    2016-03-23    Modified to defaults for Cori (NERSC). (PJC)
 # 1.4.2    2016-08-05    Replaced cime_space with pattern matching, added num_depends functionality for daisychained
-#                        jobs, added code for submitting to qos=acme_special on Edison, added cpl_hist options, and
+#                        jobs, added code for submitting to qos=e3sm_special on Edison, added cpl_hist options, and
 #                        improved support for sierra and cab at LLNL.(PMC)
 # 1.4.3    2016-08-10    Improved support for branch runs (PMC)
 # 1.4.4    2016-08-11    Added umask command to make run directory world-readable by default.
@@ -1313,7 +1313,7 @@ acme_newline
 #                        Generalized setting of group permissions for other machines. (PJC)
 # 2.0.2    2016-09-13    Turned off short- and long-term archiving so auto_chain_runs script can do it manually. (PJC)
 # 2.0.3    2016-09-14    Removed 'git --set-upstream' command, because it does not work on tags.  (PJC)
-# 2.0.4    2016-09-14    Long term archiving not working in ACME, so turn it off and warn user.  (PJC)
+# 2.0.4    2016-09-14    Long term archiving not working in E3SM, so turn it off and warn user.  (PJC)
 # 3.0.0    2016-12-15    Initial update for CIME5. Change script names, don't move the case directory
 #                        as it's broken by the update, use xmlchange to set up the custom PE Layout.
 #                        Remove support for CIME2 and pre-cime versions.  (MD)
@@ -1321,14 +1321,14 @@ acme_newline
 # 3.0.2    2017-02-13    Activated logical links by default, and tweaked the default settings. (PJC)
 # 3.0.3    2017-03-24    Added cori-knl support, made walltime an input variable, changed umask to 022, and
 #                        deleted run_name since it wasn't being used any more.
-# 3.0.4    2017-03-31    Added version to ACME repository. Working on using more defaults from CIME.
+# 3.0.4    2017-03-31    Added version to E3SM repository. Working on using more defaults from CIME.
 #                        Use 'print' and 'newline' for standardized output (MD)
 # 3.0.5    2017-04-07    Restored functionality to delete of run and build directories, and reuse other builds.
 #                        Merged in PMC's changes from 3.0.4. Enabled using CIME defaults for more functionality
-#                        Renamed 'print' and 'newline' to 'acme_print' and 'acme_newline'
+#                        Renamed 'print' and 'newline' to 'eeesm_print' and 'eeesm_newline'
 #                        to disambiguate them from system commands (MD)
 # 3.0.6    2017-04-27    Implemented PJC's "hack" in a machine independent way to
-#                        restore the run acme groups preferred directory structure
+#                        restore the run e3sm groups preferred directory structure
 #                        Add a warning if the default output directory is in the users home
 #                        Give project a default value; if used, CIME will determine the batch account to use
 #                        Remove the warning about not running in interactive mode;
@@ -1337,11 +1337,11 @@ acme_newline
 #                        Set walltime to default to get more time on Edison (MD)
 # 3.0.7    2017-05-22    Fix for the new CIME 5.3; use the --script-root option instead of PJC's "hack"
 #                        Note that this breaks compatibility with older versions of CIME
-#                        Also add a fix to reenable using the special acme qos queue on Edison (MD)
+#                        Also add a fix to reenable using the special e3sm qos queue on Edison (MD)
 # 3.0.8    2017-05-24    Fixed minor bug when $machine contained a capital letter. Bug was introduced recently. (PJC)
 # 3.0.9    2017-06-19    Fixed branch runs. Also removed sed commands for case.run and use --batch-args in case.submit (MD)
 # 3.0.10   2017-06-14    To allow data-atm compsets to work, I added a test for CAM_CONFIG_OPTS. (PJC)
-# 3.0.11   2017-07-14    Replace auto-chaining code with ACME's resubmit feature. Also fix Edison's qos setting (again...) (MD)
+# 3.0.11   2017-07-14    Replace auto-chaining code with E3SM's resubmit feature. Also fix Edison's qos setting (again...) (MD)
 # 3.0.12   2017-07-24    Supports setting the queue priority for anvil. Also move making machine lowercase up to clean some things up (MD)
 # 3.0.13   2017-08-07    Verify that the number of periods between a restart evenly divides the number until the stop with the same units.
 #                        Update the machine check for cori to account for cori-knl (MD)
@@ -1350,6 +1350,8 @@ acme_newline
 # 3.0.16   2017-10-17    Brings in CGs changes to make branch runs faster and easier. Also adds the machine name to case_name
 # 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
 # 3.0.18   2017-12-07    Update cime script names which have been hidden (MD)
+# 3.0.19   2017-12-07    Remove all references to ACME except for online links (MD)
+>>>>>>> Remove all references to ACME except for internet links
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
@@ -1360,7 +1362,7 @@ acme_newline
 # +) generalize xxdiff commands (for fixing known bugs) to work for other people  (PJC)
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
-# +) triggering on $acme_tag = master_detached doesn't make sense.  Fix logic. (PJC)
+# +) triggering on $eeesm_tag = master_detached doesn't make sense.  Fix logic. (PJC)
 # +) run_root and run_root_dir are duplicative.  Also, move logical link creation before case.setup (PJC)
 # +) change comments referring to cesm_setup to case.setup (name has changed). (PJC)
 
