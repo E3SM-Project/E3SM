@@ -328,19 +328,19 @@
 		/>
 		<nml_option name="config_write_output_on_startup" type="logical" default_value="false" units="unitless"
 			description="If true write the output streams to disk after model initialization but before time stepping."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_test_case_diag" type="logical" default_value="false" units="unitless"
-			description="Perform a test case"
-			possible_values=".true. or .false."
+			description="If true output test case diagnostics."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_test_case_diag_type" type="character" default_value="none" units="unitless"
-			description="Test case type"
+			description="Test case diagnostic type."
 			possible_values="'global_velocity', 'square_advection' or 'advection'"
 		/>
 		<nml_option name="config_full_abort_write" type="logical" default_value="true" units="unitless"
 			description="If true write the abort stream to disk after a critical error for the entire domain, not just failing block."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 	</nml_record>
 	<nml_record name="decomposition" in_defaults="true">
@@ -354,10 +354,10 @@
 		/>
 		<nml_option name="config_explicit_proc_decomp" type="logical" default_value="false" units="unitless"
 			description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
-			description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
+			description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is true The number of processors is appended to the end of the prefix at run-time."
 			possible_values="Any path/prefix to a processor decomposition file."
 		/>
 		<nml_option name="config_aggregate_halo_exch" type="logical" default_value="false" units="unitless"
@@ -368,7 +368,7 @@
 	<nml_record name="restart" in_defaults="true">
 		<nml_option name="config_do_restart" type="logical" default_value="false" units="unitless"
 			description="Determines if the initial conditions should be read from a restart file, or an input file."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
 			description="Path to the filename for restart timestamps to be read and written from."
@@ -404,7 +404,8 @@
 	<nml_record name="initialize" in_defaults="true">
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
 			description="Initial condition type for sea ice state."
-			possible_values="'restart', 'uniform', 'circle', 'square' or 'uniform_interior'"/>
+			possible_values="'restart', 'uniform', 'circle', 'square' or 'uniform_interior'"
+		/>
 		<nml_option name="config_initial_ice_area" type="real" default_value="1.0" units="unitless"
 			description="Sea ice concentration at initialization."
 			possible_values="A real number between 0.0 and 1.0 inclusive."
@@ -439,157 +440,157 @@
 		/>
 		<nml_option name="config_calculate_coriolis" type="logical" default_value="true" units="unitless"
 			description="If True calculate the Coriolis parameter at initialization from the latitude."
-			possible_values=".true. or .false"
+			possible_values="true or .false"
 		/>
 	</nml_record>
 	<nml_record name="use_sections" in_defaults="true">
 		<nml_option name="config_use_velocity_solver" type="logical" default_value="true" units="unitless"
 			description="If true calculate the sea ice velocity."
-			possible_values=".true. or .false"
+			possible_values="true or .false"
 		/>
 		<nml_option name="config_use_advection" type="logical" default_value="true" units="unitless"
 			description="If true perform advection of the sea ice."
-			possible_values=".true. or .false"
+			possible_values="true or .false"
 		/>
 		<nml_option name="config_use_forcing" type="logical" default_value="true" units="unitless"
 			description="If true calculate input forcing fields."
-			possible_values=".true. or .false"
+			possible_values="true or .false"
 		/>
 		<nml_option name="config_use_column_package" type="logical" default_value="true" units="unitless"
 			description="If true perform calculations from the column physics package."
-			possible_values=".true. or .false"
+			possible_values="true or .false"
 		/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
-		<nml_option name="config_atmospheric_forcing_type" type="character" default_value="CORE"
-			description=""
+		<nml_option name="config_atmospheric_forcing_type" type="character" default_value="CORE" units="unitless"
+			description="Atmospheric forcing type."
 			possible_values="'CORE'"
 		/>
-		<nml_option name="config_forcing_start_time" type="character" default_value="2000-01-01_00:00:00"
-			description=""
+		<nml_option name="config_forcing_start_time" type="character" default_value="2000-01-01_00:00:00" units="unitless"
+			description="Forcing time to use at the simulation start time"
 			possible_values="'YYYY-MM-DD_HH:MM:SS"
 		/>
-		<nml_option name="config_forcing_cycle_start" type="character" default_value="2000-01-01_00:00:00"
-			description=""
+		<nml_option name="config_forcing_cycle_start" type="character" default_value="2000-01-01_00:00:00" units="unitless"
+			description="Start time for the forcing cycle."
 			possible_values="'YYYY-MM-DD_HH:MM:SS"
 		/>
-		<nml_option name="config_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00"
-			description=""
+		<nml_option name="config_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
+			description="Duration of the forcing cycle."
 			possible_values="'YYYY-MM-DD_HH:MM:SS"
 		/>
-		<nml_option name="config_forcing_precipitation_units" type="character" default_value="mm_per_sec"
-			description=""
+		<nml_option name="config_forcing_precipitation_units" type="character" default_value="mm_per_sec" units="unitless"
+			description="Forcing input precipitation units."
 			possible_values="'mm_per_month', 'mm_per_day', or 'mm_per_sec'"
 		/>
-		<nml_option name="config_forcing_sst_type" type="character" default_value="ncar"
-			description=""
+		<nml_option name="config_forcing_sst_type" type="character" default_value="ncar" units="unitless"
+			description="Sea surface temperature ocean forcing type."
 			possible_values="'ncar'"
 		/>
-		<nml_option name="config_update_ocean_fluxes" type="logical" default_value="false"
+		<nml_option name="config_update_ocean_fluxes" type="logical" default_value="false" units="unitless"
 			description=""
-			possible_values=".true. or .false"
+			possible_values="true or false"
 		/>
-		<nml_option name="config_include_pond_freshwater_feedback" type="logical" default_value="false"
-			description=""
-			possible_values=".true. or .false"
+		<nml_option name="config_include_pond_freshwater_feedback" type="logical" default_value="false" units="unitless"
+			description="Reduce the ocean fresh water flux by the pond fresh water flux for coupling."
+			possible_values="true or false"
 		/>
 	</nml_record>
 	<nml_record name="unit_test" in_defaults="true">
-		<nml_option name="config_perform_unit_test" type="logical" default_value="false" units=""
-			description=""
-			possible_values=".true. or .false."
+		<nml_option name="config_perform_unit_test" type="logical" default_value="false" units="unitless"
+			description="If true perform a unit test."
+			possible_values="true or false"
 		/>
-		<nml_option name="config_unit_test_type" type="character" default_value="" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_unit_test_type" type="character" default_value="" units="unitless"
+			description="Unit test type."
+			possible_values="'strain rate operator', 'stress divergence operator', or 'constitutive relationship'"
 		/>
-		<nml_option name="config_unit_test_subtype" type="character" default_value="" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_unit_test_subtype" type="character" default_value="" units="unitless"
+			description="Unit test subtype."
+			possible_values="('strain rate operator'): 'all', 'zero', 'zonal', 'meridonal', 'solid_body', 'sinusoidal1', or 'sinusoidal2', (stress divergence operator): 'all', 'zero', 'const11', 'const22', 'const12', 'test1', 'test2', 'test3', or 'test4'"
 		/>
-		<nml_option name="config_use_test_ice_shelf" type="logical" default_value="false" units=""
-			description=""
-			possible_values=".true. or .false."
+		<nml_option name="config_use_test_ice_shelf" type="logical" default_value="false" units="unitless"
+			description="If true test add a test ice shelf to the ice shelf mask."
+			possible_values="true or false"
 		/>
-		<nml_option name="config_testing_system_test" type="logical" default_value="false" units=""
-			description=""
-			possible_values=".true. or .false."
+		<nml_option name="config_testing_system_test" type="logical" default_value="false" units="unitless"
+			description="If true initialize variables that will fail the testing system tests."
+			possible_values="true or false"
 		/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
-		<nml_option name="config_dynamics_subcycle_number" type="integer" default_value="1" units=""
-			description=""
+		<nml_option name="config_dynamics_subcycle_number" type="integer" default_value="1" units="unitless"
+			description="The number of dynamics subcycles to perform per thermodynamic time step (config_dt)"
 			possible_values="Any positive integer."
 		/>
-		<nml_option name="config_rotate_cartesian_grid" type="logical" default_value="true" units=""
-			description=""
-			possible_values=".true. or. false."
+		<nml_option name="config_rotate_cartesian_grid" type="logical" default_value="true" units="unitless"
+			description="Rotate the velocity directions from geographic so their pole lies on the equator."
+			possible_values="true or. false."
 		/>
-		<nml_option name="config_include_metric_terms" type="logical" default_value="true" units=""
-			description=""
-			possible_values=".true. or. false."
+		<nml_option name="config_include_metric_terms" type="logical" default_value="true" units="unitless"
+			description="Include metric terms due to Earth curvature in velocity solver horizontal operators."
+			possible_values="true or. false."
 		/>
-		<nml_option name="config_elastic_subcycle_number" type="integer" default_value="120" units=""
-			description=""
+		<nml_option name="config_elastic_subcycle_number" type="integer" default_value="120" units="unitless"
+			description="The number of elastic EVP subcycles to perform per dynamics time step."
 			possible_values="Any positive integer."
 		/>
-		<nml_option name="config_stress_divergence_scheme" type="character" default_value="variational" units=""
-			description=""
+		<nml_option name="config_stress_divergence_scheme" type="character" default_value="variational" units="unitless"
+			description="Choice of stress divergence scheme to use in the velocity solver."
 			possible_values="'weak' or 'variational'"
 		/>
-		<nml_option name="config_variational_basis" type="character" default_value="wachspress" units=""
-			description=""
+		<nml_option name="config_variational_basis" type="character" default_value="wachspress" units="unitless"
+			description="Type of basis functions to use with the variational stress divergence scheme."
 			possible_values="'wachspress' or 'pwl'"
 		/>
-		<nml_option name="config_wachspress_integration_type" type="character" default_value="dunavant" units=""
-			description=""
+		<nml_option name="config_wachspress_integration_type" type="character" default_value="dunavant" units="unitless"
+			description="Type of integration to perform with the Wachspress variational stress divergence scheme."
 			possible_values="'trapezoidal', 'dunavant' or 'fekete'"
 		/>
-		<nml_option name="config_wachspress_integration_order" type="integer" default_value="8" units=""
-			description=""
+		<nml_option name="config_wachspress_integration_order" type="integer" default_value="8" units="unitless"
+			description="Order of integration for Wachspress basis integrations."
 			possible_values="'trapezoidal': any positive integer, 'dunavant':1-10,12, 'fekete':1-6,8,9"
 		/>
 		<nml_option name="config_revised_evp" type="logical" default_value="false" units="unitless"
-			description=""
-			possible_values=".true. or. false."
+			description="If true use the revised EVP rheology (??reference??)"
+			possible_values="true or. false."
 		/>
 		<nml_option name="config_use_air_stress" type="logical" default_value="true" units="unitless"
-			description=""
-			possible_values=".true. or. false."
+			description="If true include the air stress term in the velocity solver calculations."
+			possible_values="true or. false."
 		/>
 		<nml_option name="config_use_ocean_stress" type="logical" default_value="true" units="unitless"
-			description=""
-			possible_values=".true. or. false."
+			description="If true include the ocean stress term in the velocity solver calculations."
+			possible_values="true or. false."
 		/>
 		<nml_option name="config_use_surface_tilt" type="logical" default_value="true" units="unitless"
-			description=""
-			possible_values=".true. or. false."
+			description="If true include the sea surface tilt stress term in the velocity solver calculations."
+			possible_values="true or. false."
 		/>
 		<nml_option name="config_geostrophic_surface_tilt" type="logical" default_value="true" units="unitless"
-			description=""
-			possible_values=".true. or. false."
+			description="If true calculate the sea surface tilt stress assuming currents are geostrophic."
+			possible_values="true or. false."
 		/>
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_advection_type" type="character" default_value="incremental_remap" units="unitless"
-			description="Type of advection scheme (upwind or incremental remapping)"
+			description="Type of advection scheme (upwind or incremental remapping)."
 			possible_values="'upwind' and 'incremental_remap'"
 		/>
 		<nml_option name="config_monotonic" type="logical" default_value="true" units="unitless"
-			description="If true then fluxes are limited to produce a monotonic advection scheme"
+			description="If true then fluxes are limited to produce a monotonic advection scheme."
 			possible_values="true and false"
 		/>
 		<nml_option name="config_conservation_check" type="logical" default_value="false" units="unitless"
-			description=""
+			description="If true test the advection results for tracer conservation (incremental remap only)."
 			possible_values="true or false"
 		/>
 		<nml_option name="config_monotonicity_check" type="logical" default_value="false" units="unitless"
-			description=""
+			description="If true test the advection results for monotonicity (incremental remap only)."
 			possible_values="true or false"
 		/>
 		<nml_option name="config_recover_tracer_means_check" type="logical" default_value="false" units="unitless"
-			description=""
+			description="If true compare mass*tracer products for incremental remapping with analytical values."
 			possible_values="true or false"
 		/>
 	</nml_record>
@@ -597,11 +598,11 @@
 	<!-- column physics -->
 	<nml_record name="column_package" in_defaults="true">
 		<nml_option name="config_use_column_shortwave" type="logical" default_value="true" units="unitless"
-			description=""
+			description="Run the shortwave radiation column physics calculation."
 			possible_values="true or false"
 		/>
 		<nml_option name="config_use_column_vertical_thermodynamics" type="logical" default_value="true" units="unitless"
-			description=""
+			description="Run the vertical thermodynamics column physics calculation."
 			possible_values="true or false"
 		/>
 		<nml_option name="config_use_column_biogeochemistry" type="logical" default_value="false" units="unitless"
@@ -609,43 +610,50 @@
 			possible_values="true or false"
 		/>
 		<nml_option name="config_use_column_itd_thermodynamics" type="logical" default_value="true" units="unitless"
-			description=""
+			description="Run the ice thickness distribution thermodynamics column physics calculation."
 			possible_values="true or false"
 		/>
 		<nml_option name="config_use_column_ridging" type="logical" default_value="true" units="unitless"
-			description=""
+			description="Run the ridging column physics calculation."
 			possible_values="true or false"
 		/>
 	</nml_record>
 
 	<nml_record name="column_tracers" in_defaults="true">
 		<nml_option name="config_use_ice_age" type="logical" default_value="true" units="unitless"
-			description=""
+			description="If true use the ice age tracer."
 			possible_values="true or false"
+			icepack_name="tr_iage"
 		/>
 		<nml_option name="config_use_first_year_ice" type="logical" default_value="true" units="unitless"
-			description=""
+			description="If true use the first year ice tracer."
 			possible_values="true or false"
+			icepack_name="tr_FY"
 		/>
 		<nml_option name="config_use_level_ice" type="logical" default_value="true" units="unitless"
-			description=""
+			description="If true use the level ice tracers."
 			possible_values="true or false"
+			icepack_name="tr_lvl"
 		/>
 		<nml_option name="config_use_cesm_meltponds" type="logical" default_value="false" units="unitless"
-			description=""
+			description="If true use the cesm meltponds tracers."
 			possible_values="true or false"
+			icepack_name="tr_pond_cesm"
 		/>
 		<nml_option name="config_use_level_meltponds" type="logical" default_value="true" units="unitless"
-			description=""
+			description="If true use the level ice meltponds tracers."
 			possible_values="true or false"
+			icepack_name="tr_pond_lvl"
 		/>
 		<nml_option name="config_use_topo_meltponds" type="logical" default_value="false" units="unitless"
-			description=""
+			description="If true use the topo meltpond tracers."
 			possible_values="true or false"
+			icepack_name="tr_pond_topo"
 		/>
 		<nml_option name="config_use_aerosols" type="logical" default_value="false" units="unitless"
 			description="Carry aerosols in the ice (NCAR scheme)"
 			possible_values="true or false"
+			icepack_name="tr_aero"
 		/>
 	</nml_record>
 
@@ -1406,210 +1414,256 @@
 	</nml_record>
 
 	<nml_record name="shortwave" in_defaults="true">
-		<nml_option name="config_shortwave_type" type="character" default_value="dEdd" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_shortwave_type" type="character" default_value="dEdd" units="unitless"
+			description="Shortwave radiation method."
+			possible_values="'ccsm3' or 'dEdd'"
+			icepack_name="shortwave"
 		/>
-		<nml_option name="config_albedo_type" type="character" default_value="ccsm3" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_albedo_type" type="character" default_value="ccsm3" units="unitless"
+			description="Albedo parameterization type."
+			possible_values="'ccsm3' or 'constant'"
+			icepack_name="albedo_type"
 		/>
-		<nml_option name="config_visible_ice_albedo" type="real" default_value="0.78" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_visible_ice_albedo" type="real" default_value="0.78" units="unitless"
+			description="Visible ice albedo for ice thickness > config_variable_albedo_thickness_limit."
+			possible_values="Any real number between 0 and 1."
+			icepack_name="albicev"
 		/>
-		<nml_option name="config_infrared_ice_albedo" type="real" default_value="0.36" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_infrared_ice_albedo" type="real" default_value="0.36" units="unitless"
+			description="Near-IR ice albedo for ice thickness > config_variable_albedo_thickness_limit."
+			possible_values="Any real number between 0 and 1."
+			icepack_name="albicei"
 		/>
-		<nml_option name="config_visible_snow_albedo" type="real" default_value="0.98" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_visible_snow_albedo" type="real" default_value="0.98" units="unitless"
+			description="Visible cold snow albedo."
+			possible_values="Any real number between 0 and 1."
+			icepack_name="albsnowv"
 		/>
-		<nml_option name="config_infrared_snow_albedo" type="real" default_value="0.70" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_infrared_snow_albedo" type="real" default_value="0.70" units="unitless"
+			description="Near-IR cold snow albedo."
+			possible_values="Any real number between 0 and 1."
+			icepack_name="albsnowi"
 		/>
-		<nml_option name="config_variable_albedo_thickness_limit" type="real" default_value="0.3" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_variable_albedo_thickness_limit" type="real" default_value="0.3" units="m"
+			description="Ice thickness above which the ice albedo is constant."
+			possible_values="Any positive real number."
+			icepack_name="ahmax"
 		/>
 		<nml_option name="config_ice_shortwave_tuning_parameter" type="real" default_value="0.0" units=""
-			description=""
+			description="Sea ice tuning parameter; +1 > 1sig increase in albedo."
 			possible_values=""
+			icepack_name="R_ice"
 		/>
 		<nml_option name="config_pond_shortwave_tuning_parameter" type="real" default_value="0.0" units=""
-			description=""
+			description="Ponded ice tuning parameter; +1 > 1sig increase in albedo."
 			possible_values=""
+			icepack_name="R_pnd"
 		/>
 		<nml_option name="config_snow_shortwave_tuning_parameter" type="real" default_value="1.5" units=""
-			description=""
+			description="Snow tuning parameter; +1 > ~.01 change in broadband albedo."
 			possible_values=""
+			icepack_name="R_snw"
 		/>
-		<nml_option name="config_temp_change_snow_grain_radius_change" type="real" default_value="1.5" units=""
-			description=""
+		<nml_option name="config_temp_change_snow_grain_radius_change" type="real" default_value="1.5" units="C"
+			description="Change in temperture for non-melt to melt snow grain radius change."
 			possible_values=""
+			icepack_name="dT_mlt"
 		/>
-		<nml_option name="config_max_melting_snow_grain_radius" type="real" default_value="1500.0" units=""
-			description=""
+		<nml_option name="config_max_melting_snow_grain_radius" type="real" default_value="1500.0" units="10e-6 m"
+			description="Maximum melting snow grain radius."
 			possible_values=""
+			icepack_name="rsnw_mlt"
 		/>
 		<nml_option name="config_algae_absorption_coefficient" type="real" default_value="0.6" units=""
-			description=""
+			description="Algae absorption coefficient for 0.5 m thick layer."
 			possible_values=""
+			icepack_name="kalg"
 		/>
 	</nml_record>
 
 	<nml_record name="meltponds" in_defaults="true">
-		<nml_option name="config_snow_to_ice_transition_depth" type="real" default_value="0.0" units=""
-			description=""
+		<nml_option name="config_snow_to_ice_transition_depth" type="real" default_value="0.0" units="m"
+			description="Snow depth for transition to bare sea ice."
 			possible_values=""
+			icepack_name="hs0"
 		/>
-		<nml_option name="config_pond_refreezing_type" type="character" default_value="hlid" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_pond_refreezing_type" type="character" default_value="hlid" units="unitless"
+			description="Pond refreezing parameterization."
+			possible_values="'cesm' or 'hlid'"
+			icepack_name="frzpnd"
 		/>
 		<nml_option name="config_pond_flushing_timescale" type="real" default_value="1.0e-3" units=""
-			description=""
+			description="Alter e-folding time scale for flushing.?????"
 			possible_values=""
+			icepack_name="dpscale"
 		/>
-		<nml_option name="config_min_meltwater_retained_fraction" type="real" default_value="0.15" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_min_meltwater_retained_fraction" type="real" default_value="0.15" units="unitless"
+			description="Minimum retained fraction of meltwater."
+			possible_values="Any real number between 0 and 1"
+			icepack_name="rfracmin"
 		/>
-		<nml_option name="config_max_meltwater_retained_fraction" type="real" default_value="1.0" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_max_meltwater_retained_fraction" type="real" default_value="1.0" units="unitless"
+			description="Maximum retained fraction of meltwater."
+			possible_values="Any real number between 0 and 1"
+			icepack_name="rfracmax"
 		/>
-		<nml_option name="config_pond_depth_to_fraction_ratio" type="real" default_value="0.8" units=""
-			description=""
+		<nml_option name="config_pond_depth_to_fraction_ratio" type="real" default_value="0.8" units="unitless"
+			description="Ratio of pond depth to pond fraction."
 			possible_values=""
+			icepack_name="pndaspect"
 		/>
 		<nml_option name="config_snow_on_pond_ice_tapering_parameter" type="real" default_value="0.03" units=""
-			description=""
+			description="Tapering parameter for snow on pond ice."
 			possible_values=""
+			icepack_name="hs1"
 		/>
 		<nml_option name="config_critical_pond_ice_thickness" type="real" default_value="0.01" units=""
-			description=""
+			description="Critical parameter for pond ice thickness."
 			possible_values=""
+			icepack_name="hp1"
 		/>
 	</nml_record>
 
 	<nml_record name="thermodynamics" in_defaults="true">
-		<nml_option name="config_thermodynamics_type" type="character" default_value="mushy" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_thermodynamics_type" type="character" default_value="mushy" units="unitless"
+			description="Vertical themodynamics type."
+			possible_values="'zero layer', 'BL99', or 'mushy'"
+			icepack_name="ktherm"
 		/>
-		<nml_option name="config_heat_conductivity_type" type="character" default_value="bubbly" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_heat_conductivity_type" type="character" default_value="bubbly" units="unitless"
+			description="Thermal conductivity type for BL99 thermodynamics. Options are Maykut and Untersteiner 1971 form (with Wettlaufer 1991 constants), or Pringle et al JGR 2007 'bubbly brine'"
+			possible_values="'MU71' or 'bubbly'"
+			icepack_name="conduct"
 		/>
-		<nml_option name="config_rapid_mode_channel_radius" type="real" default_value="0.5e-3" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_rapid_mode_channel_radius" type="real" default_value="0.5e-3" units="m"
+			description="Channel radius for rapid gravity drainage mode."
+			possible_values="Any positive real number."
+			icepack_name="a_rapid_mode"
 		/>
-		<nml_option name="config_rapid_model_critical_Ra" type="real" default_value="10.0" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_rapid_model_critical_Ra" type="real" default_value="10.0" units="unitless"
+			description="Critical Rayleigh number for rapid gravity drainage mode."
+			possible_values="Any positive real number."
+			icepack_name="Rac_rapid_mode"
 		/>
-		<nml_option name="config_rapid_mode_aspect_ratio" type="real" default_value="1.0" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_rapid_mode_aspect_ratio" type="real" default_value="1.0" units="unitless"
+			description="Aspect ratio for rapid gravity drainage mode (larger=wider)."
+			possible_values="Any positive real number."
+			icepack_name="aspect_rapid_mode"
 		/>
-		<nml_option name="config_slow_mode_drainage_strength" type="real" default_value="-5.0e-8" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_slow_mode_drainage_strength" type="real" default_value="-5.0e-8" units="m s^-1 K^-1"
+			description="Slow gravity drainage mode drainage strength."
+			possible_values="Any negative real number."
+			icepack_name="dSdt_slow_mode"
 		/>
-		<nml_option name="config_slow_mode_critical_porosity" type="real" default_value="0.05" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_slow_mode_critical_porosity" type="real" default_value="0.05" units="unitless"
+			description="Liquid fraction porosity cutoff for slow gravity drainage mode."
+			possible_values="Any real number between 0 and 1."
+			icepack_name="phi_c_slow_mode"
 		/>
-		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units="unitless"
+			description="Liquid fraction of congelation ice."
+			possible_values="Any real number between 0 and 1."
+			icepack_name="phi_i_mushy"
 		/>
 	</nml_record>
 
 	<nml_record name="itd" in_defaults="true">
-		<nml_option name="config_itd_conversion_type" type="character" default_value="linear remap" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_itd_conversion_type" type="character" default_value="linear remap" units="unitless"
+			description="Type of ice thickness distribution conversions."
+			possible_values="'delta function' or 'linear remap'"
+			icepack_name="kitd"
 		/>
-		<nml_option name="config_category_bounds_type" type="character" default_value="original" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_category_bounds_type" type="character" default_value="original" units="unitless"
+			description="Type of ice thickness category bounds."
+			possible_values="'single category', 'original', 'new', 'WMO', or 'asymptotic'"
+			icepack_name="kcatbound"
 		/>
 	</nml_record>
 
 	<nml_record name="ridging" in_defaults="true">
-		<nml_option name="config_ice_strength_formulation" type="character" default_value="Rothrock75" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_ice_strength_formulation" type="character" default_value="Rothrock75" units="unitless"
+			description="Type of ice strength formulation."
+			possible_values="'Hibler79' or 'Rothrock75'"
+			icepack_name="kstrength"
 		/>
-		<nml_option name="config_ridging_participation_function" type="character" default_value="exponential" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_ridging_participation_function" type="character" default_value="exponential" units="unitless"
+			description="Type of ridging participation function."
+			possible_values="'Thorndike75' or 'exponential'"
+			icepack_name="krdg_partic"
 		/>
-		<nml_option name="config_ridging_redistribution_function" type="character" default_value="exponential" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_ridging_redistribution_function" type="character" default_value="exponential" units="unitless"
+			description="Type of ridging redistribution function."
+			possible_values="'Hibler80' or 'exponential'"
+			icepack_name="krdg_redist"
 		/>
-		<nml_option name="config_ridiging_efolding_scale" type="real" default_value="3.0" units=""
-			description=""
+		<nml_option name="config_ridiging_efolding_scale" type="real" default_value="3.0" units="m^0.5"
+			description="E-folding scale of ridged ice (krdg_redist = 1)"
 			possible_values=""
+			icepack_name="mu_rdg"
 		/>
-		<nml_option name="config_ratio_ridging_work_to_PE" type="real" default_value="17.0" units=""
-			description=""
+		<nml_option name="config_ratio_ridging_work_to_PE" type="real" default_value="17.0" units="unitless"
+			description="Ratio of ridging work to PE change in ridging (kstrength = 1)"
 			possible_values=""
+			icepack_name="Cf"
 		/>
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
-		<nml_option name="config_atmos_boundary_method" type="character" default_value="ccsm3" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_atmos_boundary_method" type="character" default_value="ccsm3" units="unitless"
+			description="Atmosphere boundary method."
+			possible_values="'ccsm3' or 'constant'"
+			icepack_name="atmbndy"
 		/>
-		<nml_option name="config_calc_surface_stresses" type="logical" default_value="true" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_calc_surface_stresses" type="logical" default_value="true" units="unitless"
+			description="If true calculate wind stress components."
+			possible_values="true or false"
+			icepack_name="calc_strair"
 		/>
-		<nml_option name="config_calc_surface_temperature" type="logical" default_value="true" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_calc_surface_temperature" type="logical" default_value="true" units="unitless"
+			description="If true calculate surface temperature. If false surface temperature is computed elsewhere and atmos-ice fluxes are provided."
+			possible_values="true or false"
+			icepack_name="calc_Tsfc"
 		/>
-		<nml_option name="config_use_form_drag" type="logical" default_value="false" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_use_form_drag" type="logical" default_value="false" units="unitless"
+			description="If true calculate form drag."
+			possible_values="true or false"
+			icepack_name="formdrag"
 		/>
-		<nml_option name="config_use_high_frequency_coupling" type="logical" default_value="false" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_use_high_frequency_coupling" type="logical" default_value="false" units="unitless"
+			description="If true use high frequency coupling."
+			possible_values="true or false"
+			icepack_name="highfreq"
 		/>
-		<nml_option name="config_boundary_layer_iteration_number" type="integer" default_value="5" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_boundary_layer_iteration_number" type="integer" default_value="5" units="unitless"
+			description="Number of iterations for boundary layer calculations"
+			possible_values="Any positive integer."
+			icepack_name="natmiter"
 		/>
 	</nml_record>
 
 	<nml_record name="ocean" in_defaults="true">
-		<nml_option name="config_use_ocean_mixed_layer" type="logical" default_value="true" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_use_ocean_mixed_layer" type="logical" default_value="true" units="unitless"
+			description="If true use an ocean mixed layer."
+			possible_values="true or false"
+			icepack_name="oceanmixed_ice"
 		/>
 		<nml_option name="config_min_friction_velocity" type="real" default_value="0.0005" units=""
-			description=""
+			description="Minimum friction velocity for ice-ocean heat flux."
 			possible_values=""
+			icepack_name="ustar_min"
 		/>
-		<nml_option name="config_ocean_heat_transfer_type" type="character" default_value="constant" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_ocean_heat_transfer_type" type="character" default_value="constant" units="unitless"
+			description="Transfer coefficient type for ice-ocean heat flux."
+			possible_values="'constant' or 'Cdn_ocn'"
+			icepack_name="fbot_xfer_type"
 		/>
-		<nml_option name="config_sea_freezing_temperature_type" type="character" default_value="mushy" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_sea_freezing_temperature_type" type="character" default_value="mushy" units="unitless"
+			description="Form of ocean freezing temperature."
+			possible_values="'mushy', 'linear_salt', or DEFAULT"
+			icepack_name="tfrz_option"
 		/>
-		<nml_option name="config_ocean_surface_type" type="character" default_value="free" units=""
-			description=""
+		<nml_option name="config_ocean_surface_type" type="character" default_value="free" units="unitless"
+			description="Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')"
 			possible_values="'free' or 'non-free'"
 		/>
 		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
@@ -1619,9 +1673,9 @@
 	</nml_record>
 
 	<nml_record name="diagnostics" in_defaults="true">
-		<nml_option name="config_check_state" type="logical" default_value="false" units=""
-			description=""
-			possible_values=""
+		<nml_option name="config_check_state" type="logical" default_value="false" units="unitless"
+			description="If true perform a check at runtime of the model state."
+			possible_values="true or false"
 		/>
 	</nml_record>
 
