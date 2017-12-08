@@ -1460,14 +1460,14 @@ class Case(object):
 
     def is_save_timing_dir_project(self,project):
         """
-        Check whether the project is permitted to archive performance data in the location 
+        Check whether the project is permitted to archive performance data in the location
         specified for the current machine
         """
         save_timing_dir_projects = self.get_value("SAVE_TIMING_DIR_PROJECTS")
         if not save_timing_dir_projects:
             return False
         else:
-            save_timing_dir_projects = save_timing_dir_projects.split(",")
+            save_timing_dir_projects = save_timing_dir_projects.split(",") # pylint: disable=no-member
             for save_timing_dir_project in save_timing_dir_projects:
                 regex = re.compile(save_timing_dir_project)
                 if regex.match(project):
