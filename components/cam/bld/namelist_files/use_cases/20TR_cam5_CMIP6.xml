@@ -5,19 +5,19 @@
 <!-- Set default output options for CMIP6 simulations -->
 <cosp_lite>.true.</cosp_lite>
 
-<!-- Solar constant from Lean (via Caspar Ammann) -->
-<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1610-2140_ann_c100408.nc</solar_data_file>
+<!-- Solar constant from CMIP6 input4MIPS -->
+<solar_data_file>atm/cam/solar/Solar_1850-2299_input4MIPS_c20171207.nc</solar_data_file>
 <solar_data_type>SERIAL</solar_data_type>
 
-<!-- 1850 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) -->
-<!-- <co2vmr>284.725e-6</co2vmr> Set by CCSM_CO2_PPMV in config_compset.xml -->
-<bndtvghg>atm/cam/ggas/ghg_hist_1765-2012_c130501.nc</bndtvghg>
+<!-- GHG values from CMIP6 input4MIPS -->
+<bndtvghg>atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20171026.nc</bndtvghg>
 <scenario_ghg>RAMPED</scenario_ghg>
 
-<!-- volcanic aerosols in the stratosphere -->
-<prescribed_volcaero_datapath>'atm/cam/volc'                          </prescribed_volcaero_datapath>  
-<prescribed_volcaero_file>    'CCSM4_volcanic_1850-3009_prototype1.nc'</prescribed_volcaero_file>    
-<prescribed_volcaero_type>    'SERIAL'				      </prescribed_volcaero_type>    
+<!-- Stratospheric aerosols from CMIP6 input4MIPS -->
+<prescribed_volcaero_datapath>'atm/cam/volc'</prescribed_volcaero_datapath>
+<prescribed_volcaero_file>'CMIP_DOE-ACME_radiation_1850-2014_v3_c20171205.nc'</prescribed_volcaero_file>
+<prescribed_volcaero_filetype>VOLC_CMIP6</prescribed_volcaero_filetype>
+<prescribed_volcaero_type>'SERIAL'</prescribed_volcaero_type>
 
 <!-- Sea Surface Temperatures (SST) are specified using SSTICE in config_compsets.xml -->
 
