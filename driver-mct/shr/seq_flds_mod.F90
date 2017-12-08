@@ -197,6 +197,8 @@ module seq_flds_mod
    character(CXX) :: seq_flds_g2x_states_to_lnd
    character(CXX) :: seq_flds_g2x_fluxes
    character(CXX) :: seq_flds_g2x_fluxes_to_lnd
+   character(CXX) :: seq_flds_g2o_liq_fluxes
+   character(CXX) :: seq_flds_g2o_ice_fluxes
    character(CXX) :: seq_flds_x2g_states
    character(CXX) :: seq_flds_x2g_fluxes
 
@@ -315,6 +317,8 @@ module seq_flds_mod
      character(CXX) :: g2x_states_to_lnd = ''
      character(CXX) :: g2x_fluxes = ''
      character(CXX) :: g2x_fluxes_to_lnd = ''
+     character(CXX) :: g2o_liq_fluxes = ''
+     character(CXX) :: g2o_ice_fluxes = ''
      character(CXX) :: x2g_states = ''
      character(CXX) :: x2g_fluxes = ''
      character(CXX) :: xao_albedo = ''
@@ -344,13 +348,13 @@ module seq_flds_mod
      logical :: flds_co2b
      logical :: flds_co2c
      logical :: flds_co2_dmsa
-     logical :: flds_bgc
+     logical :: flds_bgc_oi
      logical :: flds_wiso
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
           flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
-          ice_ncat, seq_flds_i2o_per_cat, flds_bgc, nan_check_component_fields
+          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, nan_check_component_fields
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -379,7 +383,7 @@ module seq_flds_mod
         flds_co2b = .false.
         flds_co2c = .false.
         flds_co2_dmsa = .false.
-        flds_bgc  = .false.
+        flds_bgc_oi   = .false.
         flds_wiso = .false.
         glc_nec   = 0
         ice_ncat  = 1
@@ -405,7 +409,7 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2b    , mpicom)
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
-     call shr_mpi_bcast(flds_bgc     , mpicom)
+     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
      call shr_mpi_bcast(flds_wiso    , mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
      call shr_mpi_bcast(ice_ncat     , mpicom)
@@ -1522,7 +1526,7 @@ module seq_flds_mod
      !------------------------------
      ! ice<->ocn only exchange - BGC
      !------------------------------
-     if (trim(cime_model) == 'acme' .and. flds_bgc) then
+     if (trim(cime_model) == 'acme' .and. flds_bgc_oi) then
 
         ! Ocean algae concentration 1 - diatoms?
         call seq_flds_add(o2x_states,"So_algae1")
@@ -2242,6 +2246,9 @@ module seq_flds_mod
 
      name = 'Fogg_rofl'
      call seq_flds_add(g2x_fluxes,trim(name))
+     ! Don't need to add this to x2o_fluxes, because Foxx_rofl is already added in the
+     ! course of adding Forr_rofl
+     call seq_flds_add(g2o_liq_fluxes,trim(name))
      longname = 'glc liquid runoff flux to ocean'
      stdname  = 'glacier_liquid_runoff_flux_to_ocean'
      units    = 'kg m-2 s-1'
@@ -2250,6 +2257,9 @@ module seq_flds_mod
 
      name = 'Fogg_rofi'
      call seq_flds_add(g2x_fluxes,trim(name))
+     ! Don't need to add this to x2o_fluxes, because Foxx_rofi is already added in the
+     ! course of adding Forr_rofi
+     call seq_flds_add(g2o_ice_fluxes,trim(name))
      longname = 'glc frozen runoff flux to ocean'
      stdname  = 'glacier_frozen_runoff_flux_to_ocean'
      units    = 'kg m-2 s-1'
@@ -2258,6 +2268,8 @@ module seq_flds_mod
 
      name = 'Figg_rofi'
      call seq_flds_add(g2x_fluxes,trim(name))
+     ! Don't need to add this to x2i_fluxes, because Fixx_rofi is already added in the
+     ! course of adding Firr_rofi
      longname = 'glc frozen runoff_iceberg flux to ice'
      stdname  = 'glacier_frozen_runoff_flux_to_seaice'
      units    = 'kg m-2 s-1'
@@ -3217,6 +3229,8 @@ module seq_flds_mod
      seq_flds_x2o_fluxes = trim(x2o_fluxes)
      seq_flds_g2x_fluxes = trim(g2x_fluxes)
      seq_flds_g2x_fluxes_to_lnd = trim(g2x_fluxes_to_lnd)
+     seq_flds_g2o_liq_fluxes = trim(g2o_liq_fluxes)
+     seq_flds_g2o_ice_fluxes = trim(g2o_ice_fluxes)
      seq_flds_x2g_fluxes = trim(x2g_fluxes)
      seq_flds_xao_fluxes = trim(xao_fluxes)
      seq_flds_r2x_fluxes = trim(r2x_fluxes)
