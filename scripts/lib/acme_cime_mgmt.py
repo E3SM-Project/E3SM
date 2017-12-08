@@ -92,7 +92,7 @@ def do_subtree_pull():
 def make_pr_branch(branch, branch_head):
 ###############################################################################
     pr_branch = "{}-pr".format(branch)
-    run_cmd_no_fail("git checkout -b {} {}".format(pr_branch, branch_head))
+    run_cmd_no_fail("git checkout --no-track -b {} {}".format(pr_branch, branch_head))
 
     return pr_branch
 
@@ -150,7 +150,7 @@ def acme_cime_split(resume_one, resume_two):
         merge_pr_branch_2()
 
     try:
-        run_cmd_no_fail("git push {} {}".format(ESMCI_REMOTE_NAME, pr_branch))
+        run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch))
     except:
         delete_tag(old_split_tag)
         raise
@@ -180,7 +180,7 @@ def acme_cime_merge(resume):
         pr_branch = "{}-pr".format(get_branch_from_tag(new_merge_tag))
 
     try:
-        run_cmd_no_fail("git push origin {}".format(pr_branch))
+        run_cmd_no_fail("git push -u origin {}".format(pr_branch))
     except:
         delete_tag(old_merge_tag, remote=ESMCI_REMOTE_NAME)
         raise

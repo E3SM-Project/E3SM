@@ -44,7 +44,6 @@ PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION -
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
-
 ifeq ($(strip $(SMP)),TRUE)
    THREADDIR = threads
    compile_threaded = true
