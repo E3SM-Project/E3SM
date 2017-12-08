@@ -39,7 +39,7 @@ contains
     integer, intent(in)                     :: nets  ! starting thread element number (private)
     integer, intent(in)                     :: nete
 
-    integer ierr, i, j, ie, iv, block_ID, num_layers, dimgh, bridge
+    integer ierr, i, j, ie, iv, block_ID
 
     real(kind=real_kind), allocatable, target :: moab_vert_coords(:)
     INTEGER (C_INT) ,allocatable , target :: moab_corner_quads(:)
@@ -49,7 +49,7 @@ contains
 
 ! do we really need this?
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
-        iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, iMOAB_DefineTagStorage, &
+        iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo, iMOAB_DefineTagStorage, &
         iMOAB_SetIntTagStorage
 
     integer(iMap), dimension(:), allocatable :: gdofv
@@ -178,31 +178,15 @@ contains
           call endrun('Error: fail to write local mesh file')
       endif
 
+      ierr = iMOAB_UpdateMeshInfo(MHID)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to update mesh info')
 !     write out the mesh file to disk, in parallel
       outfile = 'wholeATM.h5m'//CHAR(0)
       wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
       ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
-
-      ! (iMOAB_AppID MHID, int * ghost_dim, int *num_ghost_layers, int * bridge_dim )
-      dimgh = 2 ! will ghost quads, topological dim 2
-      bridge = 0 ! use vertex as bridge
-      num_layers = 1 ! so far, one layer only
-      ierr = iMOAB_DetermineGhostEntities( MHID, dimgh, num_layers, bridge)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to determine ghosts')
-
-      ! write in serial, on each task
-      if (par%rank .lt. 10) then
-        write(lnum,"(I0.2)")par%rank
-        localmeshfile = 'localmesh_'//trim(lnum)// '.h5m' // CHAR(0)
-        wopts = CHAR(0)
-        ierr = iMOAB_WriteMesh(MHID, localmeshfile, wopts)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to write local mesh file')
-      endif
-      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
 
      ! deallocate
      deallocate(moab_corner_quads)
