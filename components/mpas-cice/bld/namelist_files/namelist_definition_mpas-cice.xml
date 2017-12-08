@@ -54,49 +54,49 @@
 
 <entry id="config_dt" type="real"
 	category="cice_model" group="cice_model">
-MISSING DESCRIPTION
+Length of model time-step.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calendar_type" type="char*1024"
 	category="cice_model" group="cice_model">
-MISSING DESCRIPTION
+Selection of the type of calendar that should be used in the simulation.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 'gregorian', 'gregorian_noleap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_start_time" type="char*1024"
 	category="cice_model" group="cice_model">
-MISSING DESCRIPTION
+Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 'YYYY-MM-DD_HH:MM:SS' or 'file'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_stop_time" type="char*1024"
 	category="cice_model" group="cice_model">
-MISSING DESCRIPTION
+Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 'YYYY-MM-DD_HH:MM:SS' or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_run_duration" type="char*1024"
 	category="cice_model" group="cice_model">
-MISSING DESCRIPTION
+Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: ''YYYY-MM-DD_HH:MM:SS' or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_num_halos" type="integer"
 	category="cice_model" group="cice_model">
-MISSING DESCRIPTION
+Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive integer value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -105,49 +105,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_pio_num_iotasks" type="integer"
 	category="io" group="io">
-MISSING DESCRIPTION
+Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive integer value greater than or equal to 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pio_stride" type="integer"
 	category="io" group="io">
-MISSING DESCRIPTION
+Integer specifying the stride of each IO task.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive integer value greater than 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_write_output_on_startup" type="logical"
 	category="io" group="io">
-MISSING DESCRIPTION
+If true write the output streams to disk after model initialization but before time stepping.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_test_case_diag" type="logical"
 	category="io" group="io">
-MISSING DESCRIPTION
+Perform a test case
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_test_case_diag_type" type="char*1024"
 	category="io" group="io">
-MISSING DESCRIPTION
+Test case type
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 'global_velocity', 'square_advection' or 'advection'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_full_abort_write" type="logical"
 	category="io" group="io">
-MISSING DESCRIPTION
+If true write the abort stream to disk after a critical error for the entire domain, not just failing block.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -156,33 +156,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_block_decomp_file_prefix" type="char*1024"
 	category="decomposition" group="decomposition">
-MISSING DESCRIPTION
+Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any path/prefix to a block decomposition file.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_number_of_blocks" type="integer"
 	category="decomposition" group="decomposition">
-MISSING DESCRIPTION
+Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any integer greater than or equal to 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_explicit_proc_decomp" type="logical"
 	category="decomposition" group="decomposition">
-MISSING DESCRIPTION
+Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_proc_decomp_file_prefix" type="char*1024"
 	category="decomposition" group="decomposition">
-MISSING DESCRIPTION
+Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any path/prefix to a processor decomposition file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_aggregate_halo_exch" type="logical"
+	category="decomposition" group="decomposition">
+Determines if aggregated halo exchanges are used in some places.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -191,41 +199,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_do_restart" type="logical"
 	category="restart" group="restart">
-MISSING DESCRIPTION
+Determines if the initial conditions should be read from a restart file, or an input file.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_restart_timestamp_name" type="char*1024"
 	category="restart" group="restart">
-MISSING DESCRIPTION
+Path to the filename for restart timestamps to be read and written from.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Path to a file.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_do_restart_hbrine" type="logical"
 	category="restart" group="restart">
-MISSING DESCRIPTION
+Restart the brine height tracer needed for vertical bgc
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_do_restart_zsalinity" type="logical"
 	category="restart" group="restart">
-MISSING DESCRIPTION
+Restart the z-salinity tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_do_restart_bgc" type="logical"
 	category="restart" group="restart">
-MISSING DESCRIPTION
+Restart the ice biogeochemistry
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -234,25 +242,25 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_nCategories" type="integer"
 	category="dimensions" group="dimensions">
-MISSING DESCRIPTION
+The number of ice thickness categories to use.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nIceLayers" type="integer"
 	category="dimensions" group="dimensions">
-MISSING DESCRIPTION
+The number of ice layers in the vertical direction to use.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nSnowLayers" type="integer"
 	category="dimensions" group="dimensions">
-MISSING DESCRIPTION
+The number of snow layers in the vertical direction to use.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -261,7 +269,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_initial_condition_type" type="char*1024"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Initial condition type for sea ice state.
 
 Valid values: 'restart', 'uniform', 'circle', 'square' or 'uniform_interior'
 Default: Defined in namelist_defaults.xml
@@ -269,73 +277,73 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_initial_ice_area" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Sea ice concentration at initialization.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: A real number between 0.0 and 1.0 inclusive.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_ice_volume" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Sea ice volume at initialization.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_snow_volume" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Sea ice snow volume at initialization.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_latitude_north" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Minimum latitude limit for initial northern hemisphere sea ice extent.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_latitude_south" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Maximum latitude limit for initial southern hemisphere sea ice extent.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_velocity_type" type="char*1024"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Initial condition type for sea ice velocity.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 'uniform', 'ocean', 'random', 'special', or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_uvelocity" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Sea ice velocity in the U direction at initialization. ???Geo or native???
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_vvelocity" type="real"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+Sea ice velocity in the V direction at initialization. ???Geo or native???
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calculate_coriolis" type="logical"
 	category="initialize" group="initialize">
-MISSING DESCRIPTION
+If True calculate the Coriolis parameter at initialization from the latitude.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -344,33 +352,33 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_velocity_solver" type="logical"
 	category="use_sections" group="use_sections">
-MISSING DESCRIPTION
+If true calculate the sea ice velocity.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_advection" type="logical"
 	category="use_sections" group="use_sections">
-MISSING DESCRIPTION
+If true perform advection of the sea ice.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_forcing" type="logical"
 	category="use_sections" group="use_sections">
-MISSING DESCRIPTION
+If true calculate input forcing fields.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_column_package" type="logical"
 	category="use_sections" group="use_sections">
-MISSING DESCRIPTION
+If true perform calculations from the column physics package.
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -379,65 +387,65 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_atmospheric_forcing_type" type="char*1024"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 'CORE'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_forcing_start_time" type="char*1024"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_forcing_cycle_start" type="char*1024"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_forcing_cycle_duration" type="char*1024"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_forcing_precipitation_units" type="char*1024"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 'mm_per_month', 'mm_per_day', or 'mm_per_sec'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_forcing_sst_type" type="char*1024"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 'ncar'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_update_ocean_fluxes" type="logical"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_include_pond_freshwater_feedback" type="logical"
 	category="forcing" group="forcing">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: .true. or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -446,41 +454,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_perform_unit_test" type="logical"
 	category="unit_test" group="unit_test">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_unit_test_type" type="char*1024"
 	category="unit_test" group="unit_test">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_unit_test_subtype" type="char*1024"
 	category="unit_test" group="unit_test">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_test_ice_shelf" type="logical"
 	category="unit_test" group="unit_test">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_testing_system_test" type="logical"
 	category="unit_test" group="unit_test">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -489,39 +497,39 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_dynamics_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: any positive integer
+
+Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rotate_cartesian_grid" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_include_metric_terms" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_elastic_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: any positive integer
+
+Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_stress_divergence_scheme" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
+
 
 Valid values: 'weak' or 'variational'
 Default: Defined in namelist_defaults.xml
@@ -529,7 +537,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_variational_basis" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
+
 
 Valid values: 'wachspress' or 'pwl'
 Default: Defined in namelist_defaults.xml
@@ -537,7 +545,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_wachspress_integration_type" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
+
 
 Valid values: 'trapezoidal', 'dunavant' or 'fekete'
 Default: Defined in namelist_defaults.xml
@@ -545,49 +553,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_wachspress_integration_order" type="integer"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: positive integers
+
+Valid values: 'trapezoidal': any positive integer, 'dunavant':1-10,12, 'fekete':1-6,8,9
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_revised_evp" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_air_stress" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_ocean_stress" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_surface_tilt" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_geostrophic_surface_tilt" type="logical"
 	category="velocity_solver" group="velocity_solver">
-MISSING DESCRIPTION
 
-Valid values: true or false
+
+Valid values: .true. or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -612,7 +620,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_conservation_check" type="logical"
 	category="advection" group="advection">
-MISSING DESCRIPTION
+
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -620,7 +628,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_monotonicity_check" type="logical"
 	category="advection" group="advection">
-MISSING DESCRIPTION
+
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -628,7 +636,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_recover_tracer_means_check" type="logical"
 	category="advection" group="advection">
-MISSING DESCRIPTION
+
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -639,41 +647,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_column_shortwave" type="logical"
 	category="column_package" group="column_package">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_column_vertical_thermodynamics" type="logical"
 	category="column_package" group="column_package">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_column_biogeochemistry" type="logical"
 	category="column_package" group="column_package">
-MISSING DESCRIPTION
+Use biological and chemical tracers in the ice
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_column_itd_thermodynamics" type="logical"
 	category="column_package" group="column_package">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_column_ridging" type="logical"
 	category="column_package" group="column_package">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -682,57 +690,57 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_ice_age" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_first_year_ice" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_level_ice" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_cesm_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_level_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_topo_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_aerosols" type="logical"
 	category="column_tracers" group="column_tracers">
-MISSING DESCRIPTION
+Carry aerosols in the ice (NCAR scheme)
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -741,1137 +749,1137 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_brine" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the brine height tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_vertical_zsalinity" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use z-salinity (with Bitz and Lipscomb 1999 thermodynamics)
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_vertical_biochemistry" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Turn on the reaction terms for vertical biological tracers
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_shortwave_bioabsorption" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Permit radiative transfer calculations that include dynamic chlorophyll and aerosols if active
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_vertical_tracers" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Allow vertically resolved biological and chemical tracers
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_skeletal_biochemistry" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the bottom 1-layer biogeochemistry
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_nitrate" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the nitrate tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_carbon" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use dissolved organic and inorganic carbon tracers
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_chlorophyll" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the chlorophyll tracer (currently not implemented!)
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_ammonium" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the ammonium tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_silicate" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the silicate tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_DMS" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use DMS/DMSPd/DMSPp species
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_nonreactive" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use a non-reactive nitrate tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_humics" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use the humic matter tracer
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_DON" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use dissolved organic nitrogen (proteins and amino acids)
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_iron" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Use particulate and dissolved iron tracers
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_modal_aerosols" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Aerosols are consistent with the CAM modal aerosol scheme
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_zaerosols" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Aerosols in the ice use the z-aerosol scheme
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_skeletal_bgc_flux_type" type="char*1024"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Determines the ocean-ice fluxes of biogeochemistry for the bottom1-layer model: in Jin2006,    the piston velocity is a function of ice growth/melt rate, in default, the piston velocity    is constant
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Jin2006 or default
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_scale_initial_vertical_bgc" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+initialize the vertical ice biogeochemistry profile to scale with    the salinity restart/initial profile
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_biogrid_bottom_molecular_sublayer" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the value of the ice/ocean molecular sublayer for the vertical biogeochemistry model
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_biogrid_top_molecular_sublayer" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the value of the ice surface molecular sublayer for the vertical biogeochemistry model
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_bio_gravity_drainage_length_scale" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+positive real number less than 1
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: Sets the gravity drainage length scale in the biological transport model
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_zsalinity_molecular_sublayer" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ice/ocean molecular sublayer for the z-salinity model
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real number less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_zsalinity_gravity_drainage_scale" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the gravity drainage length scale in the z-salinity model
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_snow_porosity_at_ice_surface" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Specifies the snow porosity (volume of air/total volume) at the ice surface
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: real between 0 and 1 or negative.  If negative, compute porosity from snow density
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_new_ice_fraction_biotracer" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of biological tracer retained as new sea ice is formed from ocean water
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_biotracer_in_frazil" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Factor multiplying the ocean concentration of a biological tracer in new frazil ice
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Si_to_N_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of silicate to nitrogen in diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real of order 1.8
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Si_to_N_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of silicate to nitrogen in small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 0
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Si_to_N_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of silicate to nitrogen in phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: 0
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_S_to_N_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of sulfur to nitrogen in diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: order of 0.03
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_S_to_N_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of sulfur to nitrogen in small plankeon
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: order of 0.03
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_S_to_N_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of sulfur to nitrogen in phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: order of 0.03
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_C_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to carbon in diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_C_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to carbon in small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_C_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to carbon in phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_N_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to nitrogen in diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_N_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to nitrogen in small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_N_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to nitrogen in phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_DON" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to dissolved organic nitrogen
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_DOC_saccharids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to poly/saccharid carbon
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_DOC_lipids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Sets the ratio of iron to lipid carbon
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_respiration_fraction_of_growth" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of algal growth that is lost due to respiration
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than one
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_mobile_to_stationary_time" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Rapid adsorption timescale  
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_long_mobile_to_stationary_time" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Slow adsorption timescale
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_algal_maximum_velocity" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Maximum speed at which diatoms can move
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real number 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_Fe_to_dust" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Mass ratio of iron in dust
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_solubility_of_Fe_in_dust" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of iron that is soluble
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: real number between and including zero and one
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_chla_absorptivity_of_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Absorptivity of chlorophyll in diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_chla_absorptivity_of_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Absorptivity of chlorophyll in small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_chla_absorptivity_of_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Absorptivity of chlorophyll in phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_light_attenuation_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the ability of diatoms to utilize light
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_light_attenuation_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the ability of small plankton to utilize light
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_light_attenuation_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the ability of phaeocystis to utilize light
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_light_inhibition_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the strength of light inhibition to growth for diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_light_inhibition_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the strength of light inhibition to growth for small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_light_inhibition_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the strength of light inhibition to growth for phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_maximum_growth_rate_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Maximum growth rate for diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_maximum_growth_rate_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Maximum growth rate for small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_maximum_growth_rate_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Maximum growth rate for phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temperature_growth_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the temperature dependence of growth for diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temperature_growth_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the temperature dependence of growth for small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temperature_growth_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Controls the temperature dependence of growth for phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_grazed_fraction_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of diatom biomass grazed
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_grazed_fraction_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of small plankton biomass grazed
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_grazed_fraction_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of phaeocystis biomass grazed
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mortality_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Mortality rate of diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mortality_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Mortality rate of small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mortality_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Mortality rate of phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temperature_mortality_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Temperature dependence of diatom mortality rate
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temperature_mortality_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Temperature dependence of small plankton mortality rate
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temperature_mortality_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Temperature dependence of phaeocystis mortality rate
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_exudation_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Rate diatoms exude DOC
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_exudation_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Rate small plankton exude DOC
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_exudation_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Rate phaeocystis exude DOC
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nitrate_saturation_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Nitrate half saturation for diatom growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nitrate_saturation_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Nitrate half saturation for small plankton growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nitrate_saturation_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Nitrate half saturation for phaeocystis growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ammonium_saturation_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Ammonium half saturation for diatom growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ammonium_saturation_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Ammonium half saturation for small plankton growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ammonium_saturation_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Ammonium half saturation for phaeocystis growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_silicate_saturation_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Silicate half saturation for diatom growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_silicate_saturation_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Silicate half saturation for small plankton growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_silicate_saturation_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Silicate half saturation for phaeocystis growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_iron_saturation_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Iron half saturation for diatom growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_iron_saturation_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Iron half saturation for small plankton growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_iron_saturation_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Iron half saturation for phaeocystis growth
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_spilled_to_DON" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of spilled grazing to proteins
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_degredation_of_DON" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Bacterial degredation of DON
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_DON_ammonium" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of remineralized DON converted to ammonium
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_loss_to_saccharids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of mortality to poly/saccharids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_loss_to_lipids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of mortality to lipids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_exudation_to_saccharids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fracton of exudation to poly/saccharids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_exudation_to_lipids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of exudation to lipids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_remineralization_saccharids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Bacterial degredaton rate of poly/saccarids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_remineralization_lipids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Bacterial degredation rate of lipids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_maximum_brine_temperature" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Maximum brine temperature
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_salinity_dependence_of_growth" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Salinity limitation factor
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_minimum_optical_depth" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Minimum optical depth above which light attenuates
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_slopped_grazing_fraction" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of grazing spilled or slopped
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_excreted_fraction" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of assimilation excreted
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_mortality_to_ammonium" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of mortality to ammonium
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_fraction_iron_remineralized" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of remineralized iron 
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_nitrification_rate" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Nitrification rate
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_desorption_loss_particulate_iron" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Desorption rate of particulate iron to dissolved iron
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_maximum_loss_fraction" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Maximum uptake fraction in a single timestep
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_maximum_ratio_iron_to_saccharids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Optimal ratio of dissolved iron to poly/saccharids in the brine
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_respiration_loss_to_DMSPd" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of respiration loss as DMSPd
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_DMSP_to_DMS_conversion_fraction" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Fraction of conversion to DMS given high yield
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: zero or positive real less than or equal to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_DMSP_to_DMS_conversion_time" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Stefels conversion time
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_DMS_oxidation_time" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+DMS oxidation time
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_nitrate" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of nitrate
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_ammonium" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of ammonium
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_silicate" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of silicate
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_DMSPp" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of particulate DMSP
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_DMSPd" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of dissolved DMSP
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_humics" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of humics
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_saccharids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of poly/saccharids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_lipids" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of lipids
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_proteins" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of proteins
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_dissolved_iron" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of dissolved iron
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_particulate_iron" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of particulate iron
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_black_carbon1" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of black carbon 1 pool
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_black_carbon2" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of black carbon 1 pool
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_dust1" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of dust pool 1
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_dust2" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of dust pool 2
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_dust3" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of dust pool 3
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_mobility_type_dust4" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Transport type of dust pool 4
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_C_to_N_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Algal carbon to nitrogen mole ratio for diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_C_to_N_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Algal carbon to nitrogen mole ratio for small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_C_to_N_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Algal carbon to nitrogen mole ratio for phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_chla_to_N_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Algal chlorophyll to nitrogen ratio for diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_chla_to_N_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Algal chlorophyll to nitrogen ratio for small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_chla_to_N_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Algal chlorophyll to nitrogen ratio for phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_scales_absorption_diatoms" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Scales absorbed radiation for diatoms
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_scales_absorption_small_plankton" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Scales absorbed radiation for small plankton
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_scales_absorption_phaeocystis" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Scales absorbed radiation for phaeocystis
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_C_to_N_proteins" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-MISSING DESCRIPTION
+Ratio of carbon to nitrogen in proteins
 
-Valid values: MISSING POSSIBLE VALUES
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1880,105 +1888,105 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_shortwave_type" type="char*1024"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_albedo_type" type="char*1024"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_visible_ice_albedo" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_infrared_ice_albedo" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_visible_snow_albedo" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_infrared_snow_albedo" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_variable_albedo_thickness_limit" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ice_shortwave_tuning_parameter" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pond_shortwave_tuning_parameter" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_snow_shortwave_tuning_parameter" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_temp_change_snow_grain_radius_change" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_max_melting_snow_grain_radius" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_algae_absorption_coefficient" type="real"
 	category="shortwave" group="shortwave">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1987,65 +1995,65 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_snow_to_ice_transition_depth" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pond_refreezing_type" type="char*1024"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pond_flushing_timescale" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_min_meltwater_retained_fraction" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_max_meltwater_retained_fraction" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pond_depth_to_fraction_ratio" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_snow_on_pond_ice_tapering_parameter" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_critical_pond_ice_thickness" type="real"
 	category="meltponds" group="meltponds">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2054,65 +2062,65 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_thermodynamics_type" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_heat_conductivity_type" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_mode_channel_radius" type="real"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_model_critical_Ra" type="real"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_mode_aspect_ratio" type="real"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_slow_mode_drainage_strength" type="real"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_slow_mode_critical_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_congelation_ice_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2121,17 +2129,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_itd_conversion_type" type="char*1024"
 	category="itd" group="itd">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_category_bounds_type" type="char*1024"
 	category="itd" group="itd">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2140,41 +2148,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ice_strength_formulation" type="char*1024"
 	category="ridging" group="ridging">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ridging_participation_function" type="char*1024"
 	category="ridging" group="ridging">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ridging_redistribution_function" type="char*1024"
 	category="ridging" group="ridging">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ridiging_efolding_scale" type="real"
 	category="ridging" group="ridging">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ratio_ridging_work_to_PE" type="real"
 	category="ridging" group="ridging">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2183,49 +2191,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_atmos_boundary_method" type="char*1024"
 	category="atmosphere" group="atmosphere">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calc_surface_stresses" type="logical"
 	category="atmosphere" group="atmosphere">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calc_surface_temperature" type="logical"
 	category="atmosphere" group="atmosphere">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_form_drag" type="logical"
 	category="atmosphere" group="atmosphere">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_high_frequency_coupling" type="logical"
 	category="atmosphere" group="atmosphere">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_boundary_layer_iteration_number" type="integer"
 	category="atmosphere" group="atmosphere">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2234,39 +2242,39 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_ocean_mixed_layer" type="logical"
 	category="ocean" group="ocean">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_min_friction_velocity" type="real"
 	category="ocean" group="ocean">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ocean_heat_transfer_type" type="char*1024"
 	category="ocean" group="ocean">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_sea_freezing_temperature_type" type="char*1024"
 	category="ocean" group="ocean">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ocean_surface_type" type="char*1024"
 	category="ocean" group="ocean">
-MISSING DESCRIPTION
+
 
 Valid values: 'free' or 'non-free'
 Default: Defined in namelist_defaults.xml
@@ -2277,9 +2285,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_check_state" type="logical"
 	category="diagnostics" group="diagnostics">
-MISSING DESCRIPTION
 
-Valid values: MISSING POSSIBLE VALUES
+
+Valid values: 
 Default: Defined in namelist_defaults.xml
 </entry>
 
