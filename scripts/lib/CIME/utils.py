@@ -2,9 +2,9 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import errno, signal, warnings, filecmp
 import stat as statlib
-import warnings
 import six
 from contextlib import contextmanager
 #pylint: disable=import-error
@@ -31,6 +31,31 @@ def redirect_stderr(new_target):
     finally:
         sys.stderr = old_target # restore to the previous value
 
+@contextmanager
+def redirect_stdout_stderr(new_target):
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = new_target, new_target
+    try:
+        yield new_target
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
+@contextmanager
+def redirect_logger(new_target, logger_name):
+    ch = logging.StreamHandler(stream=new_target)
+    ch.setLevel(logging.DEBUG)
+    log = logging.getLogger(logger_name)
+    root_log = logging.getLogger()
+    orig_handlers = log.handlers
+    orig_root_loggers = root_log.handlers
+
+    try:
+        root_log.handlers = []
+        log.handlers = [ch]
+        yield log
+    finally:
+        root_log.handlers = orig_root_loggers
+        log.handlers = orig_handlers
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -49,7 +74,12 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type(error_prefix + " " + error_msg)
+        try:
+            msg = str(error_prefix + " " + error_msg)
+        except UnicodeEncodeError:
+            msg = (error_prefix + " " + error_msg).encode('utf-8')
+        raise exc_type(msg)
+
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -200,8 +230,7 @@ def _convert_to_fd(filearg, from_dir):
 
 _hack=object()
 
-def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
-                   from_dir=None, combine_output=False):
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
 
     # This code will try to import and run each buildnml as a subroutine
     # if that fails it will run it as a program in a seperate shell
@@ -213,34 +242,40 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
         if logfile:
-            with redirect_stdout(open(logfile,"w")):
+            with redirect_logger(open(logfile,"w"), subname):
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
+
     except SyntaxError:
         do_run_cmd = True
+
     except AttributeError:
         do_run_cmd = True
-    except:
-        raise
 
     if do_run_cmd:
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
+
         fullcmd = cmd
         if isinstance(cmdargs, list):
             for arg in cmdargs:
                 fullcmd += " " + str(arg)
         else:
             fullcmd += " " + cmdargs
-        output = run_cmd_no_fail("{} 1> {} 2>&1".format(fullcmd, logfile),
-                                 combine_output=combine_output,
+
+        if logfile:
+            fullcmd += " > {} ".format(logfile)
+
+        output = run_cmd_no_fail("{}".format(fullcmd),
+                                 combine_output=True,
                                  from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
         if case is not None:
             case.read_xml()
+
     return stat, output, errput
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
@@ -357,14 +392,14 @@ def normalize_case_id(case_id):
     """
     Given a case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
-    'ERT.ne16_g37.B1850C5.skybridge_intel'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod')
-    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.G.20151121')
-    'ERT.ne16_g37.B1850C5.skybridge_intel'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod.G.20151121')
-    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.G.20151121')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod.G.20151121')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod'
     """
     sep_count = case_id.count(".")
     expect(sep_count >= 3 and sep_count <= 6,
@@ -1385,7 +1420,10 @@ def stringify_bool(val):
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
 
-def run_and_log_case_status(func, phase, caseroot='.'):
+def verbatim_success_msg(return_val):
+    return return_val
+
+def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
     try:
@@ -1395,7 +1433,8 @@ def run_and_log_case_status(func, phase, caseroot='.'):
         append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
-        append_case_status(phase, "success", caseroot=caseroot)
+        custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
+        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 
@@ -1426,6 +1465,11 @@ def resolve_mail_type_args(args):
                    "Unsupported mail-type '{}'".format(mail_type))
 
         args.mail_type = resolved_mail_types
+
+def copyifnewer(src, dest):
+    """ if dest does not exist or is older than src copy src to dest """
+    if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
+        shutil.copy2(src, dest)
 
 class SharedArea(object):
     """
@@ -1463,3 +1507,16 @@ class Timeout(object):
     def __exit__(self, *_):
         if self._seconds is not None:
             signal.alarm(0)
+
+def filter_unicode(unistr):
+    """
+    Sometimes unicode chars can cause problems
+    """
+    return "".join([i if ord(i) < 128 else ' ' for i in unistr])
+
+def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
+    arg_logger.info(cmd)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir)
+    arg_logger.info(output)
+    arg_logger.info(errput)
+    expect(stat == 0, filter_unicode(errput))

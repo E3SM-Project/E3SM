@@ -294,7 +294,8 @@
       <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
     <queues>
-      <queue default="true" walltimemax="12:00" nodemin="1" nodemax="72">regular</queue>
+      <queue default="true" walltimemax="12:00" nodemin="1" nodemax="32">regular</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="32">economy</queue>
     </queues>
   </batch_system>
 
