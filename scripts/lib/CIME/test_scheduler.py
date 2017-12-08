@@ -774,6 +774,14 @@ class TestScheduler(object):
                             threads_in_flight[test] = (new_thread, procs_needed, next_phase)
                             new_thread.start()
                             num_threads_launched_this_iteration += 1
+
+                            logger.debug("  Current workload:")
+                            total_procs = 0
+                            for the_test, the_data in threads_in_flight.iteritems():
+                                logger.debug("    {}: {} -> {}".format(the_test, the_data[2], the_data[1]))
+                                total_procs += the_data[1]
+
+                            logger.debug("    Total procs in use: {}".format(total_procs))
                         else:
                             if not threads_in_flight:
                                 msg = "Phase '{}' for test '{}' required more processors, {:d}, than this machine can provide, {:d}".format(next_phase, test, procs_needed, self._procs_avail)
@@ -781,7 +789,11 @@ class TestScheduler(object):
                                 self._update_test_status(test, next_phase, TEST_PEND_STATUS)
                                 self._update_test_status(test, next_phase, TEST_FAIL_STATUS)
                                 self._log_output(test, msg)
-                                self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                if next_phase == RUN_PHASE:
+                                    self._update_test_status_file(test, SUBMIT_PHASE, TEST_PASS_STATUS)
+                                    self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                else:
+                                    self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
                                 num_threads_launched_this_iteration += 1
 
             if not work_to_do:
