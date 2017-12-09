@@ -64,7 +64,7 @@
 <zmconv_c0_lnd>0.007</zmconv_c0_lnd>
 <zmconv_c0_ocn>0.007</zmconv_c0_ocn>
 <zmconv_dmpdz>-0.7e-3</zmconv_dmpdz>
-<zmconv_ke>1.5E-6</zmconv_ke>
+<zmconv_ke>5.e-6</zmconv_ke>
 <effgw_oro>0.25</effgw_oro>
 <seasalt_emis_scale>0.85</seasalt_emis_scale>
 <dust_emis_fact>2.05D0</dust_emis_fact>

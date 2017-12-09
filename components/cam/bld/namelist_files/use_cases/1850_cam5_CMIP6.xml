@@ -67,7 +67,7 @@
 <zmconv_c0_lnd>0.007</zmconv_c0_lnd>
 <zmconv_c0_ocn>0.007</zmconv_c0_ocn>
 <zmconv_dmpdz>-0.7e-3</zmconv_dmpdz>
-<zmconv_ke>1.5E-6</zmconv_ke>
+<zmconv_ke>5.e-6</zmconv_ke>
 <effgw_oro>0.25</effgw_oro>
 <seasalt_emis_scale>0.85</seasalt_emis_scale>
 <dust_emis_fact>2.05D0</dust_emis_fact>
@@ -90,7 +90,7 @@
 <prc_exp>3.19D0</prc_exp>
 <prc_exp1>-1.2D0</prc_exp1>
 <se_ftype>2</se_ftype>
-<clubb_C14>1.3D0</clubb_C14>
+<clubb_C14>1.2D0</clubb_C14>
 <relvar_fix>.true.</relvar_fix>
 <mg_prc_coeff_fix>.true.</mg_prc_coeff_fix>
 <rrtmg_temp_fix>.true.</rrtmg_temp_fix>
