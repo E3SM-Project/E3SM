@@ -2435,6 +2435,7 @@
            between multiple input values -->
       <value stream="topo.observed">lower</value>
       <value stream="CORE2_IAF.GISS.SWDN" cime_model="acme">coszen</value>
+      <value stream="CORE_IAF_JRA.GISS.SWDN">coszen</value>
     </values>
   </entry>
 
@@ -2611,9 +2612,6 @@
       <value datm_mode="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</value>
       <value datm_mode="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col">null</value>
-      <!-- TODO: confirm this: -->
-      <value datm_mode="CORE_IAF_JRA">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</value>
-      <value datm_mode="CORE_IAF_JRA" atm_grid="01col">null</value>
     </values>
   </entry>
 
