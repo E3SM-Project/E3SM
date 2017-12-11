@@ -1,8 +1,12 @@
 
 This is an archive tag for manuscript gmd-2017-293 submitted to GMD. 
 
-This code version was used for simulations "V1alpha Atm" and "V1alpha Coupled" labeled in the manuscript. 
+This code version was used for simulation "V1alpha Coupled" labeled in the manuscript. 
 
 cloned from code hash: 4842dc64643e7924dba9d2cf69d7a836b5ad7697
+
+For "V1alpha Atm", a very similar version was used, but with some minor bug fixes and changes in tuning parameters.  
+
+code hash for "V1alpha Atm": 6f5d9d8adbb0011f2c4353cebf1404051a8d1995
 
 
