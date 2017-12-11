@@ -716,7 +716,21 @@ my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "s
 # Check for eruptive volcano emissions.  These will be radiatively active by default, but
 # only if using BAM and the camrt radiation package (cam4 physics)
 # or if using MAM and the rrtmg package  (cam5 physics)
-my $rad_volcaero = $nl->get_value('prescribed_volcaero_file') ? 1 : 0;
+# They will only be added to mode_defs for radiation if the prescribed emission file has 
+# MMR (mass mixing ratio) for the volcanic aerosols. 
+# For CMIP6 style volcanic input file, where input file has extinction, ssa and asymmetry 
+# factor instead of the aerosol MMR, volcanic aerosols will not be part of the mode_defs 
+# in atm_in
+my $rad_volcaero_mmr = 0; # 1 for volc aerosol mmr file; 0 otherwise 
+my $rad_volcaero = $nl->get_value('prescribed_volcaero_file') ? 1 : 0; #let the default be volc aerosol mmr file
+if ($rad_volcaero){
+    $rad_volcaero_mmr = 1;#default: volc aerosol mmr file
+    my $volcaero_filetype = $nl->get_value('prescribed_volcaero_filetype') ? 1 : 0;# get filetype (CMIP6 style or MMR)
+    if ($volcaero_filetype){ #if filetype is mentioned
+	my $volcaero_filetype_val = $nl->get_value('prescribed_volcaero_filetype'); #get value of filetype variable
+	$rad_volcaero_mmr = $volcaero_filetype_val eq 'VOLC_MIXING_RATIO' ? 1 : 0;
+    }
+}
 
 #################
 # CAM namelists #
@@ -1533,7 +1547,7 @@ foreach my $name (@aero_names) {
 }
 
 # Eruptive volcanic aerosols can be run with either BAM or MAM.
-if ($rad_volcaero) {
+if ($rad_volcaero_mmr) {
     my $rel_filepath = get_default_value("VOLC_MMR");
     my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
     $radval .= "," . quote_string("N:VOLC_MMR:" . $abs_filepath);

@@ -177,6 +177,7 @@ subroutine modal_aer_opt_init()
    ! Add diagnostic fields to history output.
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
    call addfld ('AODUV',horiz_only,    'A','  ','Aerosol optical depth 350 nm', flag_xyfill=.true.)  
@@ -364,7 +365,7 @@ end subroutine modal_aer_opt_init
 
 !===============================================================================
 
-subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
+subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
                          tauxar, wa, ga, fa)
 
    ! calculates aerosol sw radiative properties
@@ -375,6 +376,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer,             intent(in) :: nnite          ! number of night columns
    integer,             intent(in) :: idxnite(nnite) ! local column indices of night columns
+   integer,             intent(in) :: trop_level(pcols)!tropopause level for each column
+   real(r8),            intent(in) :: ext_cmip6_sw(pcols,pver) !balli comments
+   logical,             intent(in) :: is_cmip6_volc !BALLI-comments
 
    real(r8), intent(out) :: tauxar(pcols,0:pver,nswbands) ! layer extinction optical depth
    real(r8), intent(out) :: wa(pcols,0:pver,nswbands)     ! layer single-scatter albedo
@@ -382,7 +386,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    real(r8), intent(out) :: fa(pcols,0:pver,nswbands)     ! forward scattered fraction
 
    ! Local variables
-   integer :: i, ifld, isw, k, l, m, nc, ns
+   integer :: i, ifld, isw, k, l, m, nc, ns, ilev_tropp
    integer :: lchnk                    ! chunk id
    integer :: ncol                     ! number of active columns in the chunk
    integer :: nmodes
@@ -436,7 +440,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    real(r8) :: palb(pcols)     ! parameterized single scattering albedo
 
    ! Diagnostics
-   real(r8) :: extinct(pcols,pver)
+   real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
    real(r8) :: aodabs(pcols)               ! absorption optical depth
@@ -1052,6 +1056,26 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
       deallocate(wetdens_m)
    end if
 
+   !Add contributions from volcanic aerosols directly read in extinction
+   if(is_cmip6_volc) then
+      !update tropopause layer first
+      do i = 1, ncol
+         ilev_tropp = trop_level(i)
+         tropopause_m(i) = state%zm(i,ilev_tropp)!in meters
+         extinct(i,ilev_tropp) = 0.5_r8*( extinct(i,ilev_tropp) + ext_cmip6_sw(i,ilev_tropp) )
+      enddo
+      do k = 1, pver
+         do i = 1, ncol            
+            ilev_tropp = trop_level(i)
+            if (k < ilev_tropp) then
+               !extinction is assigned read in values only for visible band above tropopause
+               extinct(i,k) = ext_cmip6_sw(i,k)
+            endif
+         enddo
+      enddo
+   endif
+   
+
    ! Output visible band diagnostics for quantities summed over the modes
    ! These fields are put out for diagnostic lists as well as the climate list.
    do i = 1, nnite
@@ -1062,6 +1086,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    end do
 
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
+   call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
    call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
