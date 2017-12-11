@@ -1,5 +1,105 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 12-11-1017
+Tag: cime5.4.0-alpha.14
+Answer Changes: None
+Tests: code_checker, by-hand, scripts_regression_tests.py
+       scripts_regression_tests.py (with python 3.6.2)
+
+Dependencies:
+
+Brief Summary:
+    - No iteritems method in python3, use six compatibility library.
+    - Fix couple mistakes introduced by ACME split, Pylint errors and timing problem for cesm.
+    - Minor bugfix, root arugment was ignored.
+    - Jgfouca/branch for acme split 12-08-2017.
+    - Add debug print statements to describe current workload.
+    - Fix issue in declaration.
+    - Provide access functions for the setting of pio_rearranger variables.
+    - Move GMAKE and GMAKE_J options to env_run so that changing them doesn't
+      require a rebuild.
+    - Fix processor overflow in create_test.
+    - Miscellaneous tool improvement.
+    - Add ability to customize CaseStatus success message for a phase. 
+    - DOCN mode fix.
+    - Fix bug in compare namelists.
+    - Fixes a memory leak in gptl.
+
+User interface changes: 
+    - simple-py-prof sets PYTHONPATH for you, list_acme_tests assumes you want
+      to list tests
+    - jobid now added to CaseStatus case_submit entry.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+f48881a Merge pull request #2130 from jedwards4b/py3_compatibility
+90ffcf7 Merge pull request #2129 from ESMCI/jgfouca/fix_pylint_and_cesm_timing
+036ac18 Merge pull request #2127 from ESMCI/jgfouca/xml_bugfix
+9dfce92 Merge pull request #2126 from ESMCI/jgfouca/branch-for-acme-split-12-08-2017-pr
+9c01c47 Merge pull request #2122 from ESMCI/jgfouca/create_test_add_workload_output
+c0ce363 fix issue in declaration
+f99b947 hot fix for pr 2121
+bc6f180 Merge pull request #2120 from jedwards4b/mv_gmake_to_run
+1dd0b61 Merge pull request #2119 from ESMCI/jgfouca/cime/fix_create_test_proc_overflow
+0934a32 Merge pull request #2117 from ESMCI/jgfouca/misc_improve_tools
+530c337 Merge pull request #2113 from ESMCI/jgfouca/custom_success_msg_case_status
+cb0f58a Merge pull request #2114 from jedwards4b/DOCN_MODE_fix
+148a8a9 Merge pull request #2111 from ESMCI/jgfouca/compare_nml_bugfix
+2789236 Merge pull request #2110 from ESMCI/mfdeakin-sandia/gptl/memleak
+
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+M	ChangeLog
+M	config/acme/allactive/config_compsets.xml
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/config_grids.xml
+A	config/acme/machines/Depends.summitdev.pgiacc
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+A	config/acme/machines/syslog.theta
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	doc/source/users_guide/porting-cime.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/list_acme_tests
+M	scripts/Tools/simple-py-prof
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/acme_cime_mgmt.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	scripts/tests/user_mods_test3/shell_commands
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/share/timing/gptl.c
+M	src/share/util/shr_pio_mod.F90
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 12-04-2017
 Tag: cime5.4.0-alpha.13
