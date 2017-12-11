@@ -174,8 +174,7 @@
 		/>
 		<dim name="nzAerosols"
 			definition="3"
-			description="Number of aerosol species carried
-		  in the ice"
+			description="Number of aerosol species carried in the ice"
 		/>
 		<dim name="nShortwaveBio"
 			definition="(nIceLayers+nSnowLayers+2)*(ONE+nzAerosols)"
@@ -749,15 +748,12 @@
 			icepack_name="tr_zaero"
 		/>
 		<nml_option name="config_skeletal_bgc_flux_type" type="character" default_value="Jin2006" units="unitless"
-			description="Determines the ocean-ice fluxes of biogeochemistry for the bottom1-layer model: in Jin2006,
-			the piston velocity is a function of ice growth/melt rate, in default, the piston velocity
-			is constant"
+			description="Determines the ocean-ice fluxes of biogeochemistry for the bottom1-layer model: in Jin2006, the piston velocity is a function of ice growth/melt rate, in default, the piston velocity is constant"
 			possible_values="Jin2006 or default"
 			icepack_name="bgc_flux_type"
 		/>
 		<nml_option name="config_scale_initial_vertical_bgc" type="logical" default_value="false" units="unitless"
-			description="initialize the vertical ice biogeochemistry profile to scale with
-			the salinity restart/initial profile"
+			description="initialize the vertical ice biogeochemistry profile to scale with the salinity restart/initial profile"
 			possible_values="true or false"
 			icepack_name="scale_bgc"
 		/>
@@ -1223,142 +1219,102 @@
 		/>
 		<nml_option name="config_mobility_type_diatoms" type="real" default_value="0.0" units="unitless"
 			description="Transport type of diatoms"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="algaltype_diatoms"
 		/>
 		<nml_option name="config_mobility_type_small_plankton" type="real" default_value="0.5" units="unitless"
 			description="Transport type of small plankton"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="algaltype_sp"
 		/>
 		<nml_option name="config_mobility_type_phaeocystis" type="real" default_value="0.5" units="unitless"
 			description="Transport type of phaeocystis"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="algaltype_phaeo"
 		/>
 		<nml_option name="config_mobility_type_nitrate" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of nitrate"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="nitratetype"
 		/>
 		<nml_option name="config_mobility_type_ammonium" type="real" default_value="1.0" units="unitless"
 			description="Transport type of ammonium"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="ammoniumtype"
 		/>
 		<nml_option name="config_mobility_type_silicate" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of silicate"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="silicatetype"
 		/>
 		<nml_option name="config_mobility_type_DMSPp" type="real" default_value="0.5" units="unitless"
 			description="Transport type of particulate DMSP"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="dmspptype"
 		/>
 		<nml_option name="config_mobility_type_DMSPd" type="real" default_value="-1.0" units="unitless"
 			description="Transport type of dissolved DMSP"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="dmspdtye"
 		/>
 		<nml_option name="config_mobility_type_humics" type="real" default_value="1.0" units="unitless"
 			description="Transport type of humics"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="humtypes"
 		/>
 		<nml_option name="config_mobility_type_saccharids" type="real" default_value="0.5" units="unitless"
 			description="Transport type of poly/saccharids"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="doctype_s"
 		/>
 		<nml_option name="config_mobility_type_lipids" type="real" default_value="0.5" units="unitless"
 			description="Transport type of lipids"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="doctype_l"
 		/>
 		<nml_option name="config_mobility_type_proteins" type="real" default_value="0.5" units="unitless"
 			description="Transport type of proteins"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="dontype_protein"
 		/>
 		<nml_option name="config_mobility_type_dissolved_iron" type="real" default_value="0.5" units="unitless"
 			description="Transport type of dissolved iron"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="fedtype_1"
 		/>
 		<nml_option name="config_mobility_type_particulate_iron" type="real" default_value="0.5" units="unitless"
 			description="Transport type of particulate iron"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="feptype_1"
 		/>
 		<nml_option name="config_mobility_type_black_carbon1" type="real" default_value="1.0" units="unitless"
 			description="Transport type of black carbon 1 pool"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_bc1"
 		/>
 		<nml_option name="config_mobility_type_black_carbon2" type="real" default_value="1.0" units="unitless"
 			description="Transport type of black carbon 1 pool"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_bc2"
 		/>
 		<nml_option name="config_mobility_type_dust1" type="real" default_value="1.0" units="unitless"
 			description="Transport type of dust pool 1"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust1"
 		/>
 		<nml_option name="config_mobility_type_dust2" type="real" default_value="1.0" units="unitless"
 			description="Transport type of dust pool 2"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust2"
 		/>
 		<nml_option name="config_mobility_type_dust3" type="real" default_value="1.0" units="unitless"
 			description="Transport type of dust pool 3"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust3"
 		/>
 		<nml_option name="config_mobility_type_dust4" type="real" default_value="1.0" units="unitless"
 			description="Transport type of dust pool 4"
-			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated;
-				1 = release dominated; 0.5 = equal but rapid exchange;
-				2 = equal but slow exchange"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="zaerotype_dust4"
 		/>
 		<nml_option name="config_ratio_C_to_N_diatoms" type="real" default_value="7.0" units="mol carbon/mol nitrogen"
@@ -3626,19 +3582,13 @@
 		<var name="atmosDustFlux"			type="real"	dimensions="maxDustType nCells Time"			name_in_code="atmosDustFlux"/>
 		<var name="oceanBioFluxes"			type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioFluxes"
 			units="mmol/m2/s"
-			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon,
-			lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate
-			iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s,
-			dust4 in mg/m2/s"
+			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2/s, particulate iron in umol/m2/s, humic carbon, black carbon1 in mg/m2/s, black carbon2 in mg/m2/s, dust1 in mg/m2/s, dust2 in mg/m2/s, dust3 in mg/m2/s, dust4 in mg/m2/s"
 			icepack_name="flux_bio"
 			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
 		<var name="oceanBioConcentrations"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="oceanBioConcentrations"
 			units="mmol/m3"
-			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon,
-			lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3,
-			particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3,
-			dust4 in mg/m3"
+			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
 			icepack_name="ocean_bio"
 			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -3716,17 +3666,11 @@
 		<var name="totalSkeletalAlgae"			type="real"	dimensions="nCells Time"				name_in_code="totalSkeletalAlgae"/>
 		<var name="totalVerticalBiologyIce" 		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="totalVerticalBiologyIce"
 			units="mmol/m2"
-			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon,
-			lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate
-			iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2,
-			dust4 in mg/m2"
+			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		/>
 		<var name="totalVerticalBiologySnow"		type="real"	dimensions="nZBGCTracers nCells Time"			name_in_code="totalVerticalBiologySnow"
 			units="mmol/m2"
-			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon,
-			lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate
-			iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2,
-			dust4 in mg/m2"
+			description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
 		/>
 		<var name="totalVerticalSalinity"		type="real"	dimensions="nCells Time"				name_in_code="totalVerticalSalinity"		packages="pkgTracerZSalinity;pkgColumnPackage"/>
 		<var name="totalChlorophyll"			type="real"	dimensions="nCells Time"				name_in_code="totalChlorophyll"
