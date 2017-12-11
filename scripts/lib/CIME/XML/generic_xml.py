@@ -158,7 +158,8 @@ class GenericXML(object):
         """
         if root is None:
             root = self.root
-        self.root.append(node)
+
+        root.append(node)
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None): # pylint: disable=unused-argument
         """

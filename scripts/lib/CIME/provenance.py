@@ -21,7 +21,7 @@ def _get_batch_job_id_for_syslog(case):
             return os.environ["PBS_JOBID"]
         elif mach in ['edison', 'cori-haswell', 'cori-knl']:
             return os.environ["SLURM_JOB_ID"]
-        elif mach == 'mira':
+        elif mach in ['mira', 'theta']:
             return os.environ["COBALT_JOBID"]
     except:
         pass
@@ -94,12 +94,16 @@ def save_build_provenance(case, lid=None):
             _save_build_provenance_cesm(case, lid)
 
 def _save_prerun_timing_acme(case, lid):
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
-    if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to be set in order to archive timings. Skipping archive of timing data.".format(timing_dir))
+    project = case.get_value("PROJECT", subgroup="case.run")
+    if not case.is_save_timing_dir_project(project):
         return
 
-    logger.info("timing dir is {}".format(timing_dir))
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
+    if timing_dir is None or not os.path.isdir(timing_dir):
+        logger.warning("SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to archive timing data.".format(timing_dir))
+        return
+
+    logger.info("Archiving timing data and associated provenance in {}.".format(timing_dir))
     rundir = case.get_value("RUNDIR")
     blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
@@ -124,6 +128,14 @@ def _save_prerun_timing_acme(case, lid):
     if job_id is not None:
         if mach == "mira":
             for cmd, filename in [("qstat -f", "qstatf"), ("qstat -lf %s" % job_id, "qstatf_jobid")]:
+                filename = "%s.%s" % (filename, lid)
+                run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                gzip_existing_file(os.path.join(full_timing_dir, filename))
+        elif mach == "theta":
+            for cmd, filename in [("qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry", "qstatf"), 
+                                  ("qstat -lf %s" % job_id, "qstatf_jobid"),
+                                  ("xtnodestat", "xtnodestat"),
+                                  ("xtprocadmin", "xtprocadmin")]:
                 filename = "%s.%s" % (filename, lid)
                 run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename))
@@ -250,15 +262,13 @@ def _save_postrun_provenance_cesm(case, lid):
     save_timing = case.get_value("SAVE_TIMING")
     if save_timing:
         rundir = case.get_value("RUNDIR")
-        timing_dir = case.get_value("SAVE_TIMING_DIR")
-        timing_dir = os.path.join(timing_dir, case.get_value("CASE"))
+        timing_dir = os.path.join("timing", case.get_value("CASE"))
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
 
 def _save_postrun_timing_acme(case, lid):
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
 
     # tar timings
     rundir_timing_dir = os.path.join(rundir, "timing." + lid)
@@ -274,6 +284,11 @@ def _save_postrun_timing_acme(case, lid):
     timing_saved_file = "timing.%s.saved" % lid
     touch(os.path.join(caseroot, "timing", timing_saved_file))
 
+    project = case.get_value("PROJECT", subgroup="case.run")
+    if not case.is_save_timing_dir_project(project):
+        return
+
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
     if timing_dir is None or not os.path.isdir(timing_dir):
         return
 
@@ -310,7 +325,8 @@ def _save_postrun_timing_acme(case, lid):
             globs_to_copy.append("%s*OU" % job_id)
         elif mach == "anvil":
             globs_to_copy.append("/home/%s/%s*OU" % (getpass.getuser(), job_id))
-        elif mach == "mira":
+        elif mach in ["mira", "theta"]:
+            globs_to_copy.append("%s*error" % job_id)
             globs_to_copy.append("%s*output" % job_id)
             globs_to_copy.append("%s*cobaltlog" % job_id)
         elif mach in ["edison", "cori-haswell", "cori-knl"]:

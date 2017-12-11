@@ -24,6 +24,7 @@
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
+  <xs:element name="SAVE_TIMING_DIR_PROJECTS" type="xs:string" />
   <xs:element name="PROJECT" type="xs:NCName" />
   <xs:element name="CHARGE_ACCOUNT" type="xs:NCName" />
   <xs:element name="COMPILERS" type="xs:string"/>
@@ -82,8 +83,10 @@
 	<!-- CHARGE_ACCOUNT: The name of the account to charge for batch jobs
 	  can be overridden in environment or $HOME/.cime/config -->
 	<xs:element ref="CHARGE_ACCOUNT" minOccurs="0" maxOccurs="1"/>
-	<!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
+	<!-- SAVE_TIMING_DIR: (Acme only) directory for archiving timing output -->
 	<xs:element ref="SAVE_TIMING_DIR" minOccurs="0" maxOccurs="1"/>
+	<!-- SAVE_TIMING_DIR_PROJECTS: (Acme only) projects whose jobs archive timing output -->
+	<xs:element ref="SAVE_TIMING_DIR_PROJECTS" minOccurs="0" maxOccurs="1"/>
 	<!-- CIME_OUTPUT_ROOT: Base directory for case output,
 	     the bld and run directories are written below here -->
         <xs:element ref="CIME_OUTPUT_ROOT" minOccurs="1" maxOccurs="1"/>
