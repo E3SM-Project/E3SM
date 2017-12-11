@@ -415,9 +415,9 @@ for mct, etc.
   <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
   <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
   <FREEFLAGS> -ffree-form </FREEFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE"> -g -Wall -Og -fsanitize=address -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -Wall -Og -fno-omit-frame-pointer -fsanitize=address -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="TRUE"> -g -Wall -Og -fsanitize=address -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -g -Wall -Og -fno-omit-frame-pointer -fsanitize=address -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
   <ADD_LDFLAGS DEBUG="TRUE"> -fsanitize=address </ADD_LDFLAGS>
   <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
