@@ -1539,7 +1539,7 @@
     </mach>
   </grid>
   <grid name="a%T62">
-    <mach name="edison">
+    <mach name="edison|melvin">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2434,7 +2434,7 @@
     </mach>
   </grid>
   <grid name="a%360x720cru">
-    <mach name="edison">
+    <mach name="edison|melvin">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
