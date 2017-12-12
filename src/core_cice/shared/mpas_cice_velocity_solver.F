@@ -639,6 +639,9 @@ contains
     use cice_mesh, only: &
          cice_interpolate_cell_to_vertex
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -689,6 +692,8 @@ contains
     endif
 
     ! halo exchange of initial ice area of cell
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("ice area halo")
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
@@ -739,6 +744,8 @@ contains
     call velocity_calculation_mask(domain)
 
     ! halo exchange velocity mask
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("velocity mask halo")
 
     call MPAS_dmpar_field_halo_exch(domain, 'solveVelocity')
@@ -967,6 +974,9 @@ contains
     use cice_mesh, only: &
          cice_interpolate_cell_to_vertex
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -1076,6 +1086,8 @@ contains
     enddo
 
     ! halo exchange velocities
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("velocity halo")
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
@@ -1117,6 +1129,9 @@ contains
     use cice_constants, only: &
          ciceIceStrengthConstantHiblerP, &
          ciceIceStrengthConstantHiblerC
+
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -1226,6 +1241,8 @@ contains
     enddo
 
     ! halo exchange ice strength
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("ice strength halo")
 
     call MPAS_dmpar_field_halo_exch(domain, 'icePressure')
@@ -1250,6 +1267,9 @@ contains
 
     use cice_mesh, only: &
          cice_interpolate_cell_to_vertex
+
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain
@@ -1301,6 +1321,8 @@ contains
     endif ! .not. config_use_air_stress
 
     ! halo exchange air stress
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("air stress halo")
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
@@ -1729,6 +1751,9 @@ contains
     use cice_constants, only: &
          ciceGravity
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -1764,6 +1789,8 @@ contains
          config_aggregate_halo_exch
 
     ! halo exchange surface tilt
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("sea surface tilt halo")
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
@@ -2129,6 +2156,9 @@ contains
     use cice_debug, only: &
          cice_time_output_variable_real
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -2187,6 +2217,8 @@ contains
     endif
 
     ! halo exchange
+    call cice_load_balance_timers(domain)
+
     call mpas_timer_start("Velocity solver halo")
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
@@ -2849,6 +2881,9 @@ contains
     use cice_mesh, only: &
          cice_interpolate_vertex_to_cell
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -2964,6 +2999,8 @@ contains
     if (configUseOceanStress) then
 
        ! halo exchange ocean stress
+       call cice_load_balance_timers(domain)
+
        call mpas_timer_start("ocean stress halo")
 
        call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
