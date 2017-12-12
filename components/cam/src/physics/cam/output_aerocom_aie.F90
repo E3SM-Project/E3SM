@@ -134,35 +134,48 @@ CONTAINS
 
    call addfld ('angstrm', horiz_only  ,'A' ,  '#', 'Angstrom coefficient', flag_xyfill=.true.)
    call addfld ('aerindex', horiz_only ,'A' ,  '#', 'Aerosol Index (Angstrom coefficient * AOD)', flag_xyfill=.true.)
-   call addfld ('cdr', horiz_only  ,'A'   ,   'meter', 'Grid-cell mean droplet effective radius at top of liquid water clouds',  flag_xyfill=.true.)
-   call addfld ('cdnc', horiz_only ,'A'    ,  '#/m3', 'Grid-cell mean droplet number concentration at top of liquid water clouds',  flag_xyfill=.true.)
-   call addfld ('cdnum', horiz_only ,'A'    ,  '#/m2', 'Grid-cell mean column-integrated droplet number concentrations',  flag_xyfill=.true.)
-   call addfld ('icnum', horiz_only ,'A'    ,  '#/m2',  'Grid-cell mean column-integrated ice crystal number concentrations',  flag_xyfill=.true.)
+   call addfld ('cdr', horiz_only  ,'A'   ,   'meter', &
+               'Grid-cell mean droplet effective radius at top of liquid water clouds',  flag_xyfill=.true.)
+   call addfld ('cdnc', horiz_only ,'A'    ,  '#/m3', &
+               'Grid-cell mean droplet number concentration at top of liquid water clouds',  flag_xyfill=.true.)
+   call addfld ('cdnum', horiz_only ,'A'    ,  '#/m2', &
+               'Grid-cell mean column-integrated droplet number concentrations',  flag_xyfill=.true.)
+   call addfld ('icnum', horiz_only ,'A'    ,  '#/m2',  &
+               'Grid-cell mean column-integrated ice crystal number concentrations',  flag_xyfill=.true.)
    call addfld ('clt', horiz_only ,'A'    ,   'fraction','Fractional cover by all clouds',   flag_xyfill=.true.) 
    call addfld ('lcc', horiz_only ,'A'    ,   'fraction','Fractional cover by liquid water clouds',   flag_xyfill=.true.)
-   call addfld ('lwp', horiz_only ,'A'    ,   'kg/m2',  'Grid-cell mean liquid water path for liquid water clouds',  flag_xyfill=.true.)
+   call addfld ('lwp', horiz_only ,'A'    ,   'kg/m2',  &
+               'Grid-cell mean liquid water path for liquid water clouds',  flag_xyfill=.true.)
    call addfld ('iwp', horiz_only ,'A'    ,   'kg/m2',  'Grid-cell mean ice water path for ice clouds',  flag_xyfill=.true.)
-   call addfld ('icr', horiz_only ,'A'    ,   'meter',  'Grid-cell mean effective radius of crystals at top of ice clouds',  flag_xyfill=.true.)
+   call addfld ('icr', horiz_only ,'A'    ,   'meter',  &
+               'Grid-cell mean effective radius of crystals at top of ice clouds',  flag_xyfill=.true.)
    call addfld ('icc', horiz_only ,'A'    ,   'fracton','Fractional cover by ice clouds',  flag_xyfill=.true.)
    call addfld ('cod', horiz_only ,'A'    ,   'amount',  'Grid-cell mean cloud optical depth',  flag_xyfill=.true.)
-   call addfld ('ccn', horiz_only ,'A'    ,   '#/m3',    'CCN number concentration at 0.3% at the top layer of liquid water clouds',  flag_xyfill=.true.)
+   call addfld ('ccn', horiz_only ,'A'    ,   '#/m3',    &
+               'CCN number concentration at 0.3% at the top layer of liquid water clouds',  flag_xyfill=.true.)
    call addfld ('ttop', horiz_only ,'A'    ,  'K',      'Temperature at top of clouds',  flag_xyfill=.true.)
    call addfld ('ptop', horiz_only ,'A'    ,  'Pa',      'Pressure at top of clouds',  flag_xyfill=.true.)
    call addfld ('autoconv', horiz_only ,'A'    ,  'kg/m2/s',   'Grid-mean surface precipitation rate',  flag_xyfill=.true.)
    call addfld ('accretn', horiz_only ,'A'    ,  'kg/m2/s',    'Grid-mean surface precipitation rate',  flag_xyfill=.true.)
-   call addfld ('icnc', horiz_only ,'A'    ,  '#/m3',   'Ice crystal number concentration at top of ice clouds',  flag_xyfill=.true.)
+   call addfld ('icnc', horiz_only ,'A'    ,  '#/m3',   &
+               'Ice crystal number concentration at top of ice clouds',  flag_xyfill=.true.)
    call addfld ('rh700', horiz_only ,'A'    , 'fraction', 'Relative humidity at 700 hPa',  flag_xyfill=.true.)
 
    call addfld ('rwp', horiz_only ,'A'    , 'kg/m2',  'Rain water path',  flag_xyfill=.true.)
    call addfld ('intccn', horiz_only ,'A'    , '#/m2', 'Column-integrated CCN number concentration',  flag_xyfill=.true.)
    call addfld ('colrv', horiz_only ,'A'    , 'm',  'Column-integrated volume-mean droplet effective radius',  flag_xyfill=.true.)
-   call addfld ('lwp2', horiz_only ,'A'    ,   'kg/m2',  'Grid-cell mean liquid water path for liquid water clouds (new)',  flag_xyfill=.true.)
+   call addfld ('lwp2', horiz_only ,'A'    ,   'kg/m2',  &
+               'Grid-cell mean liquid water path for liquid water clouds (new)',  flag_xyfill=.true.)
    call addfld ('iwp2', horiz_only ,'A'    ,   'kg/m2',  'Grid-cell mean ice water path for ice clouds (new)',  flag_xyfill=.true.)
 
-   call addfld ('lwpbf', horiz_only ,'A'    ,   'kg/m2',  'Grid-cell mean liquid water path for liquid water clouds before microphysics',  flag_xyfill=.true.)
-   call addfld ('iwpbf', horiz_only ,'A'    ,   'kg/m2',  'Grid-cell mean ice water path for ice clouds before microphysics',  flag_xyfill=.true.)
-   call addfld ('cdnumbf', horiz_only ,'A'  ,  '#/m2',  'Grid-cell mean column-integrated droplet number concentrations before microphysics',  flag_xyfill=.true.)
-   call addfld ('icnumbf', horiz_only ,'A'    ,  '#/m2',  'Grid-cell mean column-integrated ice crystal number concentrations before microphysics',  flag_xyfill=.true.)
+   call addfld ('lwpbf', horiz_only ,'A'    ,   'kg/m2',  &
+               'Grid-cell mean liquid water path for liquid water clouds before microphysics',  flag_xyfill=.true.)
+   call addfld ('iwpbf', horiz_only ,'A'    ,   'kg/m2',  &
+               'Grid-cell mean ice water path for ice clouds before microphysics',  flag_xyfill=.true.)
+   call addfld ('cdnumbf', horiz_only ,'A'  ,  '#/m2',  &
+              'Grid-cell mean column-integrated droplet number concentrations before microphysics',  flag_xyfill=.true.)
+   call addfld ('icnumbf', horiz_only ,'A'    ,  '#/m2',  &
+              'Grid-cell mean column-integrated ice crystal number concentrations before microphysics',  flag_xyfill=.true.)
 
    call addfld ('aod400',horiz_only ,'A'    ,  '#',   'Aerosol optical depth at 400 nm',  flag_xyfill=.true.)
    call addfld ('aod700', horiz_only ,'A'    , '#',   'Aerosol optical depth at 700 nm',  flag_xyfill=.true.)

@@ -1,10 +1,10 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+module prim_implicit_mod
 
 #ifdef TRILINOS
 
-module prim_implicit_mod
   use kinds, only : real_kind
   use edgetype_mod, only : EdgeBuffer_t
   use parallel_mod, only : abortmp, parallel_t, iam
@@ -1356,6 +1356,6 @@ contains
 
   end subroutine rhs_advance_hypervis_dp
 
-end module prim_implicit_mod
 
 #endif ! TRILINOS
+end module prim_implicit_mod

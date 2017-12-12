@@ -112,10 +112,14 @@ contains
     allocate(this%tracer_soi_molarmass_col      (begc:endc, 1:ntracers))          ; this%tracer_soi_molarmass_col (:,:) = nan
     allocate(this%errtracer_col                 (begc:endc, 1:ntracers))          ; this%errtracer_col            (:,:) = nan
     allocate(this%tracer_conc_atm_col           (begc:endc, 1:nvolatile_tracers)) ; this%tracer_conc_atm_col      (:,:) = nan
-    allocate(this%tracer_conc_mobile_col        (begc:endc, lbj:ubj, 1:ngwmobile_tracers))     ; this%tracer_conc_mobile_col       (:,:,:) =  nan
-    allocate(this%tracer_conc_solid_equil_col   (begc:endc, lbj:ubj, 1:nsolid_equil_tracers))  ; this%tracer_conc_solid_equil_col  (:,:,:) = nan
-    allocate(this%tracer_conc_solid_passive_col (begc:endc, lbj:ubj, 1:nsolid_passive_tracers)); this%tracer_conc_solid_passive_col(:,:,:) = nan
-    allocate(this%tracer_P_gas_frac_col         (begc:endc, lbj:ubj, 1:nvolatile_tracers))     ; this%tracer_P_gas_frac_col        (:,:,:) = nan
+    allocate(this%tracer_conc_mobile_col        (begc:endc, lbj:ubj, 1:ngwmobile_tracers))      
+                                                this%tracer_conc_mobile_col       (:,:,:) =  nan
+    allocate(this%tracer_conc_solid_equil_col   (begc:endc, lbj:ubj, 1:nsolid_equil_tracers))   
+                                                this%tracer_conc_solid_equil_col  (:,:,:) = nan
+    allocate(this%tracer_conc_solid_passive_col (begc:endc, lbj:ubj, 1:nsolid_passive_tracers)) 
+                                                this%tracer_conc_solid_passive_col(:,:,:) = nan
+    allocate(this%tracer_P_gas_frac_col         (begc:endc, lbj:ubj, 1:nvolatile_tracers))      
+                                                this%tracer_P_gas_frac_col        (:,:,:) = nan
 
     allocate(this%beg_tracer_molarmass_col      (begc:endc, 1:ntracers)); this%beg_tracer_molarmass_col(:,:) = nan
     allocate(this%end_tracer_molarmass_col      (begc:endc, 1:ntracers)); this%end_tracer_molarmass_col(:,:) = nan
@@ -283,7 +287,7 @@ contains
 
             if(is_adsorb(jj))then
                ptr2d => this%tracer_conc_solid_equil_col(:, :, adsorbid(jj))
-               call restartvar(ncid=ncid, flag=flag, varname=trim(tracernames(jj))//'_TRACER_CONC_SOLID_EQUIL', xtype=ncd_double,  &
+               call restartvar(ncid=ncid, flag=flag, varname=trim(tracernames(jj))//'_TRACER_CONC_SOLID_EQUIL', xtype=ncd_double, &
                     dim1name='column',dim2name='levtrc', switchdim=.true., &
                     long_name='',  units='', fill_value=spval, &
                     interpinic_flag='interp', readvar=readvar, data=ptr2d)

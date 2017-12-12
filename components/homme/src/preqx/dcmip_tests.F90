@@ -1,7 +1,7 @@
+module dcmip_tests
 #ifndef CAM
 #include "config.h"
 
-module dcmip_tests
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
@@ -534,5 +534,5 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
   enddo
 
 end subroutine
-end module dcmip_tests
 #endif
+end module dcmip_tests

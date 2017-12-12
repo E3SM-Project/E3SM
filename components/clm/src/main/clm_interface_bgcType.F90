@@ -291,19 +291,29 @@ contains
     allocate(this%plant_pdemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_pdemand_vr_col         (:,:)  = ival
 
     ! decomposition flux:
-    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_cpools_sourcesink_col     (:,:,:) = ival
-    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_npools_sourcesink_col     (:,:,:) = ival
-    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_ppools_sourcesink_col     (:,:,:) = ival
+    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               
+    this%decomp_cpools_sourcesink_col     (:,:,:) = ival
+    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              
+    this%decomp_npools_sourcesink_col     (:,:,:) = ival
+    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              
+    this%decomp_ppools_sourcesink_col     (:,:,:) = ival
 
-    allocate(this%decomp_cascade_ctransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ctransfer_vr_col  (:,:,:) = ival
-    allocate(this%decomp_cascade_ntransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ntransfer_vr_col  (:,:,:) = ival
-    allocate(this%decomp_cascade_ptransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ptransfer_vr_col  (:,:,:) = ival
+    allocate(this%decomp_cascade_ctransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
+    this%decomp_cascade_ctransfer_vr_col  (:,:,:) = ival
+    allocate(this%decomp_cascade_ntransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
+    this%decomp_cascade_ntransfer_vr_col  (:,:,:) = ival
+    allocate(this%decomp_cascade_ptransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
+    this%decomp_cascade_ptransfer_vr_col  (:,:,:) = ival
 
-    allocate(this%decomp_cascade_sminn_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_sminn_flux_vr_col (:,:,:) = ival
-    allocate(this%decomp_cascade_sminp_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_sminp_flux_vr_col (:,:,:) = ival
-    allocate(this%sminn_to_denit_decomp_cascade_vr_col (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )); this%sminn_to_denit_decomp_cascade_vr_col (:,:,:) = ival
+    allocate(this%decomp_cascade_sminn_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
+    this%decomp_cascade_sminn_flux_vr_col (:,:,:) = ival
+    allocate(this%decomp_cascade_sminp_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
+    this%decomp_cascade_sminp_flux_vr_col (:,:,:) = ival
+    allocate(this%sminn_to_denit_decomp_cascade_vr_col (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions ))
+    this%sminn_to_denit_decomp_cascade_vr_col (:,:,:) = ival
 
-    allocate(this%decomp_cascade_hr_vr_col          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_hr_vr_col         (:,:,:) = ival
+    allocate(this%decomp_cascade_hr_vr_col          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))
+    this%decomp_cascade_hr_vr_col         (:,:,:) = ival
 
     allocate(this%t_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%t_scalar_col (:,:)=spval
     allocate(this%w_scalar_col                      (begc:endc,1:nlevdecomp_full)); this%w_scalar_col (:,:)=spval
@@ -379,11 +389,16 @@ contains
     ! pflotran variables: BEGIN
     !------------------------------------------------------------------------------------------
     ! bgc rates/fluxes to decomposition pools
-    allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
-    allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externaln_to_decomp_npools_col(:,:,:) = spval
-    allocate(this%externalp_to_decomp_ppools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalp_to_decomp_ppools_col(:,:,:) = spval
-    allocate(this%decomp_k_pools                (1:ndecomp_pools))                            ; this%decomp_k_pools                (:)     = spval
-    allocate(this%adfactor_kd_pools             (1:ndecomp_pools))                            ; this%adfactor_kd_pools             (:)     = spval
+    allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
+    this%externalc_to_decomp_cpools_col(:,:,:) = spval
+    allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); 
+    this%externaln_to_decomp_npools_col(:,:,:) = spval
+    allocate(this%externalp_to_decomp_ppools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); 
+    this%externalp_to_decomp_ppools_col(:,:,:) = spval
+    allocate(this%decomp_k_pools                (1:ndecomp_pools))                            ; 
+    this%decomp_k_pools                (:)     = spval
+    allocate(this%adfactor_kd_pools             (1:ndecomp_pools))                            ; 
+    this%adfactor_kd_pools             (:)     = spval
 
     allocate(this%sitefactor_kd_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%sitefactor_kd_vr_col         (:,:) = spval
 
