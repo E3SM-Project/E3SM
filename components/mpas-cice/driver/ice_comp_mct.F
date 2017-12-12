@@ -737,8 +737,9 @@ contains
       type (MPAS_Pool_type), pointer :: &
             shortwave
 
+      real (kind=RKIND) :: current_wallclock_time
       type (MPAS_Time_Type) :: currTime
-      character(len=StrKIND) :: timeStamp, streamName
+      character(len=StrKIND) :: timeStamp, streamName, WCstring
       type (MPAS_timeInterval_type) :: timeStep
       integer :: ierr, streamDirection, iam
       logical :: streamActive, debugOn
@@ -817,7 +818,9 @@ contains
         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
         ! write time stamp on every step
-        call mpas_log_write('Doing timestep ' // trim(timeStamp))
+        call mpas_dmpar_get_time(current_wallclock_time)
+        write (WCstring,'(F18.3)') current_wallclock_time
+        call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
         ! pre-timestep analysis computation
         if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
