@@ -20,6 +20,7 @@
     config_explicit_proc_decomp = false
     config_proc_decomp_file_prefix = 'graphs/graph.info.part.'
     config_aggregate_halo_exch = false
+    config_load_balance_timers = false
 /
 &restart
     config_do_restart = false

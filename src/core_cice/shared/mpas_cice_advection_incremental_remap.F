@@ -2352,6 +2352,9 @@ contains
 
     use mpas_dmpar
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type (domain_type), intent(inout) :: &
          domain    !< Input/Output: domain info
 
@@ -2439,6 +2442,8 @@ contains
     if (updateHaloInit) then
 
        if (verboseRun) call mpas_log_write('Doing initial halo updates for velocity, mass and tracers')
+
+       call cice_load_balance_timers(domain)
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
