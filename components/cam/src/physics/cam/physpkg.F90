@@ -101,7 +101,6 @@ module physpkg
   logical           :: clim_modal_aero     ! climate controled by prognostic or prescribed modal aerosols
   logical           :: prog_modal_aero     ! Prognostic modal aerosols present
   logical           :: micro_do_icesupersat
-  logical           :: pergro_mods = .false.
   logical           :: pergro_test_active= .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
@@ -181,7 +180,6 @@ subroutine phys_register
                       use_subcol_microp_out    = use_subcol_microp, &
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
-	                  pergro_mods_out          = pergro_mods, &
                       pergro_test_active_out   = pergro_test_active )
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -1528,14 +1526,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-if(pergro_mods) then
-    !BALLI- Temporary fix - bypass changes by surface model
-    !cam_in%wsx(:)    = 0.0_r8  !BALLI
-    !cam_in%wsy(:)    = 0.0_r8 
-    !cam_in%shf(:)    = 0.0_r8
-    !cam_in%cflx(:,:) = 0.0_r8 
-    !BALLI ENDS
-endif
 
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
