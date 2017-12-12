@@ -363,6 +363,10 @@
 			description="Determines if aggregated halo exchanges are used in some places."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_load_balance_timers" type="logical" default_value="false" units="unitless"
+			description="Determines if mpi barriers are used and timed before halo exchanges."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="restart" in_defaults="true">
 		<nml_option name="config_do_restart" type="logical" default_value="false" units="unitless"

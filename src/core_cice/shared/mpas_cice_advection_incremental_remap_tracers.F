@@ -1121,6 +1121,9 @@ contains
 
     use mpas_dmpar
 
+    use cice_diagnostics, only: &
+         cice_load_balance_timers
+
     type(tracer_type), pointer, intent(in) :: &
          tracersHead ! do not alter this pointer - it should always point to the first element
 
@@ -1130,6 +1133,8 @@ contains
 
     logical, pointer :: &
          config_aggregate_halo_exch
+
+    call cice_load_balance_timers(domain)
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
     if (config_aggregate_halo_exch) then
