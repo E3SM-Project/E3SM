@@ -10,7 +10,7 @@ import six
 
 logger = logging.getLogger(__name__)
 
-class _Element(object): # private class, don't want users constructing directly
+class _Element(object): # private class, don't want users constructing directly or calling methods on it
 
     def __init__(self, xml_element):
         self.xml_element = xml_element
@@ -52,10 +52,10 @@ class GenericXML(object):
         logger.debug("read: " + infile)
         with open(infile, 'r') as fd:
             if self.tree:
-                self.add_child(__Element(ET.parse(fd).getroot()))
+                self.add_child(_Element(ET.parse(fd).getroot()))
             else:
                 self.tree = ET.parse(fd)
-                self.root = __Element(self.tree.getroot())
+                self.root = _Element(self.tree.getroot())
 
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
@@ -94,9 +94,13 @@ class GenericXML(object):
         root = root if root else self.root
         root.append(node)
 
+    def remove_child(self, node, root=None):
+        root = root if root else self.root
+        root.remove(node)
+
     def make_child(self, name, attributes=None, root=None, text=None):
         root = root if root else self.root
-        node = __Element(ET.SubElement(root, name, attrib=attributes))
+        node = _Element(ET.SubElement(root, name, attrib=attributes))
         if text:
             self.set_text(node, text)
 
@@ -127,18 +131,18 @@ class GenericXML(object):
                     if not match:
                         continue
 
-            children.append(__Element(child))
+            children.append(_Element(child))
 
         return children
 
-    def get_child(self, name=None, attributes=None, root=None):
+    def get_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
-        expect(len(children) == 1, "Expected one child")
+        expect(len(children) == 1, err_msg if err_msg else "Expected one child")
         return children[0]
 
-    def get_optional_child(self, name=None, attributes=None, root=None):
+    def get_optional_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
-        expect(len(children) <= 1, "Multiple matches")
+        expect(len(children) <= 1, err_msg if err_msg else "Multiple matches")
         return children[0] if children else None
 
     def get_element_text(self, element_name, attributes=None, root=None):

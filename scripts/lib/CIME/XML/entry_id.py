@@ -272,6 +272,7 @@ class EntryID(GenericXML):
                 type_str = self._get_type_info(node)
                 results.append( convert_to_type(result, type_str, vid))
         return results
+
     #pylint: disable=arguments-differ
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         """

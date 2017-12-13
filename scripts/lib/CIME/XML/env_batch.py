@@ -49,14 +49,14 @@ class EnvBatch(EnvBase):
 
         # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
-            nodes = self.get_nodes("entry", {"id":item})
+            nodes = self.get_children("entry", {"id":item})
             for node in nodes:
                 self._set_value(node, value, vid=item, ignore_type=ignore_type)
                 val = value
         else:
-            group = self.get_optional_node("group", {"id":subgroup})
+            group = self.get_optional_child("group", {"id":subgroup})
             if group is not None:
-                node = self.get_optional_node("entry", {"id":item}, root=group)
+                node = self.get_optional_child("entry", {"id":item}, root=group)
                 if node is not None:
                     val = self._set_value(node, value, vid=item, ignore_type=ignore_type)
 
@@ -70,7 +70,7 @@ class EnvBatch(EnvBase):
 
         value = None
         if subgroup is None:
-            node = self.get_optional_node(item, attribute)
+            node = self.get_optional_child(item, attribute)
             if node is not None:
                 value = node.text
                 if resolved:
@@ -83,7 +83,7 @@ class EnvBatch(EnvBase):
         return value
 
     def get_type_info(self, vid):
-        nodes = self.get_nodes("entry",{"id":vid})
+        nodes = self.get_children("entry",{"id":vid})
         type_info = None
         for node in nodes:
             new_type_info = self._get_type_info(node)
@@ -95,7 +95,7 @@ class EnvBatch(EnvBase):
         return type_info
 
     def get_jobs(self):
-        groups = self.get_nodes("group")
+        groups = self.get_children("group")
         results = []
         for group in groups:
             if group.get("id") not in ["job_submission", "config_batch"]:
@@ -107,29 +107,27 @@ class EnvBatch(EnvBase):
         # Subtle: in order to support dynamic batch jobs, we need to remove the
         # job_submission group and replace with job-based groups
 
-        orig_group = self.get_optional_node("group", {"id":"job_submission"})
-        expect(orig_group, "Looks like job groups have already been created")
+        orig_group = self.get_child("group", {"id":"job_submission"},
+                                    err_msg="Looks like job groups have already been created")
+        orig_group_children = self.get_children()
 
         childnodes = []
-        for child in reversed(orig_group):
+        for child in orig_group_children:
             childnodes.append(deepcopy(child))
-            orig_group.remove(child)
 
-        self.root.remove(orig_group)
+        self.remove_child(orig_group)
 
         for name, jdict in batch_jobs:
-            new_job_group = ET.Element("group")
-            new_job_group.set("id", name)
+            new_job_group = self.make_child("group", {"id":name})
             for field in jdict.keys():
                 val = jdict[field]
-                node = ET.SubElement(new_job_group, "entry", {"id":field,"value":val})
-                tnode = ET.SubElement(node, "type")
-                tnode.text = "char"
+                node = self.make_child("entry", {"id":field,"value":val}, root=new_job_group)
+                self.make_child("type", root=node, text="char")
 
             for child in childnodes:
-                new_job_group.append(deepcopy(child))
+                self.add_child(child, root=new_job_group)
 
-            self.root.append(new_job_group)
+            self.add_child(new_job_group)
 
     def cleanupnode(self, node):
         if node.get("id") == "batch_system":
@@ -149,16 +147,16 @@ class EnvBatch(EnvBase):
             self.set_batch_system_type(batch_system_type)
 
         if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
-            for node in batchobj.get_nodes('any', root=batchobj.machine_node, xpath='*'):
-                oldnode = batchobj.get_optional_node(node.tag, root=batchobj.batch_system_node)
+            for node in batchobj.get_children('any', root=batchobj.machine_node, xpath='*'):
+                oldnode = batchobj.get_optional_child(node.tag, root=batchobj.batch_system_node)
                 if oldnode is not None and oldnode.tag != "directives":
                     logger.debug( "Replacing {}".format(oldnode.tag))
                     batchobj.batch_system_node.remove(oldnode)
 
         if batchobj.batch_system_node is not None:
-            self.root.append(deepcopy(batchobj.batch_system_node))
+            self.add_child(deepcopy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
-            self.root.append(deepcopy(batchobj.machine_node))
+            self.add_child(deepcopy(batchobj.machine_node))
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
@@ -244,13 +242,13 @@ class EnvBatch(EnvBase):
         """
         """
         result = []
-        directive_prefix = self.get_node("batch_directive").text
+        directive_prefix = self.get_child("batch_directive").text
         directive_prefix = "" if directive_prefix is None else directive_prefix
 
-        roots = self.get_nodes("batch_system")
+        roots = self.get_children("batch_system")
         for root in roots:
             if root is not None:
-                nodes = self.get_nodes("directive", root=root)
+                nodes = self.get_children("directive", root=root)
                 for node in nodes:
                     directive = self.get_resolved_value("" if node.text is None else node.text)
                     default = node.get("default")
@@ -268,11 +266,11 @@ class EnvBatch(EnvBase):
         return a list of touples (flag, name)
         '''
         submitargs = " "
-        bs_nodes = self.get_nodes("batch_system")
+        bs_nodes = self.get_children("batch_system")
         submit_arg_nodes = []
 
         for node in bs_nodes:
-            submit_arg_nodes += self.get_nodes("arg",root=node)
+            submit_arg_nodes += self.get_children("arg",root=node)
 
         for arg in submit_arg_nodes:
             flag = arg.get("flag")
@@ -494,7 +492,7 @@ class EnvBatch(EnvBase):
         return mail_types[idx] if idx < len(mail_types) else None
 
     def get_batch_system_type(self):
-        nodes = self.get_nodes("batch_system")
+        nodes = self.get_children("batch_system")
         for node in nodes:
             type_ = node.get("type")
             if type_ is not None:
@@ -569,26 +567,26 @@ class EnvBatch(EnvBase):
         return None
 
     def get_default_queue(self):
-        node = self.get_optional_node("queue", attributes={"default" : "true"})
+        node = self.get_optional_child("queue", attributes={"default" : "true"})
         if node is None:
-            node = self.get_optional_node("queue")
+            node = self.get_optional_child("queue")
         expect(node is not None, "No queues found")
         return node
 
     def get_all_queues(self):
-        return self.get_nodes("queue")
+        return self.get_children("queue")
 
-    def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
+    def get_children(self, nodename=None, attributes=None, root=None):
         if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
                         "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
-            nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
-                                        root=root, xpath=xpath)
+            nodes = EnvBase.get_children(self, "entry", attributes={"id":nodename}, root=root)
         else:
-            nodes =  EnvBase.get_nodes(self, nodename, attributes, root, xpath)
+            nodes = EnvBase.get_children(self, nodename, attributes=attributes, root=root)
+
         return nodes
 
     def get_status(self, jobid):
-        batch_query = self.get_optional_node("batch_query")
+        batch_query = self.get_optional_child("batch_query")
         if batch_query is None:
             logger.warning("Batch queries not supported on this platform")
         else:
@@ -605,7 +603,7 @@ class EnvBatch(EnvBase):
                 return out.strip()
 
     def cancel_job(self, jobid):
-        batch_cancel = self.get_optional_node("batch_cancel")
+        batch_cancel = self.get_optional_child("batch_cancel")
         if batch_cancel is None:
             logger.warning("Batch cancellation not supported on this platform")
             return False
