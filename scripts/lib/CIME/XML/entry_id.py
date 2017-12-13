@@ -408,8 +408,8 @@ class EntryID(GenericXML):
                             if f1val != f2val:
                                 xmldiffs[vid] = [f1val, f2val]
                         else:
-                            f1val = self.to_string(node)
-                            f2val = self.to_string(f2match)
+                            f1val = self.to_string(node, method="text")
+                            f2val = self.to_string(f2match, method="text")
                             if f2val != f1val:
                                 f1value_nodes = self.get_children("value", root=node)
                                 for valnode in f1value_nodes:

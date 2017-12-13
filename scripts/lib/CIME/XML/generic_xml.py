@@ -17,7 +17,7 @@ class _Element(object): # private class, don't want users constructing directly 
 
 class GenericXML(object):
 
-    def __init__(self, infile=None, schema=None):
+    def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
         """
         Initialize an object
         """
@@ -42,7 +42,11 @@ class GenericXML(object):
 
             self.filename = infile
             root = ET.Element("xml")
-            self.root = self.make_child("file", root=root, attributes={"id":os.path.basename(infile), "version":"2.0"})
+            if root_name_override:
+                self.root = self.make_child(root_name_override, root=root, attributes=root_attrib_override)
+            else:
+                self.root = self.make_child("file", root=root, attributes={"id":os.path.basename(infile), "version":"2.0"})
+
             self.tree = ET.ElementTree(root)
 
     def read(self, infile, schema=None):
@@ -158,8 +162,8 @@ class GenericXML(object):
             return new_text
         return None
 
-    def to_string(self, node, method="text"):
-        return ET.tostring(node, method=method)
+    def to_string(self, node, method="xml", encoding="us-ascii"):
+        return ET.tostring(node, method=method, encoding=encoding)
 
     #
     # API for operations over the entire file
