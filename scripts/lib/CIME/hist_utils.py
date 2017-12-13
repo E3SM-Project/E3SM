@@ -102,6 +102,34 @@ def copy(case, suffix):
 
     return comments
 
+def rename_all_hist_files(case, suffix):
+    """renaming all hist files in a case, adding the given suffix.
+
+    case - The case containing the files you want to save
+    suffix - The string suffix you want to add to saved files, this can be used to find them later.
+    """
+    rundir   = case.get_value("RUNDIR")
+    testcase = case.get_value("CASE")
+
+    # Loop over models
+    comments = "Renaming hist files to suffix '%s'\n" % suffix
+    num_renamed = 0
+    for model in _iter_model_file_substrs(case):
+        comments += "  Renaming hist files for model '%s'\n" % model
+        test_hists = _get_all_hist_files(testcase, model, rundir)
+        num_renamed += len(test_hists)
+        for test_hist in test_hists:
+            new_file = "%s.%s" % (test_hist, suffix)
+            if os.path.exists(new_file):
+                os.remove(new_file)
+
+            comments += "    Renaming '%s' to '%s'\n" % (test_hist, new_file)
+            shutil.move(test_hist, new_file)
+
+    expect(num_renamed > 0, "Renaming failed: no hist files found in rundir '%s'" % rundir)
+
+    return comments
+
 def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     """
     return (num in set 1 but not 2 , num in set 2 but not 1, matchups)
