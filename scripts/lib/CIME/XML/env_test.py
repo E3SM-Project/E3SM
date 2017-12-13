@@ -17,7 +17,7 @@ class EnvTest(EnvBase):
         EnvBase.__init__(self, case_root, infile)
 
     def add_test(self,testnode):
-        self.root.append(testnode)
+        self.add_child(testnode)
         self.write()
 
     def set_initial_values(self, case):
@@ -27,7 +27,7 @@ class EnvTest(EnvBase):
         ignore fields set in the BUILD and RUN clauses, they are set in
         the appropriate build and run phases.
         """
-        tnode = self.get_node("test")
+        tnode = self.get_child("test")
         for child in tnode:
             if child.text is not None:
                 logger.debug("Setting {} to {} for test".format(child.tag, child.text))
@@ -46,37 +46,32 @@ class EnvTest(EnvBase):
         otherwise create a node and initialize it to value
         """
         case = self.get_value("TESTCASE")
-        tnode = self.get_node("test",{"NAME":case})
-        # This xpath statement gets immediate children only (ignoring
-        # children of build and run blocks)
-        idnode = self.get_optional_node(name, root=tnode, xpath=name)
+        tnode = self.get_child("test",{"NAME":case})
+        idnode = self.get_optional_child(name, root=tnode)
 
         if idnode is None:
-            newnode = ET.SubElement(tnode, name)
-            newnode.text = value
+            self.make_child(name, root=tnode, text=value)
         else:
             idnode.text = value
 
     def get_test_parameter(self, name):
         case = self.get_value("TESTCASE")
-        tnode = self.get_node("test",{"NAME":case})
-        # This xpath statement gets immediate children only (ignoring
-        # children of build and run blocks)
+        tnode = self.get_child("test",{"NAME":case})
         value = None
-        idnode = self.get_optional_node(name, root=tnode, xpath=name)
+        idnode = self.get_optional_child(name, root=tnode)
         if idnode is not None:
             value = idnode.text
         return value
 
     def get_step_phase_cnt(self,step):
-        bldnodes = self.get_nodes(step)
+        bldnodes = self.get_children(step)
         cnt = 0
         for node in bldnodes:
             cnt = max(cnt, int(node.attrib["phase"]))
         return cnt
 
     def get_settings_for_phase(self, name, cnt):
-        node = self.get_optional_node(name,attributes={"phase":cnt})
+        node = self.get_optional_child(name,attributes={"phase":cnt})
         settings = []
         if node is not None:
             for child in node:
@@ -86,7 +81,7 @@ class EnvTest(EnvBase):
         return settings
 
     def run_phase_get_clone_name(self, phase):
-        node = self.get_node("RUN",attributes={"phase":str(phase)})
+        node = self.get_child("RUN",attributes={"phase":str(phase)})
         if "clone" in node.attrib:
             return node.attrib["clone"]
         return None
@@ -110,7 +105,7 @@ class EnvTest(EnvBase):
         """
         newval = EnvBase.set_value(self, vid, value, subgroup, ignore_type)
         if newval is None:
-            tnode = self.get_optional_node("test")
+            tnode = self.get_optional_child("test")
             if tnode is not None:
                 newval = self.set_element_text(vid, value, root=tnode)
         return newval
@@ -118,7 +113,7 @@ class EnvTest(EnvBase):
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
         if value is None:
-            tnode = self.get_optional_node("test")
+            tnode = self.get_optional_child("test")
             if tnode is not None:
                 value = self.get_element_text(vid, root=tnode)
         return value
