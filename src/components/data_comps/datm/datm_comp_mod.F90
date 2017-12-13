@@ -848,17 +848,23 @@ CONTAINS
     case('CORE_IAF_JRA')
        if (firstcall) then
           if (sprec < 1 .or. sswdn < 1) then
-             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE2'
-             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE2')
+             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
+             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
           endif
-          if (trim(datamode) == 'CORE2_IAF' ) then
+          if (trim(datamode) == 'CORE_IAF_JRA' ) then
              if (starcf < 1 ) then
-                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE2_IAF'
-                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE2_IAF')
+                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE_IAF_JRA'
+                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE_IAF_JRA')
              endif
           endif
-          call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
-               mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+          if (trim(factorFn) == 'null') then
+            windFactor = 1.0_R8
+            winddFactor = 1.0_R8
+            qsatFactor = 1.0_R8
+          else
+            call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
+                 mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+          endif
        endif
        call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
