@@ -28,12 +28,12 @@ class Pes(GenericXML):
         other_settings = {}
         o_grid_nodes = []
         # Get any override nodes
-        overrides = self.get_optional_node("overrides")
+        overrides = self.get_optional_child("overrides")
         if overrides is not None:
-            o_grid_nodes = self.get_nodes("grid", root = overrides)
+            o_grid_nodes = self.get_children("grid", root = overrides)
             opes_ntasks, opes_nthrds, opes_rootpe, oother_settings = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, True)
         # Get all the nodes
-        grid_nodes = self.get_nodes("grid")
+        grid_nodes = self.get_children("grid")
         if o_grid_nodes:
             gn_set = set(grid_nodes)
             ogn_set = set(o_grid_nodes)
@@ -73,11 +73,11 @@ class Pes(GenericXML):
         for grid_node in grid_nodes:
             grid_match = grid_node.get("name")
             if grid_match == "any" or  re.search(grid_match,grid):
-                mach_nodes = self.get_nodes("mach",root=grid_node)
+                mach_nodes = self.get_children("mach",root=grid_node)
                 for mach_node in mach_nodes:
                     mach_match = mach_node.get("name")
                     if mach_match == "any" or re.search(mach_match, machine):
-                        pes_nodes = self.get_nodes("pes", root=mach_node)
+                        pes_nodes = self.get_children("pes", root=mach_node)
                         for pes_node in pes_nodes:
                             pesize_match = pes_node.get("pesize")
                             compset_match = pes_node.get("compset")

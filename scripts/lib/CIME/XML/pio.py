@@ -28,7 +28,7 @@ class PIO(EntryID):
                 attributes[attrib] = locals()[attrib]
 
         # Find defauts
-        for node in self.get_nodes("entry"):
+        for node in self.get_children("entry"):
             value = self.get_default_value(node, attributes)
             if value:
                 defaults[node.get("id")] = value

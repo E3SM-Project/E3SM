@@ -39,7 +39,7 @@ class Component(EntryID):
         from the entries in the model CONFIG_CPL_FILE
         """
         components = []
-        comps_node = self.get_node("entry", {"id":"COMP_CLASSES"})
+        comps_node = self.get_child("entry", {"id":"COMP_CLASSES"})
         comps = self.get_default_value(comps_node)
         components = comps.split(',')
         return components
@@ -56,7 +56,7 @@ class Component(EntryID):
         match_values = []
         expect(not exact_match, " exact_match not implemented in this method")
         expect(node is not None," Empty node in _get_value_match")
-        values = self.get_optional_node("values", root=node)
+        values = self.get_optional_child("values", root=node)
         if values is None:
             return
 
@@ -65,7 +65,7 @@ class Component(EntryID):
         match_type = values.get("match", default="last")
 
         # use the default_value if present
-        val_node = self.get_optional_node("default_value", root=node)
+        val_node = self.get_optional_child("default_value", root=node)
         if val_node is None:
             logger.debug("No default_value for {}".format(node.get("id")))
             return val_node
@@ -73,7 +73,7 @@ class Component(EntryID):
         if value is not None and len(value) > 0 and value != "UNSET":
             match_values.append(value)
 
-        for valnode in self.get_nodes("value", root=node):
+        for valnode in self.get_children("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
             for key,value in valnode.attrib.items():
                 # determine if key is in attributes dictionary
@@ -133,7 +133,6 @@ class Component(EntryID):
         else:
             return ""
 
-
     def _get_description_v3(self, compsetname, comp_class):
         """
         version 3 of the config_component.xml file has the description section at the top of the file
@@ -153,9 +152,9 @@ class Component(EntryID):
         """
         expect(comp_class is not None,"comp_class argument required for version3 files")
         comp_class = comp_class.lower()
-        rootnode = self.get_node("description")
+        rootnode = self.get_child("description")
         desc = ""
-        desc_nodes = self.get_nodes("desc", root=rootnode)
+        desc_nodes = self.get_children("desc", root=rootnode)
 
         modifier_mode = rootnode.get('modifier_mode')
         if modifier_mode is None:
@@ -260,12 +259,10 @@ class Component(EntryID):
 
         return match, matchcomplist
 
-
-
     def _get_description_v2(self, compsetname):
-        rootnode = self.get_node("description")
+        rootnode = self.get_child("description")
         desc = ""
-        desc_nodes = self.get_nodes("desc", root=rootnode)
+        desc_nodes = self.get_children("desc", root=rootnode)
         for node in desc_nodes:
             compsetmatch = node.get("compset")
             if compsetmatch is not None and re.search(compsetmatch, compsetname):
@@ -277,12 +274,12 @@ class Component(EntryID):
         """
         print values for help and description in target config_component.xml file
         """
-        rootnode = self.get_node("help")
+        rootnode = self.get_child("help")
         helptext = rootnode.text
 
-        rootnode = self.get_node("description")
+        rootnode = self.get_child("description")
         compsets = {}
-        descs = self.get_nodes("desc", root=rootnode)
+        descs = self.get_children("desc", root=rootnode)
         for desc in descs:
             attrib = desc.get("compset")
             text = desc.text

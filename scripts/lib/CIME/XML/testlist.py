@@ -62,16 +62,16 @@ class Testlist(GenericXML):
         if compiler is not None:
             machatts["compiler"] = compiler
 
-        compsetnodes = self.get_nodes("compset")
+        compsetnodes = self.get_children("compset")
         logger.debug("compsetnodes {:d}".format(len(compsetnodes)))
         for cnode in compsetnodes:
-            gridnodes = self.get_nodes("grid", root=cnode)
+            gridnodes = self.get_children("grid", root=cnode)
             logger.debug("  gridnodes {:d}".format(len(gridnodes)))
             for gnode in gridnodes:
-                testnamenodes = self.get_nodes("test",root=gnode)
+                testnamenodes = self.get_children("test",root=gnode)
                 logger.debug("    testnamenodes {:d}".format(len(testnamenodes)))
                 for tnode in testnamenodes:
-                    machnodes = self.get_nodes("machine",machatts,root=tnode)
+                    machnodes = self.get_children("machine",machatts,root=tnode)
                     logger.debug("      machnodes {:d}".format(len(machnodes)))
                     for mach in machnodes:
                         thistest = {}
@@ -101,7 +101,7 @@ class Testlist(GenericXML):
         if grid is not None:
             attributes['grid'] = grid
 
-        testnodes = self.get_nodes("test", attributes=attributes)
+        testnodes = self.get_children("test", attributes=attributes)
 
         machatts = {}
         if machine is not None:
@@ -112,7 +112,7 @@ class Testlist(GenericXML):
             machatts["compiler"]  = compiler
 
         for tnode in testnodes:
-            machnodes = self.get_nodes("machine",machatts,root=tnode)
+            machnodes = self.get_children("machine",machatts,root=tnode)
             if machnodes:
                 this_test_node = {}
                 for key, value in tnode.items():
@@ -135,12 +135,13 @@ class Testlist(GenericXML):
                     #
                     # option xpath here prevents us from looking within the
                     # machines block
-                    optionnodes = self.get_nodes("option", root=tnode, xpath="options/option")
+                    options = self.get_child("options", root=tnode)
+                    optionnodes = self.get_children("option", root=options)
                     for onode in optionnodes:
                         this_test['options'][onode.get('name')] = onode.text
 
                     # Now get options specific to this machine/compiler
-                    optionnodes = self.get_nodes("option", root=mach)
+                    optionnodes = self.get_children("option", root=mach)
                     for onode in optionnodes:
                         this_test['options'][onode.get('name')] = onode.text
 

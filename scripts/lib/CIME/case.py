@@ -871,7 +871,7 @@ class Case(object):
         # archiving system
         #--------------------------------------------
         env_archive = self.get_env("archive")
-        infile_node = files.get_node("entry", {"id":"ARCHIVE_SPEC_FILE"})
+        infile_node = files.get_child("entry", {"id":"ARCHIVE_SPEC_FILE"})
         infile = files.get_default_value(infile_node)
         infile = self.get_resolved_value(infile)
         logger.debug("archive defaults located in {}".format(infile))

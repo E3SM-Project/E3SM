@@ -63,7 +63,7 @@ class NamelistDefinition(EntryID):
         returns nodes that do not have attributes of `skip_default_entry` or `per_stream_entry`
         """
         default_nodes = []
-        for node in self.get_nodes("entry"):
+        for node in self.get_children("entry"):
             name = node.get("id")
             skip_default_entry = node.get("skip_default_entry")
             per_stream_entry = node.get("per_stream_entry")
@@ -129,7 +129,7 @@ class NamelistDefinition(EntryID):
 
     def get_per_stream_entries(self):
         entries = []
-        nodes = self.get_nodes("entry")
+        nodes = self.get_children("entry")
         for node in nodes:
             per_stream_entry = node.get("per_stream_entry")
             if per_stream_entry:
@@ -311,7 +311,7 @@ class NamelistDefinition(EntryID):
 
     def _user_modifiable_in_variable_definition(self, name):
         # Is name user modifiable?
-        node = self.get_optional_node("entry", attributes={'id': name})
+        node = self.get_optional_child("entry", attributes={'id': name})
         user_modifiable_only_by_xml = node.get('modify_via_xml')
         if user_modifiable_only_by_xml is not None:
             expect(False,

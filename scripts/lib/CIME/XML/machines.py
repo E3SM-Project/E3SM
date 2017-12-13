@@ -85,7 +85,7 @@ class Machines(GenericXML):
         Return a list of machines defined for a given CIME_MODEL
         """
         machines = []
-        nodes  = self.get_nodes("machine")
+        nodes  = self.get_children("machine")
         for node in nodes:
             mach = node.get("MACH")
             machines.append(mach)
@@ -125,12 +125,12 @@ class Machines(GenericXML):
         """
 
         machine = None
-        nodes = self.get_nodes("machine")
+        nodes = self.get_children("machine")
 
         for node in nodes:
             machtocheck = node.get("MACH")
             logger.debug("machine is " + machtocheck)
-            regex_str_node = self.get_optional_node("NODENAME_REGEX", root=node)
+            regex_str_node = self.get_optional_child("NODENAME_REGEX", root=node)
             regex_str = machtocheck if regex_str_node is None else regex_str_node.text
 
             if regex_str is not None:
@@ -158,7 +158,7 @@ class Machines(GenericXML):
         if machine == "Query":
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
-            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
+            self.machine_node = self.get_optional_child("machine", {"MACH" : machine})
             expect(self.machine_node is not None, "No machine {} found".format(machine))
             self.machine = machine
 
@@ -179,7 +179,7 @@ class Machines(GenericXML):
         elif name == "MPILIB":
             value = self.get_default_MPIlib(attributes)
         else:
-            node = self.get_optional_node(name, root=self.machine_node, attributes=attributes)
+            node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
                 value = node.text
 
@@ -273,16 +273,16 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
+        batch_system = self.get_optional_child("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
             result = (batch_system.text is not None and batch_system.text != "none")
         logger.debug("Machine {} has batch: {}".format(self.machine, result))
         return result
 
     def get_suffix(self, suffix_type):
-        node = self.get_optional_node("default_run_suffix")
+        node = self.get_optional_child("default_run_suffix")
         if node is not None:
-            suffix_node = self.get_optional_node(suffix_type, root=node)
+            suffix_node = self.get_optional_child(suffix_type, root=node)
             if suffix_node is not None:
                 return suffix_node.text
 
@@ -290,7 +290,7 @@ class Machines(GenericXML):
 
     def print_values(self):
         # write out machines
-        machines = self.get_nodes(nodename="machine")
+        machines = self.get_children("machine")
         print( "Machines")
         for machine in machines:
             name = machine.get("MACH")
@@ -311,7 +311,7 @@ class Machines(GenericXML):
     def return_all_values(self):
         # return a dictionary of machines
         mach_dict = dict()
-        machines = self.get_nodes(nodename="machine")
+        machines = self.get_children("machine")
         for machine in machines:
             name = machine.get("MACH")
             desc = machine.find("DESC")

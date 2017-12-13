@@ -43,16 +43,16 @@ class Files(EntryID):
         return value
 
     def get_schema(self, nodename, attributes=None):
-        node = self.get_optional_node("entry", {"id":nodename})
-        schemanode = self.get_optional_node("schema", root=node, attributes=attributes)
+        node = self.get_optional_child("entry", {"id":nodename})
+        schemanode = self.get_optional_child("schema", root=node, attributes=attributes)
         if schemanode is not None:
             logger.debug("Found schema for {}".format(nodename))
             return self.get_resolved_value(schemanode.text)
         return None
 
     def get_components(self, nodename):
-        node = self.get_optional_node("entry", {"id":nodename})
-        valnodes = self.get_nodes("value", root=node)
+        node = self.get_optional_child("entry", {"id":nodename})
+        valnodes = self.get_children("value", root=node)
         values = []
         for valnode in valnodes:
             value = valnode.get("component")

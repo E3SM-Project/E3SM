@@ -22,7 +22,7 @@ class EnvBase(EntryID):
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
-            self.root.append(headernode)
+            self.add_child(headernode)
 
     def set_components(self, components):
         if hasattr(self, '_components'):
@@ -30,7 +30,7 @@ class EnvBase(EntryID):
             self._components = components
 
     def check_if_comp_var(self, vid, attribute=None):
-        nodes = self.get_nodes("entry", {"id" : vid})
+        nodes = self.get_children("entry", {"id" : vid})
         node = None
         comp = None
         if len(nodes):
@@ -83,7 +83,7 @@ class EnvBase(EntryID):
                 attribute = {"compclass" : comp}
             else:
                 attribute["compclass"] = comp
-            node = self.get_optional_node("entry", {"id":vid})
+            node = self.get_optional_child("entry", {"id":vid})
             if node is not None:
                 type_str = self._get_type_info(node)
                 val = self.get_element_text("value", attribute, root=node)
@@ -103,8 +103,8 @@ class EnvBase(EntryID):
         """
         vid, comp, iscompvar = self.check_if_comp_var(vid, None)
         val = None
-        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
-        node = self.get_optional_node("entry", {"id":vid}, root=root)
+        root = self.root if subgroup is None else self.get_optional_child("group", {"id":subgroup})
+        node = self.get_optional_child("entry", {"id":vid}, root=root)
         if node is not None:
             if iscompvar and comp is None:
                 # pylint: disable=no-member

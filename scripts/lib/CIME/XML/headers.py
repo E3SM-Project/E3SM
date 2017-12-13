@@ -23,6 +23,6 @@ class Headers(EntryID):
         EntryID.__init__(self, infile)
 
     def get_header_node(self, fname):
-        fnode = self.get_node("file", attributes={"name" : fname})
-        headernode = self.get_node("header", root=fnode)
+        fnode = self.get_child("file", attributes={"name" : fname})
+        headernode = self.get_child("header", root=fnode)
         return headernode

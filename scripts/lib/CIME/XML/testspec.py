@@ -48,7 +48,3 @@ class TestSpec(GenericXML):
             self.set(pnode, "status", status)
         else:
             self.make_child("section", {"name":phase, "status":status}, root=root)
-
-
-
-

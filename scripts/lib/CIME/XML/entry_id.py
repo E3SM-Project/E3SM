@@ -195,7 +195,7 @@ class EntryID(GenericXML):
             return None
         return self._set_valid_values(node, new_valid_values)
 
-    def get_children_by_id(self, vid):
+    def get_nodes_by_id(self, vid):
         return self.get_children("entry", {"id":vid})
 
     def _set_valid_values(self, node, new_valid_values):
@@ -425,11 +425,11 @@ class EntryID(GenericXML):
         # if there exist two nodes with the same id delete the first one.
         for node in self.get_children("entry"):
             vid = node.get("id")
-            samenodes = self.get_children_by_id(vid)
+            samenodes = self.get_nodes_by_id(vid)
             if len(samenodes) > 1:
                 expect(len(samenodes) == 2, "Too many matchs for id {} in file {}".format(vid, self.filename))
                 logger.debug("Overwriting node {}".format(vid))
-                self.root.remove(samenodes[0])
+                self.remove_child(samenodes[0])
 
     def __iter__(self):
         for node in self.get_children("entry"):

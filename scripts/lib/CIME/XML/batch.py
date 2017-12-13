@@ -53,13 +53,13 @@ class Batch(GenericXML):
         expect(self.batch_system_node is not None, "Batch system not set, use parent get_node?")
 
         if self.machine_node is not None:
-            result = self.get_optional_node(nodename, attributes, root=self.machine_node)
+            result = self.get_optional_child(nodename, attributes, root=self.machine_node)
             if result is None:
-                return self.get_optional_node(nodename, attributes, root=self.batch_system_node)
+                return self.get_optional_child(nodename, attributes, root=self.batch_system_node)
             else:
                 return result
         else:
-            return self.get_optional_node(nodename, attributes, root=self.batch_system_node)
+            return self.get_optional_child(nodename, attributes, root=self.batch_system_node)
 
     def set_batch_system(self, batch_system, machine=None):
         """
@@ -67,7 +67,7 @@ class Batch(GenericXML):
         """
         machine = machine if machine is not None else self.machine
         if self.batch_system != batch_system or self.batch_system_node is None:
-            nodes = self.get_nodes("batch_system",{"type" : batch_system})
+            nodes = self.get_children("batch_system",{"type" : batch_system})
             for node in nodes:
                 mach = node.get("MACH")
                 if mach is None:
@@ -111,7 +111,7 @@ class Batch(GenericXML):
         and the second a dict of qualifiers for the job
         """
         jobs = []
-        bnode = self.get_node("batch_jobs")
+        bnode = self.get_child("batch_jobs")
         for jnode in bnode:
             if jnode.tag == "job":
                 name = jnode.get("name")

@@ -23,7 +23,7 @@ class Compsets(GenericXML):
         science support is used in cesm to determine if this compset and grid
         is scientifically supported.   science_support is returned as an array of grids for this compset
         """
-        nodes = self.get_nodes("compset")
+        nodes = self.get_children("compset")
         alias = None
         lname = None
 
@@ -33,7 +33,7 @@ class Compsets(GenericXML):
             alias = self.get_element_text("alias",root=node)
             lname = self.get_element_text("lname",root=node)
             if alias == name or lname == name:
-                science_support_nodes = self.get_nodes("science_support", root=node)
+                science_support_nodes = self.get_children("science_support", root=node)
                 for snode in science_support_nodes:
                     science_support.append(snode.get("grid"))
                 logger.debug("Found node match with alias: {} and lname: {}".format(alias, lname))
@@ -45,7 +45,7 @@ class Compsets(GenericXML):
         Variables can be set in config_compsets.xml in entry id settings with compset and grid attributes
         find and return id value pairs here
         '''
-        nodes = self.get_nodes("entry")
+        nodes = self.get_children("entry")
         # Get an empty entryid obj to use
         entryidobj = EntryID()
         result = []
@@ -59,12 +59,12 @@ class Compsets(GenericXML):
     def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         if name == "help":
-            rootnode = self.get_node("help")
+            rootnode = self.get_child("help")
             helptext = rootnode.text
             return helptext
         else:
             compsets = {}
-            nodes = self.get_nodes(nodename="compset")
+            nodes = self.get_children("compset")
             for node in nodes:
                 for child in node:
                     logger.debug ("Here child is {} with value {}".format(child.tag,child.text))
@@ -98,6 +98,6 @@ class Compsets(GenericXML):
         # get the matching science support grids
         for alias in all_compsets.keys():
             science_compsets[alias] = self.get_compset_match(alias)
-            
+
         return help_text, all_compsets
 
