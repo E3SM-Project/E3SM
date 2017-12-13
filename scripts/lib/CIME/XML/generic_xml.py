@@ -196,7 +196,7 @@ class GenericXML(object):
         Error unless exactly one match.
         """
 
-        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
+        nodes = self.scan_nodes(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) == 1, "Incorrect number of matches, {:d}, for nodename '{}' and attrs '{}' in file '{}'".format(len(nodes), nodename, attributes, self.filename))
         return nodes[0]
@@ -207,7 +207,7 @@ class GenericXML(object):
 
         Return None if no match.
         """
-        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
+        nodes = self.scan_nodes(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
         return nodes[0] if nodes else None
@@ -250,7 +250,7 @@ class GenericXML(object):
 
         else:
             logger.debug("xpath: {}".format(xpath))
-            nodes = root.findall(xpath)
+            nodes = root.xml_element.findall(xpath)
 
         logger.debug("Returning {} nodes ({})".format(len(nodes), nodes))
 
@@ -272,10 +272,9 @@ class GenericXML(object):
         """
         ignore_type is not used in this flavor
         """
-        valnodes = self.get_nodes(vid)
-        if valnodes:
-            for node in valnodes:
-                node.text = value
+        valnodes = self.get_children(vid)
+        for node in valnodes:
+            self.set_text(node, value)
 
     def get_resolved_value(self, raw_value):
         """
@@ -370,7 +369,7 @@ class GenericXML(object):
         return xmlstr
 
     def get_id(self):
-        xmlid = self.root.get("id")
+        xmlid = self.get(self.root, "id")
         if xmlid is not None:
             return xmlid
-        return self.root.tag
+        return self.name(self.root)
