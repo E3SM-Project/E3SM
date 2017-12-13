@@ -11,6 +11,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case_setup import case_setup
 from CIME.build import post_build
+from CIME.hist_utils import rename_all_hist_files
 #import CIME.utils
 #from CIME.check_lockedfiles import *
 
@@ -24,6 +25,9 @@ class SRC(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, case)
 
+    #=================================================================
+    # Compile model with multiple instances
+    #=================================================================
     def build_phase(self, sharedlib_only=False, model_only=False):
 
         ninst = 12
@@ -60,27 +64,25 @@ class SRC(SystemTestsCommon):
         else:
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
+    #=================================================================
+    # Conduct one multi-instance run with specified time step size.
+    # The complete run_phase (defined below) will contain two calls
+    # of this function using different dtime.
+    #=================================================================
+    def _run_with_specified_dtime(self,dtime=2):
 
-        #=================================================================
-        # Run-time settings.
-        # Do this already in build_phase so that we can check the xml and 
-        # namelist files before job starts running. 
-        #=================================================================
+        # dtime is model time step size in seconds. Default is set to 2.
 
-        # time step size  
-       #dtime = 1    # 1s for reference runs
-        dtime = 2    # 2s for trusted runs and test runs
-
-        # change the coupling frequency accordingly
+        # Change the coupling frequency accordingly
         ncpl  = 86400/dtime
         self._case.set_value("ATM_NCPL",ncpl)
 
-        # simulation length = 10 minutes
+        # Simulation length = 10 minutes
         nsteps = 600/dtime
         self._case.set_value("STOP_N",     nsteps)
         self._case.set_value("STOP_OPTION","nsteps")
 
-        # write output every 10 seconds
+        # Write output every 10 seconds
         nhtfrq = 10/dtime
         
         # generate paths/file names for initial conditons
@@ -93,8 +95,10 @@ class SRC(SystemTestsCommon):
         file_suf_atm = "-01-00000.nc"
         file_suf_lnd = "-01-00000.nc"
 
-        # namelist specifications for each instance
-
+        # user_nl_... files are modified for every instance.
+        # The number instances specified here has to be consistent with the 
+        # value set in build_phase.
+        ninst = 12  
         for iinst in range(1, ninst+1):
 
             with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
@@ -104,12 +108,12 @@ class SRC(SystemTestsCommon):
 
                  inst_label_2digits = str(iinst).zfill(2)
 
-                 atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-                 lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                #atmnlfile.write("ncdata  = '"+ csmdata_atm + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                #lndnlfile.write("finidat = '"+ csmdata_lnd + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
                 # for initial testing on constance@pnnl
-                #atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-                #lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                 atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                 lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
                  # time step sizes
 
@@ -128,4 +132,17 @@ class SRC(SystemTestsCommon):
                  atmnlfile.write("empty_htapes = .true. \n")
                  atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
 
-       #self.run_indv()
+        # Namelist settings done. Now run the model.
+        self.run_indv()
+
+        # Append "DT000x" to the history file names 
+        rename_all_hist_files( self._case, suffix="DT"+str(dtime).zfill(4) )
+
+
+    #=================================================================
+    # run_phase
+    #=================================================================
+    def run_phase(self):
+
+        self._run_with_specified_dtime(dtime=2)
+        self._run_with_specified_dtime(dtime=1)
