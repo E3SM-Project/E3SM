@@ -128,10 +128,9 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                         case_st_archive(case, no_resubmit=True)
                         restore_from_archive(case)
 
-                        orig_cont = case.get_value("CONTINUE_RUN")
-                        if not orig_cont:
-                            case.set_value("CONTINUE_RUN", True)
-                            create_namelists(case)
+                        case.set_value("CONTINUE_RUN",
+                                       case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
+                        create_namelists(case)
 
                         lid = new_lid()
                         loop = True
@@ -289,8 +288,9 @@ def case_run(case, skip_pnl=False):
     for cycle in range(data_assimilation_cycles):
         # After the first DA cycle, runs are restart runs
         if cycle > 0:
-            case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
+            case.set_value("CONTINUE_RUN",
+                           case.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
         lid = run_model(case, lid, skip_pnl, da_cycle=cycle)
 

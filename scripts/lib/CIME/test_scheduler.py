@@ -13,6 +13,7 @@ from collections import OrderedDict
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
+import six
 from update_acme_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
 from CIME.test_status import *
@@ -777,7 +778,7 @@ class TestScheduler(object):
 
                             logger.debug("  Current workload:")
                             total_procs = 0
-                            for the_test, the_data in threads_in_flight.iteritems():
+                            for the_test, the_data in six.iteritems(threads_in_flight):
                                 logger.debug("    {}: {} -> {}".format(the_test, the_data[2], the_data[1]))
                                 total_procs += the_data[1]
 
