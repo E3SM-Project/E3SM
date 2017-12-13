@@ -201,9 +201,7 @@ class EntryID(GenericXML):
     def _set_valid_values(self, node, new_valid_values):
         old_vv = self._get_valid_values(node)
         if old_vv is None:
-            vv_node = ET.Element("valid_values")
-            vv_node.text = new_valid_values
-            self.add_child(vv_node)
+            self.make_child("valid_values", text=new_valid_values)
             logger.debug("Adding valid_values {} for {}".format(new_valid_values, node.get("id")))
         else:
             vv_text = self.set_element_text("valid_values", new_valid_values, root=node)

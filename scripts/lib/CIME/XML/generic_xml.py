@@ -3,11 +3,17 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from CIME.XML.standard_module_setup import *
+import xml.etree.ElementTree as ET
 from distutils.spawn import find_executable
 import getpass
 import six
 
 logger = logging.getLogger(__name__)
+
+class _Element(object): # private class, don't want users constructing directly
+
+    def __init__(self, xml_element):
+        self.xml_element = xml_element
 
 class GenericXML(object):
 
@@ -36,9 +42,7 @@ class GenericXML(object):
 
             self.filename = infile
             root = ET.Element("xml")
-            self.root = ET.SubElement(root, "file")
-            self.root.set("id", os.path.basename(infile))
-            self.root.set("version", "2.0")
+            self.root = self.make_child("file", root=root, attributes={"id":os.path.basename(infile), "version":"2.0"})
             self.tree = ET.ElementTree(root)
 
     def read(self, infile, schema=None):
@@ -48,18 +52,114 @@ class GenericXML(object):
         logger.debug("read: " + infile)
         with open(infile, 'r') as fd:
             if self.tree:
-                self.root.append(ET.parse(fd).getroot())
+                self.add_child(__Element(ET.parse(fd).getroot()))
             else:
                 self.tree = ET.parse(fd)
-                self.root = self.tree.getroot()
+                self.root = __Element(self.tree.getroot())
 
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
 
         logger.debug("File version is {}".format(str(self.get_version())))
 
+    #
+    # API for individual node operations
+    #
+
+    def get(self, node, attrib_name):
+        return node.xml_element.get(attrib_name)
+
+    def set(self, node, attrib_name, value):
+        return node.xml_element.set(attrib_name, value)
+
+    def has(self, node, attrib_name):
+        return attrib_name in node.xml_element.attrib
+
+    def set_name(self, node, name):
+        node.xml_element.tag = name
+
+    def set_text(self, node, text):
+        node.xml_element.text = text
+
+    def name(self, node):
+        return node.xml_element.tag
+
+    def text(self, node):
+        return node.xml_element.text
+
+    def add_child(self, node, root=None):
+        """
+        Add element node to self at root
+        """
+        root = root if root else self.root
+        root.append(node)
+
+    def make_child(self, name, text=None, root=None, attributes=None):
+        root = root if root else self.root
+        node = __Element(ET.SubElement(root, name, attrib=attributes))
+        if text:
+            self.set_text(node, text)
+
+        return node
+
+    def get_children(self, root=None, name=None, attributes=None):
+        root = root if root else self.root
+        children = []
+        for child in root.xml_element:
+            if name is not None:
+                if child.tag != name:
+                    continue
+
+            if attributes is not None:
+                if child.attrib is None:
+                    continue
+                else:
+                    match = True
+                    for key, value in attributes.iteritems():
+                        if key not in child.attrib:
+                            match = False
+                            break
+                        else:
+                            if child.attrib[key] != value:
+                                match = False
+                                break
+
+                    if not match:
+                        continue
+
+            children.append(__Element(child))
+
+        return children
+
+    def get_child(self, root=None, name=None, attributes=None):
+        children = self.get_children(root=root, name=name, attributes=attributes)
+        expect(len(children) == 1, "Expected one child")
+        return children[0]
+
+    def get_optional_child(self, root=None, name=None, attributes=None):
+        children = self.get_children(root=root, name=name, attributes=attributes)
+        expect(len(children) <= 1, "Multiple matches")
+        return children[0] if children else None
+
+    def get_element_text(self, element_name, attributes=None, root=None):
+        element_node = self.get_optional_child(name=element_name, attributes=attributes, root=root)
+        if element_node is not None:
+            return self.text(element_node)
+        return None
+
+    def set_element_text(self, element_name, new_text, attributes=None, root=None):
+        element_node = self.get_optional_child(name=element_name, attributes=attributes, root=root)
+        if element_node is not None:
+            self.set_text(element_node, new_text)
+            return new_text
+        return None
+
+    #
+    # API for operations over the entire file
+    #
+
     def get_version(self):
-        version = self.root.get("version")
+        version = self.get(self.root, "version")
         version = 1.0 if version is None else float(version)
         return version
 
@@ -82,41 +182,38 @@ class GenericXML(object):
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
 
-    def get_node(self, nodename, attributes=None, root=None, xpath=None):
+    def scan_node(self, nodename, attributes=None, root=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Error unless exactly one match.
         """
 
-        nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
+        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) == 1, "Incorrect number of matches, {:d}, for nodename '{}' and attrs '{}' in file '{}'".format(len(nodes), nodename, attributes, self.filename))
         return nodes[0]
 
-    def get_optional_node(self, nodename, attributes=None, root=None, xpath=None):
+    def scan_optional_node(self, nodename, attributes=None, root=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Return None if no match.
         """
-        nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
+        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
         return nodes[0] if nodes else None
 
-    def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
+    def scan_nodes(self, nodename, attributes=None, root=None):
 
-        logger.debug("(get_nodes) Input values: {}, {}, {}, {}, {}".format(self.__class__.__name__, nodename, attributes, root, xpath))
+        logger.debug("(get_nodes) Input values: {}, {}, {}, {}".format(self.__class__.__name__, nodename, attributes, root))
 
         if root is None:
             root = self.root
         nodes = []
 
-        expect(attributes is None or xpath is None,
-               " Arguments attributes and xpath are exclusive")
-        if xpath is None:
-            xpath = ".//"+nodename
+        xpath = ".//"+nodename
 
         if attributes:
             # xml.etree has limited support for xpath and does not allow more than
@@ -151,15 +248,6 @@ class GenericXML(object):
         logger.debug("Returning {} nodes ({})".format(len(nodes), nodes))
 
         return nodes
-
-    def add_child(self, node, root=None):
-        """
-        Add element node to self at root
-        """
-        if root is None:
-            root = self.root
-
-        root.append(node)
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None): # pylint: disable=unused-argument
         """
@@ -250,13 +338,6 @@ class GenericXML(object):
 
         return item_data
 
-    def add_sub_node(self, node, subnode_name, subnode_text):
-        expect(node is not None," Bad value passed")
-        subnode = ET.Element(subnode_name)
-        subnode.text = subnode_text
-        node.append(subnode)
-        return node
-
     def validate_xml_file(self, filename, schema):
         """
         validate an XML file against a provided schema file using pylint
@@ -269,19 +350,6 @@ class GenericXML(object):
             run_cmd_no_fail("{} --noout --schema {} {}".format(xmllint, schema, filename))
         else:
             logger.warning("xmllint not found, could not validate file {}".format(filename))
-
-    def get_element_text(self, element_name, attributes=None, root=None, xpath=None):
-        element_node = self.get_optional_node(element_name, attributes, root, xpath)
-        if element_node is not None:
-            return element_node.text
-        return None
-
-    def set_element_text(self, element_name, new_text, attributes=None, root=None, xpath=None):
-        element_node = self.get_optional_node(element_name, attributes, root, xpath)
-        if element_node is not None:
-            element_node.text = new_text
-            return new_text
-        return None
 
     def get_raw_record(self, root=None):
         logger.debug("writing file {}".format(self.filename))
