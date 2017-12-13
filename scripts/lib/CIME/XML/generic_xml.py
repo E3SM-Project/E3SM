@@ -94,7 +94,7 @@ class GenericXML(object):
         root = root if root else self.root
         root.append(node)
 
-    def make_child(self, name, text=None, root=None, attributes=None):
+    def make_child(self, name, attributes=None, root=None, text=None):
         root = root if root else self.root
         node = __Element(ET.SubElement(root, name, attrib=attributes))
         if text:
@@ -102,7 +102,7 @@ class GenericXML(object):
 
         return node
 
-    def get_children(self, root=None, name=None, attributes=None):
+    def get_children(self, name=None, attributes=None, root=None):
         root = root if root else self.root
         children = []
         for child in root.xml_element:
@@ -131,12 +131,12 @@ class GenericXML(object):
 
         return children
 
-    def get_child(self, root=None, name=None, attributes=None):
+    def get_child(self, name=None, attributes=None, root=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
         expect(len(children) == 1, "Expected one child")
         return children[0]
 
-    def get_optional_child(self, root=None, name=None, attributes=None):
+    def get_optional_child(self, name=None, attributes=None, root=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
         expect(len(children) <= 1, "Multiple matches")
         return children[0] if children else None
@@ -153,6 +153,9 @@ class GenericXML(object):
             self.set_text(element_node, new_text)
             return new_text
         return None
+
+    def to_string(self, node, method="text"):
+        return ET.tostring(node, method=method)
 
     #
     # API for operations over the entire file
