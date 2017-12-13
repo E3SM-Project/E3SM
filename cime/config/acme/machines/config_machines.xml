@@ -1715,7 +1715,7 @@
 <machine MACH="constance">
          <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
          <OS>LINUX</OS>
-         <COMPILERS>intel,pgi</COMPILERS>
+         <COMPILERS>intel,pgi,nag</COMPILERS>
          <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$USER/csmruns/$CASE/run</RUNDIR>
@@ -1789,11 +1789,21 @@
 	   <modules compiler="pgi">
 	     <command name="load">pgi/14.10</command>
 	   </modules>
+	   <modules compiler="nag">
+	     <command name="load">nag/6.0</command>
+	     <command name="load">mkl/15.0.1</command>
+	   </modules>
 	   <modules mpilib="mvapich">
 	     <command name="load">mvapich2/2.1</command>
 	   </modules>
-	   <modules mpilib="mvapich2">
+	   <modules mpilib="mvapich2" compiler= "intel">
 	     <command name="load">mvapich2/2.1</command>
+	   </modules>
+	   <modules mpilib="mvapich2" compiler= "pgi">
+	     <command name="load">mvapich2/2.1</command>
+	   </modules>
+	   <modules mpilib="mvapich2" compiler= "nag">
+	     <command name="load">mvapich2/2.3b</command>
 	   </modules>
 	   <modules mpilib="intelmpi">
 	     <command name="load">intelmpi/5.0.1.035</command>
@@ -1801,8 +1811,14 @@
 	   <modules mpilib="openmpi">
 	     <command name="load">openmpi/1.8.3</command>
 	   </modules>
-	   <modules>
+	   <modules compiler = "intel">
 	     <command name="load">netcdf/4.3.2</command>
+	   </modules>
+	   <modules compiler = "pgi">
+	     <command name="load">netcdf/4.3.2</command>
+	   </modules>
+	   <modules compiler = "nag">
+	     <command name="load">netcdf/4.4.1.1</command>
 	   </modules>
 	 </module_system>
 	 <environment_variables>
