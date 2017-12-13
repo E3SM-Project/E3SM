@@ -321,6 +321,12 @@ def _add_lat_lon_table_to_viewer_index(root_dir):
     with open(index_page, "wb") as f:
         f.write(html)
 
+def _make_relative_lat_lon_html_path(abs_html_path):
+    """If the given path is an absolute path, make it relative to output_dir"""
+    # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
+    # to this: output_dir/viewer/table-data/ANN_metrics_table.html
+    return '/'.join(abs_html_path.split('/')[-4:])
+
 def generate_lat_lon_metrics_table(viewer, root_dir):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
     table_dir = os.path.join(root_dir, 'table-data')  # output_dir/viewer/table-data
@@ -331,8 +337,7 @@ def generate_lat_lon_metrics_table(viewer, root_dir):
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict(table_dir, season)
         html_path = _cvs_to_html(csv_path, season)
-        LAT_LON_TABLE_INFO[season]['html_path'] = html_path
-
+        LAT_LON_TABLE_INFO[season]['html_path'] = _make_relative_lat_lon_html_path(html_path)
     _create_lat_lon_table_index(viewer, root_dir)
 
 def create_viewer(root_dir, parameters, ext):
