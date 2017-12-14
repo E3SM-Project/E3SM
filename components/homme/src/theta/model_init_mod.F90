@@ -11,16 +11,17 @@
 !
 module model_init_mod
 
-  use element_mod, only: element_t
-  use derivative_mod, only: derivative_t
-  use hybvcoord_mod, 	only: hvcoord_t
+  use element_mod,        only: element_t
+  use derivative_mod,     only: derivative_t,gradient_sphere
+  use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
-  use dimensions_mod, only: np,nlev,nlevp,nelemd
-  use eos          ,  only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
-  use element_ops,   only: get_kappa_star
-  use kinds,         only: real_kind,iulog
-  use control_mod,   only: qsplit,theta_hydrostatic_mode
-  use time_mod,      only: timelevel_qdp, timelevel_t
+  use dimensions_mod,     only: np,nlev,nlevp,nelemd
+  use eos          ,      only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
+  use element_ops,        only: get_kappa_star
+  use kinds,              only: real_kind,iulog
+  use control_mod,        only: qsplit,theta_hydrostatic_mode
+  use time_mod,           only: timelevel_qdp, timelevel_t
+  use physical_constants, only: g
 
   implicit none
   
@@ -28,15 +29,30 @@ contains
 
   subroutine model_init2(elem,hybrid,deriv,hvcoord,tl,nets,nete )
 
-    type(element_t)   , intent(in) :: elem(:)
-    type(hybrid_t)    , intent(in) :: hybrid
-    type(derivative_t), intent(in) :: deriv
-    type (hvcoord_t)  , intent(in) :: hvcoord
-    type (TimeLevel_t), intent(in) :: tl
-    integer                        :: nets,nete
+    type(element_t)   , intent(inout) :: elem(:)
+    type(hybrid_t)    , intent(in)    :: hybrid
+    type(derivative_t), intent(in)    :: deriv
+    type (hvcoord_t)  , intent(in)    :: hvcoord
+    type (TimeLevel_t), intent(in)    :: tl
+    integer                           :: nets,nete
+
+    ! local variables
+    integer :: ie
 
     ! unit test for analytic jacobian used by IMEX methods
     call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
+
+    do ie=nets,nete
+      ! compute gradphi at the model surface
+      elem(ie)%derived%gradphis(:,:,:) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+      ! compute w_i(nlevp)
+      elem(ie)%state%w_i(:,:,nlevp,1) = (&
+         elem(ie)%state%v(:,:,1,nlev,1)*elem(ie)%derived%gradphis(:,:,1) + &
+         elem(ie)%state%v(:,:,2,nlev,1)*elem(ie)%derived%gradphis(:,:,2))/g
+
+      ! assign phinh_i(nlevp) to be phis
+      elem(ie)%state%phinh_i(:,:,nlevp,1) = elem(ie)%state%phis(:,:)
+    enddo 
 
     ! other theta specific model initialization should go here
   
@@ -76,7 +92,7 @@ contains
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
      enddo
      theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,tl%n0)
-     phi(:,:,:)         = elem(ie)%state%phinh(:,:,:,tl%n0)
+     phi(:,:,:)         = elem(ie)%state%phinh_i(:,:,1:nlev,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)

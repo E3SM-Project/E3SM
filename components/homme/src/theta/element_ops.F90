@@ -115,7 +115,7 @@ contains
         field = -omega/(rho *g)
 
       else
-        field =elem%state%w(:,:,:,nt)
+        field =elem%state%w_i(:,:,1:nlev,nt)
       endif
 
     case default
@@ -191,7 +191,7 @@ contains
 
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-          dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+          dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
           pnh,dpnh,exner)
 
   
@@ -231,7 +231,7 @@ contains
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-       dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+       dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
        pnh,dpnh,exner)
   dpnh_dp = dpnh/dp
   end subroutine 
@@ -258,7 +258,7 @@ contains
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-         dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+         dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
          pnh,dpnh,exner)
 
   end subroutine
@@ -289,7 +289,7 @@ contains
        call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
        
        call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-            dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+            dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
             pnh,dpnh,exner)
 
        do k=1,nlev
@@ -299,7 +299,7 @@ contains
        call preq_hydrostatic_v2(phi,elem%state%phis,temp)
        
     else
-       phi = elem%state%phinh(:,:,:,nt)
+       phi = elem%state%phinh_i(:,:,1:nlev,nt)
     endif
     
   end subroutine
@@ -317,12 +317,12 @@ contains
   type (element_t), intent(inout)   :: elem
   integer :: nin,nout
 
-  elem%state%v(:,:,:,:,nout)  =elem%state%v(:,:,:,:,nin)
-  elem%state%w(:,:,:,nout)    =elem%state%w(:,:,:,nin)
+  elem%state%v(:,:,:,:,nout)         =elem%state%v(:,:,:,:,nin)
+  elem%state%w_i(:,:,:,nout)         =elem%state%w_i(:,:,:,nin)
   elem%state%theta_dp_cp(:,:,:,nout) =elem%state%theta_dp_cp(:,:,:,nin)
-  elem%state%phinh(:,:,:,nout)  =elem%state%phinh(:,:,:,nin)
-  elem%state%dp3d(:,:,:,nout) =elem%state%dp3d(:,:,:,nin)
-  elem%state%ps_v(:,:,nout)   =elem%state%ps_v(:,:,nin)
+  elem%state%phinh_i(:,:,:,nout)     =elem%state%phinh_i(:,:,:,nin)
+  elem%state%dp3d(:,:,:,nout)        =elem%state%dp3d(:,:,:,nin)
+  elem%state%ps_v(:,:,nout)          =elem%state%ps_v(:,:,nin)
   end subroutine copy_state
 
 
@@ -362,13 +362,13 @@ contains
   enddo
 
   call get_dry_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phinh(:,:,:,nt))
+       elem%state%phinh_i(:,:,:,nt))
 
 
   ! debug
   kappa_star=kappa   
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phinh(:,:,:,nt),&
+       elem%state%phinh_i(:,:,:,nt),&
        elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
   do k=1,nlev
      if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
@@ -394,13 +394,13 @@ contains
   type(element_t),  intent(inout) :: elem
 
   ! set prognostic state variables at level midpoints
-  elem%state%v   (i,j,1,k,n0:n1) = u
-  elem%state%v   (i,j,2,k,n0:n1) = v
-  elem%state%w   (i,j,k,  n0:n1) = w
-  elem%state%dp3d(i,j,k,  n0:n1) = dp
-  elem%state%ps_v(i,j,    n0:n1) = ps
-  elem%state%phinh(i,j,k, n0:n1) = g*zm
-  elem%state%phis(i,j)           = phis
+  elem%state%v   (i,j,1,k,n0:n1)   = u
+  elem%state%v   (i,j,2,k,n0:n1)   = v
+  elem%state%w_i  (i,j,k,  n0:n1)  = w
+  elem%state%dp3d(i,j,k,  n0:n1)   = dp
+  elem%state%ps_v(i,j,    n0:n1)   = ps
+  elem%state%phinh_i(i,j,k, n0:n1) = g*zm
+  elem%state%phis(i,j)             = phis
   elem%state%theta_dp_cp(i,j,k,n0:n1)=T*Cp*dp*((p/p0)**(-kappa))
 
   end subroutine set_state
@@ -425,14 +425,14 @@ contains
 
   do n=n0,n1
     ! set prognostic state variables at level midpoints
-    elem%state%v   (:,:,1,:,n) = u
-    elem%state%v   (:,:,2,:,n) = v
-    elem%state%w   (:,:,:,  n) = w
-    elem%state%dp3d(:,:,:,  n) = dp
-    elem%state%ps_v(:,:,    n) = ps
-    elem%state%phinh(:,:,:, n) = g*zm
-    elem%state%phis(:,:)       = phis
-    elem%state%theta_dp_cp(:,:,:,n)=T*cp_star*dp*((p/p0)**(-kappa_star))
+    elem%state%v   (:,:,1,:,n)        = u
+    elem%state%v   (:,:,2,:,n)        = v
+    elem%state%w_i (:,:,1:nlev,  n)   = w
+    elem%state%dp3d(:,:,:,  n)        = dp
+    elem%state%ps_v(:,:,    n)        = ps
+    elem%state%phinh_i(:,:,1:nlev, n) = g*zm
+    elem%state%phis(:,:)              = phis
+    elem%state%theta_dp_cp(:,:,:,n)   = T*cp_star*dp*((p/p0)**(-kappa_star))
   end do
 
   end subroutine set_elem_state
@@ -455,13 +455,13 @@ contains
 
     integer :: k
 
-    ! set prognostic state variables at level midpoints
+    ! set prognostic state variables at level midpoints (and interfaces)????
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
-    ps  = elem%state%ps_v(:,:,    nt)
+    ps  = elem%state%ps_v(:,:,  nt)
     phis= elem%state%phis(:,:)
-    w   = elem%state%w   (:,:,  :,nt)
-    phi = elem%state%phinh(:,:, :,nt)
+    w   = elem%state%w_i   (:,:,1:nlev,nt)
+    phi = elem%state%phinh_i(:,:,1:nlev,nt)
 
     do k=1,nlev
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
@@ -528,7 +528,7 @@ contains
 
   elem%derived%FM(:,:,1,:) = f_d * ( elem%state%v(:,:,1,:,n) - u0 )
   elem%derived%FM(:,:,2,:) = f_d * ( elem%state%v(:,:,2,:,n) - v0)
-  elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w(:,:,:,n)  )
+  elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w_i(:,:,1:nlev,n)  )
 
   end subroutine 
 
@@ -556,11 +556,11 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
 
   ntQ=1
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-  call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phinh(:,:,:,ns))
+  call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phinh_i(:,:,:,ns))
 
   ! verify discrete hydrostatic balance
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,ns),dp,&
-       elem%state%phinh(:,:,:,ns),&
+       elem%state%phinh_i(:,:,:,ns),&
        elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
   
   do k=1,nlev

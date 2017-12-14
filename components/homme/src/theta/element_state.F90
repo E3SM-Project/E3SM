@@ -21,15 +21,15 @@ module element_state
     ! vertically-lagrangian code advects dp3d instead of ps_v
     ! tracers Q, Qdp always use 2 level time scheme
 
-    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)            ! horizontal velocity 
-    real (kind=real_kind) :: w   (np,np,nlev,timelevels)              ! vertical velocity                  
-    real (kind=real_kind) :: theta_dp_cp(np,np,nlev,timelevels)       ! potential temperature                       
-    real (kind=real_kind) :: phinh(np,np,nlev,timelevels)             ! geopotential used by NH model 
-    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)              ! delta p on levels                  
-    real (kind=real_kind) :: ps_v(np,np,timelevels)                   ! surface pressure                   
-    real (kind=real_kind) :: phis(np,np)                              ! surface geopotential (prescribed)  
-    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               
-    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)               ! Tracer mass                        
+    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)        ! horizontal velocity 
+    real (kind=real_kind) :: w_i (np,np,nlevp,timelevels)         ! vertical velocity at interfaces
+    real (kind=real_kind) :: theta_dp_cp(np,np,nlev,timelevels)   ! potential temperature                       
+    real (kind=real_kind) :: phinh_i(np,np,nlevp,timelevels)      ! geopotential used by NH model at interfaces
+    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)          ! delta p on levels                  
+    real (kind=real_kind) :: ps_v(np,np,timelevels)               ! surface pressure                   
+    real (kind=real_kind) :: phis(np,np)                          ! surface geopotential (prescribed)  
+    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)             ! Tracer concentration               
+    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)           ! Tracer mass                        
 
   end type elem_state_t
 
@@ -59,6 +59,8 @@ module element_state
     real (kind=real_kind) :: FM(np,np,3,nlev)                      ! momentum forcing
     real (kind=real_kind) :: FT(np,np,nlev)                        ! temperature forcing
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v
+
+    real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
 
   end type derived_state_t
   

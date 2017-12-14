@@ -202,10 +202,10 @@ contains
                - elem(ie)%state%theta_dp_cp(:,:,:,n0) )/4
           elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
                   - elem(ie)%state%dp3d(:,:,:,n0) )/4
-          elem(ie)%state%w(:,:,:,nm1)= (5*elem(ie)%state%w(:,:,:,nm1) &
-                  - elem(ie)%state%w(:,:,:,n0) )/4
-          elem(ie)%state%phinh(:,:,:,nm1)= (5*elem(ie)%state%phinh(:,:,:,nm1) &
-                  - elem(ie)%state%phinh(:,:,:,n0) )/4
+          elem(ie)%state%w_i(:,:,1:nlev,nm1)= (5*elem(ie)%state%w_i(:,:,1:nlev,nm1) &
+                  - elem(ie)%state%w_i(:,:,1:nlev,n0) )/4
+          elem(ie)%state%phinh_i(:,:,1:nlev,nm1)= (5*elem(ie)%state%phinh_i(:,:,1:nlev,nm1) &
+                  - elem(ie)%state%phinh_i(:,:,1:nlev,n0) )/4
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
@@ -238,10 +238,10 @@ contains
                - elem(ie)%state%theta_dp_cp(:,:,:,n0) )/4
           elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
                   - elem(ie)%state%dp3d(:,:,:,n0) )/4
-          elem(ie)%state%w(:,:,:,nm1)= (5*elem(ie)%state%w(:,:,:,nm1) &
-                  - elem(ie)%state%w(:,:,:,n0) )/4
-          elem(ie)%state%phinh(:,:,:,nm1)= (5*elem(ie)%state%phinh(:,:,:,nm1) &
-                  - elem(ie)%state%phinh(:,:,:,n0) )/4
+          elem(ie)%state%w_i(:,:,:,nm1)= (5*elem(ie)%state%w_i(:,:,:,nm1) &
+                  - elem(ie)%state%w_i(:,:,:,n0) )/4
+          elem(ie)%state%phinh_i(:,:,:,nm1)= (5*elem(ie)%state%phinh_i(:,:,:,nm1) &
+                  - elem(ie)%state%phinh_i(:,:,:,n0) )/4
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
@@ -561,7 +561,7 @@ contains
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
      call get_cp_star(cp_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
      call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
-          elem(ie)%state%phinh(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner)
+          elem(ie)%state%phinh_i(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner)
 
      elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
           *dp(:,:,:)/exner(:,:,:)
@@ -585,7 +585,7 @@ contains
 
   do ie=nets,nete
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
-     elem(ie)%state%w(:,:,:,np1) = elem(ie)%state%w(:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
+     elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
   enddo
   end subroutine applyCAMforcing_dynamics
 
@@ -698,7 +698,7 @@ contains
         do k=1,nlev
            elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt)-&
                 theta_ref(:,:,k,ie)
-           elem(ie)%state%phinh(:,:,k,nt)=elem(ie)%state%phinh(:,:,k,nt)-&
+           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt)-&
                 phi_ref(:,:,k,ie)
            elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)-&
                 dp_ref(:,:,k,ie)
@@ -728,8 +728,8 @@ contains
               if (nu_top>0 .and. k<=3) then
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-                 lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w          (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-                 lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh      (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
 
@@ -786,7 +786,7 @@ contains
               !add ref state back
               elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt)+&
                    theta_ref(:,:,k,ie)
-              elem(ie)%state%phinh(:,:,k,nt)=elem(ie)%state%phinh(:,:,k,nt)+&
+              elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt)+&
                    phi_ref(:,:,k,ie)
               elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)+&
                    dp_ref(:,:,k,ie)
@@ -801,16 +801,13 @@ contains
         do k=1,nlev
            elem(ie)%state%v(:,:,:,k,nt)=elem(ie)%state%v(:,:,:,k,nt) + &
                 vtens(:,:,:,k,ie)
-           elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
+           elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
                 +stens(:,:,k,3,ie)
            
            elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
                 +stens(:,:,k,1,ie)
            
-           elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
-                +stens(:,:,k,3,ie)
-           
-           elem(ie)%state%phinh(:,:,k,nt)=elem(ie)%state%phinh(:,:,k,nt) &
+           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
                 +stens(:,:,k,4,ie)
         enddo
 
@@ -852,7 +849,7 @@ contains
            else
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
-                   elem(ie)%state%w(:,:,k,nt)*stens(:,:,k,3,ie)  +&
+                   elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
                    stens(:,:,k,4,ie) ) / &
                    (exner(:,:,k)*Cp)  
            endif
@@ -939,10 +936,10 @@ contains
              elem(ie)%state%theta_dp_cp(:,:,:,nt)/(Cp*elem(ie)%state%dp3d(:,:,:,nt))
 
      ! perturbation variables
-     u_prime(:,:,:,:)  = elem(ie)%state%v(:,:,:,:,nt)        -state0(ie)%v(:,:,:,:,1)
-     w_prime(:,:,:)    = elem(ie)%state%w(:,:,:,nt)          -state0(ie)%w(:,:,:,1)
-     dp_prime(:,:,:)   = elem(ie)%state%dp3d(:,:,:,nt)       -state0(ie)%dp3d(:,:,:,1)
-     phi_prime(:,:,:)  = elem(ie)%state%phinh(:,:,:,nt)      -state0(ie)%phinh(:,:,:,1)
+     u_prime(:,:,:,:)  = elem(ie)%state%v(:,:,:,:,nt)          -state0(ie)%v(:,:,:,:,1)
+     w_prime(:,:,:)    = elem(ie)%state%w_i(:,:,1:nlev,nt)     -state0(ie)%w_i(:,:,1:nlev,1)
+     dp_prime(:,:,:)   = elem(ie)%state%dp3d(:,:,:,nt)         -state0(ie)%dp3d(:,:,:,1)
+     phi_prime(:,:,:)  = elem(ie)%state%phinh_i(:,:,1:nlev,nt) -state0(ie)%phinh_i(:,:,1:nlev,1)
      theta_prime(:,:,:)= elem(ie)%state%theta_dp_cp(:,:,:,nt)-theta_ref(:,:,:)
 
      ! vertical viscosity
@@ -968,10 +965,10 @@ contains
              laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)  )
 
         stens(:,:,k,3,ie) = (stens(:,:,k,3,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),deriv,elem(ie),var_coef=.false.) )
+             laplace_sphere_wk(elem(ie)%state%w_i(:,:,k,nt),deriv,elem(ie),var_coef=.false.) )
 
         stens(:,:,k,4,ie) = (stens(:,:,k,4,ie)*elem(ie)%spheremp(:,:) + &
-             laplace_sphere_wk(elem(ie)%state%phinh(:,:,k,nt),deriv,elem(ie),var_coef=.false.) ) 
+             laplace_sphere_wk(elem(ie)%state%phinh_i(:,:,k,nt),deriv,elem(ie),var_coef=.false.) ) 
 
      enddo
 
@@ -1005,10 +1002,10 @@ contains
         elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt) &
              +mu_s*dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
 
-        elem(ie)%state%w(:,:,k,nt)=elem(ie)%state%w(:,:,k,nt) &
+        elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
              +mu_s*dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
         
-        elem(ie)%state%phinh(:,:,k,nt)=elem(ie)%state%phinh(:,:,k,nt) &
+        elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
              +mu_s*dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)
         
      enddo
@@ -1075,10 +1072,12 @@ contains
   real (kind=real_kind) :: dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)          ! exner nh pressure
   real (kind=real_kind) :: dpnh_dp(np,np,nlev)        ! dpnh / dp3d
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlev)      ! dpnh_dp at interfaces
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
   real (kind=real_kind) :: KE(np,np,nlev)             ! Kinetic energy
   real (kind=real_kind) :: gradexner(np,np,2,nlev)    ! grad(p^kappa)
-  real (kind=real_kind) :: gradphi(np,np,2,nlev)     
+  real (kind=real_kind) :: gradphinh_i(np,np,2,nlev ) ! gradphi at interfaces
+  real (kind=real_kind) :: gradphinh(np,np,2,nlev)     ! gradphi at cell centers
   real (kind=real_kind) :: gradKE(np,np,2,nlev)       ! grad(0.5 u^T u )
 
   real (kind=real_kind) :: grad_kappastar(np,np,2,nlev)
@@ -1087,9 +1086,10 @@ contains
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
   real (kind=real_kind) :: v_theta(np,np,2,nlev)
   real (kind=real_kind) :: div_v_theta(np,np,nlev)
-  real (kind=real_kind) :: v_gradphi(np,np,nlev)
+  real (kind=real_kind) :: v_gradphinh_i(np,np,nlev) ! v*gradphi at interfaces
   real (kind=real_kind) :: v_gradKE(np,np,nlev)     
   real (kind=real_kind) :: vdp(np,np,2,nlev)
+  real (kind=real_kind) :: vi(np,np,2,nlevp)
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
@@ -1115,7 +1115,7 @@ contains
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
-     phi => elem(ie)%state%phinh(:,:,:,n0)
+     phi => elem(ie)%state%phinh_i(:,:,1:nlevp,n0)
 
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
 
@@ -1213,7 +1213,7 @@ contains
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
         ! ==============================================
         ! TODO: remove theta from s_state and s_vadv
-        s_state(:,:,:,1)=elem(ie)%state%w(:,:,:,n0)
+        s_state(:,:,:,1)=elem(ie)%state%w_i(:,:,1:nlev,n0)
         s_state(:,:,:,2)=phi
         call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,2,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
         !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
@@ -1258,7 +1258,20 @@ contains
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
+     ! ================================            
+     ! average to get horizontal velocity at intefaces
+     ! ================================
+     vi(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)
+#if (defined COLUMN_OPENMP)
+     !$omp parallel do private(k)          
+     do k=2,nlev-1                                                                      
+       vi(:,:,1:2,k) = (elem(ie)%state%v(:,:,1:2,k,n0)+  elem(ie)%state%v(:,:,1:2,k-1,n0))/2
+     enddo
+#endif
+     vi(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
 
+
+     gradphinh_i(:,:,:,1) = gradient_sphere(phi(:,:,1),deriv,elem(ie)%Dinv)
 
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
@@ -1272,9 +1285,13 @@ contains
         ! ================================================
         ! w,theta,phi tendencies:
         ! ================================================
-        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
-        v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
-             +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
+        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
+        v_gradw(:,:,k) = vi(:,:,1,k)*vtemp(:,:,1) + vi(:,:,2,k)*vtemp(:,:,2)
+        if (k.eq.1) then
+          dpnh_dp_i(:,:,k) = dpnh_dp_i(:,:,k)
+        else
+          dpnh_dp_i(:,:,k) = (dpnh_dp(:,:,k)+dpnh_dp(:,:,k-1))/2
+        endif
         stens(:,:,k,1) = (-s_vadv(:,:,k,1) - v_gradw(:,:,k))*scale1 - scale2*g*(1-dpnh_dp(:,:,k) )
         v_theta(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*               &
           elem(ie)%state%theta_dp_cp(:,:,k,n0)
@@ -1283,13 +1300,18 @@ contains
           *elem(ie)%state%theta_dp_cp(:,:,k,n0)
         div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
         stens(:,:,k,3)=(-s_vadv(:,:,k,3)-div_v_theta(:,:,k))*scale1
+        if (k.lt.nlev) then  
+          gradphinh_i(:,:,:,k+1) = gradient_sphere(phi(:,:,k+1),deriv,elem(ie)%Dinv)
+          gradphinh(:,:,:,k) = (gradphinh_i(:,:,:,k)+gradphinh_i(:,:,:,k+1))/2
+        else
+          gradphinh(:,:,:,k) = (gradphinh_i(:,:,:,k)+elem(ie)%derived%gradphis(:,:,:))/2
+        endif
 
-        gradphi(:,:,:,k) = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
+        v_gradphinh_i(:,:,k) = vi(:,:,1,k)*gradphinh_i(:,:,1,k) &
+             +vi(:,:,2,k)*gradphinh_i(:,:,2,k) 
 
-        v_gradphi(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*gradphi(:,:,1,k) &
-             +elem(ie)%state%v(:,:,2,k,n0)*gradphi(:,:,2,k) 
         ! use of s_vadv(:,:,k,2) here is correct since this corresponds to etadot d(phi)/deta
-        stens(:,:,k,2) =  (-s_vadv(:,:,k,2) - v_gradphi(:,:,k))*scale1 + scale2*g*elem(ie)%state%w(:,:,k,n0)
+        stens(:,:,k,2) =  (-s_vadv(:,:,k,2) - v_gradphinh_i(:,:,k))*scale1 + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
 
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
@@ -1305,7 +1327,7 @@ contains
 
               vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - gradKE(i,j,1,k) - gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
+                   - gradKE(i,j,1,k) - gradphinh(i,j,1,k)*dpnh_dp(i,j,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,1,k)&
                   +theta_cp(i,j,k)*grad_kappastar(i,j,1,k)*exner(i,j,k)*log(pnh(i,j,k)/p0)&
                   )*scale1
@@ -1313,7 +1335,7 @@ contains
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
-                   - gradKE(i,j,2,k) - gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
+                   - gradKE(i,j,2,k) - gradphinh(i,j,2,k)*dpnh_dp(i,j,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,2,k) &
                   +theta_cp(i,j,k)*grad_kappastar(i,j,2,k)*exner(i,j,k)*log(pnh(i,j,k)/p0) &
                   )*scale1
@@ -1374,9 +1396,9 @@ contains
                   -KE(i,j,k)*divdp(i,j,k)
                !  Form horiz advection of KE-w
                   elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)-   &
-                  dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    
+                  dp3d(i,j,k) * elem(ie)%state%w_i(i,j,k,n0) * v_gradw(i,j,k)    
                   elem(ie)%accum%KEw_horiz2(i,j)=elem(ie)%accum%KEw_horiz2(i,j)-   &
-                  0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
+                  0.5*(elem(ie)%state%w_i(i,j,k,n0))**2 * divdp(i,j,k) 
                !  Form vertical advection of KE-u 
                   elem(ie)%accum%KEu_vert1(i,j)=elem(ie)%accum%KEu_vert1(i,j)- &
                   (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
@@ -1386,9 +1408,9 @@ contains
                        (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
                !  Form vertical advection of KE-w
                   elem(ie)%accum%KEw_vert1(i,j)=elem(ie)%accum%KEw_vert1(i,j)      &
-                  -s_vadv(i,j,k,1)*elem(ie)%state%w(i,j,k,n0)*dp3d(i,j,k)    
+                  -s_vadv(i,j,k,1)*elem(ie)%state%w_i(i,j,k,n0)*dp3d(i,j,k)    
                   elem(ie)%accum%KEw_vert2(i,j)=elem(ie)%accum%KEw_vert2(i,j)      &
-                  -0.5*d_eta_dot_dpdn_dn*(elem(ie)%state%w(i,j,k,n0)**2)
+                  -0.5*d_eta_dot_dpdn_dn*(elem(ie)%state%w_i(i,j,k,n0)**2)
 
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
@@ -1401,7 +1423,7 @@ contains
                   -phi(i,j,k)*divdp(i,j,k) 
                !  Form PEhoriz2                                                &
                   elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
-                  -dp3d(i,j,k)*v_gradphi(i,j,k)      
+                  -dp3d(i,j,k)*v_gradphinh_i(i,j,k)      
                !  Form PEvert1
                   elem(ie)%accum%PEvert1(i,j) = (elem(ie)%accum%PEvert1(i,j))   &
                   -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
@@ -1418,18 +1440,18 @@ contains
                   -exner(i,j,k)*div_v_theta(i,j,k)
                !  Form T2  = -S2 (no reason to compute S2?)
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
-                  (g*elem(ie)%state%w(i,j,k,n0)-v_gradphi(i,j,k))               &
+                  (g*elem(ie)%state%w_i(i,j,k,n0)-v_gradphinh_i(i,j,k))               &
                   *dpnh(i,j,k)                                 
                !  Form S2
                   elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
-                  +(v_gradphi(i,j,k)-g*elem(ie)%state%w(i,j,k,n0))              &
+                  +(v_gradphinh_i(i,j,k)-g*elem(ie)%state%w_i(i,j,k,n0))              &
                   *dpnh(i,j,k)
                !  Form P1  = -P2  (no reason to compute P2?)
                   elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
-                  -g*(elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
+                  -g*(elem(ie)%state%w_i(i,j,k,n0)) * dp3d(i,j,k)
                !  Form P2
                   elem(ie)%accum%P2(i,j)=elem(ie)%accum%P2(i,j)                 &
-                  + g * (elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
+                  + g * (elem(ie)%state%w_i(i,j,k,n0)) * dp3d(i,j,k)
               enddo
             enddo
           enddo 
@@ -1444,11 +1466,11 @@ contains
           + dt2*vtens1(:,:,k) )
         elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%v(:,:,2,k,nm1) &
           +  dt2*vtens2(:,:,k) )
-        elem(ie)%state%w(:,:,k,np1)    = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w(:,:,k,nm1)   &
+        elem(ie)%state%w_i(:,:,k,np1)    = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w_i(:,:,k,nm1)   &
           + dt2*stens(:,:,k,1))
         elem(ie)%state%theta_dp_cp(:,:,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%theta_dp_cp(:,:,k,nm1) &
           + dt2*stens(:,:,k,3))
-        elem(ie)%state%phinh(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%phinh(:,:,k,nm1) & 
+        elem(ie)%state%phinh_i(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%phinh_i(:,:,k,nm1) & 
           + dt2*stens(:,:,k,2))
 
         elem(ie)%state%dp3d(:,:,k,np1) = &
@@ -1462,9 +1484,9 @@ contains
      kptr=kptr+nlev
      call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
      kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%w(:,:,:,np1),nlev,kptr,ie)
+     call edgeVpack(edge6, elem(ie)%state%w_i(:,:,:,np1),nlev,kptr,ie)
      kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%phinh(:,:,:,np1),nlev,kptr,ie)
+     call edgeVpack(edge6, elem(ie)%state%phinh_i(:,:,:,np1),nlev,kptr,ie)
      kptr=kptr+nlev
      call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
    end do ! end do for the ie=nets,nete loop
@@ -1479,9 +1501,9 @@ contains
      kptr=kptr+nlev
      call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
      kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%w(:,:,:,np1), nlev, kptr, ie)
+     call edgeVunpack(edge6, elem(ie)%state%w_i(:,:,:,np1), nlev, kptr, ie)
      kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%phinh(:,:,:,np1), nlev, kptr, ie)
+     call edgeVunpack(edge6, elem(ie)%state%phinh_i(:,:,:,np1), nlev, kptr, ie)
      kptr=kptr+nlev
      call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
 
@@ -1495,11 +1517,14 @@ contains
      do k=1,nlev
         elem(ie)%state%dp3d(:,:,k,np1) =elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
         elem(ie)%state%theta_dp_cp(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%theta_dp_cp(:,:,k,np1)
-        elem(ie)%state%w(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w(:,:,k,np1)
-        elem(ie)%state%phinh(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%phinh(:,:,k,np1)
+        elem(ie)%state%w_i(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w_i(:,:,k,np1)
+        elem(ie)%state%phinh_i(:,:,k,np1)=elem(ie)%rspheremp(:,:)*elem(ie)%state%phinh_i(:,:,k,np1)
         elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
         elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
+     ! finally update w(np1,nlevp) 
+     elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+       elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2)
   end do
 
   call t_stopf('compute_andor_apply_rhs')
@@ -1582,7 +1607,7 @@ contains
     ! approximate the initial error of f(x) \approx 0
     dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
     theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
-    phi_np1 => elem(ie)%state%phinh(:,:,:,np1)
+    phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
     if (theta_hydrostatic_mode) then
@@ -1602,8 +1627,8 @@ contains
     kappa_star_i(:,:,nlev+1) = kappa_star(:,:,nlev)
 
    ! we first compute the initial Jacobian J0 and residual r0 and their infinity norms
-     Fn(:,:,1:nlev,1) = phi_np1-elem(ie)%state%phinh(:,:,:,n0) &
-       - dt2*g*elem(ie)%state%w(:,:,:,n0) + (dt2*g)**2 * (1.0-dpnh_dp(:,:,:))
+     Fn(:,:,1:nlev,1) = phi_np1-elem(ie)%state%phinh_i(:,:,:,n0) &
+       - dt2*g*elem(ie)%state%w_i(:,:,:,n0) + (dt2*g)**2 * (1.0-dpnh_dp(:,:,:))
 
      norminfr0=0.d0
      norminfJ0=0.d0
@@ -1656,11 +1681,11 @@ contains
         kappa_star,pnh,dpnh,exner,pnh_i_out=pnh_i)
       dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
       ! update approximate solution of w
-      elem(ie)%state%w(:,:,1:nlev,np1) = elem(ie)%state%w(:,:,1:nlev,n0) - g*dt2 * &
+      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,n0) - g*dt2 * &
         (1.0-dpnh_dp(:,:,:))
       ! update right-hand side of phi
-      Fn(:,:,1:nlev,1) = phi_np1-elem(ie)%state%phinh(:,:,:,n0) &
-        - dt2*g*elem(ie)%state%w(:,:,:,n0) + (dt2*g)**2 * (1.0-dpnh_dp(:,:,:))
+      Fn(:,:,1:nlev,1) = phi_np1-elem(ie)%state%phinh_i(:,:,:,n0) &
+        - dt2*g*elem(ie)%state%w_i(:,:,:,n0) + (dt2*g)**2 * (1.0-dpnh_dp(:,:,:))
 
       ! compute relative errors
       itererrtemp=0.d0

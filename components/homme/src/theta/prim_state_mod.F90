@@ -217,7 +217,7 @@ contains
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
-       wmax_local(ie)    = MAXVAL(elem(ie)%state%w(:,:,:,n0))
+       wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        thetamax_local(ie) = MAXVAL(elem(ie)%state%theta_dp_cp(:,:,:,n0)) 
 
@@ -236,7 +236,7 @@ contains
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
-       Wmin_local(ie)    = MINVAL(elem(ie)%state%w(:,:,:,n0))
+       Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
        thetamin_local(ie) = MINVAL(elem(ie)%state%theta_dp_cp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
@@ -257,7 +257,7 @@ contains
 
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
-       Wsum_local(ie)    = SUM(elem(ie)%state%w(:,:,:,n0))
+       Wsum_local(ie)    = SUM(elem(ie)%state%w_i(:,:,:,n0))
        thetasum_local(ie)= SUM(elem(ie)%state%theta_dp_cp(:,:,:,n0))
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
@@ -817,14 +817,14 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
-            elem(ie)%state%phinh(:,:,:,t1), &
+            elem(ie)%state%phinh_i(:,:,:,t1), &
             elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner,exner_i,pnh_i)
    
  !   KE   .5 dp/dn U^2
        do k=1,nlev
           E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
                 elem(ie)%state%v(:,:,2,k,t1)**2 + &
-                elem(ie)%state%w(:,:,k,t1)**2 ) *0.5 
+                elem(ie)%state%w_i(:,:,k,t1)**2 )/2 
           sumlk(:,:,k) = E*dpt1(:,:,k)
        enddo
        suml=0

@@ -24,8 +24,8 @@ contains
     do ie=nets,nete
       state(ie,:,:,:,1) = elem(ie)%state%v(:,:,1,:,n)
       state(ie,:,:,:,2) = elem(ie)%state%v(:,:,2,:,n)
-      state(ie,:,:,:,3) = elem(ie)%state%w(:,:,:,n)
-      state(ie,:,:,:,4) = elem(ie)%state%phinh(:,:,:,n)
+      state(ie,:,:,:,3) = elem(ie)%state%w_i(:,:,1:nlev,n)
+      state(ie,:,:,:,4) = elem(ie)%state%phinh_i(:,:,1:nlev,n)
       state(ie,:,:,:,5) = elem(ie)%state%theta_dp_cp(:,:,:,n)
       state(ie,:,:,:,6) = elem(ie)%state%dp3d(:,:,:,n)
     end do
@@ -42,12 +42,12 @@ contains
 
     integer :: ie
     do ie=nets,nete
-      elem(ie)%state%v(:,:,1,:,n)         = state(ie,:,:,:,1)
-      elem(ie)%state%v(:,:,2,:,n)         = state(ie,:,:,:,2)
-      elem(ie)%state%w(:,:,:,n)           = state(ie,:,:,:,3)
-      elem(ie)%state%phinh(:,:,:,n)       = state(ie,:,:,:,4)
-      elem(ie)%state%theta_dp_cp(:,:,:,n) = state(ie,:,:,:,5)
-      elem(ie)%state%dp3d(:,:,:,n)        = state(ie,:,:,:,6)
+      elem(ie)%state%v(:,:,1,:,n)          = state(ie,:,:,:,1)
+      elem(ie)%state%v(:,:,2,:,n)          = state(ie,:,:,:,2)
+      elem(ie)%state%w_i(:,:,1:nlev,n)     = state(ie,:,:,:,3)
+      elem(ie)%state%phinh_i(:,:,1:nlev,n) = state(ie,:,:,:,4)
+      elem(ie)%state%theta_dp_cp(:,:,:,n)  = state(ie,:,:,:,5)
+      elem(ie)%state%dp3d(:,:,:,n)         = state(ie,:,:,:,6)
     end do
 
   end subroutine state_read
@@ -142,62 +142,62 @@ contains
 
     if (alpha==1) then ! add two elements
       do ie=nets,nete
-        elem(ie)%state%v(:,:,1,:,n1)         = a1*elem(ie)%state%v(:,:,1,:,n2) + &
+        elem(ie)%state%v(:,:,1,:,n1)           = a1*elem(ie)%state%v(:,:,1,:,n2) + &
           a2*elem(ie)%state%v(:,:,1,:,n3)
-        elem(ie)%state%v(:,:,2,:,n1)         = a1*elem(ie)%state%v(:,:,2,:,n2) + &
+        elem(ie)%state%v(:,:,2,:,n1)           = a1*elem(ie)%state%v(:,:,2,:,n2) + &
           a2*elem(ie)%state%v(:,:,2,:,n3)
-        elem(ie)%state%w(:,:,:,n1)           = a1*elem(ie)%state%w(:,:,:,n2) + &
-          a2*elem(ie)%state%w(:,:,:,n3)
-        elem(ie)%state%phinh(:,:,:,n1)         = a1*elem(ie)%state%phinh(:,:,:,n2) + &
-          a2*elem(ie)%state%phinh(:,:,:,n3)
-        elem(ie)%state%theta_dp_cp(:,:,:,n1) = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
+        elem(ie)%state%w_i(:,:,1:nlev,n1)      = a1*elem(ie)%state%w_i(:,:,1:nlev,n2) + &
+          a2*elem(ie)%state%w_i(:,:,1:nlev,n3)
+        elem(ie)%state%phinh_i(:,:,1:nlev,n1)  = a1*elem(ie)%state%phinh_i(:,:,1:nlev,n2) + &
+          a2*elem(ie)%state%phinh_i(:,:,1:nlev,n3)
+        elem(ie)%state%theta_dp_cp(:,:,:,n1)   = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
           a2*elem(ie)%state%theta_dp_cp(:,:,:,n3)
-        elem(ie)%state%dp3d(:,:,:,n1)        = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
+        elem(ie)%state%dp3d(:,:,:,n1)          = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
           a2*elem(ie)%state%dp3d(:,:,:,n3)
       end do
     elseif (alpha==2) then ! add element with state
      do ie=nets,nete
-       elem(ie)%state%v(:,:,1,:,n1)         = a3*state(ie,:,:,:,1) + &
+       elem(ie)%state%v(:,:,1,:,n1)          = a3*state(ie,:,:,:,1) + &
          a1*elem(ie)%state%v(:,:,1,:,n2)
-       elem(ie)%state%v(:,:,2,:,n1)         = a3*state(ie,:,:,:,2) + &
+       elem(ie)%state%v(:,:,2,:,n1)          = a3*state(ie,:,:,:,2) + &
          a1*elem(ie)%state%v(:,:,2,:,n2)
-       elem(ie)%state%w(:,:,:,n1)           = a3*state(ie,:,:,:,3) + &
-         a1*elem(ie)%state%w(:,:,:,n2)
-       elem(ie)%state%phinh(:,:,:,n1)         = a3*state(ie,:,:,:,4) + &
-         a1*elem(ie)%state%phinh(:,:,:,n2)
-       elem(ie)%state%theta_dp_cp(:,:,:,n1) = a3*state(ie,:,:,:,5) + &
+       elem(ie)%state%w_i(:,:,1:nlev,n1)     = a3*state(ie,:,:,:,3) + &
+         a1*elem(ie)%state%w_i(:,:,1:nlev,n2)
+       elem(ie)%state%phinh_i(:,:,1:nlev,n1) = a3*state(ie,:,:,:,4) + &
+         a1*elem(ie)%state%phinh_i(:,:,1:nlev,n2)
+       elem(ie)%state%theta_dp_cp(:,:,:,n1)  = a3*state(ie,:,:,:,5) + &
          a1*elem(ie)%state%theta_dp_cp(:,:,:,n2)
-       elem(ie)%state%dp3d(:,:,:,n1)        = a3*state(ie,:,:,:,6) + &
+       elem(ie)%state%dp3d(:,:,:,n1)         = a3*state(ie,:,:,:,6) + &
          a1*elem(ie)%state%dp3d(:,:,:,n2)
      end do
     elseif (alpha==3) then ! add 2 elements with state
      do ie=nets,nete
-        elem(ie)%state%v(:,:,1,:,n1)         = a1*elem(ie)%state%v(:,:,1,:,n2) + &
+        elem(ie)%state%v(:,:,1,:,n1)          = a1*elem(ie)%state%v(:,:,1,:,n2) + &
           a2*elem(ie)%state%v(:,:,1,:,n3) + a3*state(ie,:,:,:,1)
-        elem(ie)%state%v(:,:,2,:,n1)         = a1*elem(ie)%state%v(:,:,2,:,n2) + &
+        elem(ie)%state%v(:,:,2,:,n1)          = a1*elem(ie)%state%v(:,:,2,:,n2) + &
           a2*elem(ie)%state%v(:,:,2,:,n3) + a3*state(ie,:,:,:,2)
-        elem(ie)%state%w(:,:,:,n1)           = a1*elem(ie)%state%w(:,:,:,n2) + &
-          a2*elem(ie)%state%w(:,:,:,n3) + a3*state(ie,:,:,:,3)
-        elem(ie)%state%phinh(:,:,:,n1)         = a1*elem(ie)%state%phinh(:,:,:,n2) + &
-          a2*elem(ie)%state%phinh(:,:,:,n3) + a3*state(ie,:,:,:,4)
-        elem(ie)%state%theta_dp_cp(:,:,:,n1) = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
+        elem(ie)%state%w_i(:,:,1:nlev,n1)     = a1*elem(ie)%state%w_i(:,:,1:nlev,n2) + &
+          a2*elem(ie)%state%w_i(:,:,1:nlev,n3) + a3*state(ie,:,:,:,3)
+        elem(ie)%state%phinh_i(:,:,1:nlev,n1) = a1*elem(ie)%state%phinh_i(:,:,1:nlev,n2) + &
+          a2*elem(ie)%state%phinh_i(:,:,1:nlev,n3) + a3*state(ie,:,:,:,4)
+        elem(ie)%state%theta_dp_cp(:,:,:,n1)  = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
           a2*elem(ie)%state%theta_dp_cp(:,:,:,n3) + a3*state(ie,:,:,:,5)
-        elem(ie)%state%dp3d(:,:,:,n1)        = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
+        elem(ie)%state%dp3d(:,:,:,n1)         = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
           a2*elem(ie)%state%dp3d(:,:,:,n3) + a3*state(ie,:,:,:,6)
       end do
     else ! if alpha ==4 then += an element with 2 other elements
       do ie=nets,nete
-        elem(ie)%state%v(:,:,1,:,n1)         = a1*elem(ie)%state%v(:,:,1,:,n2) + &
+        elem(ie)%state%v(:,:,1,:,n1)          = a1*elem(ie)%state%v(:,:,1,:,n2) + &
           a2*elem(ie)%state%v(:,:,1,:,n3) + elem(ie)%state%v(:,:,1,:,n1)
-        elem(ie)%state%v(:,:,2,:,n1)         = a1*elem(ie)%state%v(:,:,2,:,n2) + &
+        elem(ie)%state%v(:,:,2,:,n1)          = a1*elem(ie)%state%v(:,:,2,:,n2) + &
           a2*elem(ie)%state%v(:,:,2,:,n3) + elem(ie)%state%v(:,:,2,:,n1)
-        elem(ie)%state%w(:,:,:,n1)           = a1*elem(ie)%state%w(:,:,:,n2) + &
-          a2*elem(ie)%state%w(:,:,:,n3) + elem(ie)%state%w(:,:,:,n1)
-        elem(ie)%state%phinh(:,:,:,n1)         = a1*elem(ie)%state%phinh(:,:,:,n2) + &
-          a2*elem(ie)%state%phinh(:,:,:,n3) + elem(ie)%state%phinh(:,:,:,n1)
-        elem(ie)%state%theta_dp_cp(:,:,:,n1) = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
+        elem(ie)%state%w_i(:,:,1:nlev,n1)     = a1*elem(ie)%state%w_i(:,:,1:nlev,n2) + &
+          a2*elem(ie)%state%w_i(:,:,1:nlev,n3) + elem(ie)%state%w_i(:,:,1:nlev,n1)
+        elem(ie)%state%phinh_i(:,:,1:nlev,n1) = a1*elem(ie)%state%phinh_i(:,:,1:nlev,n2) + &
+          a2*elem(ie)%state%phinh_i(:,:,1:nlev,n3) + elem(ie)%state%phinh_i(:,:,1:nlev,n1)
+        elem(ie)%state%theta_dp_cp(:,:,:,n1)  = a1*elem(ie)%state%theta_dp_cp(:,:,:,n2) + &
           a2*elem(ie)%state%theta_dp_cp(:,:,:,n3) + elem(ie)%state%theta_dp_cp(:,:,:,n1)
-        elem(ie)%state%dp3d(:,:,:,n1)        = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
+        elem(ie)%state%dp3d(:,:,:,n1)         = a1*elem(ie)%state%dp3d(:,:,:,n2) + &
           a2*elem(ie)%state%dp3d(:,:,:,n3) + elem(ie)%state%dp3d(:,:,:,n1)
       end do
     end if
