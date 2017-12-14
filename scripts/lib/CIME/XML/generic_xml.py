@@ -46,7 +46,7 @@ class GenericXML(object):
         Read and parse an xml file into the object
         """
         logger.debug("read: " + infile)
-        with open(infile, 'r') as fd:
+        with open(infile, mode='r', encoding='utf-8') as fd:
             if self.tree:
                 self.root.append(ET.parse(fd).getroot())
             else:
