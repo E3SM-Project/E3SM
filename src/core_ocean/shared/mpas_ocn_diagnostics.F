@@ -395,7 +395,7 @@ contains
          kineticEnergyVertexOnCells  => kineticEnergyVertexOnCellsField % array
 
          !$omp do schedule(runtime) private(i, iEdge, r_tmp, k)
-         do iVertex = 1, nVertices*ke_vertex_flag
+         do iVertex = 1, nVertices
            kineticEnergyVertex(:, iVertex) = 0.0_RKIND
            do i = 1, vertexDegree
              iEdge = edgesOnVertex(i, iVertex)
@@ -408,7 +408,7 @@ contains
          !$omp end do
 
          !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
-         do iCell = 1, nCells*ke_vertex_flag
+         do iCell = 1, nCells
            kineticEnergyVertexOnCells(:, iCell) = 0.0_RKIND
            invAreaCell1 = 1.0_RKIND / areaCell(iCell)
            do i = 1, nEdgesOnCell(iCell)
@@ -426,7 +426,7 @@ contains
          ! Compute kinetic energy in each cell by blending kineticEnergyCell and kineticEnergyVertexOnCells
          !
          !$omp do schedule(runtime) private(k)
-         do iCell = 1, nCells * ke_vertex_flag
+         do iCell = 1, nCells
             do k = 1, nVertLevels
                kineticEnergyCell(k,iCell) = 5.0_RKIND / 8.0_RKIND * kineticEnergyCell(k,iCell) + 3.0_RKIND / 8.0_RKIND &
                                           * kineticEnergyVertexOnCells(k,iCell)
