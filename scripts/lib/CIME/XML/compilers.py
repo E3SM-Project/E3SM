@@ -80,7 +80,7 @@ class Compilers(GenericXML):
 
     def _is_compatible(self, compiler_node, compiler, machine, os_, mpilib):
         for xmlid, value in [ ("COMPILER", compiler), ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
-            if value is not None and self.has(compiler_node, xmlid) and value != compiler_node.get(xmlid):
+            if value is not None and self.has(compiler_node, xmlid) and value != self.get(compiler_node, xmlid):
                 return False
 
         return True
@@ -146,7 +146,7 @@ class Compilers(GenericXML):
 
             # Do worst matches first
             for compiler_node in reversed(self.compiler_nodes):
-                _add_to_macros(compiler_node, macros)
+                _add_to_macros(self, compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
                                         self.machine, macros_file=macros_file,
                                         output_format=output_format)
@@ -193,7 +193,7 @@ class Compilers(GenericXML):
             node_list = GenericXML().read(xml).get_children(name="compiler")
 
         for compiler_elem in node_list:
-            block = CompilerBlock(writer, compiler_elem, self._machobj)
+            block = CompilerBlock(writer, compiler_elem, self._machobj, self)
             # If this block matches machine settings, use it.
             if block.matches_machine():
                 block.add_settings_to_lists(self.flag_vars, value_lists)
@@ -230,10 +230,10 @@ class Compilers(GenericXML):
             if big_append_tree is not None:
                 big_append_tree.write_out(writer)
 
-def _add_to_macros(node, macros):
+def _add_to_macros(db, node, macros):
     for child in node:
-        name = self.name(child)
-        attrib = child.attrib
+        name = db.name(child)
+        attrib = db.attrib(child)
         value = child.text
 
         if not attrib:

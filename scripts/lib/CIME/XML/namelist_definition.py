@@ -64,9 +64,9 @@ class NamelistDefinition(EntryID):
         """
         default_nodes = []
         for node in self.get_children("entry"):
-            name = node.get("id")
-            skip_default_entry = node.get("skip_default_entry")
-            per_stream_entry = node.get("per_stream_entry")
+            name = self.get(node, "id")
+            skip_default_entry = self.get(node, "skip_default_entry")
+            per_stream_entry = self.get(node, "per_stream_entry")
             set_node_values = False
             if skip_groups:
                 group_name = self._get_group_name(node)
@@ -91,14 +91,14 @@ class NamelistDefinition(EntryID):
 
     def _get_group_name(self, node=None):
         if self.get_version() == 1.0:
-            group = node.get('group')
+            group = self.get(node, 'group')
         elif self.get_version() >= 2.0:
             group = self.get_element_text("group", root=node)
         return(group)
 
     def _get_type(self, node):
         if self.get_version() == 1.0:
-            type_info = node.get('type')
+            type_info = self.get(node, 'type')
         elif self.get_version() >= 2.0:
             type_info = self._get_type_info(node)
         return(type_info)
@@ -109,7 +109,7 @@ class NamelistDefinition(EntryID):
         # Returns a list from a comma seperated string in xml
         valid_values = ''
         if self.get_version() == 1.0:
-            valid_values = node.get('valid_values')
+            valid_values = self.get(node, 'valid_values')
         elif self.get_version() >= 2.0:
             valid_values = self._get_node_element_info(node, "valid_values")
         if valid_values == '':
@@ -131,9 +131,9 @@ class NamelistDefinition(EntryID):
         entries = []
         nodes = self.get_children("entry")
         for node in nodes:
-            per_stream_entry = node.get("per_stream_entry")
+            per_stream_entry = self.get(node, "per_stream_entry")
             if per_stream_entry:
-                entries.append(node.get("id"))
+                entries.append(self.get(node, "id"))
         return entries
 
     # Currently we don't use this object to construct new files, and it's no
@@ -312,11 +312,11 @@ class NamelistDefinition(EntryID):
     def _user_modifiable_in_variable_definition(self, name):
         # Is name user modifiable?
         node = self.get_optional_child("entry", attributes={'id': name})
-        user_modifiable_only_by_xml = node.get('modify_via_xml')
+        user_modifiable_only_by_xml = self.get(node, 'modify_via_xml')
         if user_modifiable_only_by_xml is not None:
             expect(False,
                    "Cannot change {} in user_nl file: set via xml variable {}".format(name, user_modifiable_only_by_xml))
-        user_cannot_modify = node.get('cannot_modify_by_user_nl')
+        user_cannot_modify = self.get(node, 'cannot_modify_by_user_nl')
         if user_cannot_modify is not None:
             expect(False,
                    "Cannot change {} in user_nl file: {}".format(name, user_cannot_modify))
@@ -385,7 +385,7 @@ class NamelistDefinition(EntryID):
     def get_input_pathname(self, name):
         node = self._nodes[name]
         if self.get_version() == 1.0:
-            input_pathname = node.get('input_pathname')
+            input_pathname = self.get(node, 'input_pathname')
         elif self.get_version() >= 2.0:
             input_pathname = self._get_node_element_info(node, "input_pathname")
         return(input_pathname)

@@ -178,10 +178,10 @@ class EnvMachSpecific(EnvBase):
         compiler, mpilib = case.get_value("COMPILER"), case.get_value("MPILIB")
 
         for node in nodes:
-            if (self._match_attribs(node.attrib, case)):
+            if (self._match_attribs(self.attrib(node), case)):
                 for child in node:
                     expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
-                    if (self._match_attribs(child.attrib, case)):
+                    if (self._match_attribs(self.attrib(child), case)):
                         val = child.text
                         if val is not None:
                             # We allow a couple special substitutions for these fields
@@ -192,7 +192,7 @@ class EnvMachSpecific(EnvBase):
                             expect("$" not in val, "Not safe to leave unresolved items in env var value: '{}'".format(val))
 
                         # intentional unindent, result is appended even if val is None
-                        result.append( (child.get("name"), val) )
+                        result.append( (self.get(child, "name"), val) )
 
         return result
 
@@ -325,7 +325,7 @@ class EnvMachSpecific(EnvBase):
         Return the module system used on this machine
         """
         module_system = self.get_child("module_system")
-        return module_system.get("type")
+        return self.get(module_system, "type")
 
     def get_module_system_init_path(self, lang):
         init_nodes = self.get_optional_child("init_path", attributes={"lang":lang})
@@ -346,7 +346,7 @@ class EnvMachSpecific(EnvBase):
         best_num_matched_default = -1
         args = []
         for mpirun_node in mpirun_nodes:
-            xml_attribs = mpirun_node.attrib
+            xml_attribs = self.attrib(mpirun_node)
             all_match = True
             matches = 0
             is_default = False
@@ -397,7 +397,7 @@ class EnvMachSpecific(EnvBase):
                     arg_value = transform_vars(arg_node.text,
                                                case=case,
                                                subgroup=job,
-                                               default=arg_node.get("default"))
+                                               default=self.get(arg_node, "default"))
                     args.append(arg_value)
 
         exec_node = self.get_child("executable", root=the_match)

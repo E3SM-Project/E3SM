@@ -31,7 +31,7 @@ class PIO(EntryID):
         for node in self.get_children("entry"):
             value = self.get_default_value(node, attributes)
             if value:
-                defaults[node.get("id")] = value
+                defaults[self.get(node, "id")] = value
 
         return defaults
 

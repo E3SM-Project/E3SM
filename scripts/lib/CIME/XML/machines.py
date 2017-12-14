@@ -87,7 +87,7 @@ class Machines(GenericXML):
         machines = []
         nodes  = self.get_children("machine")
         for node in nodes:
-            mach = node.get("MACH")
+            mach = self.get(node, "MACH")
             machines.append(mach)
         return machines
 
@@ -128,7 +128,7 @@ class Machines(GenericXML):
         nodes = self.get_children("machine")
 
         for node in nodes:
-            machtocheck = node.get("MACH")
+            machtocheck = self.get(node, "MACH")
             logger.debug("machine is " + machtocheck)
             regex_str_node = self.get_optional_child("NODENAME_REGEX", root=node)
             regex_str = machtocheck if regex_str_node is None else regex_str_node.text
@@ -293,7 +293,7 @@ class Machines(GenericXML):
         machines = self.get_children("machine")
         print( "Machines")
         for machine in machines:
-            name = machine.get("MACH")
+            name = self.get(machine, "MACH")
             desc = machine.find("DESC")
             os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")
@@ -313,7 +313,7 @@ class Machines(GenericXML):
         mach_dict = dict()
         machines = self.get_children("machine")
         for machine in machines:
-            name = machine.get("MACH")
+            name = self.get(machine, "MACH")
             desc = machine.find("DESC")
             os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")

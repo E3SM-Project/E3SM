@@ -98,8 +98,8 @@ class EnvBatch(EnvBase):
         groups = self.get_children("group")
         results = []
         for group in groups:
-            if group.get("id") not in ["job_submission", "config_batch"]:
-                results.append(group.get("id"))
+            if self.get(group, "id") not in ["job_submission", "config_batch"]:
+                results.append(self.get(group, "id"))
 
         return results
 
@@ -130,7 +130,7 @@ class EnvBatch(EnvBase):
             self.add_child(new_job_group)
 
     def cleanupnode(self, node):
-        if node.get("id") == "batch_system":
+        if self.get(node, "id") == "batch_system":
             fnode = node.find(".//file")
             node.remove(fnode)
             gnode = node.find(".//group")
@@ -251,7 +251,7 @@ class EnvBatch(EnvBase):
                 nodes = self.get_children("directive", root=root)
                 for node in nodes:
                     directive = self.get_resolved_value("" if node.text is None else node.text)
-                    default = node.get("default")
+                    default = self.get(node, "default")
                     if default is None:
                         directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
                     else:
@@ -273,8 +273,8 @@ class EnvBatch(EnvBase):
             submit_arg_nodes += self.get_children("arg",root=node)
 
         for arg in submit_arg_nodes:
-            flag = arg.get("flag")
-            name = arg.get("name")
+            flag = self.get(arg, "flag")
+            name = self.get(arg, "name")
             if self._batchtype == "cobalt" and job == "case.st_archive":
                 if flag == "-n":
                     name = 'task_count'
@@ -494,7 +494,7 @@ class EnvBatch(EnvBase):
     def get_batch_system_type(self):
         nodes = self.get_children("batch_system")
         for node in nodes:
-            type_ = node.get("type")
+            type_ = self.get(node, "type")
             if type_ is not None:
                 self._batchtype = type_
         return self._batchtype
@@ -556,11 +556,11 @@ class EnvBatch(EnvBase):
         """
         for queue_node in self.get_all_queues():
             if queue_node.text == queue:
-                nodemin = queue_node.get("nodemin")
-                nodemax = queue_node.get("nodemax")
-                jobname = queue_node.get("jobname")
-                walltimemax = queue_node.get("walltimemax")
-                strict = queue_node.get("strict") == "true"
+                nodemin = self.get(queue_node, "nodemin")
+                nodemax = self.get(queue_node, "nodemax")
+                jobname = self.get(queue_node, "jobname")
+                walltimemax = self.get(queue_node, "walltimemax")
+                strict = self.get(queue_node, "strict") == "true"
 
                 return nodemin, nodemax, jobname, walltimemax, strict
 
@@ -592,7 +592,7 @@ class EnvBatch(EnvBase):
         else:
             cmd = batch_query.text + " "
             if self.has(batch_query, "per_job_arg"):
-                cmd += batch_query.get("per_job_arg") + " "
+                cmd += self.get(batch_query, "per_job_arg") + " "
 
             cmd += jobid
 

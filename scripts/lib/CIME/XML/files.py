@@ -55,6 +55,6 @@ class Files(EntryID):
         valnodes = self.get_children("value", root=node)
         values = []
         for valnode in valnodes:
-            value = valnode.get("component")
+            value = self.get(valnode, "component")
             values.append(value)
         return values

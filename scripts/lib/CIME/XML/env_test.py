@@ -67,7 +67,7 @@ class EnvTest(EnvBase):
         bldnodes = self.get_children(step)
         cnt = 0
         for node in bldnodes:
-            cnt = max(cnt, int(node.get("phase")))
+            cnt = max(cnt, int(self.get(node, "phase")))
         return cnt
 
     def get_settings_for_phase(self, name, cnt):
@@ -83,7 +83,7 @@ class EnvTest(EnvBase):
     def run_phase_get_clone_name(self, phase):
         node = self.get_child("RUN",attributes={"phase":str(phase)})
         if self.has(node, "clone"):
-            return node.get("clone")
+            return self.get(node, "clone")
         return None
 
     def cleanupnode(self, node):

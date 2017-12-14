@@ -35,7 +35,7 @@ class Compsets(GenericXML):
             if alias == name or lname == name:
                 science_support_nodes = self.get_children("science_support", root=node)
                 for snode in science_support_nodes:
-                    science_support.append(snode.get("grid"))
+                    science_support.append(self.get(snode, "grid"))
                 logger.debug("Found node match with alias: {} and lname: {}".format(alias, lname))
                 return (lname, alias, science_support)
         return (None, None, [False])
@@ -52,7 +52,7 @@ class Compsets(GenericXML):
         for node in nodes:
             value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
             if value is not None:
-                result.append((node.get("id"), value))
+                result.append((self.get(node, "id"), value))
         return result
 
     #pylint: disable=arguments-differ

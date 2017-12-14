@@ -77,14 +77,14 @@ class Testlist(GenericXML):
                         thistest = {}
                         save_this = True
                         if machine is None or (machine is not None and mach.text == machine):
-                            thistest["compiler"] = mach.get("compiler")
-                            thistest["category"] = mach.get("testtype")
+                            thistest["compiler"] = self.get(mach, "compiler")
+                            thistest["category"] = self.get(mach, "testtype")
                             thistest["machine"] = mach.text
-                            thistest["testname"] = tnode.get("name")
-                            thistest["grid"] = gnode.get("name")
-                            thistest["compset"] = cnode.get("name")
+                            thistest["testname"] = self.get(tnode, "name")
+                            thistest["grid"] = self.get(gnode, "name")
+                            thistest["compset"] = self.get(cnode, "name")
                             if self.has(mach, "testmods"):
-                                thistest["testmods"] = mach.get("testmods")
+                                thistest["testmods"] = self.get(mach, "testmods")
                             if compset is not None and compset != thistest["compset"]:
                                 save_this = False
                             if grid is not None and grid != thistest["grid"]:
@@ -138,12 +138,12 @@ class Testlist(GenericXML):
                     options = self.get_child("options", root=tnode)
                     optionnodes = self.get_children("option", root=options)
                     for onode in optionnodes:
-                        this_test['options'][onode.get('name')] = onode.text
+                        this_test['options'][self.get(onode, 'name')] = onode.text
 
                     # Now get options specific to this machine/compiler
                     optionnodes = self.get_children("option", root=mach)
                     for onode in optionnodes:
-                        this_test['options'][onode.get('name')] = onode.text
+                        this_test['options'][self.get(onode, 'name')] = onode.text
 
 
                     tests.append(this_test)

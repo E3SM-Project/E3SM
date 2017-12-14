@@ -62,12 +62,12 @@ class Component(EntryID):
 
         # determine match_type if there is a tie
         # ASSUME a default of "last" if "match" attribute is not there
-        match_type = values.get("match", default="last")
+        match_type = self.get(values, "match", default="last")
 
         # use the default_value if present
         val_node = self.get_optional_child("default_value", root=node)
         if val_node is None:
-            logger.debug("No default_value for {}".format(node.get("id")))
+            logger.debug("No default_value for {}".format(self.get(node, "id")))
             return val_node
         value = val_node.text
         if value is not None and len(value) > 0 and value != "UNSET":
@@ -75,7 +75,7 @@ class Component(EntryID):
 
         for valnode in self.get_children("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
-            for key,value in self.attrib(valnode):
+            for key,value in self.attrib(valnode).iteritems():
                 # determine if key is in attributes dictionary
                 match_count = 0
                 if attributes is not None and key in attributes:
@@ -89,12 +89,12 @@ class Component(EntryID):
             # a match is found
             if match_count > 0:
                 # append the current result
-                if values.get("modifier") == "additive":
+                if self.get(values, "modifier") == "additive":
                     match_values.append(valnode.text)
 
                 # replace the current result if it already contains the new value
                 # otherwise append the current result
-                elif values.get("modifier") == "merge":
+                elif self.get(values, "modifier") == "merge":
                     if valnode.text in match_values:
                         del match_values[:]
                     match_values.append(valnode.text)
@@ -156,7 +156,7 @@ class Component(EntryID):
         desc = ""
         desc_nodes = self.get_children("desc", root=rootnode)
 
-        modifier_mode = rootnode.get('modifier_mode')
+        modifier_mode = self.get(rootnode, 'modifier_mode')
         if modifier_mode is None:
             modifier_mode = '*'
         expect(modifier_mode in ('*','1','?','+'),
@@ -164,7 +164,7 @@ class Component(EntryID):
         optiondesc = {}
         if comp_class == "forcing":
             for node in desc_nodes:
-                forcing = node.get('forcing')
+                forcing = self.get(node, 'forcing')
                 if forcing is not None and compsetname.startswith(forcing+'_'):
                     expect(len(desc)==0,
                            "Too many matches on forcing field {} in file {}".\
@@ -177,14 +177,14 @@ class Component(EntryID):
 
         # first pass just make a hash of the option descriptions
         for node in desc_nodes:
-            option = node.get('option')
+            option = self.get(node, 'option')
             if option is not None:
                 optiondesc[option] = node.text
 
         #second pass find a comp_class match
         desc = ""
         for node in desc_nodes:
-            compdesc = node.get(comp_class)
+            compdesc = self.get(node, comp_class)
 
             if compdesc is not None:
                 opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
@@ -264,7 +264,7 @@ class Component(EntryID):
         desc = ""
         desc_nodes = self.get_children("desc", root=rootnode)
         for node in desc_nodes:
-            compsetmatch = node.get("compset")
+            compsetmatch = self.get(node, "compset")
             if compsetmatch is not None and re.search(compsetmatch, compsetname):
                 desc += node.text
 
@@ -281,7 +281,7 @@ class Component(EntryID):
         compsets = {}
         descs = self.get_children("desc", root=rootnode)
         for desc in descs:
-            attrib = desc.get("compset")
+            attrib = self.get(desc, "compset")
             text = desc.text
             compsets[attrib] = text
 

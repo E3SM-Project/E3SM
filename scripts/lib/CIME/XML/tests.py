@@ -44,10 +44,10 @@ class Tests(GenericXML):
         all_tests = self.get_children("test")
         for one_test in all_tests:
             if skip_infrastructure_tests:
-                infrastructure_test = one_test.get("INFRASTRUCTURE_TEST")
+                infrastructure_test = self.get(one_test, "INFRASTRUCTURE_TEST")
                 if (infrastructure_test is not None and
                     infrastructure_test.upper() == "TRUE"):
                     continue
-            name = one_test.get("NAME")
+            name = self.get(one_test, "NAME")
             desc = one_test.find("DESC").text
             print("{}: {}".format(name, desc))

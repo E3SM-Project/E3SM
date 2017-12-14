@@ -69,7 +69,7 @@ class Batch(GenericXML):
         if self.batch_system != batch_system or self.batch_system_node is None:
             nodes = self.get_children("batch_system",{"type" : batch_system})
             for node in nodes:
-                mach = node.get("MACH")
+                mach = self.get(node, "MACH")
                 if mach is None:
                     self.batch_system_node = node
                 elif mach == machine:
@@ -114,7 +114,7 @@ class Batch(GenericXML):
         bnode = self.get_child("batch_jobs")
         for jnode in bnode:
             if self.name(jnode) == "job":
-                name = jnode.get("name")
+                name = self.get(jnode, "name")
                 jdict = {}
                 for child in jnode:
                     jdict[self.name(child)] = child.text

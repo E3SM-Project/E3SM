@@ -117,7 +117,7 @@ class EnvBase(EntryID):
     # pylint: disable=arguments-differ
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, compclass=None):
         if vid is None:
-            vid = node.get("id")
+            vid = self.get(node, "id")
         vid, _, iscompvar = self.check_if_comp_var(vid, None)
 
         if iscompvar:
@@ -150,8 +150,8 @@ class EnvBase(EntryID):
             # now we seperated into component and compclass)
             if len(componentatt) > 0:
                 for ccnode in vnode.findall(".//value[@component]"):
-                    val = ccnode.get("component")
-                    ccnode.attrib.pop("component")
+                    val = self.get(ccnode, "component")
+                    self.pop(ccnode, "component")
                     ccnode.set("compclass",val)
             compclassatt = vnode.findall(".//value[@compclass]")
 

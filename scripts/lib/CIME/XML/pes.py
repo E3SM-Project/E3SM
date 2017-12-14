@@ -71,16 +71,16 @@ class Pes(GenericXML):
         pes_ntasks, pes_nthrds, pes_rootpe, other_settings = {}, {}, {}, {}
         pe_select = []
         for grid_node in grid_nodes:
-            grid_match = grid_node.get("name")
+            grid_match = self.get(grid_node, "name")
             if grid_match == "any" or  re.search(grid_match,grid):
                 mach_nodes = self.get_children("mach",root=grid_node)
                 for mach_node in mach_nodes:
-                    mach_match = mach_node.get("name")
+                    mach_match = self.get(mach_node, "name")
                     if mach_match == "any" or re.search(mach_match, machine):
                         pes_nodes = self.get_children("pes", root=mach_node)
                         for pes_node in pes_nodes:
-                            pesize_match = pes_node.get("pesize")
-                            compset_match = pes_node.get("compset")
+                            pesize_match = self.get(pes_node, "pesize")
+                            compset_match = self.get(pes_node, "compset")
                             if (pesize_match == "any" or (pesize_opts is not None and \
                                                           re.search(pesize_match, pesize_opts))) and \
                                                           (compset_match == "any" or \

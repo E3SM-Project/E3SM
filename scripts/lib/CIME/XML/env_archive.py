@@ -41,8 +41,8 @@ class EnvArchive(GenericXML):
         return self.get_optional_child('comp_archive_spec', attributes={"compname":compname})
 
     def get_entry_info(self, archive_entry):
-        compname = archive_entry.get('compname')
-        compclass = archive_entry.get('compclass')
+        compname = self.get(archive_entry, 'compname')
+        compclass = self.get(archive_entry, 'compclass')
         return compname,compclass
 
     def get_entry_value(self, name, archive_entry):
