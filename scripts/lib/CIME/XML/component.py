@@ -75,7 +75,7 @@ class Component(EntryID):
 
         for valnode in self.get_children("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
-            for key,value in valnode.attrib.items():
+            for key,value in self.attrib(valnode):
                 # determine if key is in attributes dictionary
                 match_count = 0
                 if attributes is not None and key in attributes:

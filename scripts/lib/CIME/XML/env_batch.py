@@ -591,7 +591,7 @@ class EnvBatch(EnvBase):
             logger.warning("Batch queries not supported on this platform")
         else:
             cmd = batch_query.text + " "
-            if "per_job_arg" in batch_query.attrib:
+            if self.has(batch_query, "per_job_arg"):
                 cmd += batch_query.get("per_job_arg") + " "
 
             cmd += jobid

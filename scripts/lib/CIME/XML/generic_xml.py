@@ -79,6 +79,10 @@ class GenericXML(object):
     def has(self, node, attrib_name):
         return attrib_name in node.xml_element.attrib
 
+    def attrib(self, node):
+        # Return a COPY. We do not want clients making changes directly
+        return None if node.xml_element.attrib is None else tuple(node.xml_element.attrib.iteritems())
+
     def set_name(self, node, name):
         node.xml_element.tag = name
 

@@ -150,7 +150,7 @@ class EnvBase(EntryID):
             # now we seperated into component and compclass)
             if len(componentatt) > 0:
                 for ccnode in vnode.findall(".//value[@component]"):
-                    val = ccnode.attrib.get("component")
+                    val = ccnode.get("component")
                     ccnode.attrib.pop("component")
                     ccnode.set("compclass",val)
             compclassatt = vnode.findall(".//value[@compclass]")

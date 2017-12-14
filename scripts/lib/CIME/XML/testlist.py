@@ -83,7 +83,7 @@ class Testlist(GenericXML):
                             thistest["testname"] = tnode.get("name")
                             thistest["grid"] = gnode.get("name")
                             thistest["compset"] = cnode.get("name")
-                            if ("testmods" in mach.attrib):
+                            if self.has(mach, "testmods"):
                                 thistest["testmods"] = mach.get("testmods")
                             if compset is not None and compset != thistest["compset"]:
                                 save_this = False
