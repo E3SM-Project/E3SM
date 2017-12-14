@@ -364,7 +364,7 @@ def create_viewer(root_dir, parameters, ext):
                         row_name_and_fnm = []
 
                         if parameter.plevs == []:  # 2d variables
-                            row_name = '{} {}'.format(var, region)
+                            row_name = '{} {} {}'.format(var, region, ref_name)
                             fnm = '{}-{}-{}-{}'.format(ref_name,
                                                        var, season, region)
                             row_name_and_fnm.append((row_name, fnm))
