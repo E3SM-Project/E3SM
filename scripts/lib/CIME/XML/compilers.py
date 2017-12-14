@@ -232,7 +232,7 @@ class Compilers(GenericXML):
 
 def _add_to_macros(node, macros):
     for child in node:
-        name = child.tag
+        name = child.name()
         attrib = child.attrib
         value = child.text
 

@@ -30,13 +30,13 @@ class EnvTest(EnvBase):
         tnode = self.get_child("test")
         for child in tnode:
             if child.text is not None:
-                logger.debug("Setting {} to {} for test".format(child.tag, child.text))
+                logger.debug("Setting {} to {} for test".format(child.name(), child.text))
                 if "$" in child.text:
-                    case.set_value(child.tag,child.text,ignore_type=True)
+                    case.set_value(child.name(),child.text,ignore_type=True)
                 else:
-                    item_type = case.get_type_info(child.tag)
-                    value = convert_to_type(child.text,item_type,child.tag)
-                    case.set_value(child.tag,value)
+                    item_type = case.get_type_info(child.name())
+                    value = convert_to_type(child.text,item_type,child.name())
+                    case.set_value(child.name(),value)
         case.flush()
         return
 
@@ -75,8 +75,8 @@ class EnvTest(EnvBase):
         settings = []
         if node is not None:
             for child in node:
-                logger.debug ("Here child is {} with value {}".format(child.tag, child.text))
-                settings.append((child.tag, child.text))
+                logger.debug ("Here child is {} with value {}".format(child.name(), child.text))
+                settings.append((child.name(), child.text))
 
         return settings
 

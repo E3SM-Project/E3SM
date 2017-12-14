@@ -148,9 +148,9 @@ class EnvBatch(EnvBase):
 
         if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
             for node in batchobj.get_children('any', root=batchobj.machine_node, xpath='*'):
-                oldnode = batchobj.get_optional_child(node.tag, root=batchobj.batch_system_node)
-                if oldnode is not None and oldnode.tag != "directives":
-                    logger.debug( "Replacing {}".format(oldnode.tag))
+                oldnode = batchobj.get_optional_child(node.name(), root=batchobj.batch_system_node)
+                if oldnode is not None and oldnode.name() != "directives":
+                    logger.debug( "Replacing {}".format(oldnode.name()))
                     batchobj.batch_system_node.remove(oldnode)
 
         if batchobj.batch_system_node is not None:

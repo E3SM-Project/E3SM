@@ -157,10 +157,10 @@ class CompilerBlock(object):
         logger.debug("First pass output={}".format(output))
 
         for child in elem:
-            if child.tag == "env":
+            if child.name() == "env":
                 # <env> tags just need to be expanded by the writer.
                 output += writer.environment_variable_string(child.text)
-            elif child.tag == "shell":
+            elif child.name() == "shell":
                 # <shell> tags can contain other tags, so handle those.
                 command = self._handle_references(child, set_up, tear_down,
                                                   depends)
@@ -172,7 +172,7 @@ class CompilerBlock(object):
                 if new_tear_down is not None:
                     tear_down.append(new_tear_down)
                 logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
-            elif child.tag == "var":
+            elif child.name() == "var":
                 # <var> commands also need expansion by the writer, and can
                 # add dependencies.
                 var_name = child.text
@@ -180,7 +180,7 @@ class CompilerBlock(object):
                 depends.add(var_name)
             else:
                 expect(False,
-                       "Unexpected tag "+child.tag+" encountered in "
+                       "Unexpected tag "+child.name()+" encountered in "
                        "config_build.xml. Check that the file is valid "
                        "according to the schema.")
             if child.tail is not None:
@@ -211,7 +211,7 @@ class CompilerBlock(object):
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
         # Create the setting object.
-        setting = ValueSetting(value_text, elem.tag == "append",
+        setting = ValueSetting(value_text, elem.name() == "append",
                                conditions, set_up, tear_down)
         return (setting, depends)
 
@@ -246,11 +246,11 @@ class CompilerBlock(object):
         """
         for elem in self._compiler_elem:
             # Deal with "flag"-type variables.
-            if elem.tag in flag_vars:
+            if elem.name() in flag_vars:
                 for child in elem:
-                    self._add_elem_to_lists(elem.tag, child, value_lists)
+                    self._add_elem_to_lists(elem.name(), child, value_lists)
             else:
-                self._add_elem_to_lists(elem.tag, elem, value_lists)
+                self._add_elem_to_lists(elem.name(), elem, value_lists)
 
     def matches_machine(self):
         """Check whether this block matches a machine/os.
