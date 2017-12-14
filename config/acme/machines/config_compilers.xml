@@ -1185,6 +1185,8 @@ for mct, etc.
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
+  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="nag" MACH="blues">
