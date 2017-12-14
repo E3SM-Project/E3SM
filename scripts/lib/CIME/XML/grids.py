@@ -89,7 +89,8 @@ class Grids(GenericXML):
         read config_grids.xml with v1.0 schema
         """
         component_grids = {}
-        nodes = self.get_children("grid")
+        grid_list = self.get_child("grids")
+        nodes = self.get_children("grid", root=grid_list)
         # first search for all grids that have a compset match - if one is found then return
         for node in nodes:
             if self.has(node, "compset"):
@@ -322,6 +323,7 @@ class Grids(GenericXML):
                  ("WAV", component_grids[6])]
         mask = component_grids[4]
 
+        domains_elem = self.get_child("domains")
         domains = {}
         mask_name = None
         for grid in grids:
@@ -331,7 +333,7 @@ class Grids(GenericXML):
                 mask_name = "lnd_mask"
             if grid[0] == "ICE" or grid[0] == "OCN":
                 mask_name = "ocn_mask"
-            root = self.get_optional_child("domain", attributes={"name":grid[1]})
+            root = self.get_optional_child("domain", attributes={"name":grid[1]}, root=domains_elem)
             if root is not None:
                 if grid[0] != "MASK":
                     domains[grid[0]+"_NX"] = int(self.get_element_text("nx", root=root))
@@ -367,12 +369,13 @@ class Grids(GenericXML):
         if lndnlev is not None:
             grids[1] += "z"+lndnlev
 
+        gridmaps_elem = self.get_child("gridmaps")
         gridmaps = {}
         for idx, grid in enumerate(grids):
             for other_grid in grids[idx+1:]:
-                nodes = self.get_children("gridmap", attributes={grid[0]:grid[1], other_grid[0]:other_grid[1]})
+                nodes = self.get_children("gridmap", attributes={grid[0]:grid[1], other_grid[0]:other_grid[1]}, root=gridmaps_elem)
                 for gridmap_node in nodes:
-                    for child in gridmap_node:
+                    for child in self.get_children(root=gridmap_node):
                         gridmap = (self.name(child), self.text(child))
                         if gridmap is not None:
                             gridmaps[self.name(child)] = self.text(child)

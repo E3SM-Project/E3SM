@@ -15,6 +15,17 @@ class _Element(object): # private class, don't want users constructing directly 
     def __init__(self, xml_element):
         self.xml_element = xml_element
 
+    def __eq__(self, rhs):
+        expect(isinstance(rhs, _Element), "Wrong type")
+        return self.xml_element == rhs.xml_element # pylint: disable=protected-access
+
+    def __ne__(self, rhs):
+        expect(isinstance(rhs, _Element), "Wrong type")
+        return self.xml_element != rhs.xml_element # pylint: disable=protected-access
+
+    def __hash__(self):
+        return hash(self.xml_element)
+
 class GenericXML(object):
 
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
@@ -108,7 +119,7 @@ class GenericXML(object):
 
     def remove_child(self, node, root=None):
         root = root if root is not None else self.root
-        root.remove(node.xml_element)
+        root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
         root = root if root is not None else self.root
@@ -119,6 +130,12 @@ class GenericXML(object):
         return node
 
     def get_children(self, name=None, attributes=None, root=None):
+        """
+        This is the critical function, its interface and performance are crucial.
+
+        You can specify attributes={key:None} if you want to select chilren
+        with the key attribute but you don't care what its value is.
+        """
         root = root if root is not None else self.root
         children = []
         for child in root.xml_element:
@@ -135,7 +152,7 @@ class GenericXML(object):
                         if key not in child.attrib:
                             match = False
                             break
-                        else:
+                        elif value is not None:
                             if child.attrib[key] != value:
                                 match = False
                                 break
@@ -144,6 +161,10 @@ class GenericXML(object):
                         continue
 
             children.append(_Element(child))
+
+        # Remove
+        validate = self.scan_nodes(name, attributes=attributes, root=root)
+        expect(validate == children, "bad")
 
         return children
 
@@ -232,7 +253,7 @@ class GenericXML(object):
             root = self.root
         nodes = []
 
-        xpath = ".//"+nodename
+        xpath = ".//" + (nodename if nodename else "")
 
         if attributes:
             # xml.etree has limited support for xpath and does not allow more than
@@ -243,11 +264,15 @@ class GenericXML(object):
                 if value is not None:
                     expect(isinstance(value, six.string_types),
                            " Bad value passed for key {}".format(key))
-                    xpath = ".//{}[@{}=\'{}\']".format(nodename, key, value)
+                    if value is None:
+                        xpath = ".//{}[@{}]".format(nodename, key)
+                    else:
+                        xpath = ".//{}[@{}=\'{}\']".format(nodename, key, value)
+
                     logger.debug("xpath is {}".format(xpath))
 
                     try:
-                        newnodes = root.findall(xpath)
+                        newnodes = root.xml_element.findall(xpath)
                     except Exception as e:
                         expect(False, "Bad xpath search term '{}', error: {}".format(xpath, e))
 
@@ -266,7 +291,7 @@ class GenericXML(object):
 
         logger.debug("Returning {} nodes ({})".format(len(nodes), nodes))
 
-        return nodes
+        return [_Element(node) for node in nodes]
 
     def get_value(self, item, attribute=None, resolved=True, subgroup=None): # pylint: disable=unused-argument
         """

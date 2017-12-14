@@ -284,6 +284,7 @@ class EntryID(GenericXML):
         node = self.get_optional_child("entry", {"id":vid}, root=root)
         if node is None:
             return
+
         val = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
         # Return value as right type if we were able to fully resolve
         # otherwise, we have to leave as string.
@@ -307,6 +308,8 @@ class EntryID(GenericXML):
 
         logger.debug("Found node {} with attributes {}".format(self.name(node) , self.attrib(node)))
         if attribute:
+            vals = self.get_optional_child("values", root=node)
+            node = vals if vals is not None else node
             val = self.get_element_text("value", attributes=attribute, root=node)
         elif self.get(node, "value") is not None:
             val = self.get(node, "value")
@@ -354,7 +357,7 @@ class EntryID(GenericXML):
         # group elements in file $file
         for src_node in nodelist:
             node  = deepcopy(src_node)
-            gname = srcobj.get_element_text(root=src_node, name="group")
+            gname = srcobj.get_element_text("group", root=src_node)
             if gname is None:
                 gname = "group_not_set"
 

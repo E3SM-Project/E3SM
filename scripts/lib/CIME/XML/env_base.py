@@ -29,14 +29,15 @@ class EnvBase(EntryID):
             # pylint: disable=attribute-defined-outside-init
             self._components = components
 
-    def check_if_comp_var(self, vid, attribute=None):
-        nodes = self.get_children("entry", {"id" : vid})
-        node = None
+    def check_if_comp_var(self, vid, attribute=None, node=None):
         comp = None
-        if len(nodes):
-            node = nodes[0]
+        if node is None:
+            nodes = self.get_children("entry", {"id" : vid})
+            if len(nodes):
+                node = nodes[0]
+
         if node:
-            valnodes = node.findall(".//value[@compclass]")
+            valnodes = self.get_children("value", attributes={"compclass":None}, root=node)
             if len(valnodes) == 0:
                 logger.debug("vid {} is not a compvar".format(vid))
                 return vid, None, False
@@ -118,9 +119,10 @@ class EnvBase(EntryID):
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, compclass=None):
         if vid is None:
             vid = self.get(node, "id")
-        vid, _, iscompvar = self.check_if_comp_var(vid, None)
+        vid, _, iscompvar = self.check_if_comp_var(vid, node=node)
 
         if iscompvar:
+            expect(compclass is not None, "compclass must be specified if is comp var")
             attribute = {"compclass":compclass}
             str_value = self.get_valid_value_string(node, value, vid, ignore_type)
             val = self.set_element_text("value", str_value, attribute, root=node)
@@ -136,26 +138,27 @@ class EnvBase(EntryID):
         """
         Remove the <group>, <file>, <values> and <value> childnodes from node
         """
-        fnode = node.find(".//file")
-        node.remove(fnode)
-        gnode = node.find(".//group")
-        node.remove(gnode)
-        dnode = node.find(".//default_value")
+        fnode = self.get_child("file", root=node)
+        self.remove_child(fnode, node)
+        gnode = self.get_child("group", root=node)
+        self.remove_child(gnode, node)
+        dnode = self.get_optional_child("default_value", root=node)
         if dnode is not None:
-            node.remove(dnode)
-        vnode = node.find(".//values")
+            self.remove_child(dnode, node)
+
+        vnode = self.get_optional_child("values", root=node)
         if vnode is not None:
-            componentatt = vnode.findall(".//value[@component=\"ATM\"]")
+            componentatt = self.get_children("value", attributes={"component":"ATM"}, root=vnode)
             # backward compatibility (compclasses and component were mixed
             # now we seperated into component and compclass)
             if len(componentatt) > 0:
-                for ccnode in vnode.findall(".//value[@component]"):
+                for ccnode in self.get_children("value", attributes={"component":None}, root=vnode):
                     val = self.get(ccnode, "component")
                     self.pop(ccnode, "component")
-                    ccnode.set("compclass",val)
-            compclassatt = vnode.findall(".//value[@compclass]")
+                    self.set(ccnode, "compclass", val)
 
+            compclassatt = self.get_children("value", attributes={"compclass":None}, root=vnode)
             if len(compclassatt) == 0:
-                node.remove(vnode)
+                self.remove_child(vnode, root=node)
 
         return node

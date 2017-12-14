@@ -51,8 +51,9 @@ class Files(EntryID):
         return None
 
     def get_components(self, nodename):
-        node = self.get_optional_child("entry", {"id":nodename})
-        valnodes = self.get_children("value", root=node)
+        node = self.get_child("entry", {"id":nodename})
+        vals = self.get_child("values", root=node)
+        valnodes = self.get_children("value", root=vals)
         values = []
         for valnode in valnodes:
             value = self.get(valnode, "component")
