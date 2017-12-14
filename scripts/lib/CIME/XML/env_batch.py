@@ -576,12 +576,12 @@ class EnvBatch(EnvBase):
     def get_all_queues(self):
         return self.get_children("queue")
 
-    def get_children(self, nodename=None, attributes=None, root=None):
-        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
+    def get_children(self, name=None, attributes=None, root=None):
+        if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
                         "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
-            nodes = EnvBase.get_children(self, "entry", attributes={"id":nodename}, root=root)
+            nodes = EnvBase.get_children(self, "entry", attributes={"id":name}, root=root)
         else:
-            nodes = EnvBase.get_children(self, nodename, attributes=attributes, root=root)
+            nodes = EnvBase.get_children(self, name, attributes=attributes, root=root)
 
         return nodes
 

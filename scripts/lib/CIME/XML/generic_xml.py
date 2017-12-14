@@ -23,6 +23,7 @@ class GenericXML(object):
         """
         logger.debug("Initializing {}".format(infile))
         self.tree = None
+        self.root = None
 
         if infile == None:
             # if file is not defined just return
@@ -41,7 +42,7 @@ class GenericXML(object):
             expect("$" not in infile,"File path not fully resolved {}".format(infile))
 
             self.filename = infile
-            root = ET.Element("xml")
+            root = _Element(ET.Element("xml"))
             if root_name_override:
                 self.root = self.make_child(root_name_override, root=root, attributes=root_attrib_override)
             else:
@@ -102,23 +103,23 @@ class GenericXML(object):
         """
         Add element node to self at root
         """
-        root = root if root else self.root
-        root.append(node)
+        root = root if root is not None else self.root
+        root.xml_element.append(node.xml_element)
 
     def remove_child(self, node, root=None):
-        root = root if root else self.root
-        root.remove(node)
+        root = root if root is not None else self.root
+        root.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
-        root = root if root else self.root
-        node = _Element(ET.SubElement(root, name, attrib=attributes))
+        root = root if root is not None else self.root
+        node = _Element(ET.SubElement(root.xml_element, name, attrib=attributes))
         if text:
             self.set_text(node, text)
 
         return node
 
     def get_children(self, name=None, attributes=None, root=None):
-        root = root if root else self.root
+        root = root if root is not None else self.root
         children = []
         for child in root.xml_element:
             if name is not None:
