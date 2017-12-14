@@ -134,7 +134,7 @@ class Grids(GenericXML):
             compset_attrib = self.get(grid_node, "compset")
             compset_match = re.search(compset_attrib, compset)
             if compset_match is not None:
-                model_grid[name_attrib] = grid_node.text
+                model_grid[name_attrib] = self.text(grid_node)
 
         # (2)loop over all of the "model grid" nodes and determine is there an alias match with the
         # input grid name -  if there is an alias match determine if the "compset" and "not_compset"
@@ -188,12 +188,12 @@ class Grids(GenericXML):
         grid_nodes = self.get_children("grid", root=model_gridnode)
         for grid_node in grid_nodes:
             name = self.get(grid_node, "name")
-            value = grid_node.text
+            value = self.text(grid_node)
             if model_grid[name] != "null":
                 model_grid[name] = value
         mask_node = self.get_optional_child("mask",root=model_gridnode)
         if mask_node is not None:
-            model_grid["mask"] = mask_node.text
+            model_grid["mask"] = self.text(mask_node)
         else:
             model_grid["mask"] = model_grid["ocnice"]
 
@@ -268,15 +268,15 @@ class Grids(GenericXML):
                         if mask_name is not None:
                             mask_match = re.search(mask_name, mask_attrib)
                         if grid_match is not None and mask_match is not None:
-                            domain_name = file_node.text
+                            domain_name = self.text(file_node)
                     elif grid_attrib is not None:
                         grid_match = re.search(comp_name.lower(), grid_attrib)
                         if grid_match is not None:
-                            domain_name = file_node.text
+                            domain_name = self.text(file_node)
                     elif mask_attrib is not None:
                         mask_match = re.search(mask_name.lower(), mask_attrib)
                         if mask_match is not None:
-                            domain_name = file_node.text
+                            domain_name = self.text(file_node)
                     if domain_name:
                         domains[file_name] = os.path.basename(domain_name)
                         path = os.path.dirname(domain_name)
@@ -373,9 +373,9 @@ class Grids(GenericXML):
                 nodes = self.get_children("gridmap", attributes={grid[0]:grid[1], other_grid[0]:other_grid[1]})
                 for gridmap_node in nodes:
                     for child in gridmap_node:
-                        gridmap = (self.name(child), child.text)
+                        gridmap = (self.name(child), self.text(child))
                         if gridmap is not None:
-                            gridmaps[self.name(child)] = child.text
+                            gridmaps[self.name(child)] = self.text(child)
                             logger.debug(" {}: {}".format(*gridmap))
 
         return gridmaps
@@ -392,7 +392,7 @@ class Grids(GenericXML):
         required_gridmaps_node = self.get_child("required_gridmaps")
         required_gridmap_nodes = self.get_children("required_gridmap", root=required_gridmaps_node)
         for node in required_gridmap_nodes:
-            gridmaps[node.text] = "idmap"
+            gridmaps[self.text(node)] = "idmap"
 
         # (2) determine values gridmaps for target grid
         for idx, grid in enumerate(grids):
@@ -411,7 +411,7 @@ class Grids(GenericXML):
                     map_nodes = self.get_children("map",root=gridmap_node)
                     for map_node in map_nodes:
                         name = self.get(map_node, "name")
-                        value = map_node.text
+                        value = self.text(map_node)
                         if name is not None and value is not None:
                             gridmaps[name] = value
                             logger.debug(" gridmap name,value are {}: {}"
@@ -428,12 +428,12 @@ class Grids(GenericXML):
             grid2_value = component_grids[prefix2]
             if grid1_value is not None and grid2_value is not None:
                 if grid1_value != grid2_value and grid1_value != 'null' and grid2_value != 'null':
-                    map_ = gridmaps[node.text]
+                    map_ = gridmaps[self.text(node)]
                     if map_ == 'idmap':
                         if grid1_name == "ocn_grid" and grid1_value == atm_gridvalue:
                             logger.debug('ocn_grid == atm_grid so this is not an idmap error')
                         else:
-                            logger.warning("Warning: missing non-idmap {} for {}, {} and {} {} ".format(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
+                            logger.warning("Warning: missing non-idmap {} for {}, {} and {} {} ".format(self.text(node), grid1_name, grid1_value, grid2_name, grid2_value))
 
         return gridmaps
 
@@ -459,7 +459,7 @@ class Grids(GenericXML):
             for grid_node in grid_nodes:
                 name = self.get(grid_node, "name")
                 compset = self.get(grid_node, "compset")
-                value = grid_node.text
+                value = self.text(grid_node)
                 logger.info("     {:6s}   {:15s}   {:10s}".format(name, compset, value))
         logger.info("{:5s}-------------------------------------------------------------".format(""))
 
@@ -475,7 +475,7 @@ class Grids(GenericXML):
                 files = ""
                 file_nodes = self.get_children("file", root=domain_node)
                 for file_node in file_nodes:
-                    filename = file_node.text
+                    filename = self.text(file_node)
                     mask_attrib = self.get(file_node, "mask")
                     grid_attrib = self.get(file_node, "grid")
                     files += "\n       " + filename
@@ -507,12 +507,12 @@ class Grids(GenericXML):
             grids = ""
             gridnames = []
             for grid_node in grid_nodes:
-                gridnames.append(grid_node.text)
-                grids += self.get(grid_node, "name") + ":" + grid_node.text + "  "
+                gridnames.append(self.text(grid_node))
+                grids += self.get(grid_node, "name") + ":" + self.text(grid_node) + "  "
             logger.info("       non-default grids are: {}".format(grids))
             mask_nodes = self.get_children("mask", root=model_grid_node)
             for mask_node in mask_nodes:
-                logger.info("       mask is: {}".format(mask_node.text))
+                logger.info("       mask is: {}".format(self.text(mask_node)))
             if long_output is not None:
                 gridnames = set(gridnames)
                 for gridname in gridnames:
@@ -548,7 +548,7 @@ class Grids(GenericXML):
                         logger.info("   domain is {}".format(domain))
                         domain_node = self.get_child("domain", attributes={"name":domain})
                         for child in domain_node:
-                            logger.info("        {}: {}".format(self.name(child), child.text))
+                            logger.info("        {}: {}".format(self.name(child), self.text(child)))
 
                 # write out mapping files
                 grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \
@@ -559,7 +559,7 @@ class Grids(GenericXML):
                         nodes = self.get_children("gridmap", attributes={grid[0]:grid[1], other_grid[0]:other_grid[1]})
                         for gridmap_node in nodes:
                             for child in gridmap_node:
-                                logger.info("    mapping file {}: {}".format(self.name(child), child.text))
+                                logger.info("    mapping file {}: {}".format(self.name(child), self.text(child)))
 
                 logger.info("   ")
 
@@ -598,7 +598,7 @@ class Grids(GenericXML):
                     domain_list = list()
                     domain_node = self.get_child("domain", attributes={"name":domain})
                     for child in domain_node:
-                        domain_list.append({'domain':self.name(child), 'text':child.text})
+                        domain_list.append({'domain':self.name(child), 'text':self.text(child)})
 
             grid_info.update({'domains': domain_list})
 
@@ -612,7 +612,7 @@ class Grids(GenericXML):
                     nodes = self.get_children("gridmap", attributes={grid[0]:grid[1], other_grid[0]:other_grid[1]})
                     for gridmap_node in nodes:
                         for child in gridmap_node:
-                            map_list.append({'map':self.name(child), 'file':child.text})
+                            map_list.append({'map':self.name(child), 'file':self.text(child)})
 
             grid_info.update({'maps': map_list})
 
@@ -631,7 +631,7 @@ class Grids(GenericXML):
             for grid_node in grid_nodes:
                 name = self.get(grid_node, "name")
                 compset = self.get(grid_node, "compset")
-                value = grid_node.text
+                value = self.text(grid_node)
                 default_comp_grids.append({'component':name,
                                            'compset':compset,
                                            'value':value,})
@@ -647,7 +647,7 @@ class Grids(GenericXML):
             files = ""
             file_nodes = self.get_children("file", root=domain_node)
             for file_node in file_nodes:
-                filename = file_node.text
+                filename = self.text(file_node)
                 mask_attrib = self.get(file_node, "mask")
                 grid_attrib = self.get(file_node, "grid")
                 files += "\n       " + filename
@@ -681,14 +681,14 @@ class Grids(GenericXML):
             grids = ""
             gridnames = []
             for grid_node in grid_nodes:
-                gridnames.append(grid_node.text)
-                grids += self.get(grid_node, "name") + ":" + grid_node.text + "  "
+                gridnames.append(self.text(grid_node))
+                grids += self.get(grid_node, "name") + ":" + self.text(grid_node) + "  "
             grids = "       non-default grids are: %s" %grids
 
             mask = ""
             mask_nodes = self.get_children("mask", root=model_grid_node)
             for mask_node in mask_nodes:
-                mask += "\n       mask is: %s" %(mask_node.text)
+                mask += "\n       mask is: %s" %(self.text(mask_node))
 
             grids_dict[alias] = {'aliases':aliases,
                                  'grids':grids,

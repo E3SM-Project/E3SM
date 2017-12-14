@@ -76,10 +76,10 @@ class Testlist(GenericXML):
                     for mach in machnodes:
                         thistest = {}
                         save_this = True
-                        if machine is None or (machine is not None and mach.text == machine):
+                        if machine is None or (machine is not None and self.text(mach) == machine):
                             thistest["compiler"] = self.get(mach, "compiler")
                             thistest["category"] = self.get(mach, "testtype")
-                            thistest["machine"] = mach.text
+                            thistest["machine"] = self.text(mach)
                             thistest["testname"] = self.get(tnode, "name")
                             thistest["grid"] = self.get(gnode, "name")
                             thistest["compset"] = self.get(cnode, "name")
@@ -138,12 +138,12 @@ class Testlist(GenericXML):
                     options = self.get_child("options", root=tnode)
                     optionnodes = self.get_children("option", root=options)
                     for onode in optionnodes:
-                        this_test['options'][self.get(onode, 'name')] = onode.text
+                        this_test['options'][self.get(onode, 'name')] = self.text(onode)
 
                     # Now get options specific to this machine/compiler
                     optionnodes = self.get_children("option", root=mach)
                     for onode in optionnodes:
-                        this_test['options'][self.get(onode, 'name')] = onode.text
+                        this_test['options'][self.get(onode, 'name')] = self.text(onode)
 
 
                     tests.append(this_test)

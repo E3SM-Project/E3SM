@@ -72,7 +72,7 @@ class EnvBatch(EnvBase):
         if subgroup is None:
             node = self.get_optional_child(item, attribute)
             if node is not None:
-                value = node.text
+                value = self.text(node)
                 if resolved:
                     value = self.get_resolved_value(value)
             else:
@@ -220,7 +220,7 @@ class EnvBatch(EnvBase):
                 if queue is None:
                     logger.warning("WARNING: No queue on this system met the requirements for this job. Falling back to defaults")
                     default_queue_node = self.get_default_queue()
-                    queue = default_queue_node.text
+                    queue = self.text(default_queue_node)
                     walltime = self.get_queue_specs(queue)[3]
 
             if walltime is None:
@@ -250,7 +250,7 @@ class EnvBatch(EnvBase):
             if root is not None:
                 nodes = self.get_children("directive", root=root)
                 for node in nodes:
-                    directive = self.get_resolved_value("" if node.text is None else node.text)
+                    directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
                     default = self.get(node, "default")
                     if default is None:
                         directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
@@ -542,7 +542,7 @@ class EnvBatch(EnvBase):
         all_queues = all_queues + self.get_all_queues()
         for queue in all_queues:
             if queue is not None:
-                qname = queue.text
+                qname = self.text(queue)
                 if self.queue_meets_spec(qname, num_nodes, walltime=walltime, job=job):
                     return qname
 
@@ -555,7 +555,7 @@ class EnvBatch(EnvBase):
         Returns (nodemin, nodemax, jobname, walltimemax, is_strict)
         """
         for queue_node in self.get_all_queues():
-            if queue_node.text == queue:
+            if self.text(queue_node) == queue:
                 nodemin = self.get(queue_node, "nodemin")
                 nodemax = self.get(queue_node, "nodemax")
                 jobname = self.get(queue_node, "jobname")
@@ -590,7 +590,7 @@ class EnvBatch(EnvBase):
         if batch_query is None:
             logger.warning("Batch queries not supported on this platform")
         else:
-            cmd = batch_query.text + " "
+            cmd = self.text(batch_query) + " "
             if self.has(batch_query, "per_job_arg"):
                 cmd += self.get(batch_query, "per_job_arg") + " "
 
@@ -608,7 +608,7 @@ class EnvBatch(EnvBase):
             logger.warning("Batch cancellation not supported on this platform")
             return False
         else:
-            cmd = batch_cancel.text + " "  + str(jobid)
+            cmd = self.text(batch_cancel) + " "  + str(jobid)
 
             status, out, err = run_cmd(cmd)
             if status != 0:

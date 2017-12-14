@@ -29,13 +29,13 @@ class EnvTest(EnvBase):
         """
         tnode = self.get_child("test")
         for child in tnode:
-            if child.text is not None:
-                logger.debug("Setting {} to {} for test".format(self.name(child), child.text))
-                if "$" in child.text:
-                    case.set_value(self.name(child),child.text,ignore_type=True)
+            if self.text(child) is not None:
+                logger.debug("Setting {} to {} for test".format(self.name(child), self.text(child)))
+                if "$" in self.text(child):
+                    case.set_value(self.name(child),self.text(child),ignore_type=True)
                 else:
                     item_type = case.get_type_info(self.name(child))
-                    value = convert_to_type(child.text,item_type,self.name(child))
+                    value = convert_to_type(self.text(child),item_type,self.name(child))
                     case.set_value(self.name(child),value)
         case.flush()
         return
@@ -52,7 +52,7 @@ class EnvTest(EnvBase):
         if idnode is None:
             self.make_child(name, root=tnode, text=value)
         else:
-            idnode.text = value
+            self.set_text(idnode, value)
 
     def get_test_parameter(self, name):
         case = self.get_value("TESTCASE")
@@ -60,7 +60,7 @@ class EnvTest(EnvBase):
         value = None
         idnode = self.get_optional_child(name, root=tnode)
         if idnode is not None:
-            value = idnode.text
+            value = self.text(idnode)
         return value
 
     def get_step_phase_cnt(self,step):
@@ -75,8 +75,8 @@ class EnvTest(EnvBase):
         settings = []
         if node is not None:
             for child in node:
-                logger.debug ("Here child is {} with value {}".format(self.name(child), child.text))
-                settings.append((self.name(child), child.text))
+                logger.debug ("Here child is {} with value {}".format(self.name(child), self.text(child)))
+                settings.append((self.name(child), self.text(child)))
 
         return settings
 

@@ -123,7 +123,7 @@ class Compilers(GenericXML):
 
         node = self.get_optional_compiler_node(name, attributes=attribute)
         if node is not None:
-            value = node.text
+            value = self.text(node)
 
         if value is None:
             # if all else fails
@@ -234,7 +234,7 @@ def _add_to_macros(db, node, macros):
     for child in node:
         name = db.name(child)
         attrib = db.attrib(child)
-        value = child.text
+        value = db.text(child)
 
         if not attrib:
             if name.startswith("ADD_"):

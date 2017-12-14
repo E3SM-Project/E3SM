@@ -33,7 +33,7 @@ class EnvMachSpecific(EnvBase):
             nodes = machobj.get_first_child_nodes(item)
             if item == "run_exe" or item == "run_misc_suffix":
                 if len(nodes) == 0:
-                    value = default_run_exe_node.text if item == "run_exe" else default_run_misc_suffix_node.text
+                    value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
                 else:
                     value = nodes[0].text
 
@@ -182,7 +182,7 @@ class EnvMachSpecific(EnvBase):
                 for child in node:
                     expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
                     if (self._match_attribs(self.attrib(child), case)):
-                        val = child.text
+                        val = self.text(child)
                         if val is not None:
                             # We allow a couple special substitutions for these fields
                             for repl_this, repl_with in [("$COMPILER", compiler), ("$MPILIB", mpilib)]:
@@ -329,11 +329,11 @@ class EnvMachSpecific(EnvBase):
 
     def get_module_system_init_path(self, lang):
         init_nodes = self.get_optional_child("init_path", attributes={"lang":lang})
-        return init_nodes.text if init_nodes is not None else None
+        return self.text(init_nodes) if init_nodes is not None else None
 
     def get_module_system_cmd_path(self, lang):
         cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang})
-        return cmd_nodes.text if cmd_nodes is not None else None
+        return self.text(cmd_nodes) if cmd_nodes is not None else None
 
     def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
         """
@@ -394,7 +394,7 @@ class EnvMachSpecific(EnvBase):
             if arg_node is not None:
                 arg_nodes = self.get_children("arg", root=arg_node)
                 for arg_node in arg_nodes:
-                    arg_value = transform_vars(arg_node.text,
+                    arg_value = transform_vars(self.text(arg_node),
                                                case=case,
                                                subgroup=job,
                                                default=self.get(arg_node, "default"))
@@ -402,6 +402,6 @@ class EnvMachSpecific(EnvBase):
 
         exec_node = self.get_child("executable", root=the_match)
         expect(exec_node is not None,"No executable found")
-        executable = exec_node.text
+        executable = self.text(exec_node)
 
         return executable, args

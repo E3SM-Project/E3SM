@@ -125,7 +125,7 @@ class EntryID(GenericXML):
                 expect(False,
                        "match attribute can only have a value of 'last' or 'first', value is %s" %match_type)
 
-        return mnode.text
+        return self.text(mnode)
 
     def get_node_element_info(self, vid, element_name):
         node = self.get_optional_child("entry", {"id":vid})
@@ -417,8 +417,8 @@ class EntryID(GenericXML):
                                     for f2valnode in f2valnodes:
                                         if self.attrib(valnode) is None and self.attrib(f2valnode) is None or \
                                            self.attrib(f2valnode) == self.attrib(valnode):
-                                            if other.get_resolved_value(f2valnode.text) != self.get_resolved_value(valnode.text):
-                                                xmldiffs["{}:{}".format(vid, self.attrib(valnode))] = [valnode.text, f2valnode.text]
+                                            if other.get_resolved_value(self.text(f2valnode)) != self.get_resolved_value(self.text(valnode)):
+                                                xmldiffs["{}:{}".format(vid, self.attrib(valnode))] = [self.text(valnode), self.text(f2valnode)]
         return xmldiffs
 
     def overwrite_existing_entries(self):

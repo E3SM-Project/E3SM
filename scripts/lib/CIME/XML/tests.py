@@ -30,7 +30,7 @@ class Tests(GenericXML):
     def get_test_node(self, testname):
         logger.debug("Get settings for {}".format(testname))
         node = self.get_child("test",{"NAME":testname})
-        logger.debug("Found {}".format(node.text))
+        logger.debug("Found {}".format(self.text(node)))
         return node
 
     def print_values(self, skip_infrastructure_tests=True):

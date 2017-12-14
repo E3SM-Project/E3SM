@@ -48,21 +48,21 @@ class EnvArchive(GenericXML):
     def get_entry_value(self, name, archive_entry):
         node = self.get_optional_child(name, root=archive_entry)
         if node is not None:
-            return node.text
+            return self.text(node)
         return None
 
     def get_rest_file_extensions(self, archive_entry):
         file_extensions = []
         nodes = self.get_children('rest_file_extension', root=archive_entry)
         for node in nodes:
-            file_extensions.append(node.text)
+            file_extensions.append(self.text(node))
         return file_extensions
 
     def get_hist_file_extensions(self, archive_entry):
         file_extensions = []
         nodes = self.get_children('hist_file_extension', root=archive_entry)
         for node in nodes:
-            file_extensions.append(node.text)
+            file_extensions.append(self.text(node))
         return file_extensions
 
     def get_rpointer_contents(self, archive_entry):
@@ -71,5 +71,5 @@ class EnvArchive(GenericXML):
         for rpointer_node in rpointer_nodes:
             file_node = self.get_child('rpointer_file', root=rpointer_node)
             content_node = self.get_child('rpointer_content', root=rpointer_node)
-            rpointer_items.append([file_node.text,content_node.text])
+            rpointer_items.append([self.text(file_node),self.text(content_node)])
         return rpointer_items

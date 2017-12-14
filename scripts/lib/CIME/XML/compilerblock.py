@@ -115,7 +115,7 @@ class CompilerBlock(object):
         modified and thus serve as additional outputs.
         """
         writer = self._writer
-        output = elem.text
+        output = self._db.text(elem)
         if output is None:
             output = ""
         logger.debug("Initial output={}".format(output))
@@ -160,7 +160,7 @@ class CompilerBlock(object):
         for child in elem:
             if self._db.name(child) == "env":
                 # <env> tags just need to be expanded by the writer.
-                output += writer.environment_variable_string(child.text)
+                output += writer.environment_variable_string(self._db.text(child))
             elif self._db.name(child) == "shell":
                 # <shell> tags can contain other tags, so handle those.
                 command = self._handle_references(child, set_up, tear_down,
@@ -176,7 +176,7 @@ class CompilerBlock(object):
             elif self._db.name(child) == "var":
                 # <var> commands also need expansion by the writer, and can
                 # add dependencies.
-                var_name = child.text
+                var_name = self._db.text(child)
                 output += writer.variable_string(var_name)
                 depends.add(var_name)
             else:

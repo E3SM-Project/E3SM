@@ -69,7 +69,7 @@ class Component(EntryID):
         if val_node is None:
             logger.debug("No default_value for {}".format(self.get(node, "id")))
             return val_node
-        value = val_node.text
+        value = self.text(val_node)
         if value is not None and len(value) > 0 and value != "UNSET":
             match_values.append(value)
 
@@ -90,14 +90,14 @@ class Component(EntryID):
             if match_count > 0:
                 # append the current result
                 if self.get(values, "modifier") == "additive":
-                    match_values.append(valnode.text)
+                    match_values.append(self.text(valnode))
 
                 # replace the current result if it already contains the new value
                 # otherwise append the current result
                 elif self.get(values, "modifier") == "merge":
-                    if valnode.text in match_values:
+                    if self.text(valnode) in match_values:
                         del match_values[:]
-                    match_values.append(valnode.text)
+                    match_values.append(self.text(valnode))
 
                 else:
                     if match_type == "last":
@@ -105,13 +105,13 @@ class Component(EntryID):
                         if match_count >= match_max:
                             del match_values[:]
                             match_max = match_count
-                            match_value = valnode.text
+                            match_value = self.text(valnode)
                     elif match_type == "first":
                         # take the *first* best match
                         if match_count > match_max:
                             del match_values[:]
                             match_max = match_count
-                            match_value = valnode.text
+                            match_value = self.text(valnode)
                     else:
                         expect(False, "match attribute can only have a value of 'last' or 'first'")
 
@@ -169,7 +169,7 @@ class Component(EntryID):
                     expect(len(desc)==0,
                            "Too many matches on forcing field {} in file {}".\
                                format(forcing, self.filename))
-                    desc = node.text
+                    desc = self.text(node)
             if desc is None:
                 desc = compsetname.split('_')[0]
             return desc
@@ -179,7 +179,7 @@ class Component(EntryID):
         for node in desc_nodes:
             option = self.get(node, 'option')
             if option is not None:
-                optiondesc[option] = node.text
+                optiondesc[option] = self.text(node)
 
         #second pass find a comp_class match
         desc = ""
@@ -193,7 +193,7 @@ class Component(EntryID):
                 fullset = set(parts+opt_parts)
                 match, complist =  self._get_description_match(compsetname, reqset, fullset, modifier_mode)
                 if match:
-                    desc = node.text
+                    desc = self.text(node)
                     for opt in complist:
                         if opt in optiondesc:
                             desc += optiondesc[opt]
@@ -266,7 +266,7 @@ class Component(EntryID):
         for node in desc_nodes:
             compsetmatch = self.get(node, "compset")
             if compsetmatch is not None and re.search(compsetmatch, compsetname):
-                desc += node.text
+                desc += self.text(node)
 
         return desc
 
@@ -275,14 +275,14 @@ class Component(EntryID):
         print values for help and description in target config_component.xml file
         """
         rootnode = self.get_child("help")
-        helptext = rootnode.text
+        helptext = self.text(rootnode)
 
         rootnode = self.get_child("description")
         compsets = {}
         descs = self.get_children("desc", root=rootnode)
         for desc in descs:
             attrib = self.get(desc, "compset")
-            text = desc.text
+            text = self.text(desc)
             compsets[attrib] = text
 
         logger.info(" {}".format(helptext))
