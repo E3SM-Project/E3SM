@@ -46,20 +46,13 @@ class GenericXML(object):
         Read and parse an xml file into the object
         """
         logger.debug("read: " + infile)
-        if six.PY3:
-            with open(infile, mode='r', encoding='utf-8') as fd:
-                if self.tree:
-                    self.root.append(ET.parse(fd).getroot())
-                else:
-                    self.tree = ET.parse(fd)
-                    self.root = self.tree.getroot()
-        else:
-            with open(infile, mode='r') as fd:
-                if self.tree:
-                    self.root.append(ET.parse(fd).getroot())
-                else:
-                    self.tree = ET.parse(fd)
-                    self.root = self.tree.getroot()
+        file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
+        with file_open(infile) as fd:
+            if self.tree:
+                self.root.append(ET.parse(fd).getroot())
+            else:
+                self.tree = ET.parse(fd)
+                self.root = self.tree.getroot()
 
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
