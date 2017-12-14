@@ -108,12 +108,6 @@
       <grid name="rof">null</grid>
     </model_grid>
 
-    <model_grid alias="1x1_tropicAtl" compset="DATM.+CLM">
-      <grid name="atm">1x1_tropicAtl</grid>
-      <grid name="lnd">1x1_tropicAtl</grid>
-      <grid name="rof">null</grid>
-    </model_grid>
-
     <model_grid alias="1x1_urbanc_alpha" compset="DATM.+CLM">
       <grid name="atm">1x1_urbanc_alpha</grid>
       <grid name="lnd">1x1_urbanc_alpha</grid>
@@ -990,12 +984,6 @@
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
       <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>
-    </domain>
-
-    <domain name="1x1_tropicAtl">
-      <nx>1</nx> <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-tropicAtl_test.111004.nc</file>
-      <desc>1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_urbanc_alpha">
