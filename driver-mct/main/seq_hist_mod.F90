@@ -168,7 +168,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    integer(IN)   :: lsize        ! local size of an aVect
    real(r8)      :: tbnds(2)     ! CF1.0 time bounds
    logical       :: whead,wdata  ! for writing restart/history cdf files
-
+   character(len=6) :: year_char
    type(mct_gsMap), pointer :: gsmap
    type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
 !-------------------------------------------------------------------------------
@@ -215,8 +215,9 @@ subroutine seq_hist_write(infodata, EClock_d, &
         start_ymd=start_ymd, start_tod=start_tod, curr_time=curr_time, &
         calendar=calendar)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
-   write(hist_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-      trim(case_name), '.cpl'//cpl_inst_tag//'.hi.', yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+   write(year_char, '(i6.4)') yy
+   write(hist_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
+      trim(case_name), '.cpl'//cpl_inst_tag//'.hi.', trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
 
    time_units = 'days since ' &
         // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
