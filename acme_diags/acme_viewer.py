@@ -370,8 +370,8 @@ def create_viewer(root_dir, parameters, ext):
                             row_name_and_fnm.append((row_name, fnm))
                         else:  # 3d variables
                             for plev in parameter.plevs:
-                                row_name = '{} {} {}'.format(
-                                    var, str(int(plev)) + ' mb', region)
+                                row_name = '{} {} {} {}'.format(
+                                    var, str(int(plev)) + ' mb', region, ref_name)
                                 fnm = '{}-{}-{}-{}-{}'.format(
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
