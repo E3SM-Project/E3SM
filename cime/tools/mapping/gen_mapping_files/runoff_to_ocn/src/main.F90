@@ -209,6 +209,14 @@ if (step3) then
    call map_dup(map_orig,map_new)
    map_new%title  = trim(title)
    map_new%domain_b = trim(map_smooth%domain_b)
+
+   ! Need to use mask_b and frac_b from the smooth map rather than the nearest neighbor
+   ! map because, in the case where the nearest neighbor map uses a file_ocn_coastal_mask
+   ! that is a subset of file_ocn, the nearest neighbor map has a too-limited mask_b and
+   ! frac_b (containing only the coastal points).
+   map_new%mask_b = map_smooth%mask_b
+   map_new%frac_b = map_smooth%frac_b
+
    call map_matMatMult(map_orig,map_new,map_smooth) ! mult(A,B,S): B=S*A
    call mapsort_sort(map_new)
    call map_check(map_new)

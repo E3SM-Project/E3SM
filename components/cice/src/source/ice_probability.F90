@@ -361,7 +361,8 @@ if(my_task == master_task) then
 !		numIce,' IceFree blocks: ',numIceFree
    write(*,23) nblocks_tot,numIce,numIceFree,numLnd 
 
-23   format('CalcWorkPerBlock: Total blocks: ',i5,' Ice blocks: ',i5,' IceFree blocks: ',i5,' Land blocks: ',i5)
+23   format('CalcWorkPerBlock: Total blocks: ',i10,' Ice blocks: ',i10,' IceFree blocks: ',i10, &
+            ' Land blocks: ',i10)
 
 endif
    !-----------------------------------------------------------------

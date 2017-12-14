@@ -72,14 +72,13 @@ set ne = 2
 set tstep = 180
 set NPTS = 4
 set qsize = 2
-set energy_fixer = 0
 set LFTfreq=0
 
 # compate these settings to debug-tadv0.out
 #set tadv = 0 ; set RK2 = 0 ; set qsplit = 1
 
 # compare these settings with debug-sub3.out:
-set tadv = 1 ; set RK2 = 1 ; set qsplit = 3 ; set energy_fixer = -1
+set tadv = 1 ; set RK2 = 1 ; set qsplit = 3 
 
 
 set dorun1 = 1   # make the restart file
@@ -239,7 +238,6 @@ sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
 sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
 sed s/qsize.\*/"qsize = $qsize"/  |\
 sed s/NThreads.\*/"nthreads = $nthreads"/  |\
-sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/  |\
 sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv tstep_type=$RK2 qsplit=$qsplit  LFTfreq=$LFTfreq"/  |\
 sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl
 if ( $bigendian == 1 ) then
@@ -286,7 +284,6 @@ sed s/NE/$ne/ debug${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/NMAX/$nmax/ | se
 sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
 sed s/runtype.\*/"runtype = 1"/ |\
 sed s/qsize.\*/"qsize = $qsize"/  |\
-sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/  |\
 sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv tstep_type = $RK2 qsplit = $qsplit"/  |\
 sed s@R0001@$rname@ |\
 sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl

@@ -10,7 +10,7 @@ contains
     !-----------------
     use parallel_mod, only : parallel_t, syncmp, abortmp
     !-----------------
-    use thread_mod, only : nthreads
+    use thread_mod, only : hthreads
     !-----------------
     use hybrid_mod, only : hybrid_t, hybrid_create
     !-----------------
@@ -187,7 +187,7 @@ contains
     ! begin executable code
     ! ==========================
     call t_startf('sweq')
-    hybrid = hybrid_create(par,ithr,NThreads)
+    hybrid = hybrid_create(par,ithr,hthreads)
     simday=0
     if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete)
@@ -396,7 +396,7 @@ contains
           ! ============================================== 
           ! I/O routines are not thread safe
           ! we need to stop threads and restart after I/O
-          if (NThreads>1) then
+          if (hthreads>1) then
              call abortmp('Shallow water model I/O can not be called with threads')
           endif
 #ifdef PIO_INTERP
@@ -802,7 +802,7 @@ contains
     !-----------------
     use parallel_mod, only : parallel_t, syncmp
     !-----------------
-    use thread_mod, only : nthreads
+    use thread_mod, only : hthreads
     !-----------------
     use hybrid_mod, only : hybrid_t, hybrid_create
     !-----------------
@@ -910,7 +910,7 @@ contains
     ! ==========================
     call t_startf('sweq')
 
-    hybrid = hybrid_create(par,ithr,NThreads)
+    hybrid = hybrid_create(par,ithr,hthreads)
 
     if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete,mindx)

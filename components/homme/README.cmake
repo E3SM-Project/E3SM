@@ -30,8 +30,8 @@ HOMME has a large regression test suite.  For instructions on running and adding
 new tests, see homme/test/reg_test/README
 
 HOMME's regression tests use "cprnc" to compute differences between NETCDF files. HOMME
-will attempt to build this on ACME-CIME supported systems.  For non-CIME supportes systems,
-you can compile this independently (source: cime/tools/cprnc)  and specify its location by setting
+will attempt to build this from source (cime/tools/cprnc).  If you have trouble,
+you can compile this independently and specify its location by setting
 CPRNC_DIR in the cmake/machineFiles/yourmachine.cmake
 To compile cprnc outside of CIME, edit the cprnc Makefile to comment out the Macros.cmake 
 and set NETCDF_PATH, FC, and LDFLAGS=-L$(LIB_NETCDF) -lnetcdff -lnetcdf

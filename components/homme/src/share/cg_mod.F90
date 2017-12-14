@@ -142,7 +142,7 @@ contains
 
     cg%hybrid%par      = hybrid%par
     cg%hybrid%ithr     = hybrid%ithr
-    cg%hybrid%NThreads = hybrid%NThreads
+    cg%hybrid%hthreads = hybrid%hthreads
     cg%initalized      = 0
 
   end subroutine cg_create

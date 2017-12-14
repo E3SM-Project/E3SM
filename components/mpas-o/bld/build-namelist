@@ -686,6 +686,7 @@ add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
 add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
+add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
 
 ###########################
 # Namelist group: forcing #
@@ -890,7 +891,7 @@ add_default($nl, 'config_use_activeTracers_surface_bulk_forcing');
 if ($OCN_FORCING eq 'core_forced_restoring') {
 	add_default($nl, 'config_use_activeTracers_surface_restoring', 'val'=>".true.");
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
-	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
+	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-5");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
 	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".false.");
 } else {
@@ -900,6 +901,7 @@ if ($OCN_FORCING eq 'core_forced_restoring') {
 	add_default($nl, 'config_salinity_restoring_max_difference');
 	add_default($nl, 'config_salinity_restoring_under_sea_ice');
 }
+add_default($nl, 'config_surface_salinity_monthly_restoring_compute_interval');
 add_default($nl, 'config_use_activeTracers_interior_restoring');
 add_default($nl, 'config_use_activeTracers_exponential_decay');
 add_default($nl, 'config_use_activeTracers_idealAge_forcing');
@@ -1491,13 +1493,28 @@ for my $var ($nl->get_variable_names('derived')) {
   $nl->set_variable_value($broken[1], $broken[0], $val);
 }
 
-# Write out all groups  to mpas-o_in
+# Write out all groups to mpas-o_in
 my $outfile = "./mpas-o_in";
 $nl->write($outfile, 'groups'=>\@groups);
 if ($print>=2) { print "Writing mpas-o ocean component namelist to $outfile $eol"; }
 
+#--------------------------------------------------------------------
+# Append namelist specified files to input data file
+#     currently just the graph file -- which is complicated because the prefix
+#     is set in the namelist and the suffix comes from the number of tasks
+#--------------------------------------------------------------------
+
+open(my $input_list, ">>", "$CASEBUILD/mpas-o.input_data_list") or
+     die "** can't open filepath file: mpas-o.input_data_list\n";
+my $block_decomp_file_prefix = $nl->get_value( 'config_block_decomp_file_prefix' );
+# remove quotes for concatenation
+$block_decomp_file_prefix =~ s/['"]//g;
+my $block_decomp_file = $block_decomp_file_prefix . $NTASKS_OCN;
+print $input_list "graph$NTASKS_OCN = $block_decomp_file\n";
+$input_list->close;
+
 # Write input dataset list.
-check_input_files($DIN_LOC_ROOT, "../mpas-o.input_data_list");
+check_input_files($DIN_LOC_ROOT, "$CASEBUILD/mpas-o.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT

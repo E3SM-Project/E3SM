@@ -17,7 +17,6 @@ tstep=600
 rsplit=3
 qsplit = 1
 tstep_type = 5
-energy_fixer  = -1
 integration   = "explicit"
 theta_hydrostatic_mode=.false.
 smooth        = 0

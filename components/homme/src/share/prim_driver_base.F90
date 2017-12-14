@@ -20,8 +20,6 @@ module prim_driver_base
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
-  use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
-
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
@@ -43,7 +41,7 @@ contains
   subroutine prim_init1(elem, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, nThreadsHoriz
+    use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
          partmethod, use_semi_lagrange_transport, z2_map_method, cubed_sphere_map
@@ -139,7 +137,6 @@ contains
 
     integer total_nelem
     real(kind=real_kind) :: approx_elements_per_task
-    integer :: n_domains
     type (quadrature_t)   :: gp                     ! element GLL points
 
 
@@ -350,13 +347,40 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    n_domains = min(Nthreads,nelemd)
+    !
+    ! At this point, we can assume: 
+    ! nthreads was set by CAM driver, or in namelist and error checked
+    ! if CAM is running w/o threads, nthreads=0 
+    ! vthreads=1 or read from namelist and verified consistent with COLUMN_OPENMP
+    ! 
+    ! set hthreads, and check that vthreads was not set too large
+    if (vthreads > max(nthreads,1) .or. vthreads < 1) &
+         call abortmp('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+#if defined(HORIZ_OPENMP) && defined (COLUMN_OPENMP)
+    if (vthreads>1) call omp_set_nested(.true.)
+#endif
+    hthreads = max(nthreads,1) / vthreads
+    hthreads = min(max(nthreads,1),nelemd)
+    if(par%masterproc) then
+       write(iulog,*) "prim_init1: total threads: nthreads = ",nthreads
+       write(iulog,*) "threads across elements    hthreads = ",hthreads
+       write(iulog,*) "threading within elements  vthreads = ",vthreads
+    endif
+
+#ifndef COLUMN_OPENMP
+    if (vthreads>1) call abortmp('Error: vthreads>1 requires -DCOLUMN_OPENMP')
+#endif
+#ifndef HORIZ_OPENMP
+    if (hthreads>1) call abortmp('Error: hthreads>1 requires -DHORIZ_OPENMP')
+#endif
+    
+
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
     if(par%masterproc) write(iulog,*) 'init shared boundary_exchange buffers'
-    call InitReductionBuffer(red,3*nlev,n_domains)
+    call InitReductionBuffer(red,3*nlev,hthreads)
     call InitReductionBuffer(red_sum,5)
     call InitReductionBuffer(red_sum_int,1)
     call InitReductionBuffer(red_max,1)
@@ -465,29 +489,18 @@ contains
     deallocate(HeadPartition)
 
 
-    ! =====================================
-    ! Set number of threads...
-    ! =====================================
-    nthreads = n_domains
-    if(par%masterproc) then
-       write(iulog,*) "Main:NThreads=",NThreads
-       write(iulog,*) "Main:n_domains = ",n_domains
-    endif
-
-    allocate(dom_mt(0:n_domains-1))
-    do ith=0,n_domains-1
-       dom_mt(ith)=decompose(1,nelemd,n_domains,ith)
+    allocate(dom_mt(0:hthreads-1))
+    do ith=0,hthreads-1
+       dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
     end do
     ith=0
     nets=1
     nete=nelemd
-    ! set the actual number of threads which will be used in the horizontal
-    nThreadsHoriz = nthreads
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
-    call Prim_Advec_Init1(par, elem,n_domains)
+    call Prim_Advec_Init1(par, elem)
 
 
     if ( use_semi_lagrange_transport) then

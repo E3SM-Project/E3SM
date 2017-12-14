@@ -78,7 +78,7 @@
     </submit_args>
   </batch_system>
 
-  <batch_system type="lsf" version="10.1">
+  <batch_system type="lsf_old" version="10.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
@@ -105,6 +105,34 @@
       <!-- <directive default="poe"         > -a {{ poe }} </directive> -->
       <directive default="acme.stdout" > -o {{ job_id }}.%J  </directive>
       <directive default="acme.stderr" > -e {{ job_id }}.%J  </directive>
+      <directive                       > -J {{ job_id }} </directive>
+    </directives>
+  </batch_system>
+
+  <!-- This is the version on Summitdev, released as IBM release beta2 on Oct 17, 2017.
+       Created a new section as it conflicts with previous LSF settings-->
+  <batch_system type="lsf" version="2">
+    <batch_query args=" -w" >bjobs</batch_query>
+    <batch_submit>bsub</batch_submit>
+    <batch_cancel>bkill</batch_cancel>
+    <batch_directive>#BSUB</batch_directive>
+    <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
+    <depend_string> -w 'done(jobid)'</depend_string>
+    <depend_separator>&amp;&amp;</depend_separator>
+    <walltime_format>%H:%M</walltime_format>
+    <batch_mail_flag>-u</batch_mail_flag>
+    <batch_mail_type_flag></batch_mail_type_flag>
+    <batch_mail_type></batch_mail_type>
+    <submit_args>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-P" name="$CHARGE_ACCOUNT"/>
+    </submit_args>
+    <directives>
+      <directive                       > -nnodes {{ num_nodes }} </directive>
+      <directive                       > -N  </directive>
+      <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
+      <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
     </directives>
   </batch_system>
@@ -161,33 +189,32 @@
   </batch_system>
 
   <!-- for lawrence livermore computing -->
-   <batch_system type="lc_slurm">
-     <batch_submit>sbatch</batch_submit>
-     <batch_cancel>scancel</batch_cancel>
-     <batch_directive>#SBATCH</batch_directive>
-     <jobid_pattern>(\d+)$</jobid_pattern>
-     <depend_string> -l depend=jobid</depend_string>
-     <depend_separator>:</depend_separator>
-     <walltime_format>%H:%M:%S</walltime_format>
-     <batch_mail_flag>--mail-user</batch_mail_flag>
-     <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
-     <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
-     <directives>
-       <directive>--export=ALL</directive>
-       <directive>-p {{ job_queue }}</directive>
-       <directive>-J {{ job_id }}</directive>
-       <directive>-N {{ num_nodes }}</directive>
-       <directive>-n {{ total_tasks }}</directive>
-       <directive>-t {{ job_wallclock_time }}</directive>
-       <directive>-o {{ job_id }}.out</directive>
-       <directive>-e {{ job_id }}.err</directive>
-       <directive>--mail-type=all</directive>
+  <batch_system type="lc_slurm">
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string> -l depend=jobid</depend_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <directives>
+      <directive>--export=ALL</directive>
+      <directive>-p {{ job_queue }}</directive>
+      <directive>-J {{ job_id }}</directive>
+      <directive>-N {{ num_nodes }}</directive>
+      <directive>-n {{ total_tasks }}</directive>
+      <directive>-t {{ job_wallclock_time }}</directive>
+      <directive>-o {{ job_id }}.out</directive>
+      <directive>-e {{ job_id }}.err</directive>
       <directive> -A {{ project }} </directive>
-     </directives>
-     <queues>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="270" default="true">pbatch</queue>
-     </queues>
-   </batch_system>
+    </directives>
+    <queues>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="270" default="true">pbatch</queue>
+    </queues>
+  </batch_system>
   <!-- for lawrence livermore computing -->
 
   <batch_system type="slurm" >
@@ -305,7 +332,6 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--mail-type=END</directive>
 	<directive>--mail-user=email@pnnl.gov</directive>
       </directives>
       <queues>
@@ -315,10 +341,8 @@
 
    <batch_system MACH="constance" type="slurm">
     <directives>
-       <directive>--mail-type=END</directive>
-       <directive>--mail-user=email@pnnl.gov</directive>
-       <directive>--output=slurm.out</directive>
-       <directive>--error=slurm.err</directive>
+      <directive>--output=slurm.out</directive>
+      <directive>--error=slurm.err</directive>
     </directives>
     <queues>
       <queue walltimemax="00:59:00" nodemin="1" nodemax="416" default="true">slurm</queue>
@@ -328,8 +352,6 @@
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--mail-type=END</directive>
-       <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
      </directives>
@@ -338,14 +360,7 @@
      </queues>
    </batch_system>
 
-  <batch_system MACH="skybridge" type="slurm" >
-    <queues>
-      <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
-      <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="chama" type="slurm" >
+  <batch_system MACH="sandiatoss3" type="slurm" >
     <queues>
       <queue nodemin="1" nodemax="12" walltimemax="04:00:00" default="true">short</queue>
       <queue nodemin="1" nodemax="64" walltimemax="24:00:00">batch</queue>
@@ -447,14 +462,16 @@
    <batch_system MACH="summitdev" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
+       <directive>-alloc_flags gpumps</directive>
      </directives>
+
      <queues>
        <queue walltimemax="01:00" nodemin="0" nodemax="54" default="true">batch</queue>
 	   <!--
-	   jobmax = 54nodes*20cores*16th = 8640
 	   Nodes	Max Walltime
 	   <=4		4 hours
 	   >4		1 hour
+	   jobmax = 54nodes*20cores*16th = 8640
 	   -->
      </queues>
    </batch_system>

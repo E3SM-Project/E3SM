@@ -29,7 +29,6 @@ SET(NC_OUTPUT_FILES
 
 
 # OMP tests (disabled for now)
-#SET(OMP_SUB_TESTS true)
 #SET(OMP_NUM_THREADS 4)
 #SET(OMP_NAMELIST_FILES 
 #${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp4.nl

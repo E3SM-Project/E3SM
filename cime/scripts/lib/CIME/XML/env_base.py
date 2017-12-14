@@ -49,11 +49,12 @@ class EnvBase(EntryID):
             if hasattr(self, "_components"):
                 new_vid = None
                 for comp in self._components:
-                    if "_"+comp in vid:
+                    if vid.endswith('_'+comp):
                         new_vid = vid.replace('_'+comp, '', 1)
-                    elif comp+"_" in vid:
+                    elif vid.startswith(comp+'_'):
                         new_vid = vid.replace(comp+'_', '', 1)
-
+                    elif '_' + comp + '_' in vid:
+                        new_vid = vid.replace(comp+'_','', 1)
                     if new_vid is not None:
                         break
                 if new_vid is not None:
