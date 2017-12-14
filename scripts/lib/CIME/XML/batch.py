@@ -113,11 +113,11 @@ class Batch(GenericXML):
         jobs = []
         bnode = self.get_child("batch_jobs")
         for jnode in bnode:
-            if jnode.name() == "job":
+            if self.name(jnode) == "job":
                 name = jnode.get("name")
                 jdict = {}
                 for child in jnode:
-                    jdict[child.name()] = child.text
+                    jdict[self.name(child)] = child.text
 
             jobs.append((name, jdict))
 

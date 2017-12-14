@@ -67,10 +67,10 @@ class Compsets(GenericXML):
             nodes = self.get_children("compset")
             for node in nodes:
                 for child in node:
-                    logger.debug ("Here child is {} with value {}".format(child.name(),child.text))
-                    if child.name() == "alias":
+                    logger.debug ("Here child is {} with value {}".format(self.name(child),child.text))
+                    if self.name(child) == "alias":
                         alias = child.text
-                    if child.name() == "lname":
+                    if self.name(child) == "lname":
                         lname = child.text
                 compsets[alias] = lname
             return compsets

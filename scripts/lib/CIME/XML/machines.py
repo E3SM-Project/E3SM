@@ -70,7 +70,7 @@ class Machines(GenericXML):
         nodes = self.machine_node.findall("./")
         node_names = []
         for node in nodes:
-            node_names.append(node.name())
+            node_names.append(self.name(node))
         return node_names
 
     def get_first_child_nodes(self, nodename):

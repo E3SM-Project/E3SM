@@ -180,7 +180,7 @@ class EnvMachSpecific(EnvBase):
         for node in nodes:
             if (self._match_attribs(node.attrib, case)):
                 for child in node:
-                    expect(child.name() == child_tag, "Expected {} element".format(child_tag))
+                    expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
                     if (self._match_attribs(child.attrib, case)):
                         val = child.text
                         if val is not None:
