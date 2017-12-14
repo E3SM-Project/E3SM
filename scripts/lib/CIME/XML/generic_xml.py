@@ -46,7 +46,8 @@ class GenericXML(object):
         Read and parse an xml file into the object
         """
         logger.debug("read: " + infile)
-        with open(infile, 'r') as fd:
+        file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
+        with file_open(infile) as fd:
             if self.tree:
                 self.root.append(ET.parse(fd).getroot())
             else:
