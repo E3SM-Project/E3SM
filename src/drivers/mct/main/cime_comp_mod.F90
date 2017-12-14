@@ -303,7 +303,7 @@ module cime_comp_mod
    integer  :: force_stop_tod         ! force stop tod
 
    !--- for documenting speed of the model ---
-   character( 8) :: dstr              ! date string
+   character(8) :: dstr              ! date string
    character(10) :: tstr              ! time string
    integer       :: begStep, endStep  ! Begining and ending step number
    character(CL) :: calendar          ! calendar name
@@ -567,11 +567,11 @@ module cime_comp_mod
    character(*), parameter :: subname = '(seq_mct_drv)'
    character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
    character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
-   character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
-   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
+   character(*), parameter :: F0I = "('"//subname//" : ', A, 2i9.8 )"
+   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i9.8, 3x, A )"
    character(*), parameter :: F0R = "('"//subname//" : ', A, 2g23.15 )"
    character(*), parameter :: FormatA = '(A,": =============== ", A44,          " ===============")'
-   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I8,8x,   " ===============")'
+   character(*), parameter :: FormatD = '(A,": =============== ", A20,2I9.8,8x,   " ===============")'
    character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
    character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,4x," ===============")'
 !===============================================================================
@@ -1135,11 +1135,11 @@ end subroutine cime_pre_init2
 
 subroutine cime_init()
 
- 101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
- 102  format( A, 2i8, A, 8L3 )
+ 101  format( A, 2i9.8, 12A, A, F8.2, A, F8.2 )
+ 102  format( A, 2i9.8, A, 8L3 )
  103  format( 5A )
- 104  format( A, 2i8)
- 105  format( A, 2i8, A, f10.2, A, f10.2, A, A, i5, A, A)
+ 104  format( A, 2i9.8)
+ 105  format( A, 2i9.8, A, f10.2, A, f10.2, A, A, i5, A, A)
  106  format( A, f23.12)
 
    !-----------------------------------------------------------------------------
@@ -2085,16 +2085,16 @@ end subroutine cime_init
    character(len=CL)  :: drv_resume ! Driver resets state from restart file
    integer            :: iamroot_ESPID
 
-101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
-102 format( A, 2i8, A, 8L3 )
+101 format( A, 2i9.8, 12A, A, F8.2, A, F8.2 )
+102 format( A, 2i9.8, A, 8L3 )
 103 format( 5A )
-104 format( A, 2i8)
-105 format( A, 2i8, A, f10.2, A, f10.2, A, A, i5, A, A)
+104 format( A, 2i9.8)
+105 format( A, 2i9.8, A, f10.2, A, f10.2, A, A, i5, A, A)
 106 format( A, f23.12)
-107 format( A, 2i8, A, f12.4, A, f12.4 )
+107 format( A, 2i9.8, A, f12.4, A, f12.4 )
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
-110 format( A, 2i8, A, 9L3 )
+110 format( A, 2i9.8, A, 9L3 )
 
 
    hashint = 0
