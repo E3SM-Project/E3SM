@@ -1,5 +1,52 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 12-14-2017
+Tag: cime5.4.0-alpha.15
+Answer Changes: None
+Tests: external pio2 test suite using pnetcdf/1.9.0 candidate as well as
+       pnetcdf/1.8.1 and netcdf 4.4.1.1
+       scrtips_regression_tests.py
+Dependencies:
+
+Brief Summary:
+    - PIO2 update.
+    - Replace fancy quotes with standard ones.
+    - Add some debug info and correct PYTHON.
+    - Allow python to be specified in environment.
+    - Avoid continue run if resubmit_sets_continue_run is false.
+    - PIO1 update.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1fec3c1 Merge pull request #2125 from jedwards4b/pio2_update
+851918d replace fancy quotes with standard ones
+fdd3ddf add some debug info and correct PYTHON
+994a250 Merge pull request #2138 from jedwards4b/python_path_fix
+e189ba6 Merge pull request #2133 from jedwards4b/continue_run_check
+261cb8a Merge pull request #2124 from jedwards4b/pio1_update
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/case_run.py
+M       scripts/tests/CMakeLists.txt
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/externals/pio1/pio/pio_types.F90
+M       src/externals/pio2/configure.ac
+M       src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+M       src/externals/pio2/doc/source/mach_walkthrough.txt
+M       src/externals/pio2/src/clib/pio_darray.c
+M       src/externals/pio2/src/clib/pio_getput_int.c
+M       src/externals/pio2/src/clib/pio_msg.c
+M       src/externals/pio2/src/clib/pio_nc4.c
+M       src/externals/pio2/src/clib/pioc_support.c
+M       src/externals/pio2/src/flib/pio_types.F90
+
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer	 
 Date: 12-11-1017
 Tag: cime5.4.0-alpha.14
