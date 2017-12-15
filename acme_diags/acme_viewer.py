@@ -243,6 +243,11 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
             std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
             taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 15, label = data[irow][0])
 
+        # Add a figure legend
+        fig.legend([taylordiag.samplePoints[0]],
+                   [ p.get_label() for p in [taylordiag.samplePoints[0]]],
+                   numpoints=1,  loc='upper right',prop={'size':14})
+        plt.title(season + ': spatial variability')
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
 
     return taylor_diag_path
