@@ -29,7 +29,7 @@ OR
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.test SMS\033[0m
     > {0}
-"""format(os.path.basename(args[0])),
+""".format(os.path.basename(args[0])),
 
 description=description,
 
