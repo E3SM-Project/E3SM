@@ -629,6 +629,7 @@ CONTAINS
     real(R8)      :: tMin              ! minimum temperature
     character(CL) :: calendar          ! calendar type
 
+    character(len=6) :: year_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
@@ -1076,12 +1077,14 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+       write(year_str,'(i6.4)') yy
+       year_str = adjustl(year_str)
+       write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.datm'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.datm'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+            trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

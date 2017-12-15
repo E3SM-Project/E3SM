@@ -431,6 +431,7 @@ CONTAINS
     real(R8)      :: jday, jday0       ! elapsed day counters
     character(CS) :: calendar          ! calendar type
     logical       :: write_restart     ! restart now
+    character(len=6) :: year_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
@@ -644,12 +645,14 @@ CONTAINS
     if (write_restart) then
        call t_startf('dice_restart')
        ! Write rpointer file
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+       write(year_str,'(i6.4)') yy
+       year_str = adjustl(year_str)
+       write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.dice'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.dice'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+            trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

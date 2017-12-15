@@ -528,7 +528,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        endif
 
        if ( stop_ymd < 0) then
-          stop_ymd = 99990101
+          stop_ymd = 999990101
           stop_tod = 0
        endif
 

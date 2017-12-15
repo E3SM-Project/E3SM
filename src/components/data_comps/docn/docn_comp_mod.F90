@@ -381,10 +381,11 @@ CONTAINS
 
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
-
+    character(len=6) :: year_str
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(docn_comp_run) "
+
     !-------------------------------------------------------------------------------
 
     call t_startf('DOCN_RUN')
@@ -575,12 +576,14 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('docn_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+       write(year_str,'(i6.4)') yy
+       year_str =  adjustl(year_str)
+       write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.docn'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
+            trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.nc'
+       write(rest_file_strm,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
             trim(case_name), '.docn'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+            trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
