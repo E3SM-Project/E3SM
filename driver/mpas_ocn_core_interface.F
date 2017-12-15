@@ -229,8 +229,7 @@ module ocn_core_interface
       end if
 
       !
-      ! Test if chlorophyll, solar zenith angle, and clear sky radiation should
-      ! be used
+      ! Test if chlorophyll, solar zenith angle, and clear sky radiation should be used
       !
 
       call mpas_pool_get_package(packagePool,'variableShortwaveActive',variableShortwaveActive)
@@ -240,7 +239,7 @@ module ocn_core_interface
       end if
 
       !
-      ! test for land ice pressure, landIcePuressurePKG
+      ! test for land ice pressure, landIcePressurePKG
       ! test for land ice fluxes, landIceFluxesPKG
       ! test for land ice coupling, landIceCouplingPKG
       !
@@ -294,7 +293,7 @@ module ocn_core_interface
 
       !
       ! iterate over tracer groups
-      ! each tracer group is toggleed on/off using packages
+      ! each tracer group is toggled on/off using packages
       ! test each package
       !
       call mpas_pool_begin_iteration(packagePool)

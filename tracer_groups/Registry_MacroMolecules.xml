@@ -142,13 +142,13 @@
 			</var_array>
 			<var_array name="MacroMoleculesTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersSurfaceRestoringPKG">
 				<var name="PROTSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by PROTPistonVelocity."
+			 description="Tracer is restored toward this field at a rate controlled by PROTPistonVelocity."
 				/>
 				<var name="POLYSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by POLYPistonVelocity."
+			 description="Tracer is restored toward this field at a rate controlled by POLYPistonVelocity."
 				/>
 				<var name="LIPSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
-			 description="Salinity is restored toward this field at a rate controlled by LIPPistonVelocity."
+			 description="Tracer is restored toward this field at a rate controlled by LIPPistonVelocity."
 				/>
 			</var_array>
 		</var_struct>
@@ -166,13 +166,13 @@
 			</var_array>
 			<var_array name="MacroMoleculesTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersInteriorRestoringPKG">
 				<var name="PROTInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by PROTInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by PROTInteriorRestoringRate."
 				/>
 				<var name="POLYInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by POLYInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by POLYInteriorRestoringRate."
 				/>
 				<var name="LIPInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
-			 description="Salinity is restored toward this field at a rate controlled by LIPInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by LIPInteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
