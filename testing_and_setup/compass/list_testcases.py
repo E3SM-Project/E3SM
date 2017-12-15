@@ -18,14 +18,46 @@ import argparse
 import xml.etree.ElementTree as ET
 import re
 
+
+def print_case(quiet, args, core_dir, config_dir, res_dir, test_dir, case_num,
+               print_num):  # {{{
+    # Xylar: the indentation got out of hand and I had to make this a function
+
+    # Print the options if a case file was found.
+    if not quiet:
+        if (not args.core) or re.match(args.core, core_dir):
+            if (not args.configuration) or re.match(args.configuration,
+                                                    config_dir):
+                if (not args.resolution) or re.match(args.resolution, res_dir):
+                    if (not args.test) or re.match(args.test, test_dir):
+                        print "  {:d}: -o {} -c {} -r {} -t {}".format(
+                            case_num, core_dir, config_dir, res_dir, test_dir)
+    if quiet and case_num == print_num:
+        print "-o {} -c {} -r {} -t {}".format(
+            core_dir, config_dir, res_dir, test_dir)
+    case_num += 1
+    return case_num
+
+# }}}
+
+
 if __name__ == "__main__":
     # Define and process input arguments
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("-o", "--core", dest="core", help="Core to search for configurations within", metavar="CORE")
-    parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration name to search for", metavar="CONFIG")
-    parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution to search for", metavar="RES")
-    parser.add_argument("-t", "--test", dest="test", help="Test name to search for", metavar="TEST")
-    parser.add_argument("-n", "--number", dest="number", help="If set, script will print the flags to use a the N'th configuraiton.")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-o", "--core", dest="core",
+                        help="Core to search for configurations within",
+                        metavar="CORE")
+    parser.add_argument("-c", "--configuration", dest="configuration",
+                        help="Configuration name to search for",
+                        metavar="CONFIG")
+    parser.add_argument("-r", "--resolution", dest="resolution",
+                        help="Resolution to search for", metavar="RES")
+    parser.add_argument("-t", "--test", dest="test",
+                        help="Test name to search for", metavar="TEST")
+    parser.add_argument("-n", "--number", dest="number",
+                        help="If set, script will print the flags to use a "
+                             "the N'th configuraiton.")
 
     args = parser.parse_args()
 
@@ -64,31 +96,29 @@ if __name__ == "__main__":
                             for test_dir in os.listdir(res_path):
                                 test_path = '{}/{}'.format(res_path, test_dir)
                                 if os.path.isdir(test_path):
-                                    print_case = False
+                                    do_print = False
                                     # Iterate over all files within a test
                                     for case_file in os.listdir(test_path):
                                         if fnmatch.fnmatch(case_file, '*.xml'):
-                                            tree = ET.parse('{}/{}'.format(test_path, case_file))
+                                            tree = ET.parse('{}/{}'.format(
+                                                test_path, case_file))
                                             root = tree.getroot()
 
-                                            # Check to make sure the test is either
-                                            # a config file or a driver_script file
-                                            if root.tag == 'config' or root.tag == 'driver_script':
-                                                print_case = True
+                                            # Check to make sure the test is
+                                            # either a config file or a
+                                            # driver_script file
+                                            if root.tag == 'config' or \
+                                                    root.tag == \
+                                                    'driver_script':
+                                                do_print = True
 
                                             del root
                                             del tree
 
-                                    # Print the options if a case file was found.
-                                    if print_case:
-                                        if not quiet:
-                                            if (not args.core) or re.match(args.core, core_dir):
-                                                if (not args.configuration) or re.match(args.configuration, config_dir):
-                                                    if (not args.resolution) or re.match(args.resolution, res_dir):
-                                                        if (not args.test) or re.match(args.test, test_dir):
-                                                            print "  {:d}: -o {} -c {} -r {} -t {}".format(case_num, core_dir, config_dir, res_dir, test_dir)
-                                        if quiet and case_num == print_num:
-                                            print "-o {} -c {} -r {} -t {}".format(core_dir, config_dir, res_dir, test_dir)
-                                        case_num = case_num + 1
+                                    if do_print:
+                                        case_num = print_case(
+                                            quiet, args, core_dir, config_dir,
+                                            res_dir, test_dir, case_num,
+                                            print_num)
 
 # vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python
