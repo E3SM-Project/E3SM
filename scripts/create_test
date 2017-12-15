@@ -28,41 +28,41 @@ def parse_command_line(args, description):
     if model == "cesm":
         help_str = \
 """
-%s --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
+{0} --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
 OR
-%s --help
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run all tests in the xml prealpha category and yellowstone machine \033[0m
-    > %s --xml-machine yellowstone --xml-category prealpha
-""" % ((os.path.basename(args[0]), ) * 4)
+    > {0} --xml-machine yellowstone --xml-category prealpha
+""".format(os.path.basename(args[0]))
 
     else:
         help_str = \
 """
-%s <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
+{0} <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
 OR
-%s --help
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run single test \033[0m
-    > %s <TESTNAME>
+    > {0} <TESTNAME>
 
     \033[1;32m# Run test suite \033[0m
-    > %s <SUITE>
+    > {0} <SUITE>
 
     \033[1;32m# Run two tests \033[0m
-    > %s <TESTNAME1> <TESTNAME2>
+    > {0} <TESTNAME1> <TESTNAME2>
 
     \033[1;32m# Run two suites \033[0m
-    > %s <SUITE1> <SUITE2>
+    > {0} <SUITE1> <SUITE2>
 
     \033[1;32m# Run all tests in a suite except for one \033[0m
-    > %s <SUITE> ^<TESTNAME>
+    > {0} <SUITE> ^<TESTNAME>
 
     \033[1;32m# Run all tests in a suite except for tests that are in another suite \033[0m
-    > %s <SUITE1> ^<SUITE2>
-""" % ((os.path.basename(args[0]), ) * 9)
+    > {0} <SUITE1> ^<SUITE2>
+""".format(os.path.basename(args[0]))
 
     parser = argparse.ArgumentParser(usage=help_str,
                                      description=description,
