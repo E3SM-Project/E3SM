@@ -25,7 +25,7 @@
 !   arbitrary -- they were chosen because they result in the simplest code given
 !   the requirements of this module.  These assumptions can be relaxed as
 !   necessary:
-!   o the valid range of years is [-999,9999]
+!   o the valid range of years is [-999,999999]
 !   o elapsed days = 0 <=> January 1st, year 0000 for noleap
 !
 ! !INTERFACE: ------------------------------------------------------------------
@@ -803,7 +803,7 @@ logical function shr_cal_validYMD(year,month,day,calendar)
 
    shr_cal_validYMD = .true.
    if (year  < -999) shr_cal_validYMD = .false.
-   if (year  > 99999) shr_cal_validYMD = .false.
+   if (year  > 999999) shr_cal_validYMD = .false.
    if (month <    1) shr_cal_validYMD = .false.
    if (month >   12) shr_cal_validYMD = .false.
    if (day   <    1) shr_cal_validYMD = .false.
