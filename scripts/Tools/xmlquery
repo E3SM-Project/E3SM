@@ -275,10 +275,6 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
     return results
 
 def _main_func():
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
         value, no_resolve, raw, description, get_group, full, dtype, \

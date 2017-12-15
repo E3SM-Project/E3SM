@@ -22,7 +22,7 @@ from CIME.case import Case
 
 logger = logging.getLogger(__name__)
 
-import argparse, doctest
+import argparse
 
 
 # PE Layout Documentation:
@@ -35,8 +35,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.run SMS\033[0m
@@ -67,10 +65,6 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
 
     caseroot, skip_pnl = parse_command_line(sys.argv, description)
