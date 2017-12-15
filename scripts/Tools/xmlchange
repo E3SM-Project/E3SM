@@ -27,8 +27,6 @@ def parse_command_line(args, description):
         usage="""\n%s [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--force]
 OR
 %s --help
-OR
-%s --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# xmlchange REST_OPT=ndays,REST_N=4 \033[0m
@@ -148,9 +146,6 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
         append_case_status("xmlchange", "success", msg=msg, caseroot=caseroot)
 
 def _main_func(description):
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
     # pylint: disable=unused-variable
     caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, force , dry = parse_command_line(sys.argv, description)
 

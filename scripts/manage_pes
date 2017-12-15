@@ -359,10 +359,6 @@ class ManagePes(object):
 ###############################################################################
 def __main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
-        testresults = doctest.testmod(verbose=True)
-        sys.exit(1 if testresults.failed > 0 else 0)
-
     filename, add, query, setby, grid, machine = parse_command_line(sys.argv,
                                                                     description)
     manager = ManagePes(filename, add, query, setby, grid, machine)

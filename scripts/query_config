@@ -16,7 +16,7 @@ from CIME.XML.grids     import Grids
 #from CIME.XML.machines  import Machines
 import CIME.XML.machines
 
-import re, argparse, doctest
+import re, argparse
 
 def query_grids(long_output):
     """
