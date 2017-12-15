@@ -30,7 +30,7 @@
 		<option name="config_dt">'002:46:40'</option>
 		<option name="config_btr_dt">'000:08:20'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
-		<option name="config_run_duration">'0011_13:46:39'</option>
+		<option name="config_run_duration">'0001_13:46:39'</option>
 		<option name="config_prescribe_velocity">.true.</option>
 		<option name="config_prescribe_thickness">.true.</option>
 		<option name="config_disable_thick_all_tend">.true.</option>
@@ -87,8 +87,8 @@
 		</stream>
 	</streams>
 
-	<!--  Currently, this will only run with 16 processors because
-	      the particle file is decomposed with 16 processors and we
+	<!--  Currently, this will only run with 6 processors because
+	      the particle file is decomposed with 6 processors and we
 	      currently do not have an online way of redecomposing particles.
 	      Therefore, a graph file is also used because different versions
 	      of metis produce different graph files and the particle file is

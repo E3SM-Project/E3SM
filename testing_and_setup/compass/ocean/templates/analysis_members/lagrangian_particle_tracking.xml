@@ -21,7 +21,7 @@
 			<attribute name="name">lagrPartTrackOutput</attribute>
 			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
 			<attribute name="clobber_mode">truncate</attribute>
-			<attribute name="output_interval">0002_00:00:00</attribute>
+			<attribute name="output_interval">stream:output:output_interval</attribute>
 			<attribute name="filename_template">analysis_members/lagrPartTrack.$Y-$M-$D_$h.$m.$s.nc</attribute>
 			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
 			<attribute name="packages">lagrPartTrackAMPKG</attribute>
@@ -59,13 +59,6 @@
 				<member name="filteredVelocityW" type="var"/>
 				<member name="cellOwnerBlock" type="var"/>
 				<member name="transfered" type="var"/>
-				<member name="lonVel" type="var"/>
-				<member name="latVel" type="var"/>
-				<member name="sumU" type="var"/>
-				<member name="sumV" type="var"/>
-				<member name="sumUU" type="var"/>
-				<member name="sumUV" type="var"/>
-				<member name="sumVV" type="var"/>
 				<member name="buoyancySurfaceValues" type="var"/>
 				<member name="buoyancySurfaceVelocityMeridional" type="var"/>
 				<member name="buoyancySurfaceVelocityZonal" type="var"/>
@@ -110,11 +103,6 @@
 				<member name="timeIntegration" type="var"/>
 				<member name="indexLevel" type="var"/>
 				<member name="transfered" type="var"/>
-				<member name="sumU" type="var"/>
-				<member name="sumV" type="var"/>
-				<member name="sumUU" type="var"/>
-				<member name="sumUV" type="var"/>
-				<member name="sumVV" type="var"/>
 				<member name="buoyancySurfaceValues" type="var"/>
 			</add_contents>
 		</stream>

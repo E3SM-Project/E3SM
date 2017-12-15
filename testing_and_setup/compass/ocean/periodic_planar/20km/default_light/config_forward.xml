@@ -4,16 +4,16 @@
 	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
-	<get_file dest_path="initial_condition_database" file_name="particle_full.151029.nc">
+	<get_file dest_path="initial_condition_database" file_name="particle_full.171212.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest_path="mesh_database" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106">
+	<get_file dest_path="mesh_database" file_name="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<add_link source_path="initial_condition_database" source="particle_full.151029.nc" dest="particle_full.nc"/>
-	<add_link source_path="mesh_database" source="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106" dest="graph.info.part.16"/>
+	<add_link source_path="initial_condition_database" source="particle_full.171212.nc" dest="particle_full.nc"/>
+	<add_link source_path="mesh_database" source="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113" dest="graph.info.part.6"/>
 
 
 	<add_executable source="model" dest="ocean_model"/>
@@ -25,7 +25,7 @@
 		<option name="config_dt">'002:46:40'</option>
 		<option name="config_btr_dt">'000:08:20'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
-		<option name="config_run_duration">'0011_13:46:39'</option>
+		<option name="config_run_duration">'0001_13:46:39'</option>
 		<option name="config_prescribe_velocity">.true.</option>
 		<option name="config_prescribe_thickness">.true.</option>
 		<option name="config_disable_thick_all_tend">.true.</option>
@@ -71,14 +71,14 @@
 		</stream>
 	</streams>
 
-	<!--  Currently, this will only run with 16 processors because
-	      the particle file is decomposed with 16 processors and we
+	<!--  Currently, this will only run with 6 processors because
+	      the particle file is decomposed with 6 processors and we
 	      currently do not have an online way of redecomposing particles.
 	      Therefore, a graph file is also used because different versions
 	      of metis produce different graph files and the particle file is
 	      tied to a particular version of the graph file.
 	-->
 	<run_script name="run.py">
-		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="6" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

@@ -25,7 +25,7 @@
 		<option name="config_dt">'002:46:40'</option>
 		<option name="config_btr_dt">'000:08:20'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
-		<option name="config_run_duration">'0011_13:46:39'</option>
+		<option name="config_run_duration">'0003_00:00:00'</option>
 		<option name="config_prescribe_velocity">.true.</option>
 		<option name="config_prescribe_thickness">.true.</option>
 		<option name="config_disable_thick_all_tend">.true.</option>
