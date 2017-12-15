@@ -634,7 +634,6 @@
 			<var name="CO2_alt_gas_flux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="CO2 Gas Flux for Alternate CO2"
 			/>
-
 		</var_struct>
 
 		<var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">
@@ -982,7 +981,7 @@
 			/>
 			<var name="ecosys_diag_bSi_form" type="real" dimensions="FOUR nVertLevels nCells Time" units="mmol Si m^{-3} s^{-1}"
 				description="Si Uptake for sp, diat, diaz, phaeo"
-/>
+			/>
 		</var_struct>
 
 		<var_struct name="ecosysDiagFieldsLevel4" time_levs="1" packages="ecosysTracersPKG">
@@ -1332,94 +1331,94 @@
 			</var_array>
 			<var_array name="ecosysTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersInteriorRestoringPKG">
 				<var name="PO4InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol P m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by PO4InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by PO4InteriorRestoringRate."
 				/>
 				<var name="NO3InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol N m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by NO3InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by NO3InteriorRestoringRate."
 				/>
 				<var name="SiO3InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Si m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by SiO3InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by SiO3InteriorRestoringRate."
 				/>
 				<var name="NH4InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol N m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by NH4InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by NH4InteriorRestoringRate."
 				/>
 				<var name="FeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Fe m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by FeInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by FeInteriorRestoringRate."
 				/>
 				<var name="O2InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol O2 m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by O2InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by O2InteriorRestoringRate."
 				/>
 				<var name="DICInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DICInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DICInteriorRestoringRate."
 				/>
 				<var name="DIC_ALT_CO2InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DIC_ALT_CO2InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DIC_ALT_CO2InteriorRestoringRate."
 				/>
 				<var name="ALKInteriorRestoringValue" array_group="ecosysIRVGRP" units="meq m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by ALKInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by ALKInteriorRestoringRate."
 				/>
 				<var name="DOCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DOCInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DOCInteriorRestoringRate."
 				/>
 				<var name="DONInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol N m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DONInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DONInteriorRestoringRate."
 				/>
 				<var name="DOFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Fe m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DOFeInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DOFeInteriorRestoringRate."
 				/>
 				<var name="DOPInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol P m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DOPInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DOPInteriorRestoringRate."
 				/>
 				<var name="DOPrInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol P m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DOPrInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DOPrInteriorRestoringRate."
 				/>
 				<var name="DONrInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol N m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DONrInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DONrInteriorRestoringRate."
 				/>
 				<var name="zooCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by zooCInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by zooCInteriorRestoringRate."
 				/>
 				<var name="spChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mg Chl m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by spChlInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by spChlInteriorRestoringRate."
 				/>
 				<var name="spCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by spCInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by spCInteriorRestoringRate."
 				/>
 				<var name="spFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Fe m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by spFeInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by spFeInteriorRestoringRate."
 				/>
 				<var name="spCaCO3InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by spCaCO3InteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by spCaCO3InteriorRestoringRate."
 				/>
 				<var name="diatChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mg Chl m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diatChlInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diatChlInteriorRestoringRate."
 				/>
 				<var name="diatCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diatCInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diatCInteriorRestoringRate."
 				/>
 				<var name="diatFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Fe m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diatFeInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diatFeInteriorRestoringRate."
 				/>
 				<var name="diatSiInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Si m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diatSiInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diatSiInteriorRestoringRate."
 				/>
 				<var name="diazChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mg Chl m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diazChlInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diazChlInteriorRestoringRate."
 				/>
 				<var name="diazCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diazCInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diazCInteriorRestoringRate."
 				/>
 				<var name="diazFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Fe m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by diazFeInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by diazFeInteriorRestoringRate."
 				/>
 				<var name="phaeoChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mg Chl m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by phaeoChlInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by phaeoChlInteriorRestoringRate."
 				/>
 				<var name="phaeoCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol C m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by phaeoCInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by phaeoCInteriorRestoringRate."
 				/>
 				<var name="phaeoFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol Fe m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by phaeoFeInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by phaeoFeInteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
