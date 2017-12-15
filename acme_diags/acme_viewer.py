@@ -11,7 +11,8 @@ from bs4 import BeautifulSoup
 from cdp.cdp_viewer import OutputViewer
 import acme_diags
 from acme_diags.driver.utils import get_set_name
-
+from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
+import matplotlib.pyplot as plt
 # Dict of
 # {
 #   set_num: {
@@ -208,21 +209,43 @@ def _create_csv_from_dict(output_dir, season):
 
 def _create_csv_from_dict_taylor_diag(output_dir, season):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
-    #table_path = os.path.abspath(os.path.join(output_dir, season + '_metrics_table.csv'))
-    table_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
+    taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
 
-    col_names = ['Variables', 'Unit', 'Model mean', 'Obs mean', 'Mean bias', 'Model std', 'Obs std','RMSE', 'correlation']
+    col_names = ['Variables', 'Model std', 'Obs std', 'correlation']
 
-    with open(table_path, 'w') as table_csv:
+    with open(taylor_diag_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
-            if key.split('_')[0] in ['PRECT','PSL','SWCF','LWCF']:  #only include variables in a a certain list for taylor diagram
+            if key.split()[0] in ['PRECT','PSL','SWCF','LWCF']:  #only include variables in a a certain list for taylor diagram
                 metrics = metrics_dic['metrics']
-                row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
+                row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
+                #row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
                 writer.writerow(row)
 
-    return table_path
+    
+    with open(taylor_diag_path, 'r') as taylor_csv:
+        reader = csv.reader(taylor_csv, delimiter = ",")
+        data =  list(reader)
+        row_count=len(data)
+   
+    # generate taylor diagram plot if there is metrics saved for any variable within the list.
+    marker = ['o', '+', 'D', 's', '*'] 
+    color = ['r', 'b', 'g', 'y', 'm']
+ 
+    if row_count > 0:
+        fig = plt.figure(figsize=(8,8))
+        refstd =  1.0
+        taylordiag = TaylorDiagram(refstd, fig=fig,rect=111, label="Ref")
+        
+        # Add samples to taylor diagram
+        for irow in range(1,row_count):
+            std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
+            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 15, label = data[irow][0])
+
+        fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
+
+    return taylor_diag_path
 
 def _cvs_to_html(csv_path, season):
     """Convert the csv for a season located at csv_path to an HTML, returning the path to the HTML"""
@@ -355,7 +378,7 @@ def generate_lat_lon_metrics_table(viewer, root_dir):
 
 def generate_lat_lon_taylor_diag(viewer, root_dir):
     """For each season in LAT_LON_TABLE_INFO, create a csv, plot using taylor diagram  and append that html to the viewer."""
-    taylor_diag_dir = os.path.join(root_dir, 'taylor-diagram_data')  # output_dir/viewer/table-data
+    taylor_diag_dir = os.path.join(root_dir, 'taylor-diagram-data')  # output_dir/viewer/table-data
 
     if not os.path.exists(taylor_diag_dir):
         os.mkdir(taylor_diag_dir)
@@ -459,5 +482,6 @@ def create_viewer(root_dir, parameters, ext):
                                        title=col_season, other_files=formatted_files)
 
     generate_lat_lon_metrics_table(viewer, root_dir)
+    generate_lat_lon_taylor_diag(viewer, root_dir)
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
