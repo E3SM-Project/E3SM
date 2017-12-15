@@ -73,7 +73,7 @@ class Component(EntryID):
         if value is not None and len(value) > 0 and value != "UNSET":
             match_values.append(value)
 
-        for valnode in self.get_children("value", root=node):
+        for valnode in self.get_children("value", root=values):
             # loop through all the keys in valnode (value nodes) attributes
             for key,value in self.attrib(valnode).iteritems():
                 # determine if key is in attributes dictionary

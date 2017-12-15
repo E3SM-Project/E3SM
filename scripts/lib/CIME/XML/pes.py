@@ -69,7 +69,7 @@ class Pes(GenericXML):
         pesize_choice = None
         max_points = -1
         pes_ntasks, pes_nthrds, pes_rootpe, other_settings = {}, {}, {}, {}
-        pe_select = []
+        pe_select = None
         for grid_node in grid_nodes:
             grid_match = self.get(grid_node, "name")
             if grid_match == "any" or  re.search(grid_match,grid):
@@ -121,17 +121,17 @@ class Pes(GenericXML):
                                         logger.warning("points = {:d}".format(points))
                                         expect(False, "More than one PE layout matches given PE specs")
         if not override:
-            for node in pe_select:
+            for node in self.get_children(root=pe_select, no_validate=True):
                 vid = self.name(node)
                 logger.debug("vid is {}".format(vid))
                 if "ntasks" in vid:
-                    for child in node:
+                    for child in self.get_children(root=node, no_validate=True):
                         pes_ntasks[self.name(child).upper()] = int(self.text(child))
                 elif "nthrds" in vid:
-                    for child in node:
+                    for child in self.get_children(root=node, no_validate=True):
                         pes_nthrds[self.name(child).upper()] = int(self.text(child))
                 elif "rootpe" in vid:
-                    for child in node:
+                    for child in self.get_children(root=node, no_validate=True):
                         pes_rootpe[self.name(child).upper()] = int(self.text(child))
             # if the value is already upper case its something else we are trying to set
                 elif vid == self.name(node) and vid != "comment":

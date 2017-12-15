@@ -123,13 +123,17 @@ class GenericXML(object):
 
     def make_child(self, name, attributes=None, root=None, text=None):
         root = root if root is not None else self.root
-        node = _Element(ET.SubElement(root.xml_element, name, attrib=attributes))
+        if attributes is None:
+            node = _Element(ET.SubElement(root.xml_element, name))
+        else:
+            node = _Element(ET.SubElement(root.xml_element, name, attrib=attributes))
+
         if text:
             self.set_text(node, text)
 
         return node
 
-    def get_children(self, name=None, attributes=None, root=None):
+    def get_children(self, name=None, attributes=None, root=None, no_validate=False):
         """
         This is the critical function, its interface and performance are crucial.
 
@@ -163,8 +167,12 @@ class GenericXML(object):
             children.append(_Element(child))
 
         # Remove
-        validate = self.scan_nodes(name, attributes=attributes, root=root)
-        expect(validate == children, "bad")
+        # if not no_validate:
+        #     validate = self.scan_children(name, attributes=attributes, root=root)
+        #     if validate != children:
+        #         import pdb
+        #         pdb.set_trace()
+        #         validate = self.scan_children(name, attributes=attributes, root=root)
 
         return children
 
@@ -222,30 +230,30 @@ class GenericXML(object):
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
 
-    def scan_node(self, nodename, attributes=None, root=None):
+    def scan_child(self, nodename, attributes=None, root=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Error unless exactly one match.
         """
 
-        nodes = self.scan_nodes(nodename, attributes=attributes, root=root)
+        nodes = self.scan_children(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) == 1, "Incorrect number of matches, {:d}, for nodename '{}' and attrs '{}' in file '{}'".format(len(nodes), nodename, attributes, self.filename))
         return nodes[0]
 
-    def scan_optional_node(self, nodename, attributes=None, root=None):
+    def scan_optional_child(self, nodename, attributes=None, root=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Return None if no match.
         """
-        nodes = self.scan_nodes(nodename, attributes=attributes, root=root)
+        nodes = self.scan_children(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
         return nodes[0] if nodes else None
 
-    def scan_nodes(self, nodename, attributes=None, root=None):
+    def scan_children(self, nodename, attributes=None, root=None):
 
         logger.debug("(get_nodes) Input values: {}, {}, {}, {}".format(self.__class__.__name__, nodename, attributes, root))
 
@@ -261,29 +269,26 @@ class GenericXML(object):
             # and create a result with the intersection of those lists
 
             for key, value in attributes.items():
-                if value is not None:
-                    expect(isinstance(value, six.string_types),
-                           " Bad value passed for key {}".format(key))
-                    if value is None:
-                        xpath = ".//{}[@{}]".format(nodename, key)
-                    else:
-                        xpath = ".//{}[@{}=\'{}\']".format(nodename, key, value)
+                if value is None:
+                    xpath = ".//{}[@{}]".format(nodename, key)
+                else:
+                    xpath = ".//{}[@{}=\'{}\']".format(nodename, key, value)
 
-                    logger.debug("xpath is {}".format(xpath))
+                logger.debug("xpath is {}".format(xpath))
 
-                    try:
-                        newnodes = root.xml_element.findall(xpath)
-                    except Exception as e:
-                        expect(False, "Bad xpath search term '{}', error: {}".format(xpath, e))
+                try:
+                    newnodes = root.xml_element.findall(xpath)
+                except Exception as e:
+                    expect(False, "Bad xpath search term '{}', error: {}".format(xpath, e))
 
-                    if not nodes:
-                        nodes = newnodes
-                    else:
-                        for node in nodes[:]:
-                            if node not in newnodes:
-                                nodes.remove(node)
-                    if not nodes:
-                        return []
+                if not nodes:
+                    nodes = newnodes
+                else:
+                    for node in nodes[:]:
+                        if node not in newnodes:
+                            nodes.remove(node)
+                if not nodes:
+                    return []
 
         else:
             logger.debug("xpath: {}".format(xpath))
@@ -399,9 +404,9 @@ class GenericXML(object):
         if root is None:
             root = self.root
         try:
-            xmlstr = ET.tostring(root)
+            xmlstr = ET.tostring(root.xml_element)
         except ET.ParseError as e:
-            ET.dump(root)
+            ET.dump(root.xml_element)
             expect(False, "Could not write file {}, xml formatting error '{}'".format(self.filename, e))
         return xmlstr
 

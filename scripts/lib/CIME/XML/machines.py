@@ -67,7 +67,7 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine_node.findall("./")
+        nodes = self.get_children(root=self.machine_node, no_validate=True)
         node_names = []
         for node in nodes:
             node_names.append(self.name(node))
@@ -77,7 +77,7 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine_node.findall("./" + nodename)
+        nodes = self.get_children(nodename, root=self.machine_node)
         return nodes
 
     def list_available_machines(self):
@@ -158,8 +158,7 @@ class Machines(GenericXML):
         if machine == "Query":
             self.machine = machine
         elif self.machine != machine or self.machine_node is None:
-            self.machine_node = self.get_optional_child("machine", {"MACH" : machine})
-            expect(self.machine_node is not None, "No machine {} found".format(machine))
+            self.machine_node = self.get_child("machine", {"MACH" : machine}, err_msg="No machine {} found".format(machine))
             self.machine = machine
 
         return machine

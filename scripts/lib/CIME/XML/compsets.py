@@ -16,7 +16,6 @@ class Compsets(GenericXML):
             files = Files()
         schema = files.get_schema("COMPSETS_SPEC_FILE")
         GenericXML.__init__(self, infile, schema=schema)
-        self.groups={}
 
     def get_compset_match(self, name):
         """
@@ -45,7 +44,8 @@ class Compsets(GenericXML):
         Variables can be set in config_compsets.xml in entry id settings with compset and grid attributes
         find and return id value pairs here
         '''
-        nodes = self.get_children("entry")
+        entries = self.get_child("entries")
+        nodes = self.get_children("entry", root=entries)
         # Get an empty entryid obj to use
         entryidobj = EntryID()
         result = []

@@ -32,12 +32,12 @@ class EnvBase(EntryID):
     def check_if_comp_var(self, vid, attribute=None, node=None):
         comp = None
         if node is None:
-            nodes = self.get_children("entry", {"id" : vid})
+            nodes = self.scan_children("entry", {"id" : vid})
             if len(nodes):
                 node = nodes[0]
 
         if node:
-            valnodes = self.get_children("value", attributes={"compclass":None}, root=node)
+            valnodes = self.scan_children("value", attributes={"compclass":None}, root=node)
             if len(valnodes) == 0:
                 logger.debug("vid {} is not a compvar".format(vid))
                 return vid, None, False
@@ -84,9 +84,11 @@ class EnvBase(EntryID):
                 attribute = {"compclass" : comp}
             else:
                 attribute["compclass"] = comp
-            node = self.get_optional_child("entry", {"id":vid})
+            node = self.scan_optional_child("entry", {"id":vid})
             if node is not None:
                 type_str = self._get_type_info(node)
+                values = self.get_optional_child("values", root=node)
+                node = values if values is not None else node
                 val = self.get_element_text("value", attribute, root=node)
                 if val is not None:
                     if val.startswith("$"):
@@ -94,6 +96,7 @@ class EnvBase(EntryID):
                     else:
                         value = convert_to_type(val,type_str, vid)
                 return value
+
         return EntryID.get_value(self, vid, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
@@ -105,7 +108,7 @@ class EnvBase(EntryID):
         vid, comp, iscompvar = self.check_if_comp_var(vid, None)
         val = None
         root = self.root if subgroup is None else self.get_optional_child("group", {"id":subgroup})
-        node = self.get_optional_child("entry", {"id":vid}, root=root)
+        node = self.scan_optional_child("entry", {"id":vid}, root=root)
         if node is not None:
             if iscompvar and comp is None:
                 # pylint: disable=no-member
@@ -125,6 +128,8 @@ class EnvBase(EntryID):
             expect(compclass is not None, "compclass must be specified if is comp var")
             attribute = {"compclass":compclass}
             str_value = self.get_valid_value_string(node, value, vid, ignore_type)
+            values = self.get_optional_child("values", root=node)
+            node = values if values is not None else node
             val = self.set_element_text("value", str_value, attribute, root=node)
         else:
             val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)

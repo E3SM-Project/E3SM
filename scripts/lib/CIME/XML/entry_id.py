@@ -74,6 +74,7 @@ class EntryID(GenericXML):
         values_node = self.get_optional_child("values", root=node)
         if values_node is not None:
             match_type = self.get(values_node, "match", default="first")
+            node = values_node
         else:
             match_type = "first"
 
@@ -84,7 +85,7 @@ class EntryID(GenericXML):
             # For each node in the list start a score.
             score = 0
             if attributes:
-                for attribute in vnode.keys():
+                for attribute in self.attrib(vnode).keys():
                     # For each attribute, add to the score.
                     score += 1
                     # If some attribute is specified that we don't know about,
@@ -146,12 +147,12 @@ class EntryID(GenericXML):
         return val
 
     def get_type_info(self, vid):
-        vid, _, _ = self.check_if_comp_var(vid, None)
-        node = self.get_optional_child("entry", {"id":vid})
+        vid, _, _ = self.check_if_comp_var(vid)
+        node = self.scan_optional_child("entry", {"id":vid})
         return self._get_type_info(node)
 
     # pylint: disable=unused-argument
-    def check_if_comp_var(self, vid, attribute=None):
+    def check_if_comp_var(self, vid, attribute=None, node=None):
         # handled in classes
         return vid, None, False
 
@@ -222,7 +223,7 @@ class EntryID(GenericXML):
         """
         expect(subgroup is None, "Subgroup not supported")
         str_value = self.get_valid_value_string(node, value, vid, ignore_type)
-        node.set("value", str_value)
+        self.set(node, "value", str_value)
         return value
 
     def get_valid_value_string(self, node, value,vid=None,  ignore_type=False):
@@ -258,7 +259,7 @@ class EntryID(GenericXML):
         commas
         """
         results = []
-        node = self.get_optional_child("entry", {"id":vid})
+        node = self.scan_optional_child("entry", {"id":vid})
         if node is None:
             return results
         str_result = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
@@ -281,7 +282,7 @@ class EntryID(GenericXML):
         and matches
         """
         root = self.root if subgroup is None else self.get_optional_child("group", {"id":subgroup})
-        node = self.get_optional_child("entry", {"id":vid}, root=root)
+        node = self.scan_optional_child("entry", {"id":vid}, root=root)
         if node is None:
             return
 
