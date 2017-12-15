@@ -1354,8 +1354,22 @@ def get_lids(case):
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
+    jobid = batch_jobid()
+    if jobid is not None:
+        lid = jobid+'.'+lid
     os.environ["LID"] = lid
     return lid
+
+def batch_jobid():
+    jobid = os.environ.get("PBS_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("SLURM_JOB_ID")
+    if jobid is None:
+        jobid = os.environ.get("LSB_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("COBALT_JOBID")
+    return jobid
+
 
 def analyze_build_log(comp, log, compiler):
     """
