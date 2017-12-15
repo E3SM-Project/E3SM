@@ -661,6 +661,7 @@
         </rootpe>
       </pes>
     </mach>
+  </grid>
   <grid name="a%ne30np4">
     <mach name="edison">
       <pes compset="any" pesize="any">
