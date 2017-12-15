@@ -803,7 +803,7 @@ logical function shr_cal_validYMD(year,month,day,calendar)
 
    shr_cal_validYMD = .true.
    if (year  < -999) shr_cal_validYMD = .false.
-   if (year  > 9999) shr_cal_validYMD = .false.
+   if (year  > 99999) shr_cal_validYMD = .false.
    if (month <    1) shr_cal_validYMD = .false.
    if (month >   12) shr_cal_validYMD = .false.
    if (day   <    1) shr_cal_validYMD = .false.
