@@ -3,7 +3,9 @@
 #endif
 
 module repro_sum_mod
+#ifndef SPMD
 #define SPMD
+#endif
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
