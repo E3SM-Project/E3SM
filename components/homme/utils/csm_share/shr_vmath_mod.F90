@@ -46,10 +46,6 @@ subroutine shr_vmath_sqrt(X, Y, n)
    call vsqrt(Y, X, n)
 #endif
 
-#if (defined IRIX64)
-   call shr_vmath_fwrap_vsqrt(X, Y, n)
-#endif
-
 #if (defined OSF1)
    call vsqrt(X, 1, Y, 1, n)
 #endif
@@ -108,10 +104,6 @@ subroutine shr_vmath_exp(X, Y, n)
 
 #if (defined AIX)
    call vexp(Y, X, n)
-#endif
-
-#if (defined IRIX64)
-   call shr_vmath_fwrap_vexp(X, Y, n)
 #endif
 
 #if (defined OSF1)
@@ -173,10 +165,6 @@ subroutine shr_vmath_log(X, Y, n)
    call vlog(Y, X, n)
 #endif
 
-#if (defined IRIX64)
-   call shr_vmath_fwrap_vlog(X, Y, n)
-#endif
-
 #if (defined OSF1)
    call vlog(X, 1, Y, 1, n)
 #endif
@@ -209,10 +197,6 @@ subroutine shr_vmath_sin(X, Y, n)
    call vsin(Y, X, n)
 #endif
 
-#if (defined IRIX64)
-   call shr_vmath_fwrap_vsin(X, Y, n)
-#endif
-
 #if (defined OSF1)
    call vsin(X, 1, Y, 1, n)
 #endif
@@ -243,10 +227,6 @@ subroutine shr_vmath_cos(X, Y, n)
 
 #if (defined AIX)
    call vcos(Y, X, n)
-#endif
-
-#if (defined IRIX64)
-   call shr_vmath_fwrap_vcos(X, Y, n)
 #endif
 
 #if (defined OSF1)
