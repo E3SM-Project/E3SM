@@ -550,7 +550,8 @@ contains
       ! Return true if we should check weights
       !
       ! !USES:
-      use clm_varctl, only : flanduse_timeseries, nsrest, nsrContinue, use_cndv, use_ed
+      use clm_varctl          , only : nsrest, nsrContinue, use_cndv, use_ed
+      use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
       !
@@ -559,7 +560,7 @@ contains
       character(len=*), parameter :: subname = 'do_check_weights'
       !-----------------------------------------------------------------------
       
-      if (flanduse_timeseries /= ' ') then
+      if (get_do_transient_pfts()) then
          ! Don't check weights for a transient PFT case, because it's harder to come up with the
          ! correct weights to check against
          do_check_weights = .false.

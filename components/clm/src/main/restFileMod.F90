@@ -811,12 +811,13 @@ contains
     ! Read/Write initial data from/to netCDF instantaneous initial data file
     !
     ! !USES:
-    use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : caseid, ctitle, version, username, hostname, fsurdat
-    use clm_varctl       , only : flanduse_timeseries, conventions, source
-    use clm_varpar       , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
-    use clm_varpar       , only : cft_lb, cft_ub, maxpatch_glcmec
-    use decompMod        , only : get_proc_global
+    use clm_time_manager     , only : get_nstep
+    use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
+    use clm_varctl           , only : conventions, source
+    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
+    use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
+    use dynSubgridControlMod , only : get_flanduse_timeseries
+    use decompMod            , only : get_proc_global
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -875,7 +876,7 @@ contains
     call ncd_putatt(ncid, NCD_GLOBAL, 'case_title'     , trim(ctitle))
     call ncd_putatt(ncid, NCD_GLOBAL, 'case_id'        , trim(caseid))
     call ncd_putatt(ncid, NCD_GLOBAL, 'surface_dataset', trim(fsurdat))
-    call ncd_putatt(ncid, NCD_GLOBAL, 'flanduse_timeseries', trim(flanduse_timeseries))
+    call ncd_putatt(ncid, NCD_GLOBAL, 'flanduse_timeseries', trim(get_flanduse_timeseries()))
     call ncd_putatt(ncid, NCD_GLOBAL, 'title', 'CLM Restart information')
     if (create_glacier_mec_landunit) then
        call ncd_putatt(ncid, ncd_global, 'created_glacier_mec_landunits', 'true')
@@ -1167,8 +1168,9 @@ contains
     ! Check consistency of the fsurdat value on the restart file and the current fsurdat
     !
     ! !USES:
-    use fileutils  , only : get_filename
-    use clm_varctl , only : fname_len, fsurdat, flanduse_timeseries
+    use fileutils            , only : get_filename
+    use clm_varctl           , only : fname_len, fsurdat
+    use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid    ! netcdf id
@@ -1186,7 +1188,7 @@ contains
     ! run with an 1850 surface dataset and a pftdyn file, then use the restart file from
     ! that run to start a present-day (non-transient) run, which would use a 2000 surface
     ! dataset.
-    if (flanduse_timeseries /= ' ') then
+    if (get_flanduse_timeseries() /= ' ') then
        call ncd_getatt(ncid, NCD_GLOBAL, 'surface_dataset', fsurdat_rest)
 
        ! Compare file names, ignoring path
@@ -1224,8 +1226,9 @@ contains
     ! Make sure year on the restart file is consistent with the current model year
     !
     ! !USES:
-    use clm_time_manager, only : get_curr_date, get_rest_date
-    use clm_varctl      , only : fname_len, flanduse_timeseries
+    use clm_time_manager     , only : get_curr_date, get_rest_date
+    use clm_varctl           , only : fname_len
+    use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid    ! netcdf id
@@ -1243,7 +1246,7 @@ contains
     !-----------------------------------------------------------------------
     
     ! Only do this check for a transient run
-    if (flanduse_timeseries /= ' ') then
+    if (get_flanduse_timeseries() /= ' ') then
        ! Determine if the restart file was generated from a transient run; if so, we will
        ! do this consistency check. For backwards compatibility, we allow for the
        ! possibility that the flanduse_timeseries attribute was not on the restart file;

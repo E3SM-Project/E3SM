@@ -46,28 +46,29 @@ contains
     ! CLM initialization first phase 
     !
     ! !USES:
-    use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
-    use clm_varcon       , only: clm_varcon_init
-    use landunit_varcon  , only: landunit_varcon_init, max_lunit, istice_mec
-    use column_varcon    , only: col_itype_to_icemec_class
-    use clm_varctl       , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
-    use pftvarcon        , only: pftconrd
-    use soilorder_varcon , only: soilorder_conrd
-    use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
-    use domainMod        , only: domain_check, ldomain, domain_init
-    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
-    use controlMod       , only: control_init, control_print
-    use ncdio_pio        , only: ncd_pio_init
-    use initGridCellsMod , only: initGridCells, initGhostGridCells
-    use ch4varcon        , only: ch4conrd
-    use UrbanParamsType  , only: UrbanInput
-    use CLMFatesParamInterfaceMod, only : FatesReadPFTs
-    use surfrdMod        , only: surfrd_get_grid_conn
-    use clm_varctl       , only: lateral_connectivity, domain_decomp_type
-    use decompInitMod    , only: decompInit_lnd_using_gp, decompInit_ghosts
-    use domainLateralMod , only: ldomain_lateral, domainlateral_init
-    use SoilTemperatureMod, only : init_soil_temperature
-    use ExternalModelInterfaceMod, only : EMI_Determine_Active_EMs
+    use clm_varpar                , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
+    use clm_varcon                , only: clm_varcon_init
+    use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
+    use column_varcon             , only: col_itype_to_icemec_class
+    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
+    use pftvarcon                 , only: pftconrd
+    use soilorder_varcon          , only: soilorder_conrd
+    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
+    use domainMod                 , only: domain_check, ldomain, domain_init
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
+    use controlMod                , only: control_init, control_print, NLFilename
+    use ncdio_pio                 , only: ncd_pio_init
+    use initGridCellsMod          , only: initGridCells, initGhostGridCells
+    use ch4varcon                 , only: ch4conrd
+    use UrbanParamsType           , only: UrbanInput
+    use CLMFatesParamInterfaceMod , only: FatesReadPFTs
+    use surfrdMod                 , only: surfrd_get_grid_conn
+    use clm_varctl                , only: lateral_connectivity, domain_decomp_type
+    use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
+    use domainLateralMod          , only: ldomain_lateral, domainlateral_init
+    use SoilTemperatureMod        , only: init_soil_temperature
+    use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
+    use dynSubgridControlMod      , only: dynSubgridControl_init
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -113,6 +114,8 @@ contains
     call init_soil_temperature()
 
     if (masterproc) call control_print()
+
+    call dynSubgridControl_init(NLFilename)
 
     ! ------------------------------------------------------------------------
     ! Read in global land grid and land mask (amask)- needed to set decomposition

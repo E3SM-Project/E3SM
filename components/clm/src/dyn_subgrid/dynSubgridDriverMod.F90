@@ -9,6 +9,9 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
+  use dynSubgridControlMod, only : get_flanduse_timeseries
+  use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
+  use dynSubgridControlMod, only : get_do_harvest
   use dynPriorWeightsMod  , only : prior_weights_type
   use UrbanParamsType     , only : urbanparams_type
   use CNDVType            , only : dgvs_type
@@ -59,7 +62,7 @@ contains
     ! clumps - so this routine needs to be called from outside any loops over clumps.
     !
     ! !USES:
-    use clm_varctl        , only : flanduse_timeseries, use_cndv
+    use clm_varctl        , only : use_cndv
     use decompMod         , only : bounds_type, BOUNDS_LEVEL_PROC
     use dynpftFileMod     , only : dynpft_init
     use dynHarvestMod     , only : dynHarvest_init
@@ -79,12 +82,12 @@ contains
     prior_weights = prior_weights_type(bounds)
 
     ! Initialize stuff for prescribed transient Patches
-    if (flanduse_timeseries /= ' ') then
+    if (get_do_transient_pfts()) then
        call dynpft_init(bounds)
     end if
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
-    if (flanduse_timeseries /= ' ') then
+    if (get_do_harvest()) then
        call dynHarvest_init(bounds)
     end if
 
@@ -117,7 +120,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use clm_varctl           , only : flanduse_timeseries, use_cndv, use_cn, create_glacier_mec_landunit, use_ed
+    use clm_varctl           , only : use_cndv, use_cn, create_glacier_mec_landunit, use_ed
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynLandunitAreaMod   , only : update_landunit_weights
@@ -191,11 +194,11 @@ contains
     ! Do land cover change that requires I/O, and thus must be outside a threaded region
     ! ==========================================================================
 
-    if (flanduse_timeseries /= ' ') then
+    if (get_do_transient_pfts()) then
        call dynpft_interp(bounds_proc)
     end if
 
-    if (flanduse_timeseries /= ' ') then
+    if (get_do_transient_crops()) then
        call dynHarvest_interp(bounds_proc)
     end if
 

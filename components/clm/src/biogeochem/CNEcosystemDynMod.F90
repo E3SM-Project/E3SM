@@ -4,9 +4,10 @@ module CNEcosystemDynMod
   ! Ecosystem dynamics: phenology, vegetation
   !
   ! !USES:
+  use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use clm_varctl          , only : flanduse_timeseries, use_c13, use_c14, use_ed, use_dynroot
+  use clm_varctl          , only : use_c13, use_c14, use_ed, use_dynroot
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -748,7 +749,7 @@ contains
        call PStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-       if (flanduse_timeseries /= ' ') then
+       if (get_do_harvest()) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
                phosphorusstate_vars, phosphorusflux_vars)

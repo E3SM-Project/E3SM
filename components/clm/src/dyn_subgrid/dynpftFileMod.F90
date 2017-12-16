@@ -51,8 +51,8 @@ contains
     ! This also calls dynpft_interp for the initial time
     !
     ! !USES:
-    use clm_varctl  , only : flanduse_timeseries
-    use clm_varpar  , only : numpft, maxpatch_pft, natpft_size
+    use dynSubgridControlMod , only : get_flanduse_timeseries
+    use clm_varpar           , only : numpft, maxpatch_pft, natpft_size
     use ncdio_pio
     !
     ! !ARGUMENTS:
@@ -77,7 +77,7 @@ contains
        write(iulog,*) 'Attempting to read pft dynamic landuse data .....'
     end if
 
-    dynpft_file = dyn_file_type(flanduse_timeseries)
+    dynpft_file = dyn_file_type(get_flanduse_timeseries())
 
     ! Consistency checks
     call check_dim(dynpft_file, 'natpft', natpft_size)
