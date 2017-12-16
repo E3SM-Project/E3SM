@@ -60,7 +60,7 @@ contains
          hs_T_forcing(hvcoord,psfrc(1,1),               &
          temperature,elemin%spherep,np, nlev)
     
-    elemin%derived%FM(:,:,:,:)= elemin%derived%FM(:,:,:,:) + &
+    elemin%derived%FM(:,:,1:2,:)= elemin%derived%FM(:,:,1:2,:) + &
          hs_v_forcing(hvcoord,psfrc(1,1),& 
          elemin%state%v(1,1,1,1,nm1),np,nlev)
 

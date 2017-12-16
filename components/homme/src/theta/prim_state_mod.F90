@@ -66,7 +66,7 @@ contains
 
     use physical_constants,     only: dd_pi
 
-    type(element_t),            intent(in) :: elem(:)
+    type(element_t),            intent(inout), target :: elem(:)
     type(TimeLevel_t),target,   intent(in) :: tl
     type(hybrid_t),             intent(in) :: hybrid
     type(hvcoord_t),            intent(in) :: hvcoord
@@ -452,6 +452,12 @@ contains
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
+          if (SUM(tmp(:,:,ie)) /= SUM(elem(ie)%accum%PEner(:,:,n))) then
+             ! print *,'IAM: ',iam,',n,ie,prim_printstate:SUM(PEner): ',n,ie,SUM(tmp(:,:,ie))
+             ! PEner is NaN, reset to 0
+             elem(ie)%accum%PEner(:,:,n) = 0
+             tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
+          endif
        enddo
        PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        PEner(n) = PEner(n)*scale
