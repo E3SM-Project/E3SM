@@ -90,13 +90,13 @@ class EnvTest(EnvBase):
         '''
         keep the values component set
         '''
-        fnode = node.find(".//file")
-        node.remove(fnode)
-        gnode = node.find(".//group")
-        node.remove(gnode)
-        dnode = node.find(".//default_value")
+        fnode = self.get_child(name="file", root=node)
+        self.remove_child(fnode, root=node)
+        gnode = self.get_child(name="group", root=node)
+        self.remove_child(gnode, root=node)
+        dnode = self.get_optional_child(name="default_value", root=node)
         if dnode is not None:
-            node.remove(dnode)
+            self.remove_child(dnode, root=node)
         return node
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):

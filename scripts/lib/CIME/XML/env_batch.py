@@ -6,7 +6,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config
 
-from copy import deepcopy
 from collections import OrderedDict
 import stat, re, math
 
@@ -113,7 +112,8 @@ class EnvBatch(EnvBase):
 
         childnodes = []
         for child in orig_group_children:
-            childnodes.append(deepcopy(child))
+            childnodes.append(self.copy(child))
+            self.remove_child(child, root=orig_group)
 
         self.remove_child(orig_group)
 
@@ -131,13 +131,13 @@ class EnvBatch(EnvBase):
 
     def cleanupnode(self, node):
         if self.get(node, "id") == "batch_system":
-            fnode = node.find(".//file")
-            node.remove(fnode)
-            gnode = node.find(".//group")
-            node.remove(gnode)
-            vnode = node.find(".//values")
+            fnode = self.get_child(name="file", root=node)
+            self.remove_child(fnode, root=node)
+            gnode = self.get_child(name="group", root=node)
+            self.remove_child(gnode, root=node)
+            vnode = self.get_optional_child(name="values", root=node)
             if vnode is not None:
-                node.remove(vnode)
+                self.remove_child(vnode, root=node)
         else:
             node = EnvBase.cleanupnode(self, node)
         return node
@@ -151,12 +151,12 @@ class EnvBatch(EnvBase):
                 oldnode = batchobj.get_optional_child(self.name(node), root=batchobj.batch_system_node)
                 if oldnode is not None and self.name(oldnode) != "directives":
                     logger.debug( "Replacing {}".format(self.name(oldnode)))
-                    batchobj.batch_system_node.remove(oldnode)
+                    batchobj.remove_child(oldnode, root=batch_system_node)
 
         if batchobj.batch_system_node is not None:
-            self.add_child(deepcopy(batchobj.batch_system_node))
+            self.add_child(self.copy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
-            self.add_child(deepcopy(batchobj.machine_node))
+            self.add_child(self.copy(batchobj.machine_node))
 
     def make_batch_script(self, input_template, job, case):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))

@@ -703,15 +703,3 @@ class Grids(GenericXML):
                     grid_list.append({gridname:(grids_dict[alias], domains[gridname])})
 
         return default_comp_grids, grid_list
-
-    def return_all_values(self):
-        # parse grid data and return a dictionary
-        help_text = self.get_element_text("help")
-
-        # get a list of grid dictionaries
-        if self._version == 1.0:
-            (default_comp_grids, all_grids) = self._get_all_values_v1()
-        elif self._version >= 2.0:
-            (default_comp_grids, all_grids) = self._get_all_values_v2()
-
-        return help_text, default_comp_grids, all_grids

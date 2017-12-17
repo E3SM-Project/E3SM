@@ -7,7 +7,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.generic_xml import GenericXML
 
-from copy import deepcopy
 import six
 
 logger = logging.getLogger(__name__)
@@ -357,7 +356,7 @@ class EntryID(GenericXML):
         # new entries in self - putting the entries as children of
         # group elements in file $file
         for src_node in nodelist:
-            node  = deepcopy(src_node)
+            node  = self.copy(src_node)
             gname = srcobj.get_element_text("group", root=src_node)
             if gname is None:
                 gname = "group_not_set"

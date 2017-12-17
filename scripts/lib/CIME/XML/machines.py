@@ -290,46 +290,19 @@ class Machines(GenericXML):
     def print_values(self):
         # write out machines
         machines = self.get_children("machine")
-        print( "Machines")
+        logger.info("Machines")
         for machine in machines:
             name = self.get(machine, "MACH")
-            desc = machine.find("DESC")
-            os_  = machine.find("OS")
-            compilers = machine.find("COMPILERS")
-            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
+            desc = self.get_child("DESC", root=machine)
+            os_  = self.get_child("OS", root=machine)
+            compilers = self.get_child("COMPILERS", root=machine)
+            max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
+            max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
 
-            print( "  {} : {} ".format(name , self.text(desc)))
-            print( "      os             ", self.text(os_))
-            print( "      compilers      ",self.text(compilers))
+            logger.info( "  {} : {} ".format(name , self.text(desc)))
+            logger.info( "      os             ", self.text(os_))
+            logger.info( "      compilers      ",self.text(compilers))
             if max_mpitasks_per_node is not None:
-                print("      pes/node       ",self.text(max_mpitasks_per_node))
+                logger.info("      pes/node       ",self.text(max_mpitasks_per_node))
             if max_tasks_per_node is not None:
-                print("      max_tasks/node ",self.text(max_tasks_per_node))
-
-    def return_all_values(self):
-        # return a dictionary of machines
-        mach_dict = dict()
-        machines = self.get_children("machine")
-        for machine in machines:
-            name = self.get(machine, "MACH")
-            desc = machine.find("DESC")
-            os_  = machine.find("OS")
-            compilers = machine.find("COMPILERS")
-            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
-            max_mpitasks_per_node = machine.find("MAX_MPITASKS_PER_NODE")
-            ppn = ''
-            if max_mpitasks_per_node is not None:
-                ppn = self.text(max_mpitasks_per_node)
-
-            max_tasks_pn = ''
-            if max_tasks_per_node is not None:
-                max_tasks_pn = self.text(max_tasks_per_node)
-
-            mach_dict[name] = { 'description'    : self.text(desc),
-                                'os'             : self.text(os_),
-                                'compilers'      : self.text(compilers),
-                                'pes/node'       : ppn,
-                                'max_tasks/node' : max_tasks_pn }
-
-        return mach_dict
+                logger.info("      max_tasks/node ",self.text(max_tasks_per_node))

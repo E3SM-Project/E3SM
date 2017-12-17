@@ -49,5 +49,5 @@ class Tests(GenericXML):
                     infrastructure_test.upper() == "TRUE"):
                     continue
             name = self.get(one_test, "NAME")
-            desc = one_test.find("DESC").text
-            print("{}: {}".format(name, desc))
+            desc = self.get_element_text("DESC", root=one_test)
+            logger.info("{}: {}".format(name, desc))

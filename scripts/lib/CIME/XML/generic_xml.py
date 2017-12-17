@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from distutils.spawn import find_executable
 import getpass
 import six
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,10 @@ class _Element(object): # private class, don't want users constructing directly 
 
     def __hash__(self):
         return hash(self.xml_element)
+
+    def __deepcopy__(self, _):
+        self.xml_element = deepcopy(self.xml_element)
+        return self
 
 class GenericXML(object):
 
@@ -116,6 +121,9 @@ class GenericXML(object):
         """
         root = root if root is not None else self.root
         root.xml_element.append(node.xml_element)
+
+    def copy(self, node):
+        return deepcopy(node)
 
     def remove_child(self, node, root=None):
         root = root if root is not None else self.root
