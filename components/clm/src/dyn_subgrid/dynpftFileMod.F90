@@ -42,7 +42,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine dynpft_init(bounds)
+  subroutine dynpft_init(bounds, dynpft_filename)
     !
     ! !DESCRIPTION:
     ! Initialize dynamic pft dataset (position it to the right time samples
@@ -51,12 +51,12 @@ contains
     ! This also calls dynpft_interp for the initial time
     !
     ! !USES:
-    use dynSubgridControlMod , only : get_flanduse_timeseries
     use clm_varpar           , only : numpft, maxpatch_pft, natpft_size
     use ncdio_pio
     !
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
+    type(bounds_type), intent(in) :: bounds          ! proc-level bounds
+    character(len=*) , intent(in) :: dynpft_filename ! name of file containing transient pft information
     !
     ! !LOCAL VARIABLES:
     integer  :: wtpatch_shape(2)                  ! shape of the wtpatch data
@@ -77,7 +77,7 @@ contains
        write(iulog,*) 'Attempting to read pft dynamic landuse data .....'
     end if
 
-    dynpft_file = dyn_file_type(get_flanduse_timeseries())
+    dynpft_file = dyn_file_type(dynpft_filename)
 
     ! Consistency checks
     call check_dim(dynpft_file, 'natpft', natpft_size)

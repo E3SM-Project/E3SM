@@ -89,12 +89,12 @@ contains
 
     ! Initialize stuff for prescribed transient Patches
     if (get_do_transient_pfts()) then
-       call dynpft_init(bounds)
+       call dynpft_init(bounds, dynpft_filename=get_flanduse_timeseries())
     end if
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
     if (get_do_harvest()) then
-       call dynHarvest_init(bounds)
+       call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
     end if
 
     if (use_cndv) then

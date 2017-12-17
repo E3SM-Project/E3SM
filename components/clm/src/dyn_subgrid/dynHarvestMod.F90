@@ -63,7 +63,7 @@ module dynHarvestMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynHarvest_init(bounds)
+  subroutine dynHarvest_init(bounds, harvest_filename)
     !
     ! !DESCRIPTION:
     ! Initialize data structures for harvest information.
@@ -72,12 +72,12 @@ contains
     ! This also calls dynHarvest_interp for the initial time
     !
     ! !USES:
-    use dynSubgridControlMod  , only : get_flanduse_timeseries
     use clm_varctl            , only : use_cn
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     !
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
+    type(bounds_type), intent(in) :: bounds           ! proc-level bounds
+    character(len=*) , intent(in) :: harvest_filename ! name of file containing harvest information
     !
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
@@ -94,7 +94,7 @@ contains
        call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, __LINE__))
     end if
 
-    dynHarvest_file = dyn_file_type(get_flanduse_timeseries())
+    dynHarvest_file = dyn_file_type(harvest_filename)
     
     ! Get initial harvest data
     if (use_cn) then
