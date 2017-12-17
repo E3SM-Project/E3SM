@@ -190,13 +190,13 @@ class EntryID(GenericXML):
         return valid_values_list
 
     def set_valid_values(self, vid, new_valid_values):
-        node = self.get_optional_child("entry", {"id":vid})
+        node = self.scan_optional_child("entry", {"id":vid})
         if node is None:
             return None
         return self._set_valid_values(node, new_valid_values)
 
     def get_nodes_by_id(self, vid):
-        return self.get_children("entry", {"id":vid})
+        return self.scan_children("entry", {"id":vid})
 
     def _set_valid_values(self, node, new_valid_values):
         old_vv = self._get_valid_values(node)

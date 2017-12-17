@@ -174,12 +174,13 @@ class GenericXML(object):
             children.append(_Element(child))
 
         # Remove
-        if not no_validate:
-            validate = self.scan_children(name, attributes=attributes, root=root)
-            if validate != children:
-                import pdb
-                pdb.set_trace()
-                validate = self.scan_children(name, attributes=attributes, root=root)
+        # if not no_validate:
+        #     validate = self.scan_children(name, attributes=attributes, root=root)
+        #     expect(validate == children, "bad")
+            # if validate != children:
+            #     import pdb
+            #     pdb.set_trace()
+            #     validate = self.scan_children(name, attributes=attributes, root=root)
 
         return children
 
