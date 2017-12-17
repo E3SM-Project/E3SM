@@ -64,6 +64,7 @@ contains
     ! !USES:
     use clm_varctl        , only : use_cndv
     use decompMod         , only : bounds_type, BOUNDS_LEVEL_PROC
+    use decompMod         , only : get_proc_clumps, get_clump_bounds
     use dynpftFileMod     , only : dynpft_init
     use dynHarvestMod     , only : dynHarvest_init
     use dynCNDVMod        , only : dynCNDV_init
@@ -74,10 +75,15 @@ contains
     type(dgvs_type)  , intent(inout) :: dgvs_vars
     !
     ! !LOCAL VARIABLES:
+    integer           :: nclumps      ! number of clumps on this processor
+    integer           :: nc           ! clump index
+    type(bounds_type) :: bounds_clump ! clump-level bounds
     character(len=*), parameter :: subname = 'dynSubgrid_init'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    nclumps = get_proc_clumps()
 
     prior_weights = prior_weights_type(bounds)
 
@@ -95,7 +101,12 @@ contains
        call dynCNDV_init(bounds, dgvs_vars)
     end if
 
-    call compute_higher_order_weights(bounds)
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    do nc = 1, nclumps
+       call get_clump_bounds(nc, bounds_clump)
+       call compute_higher_order_weights(bounds_clump)
+    end do
+    !$OMP END PARALLEL DO
     
   end subroutine dynSubgrid_init
 
