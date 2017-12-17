@@ -299,10 +299,10 @@ class Machines(GenericXML):
             max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
             max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
 
-            logger.info( "  {} : {} ".format(name , self.text(desc)))
-            logger.info( "      os             ", self.text(os_))
-            logger.info( "      compilers      ",self.text(compilers))
+            print( "  {} : {} ".format(name , self.text(desc)))
+            print( "      os             ", self.text(os_))
+            print( "      compilers      ",self.text(compilers))
             if max_mpitasks_per_node is not None:
-                logger.info("      pes/node       ",self.text(max_mpitasks_per_node))
+                print("      pes/node       ",self.text(max_mpitasks_per_node))
             if max_tasks_per_node is not None:
-                logger.info("      max_tasks/node ",self.text(max_tasks_per_node))
+                print("      max_tasks/node ",self.text(max_tasks_per_node))

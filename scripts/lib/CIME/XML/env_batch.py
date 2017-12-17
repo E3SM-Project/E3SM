@@ -148,7 +148,7 @@ class EnvBatch(EnvBase):
                 oldnode = batchobj.get_optional_child(self.name(node), root=batchobj.batch_system_node)
                 if oldnode is not None and self.name(oldnode) != "directives":
                     logger.debug( "Replacing {}".format(self.name(oldnode)))
-                    batchobj.remove_child(oldnode, root=batch_system_node)
+                    batchobj.remove_child(oldnode, root=batchobj.batch_system_node)
 
         if batchobj.batch_system_node is not None:
             self.add_child(self.copy(batchobj.batch_system_node))
