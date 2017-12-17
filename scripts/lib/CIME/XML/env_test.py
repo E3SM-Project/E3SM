@@ -28,7 +28,7 @@ class EnvTest(EnvBase):
         the appropriate build and run phases.
         """
         tnode = self.get_child("test")
-        for child in tnode:
+        for child in self.get_children(root=tnode):
             if self.text(child) is not None:
                 logger.debug("Setting {} to {} for test".format(self.name(child), self.text(child)))
                 if "$" in self.text(child):

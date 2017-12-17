@@ -393,10 +393,10 @@ class EntryID(GenericXML):
 
     def compare_xml(self, other):
         xmldiffs = {}
-        f1nodes = self.get_children("entry")
+        f1nodes = self.scan_children("entry")
         for node in f1nodes:
             vid = self.get(node, "id")
-            f2match = other.get_optional_child("entry", attributes={"id":vid})
+            f2match = other.scan_optional_child("entry", attributes={"id":vid})
             if f2match is not None:
                 f1val = self.get_value(vid, resolved=False)
                 if f1val is not None:
@@ -435,6 +435,6 @@ class EntryID(GenericXML):
                 self.remove_child(samenodes[0])
 
     def __iter__(self):
-        for node in self.get_children("entry"):
+        for node in self.scan_children("entry"):
             vid = self.get(node, "id")
             yield vid, self.get_value(vid)

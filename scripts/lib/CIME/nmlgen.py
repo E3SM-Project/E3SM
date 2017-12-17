@@ -125,7 +125,7 @@ class NamelistGenerator(object):
 
         if skip_entry_loop is None:
             for entry in entry_nodes:
-                self.add_default(entry.get("id"))
+                self.add_default(self._definition.get(entry, "id"))
         else:
             return entry_nodes
 

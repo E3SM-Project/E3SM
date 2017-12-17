@@ -239,7 +239,7 @@ class EnvBatch(EnvBase):
         """
         """
         result = []
-        directive_prefix = self.get_child("batch_directive").text
+        directive_prefix = self.get_element_text("batch_directive", root=self.get_child("batch_system"))
         directive_prefix = "" if directive_prefix is None else directive_prefix
 
         roots = self.get_children("batch_system")

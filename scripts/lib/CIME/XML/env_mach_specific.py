@@ -48,7 +48,7 @@ class EnvMachSpecific(EnvBase):
                     self.add_child(node)
 
     def _get_modules_for_case(self, case):
-        module_nodes = self.get_children("modules")
+        module_nodes = self.get_children("modules", root=self.get_child("module_system"))
         modules_to_load = None
         if module_nodes is not None:
             modules_to_load = self._compute_module_actions(module_nodes, case)
@@ -180,7 +180,7 @@ class EnvMachSpecific(EnvBase):
 
         for node in nodes:
             if (self._match_attribs(self.attrib(node), case)):
-                for child in node:
+                for child in self.get_children(root=node, no_validate=True):
                     expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
                     if (self._match_attribs(self.attrib(child), case)):
                         val = self.text(child)
@@ -329,11 +329,11 @@ class EnvMachSpecific(EnvBase):
         return self.get(module_system, "type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_optional_child("init_path", attributes={"lang":lang})
+        init_nodes = self.get_optional_child("init_path", attributes={"lang":lang}, root=self.get_child("module_system"))
         return self.text(init_nodes) if init_nodes is not None else None
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang})
+        cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
         return self.text(cmd_nodes) if cmd_nodes is not None else None
 
     def get_mpirun(self, case, attribs, job="case.run", exe_only=False):

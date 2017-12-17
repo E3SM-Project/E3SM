@@ -231,7 +231,7 @@ class Compilers(GenericXML):
                 big_append_tree.write_out(writer)
 
 def _add_to_macros(db, node, macros):
-    for child in node:
+    for child in db.get_children(root=node, no_validate=True):
         name = db.name(child)
         attrib = db.attrib(child)
         value = db.text(child)
