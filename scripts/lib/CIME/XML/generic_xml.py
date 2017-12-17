@@ -28,8 +28,7 @@ class _Element(object): # private class, don't want users constructing directly 
         return hash(self.xml_element)
 
     def __deepcopy__(self, _):
-        self.xml_element = deepcopy(self.xml_element)
-        return self
+        return _Element(deepcopy(self.xml_element))
 
 class GenericXML(object):
 
@@ -175,12 +174,12 @@ class GenericXML(object):
             children.append(_Element(child))
 
         # Remove
-        # if not no_validate:
-        #     validate = self.scan_children(name, attributes=attributes, root=root)
-        #     if validate != children:
-        #         import pdb
-        #         pdb.set_trace()
-        #         validate = self.scan_children(name, attributes=attributes, root=root)
+        if not no_validate:
+            validate = self.scan_children(name, attributes=attributes, root=root)
+            if validate != children:
+                import pdb
+                pdb.set_trace()
+                validate = self.scan_children(name, attributes=attributes, root=root)
 
         return children
 

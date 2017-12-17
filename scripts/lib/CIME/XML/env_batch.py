@@ -108,12 +108,11 @@ class EnvBatch(EnvBase):
 
         orig_group = self.get_child("group", {"id":"job_submission"},
                                     err_msg="Looks like job groups have already been created")
-        orig_group_children = self.get_children()
+        orig_group_children = EnvBase.get_children(self, root=orig_group, no_validate=True)
 
         childnodes = []
-        for child in orig_group_children:
+        for child in reversed(orig_group_children):
             childnodes.append(self.copy(child))
-            self.remove_child(child, root=orig_group)
 
         self.remove_child(orig_group)
 
@@ -126,8 +125,6 @@ class EnvBatch(EnvBase):
 
             for child in childnodes:
                 self.add_child(child, root=new_job_group)
-
-            self.add_child(new_job_group)
 
     def cleanupnode(self, node):
         if self.get(node, "id") == "batch_system":
