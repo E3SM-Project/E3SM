@@ -20,7 +20,7 @@ import argparse
 import xml.etree.ElementTree as ET
 import subprocess
 import ConfigParser
-
+import textwrap
 import netCDF4
 
 try:
@@ -393,10 +393,10 @@ def write_streams_file(streams, config_file, filename, init_path):  # {{{
             substream_name = substream.attrib['name']
             if 'packages' in substream.attrib.keys():
                 package_name = substream.attrib['packages']
-                entry = '\t<stream name="{}"'.format(substream_name) + \
+                entry = '    <stream name="{}"'.format(substream_name) + \
                         ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<stream name="{}"'.format(substream_name) + '/>\n'
+                entry = '    <stream name="{}"'.format(substream_name) + '/>\n'
             stream_file.write(entry)
 
         # Write out all var_structs included in this stream
@@ -404,10 +404,10 @@ def write_streams_file(streams, config_file, filename, init_path):  # {{{
             var_struct_name = var_struct.attrib['name']
             if 'packages' in var_struct.attrib.keys():
                 package_name = var_struct.attrib['packages']
-                entry = '\t<var_struct name="{}"'.format(var_struct_name) + \
+                entry = '    <var_struct name="{}"'.format(var_struct_name) + \
                         ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<var_struct name="{}"'.format(var_struct_name) + \
+                entry = '    <var_struct name="{}"'.format(var_struct_name) + \
                         '/>\n'
             stream_file.write(entry)
 
@@ -416,10 +416,10 @@ def write_streams_file(streams, config_file, filename, init_path):  # {{{
             var_array_name = var_array.attrib['name']
             if 'packages' in var_array.attrib.keys():
                 package_name = var_array.attrib['packages']
-                entry = '\t<var_array name="{}"'.format(var_array_name) + \
+                entry = '    <var_array name="{}"'.format(var_array_name) + \
                         ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<var_array name="{}"'.format(var_array_name) + \
+                entry = '    <var_array name="{}"'.format(var_array_name) + \
                         '/>\n'
             stream_file.write(entry)
 
@@ -428,10 +428,10 @@ def write_streams_file(streams, config_file, filename, init_path):  # {{{
             var_name = var.attrib['name']
             if 'packages' in var.attrib.keys():
                 package_name = var.attrib['packages']
-                entry = '\t<var name="{}"'.format(var_name) + \
+                entry = '    <var name="{}"'.format(var_name) + \
                         ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<var name="{}"'.format(var_name) + '/>\n'
+                entry = '    <var name="{}"'.format(var_name) + '/>\n'
             stream_file.write(entry)
 
         stream_file.write('</stream>\n')
@@ -462,12 +462,14 @@ def generate_run_scripts(config_file, init_path, configs):  # {{{
             # Write the script header
             script.write("#!/usr/bin/env python\n")
             script.write("\n")
-            script.write("### This script was generated from "
+            script.write("# This script was generated from "
                          "setup_testcases.py as part of a config file\n")
             script.write("\n")
-            script.write("import sys, os, fnmatch, resource\n")
-            script.write("import xml.etree.ElementTree as ET\n")
-            script.write("import subprocess\n")
+            script.write('import sys\n')
+            script.write('import os\n')
+            script.write('import shutil\n')
+            script.write('import glob\n')
+            script.write("import subprocess\n\n\n")
             script.write("dev_null = open('/dev/null', 'w')\n")
 
             # Process each part of the run script
@@ -486,8 +488,7 @@ def generate_run_scripts(config_file, init_path, configs):  # {{{
 
             # Make the script executable
             subprocess.check_call(['chmod', 'a+x', '{}'.format(script_path)],
-                                  stdout=dev_null, stderr=dev_null,
-                                  env=os.environ.copy())
+                                  stdout=dev_null, stderr=dev_null)
 
     dev_null.close()
     del config_tree
@@ -519,16 +520,22 @@ def generate_driver_scripts(config_file, configs):  # {{{
         script.write('#!/usr/bin/env python\n')
         script.write('"""\n')
         script.write('This script was generated as part of a driver_script '
-                     'file by the setup_testcases.py script.\n')
+                     'file by the\nsetup_testcases.py script.\n')
         script.write('"""\n')
-        script.write('import sys, os, shutil, glob, subprocess\n')
+        script.write('import sys\n')
+        script.write('import os\n')
+        script.write('import shutil\n')
+        script.write('import glob\n')
+        script.write('import subprocess\n')
         script.write("import xml.etree.ElementTree as ET\n")
         script.write('import argparse\n')
-        script.write('\n')
-        script.write('## This script was generated by setup_testcases.py as '
-                     'part of a driver_script file.\n')
+        script.write('\n\n')
+        script.write('# This script was generated by setup_testcases.py as '
+                     'part of a driver_script\n'
+                     '# file.\n')
         script.write("os.environ['PYTHONUNBUFFERED'] = '1'\n")
-        script.write('parser = argparse.ArgumentParser(description=__doc__, '
+        script.write('parser = argparse.ArgumentParser(\n'
+                     '        description=__doc__, '
                      'formatter_class=argparse.RawTextHelpFormatter)\n')
 
         case_dict = dict()
@@ -542,15 +549,22 @@ def generate_driver_scripts(config_file, configs):  # {{{
                 print "          (name of template file is {})".format(
                     child.attrib['file'])
         for case_name in case_dict.keys():
-            script.write('parser.add_argument("--no_{}", dest="no_{}", '
-                         'help="If set, {} case will not be run during '
-                         'execution of this script.", action="store_true")'
-                         '\n'.format(case_name, case_name, case_name))
+            script.write('parser.add_argument("--no_{}", dest="no_{}",\n'
+                         '                    help="If set, {} case will not '
+                         'be run during "\n'
+                         '                         "execution of this script'
+                         '.",\n'
+                         '                    action="store_true")\n'.format(
+                             case_name, case_name, case_name))
             script.write('parser.add_argument("--finalize_{}", '
-                         'dest="finalize_{}", help="If set, {} case will have '
-                         'symlinks replaced with the files they point to, '
-                         'this occurs after any case runs that have been '
-                         'requested..", action="store_true")\n'.format(
+                         'dest="finalize_{}",\n'
+                         '                    help="If set, {} case will have '
+                         'symlinks replaced "\n'
+                         '                         "with the files they point '
+                         'to, this occurs after any "\n'
+                         '                         "case runs that have been '
+                         'requested.",\n'
+                         '                    action="store_true")\n'.format(
                              case_name, case_name, case_name))
 
         script.write('\n')
@@ -567,16 +581,17 @@ def generate_driver_scripts(config_file, configs):  # {{{
             if child.tag == 'case':
                 case = child.attrib['name']
                 script.write('if not args.no_{}:\n'.format(case))
-                script.write('\tos.chdir(base_path)\n')
-                script.write('\tos.chdir(' + "'{}')\n".format(case))
+                script.write('    os.chdir(base_path)\n')
+                script.write('    os.chdir(' + "'{}')\n".format(case))
                 # Process children of <case> tag
                 for grandchild in child:
                     # Process <step> tags
                     if grandchild.tag == 'step':
-                        process_script_step(grandchild, configs, '\t', script)
+                        process_script_step(grandchild, configs, '    ',
+                                            script)
                     # Process <define_env_var> tags
                     elif grandchild.tag == 'define_env_var':
-                        process_env_define_step(grandchild, configs, '\t',
+                        process_env_define_step(grandchild, configs, '    ',
                                                 script)
             # Process <step> tags
             elif child.tag == 'step':
@@ -595,7 +610,7 @@ def generate_driver_scripts(config_file, configs):  # {{{
         # encountered an error. This happens before finalizing a case
         # directory.
         script.write('if error:\n')
-        script.write('\tsys.exit(1)\n')
+        script.write('    sys.exit(1)\n')
 
         for case_name in case_dict.keys():
             script.write('if args.finalize_{}:\n'.format(case_name))
@@ -603,10 +618,10 @@ def generate_driver_scripts(config_file, configs):  # {{{
             script.write('    os.chdir("{}")\n'.format(case_name))
             script.write('    file_list = glob.glob("*")\n')
             script.write('    for file in file_list:\n')
-            script.write('       if os.path.islink(file):\n')
-            script.write('          link_path = os.readlink(file)\n')
-            script.write('          os.unlink(file)\n')
-            script.write('          shutil.copyfile(link_path, file)\n')
+            script.write('        if os.path.islink(file):\n')
+            script.write('            link_path = os.readlink(file)\n')
+            script.write('            os.unlink(file)\n')
+            script.write('            shutil.copyfile(link_path, file)\n')
             script.write('    os.chdir(old_dir)\n')
             script.write('\n')
 
@@ -617,8 +632,7 @@ def generate_driver_scripts(config_file, configs):  # {{{
         # Make script executable
         subprocess.check_call(['chmod', 'a+x',
                                '{}/{}'.format(init_path, name)],
-                              stdout=dev_null, stderr=dev_null,
-                              env=os.environ.copy())
+                              stdout=dev_null, stderr=dev_null)
 # }}}
 
 
@@ -682,24 +696,6 @@ def process_script_step(step, configs, indentation, script_file):  # {{{
 
     # Write step header
     script_file.write("\n")
-    script_file.write("# Run command is:\n")
-
-    # Build comment and command bases
-    comment = "# {} ".format(executable)
-    command = "subprocess.check_call(['{}'".format(executable)
-
-    # Process step arguments
-    for argument in step:
-        if argument.tag == 'argument':
-            flag = argument.attrib['flag']
-            val = argument.text
-
-            if flag.strip() != "":
-                comment = "{} {}".format(comment, flag)
-                command = "{}, '{}'".format(command, flag)
-
-            comment = "{} {}".format(comment, val)
-            command = "{}, '{}'".format(command, val)
 
     # If a pre_message attribute was supplied, write it before adding the
     # command.
@@ -707,24 +703,35 @@ def process_script_step(step, configs, indentation, script_file):  # {{{
         script_file.write('{}print "{}"\n'.format(indentation,
                                                   step_pre_message))
 
-    # Setup command redirection
-    if quiet:
-        command = "{}], stdout=dev_null, stderr=dev_null".format(command)
-    else:
-        command = "{}]".format(command)
+    script_file.write("{}# Run command is:\n".format(indentation))
+
+    command_args = [executable]
+    # Process step arguments
+    for argument in step:
+        if argument.tag == 'argument':
+            flag = argument.attrib['flag']
+            val = argument.text
+
+            if flag.strip() != "":
+                command_args.append(flag)
+
+            if val is not None:
+                command_args.append(val)
+
+    # Build comment and command bases
+    comment = wrap_subprocess_comment(command_args, indentation)
+    command = wrap_subprocess_command(command_args, indentation, quiet)
 
     # Write the comment, and the command. Also, ensure the command has the same
     # environment as the calling script.
-    script_file.write("{}{}\n".format(indentation, comment))
-    script_file.write("{}{}, env=os.environ.copy())\n".format(indentation,
-                                                              command))
+    script_file.write("{}\n".format(comment))
+    script_file.write("{}\n".format(command))
 
     # If a post_message attribute was supplied, write it after the command.
     if write_post_message:
         script_file.write('{}print "{}"\n'.format(indentation,
                                                   step_post_message))
 
-    script_file.write("\n")
 # }}}
 
 
@@ -861,42 +868,35 @@ def process_field_definition(field_tag, configs, script, file1, file2,
     compare_executable = '{}/compare_fields.py'.format(
         configs.get('script_paths', 'utility_scripts'))
 
-    # Build the base command to compare the fields
-    base_command = "subprocess.check_call(['{}', '-q', '-1', '{}', '-2', " \
-                   "'{}'".format(compare_executable, file1, file2)
-
     field_name = field_tag.attrib['name']
 
-    command = "{}, '-v', '{}'".format(base_command, field_name)
+    # Build the base command to compare the fields
+    command_args = [compare_executable, '-q', '-1', file1, '-2', file2, '-v',
+                    field_name]
 
     # Determine norm thresholds
-    if not baseline_comp:
-        if 'l1_norm' in field_tag.attrib.keys():
-            command = "{}, '--l1', '{}'".format(command,
-                                                field_tag.attrib['l1_norm'])
-        if 'l2_norm' in field_tag.attrib.keys():
-            command = "{}, '--l2', '{}'".format(command,
-                                                field_tag.attrib['l2_norm'])
-        if 'linf_norm' in field_tag.attrib.keys():
-            command = "{}, '--linf', '{}'".format(
-                command, field_tag.attrib['linf_norm'])
+    if baseline_comp:
+        command_args.extend(['--l1', '0.0', '--l2', '0.0', '--linf', '0.0'])
     else:
-        command = "{}, '--l1', '0.0', '--l2', '0.0', '--linf', " \
-                  "'0.0'".format(command)
+        if 'l1_norm' in field_tag.attrib.keys():
+            command_args.extend(['--l1', field_tag.attrib['l1_norm']])
+        if 'l2_norm' in field_tag.attrib.keys():
+            command_args.extend(['--l2', field_tag.attrib['l2_norm']])
+        if 'linf_norm' in field_tag.attrib.keys():
+            command_args.extend(['--linf', field_tag.attrib['linf_norm']])
 
-    # Ensure the comparison script has the same environment as the calling
-    # script.
-    command = '{}], env=os.environ.copy())'.format(command)
+    command = wrap_subprocess_command(command_args, indentation='    ',
+                                      quiet=False)
 
     # Write the pass/fail logic.
     script.write('try:\n')
-    script.write('\t{}\n'.format(command))
-    script.write("\tprint ' ** PASS Comparison of {} between {} and "
-                 "{}'\n".format(field_name, file1, file2))
-    script.write('except:\n')
-    script.write("\tprint ' ** FAIL Comparison of {} between {} and "
-                 "{}'\n".format(field_name, file1, file2))
-    script.write('\terror = True\n')
+    script.write('{}\n'.format(command))
+    script.write("    print ' ** PASS Comparison of {} between {} and\\n' \\\n"
+                 "          '    {}'\n".format(field_name, file1, file2))
+    script.write('except subprocess.CalledProcessError:\n')
+    script.write("    print ' ** FAIL Comparison of {} between {} and\\n' \\\n"
+                 "          '    {}'\n".format(field_name, file1, file2))
+    script.write('    error = True\n')
 # }}}
 # }}}
 
@@ -1018,20 +1018,23 @@ def process_timer_definition(timer_tag, configs, script, basedir, compdir):
         sys.exit(1)
 
     command = 'subprocess.check_call(["{}", "-b", "{}", "-c", "{}", "-t", ' \
-              '"{}"], env=os.environ.copy())'.format(compare_script, basedir,
-                                                     compdir, timer_name)
+              '"{}"])'.format(compare_script, compdir, basedir, timer_name)
 
     script.write('\n')
-    script.write('if os.path.exists("{}") and os.path.exists("{}"):\n'.format(
-        basedir, compdir))
-    script.write('\ttry:\n')
-    script.write('\t\t{}\n'.format(command))
-    script.write("\t\tprint ' ** PASS Comparison of timer {} between {} and "
-                 "{}'\n".format(timer_name, basedir, compdir))
-    script.write('\texcept:\n')
-    script.write("\t\tprint ' ** FAIL Comparison of timer {} between {} and "
-                 "{}'\n".format(timer_name, basedir, compdir))
-    script.write("\t\terror = True\n")
+    script.write('if os.path.exists("{}") and \\\n'
+                 '        os.path.exists("{}"):\n'.format(compdir, basedir))
+    script.write('    try:\n')
+    script.write('        {}\n'.format(command))
+    script.write("        print ' ** PASS Comparison of timer {} between {} "
+                 "and\\n' \\\n"
+                 "              '    {}'\n".format(timer_name, compdir,
+                                                   basedir))
+    script.write('    except subprocess.CalledProcessError:\n')
+    script.write("        print ' ** FAIL Comparison of timer {} between {} "
+                 "and\\n' \\\n"
+                 "              '    {}'\n".format(timer_name, compdir,
+                                                   basedir))
+    script.write("        error = True\n")
 # }}}
 # }}}
 
@@ -1117,6 +1120,39 @@ def process_model_run_step(model_run_tag, configs, script):  # {{{
     script.write('print "\\n"\n')
     dev_null.close()
 # }}}
+
+
+def wrap_subprocess_comment(command_args, indentation):  # {{{
+    # Build comment and command bases
+    comment = textwrap.fill(' '.join(command_args), width=79,
+                            initial_indent="{}# ".format(indentation),
+                            subsequent_indent="{}# ".format(indentation),
+                            break_on_hyphens=False, break_long_words=False)
+    return comment
+# }}}
+
+
+def wrap_subprocess_command(command_args, indentation, quiet):  # {{{
+    # Setup command redirection
+    if quiet:
+        redirect = ", stdout=dev_null, stderr=dev_null"
+    else:
+        redirect = ""
+
+    prefix = "{}subprocess.check_call(".format(indentation)
+    command = textwrap.wrap("'{}'".format("', '".join(command_args)), width=79,
+                            initial_indent="{}[".format(prefix),
+                            subsequent_indent=' ' * (len(prefix)+1),
+                            break_on_hyphens=False, break_long_words=False)
+
+    last_line = command.pop()
+    command.extend(textwrap.wrap(
+            "{}]{})".format(last_line, redirect),
+            width=80, subsequent_indent=' ' * (len(prefix)),
+            break_on_hyphens=False, break_long_words=False))
+    command = '\n'.join(command)
+    return command
+# }}}
 # }}}
 
 
@@ -1201,8 +1237,7 @@ def add_links(config_file, configs):  # {{{
 
             subprocess.check_call(['ln', '-sfn', '{}'.format(source_file),
                                    '{}'.format(dest)],
-                                  stdout=dev_null, stderr=dev_null,
-                                  env=os.environ.copy())
+                                  stdout=dev_null, stderr=dev_null)
             os.chdir(old_cwd)
             del source
             del dest
@@ -1219,8 +1254,7 @@ def add_links(config_file, configs):  # {{{
 
             subprocess.check_call(['ln', '-sf', '{}'.format(source),
                                    '{}/{}'.format(base_path, dest)],
-                                  stdout=dev_null, stderr=dev_null,
-                                  env=os.environ.copy())
+                                  stdout=dev_null, stderr=dev_null)
             del source_attr
             del source
             del dest
@@ -1346,8 +1380,7 @@ def get_defined_files(config_file, init_path, configs):  # {{{
                                     try:
                                         subprocess.check_call(
                                             ['wget', '-q', '{}'.format(path)],
-                                            stdout=dev_null, stderr=dev_null,
-                                            env=os.environ.copy())
+                                            stdout=dev_null, stderr=dev_null)
                                     except subprocess.CalledProcessError:
                                         print " Wget failed...."
 
@@ -1356,8 +1389,7 @@ def get_defined_files(config_file, init_path, configs):  # {{{
                                             ['mv', '{}'.format(file_name),
                                              '{}/{}'.format(dest_path,
                                                             file_name)],
-                                            stdout=dev_null, stderr=dev_null,
-                                            env=os.environ.copy())
+                                            stdout=dev_null, stderr=dev_null)
                                     except subprocess.CalledProcessError:
                                         print "  -- Web mirror attempt " \
                                               "failed. Trying other mirrors..."
@@ -1391,8 +1423,7 @@ def get_defined_files(config_file, init_path, configs):  # {{{
                                             ['rm', '-f',
                                              '{}/{}'.format(dest_path,
                                                             file_name)],
-                                            stdout=dev_null, stderr=dev_null,
-                                            env=os.environ.copy())
+                                            stdout=dev_null, stderr=dev_null)
                                         sys.exit(1)
 
                                     nc.close()
@@ -1409,8 +1440,7 @@ def get_defined_files(config_file, init_path, configs):  # {{{
                                             ['rm', '-f',
                                              '{}/{}'.format(dest_path,
                                                             file_name)],
-                                            stdout=dev_null, stderr=dev_null,
-                                            env=os.environ.copy())
+                                            stdout=dev_null, stderr=dev_null)
 
                     # IF validation valied, exit.
                     if not os.path.exists('{}/{}'.format(dest_path,
@@ -1768,12 +1798,12 @@ if __name__ == "__main__":
                      '{:d}'.format(int(case_num))])
                 config_options = core_configuration.strip('\n').split(' ')
                 history_file.write('\n')
-                history_file.write('\tcore: {}\n'.format(config_options[1]))
-                history_file.write('\tconfiguration: {}\n'.format(
+                history_file.write('    core: {}\n'.format(config_options[1]))
+                history_file.write('    configuration: {}\n'.format(
                     config_options[3]))
-                history_file.write('\tresolution: {}\n'.format(
+                history_file.write('    resolution: {}\n'.format(
                     config_options[5]))
-                history_file.write('\ttest: {}\n'.format(config_options[7]))
+                history_file.write('    test: {}\n'.format(config_options[7]))
         else:
             history_file.write('core: {}\n'.format(
                 config.get('script_input_arguments', 'core')))
