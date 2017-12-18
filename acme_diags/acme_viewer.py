@@ -13,6 +13,7 @@ import acme_diags
 from acme_diags.driver.utils import get_set_name
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
 import matplotlib.pyplot as plt
+import matplotlib
 # Dict of
 # {
 #   set_num: {
@@ -230,24 +231,26 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
         row_count=len(data)
    
     # generate taylor diagram plot if there is metrics saved for any variable within the list.
-    marker = ['o', '+', 'D', 's', '*'] 
+    marker = ['o', 'd', 's', '>', '<', 'v' , '^'] 
     color = ['r', 'b', 'g', 'y', 'm']
  
     if row_count > 0:
-        fig = plt.figure(figsize=(8,8))
+        matplotlib.rcParams.update({'font.size': 20})
+        fig = plt.figure(figsize=(7,8))
         refstd =  1.0
-        taylordiag = TaylorDiagram(refstd, fig=fig,rect=111, label="Ref")
+        taylordiag = TaylorDiagram(refstd, fig = fig,rect = 111, label = "Reference")
         
         # Add samples to taylor diagram
         for irow in range(1,row_count):
             std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
-            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 15, label = data[irow][0])
+            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = 'red', markeredgecolor = 'red', linestyle = 'None')
 
         # Add a figure legend
-        fig.legend([taylordiag.samplePoints[0]],
-                   [ p.get_label() for p in [taylordiag.samplePoints[0]]],
-                   numpoints=1,  loc='upper right',prop={'size':14})
-        plt.title(season + ': spatial variability')
+        fig.legend(taylordiag.samplePoints,
+                   [ p.get_label() for p in taylordiag.samplePoints],
+                   numpoints=1,  loc='upper right', bbox_to_anchor=(.9, .9), prop={'size':10})
+
+        plt.title(season + ': Spatial Variability', y = 1.1)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
 
     return taylor_diag_path
@@ -419,14 +422,14 @@ def create_viewer(root_dir, parameters, ext):
                         row_name_and_fnm = []
 
                         if parameter.plevs == []:  # 2d variables
-                            row_name = '{} {}'.format(var, region)
+                            row_name = '{} {} {}'.format(var, region, ref_name)
                             fnm = '{}-{}-{}-{}'.format(ref_name,
                                                        var, season, region)
                             row_name_and_fnm.append((row_name, fnm))
                         else:  # 3d variables
                             for plev in parameter.plevs:
-                                row_name = '{} {} {}'.format(
-                                    var, str(int(plev)) + ' mb', region)
+                                row_name = '{} {} {} {}'.format(
+                                    var, str(int(plev)) + ' mb', region, ref_name)
                                 fnm = '{}-{}-{}-{}-{}'.format(
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
