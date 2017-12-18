@@ -177,7 +177,7 @@ class EntryID(GenericXML):
         return result
 
     def get_valid_values(self, vid):
-        node = self.get_optional_child("entry", {"id":vid})
+        node = self.scan_optional_child("entry", {"id":vid})
         if node is None:
             return None
         return self._get_valid_values(node)
