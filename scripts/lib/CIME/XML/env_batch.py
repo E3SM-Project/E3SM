@@ -239,12 +239,14 @@ class EnvBatch(EnvBase):
         """
         """
         result = []
-        directive_prefix = self.get_element_text("batch_directive", root=self.get_child("batch_system"))
-        directive_prefix = "" if directive_prefix is None else directive_prefix
+        directive_prefix = None
 
         roots = self.get_children("batch_system")
         for root in roots:
             if root is not None:
+                if directive_prefix is None:
+                    directive_prefix = self.get_element_text("batch_directive", root=root)
+
                 nodes = self.get_children("directive", root=root)
                 for node in nodes:
                     directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
@@ -254,7 +256,7 @@ class EnvBatch(EnvBase):
                     else:
                         directive = transform_vars(directive, default=default)
 
-                    result.append("{} {}".format(directive_prefix, directive))
+                    result.append("{} {}".format("" if directive_prefix is None else directive_prefix, directive))
 
         return "\n".join(result)
 
