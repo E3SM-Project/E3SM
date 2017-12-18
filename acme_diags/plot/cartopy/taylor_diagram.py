@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Copyright: This document has been placed in the public domain.
+# Copyright: Modified from below document which has  been placed in the public domain.  #Jill Zhang, Dec 2017
 
 """
 Taylor diagram (Taylor, 2001) test implementation.
@@ -37,16 +36,19 @@ class TaylorDiagram(object):
         rlocs = np.concatenate((np.arange(10)/10.,[0.95,0.99]))
         tlocs = np.arccos(rlocs)        # Conversion to polar angles
         gl1 = GF.FixedLocator(tlocs)    # Positions
+        gl2 = GF.FixedLocator(np.linspace(0,1.75,8))
         tf1 = GF.DictFormatter(dict(zip(tlocs, map(str,rlocs))))
 
         # Standard deviation axis extent
         self.smin = 0.0
-        self.smax = 1.5*self.refstd
+        #self.smax = 1.5*self.refstd
+        self.smax = 1.75
 
         ghelper = FA.GridHelperCurveLinear(tr,
                                            extremes=(0,np.pi/2, # 1st quadrant
                                                      self.smin,self.smax),
                                            grid_locator1=gl1,
+                                           grid_locator2=gl2,
                                            tick_formatter1=tf1,
                                            )
 
@@ -64,14 +66,14 @@ class TaylorDiagram(object):
         ax.axis["top"].label.set_text("Correlation")
 
         ax.axis["left"].set_axis_direction("bottom") # "X axis"
-        ax.axis["left"].label.set_text("Standard deviation")
+        ax.axis["left"].label.set_text("Standard deviation (Normalized)")
 
         ax.axis["right"].set_axis_direction("top")   # "Y axis"
         ax.axis["right"].toggle(ticklabels=True)
         ax.axis["right"].major_ticklabels.set_axis_direction("left")
 
         ax.axis["bottom"].set_visible(False)         # Useless
-        
+
         # Contours along standard deviations
         ax.grid(False)
 
@@ -107,9 +109,8 @@ class TaylorDiagram(object):
                             np.linspace(0,np.pi/2))
         # Compute centered RMS difference
         rms = np.sqrt(self.refstd**2 + rs**2 - 2*self.refstd*rs*np.cos(ts))
-        
+
         contours = self.ax.contour(ts, rs, rms, levels, **kwargs)
 
         return contours
-
 
