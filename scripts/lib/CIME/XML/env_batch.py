@@ -144,7 +144,7 @@ class EnvBatch(EnvBase):
             self.set_batch_system_type(batch_system_type)
 
         if batchobj.batch_system_node is not None and batchobj.machine_node is not None:
-            for node in batchobj.get_children('any', root=batchobj.machine_node, xpath='*'):
+            for node in batchobj.get_children(root=batchobj.machine_node, no_validate=True):
                 oldnode = batchobj.get_optional_child(self.name(node), root=batchobj.batch_system_node)
                 if oldnode is not None and self.name(oldnode) != "directives":
                     logger.debug( "Replacing {}".format(self.name(oldnode)))
@@ -225,7 +225,7 @@ class EnvBatch(EnvBase):
                 specs = self.get_queue_specs(queue)
                 if specs is None:
                     # Queue is unknown, use specs from default queue
-                    walltime = self.get_default_queue().get("walltimemax")
+                    walltime = self.get(self.get_default_queue(), "walltimemax")
                 else:
                     walltime = specs[3]
 
