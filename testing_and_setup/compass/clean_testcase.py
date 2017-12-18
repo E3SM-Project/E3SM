@@ -192,12 +192,12 @@ if __name__ == "__main__":
                          '{:d}'.format(int(case_num))])
                 config_options = core_configuration.strip('\n').split(' ')
                 history_file.write('\n')
-                history_file.write('\tcore: {}\n'.format(config_options[1]))
-                history_file.write('\tconfiguration: {}\n'.format(
+                history_file.write('    core: {}\n'.format(config_options[1]))
+                history_file.write('    configuration: {}\n'.format(
                         config_options[3]))
-                history_file.write('\tresolution: {}\n'.format(
+                history_file.write('    resolution: {}\n'.format(
                         config_options[5]))
-                history_file.write('\ttest: {}\n'.format(config_options[7]))
+                history_file.write('    test: {}\n'.format(config_options[7]))
         else:
             history_file.write('core: {}\n'.format(args.core))
             history_file.write('configuration: {}\n'.format(

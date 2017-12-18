@@ -83,14 +83,13 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
             ['./setup_testcase.py', '-q', '-f', config_file,
              '--work_dir', work_dir, '-o', test_core, '-c', test_configuration,
              '-r', test_resolution, '-t', test_test,  '-m', model_runtime],
-            stdout=stdout, stderr=stderr, env=os.environ.copy())
+            stdout=stdout, stderr=stderr)
     else:
         subprocess.check_call(
             ['./setup_testcase.py', '-q', '-f', config_file,
              '--work_dir', work_dir, '-o', test_core, '-c', test_configuration,
              '-r', test_resolution, '-t', test_test,  '-m', model_runtime,
-             '-b', baseline_dir], stdout=stdout, stderr=stderr,
-            env=os.environ.copy())
+             '-b', baseline_dir], stdout=stdout, stderr=stderr)
 
     print "   -- Setup case '{}': -o {} -c {} -r {} -t {}".format(
         test_name, test_core, test_configuration, test_resolution, test_test)
@@ -120,20 +119,20 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
                       "'{}/{}/{}/{}/{}/{}']".format(
                           work_dir, test_core, test_configuration,
                           test_resolution, test_test, script_name)
-            command = '{}, stdout=case_output, stderr=case_output'.format(
+            command = '{}, stdout=case_output, stderr=case_output)'.format(
                 command)
-            command = '{}, env=os.environ.copy())'.format(command)
 
             # Write test case run step
             suite_script.write("print ' ** Running case {}'\n".format(
                 test_name))
             suite_script.write('try:\n')
-            suite_script.write('\t{}\n'.format(command))
-            suite_script.write("\tprint '      PASS'\n")
-            suite_script.write('except:\n')
-            suite_script.write("\tprint '   ** FAIL (See case_outputs/{} for "
-                               "more information)'\n".format(case_output_name))
-            suite_script.write("\ttest_failed = True\n")
+            suite_script.write('    {}\n'.format(command))
+            suite_script.write("    print '      PASS'\n")
+            suite_script.write('except subprocess.CalledProcessError:\n')
+            suite_script.write("    print '   ** FAIL (See case_outputs/{} "
+                               "for more information)'\n".format(
+                                       case_output_name))
+            suite_script.write("    test_failed = True\n")
 
     # Finish writing test case output
     suite_script.write("case_output.close()\n")
@@ -233,11 +232,12 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     # Write script header
     regression_script.write('#!/usr/bin/env python\n')
     regression_script.write('\n')
-    regression_script.write('### This script was written by '
-                            'manage_regression_suite.py as part of a '
-                            'regression_suite file\n')
+    regression_script.write('# This script was written by '
+                            'manage_regression_suite.py as part of a\n'
+                            '# regression_suite file\n')
     regression_script.write('\n')
-    regression_script.write('import sys, os\n')
+    regression_script.write('import sys\n')
+    regression_script.write('import os\n')
     regression_script.write('import subprocess\n')
     regression_script.write('import numpy as np\n')
     regression_script.write('\n')
@@ -245,7 +245,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     regression_script.write("test_failed = False\n")
     regression_script.write('\n')
     regression_script.write("if not os.path.exists('case_outputs'):\n")
-    regression_script.write("\tos.makedirs('case_outputs')\n")
+    regression_script.write("    os.makedirs('case_outputs')\n")
     regression_script.write('\n')
     regression_script.write("base_path = '{}'\n".format(work_dir))
 
@@ -264,31 +264,34 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     regression_script.write("totaltime = 0\n")
     regression_script.write("for _, _, files in os.walk(base_path + "
                             "case_output):\n")
-    regression_script.write("\tfor afile in sorted(files):\n")
-    regression_script.write("\t\toutputfile = base_path + case_output + afile"
-                            "\n")
-    regression_script.write("\t\truntime = np.ceil(float(subprocess."
-                            "check_output(['grep', 'real', outputfile])."
+    regression_script.write("    for afile in sorted(files):\n")
+    regression_script.write("        outputfile = base_path + case_output + "
+                            "afile\n")
+    regression_script.write("        runtime = np.ceil(float(subprocess."
+                            "check_output(\n"
+                            "                ['grep', 'real', outputfile])."
                             "split()[1]))\n")
-    regression_script.write("\t\ttotaltime += runtime\n")
-    regression_script.write("\t\tmins = np.floor(runtime/60.0)\n")
-    regression_script.write("\t\tsecs = np.ceil(runtime - mins*60)\n")
-    regression_script.write("\t\tprint '%02d:%02d %s'%(mins, secs, afile)\n")
-    regression_script.write("mins = np.floor(totaltime/60.0)\n")
-    regression_script.write("secs = np.ceil(totaltime - mins*60)\n")
-    regression_script.write("print 'Total runtime %02d:%02d'%(mins, secs)\n")
+    regression_script.write("        totaltime += runtime\n")
+    regression_script.write("        mins = int(np.floor(runtime/60.0))\n")
+    regression_script.write("        secs = int(np.ceil(runtime - mins*60))\n")
+    regression_script.write("        print '{:02d}:{:02d} {}'.format(mins, "
+                            "secs, afile)\n")
+    regression_script.write("mins = int(np.floor(totaltime/60.0))\n")
+    regression_script.write("secs = int(np.ceil(totaltime - mins*60))\n")
+    regression_script.write("print 'Total runtime {:02d}:{:02d}'.format(mins, "
+                            "secs)\n")
     regression_script.write("\n")
 
     regression_script.write("if test_failed:\n")
-    regression_script.write("\tsys.exit(1)\n")
+    regression_script.write("    sys.exit(1)\n")
     regression_script.write("else:\n")
-    regression_script.write("\tsys.exit(0)\n")
+    regression_script.write("    sys.exit(0)\n")
     regression_script.close()
 
     dev_null = open('/dev/null', 'a')
     subprocess.check_call(
         ['chmod', 'a+x', '{}'.format(regression_script_name)],
-        stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+        stdout=dev_null, stderr=dev_null)
     dev_null.close()
 # }}}
 
@@ -494,7 +497,7 @@ if __name__ == "__main__":
                 if os.path.exists(output_file):
                     cmd = ['cat', output_file]
                     print '\nCase cleanup output:'
-                    print subprocess.check_output(cmd, env=os.environ.copy())
+                    print subprocess.check_output(cmd)
             write_history = True
         # If setting up, set up the suite
         if args.setup:
@@ -507,7 +510,7 @@ if __name__ == "__main__":
                 cmd = ['cat',
                        args.work_dir + '/manage_regression_suite.py.out']
                 print '\nCase setup output:'
-                print subprocess.check_output(cmd, env=os.environ.copy())
+                print subprocess.check_output(cmd)
             write_history = True
 
     # Write the history of this command to the command_history file, for
