@@ -157,7 +157,7 @@ class CompilerBlock(object):
 
         logger.debug("First pass output={}".format(output))
 
-        for child in elem:
+        for child in self._db.get_children(root=elem, no_validate=True):
             if self._db.name(child) == "env":
                 # <env> tags just need to be expanded by the writer.
                 output += writer.environment_variable_string(self._db.text(child))
@@ -184,8 +184,8 @@ class CompilerBlock(object):
                        "Unexpected tag "+self._db.name(child)+" encountered in "
                        "config_build.xml. Check that the file is valid "
                        "according to the schema.")
-            if child.tail is not None:
-                output += child.tail
+            if child.xml_element.tail is not None:
+                output += child.xml_element.tail
 
         logger.debug("Second pass output={}".format(output))
 
@@ -202,7 +202,7 @@ class CompilerBlock(object):
         variables that this setting depends on.
         """
         # Attributes on an element are the conditions on that element.
-        conditions = dict(list(elem.items()))
+        conditions = self._db.attrib(elem)
         if self._compiler is not None:
             conditions["COMPILER"] = self._compiler
         # Deal with internal markup.
@@ -226,7 +226,7 @@ class CompilerBlock(object):
                       of all settings for each variable.
         """
         # Skip this if the element's MPILIB is not valid.
-        if "MPILIB" in elem.keys() and \
+        if self._db.has(elem, "MPILIB") and \
            not self._machobj.is_valid_MPIlib(self._db.get(elem, "MPILIB")):
             return
         setting, depends = self._elem_to_setting(elem)
@@ -245,10 +245,10 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
-        for elem in self._db.get_children(self._compiler_elem):
+        for elem in self._db.get_children(root=self._compiler_elem, no_validate=True):
             # Deal with "flag"-type variables.
             if self._db.name(elem) in flag_vars:
-                for child in elem:
+                for child in self._db.get_children(root=elem, no_validate=True):
                     self._add_elem_to_lists(self._db.name(elem), child, value_lists)
             else:
                 self._add_elem_to_lists(self._db.name(elem), elem, value_lists)
@@ -260,7 +260,7 @@ class CompilerBlock(object):
         before add_settings_to_lists if machine-specific output is needed.
         """
         self._specificity = 0
-        if "MACH" in self._compiler_elem.keys():
+        if self._db.has(self._compiler_elem, "MACH"):
             if self._machobj.get_machine_name() == \
                self._db.get(self._compiler_elem, "MACH"):
                 self._specificity += 2

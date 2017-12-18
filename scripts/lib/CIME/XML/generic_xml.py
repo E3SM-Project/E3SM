@@ -69,18 +69,22 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logger.debug("read: " + infile)
+        logger.debug("read: " + str(infile))
+
         with open(infile, 'r') as fd:
-            if self.tree:
-                self.add_child(_Element(ET.parse(fd).getroot()))
-            else:
-                self.tree = ET.parse(fd)
-                self.root = _Element(self.tree.getroot())
+            self.read_fd(fd)
 
         if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
 
         logger.debug("File version is {}".format(str(self.get_version())))
+
+    def read_fd(self, fd):
+        if self.tree:
+            self.add_child(_Element(ET.parse(fd).getroot()))
+        else:
+            self.tree = ET.parse(fd)
+            self.root = _Element(self.tree.getroot())
 
     #
     # API for individual node operations

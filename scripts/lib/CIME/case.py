@@ -310,7 +310,7 @@ class Case(object):
             # Wait and resolve in self rather than in env_file
             logger.debug("(get_record_field) Searching in {}".format(env_file.__class__.__name__))
             if field == "varid":
-                roots = env_file.get_nodes("entry")
+                roots = env_file.scan_children("entry")
             else:
                 roots = env_file.get_nodes_by_id(variable)
             for root in roots:
@@ -320,7 +320,7 @@ class Case(object):
                     elif field == "desc":
                         result.append(env_file.get_description(root))
                     elif field == "varid":
-                        result.append(root.get("id"))
+                        result.append(env_file.get(root, "id"))
                     elif field == "group":
                         result.extend(env_file.get_groups(root))
                     elif field == "valid_values":
@@ -333,7 +333,7 @@ class Case(object):
 
         if not result:
             for env_file in self._env_generic_files:
-                roots = env_file.get_nodes(variable)
+                roots = env_file.scan_children(variable)
                 for root in roots:
                     if root is not None:
                         if field == "raw":

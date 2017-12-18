@@ -56,9 +56,9 @@ class Compilers(GenericXML):
 
         if self._version > 1.0:
             schema_db = GenericXML(infile=schema)
-            compiler_vars = schema_db.get_child("group", attributes={"name":"compilerVars"})
-            choice  = schema_db.get_child(name="choice", root=compiler_vars)
-            self.flag_vars = set(schema_db.get(elem, "name") for elem in schema_db.get_children(choice, attributes={"type":"flagsVar"}))
+            compiler_vars = schema_db.get_child("{http://www.w3.org/2001/XMLSchema}group", attributes={"name":"compilerVars"})
+            choice  = schema_db.get_child(name="{http://www.w3.org/2001/XMLSchema}choice", root=compiler_vars)
+            self.flag_vars = set(schema_db.get(elem, "name") for elem in schema_db.get_children(root=choice, attributes={"type":"flagsVar"}, no_validate=True))
 
     def get_compiler(self):
         """
@@ -190,7 +190,9 @@ class Compilers(GenericXML):
         if xml is None:
             node_list = self.get_children(name="compiler")
         else:
-            node_list = GenericXML().read(xml).get_children(name="compiler")
+            gen_xml = GenericXML()
+            gen_xml.read_fd(xml)
+            node_list = gen_xml.get_children(name="compiler")
 
         for compiler_elem in node_list:
             block = CompilerBlock(writer, compiler_elem, self._machobj, self)
