@@ -89,12 +89,50 @@ module shr_cal_mod
    public :: shr_cal_validHMS   ! logical function: are hr, min, sec valid?
    public :: shr_cal_getDebug   ! get internal debug level
    public :: shr_cal_setDebug   ! set internal debug level
+   public :: shr_cal_ymdtod2string ! translate ymdtod to string for filenames
 
 ! !PUBLIC DATA MEMBERS:
 
    ! none
 
 !EOP
+
+! ! subroutine interfaces
+   interface shr_cal_timeSet
+      module procedure shr_cal_timeSet_int
+      module procedure shr_cal_timeSet_long
+   end interface shr_cal_timeSet
+
+   interface shr_cal_date2ymd
+      module procedure shr_cal_date2ymd_int
+      module procedure shr_cal_date2ymd_long
+   end interface shr_cal_date2ymd
+
+   interface shr_cal_date2julian
+      module procedure shr_cal_date2julian_int
+      module procedure shr_cal_date2julian_long
+   end interface shr_cal_date2julian
+
+   interface shr_cal_ymd2date
+      module procedure shr_cal_ymd2date_int
+      module procedure shr_cal_ymd2date_long
+   end interface shr_cal_ymd2date
+
+   interface shr_cal_advDate
+      module procedure shr_cal_advDate_int
+      module procedure shr_cal_advDate_long
+   end interface shr_cal_advDate
+
+   interface shr_cal_advDateInt
+      module procedure shr_cal_advDateInt_int
+      module procedure shr_cal_advDateInt_long
+   end interface shr_cal_advDateInt
+
+   interface shr_cal_validdate
+      module procedure shr_cal_validdate_int
+      module procedure shr_cal_validdate_long
+   end interface shr_cal_validdate
+
 
    integer(SHR_KIND_IN),parameter,public :: shr_cal_calMaxLen = 64
    character(len=*),parameter,public :: &
@@ -187,7 +225,7 @@ function shr_cal_calendarName(calendar,trap)
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_cal_timeSet(etime,ymd,sec,calendar)
+subroutine shr_cal_timeSet_int(etime,ymd,sec,calendar)
 
    implicit none
 
@@ -221,7 +259,44 @@ subroutine shr_cal_timeSet(etime,ymd,sec,calendar)
    call ESMF_TimeSet(etime,yy=year,mm=month,dd=day,s=sec,calkindflag=calkind,rc=rc)
    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-end subroutine shr_cal_timeSet
+end subroutine shr_cal_timeSet_int
+
+subroutine shr_cal_timeSet_long(etime,ymd,sec,calendar)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(ESMF_Time),intent(out) :: etime
+   integer(SHR_KIND_I8),intent(in ) :: ymd ! ymd
+   integer(SHR_KIND_IN), intent(in) :: sec   ! ymd
+   character(*)        ,intent(in)  :: calendar  ! calendar type
+
+!EOP
+
+   integer(SHR_KIND_IN) :: year,month,day
+   type(ESMF_CALKIND_FLAG) :: calkind
+   character(len=shr_cal_calMaxLen) :: lcalendar
+   integer :: rc
+   character(*),parameter :: subName = "(shr_cal_timeSet_long)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+
+   lcalendar = shr_cal_calendarName(calendar)
+
+   calkind = ESMF_CALKIND_NOLEAP
+   if (trim(lcalendar) == trim(shr_cal_gregorian)) then
+      calkind = ESMF_CALKIND_GREGORIAN
+   endif
+
+   call shr_cal_date2ymd(ymd,year,month,day)
+   call ESMF_TimeSet(etime,yy=year,mm=month,dd=day,s=sec,calkindflag=calkind,rc=rc)
+   if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+end subroutine shr_cal_timeSet_long
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -387,7 +462,7 @@ end function shr_cal_elapsDaysStrtMonth
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_cal_date2ymd (date,year,month,day)
+subroutine shr_cal_date2ymd_int (date,year,month,day)
 
    implicit none
 
@@ -415,7 +490,37 @@ subroutine shr_cal_date2ymd (date,year,month,day)
 
    if (debug > 1) write(s_logunit,*) trim(subname),'_b ',year,month,day
 
-end subroutine shr_cal_date2ymd
+end subroutine shr_cal_date2ymd_int
+
+subroutine shr_cal_date2ymd_long (date,year,month,day)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   integer(SHR_KIND_I8),intent(in)  :: date             ! coded-date ([yy]yyyymmdd)
+   integer(SHR_KIND_IN),intent(out) :: year,month,day   ! calendar year,month,day
+
+!EOP
+
+   integer(SHR_KIND_IN) :: tdate   ! temporary date
+   character(*),parameter :: subName = "(shr_cal_date2ymd_long)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (debug > 1) write(s_logunit,*) trim(subname),'_a ',date
+
+   tdate = abs(date)
+   year =int(     tdate       /10000)
+   if (date < 0) year = -year
+   month=int( mod(tdate,10000)/  100)
+   day  =     mod(tdate,  100)
+
+   if (debug > 1) write(s_logunit,*) trim(subname),'_b ',year,month,day
+
+end subroutine shr_cal_date2ymd_long
 
 !===============================================================================
 !BOP ===========================================================================
@@ -430,7 +535,7 @@ end subroutine shr_cal_date2ymd
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_cal_date2julian(date,sec,jday,calendar)
+subroutine shr_cal_date2julian_int(date,sec,jday,calendar)
 
    implicit none
 
@@ -459,7 +564,38 @@ subroutine shr_cal_date2julian(date,sec,jday,calendar)
 
    if (debug > 1) write(s_logunit,*) trim(subname),'_b ',jday
 
-end subroutine shr_cal_date2julian
+end subroutine shr_cal_date2julian_int
+
+subroutine shr_cal_date2julian_long(date,sec,jday,calendar)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   integer(SHR_KIND_I8),intent(in ) :: date            ! coded ([yy]yyyymmdd) calendar date
+   integer(SHR_KIND_IN),intent(in ) :: sec             ! seconds
+   real   (SHR_KIND_R8),intent(out) :: jday            ! julian day of year
+   character(*)        ,intent(in)  :: calendar        ! calendar type
+
+!EOP
+
+   !--- local ---
+   integer(SHR_KIND_IN) :: year,month,day
+   character(*),parameter :: subName = "(shr_cal_date2julian)"
+
+!-------------------------------------------------------------------------------
+! NOTE:
+!   julian day of year since yy-01-01-00000
+!-------------------------------------------------------------------------------
+
+   if (debug > 1) write(s_logunit,*) trim(subname),'_a ',date,sec
+
+   call shr_cal_date2ymd(date,year,month,day)
+   call shr_cal_ymd2julian(year,month,day,sec,jday,calendar)
+
+   if (debug > 1) write(s_logunit,*) trim(subname),'_b ',jday
+
+end subroutine shr_cal_date2julian_long
 
 !===============================================================================
 !BOP ===========================================================================
@@ -523,7 +659,7 @@ end subroutine shr_cal_ymd2julian
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_cal_ymd2date(year,month,day,date)
+subroutine shr_cal_ymd2date_int(year,month,day,date)
 
    implicit none
 
@@ -549,7 +685,35 @@ subroutine shr_cal_ymd2date(year,month,day,date)
 
    if (debug > 1) write(s_logunit,*) trim(subname),'_b ',date
 
-end subroutine shr_cal_ymd2date
+end subroutine shr_cal_ymd2date_int
+
+subroutine shr_cal_ymd2date_long(year,month,day,date)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   integer(SHR_KIND_IN),intent(in ) :: year,month,day  ! calendar year,month,day
+   integer(SHR_KIND_I8),intent(out) :: date            ! coded ([yy]yyyymmdd) calendar date
+
+!EOP
+
+   !--- local ---
+   character(*),parameter :: subName = "(shr_cal_ymd2date)"
+
+!-------------------------------------------------------------------------------
+! NOTE:
+!   this calendar has a year zero (but no day or month zero)
+!-------------------------------------------------------------------------------
+
+   if (debug > 1) write(s_logunit,*) trim(subname),'_a ',year,month,day
+
+   date = abs(year)*10000 + month*100 + day  ! coded calendar date
+   if (year < 0) date = -date
+
+   if (debug > 1) write(s_logunit,*) trim(subname),'_b ',date
+
+end subroutine shr_cal_ymd2date_long
 
 !===============================================================================
 !BOP ===========================================================================
@@ -567,7 +731,7 @@ end subroutine shr_cal_ymd2date
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_cal_advDate(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
+subroutine shr_cal_advDate_int(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
 
    implicit none
 
@@ -652,7 +816,94 @@ subroutine shr_cal_advDate(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
       if (s_loglev > 0) write(s_logunit,F02) "dateOUT,secOUT=",dateOUT,secOUT
    end if
 
-end subroutine shr_cal_advDate
+end subroutine shr_cal_advDate_int
+
+subroutine shr_cal_advDate_long(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   real   (SHR_KIND_R8) ,intent(in)  :: delta     ! time increment
+   character(*)         ,intent(in)  :: units     ! units of increment
+   integer(SHR_KIND_I8) ,intent(in)  :: dateIN    ! base date, [yy]yyyymmdd
+   real   (SHR_KIND_R8) ,intent(in)  :: secIN     ! base seconds
+   integer(SHR_KIND_I8) ,intent(out) :: dateOUT   ! new date, [yy]yyyymmdd
+   real   (SHR_KIND_R8) ,intent(out) :: secOUT    ! new seconds
+   character(*)         ,intent(in)  :: calendar  ! calendar type
+
+!EOP
+
+   !--- local ---
+   type(ESMF_time) :: timeIn, timeOut
+   type(ESMF_timeInterval) :: dt
+   real   (SHR_KIND_R8)   :: dSec    ! delta-sec: advance date this many seconds
+   integer(SHR_KIND_I8)   :: i8dsec, i8dday ! delta sec and day in i8
+   integer(SHR_KIND_I8)   :: spd     ! seconds per day in i8
+   integer(SHR_KIND_I4)   :: idday, idsec   ! delta sec and dat in i4
+   integer(SHR_KIND_I4)   :: year, month, day, sec  ! calendar stuff
+   character(len=shr_cal_calMaxLen) :: lcalendar
+   type(ESMF_CALKIND_FLAG) :: calkind
+
+   !--- formats ---
+   character(*),parameter :: subName = "(shr_cal_advDate)"
+   character(*),parameter :: F00 = "('(shr_cal_advDate) ',a,i5)"
+   character(*),parameter :: F02 = "('(shr_cal_advDate) ',a,i10.8,f10.3)"
+
+!-------------------------------------------------------------------------------
+! NOTE:
+!-------------------------------------------------------------------------------
+
+   !--- calculate delta-time in seconds ---
+   if     (trim(units) == 'days'   ) then
+      dSec = delta * SHR_CONST_CDAY
+   elseif (trim(units) == 'hours'  ) then
+      dSec = delta * 3600.0_SHR_KIND_R8
+   elseif (trim(units) == 'minutes') then
+      dSec = delta *   60.0_SHR_KIND_R8
+   elseif (trim(units) == 'seconds') then
+      dSec = delta *    1.0_SHR_KIND_R8
+   else
+      call shr_sys_abort(trim(subname)//' ERROR: unrecognized time units '//trim(units))
+   endif
+
+   ! take secIn into account here since it's real
+   dSec = dSec - secIn
+
+   ! i8 math, convert reals to nearest second
+   i8dSec = nint(dSec,SHR_KIND_I8)
+   spd = nint(SHR_CONST_CDAY)
+   i8dday = i8dsec/spd
+   i8dsec = i8dsec - i8dday*spd
+
+   ! convert to i4
+   idday = i8dday
+   idsec = i8dsec
+
+   calkind = ESMF_CALKIND_NOLEAP
+   lcalendar = shr_cal_calendarName(calendar)
+
+   if (trim(lcalendar) == trim(shr_cal_gregorian)) then
+      calkind = ESMF_CALKIND_GREGORIAN
+   endif
+
+   call shr_cal_date2ymd(dateIn,year,month,day)
+   call ESMF_TimeSet(timeIN,yy=year,mm=month,dd=day,calkindflag=calkind)
+   call ESMF_TimeIntervalSet(dt,d=idday,s=idsec)
+
+   timeOut = timeIn + dt
+
+   call ESMF_TimeGet(timeOut,yy=year,mm=month,dd=day,s=sec)
+   call shr_cal_ymd2date(year,month,day,dateOut)
+   secOut = sec
+
+   if (debug>0) then
+      if (s_loglev > 0) write(s_logunit,*) subName," units,delta,calendar=",trim(units),delta,' ',trim(calendar)
+      if (s_loglev > 0) write(s_logunit,F02) "dateIN ,secIN =",dateIN ,secIN
+      if (s_loglev > 0) write(s_logunit,F02) "dateOUT,secOUT=",dateOUT,secOUT
+   end if
+
+end subroutine shr_cal_advDate_long
 
 !===============================================================================
 !BOP ===========================================================================
@@ -667,7 +918,7 @@ end subroutine shr_cal_advDate
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-subroutine shr_cal_advDateInt(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
+subroutine shr_cal_advDateInt_int(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
 
    implicit none
 
@@ -731,7 +982,73 @@ subroutine shr_cal_advDateInt(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
       if (s_loglev > 0) write(s_logunit,F02) "dateOUT,secOUT=",dateOUT,secOUT
    end if
 
-end subroutine shr_cal_advDateInt
+end subroutine shr_cal_advDateInt_int
+
+subroutine shr_cal_advDateInt_long(delta,units,dateIN,secIN,dateOUT,secOUT,calendar)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   integer(SHR_KIND_IN) ,intent(in)  :: delta     ! time increment
+   character(*)         ,intent(in)  :: units     ! units of increment
+   integer(SHR_KIND_I8) ,intent(in)  :: dateIN    ! base date, yyyymmdd
+   integer(SHR_KIND_IN) ,intent(in)  :: secIN     ! base seconds
+   integer(SHR_KIND_I8) ,intent(out) :: dateOUT   ! new date, yyyymmdd
+   integer(SHR_KIND_IN) ,intent(out) :: secOUT    ! new seconds
+   character(*)         ,intent(in)  :: calendar  ! calendar type
+
+!EOP
+
+   !--- local ---
+   type(ESMF_time) :: timeIn, timeOut
+   type(ESMF_timeInterval) :: dt
+   integer(SHR_KIND_IN) :: year,month,day
+   character(len=shr_cal_calMaxLen) :: lcalendar
+   type(ESMF_CALKIND_FLAG) :: calkind
+
+   !--- formats ---
+   character(*),parameter :: subName = "(shr_cal_advDateInt)"
+   character(*),parameter :: F00 = "('(shr_cal_advDateInt) ',a,i5)"
+   character(*),parameter :: F02 = "('(shr_cal_advDateInt) ',a,i10.8,f10.3)"
+
+!-------------------------------------------------------------------------------
+! NOTE:
+!-------------------------------------------------------------------------------
+   lcalendar = shr_cal_calendarName(calendar)
+   calkind = ESMF_CALKIND_NOLEAP
+   if (trim(lcalendar) == trim(shr_cal_gregorian)) then
+      calkind = ESMF_CALKIND_GREGORIAN
+   endif
+
+   call shr_cal_date2ymd(dateIn,year,month,day)
+   call ESMF_TimeSet(timeIN,yy=year,mm=month,dd=day,s=secIn,calkindflag=calkind)
+
+   !--- calculate delta-time in seconds ---
+   if     (trim(units) == 'days'   ) then
+      call ESMF_TimeIntervalSet(dt,d=delta)
+   elseif (trim(units) == 'hours'  ) then
+      call ESMF_TimeIntervalSet(dt,h=delta)
+   elseif (trim(units) == 'minutes') then
+      call ESMF_TimeIntervalSet(dt,m=delta)
+   elseif (trim(units) == 'seconds') then
+      call ESMF_TimeIntervalSet(dt,s=delta)
+   else
+      call shr_sys_abort(trim(subname)//' ERROR: unrecognized time units '//trim(units))
+   endif
+
+   timeOut = timeIn + dt
+
+   call ESMF_TimeGet(timeOut,yy=year,mm=month,dd=day,s=secOut)
+   call shr_cal_ymd2date(year,month,day,dateOut)
+
+   if (debug>0) then
+      if (s_loglev > 0) write(s_logunit,*) subName," units,delta,calendar=",trim(units),delta,' ',trim(calendar)
+      if (s_loglev > 0) write(s_logunit,F02) "dateIN ,secIN =",dateIN ,secIN
+      if (s_loglev > 0) write(s_logunit,F02) "dateOUT,secOUT=",dateOUT,secOUT
+   end if
+
+end subroutine shr_cal_advDateInt_long
 
 !===============================================================================
 !BOP ===========================================================================
@@ -746,7 +1063,7 @@ end subroutine shr_cal_advDateInt
 !
 ! !INTERFACE:  -----------------------------------------------------------------
 
-logical function shr_cal_validDate(date,calendar)
+logical function shr_cal_validDate_int(date,calendar)
 
    implicit none
 
@@ -759,7 +1076,6 @@ logical function shr_cal_validDate(date,calendar)
 
    !--- local ---
    integer(SHR_KIND_IN) :: year,month,day
-   integer(SHR_KIND_IN) :: tdate
    character(*),parameter :: subName = "(shr_cal_validDate)"
 
 !-------------------------------------------------------------------------------
@@ -767,9 +1083,35 @@ logical function shr_cal_validDate(date,calendar)
 !-------------------------------------------------------------------------------
 
    call shr_cal_date2ymd(date,year,month,day)
-   shr_cal_validDate = shr_cal_validYMD(year,month,day,calendar)
+   shr_cal_validDate_int = shr_cal_validYMD(year,month,day,calendar)
 
-end function shr_cal_validDate
+end function shr_cal_validDate_int
+
+
+logical function shr_cal_validDate_long(date,calendar)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   integer(SHR_KIND_I8),intent(in ) :: date      ! coded ([yy]yyyymmdd) calendar date
+   character(len=*)    ,intent(in ) :: calendar  ! calendar
+
+!EOP
+
+   !--- local ---
+   integer(SHR_KIND_IN) :: year,month,day
+
+   character(*),parameter :: subName = "(shr_cal_validDate)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   call shr_cal_date2ymd(date,year,month,day)
+   shr_cal_validDate_long = shr_cal_validYMD(year,month,day,calendar)
+
+end function shr_cal_validDate_long
 
 !===============================================================================
 !BOP ===========================================================================
@@ -929,6 +1271,18 @@ subroutine shr_cal_getDebug(level)
 end subroutine shr_cal_getDebug
 
 !===============================================================================
-!===============================================================================
+subroutine shr_cal_ymdtod2string(yy, mm, dd, tod, date_str)
+  integer(shr_kind_in), intent(in) :: yy, mm, dd, tod
+  character(len=*), intent(out) :: date_str
 
+  character(len=6) :: year_str
+
+  write(year_str,'(i6.4)') yy
+  year_str = adjustl(year_str)
+  write(date_str,'(2a,i2.2,a,i2.2,a,i5.5)')  trim(year_str),'-',mm,'-',dd,'-',tod
+
+end subroutine shr_cal_ymdtod2string
+
+
+!===============================================================================
 end module shr_cal_mod
