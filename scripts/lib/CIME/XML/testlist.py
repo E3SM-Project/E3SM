@@ -112,39 +112,37 @@ class Testlist(GenericXML):
             machatts["compiler"]  = compiler
 
         for tnode in testnodes:
-            machnodes = self.get_children("machine",machatts,root=tnode)
+            machnode = self.get_optional_child("machines", root=tnode)
+            machnodes = None if machnode is None else self.get_children("machine",machatts,root=machnode)
             if machnodes:
                 this_test_node = {}
-                for key, value in tnode.items():
+                for key, value in self.attrib(tnode).items():
                     if key == "name":
                         this_test_node["testname"] = value
                     else:
                         this_test_node[key] = value
 
+                # Get options that apply to all machines/compilers for this test
+                optionnodes = self.scan_children("option", root=tnode)
+
                 for mach in machnodes:
                     # this_test_node can include multiple tests
                     this_test = dict(this_test_node)
-                    for key, value in mach.items():
+                    for key, value in self.attrib(mach).items():
                         if key == "name":
                             this_test["machine"] = value
                         else:
                             this_test[key] = value
                     this_test["options"] = {}
 
-                    # Get options that apply to all machines/compilers for this test
-                    #
-                    # option xpath here prevents us from looking within the
-                    # machines block
-                    options = self.get_child("options", root=tnode)
-                    optionnodes = self.get_children("option", root=options)
                     for onode in optionnodes:
                         this_test['options'][self.get(onode, 'name')] = self.text(onode)
 
                     # Now get options specific to this machine/compiler
-                    optionnodes = self.get_children("option", root=mach)
+                    options = self.get_optional_child("options", root=mach)
+                    optionnodes = [] if options is None else self.get_children("option", root=options)
                     for onode in optionnodes:
                         this_test['options'][self.get(onode, 'name')] = self.text(onode)
-
 
                     tests.append(this_test)
 

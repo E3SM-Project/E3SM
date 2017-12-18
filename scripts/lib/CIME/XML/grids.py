@@ -104,10 +104,11 @@ class Grids(GenericXML):
                         logger.debug("Found node compset match: {} and lname: {}".format(attrib, lname))
                         component_grids = self._get_component_grids(lname)
                         return lname, component_grids
+
         # if no matches were found for a possible compset match, then search for just a grid match with no
         # compset attribute
         for node in nodes:
-            if self.has(node, "compset"):
+            if not self.has(node, "compset"):
                 sname = self.get_element_text("sname", root=node)
                 alias = self.get_element_text("alias", root=node)
                 lname = self.get_element_text("lname", root=node)
@@ -473,7 +474,7 @@ class Grids(GenericXML):
                 name = self.get(domain_node, "name")
                 if name == 'null':
                     continue
-                desc = self.get_child("desc", root=domain_node).text
+                desc = self.text(self.get_child("desc", root=domain_node))
                 #support = self.get_optional_child("support", root=domain_node).text
                 files = ""
                 file_nodes = self.get_children("file", root=domain_node)
@@ -645,7 +646,7 @@ class Grids(GenericXML):
             name = self.get(domain_node, "name")
             if name == 'null':
                 continue
-            desc = self.get_child("desc", root=domain_node).text
+            desc = self.text(self.get_child("desc", root=domain_node))
             ##support = self.get_optional_child("support", root=domain_node).text
             files = ""
             file_nodes = self.get_children("file", root=domain_node)
