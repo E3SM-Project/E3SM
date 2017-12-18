@@ -44,15 +44,17 @@ class Compsets(GenericXML):
         Variables can be set in config_compsets.xml in entry id settings with compset and grid attributes
         find and return id value pairs here
         '''
-        entries = self.get_child("entries")
-        nodes = self.get_children("entry", root=entries)
-        # Get an empty entryid obj to use
-        entryidobj = EntryID()
+        entries = self.get_optional_child("entries")
         result = []
-        for node in nodes:
-            value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
-            if value is not None:
-                result.append((self.get(node, "id"), value))
+        if entries is not None:
+            nodes = self.get_children("entry", root=entries)
+            # Get an empty entryid obj to use
+            entryidobj = EntryID()
+            for node in nodes:
+                value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
+                if value is not None:
+                    result.append((self.get(node, "id"), value))
+
         return result
 
     #pylint: disable=arguments-differ
