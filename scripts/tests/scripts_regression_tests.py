@@ -1797,6 +1797,7 @@ class MockMachines(object):
         """Assume all MPILIB settings are valid."""
         return True
 
+# pragma pylint: disable=unused-argument
     def get_default_MPIlib(self, attributes=None):
         return "mpich2"
 
