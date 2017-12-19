@@ -1090,7 +1090,7 @@ using a fortran linker.
   </FFLAGS>
   <CFLAGS>
     <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS> 
+  </CFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
 </compiler>
 
@@ -1106,7 +1106,7 @@ using a fortran linker.
   </FFLAGS>
   <CFLAGS>
     <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS> 
+  </CFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
 </compiler>
 
