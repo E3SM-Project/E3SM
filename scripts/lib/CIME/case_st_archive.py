@@ -34,12 +34,12 @@ def _get_datenames(rundir, casename):
         expect(False, 'Cannot find a {}.cpl*.r.*.nc file in directory {} '.format(casename, rundir))
     datenames = []
     for filename in files:
-        date = _get_file_date(filename)
+        date = get_file_date(filename)
         datenames.append(date)
     return datenames
 
 ###############################################################################
-def _get_file_date(filename):
+def get_file_date(filename):
 ###############################################################################
     """
     Returns the date associated with the filename as a datetime object representing the correct date
@@ -51,19 +51,19 @@ def _get_file_date(filename):
     "%Y-%m"
     "%Y.%m"
 
-    >>> _get_file_date("./ne4np4_oQU240.cam.r.0001-01-06-00435.nc")
+    >>> get_file_date("./ne4np4_oQU240.cam.r.0001-01-06-00435.nc")
     datetime.datetime(1, 1, 6, 0, 7, 15)
-    >>> _get_file_date("./ne4np4_oQU240.cam.r.0010-1-06_00435.nc")
+    >>> get_file_date("./ne4np4_oQU240.cam.r.0010-1-06_00435.nc")
     datetime.datetime(10, 1, 6, 0, 7, 15)
-    >>> _get_file_date("./ne4np4_oQU240.cam.r.0010-10.nc")
+    >>> get_file_date("./ne4np4_oQU240.cam.r.0010-10.nc")
     datetime.datetime(10, 10, 1, 0, 0)
-    >>> _get_file_date("0064-3-8_10.20.30.nc")
+    >>> get_file_date("0064-3-8_10.20.30.nc")
     datetime.datetime(64, 3, 8, 10, 20, 30)
-    >>> _get_file_date("0140-3-5")
+    >>> get_file_date("0140-3-5")
     datetime.datetime(140, 3, 5, 0, 0)
-    >>> _get_file_date("0140-3")
+    >>> get_file_date("0140-3")
     datetime.datetime(140, 3, 1, 0, 0)
-    >>> _get_file_date("0140.3")
+    >>> get_file_date("0140.3")
     datetime.datetime(140, 3, 1, 0, 0)
     """
 
@@ -101,7 +101,8 @@ def _get_file_date(filename):
         return datetime.datetime(year, month, day) + datetime.timedelta(seconds = second)
 
     # Not a valid filename date format
-    raise ValueError("{} is a filename without a supported date!".format(filename))
+    logger.debug("{} is a filename without a supported date!".format(filename))
+    return None
 
 def _get_day_second(date):
     """
@@ -121,7 +122,7 @@ def _datetime_str(date):
 
     >>> _datetime_str(datetime.datetime(5, 8, 22))
     '0005-08-22-00000'
-    >>> _datetime_str(_get_file_date("0011-12-09-00435"))
+    >>> _datetime_str(get_file_date("0011-12-09-00435"))
     '0011-12-09-00435'
     """
 
@@ -138,9 +139,9 @@ def _datetime_str_mpas(date):
     to support abbreviations, so we can't use that here
 
     >>> _datetime_str_mpas(datetime.datetime(5, 8, 22))
-    '0005-08-22_00000'
-    >>> _datetime_str_mpas(_get_file_date("0011-12-09-00435"))
-    '0011-12-09_00435'
+    '0005-08-22_00:00:00'
+    >>> _datetime_str_mpas(get_file_date("0011-12-09-00435"))
+    '0011-12-09_00:07:15'
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}_{hours:02d}:{minutes:02d}:{seconds:02d}"
@@ -277,7 +278,7 @@ def _archive_history_files(case, archive, archive_entry,
 
     # determine history archive directory (create if it does not exist)
     dout_s_root = case.get_value("DOUT_S_ROOT")
-    casename = case.get_value("CASE")
+    casename = re.escape(case.get_value("CASE"))
     archive_histdir = os.path.join(dout_s_root, compclass, 'hist')
     if not os.path.exists(archive_histdir):
         os.makedirs(archive_histdir)
@@ -312,8 +313,8 @@ def _archive_history_files(case, archive, archive_entry,
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
             if histfiles:
                 for histfile in histfiles:
-                    file_date = _get_file_date(os.path.basename(histfile))
-                    if last_date is None or file_date <= last_date:
+                    file_date = get_file_date(os.path.basename(histfile))
+                    if last_date is None or file_date is None or file_date <= last_date:
                         srcfile = join(rundir, histfile)
                         expect(os.path.isfile(srcfile),
                                "history file {} does not exist ".format(srcfile))
@@ -376,7 +377,7 @@ def _archive_restarts_date(case, archive,
     logger.info('-------------------------------------------')
     logger.info('Archiving restarts for date {}'.format(datename))
     logger.info('-------------------------------------------')
-    logger.info("last date: {}".format(last_date))
+    logger.debug("last date: {}".format(last_date))
 
     histfiles_savein_rundir_by_compname = {}
 
@@ -439,7 +440,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
     # the compname is drv but the files are named cpl
     if compname == 'drv':
         compname = 'cpl'
-
+    casename = re.escape(casename)
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
@@ -462,8 +463,7 @@ def _archive_restarts_date_comp(case, archive, archive_entry,
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
-                file_date = _get_file_date(restfile)
-                logger.info("Last date: {}".format(last_date))
+                file_date = get_file_date(restfile)
                 if last_date is not None and file_date > last_date:
                     # Skip this file
                     continue
@@ -552,7 +552,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         if datename == datenames[-1]:
             datename_is_last = True
 
-        if last_date is None or datename < last_date:
+        if last_date is None or datename <= last_date:
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
 
             histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(

@@ -53,7 +53,6 @@ METHOD_case_one_custom_prerun_action = "_case_one_custom_prerun_action"
 METHOD_case_one_custom_postrun_action = "_case_one_custom_postrun_action"
 METHOD_case_two_custom_prerun_action = "_case_two_custom_prerun_action"
 METHOD_case_two_custom_postrun_action = "_case_two_custom_postrun_action"
-METHOD_component_compare_test = "_component_compare_test"
 METHOD_link_to_case2_output = "_link_to_case2_output"
 METHOD_run_indv = "_run_indv"
 
@@ -77,7 +76,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
                  multisubmit = False,
                  case2setup_raises_exception = False,
                  run_one_should_pass = True,
-                 run_two_should_pass = True):
+                 run_two_should_pass = True,
+                 compare_should_pass = True):
         """
         Initialize a SystemTestsCompareTwoFake object
 
@@ -97,6 +97,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
                 pass for the first run. Default is True, meaning it will pass.
             run_two_should_pass (bool, optional): Whether the run_indv method should
                 pass for the second run. Default is True, meaning it will pass.
+            compare_should_pass (bool, optional): Whether the comparison between the two
+                cases should pass. Default is True, meaning it will pass.
         """
 
         self._case2setup_raises_exception = case2setup_raises_exception
@@ -130,6 +132,8 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
             self.run_pass_caseroot.append(self._case1.get_value('CASEROOT'))
         if run_two_should_pass:
             self.run_pass_caseroot.append(self._case2.get_value('CASEROOT'))
+
+        self.compare_should_pass = compare_should_pass
 
         self.log = []
 
@@ -175,26 +179,12 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         if caseroot not in self.run_pass_caseroot:
             raise RuntimeError('caseroot not in run_pass_caseroot')
 
-    def _component_compare_test(self, suffix1, suffix2, success_change=False):
-        # Trying to use the real version of _component_compare_test would pull
-        # too much baggage into these tests. Since the return value from this
-        # method isn't important, it's sufficient for the tests of this class to
-        # just ensure that _component_compare_test was actually called
-        # correctly.
-        #
-        # An alternative would be to extract the main work of
-        # _component_compare_test into a different method that returns a True
-        # (success) / False (failure) result, with _component_compare_test then
-        # updating test_status appropriately. Then we could override that new
-        # method in this Fake class, using the true implementation of
-        # _component_compare_test. Then the test verification would include
-        # verification that TestStatus is set correctly for the COMPARE
-        # phase. But that seems more about testing _component_compare_test than
-        # testing SystemTestsCompareTwo itself, so I don't see much added value
-        # of that.
-
-        self.log.append(Call(METHOD_component_compare_test,
-                             {'suffix1': suffix1, 'suffix2': suffix2}))
+    def _do_compare_test(self, suffix1, suffix2):
+        """
+        This fake implementation allows controlling whether compare_test
+        passes or fails
+        """
+        return (self.compare_should_pass, "no comment")
 
     def _check_for_memleak(self):
         pass
@@ -271,6 +261,17 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         case1root = os.path.join(self.tempdir, casename)
         case2root = os.path.join(case1root, 'case2', casename)
         return case1root, case2root
+
+    def get_compare_phase_name(self, mytest):
+        """
+        Returns a string giving the compare phase name for this test
+        """
+        run_one_suffix = mytest._run_one_suffix
+        run_two_suffix = mytest._run_two_suffix
+        compare_phase_name = "{}_{}_{}".format(test_status.COMPARE_PHASE,
+                                               run_one_suffix,
+                                               run_two_suffix)
+        return compare_phase_name
 
     def test_setup(self):
         # Ensure that test setup properly sets up case 1 and case 2
@@ -407,9 +408,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
             Call(METHOD_run_indv,
                  {'suffix': run_two_suffix, 'CASEROOT': case2root}),
             Call(METHOD_case_two_custom_postrun_action, {}),
-            Call(METHOD_link_to_case2_output, {}),
-            Call(METHOD_component_compare_test,
-                {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
+            Call(METHOD_link_to_case2_output, {})
         ]
         self.assertEqual(expected_calls, mytest.log)
 
@@ -443,6 +442,10 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         ]
         self.assertEqual(expected_calls, mytest.log)
 
+        # Also verify that comparison is NOT called:
+        compare_phase_name = self.get_compare_phase_name(mytest)
+        self.assertIsNone(mytest._test_status.get_status(compare_phase_name))
+
     def test_run_phase_internal_calls_multisubmit_phase2(self):
         # Make sure that the correct calls are made to methods stubbed out by
         # SystemTestsCompareTwoFake (when runs succeed), when we have a
@@ -457,7 +460,8 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
             case1 = case1,
             run_one_suffix = run_one_suffix,
             run_two_suffix = run_two_suffix,
-            multisubmit = True)
+            multisubmit = True,
+            compare_should_pass = True)
         # RESUBMIT=0 signals second phase
         case1.set_value("RESUBMIT", 0)
 
@@ -470,11 +474,14 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
             Call(METHOD_run_indv,
                  {'suffix': run_two_suffix, 'CASEROOT': case2root}),
             Call(METHOD_case_two_custom_postrun_action, {}),
-            Call(METHOD_link_to_case2_output, {}),
-            Call(METHOD_component_compare_test,
-                {'suffix1': run_one_suffix, 'suffix2': run_two_suffix})
+            Call(METHOD_link_to_case2_output, {})
         ]
         self.assertEqual(expected_calls, mytest.log)
+
+        # Also verify that comparison is called:
+        compare_phase_name = self.get_compare_phase_name(mytest)
+        self.assertEqual(test_status.TEST_PASS_STATUS,
+                         mytest._test_status.get_status(compare_phase_name))
 
     def test_run1_fails(self):
         # Make sure that a failure in run1 is reported correctly
@@ -507,6 +514,40 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
                          mytest._test_status.get_status(test_status.RUN_PHASE))
+
+    def test_compare_passes(self):
+        # Make sure that a pass in the comparison is reported correctly
+
+        # Setup
+        case1root = os.path.join(self.tempdir, 'case1')
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1,
+                                           compare_should_pass = True)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        compare_phase_name = self.get_compare_phase_name(mytest)
+        self.assertEqual(test_status.TEST_PASS_STATUS,
+                         mytest._test_status.get_status(compare_phase_name))
+
+    def test_compare_fails(self):
+        # Make sure that a failure in the comparison is reported correctly
+
+        # Setup
+        case1root = os.path.join(self.tempdir, 'case1')
+        case1 = CaseFake(case1root)
+        mytest = SystemTestsCompareTwoFake(case1,
+                                           compare_should_pass = False)
+
+        # Exercise
+        mytest.run()
+
+        # Verify
+        compare_phase_name = self.get_compare_phase_name(mytest)
+        self.assertEqual(test_status.TEST_FAIL_STATUS,
+                         mytest._test_status.get_status(compare_phase_name))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2, catchbreak=True)

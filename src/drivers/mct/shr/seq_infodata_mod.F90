@@ -18,7 +18,7 @@
 ! !REVISION HISTORY:
 !     2005-Nov-11 - E. Kluzek - creation of shr_inputinfo_mod
 !     2007-Nov-15 - T. Craig - refactor for ccsm4 system and move to seq_infodata_mod
-!     2016-Dec-08 - R. Montuoro - updated for multiple coupler instances
+!     2016-Dec-08 - R. Montuoro - updated for multiple driver instances
 !
 ! !INTERFACE: ------------------------------------------------------------------
 

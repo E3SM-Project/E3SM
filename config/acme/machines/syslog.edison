@@ -9,11 +9,12 @@ set run = $4
 set timing = $5
 set dir = $6
 
-# wait until job mapping information is output before saving output file
-# (note that calling script 'touch'es the acme log file before spawning this script, so that 'wc' does not fail)
-set ncpus = `sqs -f $jid | grep -F NumCPUs | sed 's/^ *NumNodes= *\([0-9]*\) *NumCPUs=*\([0-9]*\).*/\2/' `
+# Try to wait until job mapping information is output before saving output file. Since number of MPI tasks
+#  is not known, at least wait until file length is greater than the number of nodes.
+# (Note that calling script 'touch'es the acme log file before spawning this script, so that 'wc' does not fail.)
+set nnodes = `sqs -f $jid | grep -F NumCPUs | sed 's/^ *NumNodes= *\([0-9]*\) *NumCPUs=*\([0-9]*\).*/\1/' `
 set outlth = 0
-while ($outlth < $ncpus)
+while ($outlth < $nnodes)
   sleep 10
   set outlth = `wc \-l $run/acme.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
