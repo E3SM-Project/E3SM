@@ -422,6 +422,7 @@ module cime_comp_mod
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
    logical  :: output_perf = .false.  ! require timing data output for this pe
+   logical  :: in_first_day = .true.  ! currently simulating first day
 
    !--- history & budgets ---
    logical :: do_budgets              ! heat/water budgets on
@@ -840,10 +841,6 @@ subroutine cime_pre_init2()
       call seq_io_cpl_init()
    endif
 
-   call t_startf('CPL:INIT')
-   call t_adj_detailf(+1)
-
-   call t_startf('CPL:cime_pre_init2')
    !----------------------------------------------------------
    !| Memory test
    !----------------------------------------------------------
@@ -1130,11 +1127,6 @@ subroutine cime_pre_init2()
       call pio_closefile(pioid)
    endif
 
-   call t_stopf('CPL:cime_pre_init2')
-
-   call t_adj_detailf(-1)
-   call t_stopf('CPL:INIT')
-
 end subroutine cime_pre_init2
 
 !===============================================================================
@@ -1161,7 +1153,7 @@ subroutine cime_init()
    !  components will set them to true for the purposes of symmetry
    !-----------------------------------------------------------------------------
 
-   call t_startf('cime_init')
+   call t_startf('CPL:cime_init')
    call t_adj_detailf(+1)
 
    call t_startf('CPL:init_comps')
@@ -1171,7 +1163,7 @@ subroutine cime_init()
       call shr_sys_flush(logunit)
    endif
 
-   call t_startf('comp_init_pre_all')
+   call t_startf('CPL:comp_init_pre_all')
    call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
    call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
    call component_init_pre(rof, ROFID, CPLROFID, CPLALLROFID, infodata, ntype='rof')
@@ -1180,58 +1172,58 @@ subroutine cime_init()
    call component_init_pre(glc, GLCID, CPLGLCID, CPLALLGLCID, infodata, ntype='glc')
    call component_init_pre(wav, WAVID, CPLWAVID, CPLALLWAVID, infodata, ntype='wav')
    call component_init_pre(esp, ESPID, CPLESPID, CPLALLESPID, infodata, ntype='esp')
-   call t_stopf('comp_init_pre_all')
+   call t_stopf('CPL:comp_init_pre_all')
 
-   call t_startf('comp_init_cc_atm')
+   call t_startf('CPL:comp_init_cc_atm')
    call t_adj_detailf(+2)
 
    call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_atm')
+   call t_stopf('CPL:comp_init_cc_atm')
 
-   call t_startf('comp_init_cc_lnd')
+   call t_startf('CPL:comp_init_cc_lnd')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_l, lnd, lnd_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_lnd')
+   call t_stopf('CPL:comp_init_cc_lnd')
 
-   call t_startf('comp_init_cc_rof')
+   call t_startf('CPL:comp_init_cc_rof')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_r, rof, rof_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_rof')
+   call t_stopf('CPL:comp_init_cc_rof')
 
-   call t_startf('comp_init_cc_ocn')
+   call t_startf('CPL:comp_init_cc_ocn')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_o, ocn, ocn_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_ocn')
+   call t_stopf('CPL:comp_init_cc_ocn')
 
-   call t_startf('comp_init_cc_ice')
+   call t_startf('CPL:comp_init_cc_ice')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_i, ice, ice_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_ice')
+   call t_stopf('CPL:comp_init_cc_ice')
 
-   call t_startf('comp_init_cc_glc')
+   call t_startf('CPL:comp_init_cc_glc')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_g, glc, glc_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_glc')
+   call t_stopf('CPL:comp_init_cc_glc')
 
-   call t_startf('comp_init_cc_wav')
+   call t_startf('CPL:comp_init_cc_wav')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_wav')
+   call t_stopf('CPL:comp_init_cc_wav')
 
-   call t_startf('comp_init_cc_esp')
+   call t_startf('CPL:comp_init_cc_esp')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cc_esp')
+   call t_stopf('CPL:comp_init_cc_esp')
 
-   call t_startf('comp_init_cx_all')
+   call t_startf('CPL:comp_init_cx_all')
    call t_adj_detailf(+2)
    call component_init_cx(atm, infodata)
    call component_init_cx(lnd, infodata)
@@ -1241,11 +1233,11 @@ subroutine cime_init()
    call component_init_cx(glc, infodata)
    call component_init_cx(wav, infodata)
    call t_adj_detailf(-2)
-   call t_stopf('comp_init_cx_all')
+   call t_stopf('CPL:comp_init_cx_all')
 
    ! Determine complist (list of comps for each id)
 
-   call t_startf('comp_list_all')
+   call t_startf('CPL:comp_list_all')
    call t_adj_detailf(+2)
    complist = " "
    if (iamin_CPLID) complist = trim(complist)//' cpl'
@@ -1302,7 +1294,7 @@ subroutine cime_init()
    enddo
 
    call t_adj_detailf(-2)
-   call t_stopf('comp_list_all')
+   call t_stopf('CPL:comp_list_all')
 
    call t_stopf('CPL:init_comps')
    !----------------------------------------------------------
@@ -1948,7 +1940,7 @@ subroutine cime_init()
    !----------------------------------------------------------
 
    if (atm_present) then
-      call t_startf('comp_init_cc_atm2')
+      call t_startf('CPL:comp_init_cc_atm2')
       call t_adj_detailf(+2)
 
       if (iamroot_CPLID) then
@@ -1986,7 +1978,7 @@ subroutine cime_init()
       endif
 
       call t_adj_detailf(-2)
-      call t_stopf('comp_init_cc_atm2')
+      call t_stopf('CPL:comp_init_cc_atm2')
    endif   ! atm present
 
    !----------------------------------------------------------
@@ -2071,7 +2063,7 @@ subroutine cime_init()
    endif
 
    call t_adj_detailf(-1)
-   call t_stopf('cime_init')
+   call t_stopf('CPL:cime_init')
 
 end subroutine cime_init
 
@@ -3864,15 +3856,21 @@ end subroutine cime_init
 
       ! --- Write out performance data
       call t_startf  ('CPL:TPROF_WRITE')
-      if (tprof_alarm) then
+      if ((tprof_alarm) .or. ((tod == 0) .and. in_first_day)) then
+
+         if ((tod == 0) .and. in_first_day) then
+           in_first_day = .false.
+         endif
          call t_adj_detailf(+1)
 
-         call t_startf("sync1_tprof")
+         call t_startf("CPL:sync1_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
-         call t_stopf("sync1_tprof")
+         call t_stopf("CPL:sync1_tprof")
 
          write(timing_file,'(a,i8.8,a1,i5.5)') &
            trim(tchkpt_dir)//"/cesm_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
+
+         call t_set_prefixf("CPL:")
          if (output_perf) then
             call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
                        num_outpe=0, output_thispe=output_perf)
@@ -3880,20 +3878,21 @@ end subroutine cime_init
             call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
                        num_outpe=0)
          endif
+         call t_unset_prefixf()
 
-         call t_startf("sync2_tprof")
+         call t_startf("CPL:sync2_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
-         call t_stopf("sync2_tprof")
+         call t_stopf("CPL:sync2_tprof")
 
          call t_adj_detailf(-1)
       endif
       call t_stopf  ('CPL:TPROF_WRITE')
 
-      call t_drvstartf  ('CPL:BARRIERALARM',cplrun=.true.)
       if (barrier_alarm) then
+         call t_drvstartf  ('CPL:BARRIERALARM',cplrun=.true.)
          call mpi_barrier(mpicom_GLOID,ierr)
+         call t_drvstopf   ('CPL:BARRIERALARM',cplrun=.true.)
       endif
-      call t_drvstopf   ('CPL:BARRIERALARM',cplrun=.true.)
 
    enddo   ! driver run loop
 
@@ -3926,7 +3925,7 @@ end subroutine cime_init
    call t_startf ('CPL:FINAL')
    call t_adj_detailf(+1)
 
-   call t_startf('cime_final')
+   call t_startf('CPL:cime_final')
    call t_adj_detailf(+1)
 
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
@@ -3974,16 +3973,15 @@ end subroutine cime_init
    endif
 
    call t_adj_detailf(-1)
-   call t_stopf('cime_final')
-
-   call t_startf("final:sync1_tprof")
-   call mpi_barrier(mpicom_GLOID,ierr)
-   call t_stopf("final:sync1_tprof")
+   call t_stopf('CPL:cime_final')
 
    call t_adj_detailf(-1)
    call t_stopf  ('CPL:FINAL')
 
-   call t_set_prefixf("final:")
+   call t_startf("sync3_tprof")
+   call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf("sync3_tprof")
+
    if (output_perf) then
       call t_prf(trim(timing_dir)//'/model_timing'//trim(cpl_inst_tag), &
                  mpicom=mpicom_GLOID, output_thispe=output_perf)
@@ -3991,7 +3989,6 @@ end subroutine cime_init
       call t_prf(trim(timing_dir)//'/model_timing'//trim(cpl_inst_tag), &
                  mpicom=mpicom_GLOID)
    endif
-   call t_unset_prefixf()
 
    call t_finalizef()
 

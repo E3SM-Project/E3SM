@@ -194,7 +194,7 @@ real (kind=real_kind), dimension(np,np,klev,nets:nete) :: zeta
 ! local
 integer :: k,i,j,ie,ic,kptr
 
-call initEdgeBuffer(hybrid%par,edge1,elem,klev, numthreads_in=omp_get_num_threads())
+call initEdgeBuffer(hybrid%par,edge1,elem,klev)
 do ie=nets,nete
    do k=1,klev
       zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%spheremp(:,:)

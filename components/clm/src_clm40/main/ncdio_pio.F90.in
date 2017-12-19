@@ -24,7 +24,7 @@ module ncdio_pio
   use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
   use fileutils      , only : getavu, relavu
-  use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_OP
+  use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_orderedPoints
   use pio            , only : file_desc_t, io_desc_t, iosystem_desc_t, pio_64bit_offset
   use pio            , only : pio_bcast_error, pio_char, pio_clobber, pio_closefile, pio_createfile, pio_def_dim
   use pio            , only : pio_def_var, pio_double, pio_enddef, pio_get_att, pio_get_var, pio_global, pio_initdecomp
@@ -2156,7 +2156,7 @@ contains
     gsmap_lsize = mct_gsmap_lsize(gsmap,mpicom)
     gsmap_gsize = mct_gsmap_gsize(gsmap)
 
-    call mct_gsmap_OP(gsmap,iam,gsmOP)
+    call mct_gsMap_orderedPoints(gsmap,iam,gsmOP)
 
     fullsize = 1
     do n = 1,ndims

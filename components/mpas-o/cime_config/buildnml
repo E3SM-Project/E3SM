@@ -48,6 +48,7 @@ my $decomp_prefix = '';
 my $ic_date = '';
 my $ic_prefix = '';
 my $restoring_file = '';
+my $analysis_mask_file = '';
 
 if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_date .= '151031';
@@ -65,11 +66,13 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
         $restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc';
+	$analysis_mask_file .= 'oEC60to30v3_Atlantic_region_and_southern_transect.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
-        $ic_date .= '170905';
-        $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0824';
+        $ic_date .= '171101';
+        $ic_prefix .= 'oEC60to30v3_60layer.restartFrom_anvil0926';
         $decomp_date .= '161222';
         $decomp_prefix .= 'mpas-o.graph.info.';
+	$analysis_mask_file .= 'oEC60to30v3_Atlantic_region_and_southern_transect.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30wLI' ) {
         $ic_date .= '160830';
         $ic_prefix .= 'oEC60to30wLI';
@@ -122,16 +125,18 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '160830';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS18to6v3' ) {
-	$ic_date .= '170111';
+	$ic_date .= '171116';
 	$ic_prefix .= 'oRRS18to6v3';
 	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 	$restoring_file .= 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc';
+	$analysis_mask_file .= 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc';
 } elsif ( $OCN_GRID eq 'oRRS18to6v3_ICG' ) {
-	$ic_date .= '170622';
-	$ic_prefix .= 'oRRS18to6v3.restartFrom_titan0228';
+	$ic_date .= '171031';
+        $ic_prefix .= 'oRRS18to6v3_80Layer.restartFromAnvil';
 	$decomp_date .= '170111';
 	$decomp_prefix .= 'mpas-o.graph.info.';
+	$analysis_mask_file .= 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
 	$ic_date .= '151209';
 	$ic_prefix .= 'ocean.RRS.15-5km';
@@ -154,17 +159,18 @@ if ($OCN_FORCING eq 'core_forced') {
 }
 
 #--------------------------------------------------------------------
-# Generate input data file
+# Generate input data file with stream-specified files
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
 print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
 print $input_list "ic = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
+if ($analysis_mask_file ne '') {
+        print $input_list "moc = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file\n";
+}
 if ( $OCN_FORCING eq 'core_forced_restoring' ) {
 	print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
 }
-#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$decomp_date\n";
-print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$decomp_date.part.$NTASKS_OCN\n";
 close($input_list);
 
 #--------------------------------------------------------------------
@@ -336,6 +342,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var_array name="activeTracerSurfaceFluxTendency"/>' . "\n";
 	print $stream_file '    <var_array name="temperatureShortWaveTendency"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracerNonLocalTendency"/>' . "\n";
+	print $stream_file '    <var name="salinitySurfaceRestoringTendency"/>' . "\n";
 	print $stream_file '    <var name="vertTransportVelocityTop"/>' . "\n";
 	print $stream_file '    <var name="vertGMBolusVelocityTop"/>' . "\n";
 	print $stream_file '    <var name="vertAleTransportTop"/>' . "\n";
@@ -413,7 +420,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file 'the analysis data.' . "\n";
 	print $stream_file '-->' . "\n";
 	print $stream_file '' . "\n";
-        if ($OCN_FORCING eq 'core_forced_restoring') {
+	if ($OCN_FORCING eq 'core_forced_restoring') {
 		print $stream_file '<stream name="surface_salinity_monthly_data"' . "\n";
 		print $stream_file '       type="input"' . "\n";
 		print $stream_file "       filename_template=" . '"'
@@ -426,7 +433,61 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 		print $stream_file '       <var name="surfaceSalinityMonthlyClimatologyValue"/>' . "\n";
 		print $stream_file '</stream>' . "\n";
 		print $stream_file '' . "\n";
-        }
+	}
+	if ($analysis_mask_file ne '') {
+		print $stream_file '<stream name="transectMasksInput"' . "\n";
+		print $stream_file '        type="input"' . "\n";
+		print $stream_file "        filename_template=" . '"'
+						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file"
+						. '"' . "\n";
+		print $stream_file '        input_interval="initial_only">' . "\n";
+		print $stream_file '' . "\n";
+		print $stream_file '        <var name="transectEdgeMasks"/>' . "\n";
+		print $stream_file '        <var name="transectNames"/>' . "\n";
+		print $stream_file '        <var name="nTransectsInGroup"/>' . "\n";
+		print $stream_file '        <var name="transectsInGroup"/>' . "\n";
+		print $stream_file '        <var name="transectGroupNames"/>' . "\n";
+		print $stream_file '        <var name="transectEdgeMaskSigns"/>' . "\n";
+		print $stream_file '</stream>' . "\n";
+		print $stream_file '' . "\n";
+	}
+	if ($analysis_mask_file ne '') {
+		print $stream_file '<stream name="regionalMasksInput"' . "\n";
+		print $stream_file '        type="input"' . "\n";
+		print $stream_file "        filename_template=" . '"'
+						. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$analysis_mask_file"
+						. '"' . "\n";
+		print $stream_file '        input_interval="initial_only">' . "\n";
+		print $stream_file '' . "\n";
+		print $stream_file '        <var name="regionCellMasks"/>' . "\n";
+		print $stream_file '        <var name="regionNames"/>' . "\n";
+		print $stream_file '        <var name="nRegionsInGroup"/>' . "\n";
+		print $stream_file '        <var name="regionsInGroup"/>' . "\n";
+		print $stream_file '        <var name="regionGroupNames"/>' . "\n";
+		print $stream_file '</stream>' . "\n";
+		print $stream_file '' . "\n";
+	}
+	print $stream_file '<stream name="mocStreamfunctionOutput"' . "\n";
+	print $stream_file '	    type="output"' . "\n";
+	print $stream_file '        filename_template="mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"'. "\n";
+	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        packages="mocStreamfunctionAMPKG">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '        <var name="xtime"/>' . "\n";
+	print $stream_file '        <var name="mocStreamvalLatAndDepth"/>' . "\n";
+	print $stream_file '        <var name="mocStreamvalLatAndDepthRegion"/>' . "\n";
+	print $stream_file '        <var name="binBoundaryMocStreamfunction"/>' . "\n";
+	print $stream_file '        <var name="refBottomDepth"/>' . "\n";
+	print $stream_file '        <var name="regionGroupNames"/>' . "\n";
+	print $stream_file '        <var name="minMaxLatRegion"/>' . "\n";
+	print $stream_file '        <var name="regionNames"/>' . "\n";
+	print $stream_file '        <var name="nRegionsInGroup"/>' . "\n";
+	print $stream_file '        <var name="regionsInGroup"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
 	print $stream_file '<stream name="globalStatsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        io_type="netcdf"' . "\n";
@@ -546,13 +607,31 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="refBottomDepth"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+	print $stream_file '<stream name="eddyProductVariablesOutput"' . "\n";
+	print $stream_file '        type="output"' . "\n";
+	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+	print $stream_file '        filename_template="mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"' . "\n";
+	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        packages="eddyProductVariablesAMPKG">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '    <var name="xtime"/>' . "\n";
+	print $stream_file '    <var name="SSHSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalTimesTemperature"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalTimesTemperature"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-00-05_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="highFrequencyOutputAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -663,8 +742,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="vertVelocityTop"/>' . "\n";
 	print $stream_file '    <var name="normalTransportVelocity"/>' . "\n";
 	print $stream_file '    <var name="vertTransportVelocityTop"/>' . "\n";
-	print $stream_file '    <var name="normalGMBolusVelocity"/>' . "\n";
-	print $stream_file '    <var name="vertGMBolusVelocityTop"/>' . "\n";
+        if ( $OCN_GRID !~ m/^oRRS1/ ) { 
+		print $stream_file '    <var name="normalGMBolusVelocity"/>' . "\n";
+		print $stream_file '    <var name="vertGMBolusVelocityTop"/>' . "\n";
+	}
 	print $stream_file '    <var_struct name="tracersSurfaceFlux"/>' . "\n";
 	print $stream_file '    <var name="penetrativeTemperatureFlux"/>' . "\n";
 	print $stream_file '    <var name="latentHeatFlux"/>' . "\n";
@@ -681,6 +762,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="rainFlux"/>' . "\n";
 	print $stream_file '    <var name="snowFlux"/>' . "\n";
 	print $stream_file '    <var name="vertNonLocalFlux"/>' . "\n";
+	print $stream_file '    <var name="salinitySurfaceRestoringTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerHorizontalAdvectionTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerVerticalAdvectionTendency"/>' . "\n";
+        print $stream_file '    <var_array name="activeTracerVertMixTendency"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracerSurfaceFluxTendency"/>' . "\n";
 	print $stream_file '    <var_array name="temperatureShortWaveTendency"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracerNonLocalTendency"/>' . "\n";
@@ -705,6 +790,14 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
 	print $stream_file '    <var name="landIceHeatFlux"/>' . "\n";
 	print $stream_file '    <var name="heatFluxToLandIce"/>' . "\n";
+	print $stream_file '    <var name="mocStreamvalLatAndDepth"/>' . "\n";
+	print $stream_file '    <var name="mocStreamvalLatAndDepthRegion"/>' . "\n";
+	print $stream_file '    <var name="binBoundaryMocStreamfunction"/>' . "\n";
+	print $stream_file '    <var name="SSHSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalSquared"/>' . "\n";
+	print $stream_file '    <var name="velocityZonalTimesTemperature"/>' . "\n";
+	print $stream_file '    <var name="velocityMeridionalTimesTemperature"/>' . "\n";
         if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
         	print $stream_file '    <var_struct name="ecosysDiagFieldsLevel1"/>' . "\n";
         	print $stream_file '    <var_struct name="ecosysAuxiliary"/>' . "\n";

@@ -8,6 +8,7 @@ module derivative_mod
                                  derivinit, &
                                  gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
                                  curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, limiter_optim_iter_full, &
+                                 limiter_clip_and_sum, &
                                  laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere, laplace_z
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only : np, nelemd, nlev
@@ -24,6 +25,7 @@ module derivative_mod
              derivinit, &
              gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
              curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, limiter_optim_iter_full, &
+             limiter_clip_and_sum, &
              laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere, laplace_z
   public :: laplace_sphere_wk_openacc
   public :: divergence_sphere_wk_openacc

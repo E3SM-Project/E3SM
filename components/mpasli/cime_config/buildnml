@@ -58,13 +58,11 @@ if ( $GLC_GRID eq 'mpas.gis20km' ) {
 chdir "$CASEBUILD/mpasliconf";
 
 #--------------------------------------------------------------------
-# Generate input data file
+# Generate input data file with stream-specified files
 #--------------------------------------------------------------------
 
 open(my $input_list, "+>", "$CASEBUILD/mpasli.input_data_list");
 print $input_list "mesh = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$grid_prefix.$grid_date.nc\n";
-#print $input_list "full_graph = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$decomp_prefix$grid_date\n";
-print $input_list "graph$NTASKS_GLC = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$decomp_prefix$grid_date.part.$NTASKS_GLC\n";
 close($input_list);
 
 #--------------------------------------------------------------------

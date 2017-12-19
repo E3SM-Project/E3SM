@@ -18,7 +18,6 @@ module namelist_mod
     topology,      &       ! Mesh topology
     test_case,     &       ! test case
     uselapi,       &
-    multilevel,    &
     numnodes,      &
     sub_case,      &
     tasknum,       &       ! used dg model in AIX machine
@@ -41,7 +40,6 @@ module namelist_mod
     LFTfreq,       &
     prescribed_wind, &
     ftype,         &
-    energy_fixer,  &
     limiter_option,&
     fine_ne,       &
     max_hypervis_courant, &
@@ -102,7 +100,7 @@ module namelist_mod
   use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit, phys_tscale
 #endif
   use parallel_mod,   only: parallel_t,  iam, abortmp, &
-       partitionfornodes, useframes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
+       partitionfornodes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
   use cg_mod,         only: cg_no_debug
 
 #ifndef CAM
@@ -203,8 +201,6 @@ module namelist_mod
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
       uselapi,       &
-      multilevel,    &
-      useframes,     &
       numnodes,      &
       ne,            &             ! element resolution factor
       tasknum,       &
@@ -224,7 +220,6 @@ module namelist_mod
       disable_diagnostics, &
       prescribed_wind, &
       se_ftype,        &           ! forcing type
-      energy_fixer,    &
       fine_ne,         &
       max_hypervis_courant, &
       nu,            &
@@ -328,8 +323,6 @@ module namelist_mod
     COORD_TRANSFORM_METHOD = SPHERE_COORDS
     Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
-    useframes     = 0
-    multilevel    = 1
     uselapi       = .TRUE.
 #ifdef CAM
     ! set all CAM defaults
@@ -354,7 +347,6 @@ module namelist_mod
     nsplit = 1
     pertlim = 0.0_real_kind
 #endif
-    vthreads      = 1
     sub_case      = 1
     numnodes      = -1
     restartfreq   = -100
@@ -605,8 +597,6 @@ module namelist_mod
     call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(multilevel,      1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(useframes,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
 
 #ifdef CAM
@@ -727,14 +717,13 @@ module namelist_mod
 
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
-    if (NThreads*vthreads > omp_get_max_threads()) then
-       if(par%masterproc) write(iulog,*) "Main:NThreads=",NThreads
-       if(par%masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()
-       if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
+    if (NThreads > omp_get_max_threads()) then
+       if(par%masterproc) print *, "Main:NThreads=",NThreads
+       if(par%masterproc) print *, 'omp_get_max_threads() = ',OMP_get_max_threads()
+       if(par%masterproc) print *, 'requested threads exceeds OMP_get_max_threads()'
        call abortmp('stopping')
     endif
-    call omp_set_num_threads(NThreads*vthreads)
-
+    call omp_set_num_threads(NThreads)
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
     if (hypervis_subcycle==-1) then
@@ -752,6 +741,19 @@ module namelist_mod
        endif
     endif
 #endif
+
+    ! more thread error checks:  
+#ifdef HORIZ_OPENMP
+    if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP enabled'
+#else
+    if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP disabled'
+#endif
+#ifdef COLUMN_OPENMP
+    if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP enabled'
+#else
+    if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP disabled'
+#endif
+
 
     if (ne /=0) then
     if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then
@@ -794,9 +796,9 @@ module namelist_mod
     if (phys_tscale/=0) then
        if (ftype>0) call abortmp('user specified se_phys_tscale requires se_ftype<=0')
     endif
-    if (limiter_option==8 .or. limiter_option==84) then
+    if (limiter_option==8 .or. limiter_option==84 .or. limiter_option == 9) then
        if (hypervis_subcycle_q/=1) then
-          call abortmp('limiter 8,84 requires hypervis_subcycle_q=1')
+          call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
        endif
     endif
 #endif
@@ -848,13 +850,8 @@ module namelist_mod
     if(nu_div<0)  nu_div= nu
     if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
 
-    if (multilevel <= 0) then
-      nmpi_per_node = 1
-    endif
-
     nnodes = npart/nmpi_per_node
-
-    if(numnodes > 0 .and. multilevel .eq. 1) then
+    if(numnodes > 0 ) then
         nnodes = numnodes
         nmpi_per_node = npart/nnodes
     endif
@@ -891,8 +888,6 @@ module namelist_mod
 
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
        write(iulog,*)"readnl: vthreads      = ",vthreads
-       write(iulog,*)'readnl: multilevel    = ',multilevel
-       write(iulog,*)'readnl: useframes     = ',useframes
        write(iulog,*)'readnl: nnodes        = ',nnodes
        write(iulog,*)'readnl: npart         = ',npart
 

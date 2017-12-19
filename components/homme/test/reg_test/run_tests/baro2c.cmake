@@ -20,7 +20,6 @@ SET(NC_OUTPUT_FILES
 
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*26*)
 
-SET(OMP_SUB_TESTS true)
 SET(OMP_NUM_THREADS 4)
 SET(OMP_NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}-run2-omp.nl)
 
@@ -30,6 +29,7 @@ SET(OMP_NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}-run2-o
 
 # compare openMP output vs single threaded output
 SET(NC_OUTPUT_REF  baro2c-run2-jw_baroclinic-000000000-1.nc )
-SET(NC_OUTPUT_CHECKREF baro2c-run2-omp-jw_baroclinic-000000000-1.nc )
-
+IF (${ENABLE_HORIZ_OPENMP})
+  SET(NC_OUTPUT_CHECKREF baro2c-run2-omp-jw_baroclinic-000000000-1.nc )
+ENDIF ()
 

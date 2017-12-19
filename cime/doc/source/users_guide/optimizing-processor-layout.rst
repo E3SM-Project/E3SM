@@ -57,7 +57,7 @@ Finally, decide whether components should run sequentially, concurrently, or in 
 Typically, a series of short test runs with the desired production configuration can establish a reasonable load balance setup for the production job. The timing output can be used to compare test runs to help determine the optimal load balance.
 
 Changing the pe layout of the model has NO IMPACT on the scientific results. The basic order of operations and calling sequence are hardwired into the driver and do not change with the pe layout. that doesn't change when the pe layout is changed. 
-There are some constraints on the ability of either the CESM or ACME fully active configuration fully concurrent. For example, the atmosphere model always run sequentially with the ice and land models for scientific reasons. As a result, running the atmosphere concurrently with the ice and land will result in idle processors at some point in the timestepping sequence.
+There are some constraints on the ability of either the CESM or E3SM fully active configuration fully concurrent. For example, the atmosphere model always run sequentially with the ice and land models for scientific reasons. As a result, running the atmosphere concurrently with the ice and land will result in idle processors at some point in the timestepping sequence.
 
 For more information about how the driver is implemented, see (Craig, A.P., Vertenstein, M., Jacob, R., 2012: A new flexible coupler for earth system modeling developed for CCSM4 and CESM1.0. International Journal of High Performance Computing Applications, 26, 31-42, 10.1177/1094342011428141). 
 

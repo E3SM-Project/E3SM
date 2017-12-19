@@ -76,7 +76,7 @@ contains
   !$omp parallel do default(shared), private(k)
 #endif
         do k=1,nlev
-          Rtemp(k,k)=norm2(Atemp(:,k))
+          Rtemp(k,k)=sqrt(dot_product(Atemp(:,k),Atemp(:,k))) !norm2(Atemp(:,k))
           Qtemp(1:nlev,k)=Atemp(1:nlev,k)/Rtemp(k,k)
           do l=k+1,nlev
             Rtemp(k,l)=dot_product(Qtemp(:,k),Atemp(:,l))

@@ -78,7 +78,6 @@ set RK2 = 1
 set qsplit = 4
 set limiter = 8
 set rsplit=0
-set energy_fixer = -1  # disabled
 
 # tensor HV options
 set hypervis_scaling = 0  # 3.2 or 4 to turn on tensor HV
@@ -174,7 +173,6 @@ if ( $ne == 30 ) then
         #set rsplit = 0 ; set nu_p = 0
         set rsplit = 5 ; set nu_p = 1e15
     
-        set energy_fixer = -1
     endif
     if ( 0 ) then
        # tensorHV instead of constant coefficient
@@ -270,7 +268,6 @@ sed s/hypervis_order.\*/"hypervis_order=2  hypervis_scaling=$hypervis_scaling  "
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/ |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/ |\
 sed s/ndays.\*/"ndays = $ndays"/ |\
-sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/ |\
 sed s/limiter_option.\*/"limiter_option = $limiter"/ |\
 sed s/smooth.\*/"smooth = $smooth"/ |\
 sed s/qsize.\*/"qsize = $qsize"/    > $run/input.nl

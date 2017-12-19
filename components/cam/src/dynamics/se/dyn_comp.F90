@@ -6,7 +6,7 @@ Module dyn_comp
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t, set_layer_locations
   use hybrid_mod, only : hybrid_t
-  use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
+  use thread_mod, only: nthreads, hthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
   use cam_logfile, only : iulog
   use time_manager, only: is_first_step
@@ -145,39 +145,10 @@ CONTAINS
     fullgrid=.true.
 
 #ifdef _OPENMP    
-!   Set by driver
+!   Total number of threads available to dycore, as set by driver
     nthreads = omp_get_max_threads()
-    if(par%masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
-       write(iulog,*) " "
-    endif
-#ifndef HORIZ_OPENMP
-    call endrun('Error: threaded runs require -DHORIZ_OPENMP')
 #endif
-#ifdef COLUMN_OPENMP
-    call omp_set_nested(.true.)
-    if (vthreads > nthreads .or. vthreads < 1) &
-         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
-    nthreads = nthreads / vthreads
-    if(par%masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "dyn_init1: using OpenMP across and within elements"
-       write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
-       write(iulog,*) " "
-    endif
-#else
-    if (vthreads>1) &
-         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
-#endif
-#else
-    nthreads = 1
-    if(par%masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "dyn_init1: openmp not activated"
-       write(iulog,*) " "
-    endif
-#endif
+
     if(par%dynproc) then
        call prim_init1(elem,par,dom_mt,TimeLevel)
 
@@ -279,9 +250,9 @@ CONTAINS
     if(par%dynproc) then
 
 #ifdef HORIZ_OPENMP
-       if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
+       if (iam==0) write (iulog,*) "dyn_init2: hthreads=",hthreads,&
                                    "max_threads=",omp_get_max_threads()
-       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+       !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
 #endif
 #ifdef COLUMN_OPENMP
        call omp_set_num_threads(vthreads)
@@ -289,7 +260,7 @@ CONTAINS
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
        nete=dom_mt(ithr)%end
-       hybrid = hybrid_create(par,ithr,NThreads)
+       hybrid = hybrid_create(par,ithr,hthreads)
 
        moisture='moist'
 
@@ -382,9 +353,9 @@ CONTAINS
     !
     if(par%dynproc) then
 #ifdef HORIZ_OPENMP
-       !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
+       !if (iam==0) write (iulog,*) "dyn_run: hthreads=",hthreads,&
        !                            "max_threads=",omp_get_max_threads()
-       !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+       !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
 #endif
 #ifdef COLUMN_OPENMP
        ! nested threads
@@ -393,7 +364,7 @@ CONTAINS
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
        nete=dom_mt(ithr)%end
-       hybrid = hybrid_create(par,ithr,NThreads)
+       hybrid = hybrid_create(par,ithr,hthreads)
 
        do n=1,se_nsplit
           ! forward-in-time RK, with subcycling

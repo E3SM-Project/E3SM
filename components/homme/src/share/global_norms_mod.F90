@@ -950,13 +950,15 @@ contains
        nsize_use = nelemd
     endif
     if (nvars .gt. nrepro_vars) call abortmp('repro_sum_buffer_size exceeded')
+#ifndef CAM
+    ! CAM already does this, no need to do it twice
     do n=1,nvars
        do i=1,nsize_use
           if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) &
                call abortmp('NaNs detected in repro sum input')
        enddo
     enddo
-    
+#endif    
 
 ! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
 

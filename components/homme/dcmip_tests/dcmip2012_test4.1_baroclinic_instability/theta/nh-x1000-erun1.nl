@@ -2,7 +2,6 @@
 theta_hydrostatic_mode = .false.
 dcmip4_moist  = 0
 dcmip4_X      = 1000.0
-vert_num_threads = 1
 NThreads=1
 partmethod    = 4
 topology      = "cube"

@@ -156,9 +156,9 @@ use physical_constants,   only:  kappa
     do k=1,nz
 
       ! Autoconversion and accretion rates following KW eq. 2.13a,b
-      qrprod = qc(k) - (qc(k)-dt0*max(.001*(qc(k)-.001d0),0.))/(1.d0+dt0*2.2d0*qr(k)**.875)
-      qc(k) = max(qc(k)-qrprod,0.)
-      qr(k) = max(qr(k)+qrprod+sed(k),0.)
+      qrprod = qc(k) - (qc(k)-dt0*max(.001*(qc(k)-.001d0),0.d0))/(1.d0+dt0*2.2d0*qr(k)**.875)
+      qc(k) = max(qc(k)-qrprod,0.d0)
+      qr(k) = max(qr(k)+qrprod+sed(k),0.d0)
 
       ! Saturation vapor mixing ratio (gm/gm) following KW eq. 2.11
       qvs = pc(k)*exp(f2x*(pk(k)*theta(k)-273.d0)   &
@@ -169,11 +169,11 @@ use physical_constants,   only:  kappa
       ern = min(dt0*(((1.6d0+124.9d0*(r(k)*qr(k))**.2046)  &
             *(r(k)*qr(k))**.525)/(2550000d0*pc(k)            &
             /(3.8d0 *qvs)+540000d0))*(dim(qvs,qv(k))         &
-            /(r(k)*qvs)),max(-prod-qc(k),0.),qr(k))
+            /(r(k)*qvs)),max(-prod-qc(k),0.d0),qr(k))
 
       ! Saturation adjustment following KW eq. 3.10
       theta(k)= theta(k) + 2500000d0/(1003.d0*pk(k))*(max( prod,-qc(k))-ern)
-      qv(k) = max(qv(k)-max(prod,-qc(k))+ern,0.)
+      qv(k) = max(qv(k)-max(prod,-qc(k))+ern,0.d0)
       qc(k) = qc(k)+max(prod,-qc(k))
       qr(k) = qr(k)-ern
     end do

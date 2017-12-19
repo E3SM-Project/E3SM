@@ -23,6 +23,8 @@ module CNGapMortalityMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
 
+  use clm_varctl          , only : nu_com
+
   !
   implicit none
   save
@@ -97,8 +99,8 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+    type(cnstate_type)       , intent(inout)    :: cnstate_vars
+    type(carbonstate_type)   , intent(inout)    :: carbonstate_vars
     type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
@@ -130,6 +132,11 @@ contains
       am = CNGapMortParamsInst%am
       ! set coeff of growth efficiency in mortality equation 
       k_mort = CNGapMortParamsInst%k_mort
+
+      if (nu_com .eq. 'RD') then
+          call mortality_rate_soilorder(num_soilp,filter_soilp,cnstate_vars)
+      end if
+
 
       ! patch loop
       do fp = 1,num_soilp
@@ -164,6 +171,11 @@ contains
 
          end if
 
+         if (nu_com .eq. 'RD') then
+             am = cnstate_vars%r_mort_cal_patch(p)
+         end if
+
+
          m  = am/(get_days_per_year() * secspday)
 
          !------------------------------------------------------
@@ -190,7 +202,8 @@ contains
          carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = carbonstate_vars%livecrootc_storage_patch(p)  * m
          carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = carbonstate_vars%deadcrootc_storage_patch(p)  * m
          carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = carbonstate_vars%gresp_storage_patch(p)       * m
-
+         carbonflux_vars%m_cpool_to_litter_patch(p)               = carbonstate_vars%cpool_patch(p)               * m
+ 
          ! transfer pools
          carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = carbonstate_vars%leafc_xfer_patch(p)          * m
          carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = carbonstate_vars%frootc_xfer_patch(p)         * m
@@ -214,6 +227,7 @@ contains
          if (ivt(p) < npcropmin) then
             nitrogenflux_vars%m_retransn_to_litter_patch(p) = nitrogenstate_vars%retransn_patch(p) * m
          end if
+         nitrogenflux_vars%m_npool_to_litter_patch(p)               = nitrogenstate_vars%npool_patch(p)               * m
 
          if (spinup_state >= 1) then
            nitrogenflux_vars%m_deadstemn_to_litter_patch(p)         = nitrogenstate_vars%deadstemn_patch(p)  * m * spinup_mortality_factor
@@ -250,6 +264,7 @@ contains
          if (ivt(p) < npcropmin) then
             phosphorusflux_vars%m_retransp_to_litter_patch(p) = phosphorusstate_vars%retransp_patch(p) * m
          end if
+         phosphorusflux_vars%m_ppool_to_litter_patch(p)               = phosphorusstate_vars%ppool_patch(p)               * m
 
          if (spinup_state >= 1) then
            phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m * spinup_mortality_factor
@@ -354,7 +369,8 @@ contains
          m_livecrootc_xfer_to_litter         =>    carbonflux_vars%m_livecrootc_xfer_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
          m_deadcrootc_xfer_to_litter         =>    carbonflux_vars%m_deadcrootc_xfer_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
          m_gresp_xfer_to_litter              =>    carbonflux_vars%m_gresp_xfer_to_litter_patch           , & ! Input:  [real(r8) (:)   ]                                                    
-         
+         m_cpool_to_litter                   =>    carbonflux_vars%m_cpool_to_litter_patch                , & ! Input:  [real(r8) (:)   ]               
+
          m_leafn_to_litter                   =>    nitrogenflux_vars%m_leafn_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
          m_frootn_to_litter                  =>    nitrogenflux_vars%m_frootn_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
          m_livestemn_to_litter               =>    nitrogenflux_vars%m_livestemn_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
@@ -362,6 +378,7 @@ contains
          m_livecrootn_to_litter              =>    nitrogenflux_vars%m_livecrootn_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
          m_deadcrootn_to_litter              =>    nitrogenflux_vars%m_deadcrootn_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
          m_retransn_to_litter                =>    nitrogenflux_vars%m_retransn_to_litter_patch           , & ! Input:  [real(r8) (:)   ]                                                    
+         m_npool_to_litter                   =>    nitrogenflux_vars%m_npool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]
          m_leafn_storage_to_litter           =>    nitrogenflux_vars%m_leafn_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
          m_frootn_storage_to_litter          =>    nitrogenflux_vars%m_frootn_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
          m_livestemn_storage_to_litter       =>    nitrogenflux_vars%m_livestemn_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
@@ -383,6 +400,7 @@ contains
          m_livecrootp_to_litter              =>    phosphorusflux_vars%m_livecrootp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
          m_deadcrootp_to_litter              =>    phosphorusflux_vars%m_deadcrootp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
          m_retransp_to_litter                =>    phosphorusflux_vars%m_retransp_to_litter_patch           , & ! Input:  [real(r8) (:)   ]                                                    
+         m_ppool_to_litter                   =>    phosphorusflux_vars%m_ppool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]         
          m_leafp_storage_to_litter           =>    phosphorusflux_vars%m_leafp_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
          m_frootp_storage_to_litter          =>    phosphorusflux_vars%m_frootp_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
          m_livestemp_storage_to_litter       =>    phosphorusflux_vars%m_livestemp_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
@@ -446,7 +464,7 @@ contains
                           (m_livecrootc_to_litter(p) + m_deadcrootc_to_litter(p)) * wtcol(p) * croot_prof(p,j)
                      ! storage gap mortality carbon fluxes
                      gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
-                          (m_leafc_storage_to_litter(p) + m_gresp_storage_to_litter(p))      * wtcol(p) * leaf_prof(p,j)
+                          (m_cpool_to_litter(p) + m_leafc_storage_to_litter(p) + m_gresp_storage_to_litter(p)) * wtcol(p) * leaf_prof(p,j)
                      gap_mortality_c_to_litr_met_c(c,j)     = gap_mortality_c_to_litr_met_c(c,j)     + &
                           m_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
                      gap_mortality_c_to_litr_met_c(c,j)  = gap_mortality_c_to_litr_met_c(c,j)  + &
@@ -489,6 +507,9 @@ contains
                      ! retranslocated N pool gap mortality fluxes
                      gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
                           m_retransn_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+                     ! storage N pool gap mortality fluxes
+                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
+                          m_npool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
 
                      ! storage gap mortality nitrogen fluxes
                      gap_mortality_n_to_litr_met_n(c,j)      = gap_mortality_n_to_litr_met_n(c,j)      + &
@@ -535,6 +556,9 @@ contains
                      ! retranslocated N pool gap mortality fluxes
                      gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
                           m_retransp_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
+                          m_ppool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+
 
                      ! storage gap mortality phosphorus fluxes
                      gap_mortality_p_to_litr_met_p(c,j)      = gap_mortality_p_to_litr_met_p(c,j)      + &
@@ -566,5 +590,48 @@ contains
     end associate
 
   end subroutine CNGapPftToColumn
+
+  subroutine mortality_rate_soilorder(&
+       num_soilp, filter_soilp, &
+       cnstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! !this surroutine is to calculate mortality rate based on soil order
+
+    ! USES
+    use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree
+    use soilorder_varcon, only: r_mort_soilorder
+
+    !
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
+    type(cnstate_type)       , intent(inout)    :: cnstate_vars
+
+    ! local variables
+    integer :: p,c,fp
+
+
+    associate(                                                      &
+       ivt            =>    veg_pp%itype                             , & ! Input:[integer  (:)   ]  patch vegetation type                                
+       isoilorder     =>    cnstate_vars%isoilorder               , &
+       r_mort_cal     =>    cnstate_vars%r_mort_cal_patch )
+
+       ! loop over the patches
+       do fp = 1,num_soilp
+          p = filter_soilp(fp)
+          c = veg_pp%column(p)
+               if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
+                   r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
+               else
+                   r_mort_cal(p) = 0.02_r8                 ! Default mortality rate 
+               endif
+       end do
+
+     end associate
+
+
+  end subroutine mortality_rate_soilorder
+
 
 end module CNGapMortalityMod

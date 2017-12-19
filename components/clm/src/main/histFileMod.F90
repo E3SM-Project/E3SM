@@ -149,7 +149,7 @@ module histFileMod
   ! !PRIVATE TYPES:
   ! Constants
   !
-  integer, parameter :: max_chars = 128        ! max chars for char variables
+  integer, parameter :: max_chars = 256        ! max chars for char variables
   integer, parameter :: max_subs = 100         ! max number of subscripts
   integer            :: num_subs = 0           ! actual number of subscripts
   character(len=32)  :: subs_name(max_subs)    ! name of subscript

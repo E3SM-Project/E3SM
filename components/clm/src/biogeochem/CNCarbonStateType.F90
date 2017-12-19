@@ -101,6 +101,11 @@ module CNCarbonStateType
      real(r8), pointer :: totabgc_col              (:)     ! col (gC/m2) total column above ground carbon, excluding som 
      real(r8), pointer :: totblgc_col              (:)     ! col (gc/m2) total column non veg carbon
 
+     ! variables for above ground vegetation biomass
+     real(r8), pointer :: totvegc_abg_patch            (:)     ! (gC/m2) total above vegetation carbon, excluding cpool
+     real(r8), pointer :: totvegc_abg_col             (:)     ! (gC/m2) total above vegetation carbon, excluding cpool averaged to column (p2c)
+
+
      ! Balance checks
      real(r8), pointer :: begcb_patch              (:)     ! patch carbon mass, beginning of time step (gC/m**2)
      real(r8), pointer :: begcb_col                (:)     ! patch carbon mass, beginning of time step (gC/m**2)
@@ -203,6 +208,8 @@ contains
        allocate(this%grainc_storage_patch     (begp :endp))                   ;     this%grainc_storage_patch     (:)   = nan
        allocate(this%grainc_xfer_patch        (begp :endp))                   ;     this%grainc_xfer_patch        (:)   = nan
        allocate(this%woodc_patch              (begp :endp))                   ;     this%woodc_patch              (:)   = nan     
+       allocate(this%totvegc_abg_patch        (begp :endp))                   ;     this%totvegc_abg_patch            (:)   = nan
+
     endif
     allocate(this%cwdc_col                 (begc :endc))                   ;     this%cwdc_col                 (:)   = nan
     allocate(this%ctrunc_col               (begc :endc))                   ;     this%ctrunc_col               (:)   = nan
@@ -228,6 +235,9 @@ contains
     allocate(this%decomp_cpools_1m_col     (begc :endc,1:ndecomp_pools))   ;     this%decomp_cpools_1m_col     (:,:) = nan
     allocate(this%totpftc_col              (begc :endc))                   ;     this%totpftc_col              (:)   = nan
     allocate(this%totvegc_col              (begc :endc))                   ;     this%totvegc_col              (:)   = nan
+
+    allocate(this%totvegc_abg_col          (begc :endc))                   ;     this%totvegc_abg_col              (:)   = nan
+
 
     allocate(this%totabgc_col              (begc :endc))                   ;     this%totabgc_col              (:)   = nan
     allocate(this%totblgc_col              (begc:endc))                    ;     this%totblgc_col              (:)   = nan
@@ -472,6 +482,13 @@ contains
        call hist_addfld1d (fname='TOTPFTC', units='gC/m^2', &
              avgflag='A', long_name='total patch-level carbon, including cpool', &
              ptr_patch=this%totpftc_patch)
+
+       this%totvegc_abg_patch(begp:endp) = spval
+       call hist_addfld1d (fname='TOTVEGC_ABG', units='gC/m^2', &
+            avgflag='A', long_name='total aboveground vegetation carbon, excluding cpool', &
+            ptr_patch=this%totvegc_abg_patch)
+
+
 
     end if
 
@@ -2740,10 +2757,10 @@ contains
                  do j = 1, nlevdecomp
 		    if ( exit_spinup ) then
 		       m = decomp_cascade_con%spinup_factor(k)
-                       if (decomp_cascade_con%spinup_factor(k) > 1 .and. nu_com .eq. 'RD') m = m / cnstate_vars%scalaravg_col(c)
+                       if (decomp_cascade_con%spinup_factor(k) > 1 .and. nu_com .eq. 'RD') m = m / cnstate_vars%scalaravg_col(c,j)
                     else if ( enter_spinup ) then 
 		       m = 1. / decomp_cascade_con%spinup_factor(k)
-		       if (decomp_cascade_con%spinup_factor(k) > 1 .and. nu_com .eq. 'RD') m = m * cnstate_vars%scalaravg_col(c)
+		       if (decomp_cascade_con%spinup_factor(k) > 1 .and. nu_com .eq. 'RD') m = m * cnstate_vars%scalaravg_col(c,j)
 		    end if
                     this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
                  end do
@@ -2816,6 +2833,8 @@ contains
           this%totvegc_patch(i)            = value_patch
           this%totpftc_patch(i)            = value_patch
           this%woodc_patch(i)              = value_patch
+          this%totvegc_abg_patch(i)        = value_patch
+
 
        end do
        if ( crop_prog ) then
@@ -2985,6 +3004,18 @@ contains
             this%deadcrootc_patch(p)   + &
             this%livecrootc_patch(p)
 
+       this%totvegc_abg_patch(p) = &
+               this%leafc_patch(p)              + &
+               this%leafc_storage_patch(p)      + &
+               this%leafc_xfer_patch(p)         + &
+               this%livestemc_patch(p)          + &
+               this%livestemc_storage_patch(p)  + &
+               this%livestemc_xfer_patch(p)     + &
+               this%deadstemc_patch(p)          + &
+               this%deadstemc_storage_patch(p)  + &
+               this%deadstemc_xfer_patch(p)
+
+
     end do
 
 
@@ -2995,6 +3026,11 @@ contains
     call p2c(bounds, num_soilc, filter_soilc, &
          this%totvegc_patch(bounds%begp:bounds%endp), &
          this%totvegc_col(bounds%begc:bounds%endc))
+
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%totvegc_abg_patch(bounds%begp:bounds%endp), &
+         this%totvegc_abg_col(bounds%begc:bounds%endc))
+
 
 
     ! column level summary

@@ -311,7 +311,7 @@ CONTAINS
 
        end if
        allocate(dest(np,np,numlev,nelemd))
-       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev, numthreads_in=1)
+       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
@@ -507,7 +507,7 @@ CONTAINS
           deallocate( cbuffer )
 
        end if
-       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev, numthreads_in=1)
+       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts

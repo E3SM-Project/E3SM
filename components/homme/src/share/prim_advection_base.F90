@@ -94,12 +94,11 @@ module prim_advection_base
 
 contains
 
-  subroutine Prim_Advec_Init1_rk2(par, elem, n_domains)
+  subroutine Prim_Advec_Init1_rk2(par, elem)
     use dimensions_mod, only : nlev, qsize, nelemd
     use control_mod, only : use_semi_lagrange_transport
     use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
-    integer, intent(in) :: n_domains
     type (element_t) :: elem(:)
     type (EdgeDescriptor_t), allocatable :: desc(:)
 
@@ -219,7 +218,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if ( limiter_option == 8  ) then
+    if ( limiter_option == 8 .or. limiter_option == 9 ) then
       ! dissipation was applied in RHS.
     else
       call t_startf('ah_scalar')
@@ -294,7 +293,8 @@ contains
   use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
-  use derivative_mod , only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere, limiter_optim_iter_full
+  use derivative_mod , only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere, &
+                              limiter_optim_iter_full, limiter_clip_and_sum
   use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
@@ -330,7 +330,7 @@ contains
   !   compute biharmonic mixing term f
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss = 0
-  if ( limiter_option == 8  ) then
+  if ( limiter_option == 8 .or. limiter_option == 9 ) then
     call t_startf('bihmix_qminmax')
     ! when running lim8, we also need to limit the biharmonic, so that term needs
     ! to be included in each euler step.  three possible algorithms here:
@@ -441,7 +441,7 @@ OMP_SIMD
     endif
     call t_stopf('bihmix_qminmax')
   endif  ! compute biharmonic mixing term and qmin/qmax
-  ! end of limiter_option == 8 
+  ! end of limiter_option == 8 .or. limiter_option == 9
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   2D Advection step
@@ -465,7 +465,7 @@ OMP_SIMD
       Vstar(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k) / dp(:,:,k)
       Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k) / dp(:,:,k)
 
-      if ( limiter_option == 8) then
+      if ( limiter_option == 8 .or. limiter_option == 9 ) then
         ! Note that the term dpdissk is independent of Q
         ! UN-DSS'ed dp at timelevel n0+1:
         dpdissk(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
@@ -481,7 +481,7 @@ OMP_SIMD
         do q=1,qsize
           qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
         enddo
-      endif  ! limiter == 8
+      endif  ! limiter == 8 or 9
 
       ! also DSS extra field
       DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
@@ -505,8 +505,15 @@ OMP_SIMD
 
       if ( limiter_option == 8) then
         ! apply limiter to Q = Qtens / dp_star
+        !call t_startf('lim8')
         call limiter_optim_iter_full( Qtens(:,:,:) , elem(ie)%spheremp(:,:) , qmin(:,q,ie) , &
                                       qmax(:,q,ie) , dpdissk )
+        !call t_stopf('lim8')
+      elseif ( limiter_option == 9 ) then
+        !call t_startf('lim9')
+        call limiter_clip_and_sum(    Qtens(:,:,:) , elem(ie)%spheremp(:,:) , qmin(:,q,ie) , &
+                                      qmax(:,q,ie) , dpdissk )
+        !call t_stopf('lim9')
       endif
 
       ! apply mass matrix, overwrite np1 with solution:

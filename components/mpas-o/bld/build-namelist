@@ -686,6 +686,7 @@ add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
 add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
+add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
 
 ###########################
 # Namelist group: forcing #
@@ -881,442 +882,6 @@ add_default($nl, 'config_rx1_horiz_smooth_open_ocean_cells');
 add_default($nl, 'config_rx1_min_levels');
 add_default($nl, 'config_rx1_min_layer_thickness');
 
-######################################
-# Namelist group: baroclinic_channel #
-######################################
-
-add_default($nl, 'config_baroclinic_channel_vert_levels');
-add_default($nl, 'config_baroclinic_channel_use_distances');
-add_default($nl, 'config_baroclinic_channel_surface_temperature');
-add_default($nl, 'config_baroclinic_channel_bottom_temperature');
-add_default($nl, 'config_baroclinic_channel_temperature_difference');
-add_default($nl, 'config_baroclinic_channel_gradient_width_frac');
-add_default($nl, 'config_baroclinic_channel_gradient_width_dist');
-add_default($nl, 'config_baroclinic_channel_bottom_depth');
-add_default($nl, 'config_baroclinic_channel_salinity');
-add_default($nl, 'config_baroclinic_channel_coriolis_parameter');
-
-#################################
-# Namelist group: lock_exchange #
-#################################
-
-add_default($nl, 'config_lock_exchange_vert_levels');
-add_default($nl, 'config_lock_exchange_bottom_depth');
-add_default($nl, 'config_lock_exchange_cold_temperature');
-add_default($nl, 'config_lock_exchange_warm_temperature');
-add_default($nl, 'config_lock_exchange_direction');
-add_default($nl, 'config_lock_exchange_salinity');
-add_default($nl, 'config_lock_exchange_layer_type');
-add_default($nl, 'config_lock_exchange_isopycnal_min_thickness');
-
-##################################
-# Namelist group: internal_waves #
-##################################
-
-add_default($nl, 'config_internal_waves_vert_levels');
-add_default($nl, 'config_internal_waves_use_distances');
-add_default($nl, 'config_internal_waves_surface_temperature');
-add_default($nl, 'config_internal_waves_bottom_temperature');
-add_default($nl, 'config_internal_waves_temperature_difference');
-add_default($nl, 'config_internal_waves_amplitude_width_frac');
-add_default($nl, 'config_internal_waves_amplitude_width_dist');
-add_default($nl, 'config_internal_waves_bottom_depth');
-add_default($nl, 'config_internal_waves_salinity');
-add_default($nl, 'config_internal_waves_layer_type');
-add_default($nl, 'config_internal_waves_isopycnal_displacement');
-
-############################
-# Namelist group: overflow #
-############################
-
-add_default($nl, 'config_overflow_vert_levels');
-add_default($nl, 'config_overflow_use_distances');
-add_default($nl, 'config_overflow_bottom_depth');
-add_default($nl, 'config_overflow_ridge_depth');
-add_default($nl, 'config_overflow_plug_temperature');
-add_default($nl, 'config_overflow_domain_temperature');
-add_default($nl, 'config_overflow_salinity');
-add_default($nl, 'config_overflow_plug_width_frac');
-add_default($nl, 'config_overflow_slope_center_frac');
-add_default($nl, 'config_overflow_slope_width_frac');
-add_default($nl, 'config_overflow_plug_width_dist');
-add_default($nl, 'config_overflow_slope_center_dist');
-add_default($nl, 'config_overflow_slope_width_dist');
-add_default($nl, 'config_overflow_layer_type');
-add_default($nl, 'config_overflow_isopycnal_min_thickness');
-
-################################
-# Namelist group: global_ocean #
-################################
-
-add_default($nl, 'config_global_ocean_minimum_depth');
-add_default($nl, 'config_global_ocean_depth_file');
-add_default($nl, 'config_global_ocean_depth_dimname');
-add_default($nl, 'config_global_ocean_depth_varname');
-add_default($nl, 'config_global_ocean_depth_conversion_factor');
-add_default($nl, 'config_global_ocean_temperature_file');
-add_default($nl, 'config_global_ocean_salinity_file');
-add_default($nl, 'config_global_ocean_tracer_nlat_dimname');
-add_default($nl, 'config_global_ocean_tracer_nlon_dimname');
-add_default($nl, 'config_global_ocean_tracer_ndepth_dimname');
-add_default($nl, 'config_global_ocean_tracer_depth_conversion_factor');
-add_default($nl, 'config_global_ocean_tracer_vert_levels');
-add_default($nl, 'config_global_ocean_temperature_varname');
-add_default($nl, 'config_global_ocean_salinity_varname');
-add_default($nl, 'config_global_ocean_tracer_latlon_degrees');
-add_default($nl, 'config_global_ocean_tracer_lat_varname');
-add_default($nl, 'config_global_ocean_tracer_lon_varname');
-add_default($nl, 'config_global_ocean_tracer_depth_varname');
-add_default($nl, 'config_global_ocean_tracer_method');
-add_default($nl, 'config_global_ocean_smooth_TS_iterations');
-add_default($nl, 'config_global_ocean_swData_file');
-add_default($nl, 'config_global_ocean_swData_nlat_dimname');
-add_default($nl, 'config_global_ocean_swData_nlon_dimname');
-add_default($nl, 'config_global_ocean_swData_lat_varname');
-add_default($nl, 'config_global_ocean_swData_lon_varname');
-add_default($nl, 'config_global_ocean_swData_latlon_degrees');
-add_default($nl, 'config_global_ocean_swData_method');
-add_default($nl, 'config_global_ocean_chlorophyll_varname');
-add_default($nl, 'config_global_ocean_zenithAngle_varname');
-add_default($nl, 'config_global_ocean_clearSky_varname');
-add_default($nl, 'config_global_ocean_piston_velocity');
-add_default($nl, 'config_global_ocean_interior_restore_rate');
-add_default($nl, 'config_global_ocean_topography_file');
-add_default($nl, 'config_global_ocean_topography_nlat_dimname');
-add_default($nl, 'config_global_ocean_topography_nlon_dimname');
-add_default($nl, 'config_global_ocean_topography_latlon_degrees');
-add_default($nl, 'config_global_ocean_topography_lat_varname');
-add_default($nl, 'config_global_ocean_topography_lon_varname');
-add_default($nl, 'config_global_ocean_topography_varname');
-add_default($nl, 'config_global_ocean_topography_has_ocean_frac');
-add_default($nl, 'config_global_ocean_topography_ocean_frac_varname');
-add_default($nl, 'config_global_ocean_topography_method');
-add_default($nl, 'config_global_ocean_smooth_topography');
-add_default($nl, 'config_global_ocean_deepen_critical_passages');
-add_default($nl, 'config_global_ocean_depress_by_land_ice');
-add_default($nl, 'config_global_ocean_land_ice_topo_file');
-add_default($nl, 'config_global_ocean_land_ice_topo_nlat_dimname');
-add_default($nl, 'config_global_ocean_land_ice_topo_nlon_dimname');
-add_default($nl, 'config_global_ocean_land_ice_topo_latlon_degrees');
-add_default($nl, 'config_global_ocean_land_ice_topo_lat_varname');
-add_default($nl, 'config_global_ocean_land_ice_topo_lon_varname');
-add_default($nl, 'config_global_ocean_land_ice_topo_thickness_varname');
-add_default($nl, 'config_global_ocean_land_ice_topo_draft_varname');
-add_default($nl, 'config_global_ocean_land_ice_topo_ice_frac_varname');
-add_default($nl, 'config_global_ocean_land_ice_topo_grounded_frac_varname');
-add_default($nl, 'config_global_ocean_use_constant_land_ice_cavity_temperature');
-add_default($nl, 'config_global_ocean_constant_land_ice_cavity_temperature');
-add_default($nl, 'config_global_ocean_cull_inland_seas');
-add_default($nl, 'config_global_ocean_windstress_file');
-add_default($nl, 'config_global_ocean_windstress_nlat_dimname');
-add_default($nl, 'config_global_ocean_windstress_nlon_dimname');
-add_default($nl, 'config_global_ocean_windstress_latlon_degrees');
-add_default($nl, 'config_global_ocean_windstress_lat_varname');
-add_default($nl, 'config_global_ocean_windstress_lon_varname');
-add_default($nl, 'config_global_ocean_windstress_zonal_varname');
-add_default($nl, 'config_global_ocean_windstress_meridional_varname');
-add_default($nl, 'config_global_ocean_windstress_method');
-add_default($nl, 'config_global_ocean_windstress_conversion_factor');
-add_default($nl, 'config_global_ocean_ecosys_file');
-add_default($nl, 'config_global_ocean_ecosys_forcing_file');
-add_default($nl, 'config_global_ocean_ecosys_nlat_dimname');
-add_default($nl, 'config_global_ocean_ecosys_nlon_dimname');
-add_default($nl, 'config_global_ocean_ecosys_ndepth_dimname');
-add_default($nl, 'config_global_ocean_ecosys_depth_conversion_factor');
-add_default($nl, 'config_global_ocean_ecosys_vert_levels');
-add_default($nl, 'config_global_ocean_ecosys_lat_varname');
-add_default($nl, 'config_global_ocean_ecosys_lon_varname');
-add_default($nl, 'config_global_ocean_ecosys_depth_varname');
-add_default($nl, 'config_global_ocean_ecosys_latlon_degrees');
-add_default($nl, 'config_global_ocean_ecosys_method');
-add_default($nl, 'config_global_ocean_ecosys_forcing_time_dimname');
-add_default($nl, 'config_global_ocean_smooth_ecosys_iterations');
-
-################################
-# Namelist group: cvmix_WSwSBF #
-################################
-
-add_default($nl, 'config_cvmix_WSwSBF_vert_levels');
-add_default($nl, 'config_cvmix_WSwSBF_surface_temperature');
-add_default($nl, 'config_cvmix_WSwSBF_surface_salinity');
-add_default($nl, 'config_cvmix_WSwSBF_surface_restoring_temperature');
-add_default($nl, 'config_cvmix_WSwSBF_surface_restoring_salinity');
-add_default($nl, 'config_cvmix_WSwSBF_temperature_piston_velocity');
-add_default($nl, 'config_cvmix_WSwSBF_salinity_piston_velocity');
-add_default($nl, 'config_cvmix_WSwSBF_sensible_heat_flux');
-add_default($nl, 'config_cvmix_WSwSBF_latent_heat_flux');
-add_default($nl, 'config_cvmix_WSwSBF_shortwave_heat_flux');
-add_default($nl, 'config_cvmix_WSwSBF_rain_flux');
-add_default($nl, 'config_cvmix_WSwSBF_evaporation_flux');
-add_default($nl, 'config_cvmix_WSwSBF_interior_temperature_restoring_rate');
-add_default($nl, 'config_cvmix_WSwSBF_interior_salinity_restoring_rate');
-add_default($nl, 'config_cvmix_WSwSBF_temperature_gradient');
-add_default($nl, 'config_cvmix_WSwSBF_salinity_gradient');
-add_default($nl, 'config_cvmix_WSwSBF_temperature_gradient_mixed_layer');
-add_default($nl, 'config_cvmix_WSwSBF_salinity_gradient_mixed_layer');
-add_default($nl, 'config_cvmix_WSwSBF_mixed_layer_depth_temperature');
-add_default($nl, 'config_cvmix_WSwSBF_mixed_layer_depth_salinity');
-add_default($nl, 'config_cvmix_WSwSBF_mixed_layer_temperature_change');
-add_default($nl, 'config_cvmix_WSwSBF_mixed_layer_salinity_change');
-add_default($nl, 'config_cvmix_WSwSBF_vertical_grid');
-add_default($nl, 'config_cvmix_WSwSBF_bottom_depth');
-add_default($nl, 'config_cvmix_WSwSBF_max_windstress');
-add_default($nl, 'config_cvmix_WSwSBF_coriolis_parameter');
-
-#######################
-# Namelist group: iso #
-#######################
-
-add_default($nl, 'config_iso_vert_levels');
-add_default($nl, 'config_iso_main_channel_depth');
-add_default($nl, 'config_iso_north_wall_lat');
-add_default($nl, 'config_iso_south_wall_lat');
-add_default($nl, 'config_iso_ridge_flag');
-add_default($nl, 'config_iso_ridge_center_lon');
-add_default($nl, 'config_iso_ridge_height');
-add_default($nl, 'config_iso_ridge_width');
-add_default($nl, 'config_iso_plateau_flag');
-add_default($nl, 'config_iso_plateau_center_lon');
-add_default($nl, 'config_iso_plateau_center_lat');
-add_default($nl, 'config_iso_plateau_height');
-add_default($nl, 'config_iso_plateau_radius');
-add_default($nl, 'config_iso_plateau_slope_width');
-add_default($nl, 'config_iso_shelf_flag');
-add_default($nl, 'config_iso_shelf_depth');
-add_default($nl, 'config_iso_shelf_width');
-add_default($nl, 'config_iso_cont_slope_flag');
-add_default($nl, 'config_iso_max_cont_slope');
-add_default($nl, 'config_iso_embayment_flag');
-add_default($nl, 'config_iso_embayment_center_lon');
-add_default($nl, 'config_iso_embayment_center_lat');
-add_default($nl, 'config_iso_embayment_radius');
-add_default($nl, 'config_iso_embayment_depth');
-add_default($nl, 'config_iso_depression_flag');
-add_default($nl, 'config_iso_depression_center_lon');
-add_default($nl, 'config_iso_depression_south_lat');
-add_default($nl, 'config_iso_depression_north_lat');
-add_default($nl, 'config_iso_depression_width');
-add_default($nl, 'config_iso_depression_depth');
-add_default($nl, 'config_iso_salinity');
-add_default($nl, 'config_iso_wind_stress_max');
-add_default($nl, 'config_iso_acc_wind');
-add_default($nl, 'config_iso_asf_wind');
-add_default($nl, 'config_iso_wind_trans');
-add_default($nl, 'config_iso_heat_flux_south');
-add_default($nl, 'config_iso_heat_flux_middle');
-add_default($nl, 'config_iso_heat_flux_north');
-add_default($nl, 'config_iso_heat_flux_lat_ss');
-add_default($nl, 'config_iso_heat_flux_lat_sm');
-add_default($nl, 'config_iso_heat_flux_lat_mn');
-add_default($nl, 'config_iso_region1_center_lon');
-add_default($nl, 'config_iso_region1_center_lat');
-add_default($nl, 'config_iso_region2_center_lon');
-add_default($nl, 'config_iso_region2_center_lat');
-add_default($nl, 'config_iso_region3_center_lon');
-add_default($nl, 'config_iso_region3_center_lat');
-add_default($nl, 'config_iso_region4_center_lon');
-add_default($nl, 'config_iso_region4_center_lat');
-add_default($nl, 'config_iso_heat_flux_region1_flag');
-add_default($nl, 'config_iso_heat_flux_region1');
-add_default($nl, 'config_iso_heat_flux_region1_radius');
-add_default($nl, 'config_iso_heat_flux_region2_flag');
-add_default($nl, 'config_iso_heat_flux_region2');
-add_default($nl, 'config_iso_heat_flux_region2_radius');
-add_default($nl, 'config_iso_surface_temperature_piston_velocity');
-add_default($nl, 'config_iso_initial_temp_t1');
-add_default($nl, 'config_iso_initial_temp_t2');
-add_default($nl, 'config_iso_initial_temp_h0');
-add_default($nl, 'config_iso_initial_temp_h1');
-add_default($nl, 'config_iso_initial_temp_mt');
-add_default($nl, 'config_iso_initial_temp_latS');
-add_default($nl, 'config_iso_initial_temp_latN');
-add_default($nl, 'config_iso_temperature_sponge_t1');
-add_default($nl, 'config_iso_temperature_sponge_h1');
-add_default($nl, 'config_iso_temperature_sponge_l1');
-add_default($nl, 'config_iso_temperature_sponge_tau1');
-add_default($nl, 'config_iso_temperature_restore_region1_flag');
-add_default($nl, 'config_iso_temperature_restore_t1');
-add_default($nl, 'config_iso_temperature_restore_lcx1');
-add_default($nl, 'config_iso_temperature_restore_lcy1');
-add_default($nl, 'config_iso_temperature_restore_region2_flag');
-add_default($nl, 'config_iso_temperature_restore_t2');
-add_default($nl, 'config_iso_temperature_restore_lcx2');
-add_default($nl, 'config_iso_temperature_restore_lcy2');
-add_default($nl, 'config_iso_temperature_restore_region3_flag');
-add_default($nl, 'config_iso_temperature_restore_t3');
-add_default($nl, 'config_iso_temperature_restore_lcx3');
-add_default($nl, 'config_iso_temperature_restore_lcy3');
-add_default($nl, 'config_iso_temperature_restore_region4_flag');
-add_default($nl, 'config_iso_temperature_restore_t4');
-add_default($nl, 'config_iso_temperature_restore_lcx4');
-add_default($nl, 'config_iso_temperature_restore_lcy4');
-
-########################
-# Namelist group: soma #
-########################
-
-add_default($nl, 'config_soma_vert_levels');
-add_default($nl, 'config_soma_domain_width');
-add_default($nl, 'config_soma_center_latitude');
-add_default($nl, 'config_soma_center_longitude');
-add_default($nl, 'config_soma_phi');
-add_default($nl, 'config_soma_bottom_depth');
-add_default($nl, 'config_soma_shelf_width');
-add_default($nl, 'config_soma_shelf_depth');
-add_default($nl, 'config_soma_ref_density');
-add_default($nl, 'config_soma_density_difference');
-add_default($nl, 'config_soma_thermocline_depth');
-add_default($nl, 'config_soma_density_difference_linear');
-add_default($nl, 'config_soma_surface_temperature');
-add_default($nl, 'config_soma_surface_salinity');
-add_default($nl, 'config_soma_use_surface_temp_restoring');
-add_default($nl, 'config_soma_surface_temp_restoring_at_center_latitude');
-add_default($nl, 'config_soma_surface_temp_restoring_latitude_gradient');
-add_default($nl, 'config_soma_restoring_temp_piston_vel');
-
-########################
-# Namelist group: ziso #
-########################
-
-add_default($nl, 'config_ziso_vert_levels');
-add_default($nl, 'config_ziso_add_easterly_wind_stress_ASF');
-add_default($nl, 'config_ziso_wind_transition_position');
-add_default($nl, 'config_ziso_antarctic_shelf_front_width');
-add_default($nl, 'config_ziso_wind_stress_shelf_front_max');
-add_default($nl, 'config_ziso_use_slopping_bathymetry');
-add_default($nl, 'config_ziso_meridional_extent');
-add_default($nl, 'config_ziso_zonal_extent');
-add_default($nl, 'config_ziso_bottom_depth');
-add_default($nl, 'config_ziso_shelf_depth');
-add_default($nl, 'config_ziso_slope_half_width');
-add_default($nl, 'config_ziso_slope_center_position');
-add_default($nl, 'config_ziso_reference_coriolis');
-add_default($nl, 'config_ziso_coriolis_gradient');
-add_default($nl, 'config_ziso_wind_stress_max');
-add_default($nl, 'config_ziso_mean_restoring_temp');
-add_default($nl, 'config_ziso_restoring_temp_dev_ta');
-add_default($nl, 'config_ziso_restoring_temp_dev_tb');
-add_default($nl, 'config_ziso_restoring_temp_tau');
-add_default($nl, 'config_ziso_restoring_temp_piston_vel');
-add_default($nl, 'config_ziso_restoring_temp_ze');
-add_default($nl, 'config_ziso_restoring_sponge_l');
-add_default($nl, 'config_ziso_initial_temp_t1');
-add_default($nl, 'config_ziso_initial_temp_t2');
-add_default($nl, 'config_ziso_initial_temp_h1');
-add_default($nl, 'config_ziso_initial_temp_mt');
-add_default($nl, 'config_ziso_frazil_enable');
-add_default($nl, 'config_ziso_frazil_temperature_anomaly');
-
-####################################
-# Namelist group: sub_ice_shelf_2D #
-####################################
-
-add_default($nl, 'config_sub_ice_shelf_2D_vert_levels');
-add_default($nl, 'config_sub_ice_shelf_2D_bottom_depth');
-add_default($nl, 'config_sub_ice_shelf_2D_cavity_thickness');
-add_default($nl, 'config_sub_ice_shelf_2D_slope_height');
-add_default($nl, 'config_sub_ice_shelf_2D_edge_width');
-add_default($nl, 'config_sub_ice_shelf_2D_y1');
-add_default($nl, 'config_sub_ice_shelf_2D_y2');
-add_default($nl, 'config_sub_ice_shelf_2D_temperature');
-add_default($nl, 'config_sub_ice_shelf_2D_surface_salinity');
-add_default($nl, 'config_sub_ice_shelf_2D_bottom_salinity');
-
-###################################
-# Namelist group: periodic_planar #
-###################################
-
-add_default($nl, 'config_periodic_planar_vert_levels');
-add_default($nl, 'config_periodic_planar_bottom_depth');
-add_default($nl, 'config_periodic_planar_velocity_strength');
-
-#################################
-# Namelist group: ecosys_column #
-#################################
-
-add_default($nl, 'config_ecosys_column_vert_levels');
-add_default($nl, 'config_ecosys_column_vertical_grid');
-add_default($nl, 'config_ecosys_column_TS_filename');
-add_default($nl, 'config_ecosys_column_ecosys_filename');
-add_default($nl, 'config_ecosys_column_bottom_depth');
-
-#############################
-# Namelist group: sea_mount #
-#############################
-
-add_default($nl, 'config_sea_mount_vert_levels');
-add_default($nl, 'config_sea_mount_layer_type');
-add_default($nl, 'config_sea_mount_stratification_type');
-add_default($nl, 'config_sea_mount_density_coef_linear');
-add_default($nl, 'config_sea_mount_density_coef_exp');
-add_default($nl, 'config_sea_mount_density_gradient_linear');
-add_default($nl, 'config_sea_mount_density_gradient_exp');
-add_default($nl, 'config_sea_mount_density_depth_linear');
-add_default($nl, 'config_sea_mount_density_depth_exp');
-add_default($nl, 'config_sea_mount_density_ref');
-add_default($nl, 'config_sea_mount_density_Tref');
-add_default($nl, 'config_sea_mount_density_alpha');
-add_default($nl, 'config_sea_mount_bottom_depth');
-add_default($nl, 'config_sea_mount_height');
-add_default($nl, 'config_sea_mount_radius');
-add_default($nl, 'config_sea_mount_width');
-add_default($nl, 'config_sea_mount_salinity');
-add_default($nl, 'config_sea_mount_coriolis_parameter');
-
-##########################
-# Namelist group: isomip #
-##########################
-
-add_default($nl, 'config_isomip_vert_levels');
-add_default($nl, 'config_isomip_vertical_level_distribution');
-add_default($nl, 'config_isomip_bottom_depth');
-add_default($nl, 'config_isomip_temperature');
-add_default($nl, 'config_isomip_salinity');
-add_default($nl, 'config_isomip_restoring_temperature');
-add_default($nl, 'config_isomip_temperature_piston_velocity');
-add_default($nl, 'config_isomip_restoring_salinity');
-add_default($nl, 'config_isomip_salinity_piston_velocity');
-add_default($nl, 'config_isomip_coriolis_parameter');
-add_default($nl, 'config_isomip_southern_boundary');
-add_default($nl, 'config_isomip_northern_boundary');
-add_default($nl, 'config_isomip_western_boundary');
-add_default($nl, 'config_isomip_eastern_boundary');
-add_default($nl, 'config_isomip_y1');
-add_default($nl, 'config_isomip_z1');
-add_default($nl, 'config_isomip_ice_fraction1');
-add_default($nl, 'config_isomip_y2');
-add_default($nl, 'config_isomip_z2');
-add_default($nl, 'config_isomip_ice_fraction2');
-add_default($nl, 'config_isomip_y3');
-add_default($nl, 'config_isomip_z3');
-add_default($nl, 'config_isomip_ice_fraction3');
-
-###############################
-# Namelist group: isomip_plus #
-###############################
-
-add_default($nl, 'config_isomip_plus_vert_levels');
-add_default($nl, 'config_isomip_plus_vertical_level_distribution');
-add_default($nl, 'config_isomip_plus_max_bottom_depth');
-add_default($nl, 'config_isomip_plus_minimum_levels');
-add_default($nl, 'config_isomip_plus_min_column_thickness');
-add_default($nl, 'config_isomip_plus_min_ocean_fraction');
-add_default($nl, 'config_isomip_plus_topography_file');
-add_default($nl, 'config_isomip_plus_init_top_temp');
-add_default($nl, 'config_isomip_plus_init_bot_temp');
-add_default($nl, 'config_isomip_plus_init_top_sal');
-add_default($nl, 'config_isomip_plus_init_bot_sal');
-add_default($nl, 'config_isomip_plus_restore_top_temp');
-add_default($nl, 'config_isomip_plus_restore_bot_temp');
-add_default($nl, 'config_isomip_plus_restore_top_sal');
-add_default($nl, 'config_isomip_plus_restore_bot_sal');
-add_default($nl, 'config_isomip_plus_restore_rate');
-add_default($nl, 'config_isomip_plus_restore_evap_rate');
-add_default($nl, 'config_isomip_plus_restore_xMin');
-add_default($nl, 'config_isomip_plus_restore_xMax');
-add_default($nl, 'config_isomip_plus_coriolis_parameter');
-add_default($nl, 'config_isomip_plus_effective_density');
-
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1326,14 +891,17 @@ add_default($nl, 'config_use_activeTracers_surface_bulk_forcing');
 if ($OCN_FORCING eq 'core_forced_restoring') {
 	add_default($nl, 'config_use_activeTracers_surface_restoring', 'val'=>".true.");
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
-	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
+	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-5");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
+	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".false.");
 } else {
 	add_default($nl, 'config_use_activeTracers_surface_restoring');
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring');
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
 	add_default($nl, 'config_salinity_restoring_max_difference');
+	add_default($nl, 'config_salinity_restoring_under_sea_ice');
 }
+add_default($nl, 'config_surface_salinity_monthly_restoring_compute_interval');
 add_default($nl, 'config_use_activeTracers_interior_restoring');
 add_default($nl, 'config_use_activeTracers_exponential_decay');
 add_default($nl, 'config_use_activeTracers_idealAge_forcing');
@@ -1884,21 +1452,6 @@ my @groups = qw(run_modes
                 testing
                 debug
                 constrain_haney_number
-                baroclinic_channel
-                lock_exchange
-                internal_waves
-                overflow
-                global_ocean
-                cvmix_wswsbf
-                iso
-                soma
-                ziso
-                sub_ice_shelf_2d
-                periodic_planar
-                ecosys_column
-                sea_mount
-                isomip
-                isomip_plus
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
@@ -1940,13 +1493,28 @@ for my $var ($nl->get_variable_names('derived')) {
   $nl->set_variable_value($broken[1], $broken[0], $val);
 }
 
-# Write out all groups  to mpas-o_in
+# Write out all groups to mpas-o_in
 my $outfile = "./mpas-o_in";
 $nl->write($outfile, 'groups'=>\@groups);
 if ($print>=2) { print "Writing mpas-o ocean component namelist to $outfile $eol"; }
 
+#--------------------------------------------------------------------
+# Append namelist specified files to input data file
+#     currently just the graph file -- which is complicated because the prefix
+#     is set in the namelist and the suffix comes from the number of tasks
+#--------------------------------------------------------------------
+
+open(my $input_list, ">>", "$CASEBUILD/mpas-o.input_data_list") or
+     die "** can't open filepath file: mpas-o.input_data_list\n";
+my $block_decomp_file_prefix = $nl->get_value( 'config_block_decomp_file_prefix' );
+# remove quotes for concatenation
+$block_decomp_file_prefix =~ s/['"]//g;
+my $block_decomp_file = $block_decomp_file_prefix . $NTASKS_OCN;
+print $input_list "graph$NTASKS_OCN = $block_decomp_file\n";
+$input_list->close;
+
 # Write input dataset list.
-check_input_files($DIN_LOC_ROOT, "../mpas-o.input_data_list");
+check_input_files($DIN_LOC_ROOT, "$CASEBUILD/mpas-o.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT

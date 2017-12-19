@@ -136,6 +136,9 @@ contains
          cs%deadcrootc_xfer_patch(p)    = cs%deadcrootc_xfer_patch(p)     - cf%m_deadcrootc_xfer_to_litter_fire_patch(p)* dt
          cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)          - cf%m_gresp_xfer_to_fire_patch(p)            * dt
          cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)          - cf%m_gresp_xfer_to_litter_fire_patch(p)     * dt
+         cs%cpool_patch(p)              = cs%cpool_patch(p)               - cf%m_cpool_to_fire_patch(p)                 * dt
+         cs%cpool_patch(p)              = cs%cpool_patch(p)               - cf%m_cpool_to_litter_fire_patch(p)          * dt
+
 
       end do ! end of pft loop
 

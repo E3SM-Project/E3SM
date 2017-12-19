@@ -5105,6 +5105,11 @@ Remove the file containing prescribed volcanic aerosol concentrations from local
 Default: FALSE
 </entry>
 
+<entry id="prescribed_volcaero_filetype" type="char*32" category="cam_chem"
+       group="prescribed_volcaero_nl" valid_values="VOLC_MIXING_RATIO,VOLC_CMIP6" >
+Default: 'VOLC_MIXING_RATIO'
+</entry>
+
 <entry id="prescribed_volcaero_type" type="char*32" category="cam_chem"
        group="prescribed_volcaero_nl" valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
 Type of time interpolation for data in prescribed_volcaero files.

@@ -32,7 +32,7 @@ contains
     use domainMod        , only: ldomain
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
-    use spmdmod          , only: masterproc, mpicom
+    use spmdmod          , only: masterproc, mpicom, MPI_REAL8
     use clm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
     !
@@ -66,11 +66,11 @@ contains
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
     real(r8) :: thiscosz, avgcosz, szenith
     real(r8) :: timetemp(2)
-    real(r8) :: latixy(200000), longxy(200000)
+    real(r8) :: latixy(500000), longxy(500000)
     integer ::  ierr, varid, dimid, yr, mon, day, tod, nindex(2), caldaym(13)
     integer ::  ncid, met_ncids(8), mask_ncid, thisncid, ng, tm
     integer ::  aindex(2), tindex(8,2), starti(3), counti(3)
-    integer ::  grid_map(200000), zone_map(200000)
+    integer ::  grid_map(500000), zone_map(500000)
     integer ::  nyears_spinup, nyears_trans, starti_site, endi_site
     real(r8) :: smap05_lat(360), smap05_lon(720)
     real(r8) :: smapt62_lat(94), smapt62_lon(192)
@@ -79,8 +79,12 @@ contains
     real(r8) :: tbot, tempndep(1,1,158), thiscalday, wt1(8), wt2(8), thisdoy
     real(r8) :: site_metdata(8,12)
     real(r8) :: var_month_mean(12)
+    real(r8) :: hdm1(720,360,1), hdm2(720,360,1) 
+    real(r8) :: lnfm1(192,94,2920)
+    real(r8) :: ndep1(144,96,1), ndep2(144,96,1)
+    real(r8) :: aerodata(14,144,96,14)
     integer  :: var_month_count(12)
-    integer*2 :: temp(1,200000)
+    integer*2 :: temp(1,500000)
     integer :: xtoget, ytoget, thisx, thisy, calday_start
     character(len=200) metsource_str, thisline
     character(len=32), parameter :: sub = 'lnd_import_mct'
@@ -199,6 +203,10 @@ contains
             atm2lnd_vars%metsource  = 1   !0 = qian , 1 = cruncep, 2 = Site forcing
           else if (metdata_type(1:4) == 'site') then 
             atm2lnd_vars%metsource  = 2
+          else if (metdata_type(1:6) == 'livneh') then 
+            atm2lnd_vars%metsource = 3
+          else if (metdata_type(1:4) == 'gswp') then
+            atm2lnd_vars%metsource = 4
           else
             call endrun( sub//' ERROR: Invalid met data source for cpl_bypass' )
           end if
@@ -235,6 +243,17 @@ contains
             ierr = nf90_close(ncid)
             atm2lnd_vars%endyear_met_trans = atm2lnd_vars%endyear_met_spinup
           endif
+         if (atm2lnd_vars%metsource == 3) then
+            metsource_str = 'livneh'
+            atm2lnd_vars%startyear_met      = 1950
+            atm2lnd_vars%endyear_met_spinup = 1969
+            atm2lnd_vars%endyear_met_trans  = 2013
+         end if
+         if (atm2lnd_Vars%metsource == 4) then 
+            atm2lnd_vars%startyear_met      = 1901
+            atm2lnd_vars%endyear_met_spinup = 1920
+            atm2lnd_Vars%endyear_met_trans  = 2010
+         end if
 
           nyears_spinup = atm2lnd_vars%endyear_met_spinup - &
                              atm2lnd_vars%startyear_met + 1
@@ -254,7 +273,7 @@ contains
 
           if (atm2lnd_vars%metsource .ne. 2) then 
             ng = 0     !number of points
-            do v=1,200000
+            do v=1,500000
               read(13,*, end=10), longxy(v), latixy(v), zone_map(v), grid_map(v)
               ng = ng + 1
             end do
@@ -300,10 +319,16 @@ contains
               ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metsource_str) // '_' // trim(metvars(v)) // &
                        '_z' // zst(2:3) // '.nc', NF90_NOWRITE, met_ncids(v))
             else if (atm2lnd_vars%metsource == 1) then 
-              ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metsource_str) // '_' // trim(metvars(v)) // &
-                       '_1901-2010_z' // zst(2:3) // '.nc', NF90_NOWRITE, met_ncids(v))
+              ierr = nf90_open(trim(metdata_bypass) // '/CRUNCEP.v5_' // trim(metvars(v)) // &
+                       '_1901-2013_z' // zst(2:3) // '.nc', NF90_NOWRITE, met_ncids(v))
             else if (atm2lnd_vars%metsource == 2) then 
               ierr = nf90_open(trim(metdata_bypass) // '/all_hourly.nc', NF90_NOWRITE, met_ncids(v))
+            else if (atm2lnd_vars%metsource == 3) then
+              ierr = nf90_open(trim(metdata_bypass) // '/cruncep.v5_' // trim(metvars(v)) // &
+                     '_1950-2013_z' // zst(2:3) // '.nc', NF90_NOWRITE, met_ncids(v))
+            else if (atm2lnd_vars%metsource == 4) then 
+              ierr = nf90_open(trim(metdata_bypass) // '/GSWP3.v1_' // trim(metvars(v)) // &
+                     '_1901-2010_z' // zst(2:3) // '.nc', NF90_NOWRITE, met_ncids(v))
             end if
             if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file' )
        
@@ -367,15 +392,6 @@ contains
               end do
             end if
         
-            if (v .eq. 1) then 
-              !get mean annual temperature
-              !atm2lnd_vars%forc_mat_grc(g) = (sum(atm2lnd_vars%atm_input(1,g,1,1:counti(1))*atm2lnd_vars%scale_factors(1) + &
-              !                             atm2lnd_vars%add_offsets(1))/counti(1))
-              !  print*, g, ldomain%lonc(g), ldomain%latc(g), 'MAT = ', atm2lnd_vars%forc_mat_grc(g)
-              print*, g, ldomain%lonc(g), ldomain%latc(g),  (sum(atm2lnd_vars%atm_input(1,g,1,1:counti(1))* &	
-                       atm2lnd_vars%scale_factors(1) + atm2lnd_vars%add_offsets(1))/counti(1))
-            end if 
-
             !Align spinups and transient simulations
             !figure out which year to start with (assuming spinups always use integer multiple of met cycles)
             mystart = atm2lnd_vars%startyear_met
@@ -385,7 +401,6 @@ contains
 
             if (yr .lt. 1850) then 
               atm2lnd_vars%tindex(g,v,1) = (mod(yr-1,nyears_spinup) + (1850-mystart)) * 365 * nint(24./atm2lnd_vars%timeres(v))
-              !print*, 'Start year: ', (mod(yr-1,nyears_spinup) + (1850-mystart))+atm2lnd_vars%startyear_met
             else if (yr .le. atm2lnd_vars%endyear_met_spinup) then
               atm2lnd_vars%tindex(g,v,1) = (mod(yr-1850,nyears_spinup) + (1850-mystart)) * 365 * nint(24./atm2lnd_vars%timeres(v))
             else
@@ -446,14 +461,14 @@ contains
         end do
 
         !Air temperature
-        atm2lnd_vars%forc_t_not_downscaled_grc(g)  = ((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
+        atm2lnd_vars%forc_t_not_downscaled_grc(g)  = min(((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
                                                       atm2lnd_vars%add_offsets(1))*wt1(1) + (atm2lnd_vars%atm_input(1,g,1,tindex(1,2))* &
                                                       atm2lnd_vars%scale_factors(1)+atm2lnd_vars%add_offsets(1))*wt2(1)) * &
-                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon)             
-        atm2lnd_vars%forc_th_not_downscaled_grc(g) = ((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
+                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon), 328._r8)             
+        atm2lnd_vars%forc_th_not_downscaled_grc(g) = min(((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
                                                       atm2lnd_vars%add_offsets(1))*wt1(1) + (atm2lnd_vars%atm_input(1,g,1,tindex(1,2))* &
                                                       atm2lnd_vars%scale_factors(1)+atm2lnd_vars%add_offsets(1))*wt2(1)) * &
-                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon)
+                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon), 328._r8)
 
         tbot = atm2lnd_vars%forc_t_not_downscaled_grc(g)
 
@@ -464,10 +479,10 @@ contains
                                                         *atm2lnd_vars%scale_factors(2)+atm2lnd_vars%add_offsets(2))*wt2(2)) * &
                                                         atm2lnd_vars%var_mult(2,g,mon) + atm2lnd_vars%var_offset(2,g,mon)        
         !Specific humidity
-        atm2lnd_vars%forc_q_not_downscaled_grc(g) = ((atm2lnd_vars%atm_input(3,g,1,tindex(3,1))*atm2lnd_vars%scale_factors(3)+ &
+        atm2lnd_vars%forc_q_not_downscaled_grc(g) = max(((atm2lnd_vars%atm_input(3,g,1,tindex(3,1))*atm2lnd_vars%scale_factors(3)+ &
                                                      atm2lnd_vars%add_offsets(3))*wt1(3) + (atm2lnd_vars%atm_input(3,g,1,tindex(3,2)) &
                                                      *atm2lnd_vars%scale_factors(3)+atm2lnd_vars%add_offsets(3))*wt2(3)) * &
-                                                     atm2lnd_vars%var_mult(3,g,mon) + atm2lnd_vars%var_offset(3,g,mon)
+                                                     atm2lnd_vars%var_mult(3,g,mon) + atm2lnd_vars%var_offset(3,g,mon), 1e-9_r8)
 
         if (atm2lnd_vars%metsource == 2) then  !convert RH to qbot						     
           if (tbot > SHR_CONST_TKFRZ) then
@@ -518,39 +533,37 @@ contains
           wt2(4) = 0d0
         end if
 
-        swndr               = ((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
-                                atm2lnd_vars%add_offsets(4))*wt2(4)) * 0.50_R8
+        swndr               = max(((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
+                                atm2lnd_vars%add_offsets(4))*wt2(4)) * 0.50_R8, 0.0_r8)
         ratio_rvrf =   min(0.99_R8,max(0.29548_R8 + 0.00504_R8*swndr &
                         -1.4957e-05_R8*swndr**2 + 1.4881e-08_R8*swndr**3,0.01_R8))
         atm2lnd_vars%forc_solad_grc(g,2) = ratio_rvrf*swndr
-        swndf               = ((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
-                                atm2lnd_vars%add_offsets(4))*wt2(4))*0.50_R8
+        swndf               = max(((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
+                                atm2lnd_vars%add_offsets(4))*wt2(4))*0.50_R8, 0.0_r8)
         atm2lnd_vars%forc_solai_grc(g,2) = (1._R8 - ratio_rvrf)*swndf
-        swvdr               = ((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
-                                atm2lnd_vars%add_offsets(4))*wt2(4))*0.50_R8
+        swvdr               = max(((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
+                                atm2lnd_vars%add_offsets(4))*wt2(4))*0.50_R8, 0.0_r8)
         ratio_rvrf =   min(0.99_R8,max(0.17639_R8 + 0.00380_R8*swvdr  &
                            -9.0039e-06_R8*swvdr**2 + 8.1351e-09_R8*swvdr**3,0.01_R8))
         atm2lnd_vars%forc_solad_grc(g,1) = ratio_rvrf*swvdr
-        swvdf               = ((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
-                                atm2lnd_vars%add_offsets(4))*wt2(4))*0.50_R8
+        swvdf               = max(((atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
+                                atm2lnd_vars%add_offsets(4))*wt2(4))*0.50_R8, 0.0_r8)
         atm2lnd_vars%forc_solai_grc(g,1) = (1._R8 - ratio_rvrf)*swvdf
-        !if (g .eq. 1) print*, thiscalday, tod, thiscosz, avgcosz, (atm2lnd_vars%atm_input(4,g,1,tindex(4,2))*atm2lnd_vars%scale_factors(4)+ &
-        !                        atm2lnd_vars%add_offsets(4)), wt2(4)	
 
         !Rain and snow
         frac = (atm2lnd_vars%forc_t_not_downscaled_grc(g) - SHR_CONST_TKFRZ)*0.5_R8       ! ramp near freezing
         frac = min(1.0_R8,max(0.0_R8,frac))           ! bound in [0,1]
         !Don't interpolate rainfall data
-        forc_rainc = 0.1_R8 * frac * (((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
+        forc_rainc = 0.1_R8 * frac * max((((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
                                           atm2lnd_vars%add_offsets(5)))*atm2lnd_vars%var_mult(5,g,mon) + &
-                                          atm2lnd_vars%var_offset(5,g,mon))
-        forc_rainl = 0.9_R8 * frac * (((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
+                                          atm2lnd_vars%var_offset(5,g,mon)), 0.0_r8)
+        forc_rainl = 0.9_R8 * frac * max((((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
                                            atm2lnd_vars%add_offsets(5)))*atm2lnd_vars%var_mult(5,g,mon) + &
-                                           atm2lnd_vars%var_offset(5,g,mon)) 
-        forc_snowc = 0.1_R8 * (1.0_R8 - frac) * (((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
-                    atm2lnd_vars%add_offsets(5)))*atm2lnd_vars%var_mult(5,g,mon) + atm2lnd_vars%var_offset(5,g,mon))  
-        forc_snowl = 0.9_R8 * (1.0_R8 - frac) * (((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
-                    atm2lnd_vars%add_offsets(5))) * atm2lnd_vars%var_mult(5,g,mon) + atm2lnd_vars%var_offset(5,g,mon)) 
+                                           atm2lnd_vars%var_offset(5,g,mon)), 0.0_r8) 
+        forc_snowc = 0.1_R8 * (1.0_R8 - frac) * max((((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
+                    atm2lnd_vars%add_offsets(5)))*atm2lnd_vars%var_mult(5,g,mon) + atm2lnd_vars%var_offset(5,g,mon)), 0.0_r8)  
+        forc_snowl = 0.9_R8 * (1.0_R8 - frac) * max((((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
+                    atm2lnd_vars%add_offsets(5))) * atm2lnd_vars%var_mult(5,g,mon) + atm2lnd_vars%var_offset(5,g,mon)), 0.0_r8) 
         !Wind
         atm2lnd_vars%forc_u_grc(g) = (atm2lnd_vars%atm_input(6,g,1,tindex(6,1))*atm2lnd_vars%scale_factors(6)+ &
                                        atm2lnd_vars%add_offsets(6))*wt1(6) + (atm2lnd_vars%atm_input(6,g,1,tindex(6,2))* &
@@ -563,69 +576,82 @@ contains
 
   !------------------------------------Fire data -------------------------------------------------------
  
-        if (nstep.eq. 0) then 
-   
-          ! Read pop_dens streams namelist to get filename
-          nu_nml = getavu()
-          open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-          call find_nlgroup_name(nu_nml, 'popd_streams', status=nml_error)
-          if (nml_error == 0) then
-            read(nu_nml, nml=popd_streams,iostat=nml_error)
-            if (nml_error /= 0) then
-              call endrun(msg='ERROR reading popdens namelist')
-            end if
-          end if
-          close(nu_nml)
-          call relavu( nu_nml )
-          if (masterproc) print*, "poulation density stream file: " // trim(stream_fldFileName_popdens)
-
-          ierr = nf90_open(trim(stream_fldFileName_popdens), NF90_NOWRITE, ncid)
-          ierr = nf90_inq_varid(ncid, 'lat', varid)
-          ierr = nf90_get_var(ncid, varid, smap05_lat)
-          ierr = nf90_inq_varid(ncid, 'lon', varid)
-          ierr = nf90_get_var(ncid, varid, smap05_lon)
-          ierr = nf90_inq_dimid(ncid, 'time', dimid)	
-          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)	
-          !figure out which point to get
-          mindist=99999
-          do thisx = 1,720
-            do thisy = 1,360
-	      if (ldomain%lonc(g) .lt. 0) then 
-              	 if (smap05_lon(thisx) >= 180) smap05_lon(thisx) = smap05_lon(thisx)-360._r8
-	      else if (ldomain%lonc(g) .ge. 180) then 
-                 if (smap05_lon(thisx) < 0) smap05_lon(thisx) = smap05_lon(thisx) + 360._r8
-              end if
-              thisdist = 100*((smap05_lat(thisy) - ldomain%latc(g))**2 + &
-                              (smap05_lon(thisx) - ldomain%lonc(g))**2)**0.5
-              if (thisdist .lt. mindist) then
-                mindist = thisdist
-                xtoget = thisx
-                ytoget = thisy
-              end if
-            end do
-          end do
-          ierr = nf90_inq_varid(ncid, 'hdm', varid)
-          starti(1) = xtoget
-          starti(2) = ytoget
-          starti(3) = 1
-          counti(1) = 1
-          counti(2) = 1
-          counti(3) = thistimelen
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%hdm_input(g:g,1:1,1:thistimelen), starti(1:3), counti(1:3))
-          ierr = nf90_close(ncid)
-        end if
-
-        !get weights for interpolation
-        wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
-        wt2(1) = 1._r8 - wt1(1)
         nindex(1) = yr-1848
         nindex(2) = nindex(1)+1
         if (yr .lt. 1850) nindex(1:2) = 2
         if (yr .ge. 2010) nindex(1:2) = 161
-        atm2lnd_vars%forc_hdm(g) = (atm2lnd_vars%hdm_input(g,1,nindex(1)) &
-                       *wt1(1) + atm2lnd_vars%hdm_input(g,1,nindex(2))*wt2(1))
+      
+        if (nstep.eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then  
+          if (masterproc .and. i .eq. 1) then 
+              ! Read pop_dens streams namelist to get filename
+              nu_nml = getavu()
+              open(nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
+              call find_nlgroup_name(nu_nml, 'popd_streams', status=nml_error)
+              if (nml_error == 0) then
+                  read(nu_nml, nml=popd_streams,iostat=nml_error)
+                  if (nml_error /= 0) then
+                      call endrun(msg='ERROR reading popdens namelist')
+                  end if
+              end if
+              close(nu_nml)
+              call relavu( nu_nml )
 
-        if (nstep.eq. 0) then 
+              ierr = nf90_open(trim(stream_fldFileName_popdens), NF90_NOWRITE, ncid)
+              ierr = nf90_inq_varid(ncid, 'lat', varid)
+              ierr = nf90_get_var(ncid, varid, smap05_lat)
+              ierr = nf90_inq_varid(ncid, 'lon', varid)
+              ierr = nf90_get_var(ncid, varid, smap05_lon)
+              ierr = nf90_inq_varid(ncid, 'hdm', varid)
+              starti(1:2) = 1 
+              starti(3)   = nindex(1)
+              counti(1) = 720
+              counti(2) = 360
+              counti(3) = 1       
+              ierr = nf90_get_var(ncid, varid, hdm1, starti, counti)
+              starti(3) = nindex(2)
+              if (nindex(1) .ne. nindex(2)) then 
+                  ierr = nf90_get_var(ncid, varid, hdm2, starti, counti)
+              else
+                  hdm2 = hdm1 
+              end if
+              ierr = nf90_close(ncid)
+          end if
+
+          if (i .eq. 1) then 
+              call mpi_bcast (hdm1, 360*720, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (hdm2, 360*720, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (smap05_lon, 720, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
+          end if
+        end if
+
+        !figure out which point to get
+        if (nstep .eq. 0) then 
+          mindist=99999
+          do thisx = 1,720
+              do thisy = 1,360
+                  if (ldomain%lonc(g) .lt. 0) then
+                      if (smap05_lon(thisx) >= 180) smap05_lon(thisx) = smap05_lon(thisx)-360._r8
+                  else if (ldomain%lonc(g) .ge. 180) then
+                      if (smap05_lon(thisx) < 0) smap05_lon(thisx) = smap05_lon(thisx) + 360._r8
+                  end if
+                  thisdist = 100*((smap05_lat(thisy) - ldomain%latc(g))**2 + &
+                          (smap05_lon(thisx) - ldomain%lonc(g))**2)**0.5
+                  if (thisdist .lt. mindist) then
+                      mindist = thisdist
+                      atm2lnd_vars%hdmind(g,1) = thisx
+                      atm2lnd_vars%hdmind(g,2) = thisy
+                  end if
+              end do
+          end do
+        end if
+        !get weights for interpolation
+        wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
+        wt2(1) = 1._r8 - wt1(1)
+        atm2lnd_vars%forc_hdm(g) = hdm1(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt1(1) + &
+                                   hdm2(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt2(1)
+
+        if (nstep .eq. 0 .and. masterproc .and. i .eq. 1) then 
           ! Read light_streams namelist to get filename
           nu_nml = getavu()
           open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
@@ -638,183 +664,177 @@ contains
           end if
           close(nu_nml)
           call relavu( nu_nml )
-          if (masterproc) print*, 'Lightning stream file: ' // stream_fldFileName_lightng 
 
           ierr = nf90_open(trim(stream_fldFileName_lightng), NF90_NOWRITE, ncid)
           ierr = nf90_inq_varid(ncid, 'lat', varid)
           ierr = nf90_get_var(ncid, varid, smapt62_lat)
           ierr = nf90_inq_varid(ncid, 'lon', varid)
           ierr = nf90_get_var(ncid, varid, smapt62_lon)
-          ierr = nf90_inq_dimid(ncid, 'time', dimid)	
-          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)	
+          ierr = nf90_inq_varid(ncid, 'lnfm', varid)
+          ierr = nf90_get_var(ncid, varid, lnfm1)
+          ierr = nf90_close(ncid)
+        end if
+        if (nstep .eq. 0 .and. i .eq. 1) then
+            call mpi_bcast(lnfm1, 192*94*2920, MPI_REAL8, 0, mpicom, ier)
+            call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
+            call mpi_bcast (smapt62_lat, 94, MPI_REAL8, 0, mpicom, ier)
+        end if
+        if (nstep .eq. 0) then
           mindist=99999
           do thisx = 1,192
             do thisy = 1,94
-	      if (ldomain%lonc(g) .lt. 0) then 
-              	 if (smapt62_lon(thisx) >= 180) smapt62_lon(thisx) = smapt62_lon(thisx)-360._r8
-	      else if (ldomain%lonc(g) .ge. 180) then 
-                 if (smapt62_lon(thisx) < 0) smapt62_lon(thisx) = smapt62_lon(thisx) + 360._r8
+              if (ldomain%lonc(g) .lt. 0) then 
+                if (smapt62_lon(thisx) >= 180) smapt62_lon(thisx) = smapt62_lon(thisx)-360._r8
+              else if (ldomain%lonc(g) .ge. 180) then 
+                if (smapt62_lon(thisx) < 0) smapt62_lon(thisx) = smapt62_lon(thisx) + 360._r8
               end if
               thisdist = 100*((smapt62_lat(thisy) - ldomain%latc(g))**2 + &
-                              (smapt62_lon(thisx) - ldomain%lonc(g))**2)**0.5
+                            (smapt62_lon(thisx) - ldomain%lonc(g))**2)**0.5
               if (thisdist .lt. mindist) then
                 mindist = thisdist
-                xtoget = thisx
-                ytoget = thisy
+                atm2lnd_vars%lnfmind(g,1) = thisx
+                atm2lnd_vars%lnfmind(g,2) = thisy
               end if
             end do
           end do
-          starti(1) = xtoget
-          starti(2) = ytoget
-          starti(3) = 1
-          counti(1) = 1
-          counti(2) = 1 
-          counti(3) = thistimelen
-          ierr = nf90_inq_varid(ncid, 'lnfm', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%lnfm_input(g:g,1:1,1:thistimelen), starti(1:3), counti(1:3))
-          ierr = nf90_close(ncid)
         end if
 
         !Lightning data is 3-hourly.  Does not currently interpolate.
-        atm2lnd_vars%forc_lnfm(g) = atm2lnd_vars%lnfm_input(g,1,((int(thiscalday)-1)*8+tod/(3600*3))+1)
+        atm2lnd_vars%forc_lnfm(g) = lnfm1(atm2lnd_vars%lnfmind(g,1),atm2lnd_vars%lnfmind(g,2), &
+                                         ((int(thiscalday)-1)*8+tod/(3600*3))+1)
 
    !------------------------------------Nitrogen deposition----------------------------------------------
-        if (nstep .eq. 0) then 
 
-          nu_nml = getavu()
-          open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-          call find_nlgroup_name(nu_nml, 'ndepdyn_nml', status=nml_error)
-          if (nml_error == 0) then
-            read(nu_nml, nml=ndepdyn_nml,iostat=nml_error)
-            if (nml_error /= 0) then
-              call endrun(msg='ERROR reading ndep namelist')
+        !DMR note - ndep will NOT be correct if more than 1850 years of model
+        !spinup (model year > 1850)
+        nindex(1) = min(max(yr-1848,2), 158)
+        nindex(2) = min(nindex(1)+1, 158)
+
+        if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+          if (masterproc .and. i .eq. 1) then 
+            nu_nml = getavu()
+            open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
+            call find_nlgroup_name(nu_nml, 'ndepdyn_nml', status=nml_error)
+            if (nml_error == 0) then
+              read(nu_nml, nml=ndepdyn_nml,iostat=nml_error)
+              if (nml_error /= 0) then
+                call endrun(msg='ERROR reading ndep namelist')
+              end if
             end if
-          end if
-          close(nu_nml)
-          call relavu( nu_nml )
-          if (masterproc) print*, 'Nitrogen deposition stream file: ' // stream_fldFileName_ndep
+            close(nu_nml)
+            call relavu( nu_nml )
 
-          ierr = nf90_open(trim(stream_fldFileName_ndep), nf90_nowrite, ncid)
-          ierr = nf90_inq_varid(ncid, 'lat', varid)
-          ierr = nf90_get_var(ncid, varid, smap2_lat)
-          ierr = nf90_inq_varid(ncid, 'lon', varid)      
-          ierr = nf90_get_var(ncid, varid, smap2_lon)
-          ierr = nf90_inq_dimid(ncid, 'time', dimid)	
-          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)	
+            ierr = nf90_open(trim(stream_fldFileName_ndep), nf90_nowrite, ncid)
+            ierr = nf90_inq_varid(ncid, 'lat', varid)
+            ierr = nf90_get_var(ncid, varid, smap2_lat)
+            ierr = nf90_inq_varid(ncid, 'lon', varid)      
+            ierr = nf90_get_var(ncid, varid, smap2_lon)
+            ierr = nf90_inq_varid(ncid, 'NDEP_year', varid)
+            starti(1:2) = 1
+            starti(3)   = nindex(1)
+            counti(1)   = 144
+            counti(2)   = 96
+            counti(3)   = 1
+            ierr = nf90_get_var(ncid, varid, ndep1, starti, counti)
+            if (nindex(1) .ne. nindex(2)) then 
+              starti(3) = nindex(2)
+              ierr = nf90_get_var(ncid, varid, ndep2, starti, counti)
+            else
+              ndep2 = ndep1
+            end if
+            ierr = nf90_close(ncid)
+           end if
+           if (i .eq. 1) then
+              call mpi_bcast (ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (ndep2, 144*96, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (smap2_lon, 144, MPI_REAL8, 0, mpicom, ier)
+              call mpi_bcast (smap2_lat, 96, MPI_REAL8, 0, mpicom, ier)
+           end if
+        end if
+
+        if (nstep .eq. 0) then 
           mindist=99999
           do thisx = 1,144
             do thisy = 1,96
- 	      if (ldomain%lonc(g) .lt. 0) then 
-              	 if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
-	      else if (ldomain%lonc(g) .ge. 180) then 
+              if (ldomain%lonc(g) .lt. 0) then 
+                if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
+              else if (ldomain%lonc(g) .ge. 180) then 
                  if (smap2_lon(thisx) < 0) smap2_lon(thisx) = smap2_lon(thisx) + 360._r8
               end if
-	      thislon = smap2_lon(thisx)
+              thislon = smap2_lon(thisx)
               thisdist = 100*((smap2_lat(thisy) - ldomain%latc(g))**2 + &
                               (thislon - ldomain%lonc(g))**2)**0.5
               if (thisdist .lt. mindist) then
                 mindist = thisdist
-                xtoget = thisx
-                ytoget = thisy
+                atm2lnd_vars%ndepind(g,1) = thisx
+                atm2lnd_vars%ndepind(g,2) = thisy
               end if
             end do
           end do
-          starti(1) = xtoget
-          starti(2) = ytoget
-          starti(3) = 1
-          counti(1) = 1
-          counti(2) = 1
-          counti(3) = thistimelen
-          ierr = nf90_inq_varid(ncid, 'NDEP_year', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep_input(g:g,1:1,1:thistimelen), starti(1:3), counti(1:3))
-          ierr = nf90_close(ncid)
         end if
 
         !get weights for interpolation
         wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
         wt2(1) = 1._r8 - wt1(1)
+  
+        atm2lnd_vars%forc_ndep_grc(g)    = (ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
+                                            ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
 
-        !DMR note - ndep will NOT be correct if more than 1850 years of model spinup (model year > 1850)
-        nindex(1) = min(max(yr-1848,2), 158)
-        nindex(2) = min(nindex(1)+1, 158)
-
-        if (yr .lt. 1850) nindex(1:2) = 2
-        if (yr .gt. 1848+thistimelen) nindex(1:2) = thistimelen   !assume 1849 is start year
-            
-        atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep_input(g,1,nindex(1))*wt1(1) + &
-                                            atm2lnd_vars%ndep_input(g,1,nindex(2))*wt2(1)) / (365._r8 * 86400._r8)
-        !print*, 'NINDEX', nindex(1), nindex(2), atm2lnd_vars%forc_ndep_grc(g) 
    !------------------------------------Aerosol forcing--------------------------------------------------
-       if (nstep .eq. 0) then 
-          aerovars(1) = 'BCDEPWET'
-          aerovars(2) = 'BCPHODRY'
-          aerovars(3) = 'BCPHIDRY'
-          aerovars(4) = 'OCDEPWET'
-          aerovars(5) = 'OCPHODRY'
-          aerovars(6) = 'OCPHIDRY'
-          aerovars(7) = 'DSTX01DD'
-          aerovars(8) = 'DSTX02DD'
-          aerovars(9) = 'DSTX03DD'
-          aerovars(10) = 'DSTX04DD'
-          aerovars(11) = 'DSTX01WD'
-          aerovars(12) = 'DSTX02WD'
-          aerovars(13) = 'DSTX03WD'
-          aerovars(14) = 'DSTX04WD'
-          ierr = nf90_open(trim(aero_file), nf90_nowrite, ncid)
-          ierr = nf90_inq_varid(ncid, 'lat', varid)
-          ierr = nf90_get_var(ncid, varid, smap2_lat)
-          ierr = nf90_inq_varid(ncid, 'lon', varid)      
-          ierr = nf90_get_var(ncid, varid, smap2_lon)
-          ierr = nf90_inq_dimid(ncid, 'time', dimid)
-          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)
-
-          mindist=99999
-          do thisx = 1,144
-            do thisy = 1,96
- 	      if (ldomain%lonc(g) .lt. 0) then 
-              	 if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
-	      else if (ldomain%lonc(g) .ge. 180) then 
-                 if (smap2_lon(thisx) < 0) smap2_lon(thisx) = smap2_lon(thisx) + 360._r8
-              end if
-	      thislon = smap2_lon(thisx)
-              thisdist = 100*((smap2_lat(thisy) - ldomain%latc(g))**2 + &
-                              (thislon - ldomain%lonc(g))**2)**0.5
-              if (thisdist .lt. mindist) then
-                mindist = thisdist
-                xtoget = thisx
-                ytoget = thisy
-              end if
+       if (nstep .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+          if (masterproc .and. i .eq. 1) then 
+            aerovars(1) = 'BCDEPWET'
+            aerovars(2) = 'BCPHODRY'
+            aerovars(3) = 'BCPHIDRY'
+            aerovars(4) = 'OCDEPWET'
+            aerovars(5) = 'OCPHODRY'
+            aerovars(6) = 'OCPHIDRY'
+            aerovars(7) = 'DSTX01DD'
+            aerovars(8) = 'DSTX02DD'
+            aerovars(9) = 'DSTX03DD'
+            aerovars(10) = 'DSTX04DD'
+            aerovars(11) = 'DSTX01WD'
+            aerovars(12) = 'DSTX02WD'
+            aerovars(13) = 'DSTX03WD'
+            aerovars(14) = 'DSTX04WD'
+            ierr = nf90_open(trim(aero_file), nf90_nowrite, ncid)
+            ierr = nf90_inq_varid(ncid, 'lat', varid)
+            ierr = nf90_get_var(ncid, varid, smap2_lat)
+            ierr = nf90_inq_varid(ncid, 'lon', varid)      
+            ierr = nf90_get_var(ncid, varid, smap2_lon)
+            starti(1:2) = 1
+            starti(3)   = max((min(yr,2006)-1849)*12+1, 13)-1
+            counti(1)   = 144
+            counti(2)   = 96
+            counti(3)   = 14
+            do av=1,14
+              ierr = nf90_inq_varid(ncid, trim(aerovars(av)), varid)
+              ierr = nf90_get_var(ncid, varid, aerodata(av,:,:,:), starti, counti)
             end do
-          end do
-          starti(1) = xtoget
-          starti(2) = ytoget
-          starti(3) = 1
-          counti(1) = 1
-          counti(2) = 1
-          counti(3) = thistimelen
-          do av=1,14
-            ierr = nf90_inq_varid(ncid, trim(aerovars(av)), varid)
-            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%aero_input(av,g:g,1:1,1:thistimelen), starti(1:3), counti(1:3))
-          end do
-          ierr = nf90_close(ncid)
-        end if
+            ierr = nf90_close(ncid)
+          end if
+          if (i .eq. 1) then 
+             call mpi_bcast (aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
+          end if
+       end if
+
+       !Use ndep grid indices since they're on the same grid
 
         !get weights for interpolation (note this method doesn't get the month boundaries quite right..)
-        aindex(1) = (min(max(yr,1850),2006)-1849)*12+mon
+        aindex(1) = mon+1
         if (thiscalday .le. (caldaym(mon+1)+caldaym(mon))/2._r8) then 
            wt1(1) = 0.5_r8 + (thiscalday-caldaym(mon))/(caldaym(mon+1)-caldaym(mon))
            aindex(2) = aindex(1)-1
         else
-        wt1(1) = 1.0_r8 - (thiscalday-(caldaym(mon+1)+caldaym(mon))/2._r8)/   &
+           wt1(1) = 1.0_r8 - (thiscalday-(caldaym(mon+1)+caldaym(mon))/2._r8)/   &
                           (caldaym(mon+1)-caldaym(mon))
            aindex(2) = aindex(1)+1
         end if
-        if (aindex(2) .eq. 0) aindex(2)=aindex(2)+12
         wt2(1) = 1._r8 - wt1(1)
 
         do av = 1,14
-          atm2lnd_vars%forc_aer_grc(g,av)  =  atm2lnd_vars%aero_input(av,g,1,aindex(1))*wt1(1)+ &
-                                              atm2lnd_vars%aero_input(av,g,1,aindex(2))*wt2(1)
+          atm2lnd_vars%forc_aer_grc(g,av)  =  aerodata(av,atm2lnd_vars%ndepind(g,1), atm2lnd_vars%ndepind(g,2),aindex(1))*wt1(1)+ &
+                                              aerodata(av,atm2lnd_vars%ndepind(g,1), atm2lnd_vars%ndepind(g,2),aindex(2))*wt2(1)
         end do     
        
   !-----------------------------------------------------------------------------------------------------
@@ -919,7 +939,6 @@ contains
 #ifdef CPL_BYPASS
         !atmospheric CO2 (to be used for transient simulations only)
         if (nstep .eq. 0) then 
-	  print*, trim(co2_file)
           ierr = nf90_open(trim(co2_file), nf90_nowrite, ncid)
           ierr = nf90_inq_dimid(ncid, 'time', dimid)
           ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)

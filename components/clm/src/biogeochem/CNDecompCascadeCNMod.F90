@@ -735,7 +735,7 @@ contains
 
        minpsi=CNDecompCnParamsInst%minpsi_cn
 
-       Q10 = CNParamsShareInst%Q10
+       Q10 = CNParamsShareInst%Q10_hr
 
        ! set "froz_q10" parameter
        froz_q10  = CNParamsShareInst%froz_q10
@@ -989,21 +989,22 @@ contains
        end if
 
        call get_curr_date(year, mon, day, sec)
-       if (year >= 20 .and. year < 40) then 
-         !as a first test, use level 4 (10cm) - this is used to cacluate location-specific acceleration factors
-	     do fc=1,num_soilc
-	         c = filter_soilc(fc)
-             cnstate_vars%scalaravg_col(c) = cnstate_vars%scalaravg_col(c) + &
-                  (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) ) * dt / (86400._r8 * 365._r8 * 20._r8)
-             if (cnstate_vars%scalaravg_col(c) < 1.0e-2) cnstate_vars%scalaravg_col(c) = 1.0e-2
-         end do
-       else if (year < 20) then 
-          do fc=1,num_soilc
-            c = filter_soilc(fc)
-            cnstate_vars%scalaravg_col(c) = 0._r8
-          end do
-       end if
-
+       !Calcluate location and depth-specific acceleration factors
+       do fc=1,num_soilc
+           c = filter_soilc(fc)
+           if (year < 20 .and. spinup_state == 1) then 
+               cnstate_vars%scalaravg_col(c,:) = 0._r8
+           else if (year < 40 .and. spinup_state == 1) then  
+               cnstate_vars%scalaravg_col(c,:) = cnstate_vars%scalaravg_col(c,:) + &
+                     (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) * depth_scalar(c,4) ) &
+                     * dt / (86400._r8 * 365._r8 * 20._r8)
+           else
+               if (cnstate_vars%scalaravg_col(c,4) < 1.0e-3) then 
+                    cnstate_vars%scalaravg_col(c,:) = 1.0_r8
+               end if
+           end if
+       end do
+  
        if (use_vertsoilc) then
           do j = 1,nlevdecomp
              do fc = 1,num_soilc
@@ -1055,23 +1056,23 @@ contains
            do fc = 1, num_soilc
              c = filter_soilc(fc)
              if ( decomp_cascade_con%spinup_factor(i_litr1) > 1._r8) decomp_k(c,j,i_litr1) = decomp_k(c,j,i_litr1)  &
-	       / cnstate_vars%scalaravg_col(c)
+               / cnstate_vars%scalaravg_col(c,j) 
              if ( decomp_cascade_con%spinup_factor(i_litr2) > 1._r8) decomp_k(c,j,i_litr2) = decomp_k(c,j,i_litr2)  &
-	       / cnstate_vars%scalaravg_col(c)
+               / cnstate_vars%scalaravg_col(c,j) 
              if ( decomp_cascade_con%spinup_factor(i_litr3) > 1._r8) decomp_k(c,j,i_litr3) = decomp_k(c,j,i_litr3)  &
-                  / cnstate_vars%scalaravg_col(c)
+                  / cnstate_vars%scalaravg_col(c,j) 
              if ( .not. use_ed ) then
                 if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
-                     / cnstate_vars%scalaravg_col(c)
+                     / cnstate_vars%scalaravg_col(c,j) 
              endif
              if ( decomp_cascade_con%spinup_factor(i_soil1) > 1._r8) decomp_k(c,j,i_soil1) = decomp_k(c,j,i_soil1)  &
-	       / cnstate_vars%scalaravg_col(c)
+               / cnstate_vars%scalaravg_col(c,j) 
              if ( decomp_cascade_con%spinup_factor(i_soil2) > 1._r8) decomp_k(c,j,i_soil2) = decomp_k(c,j,i_soil2)  &
-	       / cnstate_vars%scalaravg_col(c)
+               / cnstate_vars%scalaravg_col(c,j) 
              if ( decomp_cascade_con%spinup_factor(i_soil3) > 1._r8) decomp_k(c,j,i_soil3) = decomp_k(c,j,i_soil3)  &
-	       / cnstate_vars%scalaravg_col(c)
+               / cnstate_vars%scalaravg_col(c,j) 
              if ( decomp_cascade_con%spinup_factor(i_soil4) > 1._r8) decomp_k(c,j,i_soil4) = decomp_k(c,j,i_soil4)  &
-	       / cnstate_vars%scalaravg_col(c)
+               / cnstate_vars%scalaravg_col(c,j) 
            end do
          end do
        end if    
