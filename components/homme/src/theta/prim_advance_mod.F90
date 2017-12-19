@@ -1069,10 +1069,12 @@ contains
   real (kind=real_kind) :: vort(np,np,nlev)           ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
   real (kind=real_kind) :: pnh(np,np,nlev)            ! nh (nonydro) pressure
-  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)           
+  real (kind=real_kind) :: dpnh_i(np,np,nlevp)
+  real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)          ! exner nh pressure
-  real (kind=real_kind) :: dpnh_dp(np,np,nlev)        ! dpnh / dp3d
-  real (kind=real_kind) :: dpnh_dp_i(np,np,nlev)      ! dpnh_dp at interfaces
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev)        ! dpnh / dp3d at levels
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)      ! dpnh / dp3d at interfaces
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
   real (kind=real_kind) :: KE(np,np,nlev)             ! Kinetic energy
   real (kind=real_kind) :: gradexner(np,np,2,nlev)    ! grad(p^kappa)
@@ -1115,10 +1117,11 @@ contains
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
-     phi => elem(ie)%state%phinh_i(:,:,1:nlevp,n0)
-
+     phi => elem(ie)%state%phinh_i(:,:,1:nlev,n0)
+   
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
 
+     ! should any averaging being done on phi here???
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
              kappa_star,pnh,dpnh,exner)
 
@@ -1212,9 +1215,11 @@ contains
         ! ===========================================================
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
         ! ==============================================
-        ! TODO: remove theta from s_state and s_vadv
-        s_state(:,:,:,1)=elem(ie)%state%w_i(:,:,1:nlev,n0)
-        s_state(:,:,:,2)=phi
+        ! average phi and w at interfaces???
+        do k = 1,nlev
+          s_state(:,:,k,1)=(elem(ie)%state%w_i(:,:,k,n0)+elem(ie)%state%w_i(:,:,k+1,n0))/2
+          s_state(:,:,k,2)=(phi(:,:,k)+phi(:,:,k+1))/2
+        enddo
         call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,2,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
         !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
         !call preq_vertadv_upwind(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
@@ -1259,18 +1264,22 @@ contains
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
      ! ================================            
-     ! average to get horizontal velocity at intefaces
+     ! average to get horizontal velocity, dp3d, and dpnh from levels to interfaces
      ! ================================
      vi(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)
 #if (defined COLUMN_OPENMP)
      !$omp parallel do private(k)          
-     do k=2,nlev-1                                                                      
+     do k=2,nlev                                                                     
        vi(:,:,1:2,k) = (elem(ie)%state%v(:,:,1:2,k,n0)+  elem(ie)%state%v(:,:,1:2,k-1,n0))/2
+       dp3d_i(:,:,k-1) = (dp3d(:,:,k)+dp3d(:,:,k-1))/2
+       dpnh_i(:,:,k-1) = (dpnh(:,:,k)+dpnh(:,:,k-1))/2
      enddo
 #endif
      vi(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
-
-
+     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+     dpnh_i(:,:,nlevp) = dpnh(:,:,nlev)
+     dpnh_dp_i(:,:,:) = dpnh_i(:,:,:)/dp3d_i(:,:,:)
+     ! this is computed here to avoid computing gradphi twice at every step of the following vertloop
      gradphinh_i(:,:,:,1) = gradient_sphere(phi(:,:,1),deriv,elem(ie)%Dinv)
 
      ! ==============================================
@@ -1286,13 +1295,10 @@ contains
         ! w,theta,phi tendencies:
         ! ================================================
         vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
+ 
         v_gradw(:,:,k) = vi(:,:,1,k)*vtemp(:,:,1) + vi(:,:,2,k)*vtemp(:,:,2)
-        if (k.eq.1) then
-          dpnh_dp_i(:,:,k) = dpnh_dp_i(:,:,k)
-        else
-          dpnh_dp_i(:,:,k) = (dpnh_dp(:,:,k)+dpnh_dp(:,:,k-1))/2
-        endif
-        stens(:,:,k,1) = (-s_vadv(:,:,k,1) - v_gradw(:,:,k))*scale1 - scale2*g*(1-dpnh_dp(:,:,k) )
+ 
+        stens(:,:,k,1) = (-s_vadv(:,:,k,1) - v_gradw(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
         v_theta(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*               &
           elem(ie)%state%theta_dp_cp(:,:,k,n0)
         v_theta(:,:,2,k) =                                             &
@@ -1300,18 +1306,19 @@ contains
           *elem(ie)%state%theta_dp_cp(:,:,k,n0)
         div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
         stens(:,:,k,3)=(-s_vadv(:,:,k,3)-div_v_theta(:,:,k))*scale1
+        ! compute gradphi at interfaces and then average to levels
         if (k.lt.nlev) then  
           gradphinh_i(:,:,:,k+1) = gradient_sphere(phi(:,:,k+1),deriv,elem(ie)%Dinv)
-          gradphinh(:,:,:,k) = (gradphinh_i(:,:,:,k)+gradphinh_i(:,:,:,k+1))/2
+          gradphinh(:,:,:,k)     = (gradphinh_i(:,:,:,k)+gradphinh_i(:,:,:,k+1))/2
         else
-          gradphinh(:,:,:,k) = (gradphinh_i(:,:,:,k)+elem(ie)%derived%gradphis(:,:,:))/2
+          gradphinh(:,:,:,k)     = (gradphinh_i(:,:,:,k)+elem(ie)%derived%gradphis(:,:,:))/2
         endif
 
         v_gradphinh_i(:,:,k) = vi(:,:,1,k)*gradphinh_i(:,:,1,k) &
              +vi(:,:,2,k)*gradphinh_i(:,:,2,k) 
 
-        ! use of s_vadv(:,:,k,2) here is correct since this corresponds to etadot d(phi)/deta
-        stens(:,:,k,2) =  (-s_vadv(:,:,k,2) - v_gradphinh_i(:,:,k))*scale1 + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
+        stens(:,:,k,2) =  (-s_vadv(:,:,k,2) - v_gradphinh_i(:,:,k))*scale1 &
+          + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
 
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
