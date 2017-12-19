@@ -28,7 +28,7 @@ class Grids(GenericXML):
         if self._version == 1.0:
             gridnames = ["atm", "lnd", "ocnice", "rof", "mask", "glc", "wav"]
         elif self._version >= 2.0:
-            nodes = self.get_children("grid")
+            nodes = self.scan_children("grid")
             gridnames = []
             for node in nodes:
                 gn = self.get(node, "name")
