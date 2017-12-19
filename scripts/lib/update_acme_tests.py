@@ -86,7 +86,7 @@ _TEST_SUITES = {
 
     "acme_atm_developer" : (None, None,
                             ("SMS_D_Ln5.ne4_ne4.FC5",
-                             "ERS_Ln9.ne4_ne4.FC5AV1C-L",
+                             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
                              ("SMS.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
                              "SMS_R_Ld5.T42_T42.FSCM5A97",
@@ -144,6 +144,7 @@ _TEST_SUITES = {
 
     "acme_integration" : (("acme_developer", "acme_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
+                           "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
                            "PET.f19_g16.X",
                            "PET.f45_g37_rx1.A",
