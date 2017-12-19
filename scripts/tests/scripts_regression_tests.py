@@ -1797,7 +1797,7 @@ class MockMachines(object):
         """Assume all MPILIB settings are valid."""
         return True
 
-    def get_default_MPIlib(self):
+    def get_default_MPIlib(self, attributes=None):
         return "mpich2"
 
     def get_default_compiler(self):
@@ -1912,7 +1912,7 @@ query:
             query_result = output.read().strip()
 
         # Clean up the Makefiles.
-        shutil.rmtree(temp_dir)
+#        shutil.rmtree(temp_dir)
 
         return query_result
 
@@ -2192,8 +2192,8 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>"""
         xml2 = """<compiler COMPILER="gnu"><SUPPORTS_CXX>TRUE</SUPPORTS_CXX></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("SUPPORTS_CXX", "FALSE")
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE", env={"COMPILER": "gnu"})
+        tester.assert_variable_equals("SUPPORTS_CXX", "FALSE")
 
     def test_base_flags(self):
         """Test that we get "base" compiler flags."""

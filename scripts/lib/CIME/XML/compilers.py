@@ -42,7 +42,10 @@ class Compilers(GenericXML):
         self.compiler       = compiler
 
         if mpilib is None:
-            mpilib = machobj.get_default_MPIlib(attributes={'compiler':compiler})
+            if compiler is None:
+                mpilib = machobj.get_default_MPIlib()
+            else:
+                mpilib = machobj.get_default_MPIlib(attributes={'compiler':compiler})
         self.mpilib = mpilib
 
         self.compiler_nodes = None # Listed from last to first
