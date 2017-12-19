@@ -1298,12 +1298,10 @@ def find_system_test(testname, case):
     else:
         components = ["any"]
         components.extend( case.get_compset_components())
-        env_test = case.get_env("test")
         fdir = []
         for component in components:
-            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+            tdir = case.get_value("SYSTEM_TESTS_DIR",
                                       attribute={"component":component})
-
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
