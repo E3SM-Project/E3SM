@@ -46,12 +46,12 @@ contains
       ! compute gradphi at the model surface
       elem(ie)%derived%gradphis(:,:,:) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
       ! compute w_i(nlevp)
-      elem(ie)%state%w_i(:,:,nlevp,1) = (&
-         elem(ie)%state%v(:,:,1,nlev,1)*elem(ie)%derived%gradphis(:,:,1) + &
-         elem(ie)%state%v(:,:,2,nlev,1)*elem(ie)%derived%gradphis(:,:,2))/g
+      elem(ie)%state%w_i(:,:,nlevp,tl%n0) = (&
+         elem(ie)%state%v(:,:,1,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,1) + &
+         elem(ie)%state%v(:,:,2,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,2))/g
 
       ! assign phinh_i(nlevp) to be phis
-      elem(ie)%state%phinh_i(:,:,nlevp,1) = elem(ie)%state%phis(:,:)
+      elem(ie)%state%phinh_i(:,:,nlevp,tl%n0) = elem(ie)%state%phis(:,:)
     enddo 
 
     ! other theta specific model initialization should go here
