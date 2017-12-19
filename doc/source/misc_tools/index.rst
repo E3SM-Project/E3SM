@@ -17,13 +17,10 @@ tools that are necessary and/or useful when building a climate model.  Guides fo
    :numbered:
 
 
-Statistical Ensemble Test
-
-Mapping Tools
-
-cprnc
-
-load-balancing-tool.rst
+   Statistical Ensemble Test
+   Mapping Tools
+   cprnc
+   load-balancing-tool.rst
 
 Indices and tables
 ==================
