@@ -341,6 +341,7 @@ CONTAINS
     use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
     use seq_comm_mct, only: num_inst_wav
     use esp_utils,    only: esp_pio_modify_variable
+    use shr_cal_mod, only: shr_cal_ymdtod2string
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -374,8 +375,7 @@ CONTAINS
     integer(IN)                      :: stepno                ! step number
     character(len=CL)                :: calendar              ! calendar type
     character(len=CS)                :: varname
-    character(len=6)                 :: year_str
-
+    character(len=18)                :: date_str
     character(len=*), parameter      :: F00   = "('(desp_comp_run) ',8a)"
     character(len=*), parameter      :: F04   = "('(desp_comp_run) ',2a,2i8,'s')"
     character(len=*), parameter      :: subName = "(desp_comp_run) "
@@ -533,11 +533,10 @@ CONTAINS
 
     if (write_restart) then
       call t_startf('desp_restart')
-      write(year_str, '(i6.4)') yy
-      year_str = adjustl(year_str)
-      write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)")                     &
-           trim(case_name), '.desp'//trim(inst_suffix)//'.r.',                &
-           trim(year_str),'-',mm,'-',dd,'-',currentTOD,'.nc'
+      call shr_cal_ymdtod2string(yy,mm,dd,currentTOD, date_str)
+      write(rest_file,"(6a)")                     &
+           trim(case_name), '.desp',trim(inst_suffix),'.r.',                &
+           trim(date_str),'.nc'
       if (my_task == master_task) then
         nu = shr_file_getUnit()
         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
