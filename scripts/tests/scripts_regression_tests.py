@@ -1912,7 +1912,7 @@ query:
             query_result = output.read().strip()
 
         # Clean up the Makefiles.
-#        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir)
 
         return query_result
 
