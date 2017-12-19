@@ -255,7 +255,8 @@
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>mpt,openmpi</MPILIBS>
+    <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
+    <MPILIBS compiler="gnu" >openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
@@ -321,16 +322,17 @@
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">gnu/6.3.0</command>
-	<command name="load">openblas/0.2.14</command>
+	<command name="load">gnu/7.1.0</command>
       </modules>
       <modules mpilib="mpt">
 	<command name="load">mpt/2.16</command>
 	<command name="load">netcdf-mpi/4.4.1.1</command>
+      </modules>
+      <modules mpilib="mpt" compiler="intel">
 	<command name="load">pnetcdf/1.8.1</command>
       </modules>
       <modules mpilib="openmpi">
-	<command name="load">openmpi/2.1.0</command>
+	<command name="load">openmpi/3.0.0</command>
 	<command name="load">netcdf/4.4.1.1</command>
       </modules>
       <modules>

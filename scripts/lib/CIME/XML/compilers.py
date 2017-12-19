@@ -37,12 +37,16 @@ class Compilers(GenericXML):
 
         self.machine  = machobj.get_machine_name()
         self.os = machobj.get_value("OS")
-        if mpilib is None:
-            mpilib = machobj.get_default_MPIlib()
-        self.mpilib = mpilib
         if compiler is None:
             compiler = machobj.get_default_compiler()
         self.compiler       = compiler
+
+        if mpilib is None:
+            if compiler is None:
+                mpilib = machobj.get_default_MPIlib()
+            else:
+                mpilib = machobj.get_default_MPIlib(attributes={'compiler':compiler})
+        self.mpilib = mpilib
 
         self.compiler_nodes = None # Listed from last to first
         #Append the contents of $HOME/.cime/config_compilers.xml if it exists
