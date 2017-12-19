@@ -391,8 +391,12 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
 
-        expect(allow_undefined or result is not None,
-               "No variable {} found in case".format(item))
+        if len(self._files) == 1:
+            expect(allow_undefined or result is not None,
+                   "No variable {} found in file {}".format(item, self._files[0].filename))
+        else:
+            expect(allow_undefined or result is not None,
+                   "No variable {} found in case".format(item))
 
     def set_valid_values(self, item, valid_values):
         """
@@ -766,9 +770,13 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None):
+                  input_dir=None, driver=None):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
+
+        if driver:
+            self.set_lookup_value("COMP_INTERFACE", driver)
+
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
@@ -1022,9 +1030,9 @@ class Case(object):
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
-                     os.path.join(machines_dir,"Makefile"),
-                     os.path.join(machines_dir,"mkSrcfiles"),
-                     os.path.join(machines_dir,"mkDepends")]
+                     os.path.join(toolsdir,"Makefile"),
+                     os.path.join(toolsdir,"mkSrcfiles"),
+                     os.path.join(toolsdir,"mkDepends")]
 
         # used on Titan
         if os.path.isfile( os.path.join(toolsdir,"mdiag_reduce.csh") ):
@@ -1170,7 +1178,7 @@ class Case(object):
             return comp_user_mods
 
     def submit_jobs(self, no_batch=False, job=None, prereq=None, skip_pnl=False,
-                    mail_user=None, mail_type='never', batch_args=None,
+                    mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
         env_batch = self.get_env('batch')
         return env_batch.submit_jobs(self, no_batch=no_batch, job=job, user_prereq=prereq,
@@ -1235,7 +1243,7 @@ class Case(object):
         executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
 
         # special case for aprun
-        if executable is not None and "aprun" in executable and "titan" in self.get_value("MACH"):
+        if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
             aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)[0:2]
             expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return executable + aprun_args + " " + run_misc_suffix
@@ -1326,8 +1334,6 @@ class Case(object):
         gfile = GenericXML(infile=xmlfile)
         ftype = gfile.get_id()
 
-        self.flush(flushall=True)
-
         logger.warning("setting case file to {}".format(xmlfile))
         components = self.get_value("COMP_CLASSES")
         new_env_file = None
@@ -1407,7 +1413,7 @@ class Case(object):
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None):
+               input_dir=None, driver=None):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1423,7 +1429,7 @@ class Case(object):
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir)
+                           input_dir=input_dir, driver=driver)
 
             self.create_caseroot()
 
@@ -1451,3 +1457,20 @@ class Case(object):
                                  project=project, cime_output_root=cime_output_root,
                                  exeroot=exeroot, rundir=rundir,
                                  user_mods_dir=user_mods_dir)
+
+    def is_save_timing_dir_project(self,project):
+        """
+        Check whether the project is permitted to archive performance data in the location 
+        specified for the current machine
+        """
+        save_timing_dir_projects = self.get_value("SAVE_TIMING_DIR_PROJECTS")
+        if not save_timing_dir_projects:
+            return False
+        else:
+            save_timing_dir_projects = save_timing_dir_projects.split(",")
+            for save_timing_dir_project in save_timing_dir_projects:
+                regex = re.compile(save_timing_dir_project)
+                if regex.match(project):
+                    return True
+
+            return False

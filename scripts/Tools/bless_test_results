@@ -45,8 +45,6 @@ OR
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    default_baseline_root = _MACHINE.get_value("BASELINE_ROOT")
     default_compiler      = _MACHINE.get_default_compiler()
     scratch_root          = _MACHINE.get_value("CIME_OUTPUT_ROOT")
     default_testroot      = os.path.join(scratch_root)
@@ -59,11 +57,11 @@ OR
     parser.add_argument("--hist-only", action="store_true",
                         help="Only analyze history files.")
 
-    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
-                        help="Name of baselines to use, corresponds to branch used.")
+    parser.add_argument("-b", "--baseline-name",
+                        help="Name of baselines to use. Default will use BASELINE_NAME_CMP first if possible, otherwise branch name.")
 
-    parser.add_argument("--baseline-root", default=default_baseline_root,
-                        help="Root of baselines.")
+    parser.add_argument("--baseline-root",
+                        help="Root of baselines. Default will use the BASELINE_ROOT from the case.")
 
     parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="Compiler of run you want to bless")

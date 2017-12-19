@@ -58,7 +58,8 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Rr2o_liq
   public :: prep_ocn_get_mapper_Rr2o_ice
   public :: prep_ocn_get_mapper_SFi2o
-  public :: prep_ocn_get_mapper_Rg2o
+  public :: prep_ocn_get_mapper_Rg2o_liq
+  public :: prep_ocn_get_mapper_Rg2o_ice
   public :: prep_ocn_get_mapper_Sw2o
 
   !--------------------------------------------------------------------------
@@ -79,7 +80,8 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_Rr2o_liq
   type(seq_map), pointer :: mapper_Rr2o_ice
   type(seq_map), pointer :: mapper_SFi2o
-  type(seq_map), pointer :: mapper_Rg2o
+  type(seq_map), pointer :: mapper_Rg2o_liq
+  type(seq_map), pointer :: mapper_Rg2o_ice
   type(seq_map), pointer :: mapper_Sw2o
 
   ! attribute vectors
@@ -164,6 +166,7 @@ contains
          wav_gnam=wav_gnam             , &
          atm_nx=atm_nx                 , &
          atm_ny=atm_ny                 , &
+         glc_gnam=glc_gnam             , &
          esmf_map_flag=esmf_map_flag   )
 
     allocate(mapper_Sa2o)
@@ -173,7 +176,8 @@ contains
     allocate(mapper_Rr2o_liq)
     allocate(mapper_Rr2o_ice)
     allocate(mapper_SFi2o)
-    allocate(mapper_Rg2o)
+    allocate(mapper_Rg2o_liq)
+    allocate(mapper_Rg2o_ice)
     allocate(mapper_Sw2o)
 
     if (ocn_present) then
@@ -325,11 +329,19 @@ contains
        if (glc_c2_ocn) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Rg2o'
+             write(logunit,F00) 'Initializing mapper_Rg2o_liq'
           end if
-          call seq_map_init_rcfile(mapper_Rg2o, glc(1), ocn(1), &
-               'seq_maps.rc', 'glc2ocn_rmapname:', 'glc2ocn_rmaptype:',samegrid_og, &
-               'mapper_Rg2o initialization',esmf_map_flag)
+          call seq_map_init_rcfile(mapper_Rg2o_liq, glc(1), ocn(1), &
+               'seq_maps.rc', 'glc2ocn_liq_rmapname:', 'glc2ocn_liq_rmaptype:',samegrid_og, &
+               'mapper_Rg2o_liq initialization',esmf_map_flag)
+
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Rg2o_ice'
+          end if
+          call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
+               'seq_maps.rc', 'glc2ocn_ice_rmapname:', 'glc2ocn_ice_rmaptype:',samegrid_og, &
+               'mapper_Rg2o_ice initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -1237,7 +1249,11 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
-       call seq_map_map(mapper_Rg2o, g2x_gx, g2x_ox(egi), norm=.true.)
+       call seq_map_map(mapper_Rg2o_liq, g2x_gx, g2x_ox(egi), &
+            fldlist=seq_flds_g2o_liq_fluxes, norm=.false.)
+
+       call seq_map_map(mapper_Rg2o_ice, g2x_gx, g2x_ox(egi), &
+            fldlist=seq_flds_g2o_ice_fluxes, norm=.false.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
@@ -1338,10 +1354,15 @@ contains
     prep_ocn_get_mapper_SFi2o => mapper_SFi2o
   end function prep_ocn_get_mapper_SFi2o
 
-  function prep_ocn_get_mapper_Rg2o()
-    type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o
-    prep_ocn_get_mapper_Rg2o => mapper_Rg2o
-  end function prep_ocn_get_mapper_Rg2o
+  function prep_ocn_get_mapper_Rg2o_liq()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o_liq
+    prep_ocn_get_mapper_Rg2o_liq => mapper_Rg2o_liq
+  end function prep_ocn_get_mapper_Rg2o_liq
+
+  function prep_ocn_get_mapper_Rg2o_ice()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Rg2o_ice
+    prep_ocn_get_mapper_Rg2o_ice => mapper_Rg2o_ice
+  end function prep_ocn_get_mapper_Rg2o_ice
 
   function prep_ocn_get_mapper_Sw2o()
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o

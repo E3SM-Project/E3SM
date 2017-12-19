@@ -40,28 +40,30 @@ class PRE(SystemTestsCompareTwo):
     def _case_one_setup(self):
     ###########################################################################
         case_setup(self._case, test_mode=True, reset=True)
-        self._stopopt = self._case.get_value("STOP_OPTION")
-        self._stopn = self._case.get_value("STOP_N")
 
     ###########################################################################
     def _case_two_setup(self):
     ###########################################################################
         # Set up a pause/resume run
-        self._case.set_value("STOP_OPTION", self._stopopt)
-        self._case.set_value("STOP_N", self._stopn)
+        stopopt = self._case1.get_value("STOP_OPTION")
+        stopn = self._case1.get_value("STOP_N")
+        self._case.set_value("STOP_OPTION", stopopt)
+        self._case.set_value("STOP_N", stopn)
         self._case.set_value("ESP_RUN_ON_PAUSE", "TRUE")
-        if self._stopn > 3:
+        if stopn > 3:
             pausen = 2
         else:
             pausen = 1
         # End if
 
-        self._case.set_value("PAUSE_OPTION", self._stopopt)
+        self._case.set_value("PAUSE_OPTION", stopopt)
         self._case.set_value("PAUSE_N", pausen)
-        comps = [ x.lower() for x in self._case.get_values("COMP_CLASSES") ]
-        pcl = self._case.get_value("PAUSE_COMPONENT_LIST")
-        expect(pcl == "all" or set(pcl.split(':')).issubset(comps),
-               "PRE ERROR: Invalid PAUSE_COMPONENT_LIST, '{}'".format(pcl))
+        comps = self._case.get_values("COMP_CLASSES")
+        data_assimilation = []
+        for comp in comps:
+            data_assimilation.append(self._case.get_value("DATA_ASSIMILATION_{}".format(comp)))
+
+        expect(any(data_assimilation), "No Data_Assimilation flag is set")
 
         self._case.flush()
 
@@ -78,25 +80,20 @@ class PRE(SystemTestsCompareTwo):
         self._activate_case2()
         rundir2 = self._case.get_value("RUNDIR")
         compare_ok = True
-        pause_comps = self._case.get_value("PAUSE_COMPONENT_LIST")
-        expect((pause_comps != 'none'), "Pause/Resume (PRE) test has no pause components")
-        if pause_comps == 'all':
-            pause_comps = self._case.get_values("COMP_CLASSES")
-        else:
-            pause_comps = pause_comps.split(':')
-
         multi_driver = self._case.get_value("MULTI_DRIVER")
-
-        for comp in pause_comps:
-            if comp == "cpl":
+        comps = self._case.get_values("COMP_CLASSES")
+        for comp in comps:
+            if not self._case.get_value("DATA_ASSIMILATION_{}".format(comp)):
+                continue
+            if comp == "CPL":
                 if multi_driver:
                     ninst = self._case.get_value("NINST_MAX")
                 else:
                     ninst = 1
             else:
-                ninst = self._case.get_value("NINST_{}".format(comp.upper()))
+                ninst = self._case.get_value("NINST_{}".format(comp))
 
-            comp_name = self._case.get_value('COMP_{}'.format(comp.upper()))
+            comp_name = self._case.get_value('COMP_{}'.format(comp))
             for index in range(1,ninst+1):
                 if ninst == 1:
                     rname = '*.{}.r.*'.format(comp_name)

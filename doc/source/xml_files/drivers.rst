@@ -25,11 +25,11 @@ XML variables and component descriptions specific to the driver/coupler
 
 .. literalinclude:: ../../../src/drivers/mct/cime_config/config_component.xml
 
-XML variables and component descriptions specific to the ACME driver/coupler
+XML variables and component descriptions specific to the E3SM driver/coupler
 
 .. literalinclude:: ../../../src/drivers/mct/cime_config/config_component_acme.xml
 
-XML variables and component descriptions specific to the ACME driver/coupler
+XML variables and component descriptions specific to the E3SM driver/coupler
 
 .. literalinclude:: ../../../src/drivers/mct/cime_config/config_component_cesm.xml
 

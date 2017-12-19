@@ -630,49 +630,14 @@
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
-          <ntasks_atm>64</ntasks_atm>
-          <ntasks_lnd>64</ntasks_lnd>
-          <ntasks_rof>64</ntasks_rof>
-          <ntasks_ice>64</ntasks_ice>
-          <ntasks_ocn>64</ntasks_ocn>
-          <ntasks_glc>64</ntasks_glc>
-          <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>64</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-    <mach name="sandia-srn-sems">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>64</ntasks_atm>
-          <ntasks_lnd>64</ntasks_lnd>
-          <ntasks_rof>64</ntasks_rof>
-          <ntasks_ice>64</ntasks_ice>
-          <ntasks_ocn>64</ntasks_ocn>
-          <ntasks_glc>64</ntasks_glc>
-          <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>64</ntasks_cpl>
+          <ntasks_atm>48</ntasks_atm>
+          <ntasks_lnd>48</ntasks_lnd>
+          <ntasks_rof>48</ntasks_rof>
+          <ntasks_ice>48</ntasks_ice>
+          <ntasks_ocn>48</ntasks_ocn>
+          <ntasks_glc>48</ntasks_glc>
+          <ntasks_wav>48</ntasks_wav>
+          <ntasks_cpl>48</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -1131,80 +1096,6 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30_r%r05_m%oEC60to30_g%null_w%null">
-    <mach name="redsky">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>512</ntasks_atm>
-          <ntasks_lnd>512</ntasks_lnd>
-          <ntasks_rof>512</ntasks_rof>
-          <ntasks_ice>512</ntasks_ice>
-          <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_glc>512</ntasks_glc>
-          <ntasks_wav>512</ntasks_wav>
-          <ntasks_cpl>512</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="any">
-    <mach name="redsky">
-      <pes compset="MPASLIALB" pesize="any">
-        <comment>MPASLIALB.</comment>
-        <ntasks>
-          <ntasks_atm>1</ntasks_atm>
-          <ntasks_lnd>1</ntasks_lnd>
-          <ntasks_rof>1</ntasks_rof>
-          <ntasks_ice>1</ntasks_ice>
-          <ntasks_ocn>1</ntasks_ocn>
-          <ntasks_glc>64</ntasks_glc>
-          <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>64</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
   <grid name="a%0.9x1.25">
     <mach name="any">
       <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MPASLISIA.+SWAV" pesize="any">
@@ -1280,7 +1171,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="redsky|skybridge|chama">
+    <mach name="sandiatoss3">
       <pes compset="any" pesize="T">
         <comment>none</comment>
         <ntasks>
@@ -1613,7 +1504,7 @@
     </mach>
   </grid>
   <grid name="a%T62">
-    <mach name="edison">
+    <mach name="edison|melvin">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -1948,6 +1839,43 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5">
+    <mach name="melvin">
+      <pes compset="any" pesize="any">
+        <comment>none</comment>
+        <ntasks>
+          <ntasks_atm>48</ntasks_atm>
+          <ntasks_lnd>48</ntasks_lnd>
+          <ntasks_rof>48</ntasks_rof>
+          <ntasks_ice>48</ntasks_ice>
+          <ntasks_ocn>48</ntasks_ocn>
+          <ntasks_glc>48</ntasks_glc>
+          <ntasks_wav>48</ntasks_wav>
+          <ntasks_cpl>48</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%1.9x2.5">
     <mach name="edison|eos">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -2147,6 +2075,44 @@
           <ntasks_glc>64</ntasks_glc>
           <ntasks_wav>64</ntasks_wav>
           <ntasks_cpl>64</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+
+  <grid name="a%0.9x1.25">
+    <mach name="melvin">
+      <pes compset="any" pesize="any">
+        <comment>none</comment>
+        <ntasks>
+          <ntasks_atm>48</ntasks_atm>
+          <ntasks_lnd>48</ntasks_lnd>
+          <ntasks_rof>48</ntasks_rof>
+          <ntasks_ice>48</ntasks_ice>
+          <ntasks_ocn>48</ntasks_ocn>
+          <ntasks_glc>48</ntasks_glc>
+          <ntasks_wav>48</ntasks_wav>
+          <ntasks_cpl>48</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -2433,7 +2399,7 @@
     </mach>
   </grid>
   <grid name="a%360x720cru">
-    <mach name="edison">
+    <mach name="edison|melvin">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2470,7 +2436,7 @@
     </mach>
   </grid>
   <grid name="a%360x720cru">
-    <mach name="redsky|cori-knl">
+    <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4640,37 +4606,41 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="mira|cetus">
-      <pes compset=".*CAM5.+MPAS.+" pesize="any">
-        <comment>ne30-wcycl case</comment>
+      <pes compset="any" pesize="any">
+        <comment>ne30 grid on 128x16x4 PEs</comment>
+        <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>1916</ntasks_atm>
-          <ntasks_lnd>120</ntasks_lnd>
-          <ntasks_rof>120</ntasks_rof>
-          <ntasks_ice>1796</ntasks_ice>
-          <ntasks_ocn>132</ntasks_ocn>
+          <ntasks_atm>1350</ntasks_atm>
+          <ntasks_lnd>176</ntasks_lnd>
+          <ntasks_rof>176</ntasks_rof>
+          <ntasks_ice>1360</ntasks_ice>
+          <ntasks_ocn>512</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
-          <ntasks_wav>1916</ntasks_wav>
-          <ntasks_cpl>1916</ntasks_cpl>
+          <ntasks_wav>1</ntasks_wav>
+          <ntasks_cpl>1360</ntasks_cpl>
+          <ntasks_esp>1</ntasks_esp>
         </ntasks>
         <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>16</nthrds_rof>
-          <nthrds_ice>16</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_atm>4</nthrds_atm>
+          <nthrds_lnd>4</nthrds_lnd>
+          <nthrds_rof>4</nthrds_rof>
+          <nthrds_ice>4</nthrds_ice>
+          <nthrds_ocn>4</nthrds_ocn>
           <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>16</nthrds_wav>
-          <nthrds_cpl>16</nthrds_cpl>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>4</nthrds_cpl>
+          <nthrds_esp>1</nthrds_esp>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>120</rootpe_ice>
-          <rootpe_ocn>1916</rootpe_ocn>
+          <rootpe_lnd>1360</rootpe_lnd>
+          <rootpe_rof>1360</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>1536</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_esp>0</rootpe_esp>
         </rootpe>
       </pes>
     </mach>
@@ -6663,15 +6633,13 @@
     <mach name="anvil">
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 32 nodes pure-MPI </comment>
-        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>64</ntasks_lnd>
-          <ntasks_rof>64</ntasks_rof>
-          <ntasks_ice>640</ntasks_ice>
-          <ntasks_ocn>320</ntasks_ocn>
-          <ntasks_cpl>640</ntasks_cpl>
+          <ntasks_lnd>72</ntasks_lnd>
+          <ntasks_rof>72</ntasks_rof>
+          <ntasks_ice>720</ntasks_ice>
+          <ntasks_ocn>360</ntasks_ocn>
+          <ntasks_cpl>720</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
@@ -6687,26 +6655,24 @@
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>640</rootpe_lnd>
-          <rootpe_rof>640</rootpe_rof>
+          <rootpe_lnd>720</rootpe_lnd>
+          <rootpe_rof>720</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>704</rootpe_ocn>
+          <rootpe_ocn>792</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 59 nodes pure-MPI </comment>
-        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 54 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>352</ntasks_lnd>
-          <ntasks_rof>352</ntasks_rof>
-          <ntasks_ice>1024</ntasks_ice>
-          <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_cpl>1024</ntasks_cpl>
+          <ntasks_lnd>216</ntasks_lnd>
+          <ntasks_rof>216</ntasks_rof>
+          <ntasks_ice>1152</ntasks_ice>
+          <ntasks_ocn>576</ntasks_ocn>
+          <ntasks_cpl>1152</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
@@ -6722,26 +6688,24 @@
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1024</rootpe_lnd>
-          <rootpe_rof>1024</rootpe_rof>
+          <rootpe_lnd>1152</rootpe_lnd>
+          <rootpe_rof>1152</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1376</rootpe_ocn>
+          <rootpe_ocn>1368</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 115 nodes pure-MPI </comment>
-        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 105 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
-          <ntasks_lnd>320</ntasks_lnd>
-          <ntasks_rof>320</ntasks_rof>
-          <ntasks_ice>1536</ntasks_ice>
-          <ntasks_ocn>960</ntasks_ocn>
-          <ntasks_cpl>2400</ntasks_cpl>
+          <ntasks_lnd>540</ntasks_lnd>
+          <ntasks_rof>540</ntasks_rof>
+          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_ocn>1080</ntasks_ocn>
+          <ntasks_cpl>2160</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
@@ -6757,10 +6721,10 @@
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>2400</rootpe_lnd>
-          <rootpe_rof>2400</rootpe_rof>
+          <rootpe_lnd>2160</rootpe_lnd>
+          <rootpe_rof>2160</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>2720</rootpe_ocn>
+          <rootpe_ocn>2700</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
@@ -6872,7 +6836,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
-    <mach name="skybridge|chama">
+    <mach name="sandiatoss3">
       <pes compset="any"  pesize="S">
         <comment>none</comment>
         <ntasks>
@@ -6975,7 +6939,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
-    <mach name="melvin|sandia-srn-sems">
+    <mach name="melvin">
       <pes compset="any"  pesize="any">
         <comment>none</comment>
         <ntasks>
