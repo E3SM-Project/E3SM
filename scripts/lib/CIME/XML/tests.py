@@ -29,7 +29,7 @@ class Tests(GenericXML):
 
     def get_test_node(self, testname):
         logger.debug("Get settings for {}".format(testname))
-        node = self.get_child("test",{"NAME":testname})
+        node = self.get_child("test",{"NAME":testname}, root=self.get_child("testlist"))
         logger.debug("Found {}".format(self.text(node)))
         return node
 
@@ -41,7 +41,10 @@ class Tests(GenericXML):
         information for tests with the attribute
         INFRASTRUCTURE_TEST="TRUE".
         """
-        all_tests = self.get_children("test")
+        all_tests = []
+        root = self.get_optional_child("testlist")
+        if root is not None:
+            all_tests = self.get_children("test", root=root)
         for one_test in all_tests:
             if skip_infrastructure_tests:
                 infrastructure_test = self.get(one_test, "INFRASTRUCTURE_TEST")
