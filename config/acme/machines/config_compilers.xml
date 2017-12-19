@@ -1078,6 +1078,8 @@ for mct, etc.
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_FFLAGS> -DSUMMITDEV_PGI </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT> -DSUMMITDEV_PGI </ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS> $(shell nc-config --libs) $(shell nf-config --flibs) -L$OLCF_NETLIB_LAPACK_ROOT/lib -lblas -llapack </ADD_LDFLAGS>
   <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>
   <MPIFC> mpif90 </MPIFC>
