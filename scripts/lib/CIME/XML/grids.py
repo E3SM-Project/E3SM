@@ -28,7 +28,9 @@ class Grids(GenericXML):
         if self._version == 1.0:
             gridnames = ["atm", "lnd", "ocnice", "rof", "mask", "glc", "wav"]
         elif self._version >= 2.0:
-            nodes = self.get_children("grid")
+            grids = self.get_child("grids")
+            model_grid_defaults = self.get_child("model_grid_defaults", root=grids)
+            nodes = self.get_children("grid", root=model_grid_defaults)
             gridnames = []
             for node in nodes:
                 gn = self.get(node, "name")
@@ -129,9 +131,9 @@ class Grids(GenericXML):
             model_grid[comp_gridname] = None
 
         # (1) set array of component grid defaults that match current compset
-
-        grid_defaults_node = self.get_child("model_grid_defaults")
-        for grid_node in grid_defaults_node:
+        grids_node = self.get_child("grids")
+        grid_defaults_node = self.get_child("model_grid_defaults", root=grids_node)
+        for grid_node in self.get_children("grid", root=grid_defaults_node):
             name_attrib = self.get(grid_node, "name")
             compset_attrib = self.get(grid_node, "compset")
             compset_match = re.search(compset_attrib, compset)
@@ -142,7 +144,7 @@ class Grids(GenericXML):
         # input grid name -  if there is an alias match determine if the "compset" and "not_compset"
         # regular expression attributes match the match the input compset
 
-        model_gridnodes = self.get_children("model_grid")
+        model_gridnodes = self.get_children("model_grid", root=grids_node)
         model_gridnode = None
         foundalias = False
         for node in model_gridnodes:
@@ -249,7 +251,8 @@ class Grids(GenericXML):
                 grid_name_nonlev = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
             # Determine all domain information search for the grid name with no level suffix in config_grids.xml
-            domain_node = self.get_optional_child("domain", attributes={"name":grid_name_nonlev})
+            domain_node = self.get_optional_child("domain", attributes={"name":grid_name_nonlev},
+                                                  root=self.get_child("domains"))
             if domain_node is not None:
                 comp_name = grid[0].upper()
                 if not comp_name == "MASK":
@@ -407,7 +410,7 @@ class Grids(GenericXML):
                 if gridname == "atm_grid":
                     atm_gridvalue = gridvalue
                 other_gridvalue = component_grids[other_grid[1]]
-                gridmap_nodes = self.get_children("gridmap",
+                gridmap_nodes = self.get_children("gridmap", root=self.get_child("gridmaps"),
                                                attributes={gridname:gridvalue, other_gridname:other_gridvalue})
                 for gridmap_node in gridmap_nodes:
                     expect(len(self.attrib(gridmap_node)) == 2,
