@@ -180,7 +180,7 @@ class GenericXML(object):
         # Remove
         if not no_validate:
             validate = self.scan_children(name, attributes=attributes, root=root)
-            assert validate == children, "Validation failed for {}, {}".format(name, attributes)
+            assert validate == children, "Validation failed for {}, {}\nScan found {} elements, get_children found {}".format(name, attributes, len(validate), len(children))
             # if validate != children:
             #     import pdb
             #     pdb.set_trace()
