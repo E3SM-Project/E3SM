@@ -287,6 +287,10 @@ class Machines(GenericXML):
 
         return None
 
+    def set_value(self, vid, value, subgroup=None, ignore_type=True, root=None):
+        return(super(Machines, self).set_value(vid, value, subgroup=self.machine_node,
+                                               ignore_type=ignore_type))
+
     def print_values(self):
         # write out machines
         machines = self.get_children("machine")
