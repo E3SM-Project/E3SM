@@ -20,7 +20,7 @@ module seq_hist_mod
    use shr_kind_mod,      only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN
    use shr_kind_mod,      only: CL => SHR_KIND_CL, CS => SHR_KIND_CS
    use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
-   use shr_cal_mod,       only: shr_cal_date2ymd
+   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_datetod2string, shr_cal_ymdtod2string
    use mct_mod           ! adds mct_ prefix to mct lib
    use ESMF
 
@@ -168,7 +168,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    integer(IN)   :: lsize        ! local size of an aVect
    real(r8)      :: tbnds(2)     ! CF1.0 time bounds
    logical       :: whead,wdata  ! for writing restart/history cdf files
-   character(len=6) :: year_char
+   character(len=18) :: date_str
    type(mct_gsMap), pointer :: gsmap
    type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
 !-------------------------------------------------------------------------------
@@ -214,10 +214,10 @@ subroutine seq_hist_write(infodata, EClock_d, &
    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod, &
         start_ymd=start_ymd, start_tod=start_tod, curr_time=curr_time, &
         calendar=calendar)
-   call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
-   write(year_char, '(i6.4)') yy
-   write(hist_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
-      trim(case_name), '.cpl'//cpl_inst_tag//'.hi.', trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
+   call shr_cal_datetod2string(date_str, curr_ymd, curr_tod)
+
+   write(hist_file,"(6a)") &
+      trim(case_name), '.cpl',cpl_inst_tag,'.hi.', trim(date_str),'.nc'
 
    time_units = 'days since ' &
         // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
@@ -445,6 +445,8 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
 
    integer(IN)    , save  :: cnt                 ! counts samples in tavg
    real(r8)       , save  :: tbnds(2)            ! CF1.0 time bounds
+   character(len=18) :: date_str
+   character(len=6) :: year_str
 
    logical        , save  :: first_call = .true. ! flags 1st call of this routine
 
@@ -764,22 +766,22 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
 
       call seq_infodata_GetData( infodata,  case_name=case_name)
       call seq_timemgr_EClockGetData( EClock_d,  prev_ymd=prev_ymd,  prev_tod=prev_tod)
+      call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
+      write(year_str,'(i6.4)') yy
+      year_str = adjustl(year_str)
       if (seq_timemgr_histavg_type == seq_timemgr_type_nyear) then
-         call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
-         write(hist_file, "(2a, i4.4, a)") &
-            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '.nc'
+         write(hist_file, "(6a)") &
+            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',trim(year_str), '.nc'
       elseif (seq_timemgr_histavg_type == seq_timemgr_type_nmonth) then
-         call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
-         write(hist_file, "(2a, i4.4, a, i2.2, a)") &
-            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '-', mm, '.nc'
+         write(hist_file, "(6a, i2.2, a)") &
+            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',trim(year_str), '-', mm, '.nc'
       elseif (seq_timemgr_histavg_type == seq_timemgr_type_nday) then
-         call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
-         write(hist_file, "(2a, i4.4, a, i2.2, a, i2.2, a)") &
-            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '-', mm, '-', dd, '.nc'
+         write(hist_file, "(6a, i2.2, a, i2.2, a)") &
+            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',  trim(year_str), '-', mm, '-', dd, '.nc'
       else
-         call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
-         write(hist_file, "(2a, i4.4, a, i2.2, a, i2.2, a, i5.5, a)") &
-            trim(case_name),  '.cpl'//cpl_inst_tag//'.ha.',  yy, '-', mm, '-', dd, '-', curr_tod, '.nc'
+         call shr_cal_datetod2string(date_str, curr_ymd, curr_tod)
+         write(hist_file, "(6a)") &
+            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',  trim(date_str), '.nc'
       endif
 
       time_units = 'days since ' &
@@ -1023,6 +1025,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
    logical                  :: lwrite_now
    logical                  :: whead, wdata  ! for writing restart/history cdf files
    real(r8)                 :: tbnds(2)
+   character(len=10) :: date_str
 
    integer(IN), parameter   :: maxout = 20
    integer(IN)       , save :: ntout = 0
@@ -1150,9 +1153,9 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
             if (present(yr_offset)) then
                yy = yy + yr_offset
             end if
-
-            write(hist_file(found), "(a, i4.4, a, i2.2, a, i2.2, a)") &
-                 trim(case_name)//'.cpl.h'//trim(aname)//'.',  yy, '-', mm, '-', dd, '.nc'
+            call shr_cal_ymdtod2string(date_str, yy, mm, dd)
+            write(hist_file(found), "(a6)") &
+                 trim(case_name),'.cpl.h',trim(aname),'.',trim(date_str), '.nc'
          else
             fk1 = 2
          endif
