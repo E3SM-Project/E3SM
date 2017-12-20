@@ -287,7 +287,7 @@ class Machines(GenericXML):
 
         return None
 
-    def set_value(self, vid, value, subgroup=None, ignore_type=True, root=None):
+    def set_value(self, vid, value, subgroup=None, ignore_type=True):
         tmproot = self.root
         self.root = self.machine_node
         result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
