@@ -326,7 +326,7 @@ class GenericXML(object):
         """
         ignore_type is not used in this flavor
         """
-        valnodes = self.get_children(vid, root=subgroup)
+        valnodes = self.get_children(vid)
         for node in valnodes:
             self.set_text(node, value)
 
