@@ -29,7 +29,7 @@ class Tests(GenericXML):
 
     def get_test_node(self, testname):
         logger.debug("Get settings for {}".format(testname))
-        node = self.get_child("test",{"NAME":testname}, root=self.get_child("testlist"))
+        node = self.get_child("test",{"NAME":testname})
         logger.debug("Found {}".format(self.text(node)))
         return node
 
