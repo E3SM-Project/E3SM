@@ -783,7 +783,7 @@ class TestCreateTestCommon(unittest.TestCase):
             print("Detected failed test or user request no teardown")
             print("Leaving files:")
             for file_to_clean in files_to_clean:
-                print(" ", file_to_clean)
+                print(" " + file_to_clean)
         else:
             # For batch machines need to avoid race condition as batch system
             # finishes I/O for the case.
@@ -1705,6 +1705,21 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         result = run_cmd_assert_result(self, "./xmlquery JOB_WALLCLOCK_TIME --subgroup=case.test --value", from_dir=casedir)
         self.assertEqual(result, "421:32:11")
+
+    ###########################################################################
+    def test_cime_case_test_custom_project(self):
+    ###########################################################################
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        machine, compiler = "melvin", "gnu" # have to use a machine both models know and one that doesn't put PROJECT in any key paths
+        self._create_test(["--no-setup", "--machine={}".format(machine), "--project=testproj", test_name], test_id=self._baseline_name,
+                          env_changes="unset CIME_GLOBAL_WALLTIME &&")
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery --value PROJECT --subgroup=case.test", from_dir=casedir)
+        self.assertEqual(result, "testproj")
 
     ###########################################################################
     def test_create_test_longname(self):
