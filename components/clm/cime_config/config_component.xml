@@ -130,6 +130,10 @@
       <value compset="_CLM.*_BGC%BPRP">prognostic</value>
       <value compset="20TR.*_DATM"    >diagnostic</value>
       <value compset="RCP.*_DATM"     >diagnostic</value>
+      <value compset="_CLM.*_BGC%BCRC">constant</value>
+      <value compset="_CLM.*_BGC%BCRD">constant</value>
+      <value compset="_CLM.*_BGC%BDRC">diagnostic</value>
+      <value compset="20TR.*_DATM.*_BGC%BC"    >constant</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
