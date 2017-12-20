@@ -18,7 +18,6 @@ tstep=600
 rsplit=3
 qsplit = 1
 tstep_type = 5
-energy_fixer  = -1
 integration   = "explicit"
 smooth        = 0
 nu=7e15

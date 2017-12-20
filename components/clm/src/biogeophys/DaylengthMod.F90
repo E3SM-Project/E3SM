@@ -6,7 +6,7 @@ module DaylengthMod
   !
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
-  use GridcellType , only : grc                
+  use GridcellType , only : grc_pp                
   !
   implicit none
   save
@@ -98,9 +98,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-    lat       => grc%lat,       & ! Input:   [real(r8) (:)] latitude (radians)
-    dayl      => grc%dayl,      & ! Output:  [real(r8) (:)] day length (s)
-    prev_dayl => grc%prev_dayl, & ! Output:  [real(r8) (:)] day length from previous time step (s)
+    lat       => grc_pp%lat,       & ! Input:   [real(r8) (:)] latitude (radians)
+    dayl      => grc_pp%dayl,      & ! Output:  [real(r8) (:)] day length (s)
+    prev_dayl => grc_pp%prev_dayl, & ! Output:  [real(r8) (:)] day length from previous time step (s)
 
     begg      => bounds%begg  , & ! beginning grid cell index
     endg      => bounds%endg    & ! ending grid cell index
@@ -133,9 +133,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-    lat       => grc%lat,       & ! Input:  [real(r8) (:)] latitude (radians)
-    dayl      => grc%dayl,      & ! InOut:  [real(r8) (:)] day length (s)
-    prev_dayl => grc%prev_dayl, & ! Output: [real(r8) (:)] day length from previous time step (s)
+    lat       => grc_pp%lat,       & ! Input:  [real(r8) (:)] latitude (radians)
+    dayl      => grc_pp%dayl,      & ! InOut:  [real(r8) (:)] day length (s)
+    prev_dayl => grc_pp%prev_dayl, & ! Output: [real(r8) (:)] day length from previous time step (s)
 
     begg      => bounds%begg  , & ! beginning grid cell index
     endg      => bounds%endg    & ! ending grid cell index

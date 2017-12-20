@@ -90,12 +90,19 @@ contains
 !-----------------------------------------------------------------------
 
     character(len=16) :: wpunits, sampling_seq
-    logical           :: history_amwg                  ! output the variables used by the AMWG diag package
+    logical           :: history_amwg          ! output the variables used by the AMWG diag package
+    logical           :: history_verbose       ! produce verbose history output
 
 
     !-----------------------------------------------------------------------
 
     cld_idx    = pbuf_get_index('CLD')
+
+    ! ----------------------------
+    ! determine default variables
+    ! ----------------------------
+    call phys_getopts( history_amwg_out = history_amwg, &
+                       history_verbose_out = history_verbose )
 
     if (mg_clouds) then
 
@@ -104,8 +111,6 @@ contains
        call addfld ('IWC', (/ 'lev' /), 'A', 'kg/m3', 'Grid box average ice water content'                      )
        call addfld ('LWC', (/ 'lev' /), 'A', 'kg/m3', 'Grid box average liquid water content'                   )
 
-       ! determine the add_default fields
-       call phys_getopts(history_amwg_out           = history_amwg) 
 
        if (history_amwg) then
           call add_default ('ICWMR', 1, ' ')
@@ -178,10 +183,6 @@ contains
 
     call cloud_cover_diags_init(sampling_seq)
 
-    ! ----------------------------
-    ! determine default variables
-    ! ----------------------------
-    call phys_getopts( history_amwg_out = history_amwg)
 
     if (history_amwg) then
        call add_default ('TGCLDLWP', 1, ' ')
@@ -190,7 +191,7 @@ contains
        if (camrt_rad) then
            call add_default ('EMIS', 1, ' ')
        else
-           call add_default ('EMISCLD', 1, ' ')
+           if (history_verbose) call add_default ('EMISCLD', 1, ' ')
        endif
     endif
 

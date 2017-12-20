@@ -20,8 +20,16 @@ class CaseFake(object):
             os.makedirs(case_root)
         self.set_value('CASEROOT', case_root)
         casename = os.path.basename(case_root)
+        # Typically, CIME_OUTPUT_ROOT is independent of the case. Here,
+        # we nest it under CASEROOT so that (1) tests don't interfere
+        # with each other; (2) a cleanup that removes CASEROOT will also
+        # remove CIME_OUTPUT_ROOT.
+        self.set_value('CIME_OUTPUT_ROOT',
+                       os.path.join(case_root, 'CIME_OUTPUT_ROOT'))
         self.set_value('CASE', casename)
         self.set_value('CASEBASEID', casename)
+        self.set_value('RUN_TYPE', 'startup')
+        self.set_exeroot()
         self.set_rundir()
 
     def get_value(self, item):
@@ -58,11 +66,13 @@ class CaseFake(object):
         newcase.set_value('CASE', newcasename)
         newcase.set_value('CASEBASEID', newcasename)
         newcase.set_value('CASEROOT', newcaseroot)
+        newcase.set_exeroot()
         newcase.set_rundir()
 
         return newcase
 
-    def create_clone(self, newcase, keepexe=False):
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
+                     cime_output_root=None, exeroot=None, rundir=None):
         # Need to disable unused-argument checking: keepexe is needed to match
         # the interface of Case, but is not used in this fake implementation
         #
@@ -75,6 +85,11 @@ class CaseFake(object):
             newcase (str): full path to the new case. This directory should not
                 already exist; it will be created
             keepexe (bool, optional): Ignored
+            mach_dir (str, optional): Ignored
+            project (str, optional): Ignored
+            cime_output_root (str, optional): New CIME_OUTPUT_ROOT for the clone
+            exeroot (str, optional): New EXEROOT for the clone
+            rundir (str, optional): New RUNDIR for the clone
 
         Returns the clone case object
         """
@@ -82,6 +97,12 @@ class CaseFake(object):
         newcasename = os.path.basename(newcase)
         os.makedirs(newcaseroot)
         clone = self.copy(newcasename = newcasename, newcaseroot = newcaseroot)
+        if cime_output_root is not None:
+            clone.set_value('CIME_OUTPUT_ROOT', cime_output_root)
+        if exeroot is not None:
+            clone.set_value('EXEROOT', exeroot)
+        if rundir is not None:
+            clone.set_value('RUNDIR', rundir)
 
         return clone
 
@@ -94,6 +115,13 @@ class CaseFake(object):
         """
         os.makedirs(self.get_value('RUNDIR'))
 
+    def set_exeroot(self):
+        """
+        Assumes CASEROOT is already set; sets an appropriate EXEROOT
+        (nested inside CASEROOT)
+        """
+        self.set_value('EXEROOT', os.path.join(self.get_value('CASEROOT'), 'bld'))
+
     def set_rundir(self):
         """
         Assumes CASEROOT is already set; sets an appropriate RUNDIR (nested
@@ -101,3 +129,11 @@ class CaseFake(object):
         """
         self.set_value('RUNDIR', os.path.join(self.get_value('CASEROOT'), 'run'))
 
+    def load_env(self, reset=False):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *_):
+        pass

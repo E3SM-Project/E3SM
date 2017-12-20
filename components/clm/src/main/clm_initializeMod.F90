@@ -18,15 +18,16 @@ module clm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use FatesInterfaceMod, only : set_fates_global_elements
+  use BeTRSimulationALM, only : create_betr_simulation_alm
   ! 
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
-  use GridcellType           , only : grc
+  use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp, top_es, top_ws
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use LandunitType           , only : lun_pp                
+  use ColumnType             , only : col_pp                
+  use VegetationType         , only : veg_pp                
   use clm_instMod
   !
   implicit none
@@ -277,16 +278,16 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
-    call grc%Init (bounds_proc%begg_all, bounds_proc%endg_all)
+    call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
     ! --ALM-v1: add initialization for topographic unit data types. 
     ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
     call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
     call top_es%Init (bounds_proc%begg, bounds_proc%endg) ! energy state
     call top_ws%Init (bounds_proc%begg, bounds_proc%endg) ! water state
     ! --end ALM-v1 block
-    call lun%Init (bounds_proc%begl_all, bounds_proc%endl_all)
-    call col%Init (bounds_proc%begc_all, bounds_proc%endc_all)
-    call pft%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+    call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
+    call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
+    call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
 
     ! Determine the number of active external models.
     call EMI_Determine_Active_EMs()
@@ -327,19 +328,19 @@ contains
     ! initialize glc_topo
     ! TODO - does this belong here?
     do c = bounds_proc%begc, bounds_proc%endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
-       if (lun%itype(l) == istice_mec) then
+       if (lun_pp%itype(l) == istice_mec) then
           ! For ice_mec landunits, initialize glc_topo based on surface dataset; this
           ! will get overwritten in the run loop by values sent from CISM
-          icemec_class = col_itype_to_icemec_class(col%itype(c))
-          col%glc_topo(c) = topo_glc_mec(g, icemec_class)
+          icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+          col_pp%glc_topo(c) = topo_glc_mec(g, icemec_class)
        else
           ! For other landunits, arbitrarily initialize glc_topo to 0 m; for landunits
           ! where this matters, this will get overwritten in the run loop by values sent
           ! from CISM
-          col%glc_topo(c) = 0._r8
+          col_pp%glc_topo(c) = 0._r8
        end if
     end do
 
@@ -356,7 +357,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
     use clm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -382,12 +383,11 @@ contains
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use CNEcosystemDynMod     , only : CNEcosystemDynInit
-    use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
     use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
-    use EcophysConType        , only : ecophysconInit 
+    use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
     use LakeCon               , only : LakeConInit 
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg
@@ -397,13 +397,11 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    use clm_varctl                          , only : use_bgc_interface, use_pflotran
-    use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
-    use betr_initializeMod    , only : betr_initialize
-    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
-    use betr_initializeMod    , only : bgc_reaction
+    use clm_varctl                          , only : use_clm_interface, use_pflotran
+    use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
+    use ALMbetrNLMod          , only : betr_namelist_buffer
     !
     ! !ARGUMENTS    
     implicit none
@@ -494,8 +492,8 @@ contains
 
     do g = bounds_proc%begg,bounds_proc%endg
        max_decl = 0.409571
-       if (grc%lat(g) < 0._r8) max_decl = -max_decl
-       grc%max_dayl(g) = daylength(grc%lat(g), max_decl)
+       if (grc_pp%lat(g) < 0._r8) max_decl = -max_decl
+       grc_pp%max_dayl(g) = daylength(grc_pp%lat(g), max_decl)
     end do
 
     ! History file variables
@@ -503,11 +501,11 @@ contains
     if (use_cn) then
        call hist_addfld1d (fname='DAYL',  units='s', &
             avgflag='A', long_name='daylength', &
-            ptr_gcell=grc%dayl, default='inactive')
+            ptr_gcell=grc_pp%dayl, default='inactive')
 
        call hist_addfld1d (fname='PREV_DAYL', units='s', &
             avgflag='A', long_name='daylength from previous timestep', &
-            ptr_gcell=grc%prev_dayl, default='inactive')
+            ptr_gcell=grc_pp%prev_dayl, default='inactive')
     end if
 
     ! ------------------------------------------------------------------------
@@ -520,22 +518,28 @@ contains
     ! First put in history calls for subgrid data structures - these cannot appear in the
     ! module for the subgrid data definition due to circular dependencies that are introduced
     
-    data2dptr => col%dz(:,-nlevsno+1:0)
-    col%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
+    data2dptr => col_pp%dz(:,-nlevsno+1:0)
+    col_pp%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
     call hist_addfld2d (fname='SNO_Z', units='m', type2d='levsno',  &
          avgflag='A', long_name='Snow layer thicknesses', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
-    col%zii(bounds_proc%begc:bounds_proc%endc) = spval
+    col_pp%zii(bounds_proc%begc:bounds_proc%endc) = spval
     call hist_addfld1d (fname='ZII', units='m', &
          avgflag='A', long_name='convective boundary height', &
-         ptr_col=col%zii, default='inactive')
+         ptr_col=col_pp%zii, default='inactive')
 
     call clm_inst_biogeophys(bounds_proc)
 
     if(use_betr)then
-      !state variables will be initialized inside betr_initialize
-      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+      !allocate memory for betr simulator
+      allocate(ep_betr, source=create_betr_simulation_alm())
+      !set internal filters for betr
+      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
+      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      is_active_betr_bgc = ep_betr%do_soibgc()
+    else
+      allocate(ep_betr, source=create_betr_simulation_alm())
     endif
     
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -610,11 +614,7 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       if(is_active_betr_bgc)then
-          call CNEcosystemDynBetrInit(bounds_proc)         
-       else
-          call CNEcosystemDynInit(bounds_proc)
-       endif
+       call CNEcosystemDynInit(bounds_proc)
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -666,7 +666,7 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
-               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+               ep_betr,                                                                       &
                alm_fates)
        end if
 
@@ -682,15 +682,11 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+            ep_betr,                                                                       &
             alm_fates)
 
     end if
        
-    if (use_betr)then
-       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
-            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
-    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
@@ -718,7 +714,9 @@ contains
                glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
        end do
        !$OMP END PARALLEL DO
-
+       if(use_betr)then
+         call ep_betr%set_active(bounds_proc, col_pp)
+       endif
        ! Create new template file using cold start
        call restFile_write(bounds_proc, finidat_interp_dest,                               &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
@@ -728,7 +726,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+            ep_betr,                                                                       &
             alm_fates)
 
        ! Interpolate finidat onto new template file
@@ -744,7 +742,7 @@ contains
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars,          &
+            ep_betr,                                                                       &
             alm_fates)
 
        ! Reset finidat to now be finidat_interp_dest 
@@ -761,6 +759,9 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    if(use_betr)then
+      call ep_betr%set_active(bounds_proc, col_pp)
+    endif 
     ! ------------------------------------------------------------------------
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------
@@ -891,16 +892,16 @@ contains
     deallocate(topo_glc_mec)
 
     !------------------------------------------------------------
-    !! initialize clm_bgc_interface_data_type
-    call t_startf('init_clm_bgc_interface_data & pflotran')
-    if (use_bgc_interface) then
-        call clm_bgc_data%Init(bounds_proc)
+    ! initialize clm_bgc_interface_data_type
+    call t_startf('init_clm_interface_data & pflotran')
+    if (use_clm_interface) then
+        call clm_interface_data%Init(bounds_proc)
         ! PFLOTRAN initialization
         if (use_pflotran) then
             call clm_pf_interface_init(bounds_proc)
         end if
     end if
-    call t_stopf('init_clm_bgc_interface_data & pflotran')
+    call t_stopf('init_clm_interface_data & pflotran')
     !------------------------------------------------------------
 
     !------------------------------------------------------------       

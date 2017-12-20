@@ -13,11 +13,11 @@ module decompInitMod
   use abortutils      , only : endrun
   use clm_varctl      , only : iulog, use_ed
   use clm_varcon      , only : grlnd
-  use GridcellType    , only : grc
-  use LandunitType    , only : lun                
-  use ColumnType      , only : col                
-  use PatchType       , only : pft                
+  use GridcellType    , only : grc_pp
+  use LandunitType    , only : lun_pp                
+  use ColumnType      , only : col_pp                
   use FatesInterfaceMod, only : fates_maxElementsPerSite
+  use VegetationType  , only : veg_pp                
   use decompMod
   use mct_mod
   !
@@ -809,7 +809,7 @@ contains
     allocate(gindex(begl:endl))
     ioff(:) = 0
     do li = begl,endl
-       gi = lun%gridcell(li) !===this is determined internally from how landunits are spread out in memory
+       gi = lun_pp%gridcell(li) !===this is determined internally from how landunits are spread out in memory
        gindex(li) = lstart(gi) + ioff(gi) !=== the output gindex is ALWAYS the same regardless of how landuntis are spread out in memory
        ioff(gi)  = ioff(gi) + 1 
        ! check that this is less than [lstart(gi) + lcount(gi)]
@@ -824,7 +824,7 @@ contains
     allocate(gindex(begc:endc))
     ioff(:) = 0
     do ci = begc,endc
-       gi = col%gridcell(ci)
+       gi = col_pp%gridcell(ci)
        gindex(ci) = cstart(gi) + ioff(gi)
        ioff(gi) = ioff(gi) + 1 
        ! check that this is less than [cstart(gi) + ccount(gi)]
@@ -839,7 +839,7 @@ contains
     allocate(gindex(begp:endp))
     ioff(:) = 0
     do pi = begp,endp
-       gi = pft%gridcell(pi)
+       gi = veg_pp%gridcell(pi)
        gindex(pi) = pstart(gi) + ioff(gi)
        ioff(gi) = ioff(gi) + 1 
        ! check that this is less than [pstart(gi) + pcount(gi)]
@@ -853,13 +853,11 @@ contains
        ! ED cohort gsMap
        allocate(gindex(begCohort:endCohort))
        ioff(:) = 0
-       ci = begc
+       gi = begg
        do coi = begCohort,endCohort
-          if ( mod(coi, fates_maxElementsPerSite ) == 0 ) ci = ci + 1
-          
-          gi = col%gridcell(ci) !function call to get gcell for this cohort idx
           gindex(coi) = coStart(gi) + ioff(gi)
           ioff(gi) = ioff(gi) + 1
+          if ( mod(coi, fates_maxElementsPerSite ) == 0 ) gi = gi + 1
        enddo
        locsize = endCohort-begCohort+1
        globsize = numCohort
@@ -1210,7 +1208,8 @@ contains
 
     ! Determine the cell id offset on each processor
     cell_id_offset = 0
-    call MPI_Exscan(ncells_loc, cell_id_offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
+    call MPI_Scan(ncells_loc, cell_id_offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
+    cell_id_offset = cell_id_offset - ncells_loc
 
     ! Determine the total number of grid cells
     call MPI_Allreduce(ncells_loc, ncells_tot, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
@@ -1375,8 +1374,8 @@ contains
     procinfo%ncells = ncells_owned
 
     offset = 0
-    call MPI_Exscan(ncells_owned, offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
-    procinfo%begg = offset + 1
+    call MPI_Scan(ncells_owned, offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
+    procinfo%begg = offset + 1 - ncells_owned
 
     offset = 0
     call MPI_scan(ncells_owned, offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)

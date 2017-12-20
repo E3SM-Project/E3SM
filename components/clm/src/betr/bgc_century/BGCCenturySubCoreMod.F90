@@ -10,7 +10,7 @@ module BGCCenturySubCoreMod
   use clm_varcon         , only : spval
   use clm_varcon         , only : catomw, natomw
   use clm_varpar         , only : ndecomp_pools
-  use ColumnType         , only : col
+  use ColumnType         , only : col_pp
   use clm_varctl         , only : spinup_state,iulog
   use clm_varctl         , only : CNAllocate_Carbon_only
   implicit none

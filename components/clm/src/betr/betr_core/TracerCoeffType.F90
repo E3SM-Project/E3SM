@@ -7,9 +7,9 @@ module TracerCoeffType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
-  use PatchType              , only : pft
-  use ColumnType             , only : col
-  use LandunitType           , only : lun
+  use VegetationType              , only : veg_pp
+  use ColumnType             , only : col_pp
+  use LandunitType           , only : lun_pp
   use landunit_varcon, only : istsoil, istcrop
   !
   ! !PUBLIC TYPES:
@@ -243,9 +243,9 @@ contains
     !-----------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%aqu2neutralcef_col        (c,:,:) = spval
           this%aqu2bulkcef_mobile_col    (c,:,:) = spval
           this%gas2bulkcef_mobile_col    (c,:,:) = spval
@@ -260,7 +260,7 @@ contains
           this%annsum_counter_col        (c)     = spval
        endif
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%aqu2neutralcef_col        (c,:,:) = 0._r8
           this%aqu2bulkcef_mobile_col    (c,:,:) = 0._r8
           this%gas2bulkcef_mobile_col    (c,:,:) = 0._r8

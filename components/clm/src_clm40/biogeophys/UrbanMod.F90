@@ -215,6 +215,7 @@ contains
     real(r8), pointer :: alb_perroad_dif(:,:)      ! diffuse pervious road albedo
     real(r8), pointer :: alb_wall_dir(:,:)         ! direct wall albedo
     real(r8), pointer :: alb_wall_dif(:,:)         ! diffuse wall albedo
+    real(r8), pointer :: lun_canyon_hwr(:)         ! ratio of building height to street width
 !-----------------------------------------------------------------------
 
     ! Assign pointers into module urban clumps
@@ -255,6 +256,7 @@ contains
     sabs_improad_dif   => lps%sabs_improad_dif
     sabs_perroad_dir   => lps%sabs_perroad_dir
     sabs_perroad_dif   => lps%sabs_perroad_dif
+    lun_canyon_hwr     => lun%canyon_hwr
 
     ! Assign column level pointers
 
@@ -315,8 +317,23 @@ contains
        do fp = 1,num_urbanp
           p = filter_urbanp(fp)
           g = pgridcell(p)
-          albd(p,ib)    = 1._r8
-          albi(p,ib)    = 1._r8
+          c = pcolumn(p)
+          l = clandunit(c)
+
+          if (ctype(c) == icol_sunwall) then
+             albd(p,ib) = 1._r8 / (3.0_r8 * lun_canyon_hwr(l))
+             albi(p,ib) = 1._r8 / (3.0_r8 * lun_canyon_hwr(l))
+          else if (ctype(c) == icol_shadewall) then
+             albd(p,ib) = 1._r8 / (3.0_r8 * lun_canyon_hwr(l))
+             albi(p,ib) = 1._r8 / (3.0_r8 * lun_canyon_hwr(l))
+          else if (ctype(c) == icol_road_perv .or. ctype(c) == icol_road_imperv) then
+             albd(p,ib) = 1._r8 / (3.0_r8)
+             albi(p,ib) = 1._r8 / (3.0_r8)
+          else if (ctype(c) == icol_roof) then
+             albd(p,ib) = 1._r8
+             albi(p,ib) = 1._r8
+          endif
+
           fabd(p,ib)    = 0._r8
           fabi(p,ib)    = 0._r8
           if (coszen_pft(fp) > 0._r8) then
@@ -362,16 +379,18 @@ contains
           sabs_improad_dif(l,ib)   = 0._r8
           sabs_perroad_dir(l,ib)   = 0._r8
           sabs_perroad_dif(l,ib)   = 0._r8
+
           sref_roof_dir(fl,ib)      = 1._r8
           sref_roof_dif(fl,ib)      = 1._r8
-          sref_sunwall_dir(fl,ib)   = 1._r8
-          sref_sunwall_dif(fl,ib)   = 1._r8
-          sref_shadewall_dir(fl,ib) = 1._r8
-          sref_shadewall_dif(fl,ib) = 1._r8
-          sref_improad_dir(fl,ib)   = 1._r8
-          sref_improad_dif(fl,ib)   = 1._r8
-          sref_perroad_dir(fl,ib)   = 1._r8
-          sref_perroad_dif(fl,ib)   = 1._r8
+          sref_sunwall_dir(fl,ib)   = 1._r8 / (3.0_r8 * canyon_hwr(fl))
+          sref_sunwall_dif(fl,ib)   = 1._r8 / (3.0_r8 * canyon_hwr(fl))
+          sref_shadewall_dir(fl,ib) = 1._r8 / (3.0_r8 * canyon_hwr(fl))
+          sref_shadewall_dif(fl,ib) = 1._r8 / (3.0_r8 * canyon_hwr(fl))
+          sref_improad_dir(fl,ib)   = 1._r8 / (3.0_r8)
+          sref_improad_dif(fl,ib)   = 1._r8 / (3.0_r8)
+          sref_perroad_dir(fl,ib)   = 1._r8 / (3.0_r8)
+          sref_perroad_dif(fl,ib)   = 1._r8 / (3.0_r8)
+
        end do
     end do
 

@@ -15,7 +15,7 @@ module atm2lndType
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
-  use PatchType     , only : pft
+  use VegetationType     , only : veg_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -54,10 +54,9 @@ module atm2lndType
       real(r8), pointer :: npf                            (:)  => null()  !number of model timesteps per forcing timestep
       real(r8), pointer :: co2_input                   (:,:,:) => null()  !annual CO2 input data
       real(r8), pointer :: c13o2_input                 (:,:,:) => null()  !annual C13O2 input data
-      real, pointer :: ndep_input                      (:,:,:) => null()  !annual nitrogen deposition data
-      real, pointer :: aero_input                    (:,:,:,:) => null()  !monthly aerosol deposition data
-      real, pointer :: hdm_input                       (:,:,:) => null()  !popluation density
-      real, pointer :: lnfm_input                      (:,:,:) => null()  !lightning
+      integer, pointer :: ndepind                        (:,:) => null()  !annual nitrogen deposition data
+      integer, pointer :: hdmind                         (:,:) => null()  !popluation density
+      integer, pointer :: lnfmind                        (:,:) => null()  !lightning
       real(r8), pointer :: forc_hdm                      (:)   => null() 
       real(r8), pointer :: forc_lnfm                     (:)   => null()
 #endif
@@ -202,10 +201,9 @@ contains
     allocate(this%var_mult                 (8,begg:endg,12))        ; this%var_mult                  (:,:,:)   = ival
     allocate(this%co2_input                      (1,1,3000))        ; this%co2_input                 (:,:,:)   = ival    
     allocate(this%c13o2_input                    (1,1,3000))        ; this%c13o2_input               (:,:,:)   = ival
-    allocate(this%ndep_input              (begg:endg,1,158))        ; this%ndep_input                (:,:,:)   = ival_float
-    allocate(this%aero_input         (14,begg:endg,1,50000))        ; this%aero_input              (:,:,:,:)   = ival_float
-    allocate(this%hdm_input              (begg:endg,1,3000))        ; this%hdm_input                 (:,:,:)   = ival_float
-    allocate(this%lnfm_input           (begg:endg,1,100000))        ; this%lnfm_input                (:,:,:)   = ival_float
+    allocate(this%ndepind                     (begg:endg,2))        ; this%ndepind                     (:,:)   = ival_int
+    allocate(this%hdmind                      (begg:endg,2))        ; this%hdmind                      (:,:)   = ival_int
+    allocate(this%lnfmind                     (begg:endg,2))        ; this%lnfmind                     (:,:)   = ival_int
     allocate(this%forc_hdm                      (begg:endg))        ; this%forc_hdm                      (:)   = ival
     allocate(this%forc_lnfm                     (begg:endg))        ; this%forc_lnfm                     (:)   = ival
     !END DMR
@@ -642,7 +640,7 @@ contains
 
     ! Accumulate and extract forc_solad24 & forc_solad240 
     do p = begp,endp
-       g = pft%gridcell(p)
+       g = veg_pp%gridcell(p)
        rbufslp(p) = this%forc_solad_grc(g,1)
     end do
     call update_accum_field  ('FSD240', rbufslp               , nstep)
@@ -652,7 +650,7 @@ contains
 
     ! Accumulate and extract forc_solai24 & forc_solai240 
     do p = begp,endp
-       g = pft%gridcell(p)
+       g = veg_pp%gridcell(p)
        rbufslp(p) = this%forc_solai_grc(g,1)
     end do
     call update_accum_field  ('FSI24' , rbufslp               , nstep)
@@ -661,7 +659,7 @@ contains
     call extract_accum_field ('FSI240', this%fsi240_patch     , nstep)
 
     do p = begp,endp
-       c = pft%column(p)
+       c = veg_pp%column(p)
        rbufslp(p) = this%forc_rain_downscaled_col(c) + this%forc_snow_downscaled_col(c)
     end do
 
@@ -684,7 +682,7 @@ contains
        ! also determines t_mo_min
        
        do p = begp,endp
-          c = pft%column(p)
+          c = veg_pp%column(p)
           rbufslp(p) = this%forc_t_downscaled_col(c)
        end do
        call update_accum_field  ('TDA', rbufslp, nstep)
@@ -701,14 +699,14 @@ contains
        call extract_accum_field ('PREC24', this%prec24_patch, nstep)
 
        do p = bounds%begp,bounds%endp
-          c = pft%column(p)
+          c = veg_pp%column(p)
           rbufslp(p) = this%forc_wind_grc(g) 
        end do
        call update_accum_field  ('WIND24', rbufslp, nstep)
        call extract_accum_field ('WIND24', this%wind24_patch, nstep)
 
        do p = bounds%begp,bounds%endp
-          c = pft%column(p)
+          c = veg_pp%column(p)
           rbufslp(p) = this%forc_rh_grc(g) 
        end do
        call update_accum_field  ('RH24', rbufslp, nstep)

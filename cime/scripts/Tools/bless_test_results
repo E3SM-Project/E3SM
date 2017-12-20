@@ -23,32 +23,28 @@ _MACHINE = Machines()
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s [-n] [-r <TESTROOT>] [-b <BRANCH>] [-c <COMPILER>] [<TEST> <TEST> ...] [--verbose]
+        usage="""\n{0} [-n] [-r <TESTROOT>] [-b <BRANCH>] [-c <COMPILER>] [<TEST> <TEST> ...] [--verbose]
 OR
-%s --help
+{0} --help
 OR
-%s --test
+{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# From most recent run, bless any namelist changes \033[0m
-    > %s -n
+    > {0} -n
     \033[1;32m# From most recent run, bless all changes \033[0m
-    > %s
+    > {0}
     \033[1;32m# From most recent run, bless changes to test foo and bar only \033[0m
-    > %s foo bar
+    > {0} foo bar
     \033[1;32m# From most recent run, bless only namelist changes to test foo and bar only \033[0m
-    > %s -n foo bar
+    > {0} -n foo bar
     \033[1;32m# From most recent run of jenkins, bless history changes for next \033[0m
-    > %s -r /home/jenkins/acme/scratch/jenkins -b next --hist-only
-""" % ((os.path.basename(args[0]), ) * 8),
+    > {0} -r /home/jenkins/acme/scratch/jenkins -b next --hist-only
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
-
-    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    default_baseline_root = _MACHINE.get_value("BASELINE_ROOT")
     default_compiler      = _MACHINE.get_default_compiler()
     scratch_root          = _MACHINE.get_value("CIME_OUTPUT_ROOT")
     default_testroot      = os.path.join(scratch_root)
@@ -61,11 +57,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--hist-only", action="store_true",
                         help="Only analyze history files.")
 
-    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
-                        help="Name of baselines to use, corresponds to branch used.")
+    parser.add_argument("-b", "--baseline-name",
+                        help="Name of baselines to use. Default will use BASELINE_NAME_CMP first if possible, otherwise branch name.")
 
-    parser.add_argument("--baseline-root", default=default_baseline_root,
-                        help="Root of baselines.")
+    parser.add_argument("--baseline-root",
+                        help="Root of baselines. Default will use the BASELINE_ROOT from the case.")
 
     parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="Compiler of run you want to bless")

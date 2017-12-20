@@ -30,7 +30,7 @@ module spmd_dyn
 CONTAINS
 !========================================================================
 
-  subroutine spmd_readnl(nlfilename, dyn_npes)
+  subroutine spmd_readnl(nlfilename, dyn_npes, dyn_npes_stride)
 
     use namelist_utils,  only: find_group_name
     use units,           only: getunit, freeunit
@@ -48,7 +48,7 @@ CONTAINS
 
     logical :: dyn_equi_by_col
     integer :: dyn_alltoall
-    integer :: dyn_npes_stride
+    integer, intent(out) :: dyn_npes_stride
     integer :: dyn_allgather
 
 
@@ -63,6 +63,7 @@ CONTAINS
 
 
     dyn_npes = npes
+    dyn_npes_stride = 1
 
     if (masterproc) then
        write(iulog,*) 'Read in spmd_dyn_inparm namelist from: ', trim(nlfilename)
@@ -89,6 +90,7 @@ CONTAINS
     endif
 
     call mpibcast (dyn_npes,1,mpiint,0,mpicom)
+    call mpibcast (dyn_npes_stride,1,mpiint,0,mpicom)
 
   end subroutine spmd_readnl
 

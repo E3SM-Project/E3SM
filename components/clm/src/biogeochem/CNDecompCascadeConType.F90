@@ -39,7 +39,8 @@ module CNDecompCascadeConType
      logical           , pointer  :: is_metabolic(:)                   ! TRUE => pool is metabolic material
      logical           , pointer  :: is_cellulose(:)                   ! TRUE => pool is cellulose
      logical           , pointer  :: is_lignin(:)                      ! TRUE => pool is lignin
-     real(r8)          , pointer  :: spinup_factor(:)                  ! factor by which to scale AD and relevant processes by
+     real(r8)          , pointer  :: spinup_factor(:)                  ! factor by which to scale AD and relevant processes
+     real(r8)          , pointer  :: decomp_k_pools(:)                 ! Kd in 1/sec for pool
   end type decomp_cascade_type
 
   type(decomp_cascade_type), public :: decomp_cascade_con
@@ -76,6 +77,7 @@ contains
     allocate(decomp_cascade_con%is_cellulose(0:ndecomp_pools))
     allocate(decomp_cascade_con%is_lignin(0:ndecomp_pools))
     allocate(decomp_cascade_con%spinup_factor(0:ndecomp_pools))
+    allocate(decomp_cascade_con%decomp_k_pools(0:ndecomp_pools))
 
     !-- properties of each pathway along decomposition cascade 
     decomp_cascade_con%cascade_step_name(1:ndecomp_cascade_transitions) = ''
@@ -99,6 +101,7 @@ contains
     decomp_cascade_con%is_cellulose(0:ndecomp_pools)                   = .false.
     decomp_cascade_con%is_lignin(0:ndecomp_pools)                      = .false.
     decomp_cascade_con%spinup_factor(0:ndecomp_pools)                  = nan
+    decomp_cascade_con%decomp_k_pools(0:ndecomp_pools)                 = nan
 
   end subroutine init_decomp_cascade_constants
 

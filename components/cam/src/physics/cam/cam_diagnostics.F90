@@ -66,6 +66,7 @@ character(len=8) :: diag_cnst_conv_tend = 'q_only' ! output constituent tendenci
                                                    ! 'none', 'q_only' or 'all'
 
 logical          :: history_amwg                   ! output the variables used by the AMWG diag package
+logical          :: history_verbose                ! produce verbose history output
 logical          :: history_vdiag                  ! output the variables used by the AMWG variability diag package
 logical          :: history_eddy                   ! output the eddy variables
 logical          :: history_budget                 ! output tendencies and state variables for CAM4
@@ -258,6 +259,10 @@ subroutine diag_init()
    call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water')
    call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
+   call addfld ('TUH',horiz_only,    'A','W/m',   'Total (vertically integrated) zonal MSE flux')
+   call addfld ('TVH',horiz_only,    'A','W/m',   'Total (vertically integrated) meridional MSE flux')
+   call addfld ('DTENDTH', horiz_only, 'A', 'W/m2',   'Dynamic Tendency of Total (vertically integrated) moist static energy')
+   call addfld ('DTENDTQ', horiz_only, 'A', 'kg/m2/s','Dynamic Tendency of Total (vertically integrated) specific humidity')
    call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity')
    call addfld ('RHW',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to liquid')
    call addfld ('RHI',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to ice')
@@ -314,6 +319,7 @@ subroutine diag_init()
    ! determine default variables
    ! ----------------------------
    call phys_getopts(history_amwg_out   = history_amwg    , &
+                     history_verbose_out  = history_verbose  , &
                      history_vdiag_out  = history_vdiag   , &
                      history_eddy_out   = history_eddy    , &
                      history_budget_out = history_budget  , &
@@ -333,7 +339,7 @@ subroutine diag_init()
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
 
-      if(prog_modal_aero) then !Only for prognostic aerosols
+      if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('Vbc_a1  ', 1, ' ')
          call add_default ('Vdst_a1 ', 1, ' ')
          call add_default ('Vdst_a3 ', 1, ' ')
@@ -349,7 +355,7 @@ subroutine diag_init()
       endif
       call add_default ('UU      ', 1, ' ')
       call add_default ('OMEGAT  ', 1, ' ')
-      if(prog_modal_aero) then !Only for prognostic aerosols
+      if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('bc_a1_2 ', 1, ' ')
          call add_default ('dst_a1_2', 1, ' ')
          call add_default ('dst_a3_2', 1, ' ')
@@ -368,6 +374,14 @@ subroutine diag_init()
       if (moist_physics) then
          call add_default ('RELHUM  ', 1, ' ')
       end if
+
+      ! For Tier 1b global water cycle diagostics
+      call add_default ('TUQ      ', 1, ' ')
+      call add_default ('TVQ      ', 1, ' ')
+      call add_default ('TUH      ', 1, ' ')
+      call add_default ('TVH      ', 1, ' ')
+      call add_default ('DTENDTQ', 1, ' ')
+      call add_default ('DTENDTH', 1, ' ')
    end if
    
    if (history_vdiag) then
@@ -547,6 +561,9 @@ subroutine diag_init()
        call add_default ('SNOWHLND', 1, ' ')
        call add_default ('SNOWHICE', 1, ' ')
     endif
+
+    call add_default ('OMEGA500', 1, ' ')
+    call add_default ('TH7001000', 1, ' ')
 
     if (history_vdiag) then
         call add_default ('PRECT   ', 2, ' ')
@@ -1101,6 +1118,21 @@ end subroutine diag_conv_tend_ini
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     call outfld ('TVQ     ',ftem, pcols   ,lchnk     )
+
+!
+! Mass of vertically integrated MSE flux
+!
+    ftem(:ncol,:) = state%u(:ncol,:)*(state%s(:ncol,:)+latvap*state%q(:ncol,:,1))*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    call outfld ('TUH     ',ftem, pcols   ,lchnk     )
+
+    ftem(:ncol,:) = state%v(:ncol,:)*(state%s(:ncol,:)+latvap*state%q(:ncol,:,1))*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    call outfld ('TVH     ',ftem, pcols   ,lchnk     )
 
     if (moist_physics) then
 

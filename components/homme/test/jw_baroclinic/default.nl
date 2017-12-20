@@ -11,7 +11,6 @@ restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = 0
 tstep         = 90
-energy_fixer  = 0
 integration   = "explicit"
 smooth        = 0.005               ! default = 0.005
 nu            = 9.6e14

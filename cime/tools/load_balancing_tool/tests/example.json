@@ -1,0 +1,29 @@
+{ 
+  "description" : "Optimize using data available from original load balancing tool. The original tool solved the problem using a different model, so we do not expect exact replication: (Original solution: NTASKS_ATM: 1006 NTASKS_ICE:  889 NTASKS_LND:  117 NTASKS_OCN:   18 TOTAL_COST:  28.749 s/mday)",
+  "layout" : "IceLndAtmOcn",
+  "totaltasks" : 1024,
+  "ATM" : {
+      "ntasks" : [32,64,128,256,512], 
+      "blocksize" : 8,
+      "nthrds" : [1],
+      "cost" : [427.471, 223.332, 119.580, 66.182, 37.769]
+  },        
+  "OCN" : {
+      "ntasks" : [32,64,128,256,512],
+      "blocksize" : 8,
+      "nthrds" : [1],
+      "cost" : [ 15.745, 7.782, 4.383, 3.181, 2.651]
+  },
+  "LND" : {
+      "ntasks" : [32,64,128,256,512],
+      "blocksize" : 8,
+      "nthrds" : [1],
+      "cost" : [  4.356, 2.191, 1.191, 0.705, 0.560]
+  },
+  "ICE" : {
+      "ntasks" : [32,64,160,320,640],
+      "blocksize" : 8,
+      "nthrds" : [1],
+      "cost" : [8.018, 4.921, 2.368, 1.557, 1.429]
+  }
+}

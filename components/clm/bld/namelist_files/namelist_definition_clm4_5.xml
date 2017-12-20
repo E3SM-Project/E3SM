@@ -116,6 +116,10 @@ If TRUE, use new phosphatase activity algorithm that comes with nu_com module
 If TRUE, use new N2 fixation algorithm that comes with nu_com module
 </entry>
 
+<entry id="forest_fert_exp" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, run forest N/P fertilization experiment
+</entry>
 
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
@@ -231,10 +235,41 @@ Toggle to turn on the ED (fates)
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_ed_spitfire" type="logical" category="physics"
+<entry id="use_fates_spitfire" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on spitfire (only relevant if ED is being used).
+Toggle to turn on spitfire (only relevant if FATES is being used).
 </entry>
+
+<entry id="use_fates_logging" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the logging module (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_planthydro" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on plant hydraulics(only relevant if FATES is on).
+</entry>
+
+<entry id="use_fates_ed_st3" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on Static Stand Structure Mode (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_ed_prescribed_phys" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on prescribed physiology (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_inventory_init" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on inventory initialization(only relevant if FATES is being used).
+</entry>
+
+<entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
+       input_pathname="abs" group="clm_inparm" valid_values="" >
+Full pathname to the inventory initialization control file.
+</entry>
+
 
 <entry id="paramfile" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
@@ -708,6 +743,11 @@ VIC parameters dataset for mksurfdata
 Inversion-derived CH4 parameters dataset for mksurfdata
 </entry>
 
+<entry id="mksrf_fphosphorus" type="char*256" category="mksurfdata"
+       input_pathname="abs" group="clmexp" valid_values="" >
+Soil phosphorus dataset for mksurfdata
+</entry>
+
 <entry id="outnc_double" type="logical" category="mksurfdata"
        group="clmexp" value=".true.">
 If TRUE, output variables in double precision for mksurfdata
@@ -1113,7 +1153,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"  
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,0.125x0.125,ne4np4,ne11np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,0.125x0.125,ne4np4,ne11np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry> 
@@ -1127,7 +1167,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,360x720cru,NLDASww3a">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,360x720cru,NLDASww3a,tx0.1v2">
 Land mask description
 </entry> 
 
@@ -1374,11 +1414,35 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the betr_initializeMod                                  -->
 <!-- ========================================================================================  -->
-<entry id="bgc_method" type="char*256" category="clm_betr"
+<entry id="reaction_method" type="char*256" category="clm_betr"
        group="betr_inparm" valid_values="" >
-Specify what bgc module will be used within the betr framework. 
+Specify what reaction module will be used within the betr framework. 
 </entry>
 
+<entry id="AppParNLFile" type="char*256" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Specify file to input parameters that will be used within the betr framework.
+</entry>
+
+<entry id="advection_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on advection in betr if it is true.
+</entry>
+
+<entry id="diffusion_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on diffusion in betr if it is true.
+</entry>
+
+<entry id="ebullition_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on ebullition in betr if it is true.
+</entry>
+
+<entry id="reaction_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on reaction in betr if it is true.
+</entry>
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->
@@ -1570,7 +1634,7 @@ Specifies the method for decomposing CLM grids across processors.
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
 
-<entry id="use_bgc_interface" type="logical" category="default_settings"
+<entry id="use_clm_interface" type="logical" category="default_settings"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
 </entry>
@@ -1627,7 +1691,7 @@ Type of lateral flow formulation supported in VSFM.
     three_dimensional  = 3D VSFM solution (only supported for serial run)
 </entry>
 
-<entry id=vsfm_include_seepage_bc" type="logical" category="default_settings"
+<entry id="vsfm_include_seepage_bc" type="logical" category="default_settings"
         group="clm_inparm" valid_values="">
 Runtime flag to add seepage boundary condition on the top soil layer to allow for exfiltration.
 </entry>
@@ -1641,5 +1705,13 @@ Runtime flag to add seepage boundary condition on the top soil layer to allow fo
 Runtime flag to turn on/off PETSc based thermal model.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for variable soil thickness                                              -->
+<!-- ========================================================================================  -->
+
+<entry id="use_var_soil_thick" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off variable soil thickness.
+</entry>
 
 </namelist_definition>

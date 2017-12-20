@@ -8,8 +8,8 @@ module test_update_landunit_weights
   use shr_kind_mod	, only : r8 => shr_kind_r8
   use landunit_varcon	, only : istsoil, istcrop, istice, istice_mec, istdlak, istwet
   use landunit_varcon	, only : isturb_tbd, isturb_hd, isturb_md
-  use GridcellType	, only : grc
-  use LandunitType	, only : lun
+  use GridcellType	, only : grc_pp
+  use LandunitType	, only : lun_pp
   use decompMod		, only : bounds_type
 
   implicit none
@@ -58,20 +58,20 @@ contains
     ! istsoil, istcrop, isturb_md
 
     ! First increase the area of istice_mec: weights of istice_mec + istsoil + istcrop + 0.01
-    index_soil = grc%landunit_indices(istsoil,gi)
-    index_crop = grc%landunit_indices(istcrop,gi)
-    index_icemec = grc%landunit_indices(istice_mec,gi)
-    index_urbmd = grc%landunit_indices(isturb_md,gi)
-    lun%wtgcell(index_icemec) = lun%wtgcell(index_icemec) + lun%wtgcell(index_soil) + lun%wtgcell(index_crop) + 0.01_r8
+    index_soil = grc_pp%landunit_indices(istsoil,gi)
+    index_crop = grc_pp%landunit_indices(istcrop,gi)
+    index_icemec = grc_pp%landunit_indices(istice_mec,gi)
+    index_urbmd = grc_pp%landunit_indices(isturb_md,gi)
+    lun_pp%wtgcell(index_icemec) = lun_pp%wtgcell(index_icemec) + lun_pp%wtgcell(index_soil) + lun_pp%wtgcell(index_crop) + 0.01_r8
 
     ! Now set the expected outcome
-    expected = lun%wtgcell
+    expected = lun_pp%wtgcell
     expected(index_soil) = 0._r8
     expected(index_crop) = 0._r8
     expected(index_urbmd) = expected(index_urbmd) - 0.01_r8
 
     call update_landunit_weights(bounds)
-    @assertEqual(expected(bounds%begl:bounds%endl), lun%wtgcell(bounds%begl:bounds%endl), tolerance=tol)
+    @assertEqual(expected(bounds%begl:bounds%endl), lun_pp%wtgcell(bounds%begl:bounds%endl), tolerance=tol)
 
     call teardown()
   end subroutine test_one_gcell_all_lunits
@@ -100,7 +100,7 @@ contains
     expected(index_wet) = 0.2_r8
 
     call update_landunit_weights(bounds)
-    @assertEqual(expected(bounds%begl:bounds%endl), lun%wtgcell(bounds%begl:bounds%endl), tolerance=tol)
+    @assertEqual(expected(bounds%begl:bounds%endl), lun_pp%wtgcell(bounds%begl:bounds%endl), tolerance=tol)
 
     call teardown()
   end subroutine test_one_gcell_some_lunits
@@ -134,12 +134,12 @@ contains
     ! grid cell 1 needs decrease in crop
     ! grid cell 2 needs increase in soil
     ! grid cell 3 stays the same
-    expected = lun%wtgcell
-    expected(grc%landunit_indices(istcrop,g1)) = 0.55_r8
-    expected(grc%landunit_indices(istsoil,g2)) = 0.2_r8
+    expected = lun_pp%wtgcell
+    expected(grc_pp%landunit_indices(istcrop,g1)) = 0.55_r8
+    expected(grc_pp%landunit_indices(istsoil,g2)) = 0.2_r8
 
     call update_landunit_weights(bounds)
-    @assertEqual(expected(bounds%begl:bounds%endl), lun%wtgcell(bounds%begl:bounds%endl), tolerance=tol)
+    @assertEqual(expected(bounds%begl:bounds%endl), lun_pp%wtgcell(bounds%begl:bounds%endl), tolerance=tol)
 
     call teardown()
   end subroutine test_multiple_gcells

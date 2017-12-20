@@ -28,7 +28,6 @@ module prim_advection_mod
   implicit none
   private
   real(kind=real_kind), private, allocatable :: qmin(:,:,:), qmax(:,:,:)
-  real(kind=real_kind), private, allocatable :: dp0(:)
   real(kind=real_kind), private, allocatable :: Qtens_biharmonic(:,:,:,:,:)
   real(kind=real_kind), private, allocatable :: Qtens(:,:,:,:,:)
   real(kind=real_kind), private, allocatable :: grads_tracer(:,:,:,:,:,:)
@@ -245,13 +244,12 @@ contains
     call t_stopf('prim_advec_tracers_remap_rk2')
   end subroutine prim_advec_tracers_remap_rk2
 
-  subroutine prim_advec_init1(par, elem, n_domains)
+  subroutine prim_advec_init1(par, elem)
     use edge_mod    , only: initEdgeBuffer,initEdgeSBuffer
     use parallel_mod, only: parallel_t
     use element_mod , only: element_t
     implicit none
     type(parallel_t), intent(in) :: par
-    integer         , intent(in) :: n_domains
     type (element_t), intent(in) :: elem(:)
     call initEdgeBuffer (par,edgeAdvQ3 ,elem(:),max(nlev,qsize*nlev*3))
     call initEdgeBuffer (par,edgeAdv1  ,elem(:),nlev                  )
@@ -267,7 +265,6 @@ contains
     allocate(Qtens_biharmonic(np,np,nlev,qsize,nelemd))
     allocate(qtens(np,np,nlev,qsize,nelemd))
     allocate(grads_tracer(np,np,2,nlev,qsize,nelemd))
-    allocate(dp0(nlev))
     allocate(data_pack(np,np,nlev,nelemd))
     allocate(data_pack2(np,np,nlev,nelemd))
   end subroutine prim_advec_init1
@@ -286,12 +283,8 @@ contains
     !$omp barrier
     !$omp master
 
-    do k = 1 , nlev
-      dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-    enddo
-
     !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens,data_pack,data_pack2)
-    !$acc enter data pcopyin(dp0)
+    !$acc enter data pcopyin(hvcoord%dp0)
     !$acc enter data pcopyin(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
     !$acc enter data pcopyin(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
     !$acc enter data pcopyin(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
@@ -353,7 +346,7 @@ contains
     do ic = 1 , hypervis_subcycle_q
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,dp0,qtens_biharmonic,qtens)
+      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,hvcoord%dp0,qtens_biharmonic,qtens)
       do ie = 1 , nelemd
         ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
         do k = 1 , nlev
@@ -373,7 +366,7 @@ contains
                 enddo
               else
                 do q = 1 , qsize
-                  Qtens(i,j,k,q,ie) = dp0(k)*state_Qdp(i,j,k,q,nt_qdp,ie) / dp
+                  Qtens(i,j,k,q,ie) = hvcoord%dp0(k)*state_Qdp(i,j,k,q,nt_qdp,ie) / dp
                 enddo
               endif
             enddo
@@ -611,12 +604,12 @@ contains
       if ( nu_p > 0 ) then
         !$omp barrier
         !$omp master
-        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,dp0)
+        !$acc parallel loop gang vector collapse(4) present(elem(:),qtens_biharmonic,hvcoord%dp0)
         do ie = 1 , nelemd
           do k = 1 , nlev    
             do j = 1 , np
               do i = 1 , np
-                tmp = elem(ie)%derived%dpdiss_ave(i,j,k) / dp0(k)
+                tmp = elem(ie)%derived%dpdiss_ave(i,j,k) / hvcoord%dp0(k)
                 do q = 1 , qsize
                   ! NOTE: divide by dp0 since we multiply by dp0 below
                   Qtens_biharmonic(i,j,k,q,ie) = Qtens_biharmonic(i,j,k,q,ie) * tmp
@@ -632,12 +625,12 @@ contains
       call neighbor_minmax_openacc( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax )
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,dp0,elem(:))
+      !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,hvcoord%dp0,elem(:))
       do ie = 1 , nelemd
         do k = 1 , nlev    !  Loop inversion (AAM)
           do j = 1 , np
             do i = 1 , np
-              tmp = -rhs_viss*dt*nu_q*dp0(k) / elem(ie)%spheremp(i,j)
+              tmp = -rhs_viss*dt*nu_q*hvcoord%dp0(k) / elem(ie)%spheremp(i,j)
               do q = 1 , qsize
                 ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
                 qtens_biharmonic(i,j,k,q,ie) = tmp*Qtens_biharmonic(i,j,k,q,ie)

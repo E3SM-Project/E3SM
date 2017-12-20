@@ -8,7 +8,7 @@ module CNVegStructUpdateMod
   use shr_sys_mod          , only : shr_sys_flush
   use shr_const_mod        , only : SHR_CONST_PI
   use clm_varctl           , only : iulog, use_cndv
-  use EcophysConType       , only : ecophyscon
+  use VegetationPropertiesType     , only : veg_vp
   use CNDVType             , only : dgv_ecophyscon    
   use WaterStateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
@@ -16,7 +16,7 @@ module CNVegStructUpdateMod
   use CNStateType          , only : cnstate_type
   use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
-  use PatchType            , only : pft                
+  use VegetationType            , only : veg_pp                
   !
   implicit none
   save
@@ -84,13 +84,13 @@ contains
     !-------------------------------------------------------------------------------
     
     associate(                                                            & 
-         ivt                =>  pft%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type                                
-         woody              =>  ecophyscon%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
-         slatop             =>  ecophyscon%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
-         dsladlai           =>  ecophyscon%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]           
-         z0mr               =>  ecophyscon%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
-         displar            =>  ecophyscon%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
-         dwood              =>  ecophyscon%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)                          
+         ivt                =>  veg_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type                                
+         woody              =>  veg_vp%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
+         slatop             =>  veg_vp%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
+         dsladlai           =>  veg_vp%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]           
+         z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
+         displar            =>  veg_vp%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
+         dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)                          
          allom2             =>  dgv_ecophyscon%allom2             ,       & ! Input:  [real(r8) (:) ] ecophys const                                     
          allom3             =>  dgv_ecophyscon%allom3             ,       & ! Input:  [real(r8) (:) ] ecophys const                                     
 
@@ -131,8 +131,8 @@ contains
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          if (ivt(p) /= noveg) then
 

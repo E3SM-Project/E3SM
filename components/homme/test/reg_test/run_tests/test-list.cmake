@@ -12,6 +12,11 @@ SET(HOMME_TESTS
   baroCamMoist-SL.cmake
   baroCamMoist-acc.cmake
   baro2d-imp.cmake
+  thetah-test22.cmake
+  thetanh-test22.cmake
+  thetah-TC.cmake
+  thetanh-TC.cmake
+  thetanhwet-TC.cmake
   templates.cmake
 )
 

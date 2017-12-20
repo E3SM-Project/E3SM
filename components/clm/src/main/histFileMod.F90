@@ -16,15 +16,19 @@ module histFileMod
   use clm_varcon     , only : spval, ispval, dzsoi_decomp 
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
-  use GridcellType   , only : grc                
-  use LandunitType   , only : lun                
-  use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use GridcellType   , only : grc_pp                
+  use LandunitType   , only : lun_pp                
+  use ColumnType     , only : col_pp                
+  use VegetationType , only : veg_pp                
   use ncdio_pio 
-  use EDtypesMod     , only : nlevsclass_ed, nlevage_ed
-  use EDtypesMod     , only : nfsc, ncwd
-  use EDtypesMod     , only : nlevleaf, nclmax, numpft_ed
-  use EDTypesMod     , only : maxpft
+  use EDTypesMod        , only : nclmax_fates     => nclmax
+  use EDTypesMod        , only : nlevleaf_fates   => nlevleaf
+  use FatesInterfaceMod , only : nlevsclass_fates => nlevsclass
+  use FatesInterfaceMod , only : nlevage_fates    => nlevage
+  use EDTypesMod        , only : nfsc_fates       => nfsc
+  use EDTypesMod        , only : ncwd_fates       => ncwd
+  use FatesInterfaceMod , only : numpft_fates     => numpft
+
   !
   implicit none
   save
@@ -145,7 +149,7 @@ module histFileMod
   ! !PRIVATE TYPES:
   ! Constants
   !
-  integer, parameter :: max_chars = 128        ! max chars for char variables
+  integer, parameter :: max_chars = 256        ! max chars for char variables
   integer, parameter :: max_subs = 100         ! max number of subscripts
   integer            :: num_subs = 0           ! actual number of subscripts
   character(len=32)  :: subs_name(max_subs)    ! name of subscript
@@ -1123,13 +1127,13 @@ contains
        ! to determine whether that point should be assigned spval
        if (type1d == namep) then
           check_active = .true.
-          active => pft%active
+          active => veg_pp%active
        else if (type1d == namec) then
           check_active = .true.
-          active => col%active
+          active => col_pp%active
        else if (type1d == namel) then
           check_active = .true.
-          active =>lun%active
+          active =>lun_pp%active
        else
           check_active = .false.
        end if
@@ -1396,13 +1400,13 @@ contains
        ! to determine whether that point should be assigned spval
        if (type1d == namep) then
           check_active = .true.
-          active => pft%active
+          active => veg_pp%active
        else if (type1d == namec) then
           check_active = .true.
-          active => col%active
+          active => col_pp%active
        else if (type1d == namel) then
           check_active = .true.
-          active =>lun%active
+          active =>lun_pp%active
        else
           check_active = .false.
        end if
@@ -1544,7 +1548,7 @@ contains
     SHR_ASSERT_ALL((ubound(field_out, 2) == ubound(field_in, 2)), errMsg(__FILE__, __LINE__))
 
     associate(&
-    snl            => col%snl  &   ! Input: [integer (:)] number of snow layers (negative)
+    snl            => col_pp%snl  &   ! Input: [integer (:)] number of snow layers (negative)
     )
 
     num_levels = ubound(field_in, 2)
@@ -1568,7 +1572,7 @@ contains
        if (type1d == namec) then
           c = point
        else if (type1d == namep) then
-          c = pft%column(point)
+          c = veg_pp%column(point)
        else
           write(iulog,*) trim(subname), ' ERROR: Only implemented for pft and col-level fields'
           write(iulog,*) 'type1d = ', trim(type1d)
@@ -1843,16 +1847,16 @@ contains
     call ncd_defdim( lnfid, 'levtrc', nlevtrc_full, dimid)    
     
     if(use_ed)then
-       call ncd_defdim(lnfid, 'fates_levscag', nlevsclass_ed * nlevage_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levscls', nlevsclass_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levpft', maxpft, dimid)
-       call ncd_defdim(lnfid, 'fates_levage', nlevage_ed, dimid)
-       call ncd_defdim(lnfid, 'fates_levfuel', nfsc, dimid)
-       call ncd_defdim(lnfid, 'fates_levcwdsc', ncwd, dimid)
-       call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_ed*maxpft, dimid)
-       call ncd_defdim(lnfid, 'fates_levcan', nclmax, dimid)
-       call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf * nclmax, dimid)
-       call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf * nclmax * numpft_ed, dimid)
+       call ncd_defdim(lnfid, 'fates_levscag', nlevsclass_fates * nlevage_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levscls', nlevsclass_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levpft', numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levage', nlevage_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levfuel', nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcwdsc', ncwd_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -2112,10 +2116,10 @@ contains
           histi(:,:) = spval
           do lev = 1,nlevgrnd
              do c = bounds%begc,bounds%endc
-                l = col%landunit(c)
+                l = col_pp%landunit(c)
                    ! Field indices MUST match varnames array order above!
-                   if (ifld ==1) histi(c,lev) = col%z(c,lev)
-                   if (ifld ==2) histi(c,lev) = col%dz(c,lev)
+                   if (ifld ==1) histi(c,lev) = col_pp%z(c,lev)
+                   if (ifld ==2) histi(c,lev) = col_pp%dz(c,lev)
                    if (ifld ==3) histi(c,lev) = watsat_col(c,lev)
                    if (ifld ==4) histi(c,lev) = sucsat_col(c,lev)
                    if (ifld ==5) histi(c,lev) = bsw_col(c,lev)
@@ -2198,11 +2202,11 @@ contains
           histil(:,:) = spval
           do lev = 1,nlevlak
              do c = bounds%begc,bounds%endc
-                l = col%landunit(c)
-                if (lun%lakpoi(l)) then
+                l = col_pp%landunit(c)
+                if (lun_pp%lakpoi(l)) then
                    ! Field indices MUST match varnamesl array order above!
-                   if (ifld ==1) histil(c,lev) = col%z_lake(c,lev) 
-                   if (ifld ==2) histil(c,lev) = col%dz_lake(c,lev)
+                   if (ifld ==1) histil(c,lev) = col_pp%z_lake(c,lev) 
+                   if (ifld ==2) histil(c,lev) = col_pp%dz_lake(c,lev)
                 end if
              end do
           end do
@@ -2245,12 +2249,22 @@ contains
     use domainMod       , only : ldomain, lon1d, lat1d
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
-    use EDTypesMod,       only : fates_hdim_levsclass, fates_hdim_pfmap_levscpf, fates_hdim_scmap_levscpf
-    use EDTypesMod,       only : fates_hdim_levage, fates_hdim_levpft
-    use EDTypesMod,       only : fates_hdim_scmap_levscag, fates_hdim_agmap_levscag
-    use EDTypesMod,       only : fates_hdim_levfuel, fates_hdim_levcwdsc
-    use EDTypesMod,       only : fates_hdim_levcan, fates_hdim_canmap_levcnlf, fates_hdim_lfmap_levcnlf
-    use EDTypesMod,       only : fates_hdim_canmap_levcnlfpf, fates_hdim_lfmap_levcnlfpf, fates_hdim_pftmap_levcnlfpf
+    use FatesInterfaceMod, only : fates_hdim_levsclass
+    use FatesInterfaceMod, only : fates_hdim_pfmap_levscpf
+    use FatesInterfaceMod, only : fates_hdim_scmap_levscpf
+    use FatesInterfaceMod, only : fates_hdim_levage
+    use FatesInterfaceMod, only : fates_hdim_levpft
+    use FatesInterfaceMod, only : fates_hdim_scmap_levscag
+    use FatesInterfaceMod, only : fates_hdim_agmap_levscag
+    use FatesInterfaceMod, only : fates_hdim_levfuel
+    use FatesInterfaceMod, only : fates_hdim_levcwdsc
+    use FatesInterfaceMod, only : fates_hdim_levcan
+    use FatesInterfaceMod, only : fates_hdim_canmap_levcnlf
+    use FatesInterfaceMod, only : fates_hdim_lfmap_levcnlf
+    use FatesInterfaceMod, only : fates_hdim_canmap_levcnlfpf
+    use FatesInterfaceMod, only : fates_hdim_lfmap_levcnlfpf
+    use FatesInterfaceMod, only : fates_hdim_pftmap_levcnlfpf
+
     !
     ! !ARGUMENTS:
     integer, intent(in) :: t              ! tape index
@@ -2896,8 +2910,8 @@ contains
 
        ! Write gridcell info
 
-       call ncd_io(varname='grid1d_lon', data=grc%londeg, dim1name=nameg, ncid=ncid, flag='write')
-       call ncd_io(varname='grid1d_lat', data=grc%latdeg, dim1name=nameg, ncid=ncid, flag='write')
+       call ncd_io(varname='grid1d_lon', data=grc_pp%londeg, dim1name=nameg, ncid=ncid, flag='write')
+       call ncd_io(varname='grid1d_lat', data=grc_pp%latdeg, dim1name=nameg, ncid=ncid, flag='write')
        do g = bounds%begg,bounds%endg
          igarr(g)= mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1
        enddo
@@ -2910,91 +2924,91 @@ contains
        ! Write landunit info
 
        do l = bounds%begl,bounds%endl
-         rlarr(l) = grc%londeg(lun%gridcell(l))
+         rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
        enddo
        call ncd_io(varname='land1d_lon', data=rlarr, dim1name=namel, ncid=ncid, flag='write')
        do l = bounds%begl,bounds%endl
-         rlarr(l) = grc%latdeg(lun%gridcell(l))
+         rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
        enddo
        call ncd_io(varname='land1d_lat', data=rlarr, dim1name=namel, ncid=ncid, flag='write')
        do l= bounds%begl,bounds%endl
-         ilarr(l) = mod(ldecomp%gdc2glo(lun%gridcell(l))-1,ldomain%ni) + 1
+         ilarr(l) = mod(ldecomp%gdc2glo(lun_pp%gridcell(l))-1,ldomain%ni) + 1
        enddo
        call ncd_io(varname='land1d_ixy', data=ilarr, dim1name=namel, ncid=ncid, flag='write')
        do l = bounds%begl,bounds%endl
-         ilarr(l) = (ldecomp%gdc2glo(lun%gridcell(l))-1)/ldomain%ni + 1
+         ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='land1d_jxy'      , data=ilarr        , dim1name=namel, ncid=ncid, flag='write')
        ! --- EBK Do NOT write out indices that are incorrect 4/1/2011 Bug 1310
-       !call ncd_io(varname='land1d_gi'       , data=lun%gridcell, dim1name=namel, ncid=ncid, flag='write')
+       !call ncd_io(varname='land1d_gi'       , data=lun_pp%gridcell, dim1name=namel, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
-       call ncd_io(varname='land1d_wtgcell'  , data=lun%wtgcell , dim1name=namel, ncid=ncid, flag='write')
-       call ncd_io(varname='land1d_ityplunit', data=lun%itype   , dim1name=namel, ncid=ncid, flag='write')
-       call ncd_io(varname='land1d_active'   , data=lun%active  , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_wtgcell'  , data=lun_pp%wtgcell , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_ityplunit', data=lun_pp%itype   , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_active'   , data=lun_pp%active  , dim1name=namel, ncid=ncid, flag='write')
 
        ! Write column info
 
        do c = bounds%begc,bounds%endc
-         rcarr(c) = grc%londeg(col%gridcell(c))
+         rcarr(c) = grc_pp%londeg(col_pp%gridcell(c))
        enddo
        call ncd_io(varname='cols1d_lon', data=rcarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         rcarr(c) = grc%latdeg(col%gridcell(c))
+         rcarr(c) = grc_pp%latdeg(col_pp%gridcell(c))
        enddo
        call ncd_io(varname='cols1d_lat', data=rcarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         icarr(c) = mod(ldecomp%gdc2glo(col%gridcell(c))-1,ldomain%ni) + 1
+         icarr(c) = mod(ldecomp%gdc2glo(col_pp%gridcell(c))-1,ldomain%ni) + 1
        enddo
        call ncd_io(varname='cols1d_ixy', data=icarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         icarr(c) = (ldecomp%gdc2glo(col%gridcell(c))-1)/ldomain%ni + 1
+         icarr(c) = (ldecomp%gdc2glo(col_pp%gridcell(c))-1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='cols1d_jxy'    , data=icarr         ,dim1name=namec, ncid=ncid, flag='write')
        ! --- EBK Do NOT write out indices that are incorrect 4/1/2011 Bug 1310
-       !call ncd_io(varname='cols1d_gi'     , data=col%gridcell, dim1name=namec, ncid=ncid, flag='write')
-       !call ncd_io(varname='cols1d_li'     , data=col%landunit, dim1name=namec, ncid=ncid, flag='write')
+       !call ncd_io(varname='cols1d_gi'     , data=col_pp%gridcell, dim1name=namec, ncid=ncid, flag='write')
+       !call ncd_io(varname='cols1d_li'     , data=col_pp%landunit, dim1name=namec, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
-       call ncd_io(varname='cols1d_wtgcell', data=col%wtgcell , dim1name=namec, ncid=ncid, flag='write')
-       call ncd_io(varname='cols1d_wtlunit', data=col%wtlunit , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_wtgcell', data=col_pp%wtgcell , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_wtlunit', data=col_pp%wtlunit , dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         icarr(c) = lun%itype(col%landunit(c))
+         icarr(c) = lun_pp%itype(col_pp%landunit(c))
        enddo
        call ncd_io(varname='cols1d_itype_lunit', data=icarr    , dim1name=namec, ncid=ncid, flag='write')
-       call ncd_io(varname='cols1d_active' , data=col%active  , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_active' , data=col_pp%active  , dim1name=namec, ncid=ncid, flag='write')
 
        ! Write pft info
 
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc%londeg(pft%gridcell(p))
+         rparr(p) = grc_pp%londeg(veg_pp%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lon', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc%latdeg(pft%gridcell(p))
+         rparr(p) = grc_pp%latdeg(veg_pp%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lat', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         iparr(p) = mod(ldecomp%gdc2glo(pft%gridcell(p))-1,ldomain%ni) + 1
+         iparr(p) = mod(ldecomp%gdc2glo(veg_pp%gridcell(p))-1,ldomain%ni) + 1
        enddo
        call ncd_io(varname='pfts1d_ixy', data=iparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         iparr(p) = (ldecomp%gdc2glo(pft%gridcell(p))-1)/ldomain%ni + 1
+         iparr(p) = (ldecomp%gdc2glo(veg_pp%gridcell(p))-1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='pfts1d_jxy'      , data=iparr        , dim1name=namep, ncid=ncid, flag='write')
        ! --- EBK Do NOT write out indices that are incorrect 4/1/2011 --- Bug 1310
-       !call ncd_io(varname='pfts1d_gi'       , data=pft%gridcell, dim1name=namep, ncid=ncid, flag='write')
-       !call ncd_io(varname='pfts1d_li'       , data=pft%landunit, dim1name=namep, ncid=ncid, flag='write')
-       !call ncd_io(varname='pfts1d_ci'       , data=pft%column  , dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_gi'       , data=veg_pp%gridcell, dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_li'       , data=veg_pp%landunit, dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_ci'       , data=veg_pp%column  , dim1name=namep, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
-       call ncd_io(varname='pfts1d_wtgcell'  , data=pft%wtgcell , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_wtlunit'  , data=pft%wtlunit , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_wtcol'    , data=pft%wtcol   , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_itype_veg', data=pft%itype   , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtgcell'  , data=veg_pp%wtgcell , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtlunit'  , data=veg_pp%wtlunit , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtcol'    , data=veg_pp%wtcol   , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_itype_veg', data=veg_pp%itype   , dim1name=namep, ncid=ncid, flag='write')
 
        do p = bounds%begp,bounds%endp
-          iparr(p) = lun%itype(pft%landunit(p))
+          iparr(p) = lun_pp%itype(veg_pp%landunit(p))
        enddo
        call ncd_io(varname='pfts1d_itype_lunit', data=iparr      , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_active'   , data=pft%active  , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_active'   , data=veg_pp%active  , dim1name=namep, ncid=ncid, flag='write')
 
        deallocate(rgarr,rlarr,rcarr,rparr)
        deallocate(igarr,ilarr,icarr,iparr)
@@ -4178,27 +4192,27 @@ contains
        clmptr_rs(hpindex)%ptr => ptr_lunit
        if (present(set_lake)) then
           do l = bounds%begl,bounds%endl
-             if (lun%lakpoi(l)) ptr_lunit(l) = set_lake
+             if (lun_pp%lakpoi(l)) ptr_lunit(l) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do l = bounds%begl,bounds%endl
-             if (.not.(lun%lakpoi(l))) ptr_lunit(l) = set_nolake
+             if (.not.(lun_pp%lakpoi(l))) ptr_lunit(l) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do l = bounds%begl,bounds%endl
-             if (lun%urbpoi(l)) ptr_lunit(l) = set_urb
+             if (lun_pp%urbpoi(l)) ptr_lunit(l) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do l = bounds%begl,bounds%endl
-             if (.not.(lun%urbpoi(l))) ptr_lunit(l) = set_nourb
+             if (.not.(lun_pp%urbpoi(l))) ptr_lunit(l) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do l = bounds%begl,bounds%endl
-             if (lun%ifspecial(l)) ptr_lunit(l) = set_spec
+             if (lun_pp%ifspecial(l)) ptr_lunit(l) = set_spec
           end do
        end if
 
@@ -4208,38 +4222,38 @@ contains
        clmptr_rs(hpindex)%ptr => ptr_col
        if (present(set_lake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (lun%lakpoi(l)) ptr_col(c) = set_lake
+             l =col_pp%landunit(c)
+             if (lun_pp%lakpoi(l)) ptr_col(c) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (.not.(lun%lakpoi(l))) ptr_col(c) = set_nolake
+             l =col_pp%landunit(c)
+             if (.not.(lun_pp%lakpoi(l))) ptr_col(c) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (lun%urbpoi(l)) ptr_col(c) = set_urb
+             l =col_pp%landunit(c)
+             if (lun_pp%urbpoi(l)) ptr_col(c) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (.not.(lun%urbpoi(l))) ptr_col(c) = set_nourb
+             l =col_pp%landunit(c)
+             if (.not.(lun_pp%urbpoi(l))) ptr_col(c) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (lun%ifspecial(l)) ptr_col(c) = set_spec
+             l =col_pp%landunit(c)
+             if (lun_pp%ifspecial(l)) ptr_col(c) = set_spec
           end do
        end if
        if (present(set_noglcmec)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (.not.(lun%glcmecpoi(l))) ptr_col(c) = set_noglcmec
+             l =col_pp%landunit(c)
+             if (.not.(lun_pp%glcmecpoi(l))) ptr_col(c) = set_noglcmec
           end do
        endif
 
@@ -4249,38 +4263,38 @@ contains
        clmptr_rs(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (lun%lakpoi(l)) ptr_patch(p) = set_lake
+             l =veg_pp%landunit(p)
+             if (lun_pp%lakpoi(l)) ptr_patch(p) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (.not.(lun%lakpoi(l))) ptr_patch(p) = set_nolake
+             l =veg_pp%landunit(p)
+             if (.not.(lun_pp%lakpoi(l))) ptr_patch(p) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (lun%urbpoi(l)) ptr_patch(p) = set_urb
+             l =veg_pp%landunit(p)
+             if (lun_pp%urbpoi(l)) ptr_patch(p) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (.not.(lun%urbpoi(l))) ptr_patch(p) = set_nourb
+             l =veg_pp%landunit(p)
+             if (.not.(lun_pp%urbpoi(l))) ptr_patch(p) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (lun%ifspecial(l)) ptr_patch(p) = set_spec
+             l =veg_pp%landunit(p)
+             if (lun_pp%ifspecial(l)) ptr_patch(p) = set_spec
           end do
        end if
        if (present(set_noglcmec)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (.not.(lun%glcmecpoi(l))) ptr_patch(p) = set_noglcmec
+             l =veg_pp%landunit(p)
+             if (.not.(lun_pp%glcmecpoi(l))) ptr_patch(p) = set_noglcmec
           end do
        end if
     else
@@ -4452,25 +4466,25 @@ contains
     case ('levsno')
        num2d = nlevsno
     case ('fates_levscls')
-       num2d = nlevsclass_ed
+       num2d = nlevsclass_fates
     case ('fates_levpft')
-       num2d = maxpft
+       num2d = numpft_fates
     case ('fates_levage')
-       num2d = nlevage_ed
+       num2d = nlevage_fates
     case ('fates_levfuel')
-       num2d = nfsc
+       num2d = nfsc_fates
     case ('fates_levcwdsc')
-       num2d = ncwd
+       num2d = ncwd_fates
     case ('fates_levscpf')
-       num2d = nlevsclass_ed*maxpft
+       num2d = nlevsclass_fates*numpft_fates
     case ('fates_levscag')
-       num2d = nlevsclass_ed*nlevage_ed
+       num2d = nlevsclass_fates*nlevage_fates
     case ('fates_levcan')
-       num2d = nclmax
+       num2d = nclmax_fates
     case ('fates_levcnlf')
-       num2d = nlevleaf * nclmax
+       num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')
-       num2d = nlevleaf * nclmax * numpft_ed
+       num2d = nlevleaf_fates * nclmax_fates * numpft_fates
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &
@@ -4498,27 +4512,27 @@ contains
        clmptr_ra(hpindex)%ptr => ptr_lunit
        if (present(set_lake)) then
           do l = bounds%begl,bounds%endl
-             if (lun%lakpoi(l)) ptr_lunit(l,:) = set_lake
+             if (lun_pp%lakpoi(l)) ptr_lunit(l,:) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do l = bounds%begl,bounds%endl
-             if (.not.(lun%lakpoi(l))) ptr_lunit(l,:) = set_nolake
+             if (.not.(lun_pp%lakpoi(l))) ptr_lunit(l,:) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do l = bounds%begl,bounds%endl
-             if (lun%urbpoi(l)) ptr_lunit(l,:) = set_urb
+             if (lun_pp%urbpoi(l)) ptr_lunit(l,:) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do l = bounds%begl,bounds%endl
-             if (.not.(lun%urbpoi(l))) ptr_lunit(l,:) = set_nourb
+             if (.not.(lun_pp%urbpoi(l))) ptr_lunit(l,:) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do l = bounds%begl,bounds%endl
-             if (lun%ifspecial(l)) ptr_lunit(l,:) = set_spec
+             if (lun_pp%ifspecial(l)) ptr_lunit(l,:) = set_spec
           end do
        end if
 
@@ -4528,32 +4542,32 @@ contains
        clmptr_ra(hpindex)%ptr => ptr_col
        if (present(set_lake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (lun%lakpoi(l)) ptr_col(c,:) = set_lake
+             l =col_pp%landunit(c)
+             if (lun_pp%lakpoi(l)) ptr_col(c,:) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (.not.(lun%lakpoi(l))) ptr_col(c,:) = set_nolake
+             l =col_pp%landunit(c)
+             if (.not.(lun_pp%lakpoi(l))) ptr_col(c,:) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (lun%urbpoi(l)) ptr_col(c,:) = set_urb
+             l =col_pp%landunit(c)
+             if (lun_pp%urbpoi(l)) ptr_col(c,:) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (.not.(lun%urbpoi(l))) ptr_col(c,:) = set_nourb
+             l =col_pp%landunit(c)
+             if (.not.(lun_pp%urbpoi(l))) ptr_col(c,:) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
-             if (lun%ifspecial(l)) ptr_col(c,:) = set_spec
+             l =col_pp%landunit(c)
+             if (lun_pp%ifspecial(l)) ptr_col(c,:) = set_spec
           end do
        end if
 
@@ -4563,32 +4577,32 @@ contains
        clmptr_ra(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (lun%lakpoi(l)) ptr_patch(p,:) = set_lake
+             l =veg_pp%landunit(p)
+             if (lun_pp%lakpoi(l)) ptr_patch(p,:) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (.not.(lun%lakpoi(l))) ptr_patch(p,:) = set_nolake
+             l =veg_pp%landunit(p)
+             if (.not.(lun_pp%lakpoi(l))) ptr_patch(p,:) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (lun%urbpoi(l)) ptr_patch(p,:) = set_urb
+             l =veg_pp%landunit(p)
+             if (lun_pp%urbpoi(l)) ptr_patch(p,:) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (.not.(lun%urbpoi(l))) ptr_patch(p,:) = set_nourb
+             l =veg_pp%landunit(p)
+             if (.not.(lun_pp%urbpoi(l))) ptr_patch(p,:) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
-             if (lun%ifspecial(l)) ptr_patch(p,:) = set_spec
+             l =veg_pp%landunit(p)
+             if (lun_pp%ifspecial(l)) ptr_patch(p,:) = set_spec
           end do
        end if
 

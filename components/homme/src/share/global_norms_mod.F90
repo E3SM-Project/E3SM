@@ -252,7 +252,7 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
-                            fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
+                            fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s
     use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t 
@@ -556,7 +556,11 @@ contains
           write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*', &
                                   1.0d0/(4*nu_top*((rrearth*max_normDinv)**2)*lambda_vis),'s'
        end if
-      if (hypervis_power /= 0) then 
+
+      if(dcmip16_mu>0)  write(iulog,'(a,f10.2,a)') 'dcmip16_mu   viscosity CFL: dt < S*', 1.0d0/(4*dcmip16_mu*  ((rrearth*max_normDinv)**2)*lambda_vis),'s'
+      if(dcmip16_mu_s>0)write(iulog,'(a,f10.2,a)') 'dcmip16_mu_s viscosity CFL: dt < S*', 1.0d0/(4*dcmip16_mu_s*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+
+      if (hypervis_power /= 0) then
         write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &
                                   nu*(/avg_hypervis**2,min_hypervis**2,max_hypervis**2/)
 !         print*, 'fine_ne = ', fine_ne
@@ -922,6 +926,7 @@ contains
 
   end function linf_vnorm
 
+
   subroutine wrap_repro_sum (nvars, comm, nsize)
     use dimensions_mod, only: nelemd
 #ifdef CAM
@@ -937,14 +942,23 @@ contains
     integer :: comm             !  mpi communicator
     integer, optional :: nsize  !  local buffer size (defaults to nelemd - number of elements in mpi task)
 
-    integer nsize_use
+    integer nsize_use,n,i
 
     if (present(nsize)) then
        nsize_use = nsize
     else
        nsize_use = nelemd
     endif
-    if (nvars .gt. nrepro_vars) call abortmp('ERROR: repro_sum_buffer_size exceeded')
+    if (nvars .gt. nrepro_vars) call abortmp('repro_sum_buffer_size exceeded')
+#ifndef CAM
+    ! CAM already does this, no need to do it twice
+    do n=1,nvars
+       do i=1,nsize_use
+          if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) &
+               call abortmp('NaNs detected in repro sum input')
+       enddo
+    enddo
+#endif    
 
 ! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
 

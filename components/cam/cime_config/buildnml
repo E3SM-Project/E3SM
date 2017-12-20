@@ -86,8 +86,8 @@ if ($BUILD_COMPLETE eq 'FALSE') {
     my $ocn = $COMP_OCN;
     if ($DOCN_MODE eq 'som') {$ocn = "pop";}
     my $comp;
-    if ($COMP_INTERFACE eq 'MCT' ) {$comp = "mct";}
-    if ($COMP_INTERFACE eq 'ESMF') {$comp = "esmf";}
+    if ($COMP_INTERFACE eq 'mct' ) {$comp = "mct";}
+    if ($COMP_INTERFACE eq 'esmf') {$comp = "esmf";}
     my $CAM_LIB_DIRS = "";
     if ("$CAM_CONFIG_OPTS" =~ /.*cosp.*/) {
 	$CAM_LIB_DIRS = "-cosp_libdir $EXEROOT/atm/obj/cosp";

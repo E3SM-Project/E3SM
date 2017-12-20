@@ -27,9 +27,11 @@ module interp_movie_mod
        nf_init_decomp, &
        get_varindex
 
+  use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
+
   use control_mod, only : test_case, runtype, &
        restartfreq, &
-       integration, columnpackage, kmass, nu
+       integration, kmass, nu, qsplit, interp_lon0
   use common_io_mod, only:  &
        output_start_time,   & 	
        output_end_time,     &
@@ -46,17 +48,22 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 37 !45
+  integer, parameter :: varcnt = 42 !45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
+                                                 'precl    ', &
                                                  'zeta     ', &
                                                  'dp3d     ', &
+                                                 'p        ', &
+                                                 'pnh      ', &
+                                                 'rho      ', &
                                                  'div      ', &
                                                  'T        ', &
                                                  'Th       ', &
                                                  'u        ', &
                                                  'v        ', &
+                                                 'w        ', &
                                                  'ke       ', &
                                                  'Q        ', &
                                                  'Q2       ', &
@@ -85,9 +92,9 @@ module interp_movie_mod
                                                  'hyai     ', &
                                                  'hybi     ', &
                                                  'time     '/)
-  integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double,&
+  integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,PIO_double, &
+                                          PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
@@ -99,8 +106,8 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,&   
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false., .false., .false., &
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -113,13 +120,18 @@ module interp_movie_mod
 
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,2,5,0,0,  &
        1,2,0,0,0,  &   ! geos
+       1,2,5,0,0,  &   ! precl
        1,2,3,5,0,  &   ! zeta
        1,2,3,5,0,  &   ! dp3d
+       1,2,3,5,0,  &   ! p
+       1,2,3,5,0,  &   ! pnh
+       1,2,3,5,0,  &   ! rho
        1,2,3,5,0,  &   ! div
        1,2,3,5,0,  &   ! T
        1,2,3,5,0,  &   ! Th
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
+       1,2,3,5,0,  &   ! w
        1,2,3,5,0,  &   ! ke
        1,2,3,5,0,  &   ! Q
        1,2,3,5,0,  &   ! Q2
@@ -304,36 +316,40 @@ contains
     !call nf_global_attribute(ncdf, 'np', np)
     !call nf_global_attribute(ncdf, 'ne', ne)
 
-    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa')
-    call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
-    call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'ps',   'surface pressure','Pa')
+    call nf_variable_attributes(ncdf, 'u',    'longitudinal wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'v',    'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'zeta', 'Relative vorticity','1/s')
 #if defined(_PRIM)
-    call nf_variable_attributes(ncdf, 'geo', 'Geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'geo',  'Geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'geos', 'Surface geopotential','m^2/s^2')
-    call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
+    call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
-    call nf_variable_attributes(ncdf, 'Q', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q2', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q3', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q4', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'Q5', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'lev' ,'hybrid level at midpoints' ,'level','positive','down') !,'formula_terms','a: hyam b: hybm p0: P0 ps: PS')
-    call nf_variable_attributes(ncdf, 'ilev','hybrid level at interfaces','level','positive','down') !,'formula_terms','a: hyai b: hybi p0: P0 ps: PS')
-    call nf_variable_attributes(ncdf, 'hyam','hybrid A coefficiet at layer midpoints' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hybm','hybrid B coefficiet at layer midpoints' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hyai','hybrid A coefficiet at layer interfaces' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hybi','hybrid B coefficiet at layer interfaces' ,'dimensionless') 
+    call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
+    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
+    call nf_variable_attributes(ncdf, 'rho',  'dry air density','kg/m^3')
+    call nf_variable_attributes(ncdf, 'Q',    'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q2',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q3',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q4',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'Q5',   'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'lev' , 'hybrid level at midpoints' ,'level','positive','down')
+    call nf_variable_attributes(ncdf, 'ilev', 'hybrid level at interfaces','level','positive','down')
+    call nf_variable_attributes(ncdf, 'hyam', 'hybrid A coefficiet at layer midpoints' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hybm', 'hybrid B coefficiet at layer midpoints' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
 #endif
-    call nf_variable_attributes(ncdf, 'gw', 'gauss weights','dimensionless')
-    call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
-    call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
+    call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
+    call nf_variable_attributes(ncdf, 'lat',  'column latitude','degrees_north')
+    call nf_variable_attributes(ncdf, 'lon',  'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
 
     call nf_output_init_complete(ncdf)
     allocate(lon(nlon), lat(nlat), gw(nlat))
     allocate(lev(nlev), ilev(nlev+1))
-    lon = get_interp_lon()
+    lon = get_interp_lon() !+ interp_lon0
     lat = get_interp_lat()
 
 
@@ -401,12 +417,13 @@ contains
 
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
-    use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
+    use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
+    use element_ops, only : get_field
     use hybvcoord_mod, only :  hvcoord_t 
+    use dcmip16_wrapper, only: precl
 #endif
-    use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
     use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
@@ -414,9 +431,8 @@ contains
     use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    use control_mod, only : qsplit
     use time_mod   , only : TimeLevel_Qdp
-    ! ---------------------    
+    ! ---------------------
     type (element_t),target    :: elem(:)
     type (parallel_t)     :: par
     type (TimeLevel_t)  :: tl
@@ -434,12 +450,12 @@ contains
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
     real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:)
     real(kind=real_kind), allocatable :: varvtmp(:,:,:,:), ulatlon(:,:,:,:,:)
-    
+    real(kind=real_kind)  :: temp3d(np,np,nlev)    
     integer :: st, en
 
     integer :: ierr
 
-    integer :: ncnt,n0,n0q,itype,qindex,cindex
+    integer :: ncnt,n0,n0_Q,itype,qindex,cindex
     character(len=2) :: vname
 
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
@@ -449,6 +465,7 @@ contains
 
     call t_startf('interp_movie_output')
     n0 = tl%n0
+    call TimeLevel_Qdp( tl, qsplit, n0_Q)
 
 !    if (0==pio_iotask_rank(piofs)) write(*,'(a,i4,a,i1)') &
 !         "lat/lon interp movie output: ios=",ios," interpolation type=",&
@@ -740,13 +757,32 @@ contains
                 endif
              endif
 
+             if(nf_selectedvar('precl', output_varnames)) then
+                if (allocated(precl)) then
+                   if (par%masterproc) print *,'writing precl...'
+                   allocate (datall(ncnt,1))
+                   st=1
+                   do ie=1,nelemd
+                      en=st+interpdata(ie)%n_interp-1
+                      call interpolate_scalar(interpdata(ie),precl(:,:,ie), &
+                           np, datall(st:en,1))
+                      st=st+interpdata(ie)%n_interp
+                   enddo
+                   call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='precl')
+                   deallocate(datall)
+                endif
+             endif
+
+
+
              if(nf_selectedvar('T', output_varnames)) then
                 if (par%masterproc) print *,'writing T...'
                 allocate(datall(ncnt,nlev))
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
+                   call get_field(elem(ie),'temperature',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
@@ -765,6 +801,51 @@ contains
                    st=st+interpdata(ie)%n_interp
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='dp3d')
+                deallocate(datall)
+             end if
+
+             if(nf_selectedvar('p', output_varnames)) then
+                if (par%masterproc) print *,'writing p...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call get_field(elem(ie),'p',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='p')
+                deallocate(datall)
+             end if
+
+             if(nf_selectedvar('pnh', output_varnames)) then
+                if (par%masterproc) print *,'writing pnh...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call get_field(elem(ie),'pnh',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='pnh')
+                deallocate(datall)
+             end if
+
+             if(nf_selectedvar('rho', output_varnames)) then
+                if (par%masterproc) print *,'writing rho...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call get_field(elem(ie),'rho',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='rho')
                 deallocate(datall)
              end if
 
@@ -788,22 +869,12 @@ contains
 
              if(nf_selectedvar('Th', output_varnames)) then
                 if (par%masterproc) print *,'writing Th...'
-                pr0=1./(p0)
                 st=1
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 do ie=1,nelemd
-                   do k=1,nlev
-                      do j=1,np
-                         do i=1,np
-                            pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
-                            var3d(i,j,k,1)=elem(ie)%state%T(i,j,k,n0)* &
-                                 (pfull*pr0)**(-kappa)
-                         end do
-                      end do
-                   end do
+                   call get_field(elem(ie),'pottemp',temp3d,hvcoord,n0,n0_Q)
                    en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,1), &
+                   call interpolate_scalar(interpdata(ie), temp3d, &
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 end do
@@ -842,7 +913,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%derived%phi, &
+                   call get_field(elem(ie),'phi',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie), temp3d, &
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
@@ -850,19 +922,29 @@ contains
                 deallocate(datall)
              end if
 
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
+                do ie=1,nelemd
+                   call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
+                end do
+                call make_C0(var3d,elem,par)
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
+                deallocate(datall,var3d)
+             end if
+
              if(nf_selectedvar('omega', output_varnames)) then
                 if (par%masterproc) print *,'writing omega...'
                 allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
                 do ie=1,nelemd
-                   do k=1,nlev
-                      do j=1,np
-                         do i=1,np
-                            pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
-                            var3d(i,j,k,ie)=elem(ie)%derived%omega_p(i,j,k)*pfull
-                         end do
-                      end do
-                   end do
+                   call get_field(elem(ie),'omega',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
                 end do
                 call make_C0(var3d,elem,par)
                 st=1
@@ -876,9 +958,6 @@ contains
                 deallocate(datall,var3d)
              end if
 
-             ! note: this is kind of a hack: forcing is computed during the
-             ! timestep, from timelevel nm1 and stored in FM(nm1). after
-             ! the timestep is over, nm1 data will be in FM(np1)
              if(nf_selectedvar('FU', output_varnames) .or. &
                   nf_selectedvar('FV', output_varnames)) then
                 allocate(var3d(ncnt,2,nlev,1))
@@ -886,7 +965,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie),  &
-                        elem(ie)%derived%FM(:,:,:,:,tl%np1), nlev, var3d(st:en,:,:,1), 0)
+                        elem(ie)%derived%FM(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
 
@@ -899,61 +978,6 @@ contains
                 end if
                 deallocate(var3d)
              end if
-
-#ifdef ENERGY_DIAGNOSTICS
-             if(nf_selectedvar('DIFFU', output_varnames) .or. &
-                  nf_selectedvar('DIFFV', output_varnames)) then
-                allocate(var3d(ncnt,2,nlev,1))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_vector(interpdata(ie), elem(ie), &
-                        elem(ie)%accum%DIFF(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
-                   st=st+interpdata(ie)%n_interp
-                enddo
-
-                if(nf_selectedvar('DIFFU', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,1,:,1),start3d, count3d, name='DIFFU')
-                end if
-
-                if(nf_selectedvar('DIFFV', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,2,:,1),start3d, count3d, name='DIFFV')
-                end if
-                deallocate(var3d)
-             end if
-             if(nf_selectedvar('CONVU', output_varnames) .or. &
-                  nf_selectedvar('CONVV', output_varnames)) then
-                allocate(var3d(ncnt,2,nlev,1))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_vector(interpdata(ie), elem(ie), &
-                        elem(ie)%accum%CONV(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
-                   st=st+interpdata(ie)%n_interp
-                enddo
-
-                if(nf_selectedvar('CONVU', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,1,:,1),start3d, count3d, name='CONVU')
-                end if
-
-                if(nf_selectedvar('CONVV', output_varnames)) then
-                   call nf_put_var(ncdf(ios),var3d(:,2,:,1),start3d, count3d, name='CONVV')
-                end if
-                deallocate(var3d)
-             end if
-             if(nf_selectedvar('DIFFT', output_varnames)) then
-                allocate(datall(ncnt,nlev))
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%accum%DIFFT, &
-                        np, nlev, datall(st:en,:))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='DIFFT')
-                deallocate(datall)
-             end if
-#endif
 
              ! note: HOMME now compiles both interp_movie_mod.F90 and native grid output modules 
              ! (prim_movie_mod.F90 or shal_movie_mod.F90) into a single executable.

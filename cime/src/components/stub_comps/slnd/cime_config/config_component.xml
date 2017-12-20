@@ -2,7 +2,11 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+
+  <description>
+    <desc lnd="SLND">Stub land component</desc>
+  </description>
 
   <entry id="COMP_LND">
     <type>char</type>
@@ -13,8 +17,10 @@
     <desc>Name of land component</desc>
   </entry>
 
-  <description>
-    <desc compset="_SLND">Stub lnd component</desc>
-  </description>
+  <help>
+    =========================================
+    SLND naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>

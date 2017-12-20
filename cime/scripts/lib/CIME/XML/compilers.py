@@ -10,6 +10,7 @@ from CIME.BuildTools.macrowriterbase import write_macros_file_v1
 from CIME.BuildTools.makemacroswriter import MakeMacroWriter
 from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
 from CIME.BuildTools.macroconditiontree import merge_optional_trees
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
+    #pylint: disable=arguments-differ
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
@@ -122,7 +124,7 @@ class Compilers(GenericXML):
         expect(subgroup is None, "This class does not support subgroups")
         value = None
 
-        node = self.get_optional_compiler_node(name)
+        node = self.get_optional_compiler_node(name, attributes=attribute)
         if node is not None:
             value = node.text
 
@@ -159,7 +161,7 @@ class Compilers(GenericXML):
             else:
                 format_ = output_format
 
-            if isinstance(macros_file, basestring):
+            if isinstance(macros_file, six.string_types):
                 with open(macros_file, "w") as macros:
                     self._write_macros_file_v2(format_, macros)
             else:
@@ -204,13 +206,13 @@ class Compilers(GenericXML):
         while value_lists:
             # Variables that are ready to be written.
             ready_variables = [
-                var_name for var_name in value_lists.keys()
+                var_name for var_name in value_lists
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The file %s has bad <var> references. "
+                   "The file {} has bad <var> references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined."%self.filename)
+                   "are in a <var> tag but not actually defined.".format(self.filename))
             big_normal_tree = None
             big_append_tree = None
             for var_name in ready_variables:
@@ -243,9 +245,9 @@ def _add_to_macros(node, macros):
             if name.startswith("ADD_"):
                 basename = name[4:]
                 if basename in macros:
-                    macros[basename] = "%s %s" % (macros[basename], value)
+                    macros[basename] = "{} {}".format(macros[basename], value)
                 elif name in macros:
-                    macros[name] = "%s %s" % (macros[name], value)
+                    macros[name] = "{} {}".format(macros[name], value)
                 else:
                     macros[name] = value
             else:
@@ -253,7 +255,7 @@ def _add_to_macros(node, macros):
 
         else:
             cond_macros = macros["_COND_"]
-            for key, value2 in attrib.iteritems():
+            for key, value2 in attrib.items():
                 if key not in cond_macros:
                     cond_macros[key] = {}
                 if value2 not in cond_macros[key]:

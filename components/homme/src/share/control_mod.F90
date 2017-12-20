@@ -13,26 +13,22 @@ module control_mod
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
-! none of this is used anymore:
+! experimental option for preqx model:
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
   logical, public  :: use_semi_lagrange_transport_ir = .false.
   logical, public  :: use_semi_lagrange_transport_qlt = .false.
   logical, public  :: use_semi_lagrange_transport_qlt_check = .false.
 
+! set to .true. to run the theta nonydrostatic model in hydrostatic mode
+  logical, public :: theta_hydrostatic_mode = .false.  
 
-!shallow water advection tests:
-!kmass points to a level with density.  other levels contain test tracers
-  integer, public  :: kmass  = -1
-  integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
-  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
   integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
-  integer, public  :: energy_fixer = 0    !  not used anymore
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
@@ -62,10 +58,20 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: precon_method  ! if semi_implicit, type of preconditioner:
                                                   ! choices block_jacobi or identity
 
+  integer              , public :: coord_transform_method   ! If zoltan2 is used, various ways of representing the coordinates methods
+                                                            ! Instead of using the sphere coordinates, it is better to use cube or projected 2D coordinates for quality.
+                                                            ! check params_mod for options.
+
+  integer              , public :: z2_map_method            ! If zoltan2 is used,
+                                                            ! Task mapping method to be used by zoltan2.
+                                                            ! Z2_NO_TASK_MAPPING        (1) - is no task mapping
+                                                            ! Z2_TASK_MAPPING           (2) - performs default task mapping of zoltan2.
+                                                            ! Z2_OPTIMIZED_TASK_MAPPING (3) - includes network aware optimizations.
+                                                            ! Use (3) if zoltan2 is enabled.
+
   integer              , public :: partmethod     ! partition methods
   character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
   character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
-  integer              , public :: sub_case                   ! generic test case param 
   integer              , public :: tasknum
   integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
   character(len=MAX_STRING_LEN) :: remap_type     ! selected remapping option
@@ -74,12 +80,10 @@ module control_mod
   integer              , public :: runtype 
   integer              , public :: timerdetail 
   integer              , public :: numnodes 
-  integer              , public :: multilevel
   logical              , public :: uselapi
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
-  character(len=MAX_STRING_LEN)    , public :: columnpackage
 ! namelist variable set to dry,notdry,moist
 ! internally the code should use logical "use_moisture"
   character(len=MAX_STRING_LEN)    , public :: moisture  
@@ -142,11 +146,6 @@ module control_mod
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
 
-  real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
-  real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
-#ifndef CAM
-  real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
-#endif
 
   integer, public, parameter :: west  = 1
   integer, public, parameter :: east  = 2
@@ -159,6 +158,28 @@ module control_mod
   
   logical, public :: disable_diagnostics  = .FALSE.
 
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! test case global parameters
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! generic test case parameter - can be used by any test case to define options
+  integer, public :: sub_case = 1                  
+
+  real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
+  real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
+#ifndef CAM
+  real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
+#endif
+
+  ! shallow water advection test paramters
+  ! kmass = level index with density.  other levels contain test tracers
+  integer, public  :: kmass  = -1
+  integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
+  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
+
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
   real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
   real(real_kind), public :: dcmip2_0_Rm      = 3.d0*dd_pi/4.d0   ! radius of mountain range        (radians)
@@ -170,4 +191,16 @@ module control_mod
   real(real_kind), public :: dcmip2_x_d       = 5000.0d0       ! mountain half width   (m)
   real(real_kind), public :: dcmip2_x_xi      = 4000.0d0       ! mountain wavelength   (m)
 
+  ! for dcmip 2014 test 4:
+  integer,         public :: dcmip4_moist     = 1
+  real(real_kind), public :: dcmip4_X         = 1.0d0 
+
+  ! for dcmip 2016 test 2
+  integer, public :: dcmip16_prec_type = 0;
+  integer, public :: dcmip16_pbl_type  = 0;
+
+  ! for dcmip 2016 test 3
+  real (kind=real_kind), public :: dcmip16_mu      = 0        ! additional uniform viscosity (momentum)
+  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalars)
+  real (kind=real_kind), public :: interp_lon0     = 0.0d0
 end module control_mod

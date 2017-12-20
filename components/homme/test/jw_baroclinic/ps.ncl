@@ -23,7 +23,7 @@ end if
 
 if (isatt(f[0],"ne")) then
    NE=f[0]@ne
-   NPTS = f[0]@nv
+   NPTS = f[0]@np
    deg=360.0 / (4*NE*(NPTS-1))
    hdeg=sprintf("%4.2f", deg)
    print("NE="+NE+" NPTS="+NPTS+" degree="+hdeg)

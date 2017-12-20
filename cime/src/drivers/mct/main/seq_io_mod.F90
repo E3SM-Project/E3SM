@@ -36,7 +36,7 @@ module seq_io_mod
 
   use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8, in => shr_kind_in
   use shr_kind_mod, only: cl => shr_kind_cl, cs => shr_kind_cs
-  use shr_sys_mod       ! system calls
+  use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
   use seq_flds_mod, only : seq_flds_lookup
@@ -106,6 +106,7 @@ module seq_io_mod
    character(CL)                  :: wfilename = ''
    type(file_desc_t), save        :: cpl_io_file(0:file_desc_t_cnt)
    integer(IN)                    :: cpl_pio_iotype
+   integer(IN)                    :: cpl_pio_ioformat
    type(iosystem_desc_t), pointer :: cpl_io_subsystem
 
    character(CL) :: charvar   ! buffer for string read/write
@@ -116,14 +117,11 @@ contains
 !=================================================================================
 
   subroutine seq_io_cpl_init()
-    use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype
+    use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
 
-    character(len=seq_comm_namelen) :: cpl_name
-
-    ! For consistency with how io_compname is set, we get the coupler name here
-    cpl_name = seq_comm_name(CPLID)
-    cpl_io_subsystem=>shr_pio_getiosys(cpl_name)
-    cpl_pio_iotype = shr_pio_getiotype(cpl_name)
+    cpl_io_subsystem=>shr_pio_getiosys(CPLID)
+    cpl_pio_iotype = shr_pio_getiotype(CPLID)
+    cpl_pio_ioformat = shr_pio_getioformat(CPLID)
 
   end subroutine seq_io_cpl_init
 
@@ -140,20 +138,18 @@ contains
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
+subroutine seq_io_wopen(filename,clobber,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(*),intent(in) :: filename
     logical,optional,intent(in):: clobber
-    logical,optional,intent(in):: cdf64
     integer,optional,intent(in):: file_ind
 
     !EOP
 
     logical :: exists
     logical :: lclobber
-    logical :: lcdf64
     integer :: iam,mpicom
     integer :: rcode
     integer :: nmode
@@ -170,9 +166,6 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
     lclobber = .false.
     if (present(clobber)) lclobber=clobber
 
-    lcdf64 = .false.
-    if (present(cdf64)) lcdf64=cdf64
-
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
 
@@ -185,9 +178,13 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
        if (exists) then
           if (lclobber) then
              nmode = pio_clobber
-             !lcdf64 only applies to classic NETCDF files.
-             if (lcdf64 .and. cpl_pio_iotype == PIO_IOTYPE_NETCDF) &
-                  nmode = ior(nmode,PIO_64BIT_OFFSET)
+
+             ! only applies to classic NETCDF files.
+             if(cpl_pio_iotype == PIO_IOTYPE_NETCDF .or. &
+                  cpl_pio_iotype == PIO_IOTYPE_PNETCDF) then
+                   nmode = ior(nmode,cpl_pio_ioformat)
+             endif
+
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
@@ -206,9 +203,11 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
           endif
        else
           nmode = pio_noclobber
-          !lcdf64 only applies to classic NETCDF files.
-          if (lcdf64 .and. cpl_pio_iotype == PIO_IOTYPE_NETCDF) &
-               nmode = ior(nmode,PIO_64BIT_OFFSET)
+          ! only applies to classic NETCDF files.
+          if(cpl_pio_iotype == PIO_IOTYPE_NETCDF .or. &
+               cpl_pio_iotype == PIO_IOTYPE_PNETCDF) then
+             nmode = ior(nmode,cpl_pio_ioformat)
+          endif
           rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)

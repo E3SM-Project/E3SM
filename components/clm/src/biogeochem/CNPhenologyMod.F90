@@ -25,13 +25,14 @@ module CNPhenologyMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
   use CropType            , only : crop_type
-  use EcophysConType      , only : ecophyscon
+  use VegetationPropertiesType      , only : veg_vp
   use SoilStateType       , only : soilstate_type
+  use atm2lndType         , only : atm2lnd_type
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
-  use ColumnType          , only : col                
-  use GridcellType        , only : grc                
-  use PatchType           , only : pft                
+  use ColumnType          , only : col_pp                
+  use GridcellType        , only : grc_pp                
+  use VegetationType           , only : veg_pp                
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : nu_com 
@@ -49,8 +50,10 @@ module CNPhenologyMod
   ! !PRIVATE DATA MEMBERS:
   type, private :: CNPnenolParamsType
      real(r8) :: crit_dayl       ! critical day length for senescence
-     real(r8) :: ndays_on     	 ! number of days to complete leaf onset
-     real(r8) :: ndays_off	 ! number of days to complete leaf offset
+     real(r8) :: crit_dayl_stress ! critical day length for senescence (stress)
+     real(r8) :: cumprec_onset   ! 10-day cumulative precipitation threshold for onset
+     real(r8) :: ndays_on        ! number of days to complete leaf onset
+     real(r8) :: ndays_off       ! number of days to complete leaf offset
      real(r8) :: fstor2tran      ! fraction of storage to move to transfer for each onset
      real(r8) :: crit_onset_fdd  ! critical number of freezing days to set gdd counter
      real(r8) :: crit_onset_swi  ! critical number of days > soilpsi_on for onset
@@ -58,7 +61,7 @@ module CNPhenologyMod
      real(r8) :: crit_offset_fdd ! critical number of freezing days to initiate offset
      real(r8) :: crit_offset_swi ! critical number of water stress days to initiate offset
      real(r8) :: soilpsi_off     ! critical soil water potential for leaf offset
-     real(r8) :: lwtop   	 ! live wood turnover proportion (annual fraction)
+     real(r8) :: lwtop           ! live wood turnover proportion (annual fraction)
   end type CNPnenolParamsType
 
   ! CNPhenolParamsInst is populated in readCNPhenolParams 
@@ -67,6 +70,8 @@ module CNPhenologyMod
   real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
   real(r8) :: crit_dayl                     ! critical daylength for offset (seconds)
+  real(r8) :: crit_dayl_stress              ! critical day length for senescence (stress)
+  real(r8) :: cumprec_onset                 ! 10-day cumulative precipitation threshold for onset
   real(r8) :: ndays_on                      ! number of days to complete onset
   real(r8) :: ndays_off                     ! number of days to complete offset
   real(r8) :: fstor2tran                    ! fraction of storage to move to transfer on each onset
@@ -103,6 +108,7 @@ contains
     !
     ! !USES:
     use ncdio_pio    , only: file_desc_t,ncd_io
+    use clm_varcon   , only: secspday
 
     ! !ARGUMENTS:
     implicit none
@@ -123,6 +129,22 @@ contains
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNPhenolParamsInst%crit_dayl=tempr
+
+    tString='crit_dayl_stress'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) then 
+        crit_dayl_stress = secspday / 4 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    else
+        CNPhenolParamsInst%crit_dayl_stress=tempr
+    end if
+
+    tString='cumprec_onset'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) then
+        cumprec_onset = 0._r8 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    else
+        CNPhenolParamsInst%cumprec_onset=tempr
+    end if
 
     tString='ndays_on'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
@@ -178,7 +200,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNPhenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       num_pcropp, filter_pcropp, doalb, &
+       num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
        waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
        dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
        nitrogenstate_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -197,6 +219,7 @@ contains
     logical                  , intent(in)    :: doalb           ! true if time for sfc albedo calc
     type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
+    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(crop_type)          , intent(inout)    :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
@@ -226,7 +249,7 @@ contains
          phosphorusstate_vars,phosphorusflux_vars)
 
     call CNStressDecidPhenology(num_soilp, filter_soilp,   &
-         soilstate_vars, temperature_vars, cnstate_vars, &
+         soilstate_vars, atm2lnd_vars, temperature_vars, cnstate_vars, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
          phosphorusstate_vars,phosphorusflux_vars)
 
@@ -310,6 +333,8 @@ contains
     ! -----------------------------------------
 
     ! onset parameters
+    cumprec_onset=CNPhenolParamsInst%cumprec_onset
+    crit_dayl_stress=CNPhenolParamsInst%crit_dayl_stress
     crit_onset_fdd=CNPhenolParamsInst%crit_onset_fdd
     ! critical onset gdd now being calculated as a function of annual
     ! average 2m temp.
@@ -451,14 +476,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                    & 
-         ivt        => pft%itype                , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt         => veg_pp%itype                , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
-         evergreen  => ecophyscon%evergreen     , & ! Input:  [real(r8) (:) ]  binary flag for evergreen leaf habit (0 or 1)     
-         leaf_long  => ecophyscon%leaf_long     , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
-         
-         bglfr      => cnstate_vars%bglfr_patch , & ! Output: [real(r8) (:) ]  background litterfall rate (1/s)                  
-         bgtr       => cnstate_vars%bgtr_patch  , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
-         lgsf       => cnstate_vars%lgsf_patch    & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
+         evergreen   => veg_vp%evergreen     , & ! Input:  [real(r8) (:) ]  binary flag for evergreen leaf habit (0 or 1)     
+         leaf_long   => veg_vp%leaf_long     , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
+         froot_long  => veg_vp%froot_long    , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
+         bglfr_leaf  => cnstate_vars%bglfr_leaf_patch , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
+         bglfr_froot => cnstate_vars%bglfr_froot_patch, & ! Output: [real(r8) (:) ]  background fine root litterfall (1/s)
+         bgtr        => cnstate_vars%bgtr_patch  , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
+         lgsf        => cnstate_vars%lgsf_patch    & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
          )
 
       dayspyr   = get_days_per_year()
@@ -466,7 +492,8 @@ contains
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          if (evergreen(ivt(p)) == 1._r8) then
-            bglfr(p) = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
+            bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
+            bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
             bgtr(p)  = 0._r8
             lgsf(p)  = 0._r8
          end if
@@ -514,12 +541,12 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                             & 
-         ivt                                 =>    pft%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
-         dayl                                =>    grc%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
-         prev_dayl                           =>    grc%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
+         ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
+         dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
+         prev_dayl                           =>    grc_pp%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
          
-         season_decid                        =>    ecophyscon%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
-         woody                               =>    ecophyscon%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         season_decid                        =>    veg_vp%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
          
          t_soisno                            =>    temperature_vars%t_soisno_col                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          
@@ -534,7 +561,8 @@ contains
          onset_gdd                           =>    cnstate_vars%onset_gdd_patch                          , & ! Output: [real(r8)  (:)   ]  onset growing degree days                         
          offset_flag                         =>    cnstate_vars%offset_flag_patch                        , & ! Output: [real(r8)  (:)   ]  offset flag                                       
          offset_counter                      =>    cnstate_vars%offset_counter_patch                     , & ! Output: [real(r8)  (:)   ]  offset counter (seconds)                          
-         bglfr                               =>    cnstate_vars%bglfr_patch                              , & ! Output: [real(r8)  (:)   ]  background litterfall rate (1/s)                  
+         bglfr_leaf                          =>    cnstate_vars%bglfr_leaf_patch                         , & ! Output: [real(r8)  (:)   ]  background leaf litterfall rate (1/s)                  
+         bglfr_froot                         =>    cnstate_vars%bglfr_froot_patch                        , & ! Output: [real(r8)  (:)   ]  background fine root litterfall rate (1/s)     
          bgtr                                =>    cnstate_vars%bgtr_patch                               , & ! Output: [real(r8)  (:)   ]  background transfer growth rate (1/s)             
          lgsf                                =>    cnstate_vars%lgsf_patch                               , & ! Output: [real(r8)  (:)   ]  long growing season factor [0-1]                  
          
@@ -626,14 +654,15 @@ contains
       ! start pft loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          if (season_decid(ivt(p)) == 1._r8) then
 
             ! set background litterfall rate, background transfer rate, and
             ! long growing season factor to 0 for seasonal deciduous types
-            bglfr(p) = 0._r8
+            bglfr_leaf(p) = 0._r8
+            bglfr_froot(p) = 0._r8
             bgtr(p) = 0._r8
             lgsf(p) = 0._r8
 
@@ -836,7 +865,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNStressDecidPhenology (num_soilp, filter_soilp , &                                            
-       soilstate_vars, temperature_vars, cnstate_vars        , &
+       soilstate_vars, atm2lnd_vars, temperature_vars, cnstate_vars        , &
        carbonstate_vars, nitrogenstate_vars, carbonflux_vars,nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
     !
@@ -861,6 +890,7 @@ contains
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(temperature_type)   , intent(in)    :: temperature_vars
+    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(inout) :: carbonstate_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
@@ -880,17 +910,19 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                             & 
-         ivt                                 =>    pft%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
-         dayl                                =>    grc%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
+         ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
+         dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
          
-         leaf_long                           =>    ecophyscon%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)                              
-         woody                               =>    ecophyscon%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
-         stress_decid                        =>    ecophyscon%stress_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for stress-deciduous leaf habit (0 or 1)
+         leaf_long                           =>    veg_vp%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)                              
+         froot_long                          =>    veg_vp%froot_long                                 , & ! Input:  [real(r8)  (:)   ]  fine root longevity (yrs)                  
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         stress_decid                        =>    veg_vp%stress_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for stress-deciduous leaf habit (0 or 1)
          
          soilpsi                             =>    soilstate_vars%soilpsi_col                            , & ! Input:  [real(r8)  (:,:) ]  soil water potential in each soil layer (MPa)   
          
          t_soisno                            =>    temperature_vars%t_soisno_col                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          
+         prec10                              =>    atm2lnd_vars%prec10_patch                             , & ! Input:  [real(r8) (:)    ]  10-day running mean precipitation
          dormant_flag                        =>    cnstate_vars%dormant_flag_patch                       , & ! Output:  [real(r8) (:)   ]  dormancy flag                                     
          days_active                         =>    cnstate_vars%days_active_patch                        , & ! Output:  [real(r8) (:)   ]  number of days since last dormancy                
          onset_flag                          =>    cnstate_vars%onset_flag_patch                         , & ! Output:  [real(r8) (:)   ]  onset flag                                        
@@ -904,7 +936,8 @@ contains
          offset_fdd                          =>    cnstate_vars%offset_fdd_patch                         , & ! Output:  [real(r8) (:)   ]  offset freezing degree days counter               
          offset_swi                          =>    cnstate_vars%offset_swi_patch                         , & ! Output:  [real(r8) (:)   ]  offset soil water index                           
          lgsf                                =>    cnstate_vars%lgsf_patch                               , & ! Output:  [real(r8) (:)   ]  long growing season factor [0-1]                  
-         bglfr                               =>    cnstate_vars%bglfr_patch                              , & ! Output:  [real(r8) (:)   ]  background litterfall rate (1/s)                  
+         bglfr_leaf                          =>    cnstate_vars%bglfr_leaf_patch                         , & ! Output:  [real(r8) (:)   ]  background leaf litterfall rate (1/s)                  
+         bglfr_froot                         =>    cnstate_vars%bglfr_froot_patch                        , & ! Output:  [real(r8) (:)   ]  background fine root litterfall rate (1/s)  
          bgtr                                =>    cnstate_vars%bgtr_patch                               , & ! Output:  [real(r8) (:)   ]  background transfer growth rate (1/s)             
          annavg_t2m                          =>    cnstate_vars%annavg_t2m_patch                         , & ! Output:  [real(r8) (:)   ]  annual average 2m air temperature (K)             
      
@@ -998,8 +1031,8 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          if (stress_decid(ivt(p)) == 1._r8) then
             soilt = t_soisno(c,3)
@@ -1132,8 +1165,17 @@ contains
                   if (onset_gddflag(p) == 1._r8 .and. onset_gdd(p) < crit_onset_gdd) onset_flag(p) = 0._r8
                end if
 
+               if (nu_com .ne. 'RD') then
+                   crit_dayl_stress = secspqtrday    !needed for BFB test
+               end if
+
                ! only allow onset if dayl > 6hrs
-               if (onset_flag(p) == 1._r8 .and. dayl(g) <= secspqtrday) then
+               if (onset_flag(p) == 1._r8 .and. dayl(g) <= crit_dayl_stress) then
+                  onset_flag(p) = 0._r8
+               end if
+               ! Require cumulative precipitation threshold for onset 
+               ! Dahlin et al., Biogeosciences 2015.
+               if (prec10(p) * 86400._r8 * 10._r8 < cumprec_onset .and. nu_com .eq. 'RD') then
                   onset_flag(p) = 0._r8
                end if
 
@@ -1226,7 +1268,7 @@ contains
                end if
 
                ! force offset if daylength is < 6 hrs
-               if (dayl(g) <= secspqtrday) then
+               if (dayl(g) <= crit_dayl_stress) then
                   offset_flag(p) = 1._r8
                end if
 
@@ -1255,12 +1297,15 @@ contains
 
             ! set background litterfall rate, when not in the phenological offset period
             if (offset_flag(p) == 1._r8) then
-               bglfr(p) = 0._r8
+               bglfr_leaf(p) = 0._r8
+               bglfr_froot(p) = 0._r8
             else
                ! calculate the background litterfall rate (bglfr)
                ! in units 1/s, based on leaf longevity (yrs) and correction for long growing season
 
-               bglfr(p) = (1._r8/(leaf_long(ivt(p))*dayspyr*secspday))*lgsf(p)
+               bglfr_leaf(p)  = (1._r8/(leaf_long(ivt(p))*dayspyr*secspday))*lgsf(p)
+               bglfr_froot(p) = (1._r8/(froot_long(ivt(p))*dayspyr*secspday))*lgsf(p)
+
             end if
 
             ! set background transfer rate when active but not in the phenological onset period
@@ -1365,11 +1410,13 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                             & 
-         ivt               =>    pft%itype                               , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt               =>    veg_pp%itype                               , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
-         leaf_long         =>    ecophyscon%leaf_long                    , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
-         leafcn            =>    ecophyscon%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
-         fertnitro         =>    ecophyscon%fertnitro                    , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)    
+         leaf_long         =>    veg_vp%leaf_long                    , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
+         froot_long        =>    veg_vp%froot_long                   , & ! Input:   [real(r8) (:) ]  fine root longevity (yrs)                              
+
+         leafcn            =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
+         fertnitro         =>    veg_vp%fertnitro                    , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)    
          
          t_ref2m_min       =>    temperature_vars%t_ref2m_min_patch      , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10               =>    temperature_vars%t_a10_patch            , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)    
@@ -1393,7 +1440,8 @@ contains
          cumvd             =>    cnstate_vars%cumvd_patch                , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?             
          hdidx             =>    cnstate_vars%hdidx_patch                , & ! Output: [real(r8) (:) ]  cold hardening index?                             
          vf                =>    cnstate_vars%vf_patch                   , & ! Output: [real(r8) (:) ]  vernalization factor                              
-         bglfr             =>    cnstate_vars%bglfr_patch                , & ! Output: [real(r8) (:) ]  background litterfall rate (1/s)                  
+         bglfr_leaf        =>    cnstate_vars%bglfr_leaf_patch           , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
+         bglfr_froot       =>    cnstate_vars%bglfr_froot_patch          , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)    
          bgtr              =>    cnstate_vars%bgtr_patch                 , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
          lgsf              =>    cnstate_vars%lgsf_patch                 , & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
          onset_flag        =>    cnstate_vars%onset_flag_patch           , & ! Output: [real(r8) (:) ]  onset flag                                        
@@ -1410,7 +1458,7 @@ contains
          dwt_seedn_to_leaf =>    nitrogenflux_vars%dwt_seedn_to_leaf_col , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level                
          crpyld            =>    crop_vars%crpyld_patch                  , & ! Output:  [real(r8) ):)]  harvested crop (bu/acre)
          dmyield           =>    crop_vars%dmyield_patch                 , & ! Output:  [real(r8) ):)]  dry matter harvested crop (t/ha)
-         leafcp            =>    ecophyscon%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
+         leafcp            =>    veg_vp%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
          leafp_xfer        =>    phosphorusstate_vars%leafp_xfer_patch   , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer                           
          dwt_seedp_to_leaf =>    phosphorusflux_vars%dwt_seedp_to_leaf_col , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level                
          fert              =>    nitrogenflux_vars%fert_patch              & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
@@ -1425,13 +1473,14 @@ contains
 
       do fp = 1, num_pcropp
          p = filter_pcropp(fp)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
          h = inhemi(p)
 
          ! background litterfall and transfer rates; long growing season factor
 
-         bglfr(p) = 0._r8 ! this value changes later in a crop's life cycle
+         bglfr_leaf(p)  = 0._r8 ! this value changes later in a crop's life cycle
+         bglfr_froot(p) = 0._r8 ! this value changes later in a crop's life cycle
          bgtr(p)  = 0._r8
          lgsf(p)  = 0._r8
 
@@ -1767,7 +1816,8 @@ contains
                ! Use CN's simple formula at least as a place holder (slevis)
 
             else if (hui(p) >= huigrain(p)) then
-               bglfr(p) = 1._r8/(leaf_long(ivt(p))*dayspyr*secspday)
+               bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p))*dayspyr*secspday)
+               bglfr_froot(p) = 1._r8/(froot_long(ivt(p))*dayspyr*secspday) 
             end if
 
             ! continue fertilizer application while in phase 2;
@@ -1840,9 +1890,9 @@ contains
 
     ! Figure out what hemisphere each PFT is in
     do p = bounds%begp, bounds%endp
-       g = pft%gridcell(p)
+       g = veg_pp%gridcell(p)
        ! Northern hemisphere
-       if ( grc%latdeg(g) > 0.0_r8 )then
+       if ( grc_pp%latdeg(g) > 0.0_r8 )then
           inhemi(p) = inNH
        else
           inhemi(p) = inSH
@@ -1908,7 +1958,7 @@ contains
          huigrain    => cnstate_vars%huigrain_patch          & ! Output: [real(r8) (:) ]  heat unit index needed to reach vegetative maturity
          )
 
-      c = pft%column(p)
+      c = veg_pp%column(p)
 
       ! for all equations - temperatures must be in degrees (C)
       ! calculate temperature of crown of crop (e.g., 3 cm soil temperature)
@@ -2034,9 +2084,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                             & 
-         ivt                                 =>    pft%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type                                
+         ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type                                
 
-         woody                               =>    ecophyscon%woody                                      , & ! Input:  [real(r8)  (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
          
          onset_flag                          =>    cnstate_vars%onset_flag_patch                           , & ! Input:  [real(r8)  (:) ]  onset flag                                        
          onset_counter                       =>    cnstate_vars%onset_counter_patch                        , & ! Input:  [real(r8)  (:) ]  onset days counter                                
@@ -2193,13 +2243,13 @@ contains
    real(r8):: cgrain                        ! amount of carbon in the grain
    !-------------------------------------------------------------------------
    associate(&
-   ivt                   =>    pft%itype                                   , & ! Input:  [integer (:)]  pft vegetation type
+   ivt                   =>    veg_pp%itype                                   , & ! Input:  [integer (:)]  pft vegetation type
    offset_flag           =>    cnstate_vars%offset_flag_patch              , & ! Input:  [real(r8) (:) ]  offset flag      
    offset_counter        =>    cnstate_vars%offset_counter_patch           , & ! Input:  [real(r8) (:) ]  offset days counter
 
-   presharv              =>    ecophyscon%presharv                         , & ! Input:  [real(r8) (:) ]  porportion of residue harvested 
-   fyield                =>    ecophyscon%fyield                           , & ! Input:  [real(r8) (:) ]  fraction of grain actually harvested
-   convfact              =>    ecophyscon%convfact                         , & ! Input:  [real(r8) (:) ]  converstion factor for bu/acre
+   presharv              =>    veg_vp%presharv                         , & ! Input:  [real(r8) (:) ]  porportion of residue harvested 
+   fyield                =>    veg_vp%fyield                           , & ! Input:  [real(r8) (:) ]  fraction of grain actually harvested
+   convfact              =>    veg_vp%convfact                         , & ! Input:  [real(r8) (:) ]  converstion factor for bu/acre
 
    leafc                 =>    carbonstate_vars%leafc_patch                , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C   
    grainc                =>    carbonstate_vars%grainc_patch               , & ! Input:  [real(r8) (:) ]  (gC/m2) grain C  
@@ -2304,20 +2354,20 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                     & 
-         ivt                   =>    pft%itype                                   , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt                   =>    veg_pp%itype                                   , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
-         leafcn                =>    ecophyscon%leafcn                           , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
-         lflitcn               =>    ecophyscon%lflitcn                          , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)                           
-         frootcn               =>    ecophyscon%frootcn                          , & ! Input:  [real(r8) (:) ]  fine root C:N (gC/gN)                             
-         livewdcn              =>    ecophyscon%livewdcn                         , & ! Input:  [real(r8) (:) ]  live wood C:N (gC/gN)                             
-         graincn               =>    ecophyscon%graincn                          , & ! Input:  [real(r8) (:) ]  grain C:N (gC/gN)                                 
-         presharv              =>    ecophyscon%presharv                         , & ! Input:  [real(r8) (:) ]  porportion of residue harvested
+         leafcn                =>    veg_vp%leafcn                           , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
+         lflitcn               =>    veg_vp%lflitcn                          , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)                           
+         frootcn               =>    veg_vp%frootcn                          , & ! Input:  [real(r8) (:) ]  fine root C:N (gC/gN)                             
+         livewdcn              =>    veg_vp%livewdcn                         , & ! Input:  [real(r8) (:) ]  live wood C:N (gC/gN)                             
+         graincn               =>    veg_vp%graincn                          , & ! Input:  [real(r8) (:) ]  grain C:N (gC/gN)                                 
+         presharv              =>    veg_vp%presharv                         , & ! Input:  [real(r8) (:) ]  porportion of residue harvested
 
-         leafcp                =>    ecophyscon%leafcp                           , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
-         lflitcp               =>    ecophyscon%lflitcp                          , & ! Input:  [real(r8) (:) ]  leaf litter C:P (gC/gP)                           
-         frootcp               =>    ecophyscon%frootcp                          , & ! Input:  [real(r8) (:) ]  fine root C:P (gC/gP)                             
-         livewdcp              =>    ecophyscon%livewdcp                         , & ! Input:  [real(r8) (:) ]  live wood C:P (gC/gP)                             
-         graincp               =>    ecophyscon%graincp                          , & ! Input:  [real(r8) (:) ]  grain C:P (gC/gP)                                 
+         leafcp                =>    veg_vp%leafcp                           , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
+         lflitcp               =>    veg_vp%lflitcp                          , & ! Input:  [real(r8) (:) ]  leaf litter C:P (gC/gP)                           
+         frootcp               =>    veg_vp%frootcp                          , & ! Input:  [real(r8) (:) ]  fine root C:P (gC/gP)                             
+         livewdcp              =>    veg_vp%livewdcp                         , & ! Input:  [real(r8) (:) ]  live wood C:P (gC/gP)                             
+         graincp               =>    veg_vp%graincp                          , & ! Input:  [real(r8) (:) ]  grain C:P (gC/gP)                                 
 
          offset_flag           =>    cnstate_vars%offset_flag_patch              , & ! Input:  [real(r8) (:) ]  offset flag                                       
          offset_counter        =>    cnstate_vars%offset_counter_patch           , & ! Input:  [real(r8) (:) ]  offset days counter                               
@@ -2430,22 +2480,22 @@ contains
                      livestemp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
                         
                   else
-                     leafn_to_litter(p)   = (t1 * leafn(p) + npool_to_leafn(p))*0.38_r8
-                     leafn_to_retransn(p) = (t1 * leafn(p) + npool_to_leafn(p))*0.62_r8
-                     frootn_to_litter(p)  = t1 * frootn(p) + npool_to_frootn(p)
+                     leafn_to_litter(p)   = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.38_r8
+                     leafn_to_retransn(p) = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.62_r8
+                     frootn_to_litter(p)  = max(t1 * frootn(p),0._r8) + npool_to_frootn(p)
                      
-                     leafp_to_litter(p)   = (t1 * leafp(p) + ppool_to_leafp(p))*0.35_r8
-                     leafp_to_retransp(p) = (t1 * leafp(p) + ppool_to_leafp(p))*0.65_r8
-                     frootp_to_litter(p)  = t1 * frootp(p) + ppool_to_frootp(p)
+                     leafp_to_litter(p)   = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.35_r8
+                     leafp_to_retransp(p) = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.65_r8
+                     frootp_to_litter(p)  = max(t1 * frootp(p),0._r8) + ppool_to_frootp(p)
                   end if
                else
-                  leafn_to_litter(p)   = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.38_r8
-                  leafn_to_retransn(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p) * 0.62_r8
-                  frootn_to_litter(p)  = frootc_to_litter(p)/ max(frootc(p), 1.e-20_r8) * frootn(p)
+                  leafn_to_litter(p)   = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8)* 0.38_r8
+                  leafn_to_retransn(p) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8) * 0.62_r8
+                  frootn_to_litter(p)  = max(min(frootc_to_litter(p)/max(frootc(p), 1.e-20_r8) * frootn(p),t1 * frootn(p)),0._r8)
                     
-                  leafp_to_litter(p)   = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.35_r8
-                  leafp_to_retransp(p) = leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p) * 0.65_r8
-                  frootp_to_litter(p)  = frootc_to_litter(p)/ max(frootc(p), 1.e-20_r8) * frootp(p)
+                  leafp_to_litter(p)   = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.35_r8
+                  leafp_to_retransp(p) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.65_r8
+                  frootp_to_litter(p)  = max(min(frootc_to_litter(p)/max(frootc(p), 1.e-20_r8) * frootp(p), t1 * frootp(p)),0._r8)
                end if
             end if
  
@@ -2487,17 +2537,18 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                               & 
-         ivt               =>    pft%itype                                 , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt               =>    veg_pp%itype                                 , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
-         leafcn            =>    ecophyscon%leafcn                         , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
-         lflitcn           =>    ecophyscon%lflitcn                        , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)                           
-         frootcn           =>    ecophyscon%frootcn                        , & ! Input:  [real(r8) (:) ]  fine root C:N (gC/gN)                             
+         leafcn            =>    veg_vp%leafcn                         , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
+         lflitcn           =>    veg_vp%lflitcn                        , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)                           
+         frootcn           =>    veg_vp%frootcn                        , & ! Input:  [real(r8) (:) ]  fine root C:N (gC/gN)                             
 
-         leafcp            =>    ecophyscon%leafcp                         , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
-         lflitcp           =>    ecophyscon%lflitcp                        , & ! Input:  [real(r8) (:) ]  leaf litter C:P (gC/gP)                           
-         frootcp           =>    ecophyscon%frootcp                        , & ! Input:  [real(r8) (:) ]  fine root C:P (gC/gP)                             
+         leafcp            =>    veg_vp%leafcp                         , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
+         lflitcp           =>    veg_vp%lflitcp                        , & ! Input:  [real(r8) (:) ]  leaf litter C:P (gC/gP)                           
+         frootcp           =>    veg_vp%frootcp                        , & ! Input:  [real(r8) (:) ]  fine root C:P (gC/gP)                             
 
-         bglfr             =>    cnstate_vars%bglfr_patch                  , & ! Input:  [real(r8) (:) ]  background litterfall rate (1/s)                  
+         bglfr_leaf        =>    cnstate_vars%bglfr_leaf_patch            , & ! Input:  [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
+         bglfr_froot       =>    cnstate_vars%bglfr_froot_patch           , & ! Input:  [real(r8) (:) ]  background fine root litterfall rate (1/s)    
 
          leafc             =>    carbonstate_vars%leafc_patch              , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C                                    
          frootc            =>    carbonstate_vars%frootc_patch             , & ! Input:  [real(r8) (:) ]  (gC/m2) fine root C                               
@@ -2524,10 +2575,10 @@ contains
          p = filter_soilp(fp)
 
          ! only calculate these fluxes if the background litterfall rate is non-zero
-         if (bglfr(p) > 0._r8) then
+         if (bglfr_leaf(p) > 0._r8) then
             ! units for bglfr are already 1/s
-            leafc_to_litter(p)  = bglfr(p) * leafc(p)
-            frootc_to_litter(p) = bglfr(p) * frootc(p)
+            leafc_to_litter(p)  = bglfr_leaf(p) * leafc(p)
+            frootc_to_litter(p) = bglfr_froot(p) * frootc(p)
 
             if ( nu_com .eq. 'RD') then
                ! calculate the leaf N litterfall and retranslocation
@@ -2545,18 +2596,18 @@ contains
                frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
             else
                ! calculate the leaf N litterfall and retranslocation
-               leafn_to_litter(p)   = bglfr(p) * leafn(p) * 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-               leafn_to_retransn(p) = bglfr(p) * leafn(p) - leafn_to_litter(p)
+               leafn_to_litter(p)   = bglfr_leaf(p) * leafn(p) * 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+               leafn_to_retransn(p) = bglfr_leaf(p) * leafn(p) - leafn_to_litter(p)
 
                ! calculate fine root N litterfall (no retranslocation of fine root N)
-               frootn_to_litter(p) = bglfr(p) * frootn(p)
+               frootn_to_litter(p) = bglfr_froot(p) * frootn(p)
 
                ! calculate the leaf P litterfall and retranslocation
-               leafp_to_litter(p)   = bglfr(p) * leafp(p) * 0.35_r8 ! 65% P resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-               leafp_to_retransp(p) = bglfr(p) * leafp(p) - leafp_to_litter(p)
+               leafp_to_litter(p)   = bglfr_leaf(p) * leafp(p) * 0.35_r8 ! 65% P resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+               leafp_to_retransp(p) = bglfr_leaf(p) * leafp(p) - leafp_to_litter(p)
 
                ! calculate fine root P litterfall (no retranslocation of fine root P)
-               frootp_to_litter(p) = bglfr(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
+               frootp_to_litter(p) = bglfr_froot(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
             end if
          end if
       end do
@@ -2594,11 +2645,11 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                             & 
-         ivt                      =>    pft%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt                      =>    veg_pp%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
-         woody                    =>    ecophyscon%woody                                 , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
-         livewdcn                 =>    ecophyscon%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN) 
-         deadwdcn                 =>    ecophyscon%deadwdcn                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:N (gC/gN)       
+         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         livewdcn                 =>    veg_vp%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN) 
+         deadwdcn                 =>    veg_vp%deadwdcn                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:N (gC/gN)       
 
          livestemc                =>    carbonstate_vars%livestemc_patch                 , & ! Input:  [real(r8) (:) ]  (gC/m2) live stem C                               
          livecrootc               =>    carbonstate_vars%livecrootc_patch                , & ! Input:  [real(r8) (:) ]  (gC/m2) live coarse root C                        
@@ -2617,8 +2668,8 @@ contains
          livecrootn_to_deadcrootn =>    nitrogenflux_vars%livecrootn_to_deadcrootn_patch , & ! Output: [real(r8) (:) ]                                                    
          livecrootn_to_retransn   =>    nitrogenflux_vars%livecrootn_to_retransn_patch   , & ! Output: [real(r8) (:) ]                                                    
  
-         livewdcp                 =>    ecophyscon%livewdcp                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:P (gC/gP) 
-         deadwdcp                 =>    ecophyscon%deadwdcp                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:P (gC/gP)       
+         livewdcp                 =>    veg_vp%livewdcp                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:P (gC/gP) 
+         deadwdcp                 =>    veg_vp%deadwdcp                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:P (gC/gP)       
          livestemp_to_deadstemp   =>    phosphorusflux_vars%livestemp_to_deadstemp_patch   , & ! Output: [real(r8) (:) ]                                                    
          livestemp_to_retransp    =>    phosphorusflux_vars%livestemp_to_retransp_patch    , & ! Output: [real(r8) (:) ]                                                    
          livecrootp_to_deadcrootp =>    phosphorusflux_vars%livecrootp_to_deadcrootp_patch , & ! Output: [real(r8) (:) ]                                                    
@@ -2716,15 +2767,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                       & 
-         ivt                                 =>    pft%itype                                       , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-         wtcol                               =>    pft%wtcol                                       , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
+         ivt                                 =>    veg_pp%itype                                       , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+         wtcol                               =>    veg_pp%wtcol                                       , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
 
-         lf_flab                             =>    ecophyscon%lf_flab                              , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-         lf_fcel                             =>    ecophyscon%lf_fcel                              , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-         lf_flig                             =>    ecophyscon%lf_flig                              , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-         fr_flab                             =>    ecophyscon%fr_flab                              , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-         fr_fcel                             =>    ecophyscon%fr_fcel                              , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-         fr_flig                             =>    ecophyscon%fr_flig                              , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+         lf_flab                             =>    veg_vp%lf_flab                              , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+         lf_fcel                             =>    veg_vp%lf_fcel                              , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+         lf_flig                             =>    veg_vp%lf_flig                              , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+         fr_flab                             =>    veg_vp%fr_flab                              , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+         fr_fcel                             =>    veg_vp%fr_fcel                              , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+         fr_flig                             =>    veg_vp%fr_flig                              , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
 
          leaf_prof                           =>    cnstate_vars%leaf_prof_patch                    , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof                          =>    cnstate_vars%froot_prof_patch                   , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -2759,9 +2810,9 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               if ( pi <=  col%npfts(c) ) then
-                  p = col%pfti(c) + pi - 1
-                  if (pft%active(p)) then
+               if ( pi <=  col_pp%npfts(c) ) then
+                  p = col_pp%pfti(c) + pi - 1
+                  if (veg_pp%active(p)) then
 
                      ! leaf litter carbon fluxes
                      phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
@@ -2878,8 +2929,8 @@ contains
    !-----------------------------------------------------------------------
 
    associate(&
-   ivt                                 =>   pft%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
-   wtcol                               =>   pft%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
+   ivt                                 =>   veg_pp%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
+   wtcol                               =>   veg_pp%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
    phrv_leafc_to_prod1c                =>   carbonflux_vars%hrv_leafc_to_prod1c_patch    , & ! Input:  [real(r8) (:)] crop leafc harvested
    phrv_livestemc_to_prod1c            =>   carbonflux_vars%hrv_livestemc_to_prod1c_patch, & ! Input:  [real(r8) (:)] crop stemc harvested
    phrv_grainc_to_prod1c               =>   carbonflux_vars%hrv_grainc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop grainc harvested
@@ -2901,10 +2952,10 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
 
-         if (pi <=  col%npfts(c)) then
-            p = col%pfti(c) + pi - 1
+         if (pi <=  col_pp%npfts(c)) then
+            p = col_pp%pfti(c) + pi - 1
 
-            if (pft%active(p)) then
+            if (veg_pp%active(p)) then
 
                 phrv_cropc_to_prod1c(p) = phrv_leafc_to_prod1c(p) + phrv_livestemc_to_prod1c(p) + &
                                          phrv_grainc_to_prod1c(p)

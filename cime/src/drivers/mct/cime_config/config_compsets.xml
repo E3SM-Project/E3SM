@@ -14,7 +14,7 @@
 
     The following compsets are those that can be tested in CIME stand-alone configurations
     without any prognostic components.
-    For the compsets below the following are the only allowable values of the components. 
+    For the compsets below the following are the only allowable values of the components.
 
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [DATM, SATM, XATM]
@@ -46,6 +46,26 @@
   </compset>
 
   <compset>
+    <alias>ADSOM</alias>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>ADSOMAQP</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADAQP3</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADAQPFILE</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>ADLND</alias>
     <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
   </compset>
@@ -57,15 +77,15 @@
 
   <compset>
     <alias>ADESP</alias>
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%NOOP</lname>
   </compset>
 
   <compset>
     <alias>ADESP_TEST</alias>
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP%TEST</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%TEST</lname>
   </compset>
 
-  <compset grid="r%rx1">
+  <compset>
     <alias>AIAF</alias>
     <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
   </compset>
@@ -80,4 +100,11 @@
     <lname>2000_XATM_XLND_XICE_XOCN_XROF_XGLC_XWAV</lname>
   </compset>
 
+  <entries>
+    <entry id="DATA_ASSIMILATION_CPL">
+      <values match="last">
+	<value compset="DESP">TRUE</value>
+      </values>
+    </entry>
+  </entries>
 </compsets>

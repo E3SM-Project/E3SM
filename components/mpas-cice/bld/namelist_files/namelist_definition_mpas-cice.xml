@@ -143,6 +143,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_full_abort_write" type="logical"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- decomposition -->
 
@@ -401,14 +409,6 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_forcing_restart_file" type="char*1024"
-	category="forcing" group="forcing">
-MISSING DESCRIPTION
-
-Valid values: MISSING POSSIBLE VALUES
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_forcing_precipitation_units" type="char*1024"
 	category="forcing" group="forcing">
 MISSING DESCRIPTION
@@ -469,6 +469,14 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_test_ice_shelf" type="logical"
+	category="unit_test" group="unit_test">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_testing_system_test" type="logical"
 	category="unit_test" group="unit_test">
 MISSING DESCRIPTION
 
@@ -2253,6 +2261,14 @@ Default: Defined in namelist_defaults.xml
 MISSING DESCRIPTION
 
 Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ocean_surface_type" type="char*1024"
+	category="ocean" group="ocean">
+MISSING DESCRIPTION
+
+Valid values: 'free' or 'non-free'
 Default: Defined in namelist_defaults.xml
 </entry>
 

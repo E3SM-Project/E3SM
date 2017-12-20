@@ -854,6 +854,7 @@ subroutine cospsimulator_intr_init
 #endif
    use netcdf,              only : nf90_open, nf90_inq_varid, nf90_get_var, nf90_close, nf90_nowrite
    use error_messages,      only : handle_ncerr, alloc_err
+   use phys_control,        only : phys_getopts
    
    use physics_buffer,  only: pbuf_get_index
 #ifdef USE_COSP
@@ -862,8 +863,10 @@ subroutine cospsimulator_intr_init
    real(r8),parameter :: R_UNDEF = -1.0E30_r8
 #endif
    integer ncid,latid,lonid,did,hrid,minid,secid, istat
+   logical :: history_verbose   !produce verbose history output
    !------------------------------------------------------------------------------
 
+    call phys_getopts( history_verbose_out=history_verbose ) 
 #ifdef COSP_ATRAIN
 if (cosp_sample_atrain) then
 
@@ -1123,12 +1126,14 @@ endif
          call add_default ('CLDMED_CAL',cosp_histfile_num,' ')
          call add_default ('CLDHGH_CAL',cosp_histfile_num,' ')
          call add_default ('CLDTOT_CAL',cosp_histfile_num,' ')
-         call add_default ('CLD_CAL',cosp_histfile_num,' ')
-         call add_default ('RFL_PARASOL',cosp_histfile_num,' ')
-         call add_default ('CFAD_SR532_CAL',cosp_histfile_num,' ')
-         call add_default ('CLD_CAL_LIQ',cosp_histfile_num,' ')  !+COSP1.4
-         call add_default ('CLD_CAL_ICE',cosp_histfile_num,' ')
-         call add_default ('CLD_CAL_UN',cosp_histfile_num,' ')
+         if (history_verbose) then
+            call add_default ('CLD_CAL',cosp_histfile_num,' ')
+            call add_default ('RFL_PARASOL',cosp_histfile_num,' ')
+            call add_default ('CFAD_SR532_CAL',cosp_histfile_num,' ')
+            call add_default ('CLD_CAL_LIQ',cosp_histfile_num,' ')  !+COSP1.4
+            call add_default ('CLD_CAL_ICE',cosp_histfile_num,' ')
+            call add_default ('CLD_CAL_UN',cosp_histfile_num,' ')
+         endif
          call add_default ('CLDTOT_CAL_ICE',cosp_histfile_num,' ')
          call add_default ('CLDTOT_CAL_LIQ',cosp_histfile_num,' ')
          call add_default ('CLDTOT_CAL_UN',cosp_histfile_num,' ')

@@ -350,6 +350,8 @@ end subroutine macrop_driver_readnl
 
     end if
 
+    call add_default ('CONCLD', 1, ' ')
+
     ! Get constituent indices
     call cnst_get_ind('CLDLIQ', ixcldliq)
     call cnst_get_ind('CLDICE', ixcldice)

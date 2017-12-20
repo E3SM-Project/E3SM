@@ -19,9 +19,9 @@ module UrbanAlbedoMod
   use WaterstateType    , only : waterstate_type
   use SolarAbsorbedType , only : solarabs_type
   use SurfaceAlbedoType , only : surfalb_type
-  use LandunitType      , only : lun                
-  use ColumnType        , only : col                
-  use PatchType         , only : pft                
+  use LandunitType      , only : lun_pp                
+  use ColumnType        , only : col_pp                
+  use VegetationType         , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -111,10 +111,10 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                        &
-         ctype              => col%itype                            , & ! Input:  [integer (:)    ]  column type                                        
-         coli               => lun%coli                             , & ! Input:  [integer (:)    ]  beginning column index for landunit                
-         canyon_hwr         => lun%canyon_hwr                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv        => lun%wtroad_perv                      , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+         ctype              => col_pp%itype                            , & ! Input:  [integer (:)    ]  column type                                        
+         coli               => lun_pp%coli                             , & ! Input:  [integer (:)    ]  beginning column index for landunit                
+         canyon_hwr         => lun_pp%canyon_hwr                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
+         wtroad_perv        => lun_pp%wtroad_perv                      , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
          
          frac_sno           => waterstate_vars%frac_sno_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
          
@@ -163,7 +163,7 @@ contains
       
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
-         g = lun%gridcell(l)
+         g = lun_pp%gridcell(l)
          coszen(l) = surfalb_vars%coszen_col(coli(l))  ! Assumes coszen for each column are the same
          zen(l)    = acos(coszen(l))
       end do
@@ -179,9 +179,25 @@ contains
 
          do fp = 1,num_urbanp  
             p = filter_urbanp(fp)
-            l = pft%landunit(p)
-            albd(p,ib)     = 1._r8
-            albi(p,ib)     = 1._r8
+            l = veg_pp%landunit(p)
+            c = veg_pp%column(p)
+
+            ! Initialize direct and diffuse albedo such that if the Sun is below
+            ! the horizon, p2g scaling returns an albedo of 1.0.
+            if (col_pp%itype(c) == icol_sunwall) then
+               albd(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+               albi(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            else if (col_pp%itype(c) == icol_shadewall) then
+               albd(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+               albi(p,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+               albd(p,ib) = 1._r8 / (3.0_r8)
+               albi(p,ib) = 1._r8 / (3.0_r8)
+            else if (col_pp%itype(c) == icol_roof) then
+               albd(p,ib) = 1._r8
+               albi(p,ib) = 1._r8
+            endif
+
             fabd(p,ib)     = 0._r8
             fabd_sun(p,ib) = 0._r8
             fabd_sha(p,ib) = 0._r8
@@ -235,6 +251,19 @@ contains
             sref_improad_dif(l,ib)   = 1._r8
             sref_perroad_dir(l,ib)   = 1._r8
             sref_perroad_dif(l,ib)   = 1._r8
+
+            ! Initialize direct and diffuse albedos such that if the Sun is below
+            ! the horizon, p2g scaling returns an albedo of 1.0.
+            sref_sunwall_dir(l,ib)   = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_sunwall_dif(l,ib)   = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_shadewall_dir(l,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_shadewall_dif(l,ib) = 1._r8 / (3.0_r8 * lun_pp%canyon_hwr(l))
+            sref_improad_dir(l,ib)   = 1._r8 / (3.0_r8)
+            sref_improad_dif(l,ib)   = 1._r8 / (3.0_r8)
+            sref_perroad_dir(l,ib)   = 1._r8 / (3.0_r8)
+            sref_perroad_dif(l,ib)   = 1._r8 / (3.0_r8)
+            sref_roof_dir(l,ib)      = 1._r8
+            sref_roof_dif(l,ib)      = 1._r8
          end do
       end do
 
@@ -310,7 +339,7 @@ contains
          do ib = 1,numrad
             do fc = 1,num_urbanc
                c = filter_urbanc(fc)
-               l = col%landunit(c)
+               l = col_pp%landunit(c)
                if (ctype(c) == icol_roof) then    
                   alb_roof_dir_s(l,ib) = alb_roof_dir(l,ib)*(1._r8-frac_sno(c))  &
                        + albsnd_roof(l,ib)*frac_sno(c)
@@ -378,7 +407,7 @@ contains
          do ib = 1,numrad
             do fc = 1,num_urbanc
                c = filter_urbanc(fc)
-               l = col%landunit(c)
+               l = col_pp%landunit(c)
                if (ctype(c) == icol_roof) then    
                   albgrd(c,ib) = sref_roof_dir(l,ib) 
                   albgri(c,ib) = sref_roof_dif(l,ib) 
@@ -398,7 +427,7 @@ contains
             end do
             do fp = 1,num_urbanp
                p = filter_urbanp(fp)
-               c = pft%column(p)
+               c = veg_pp%column(p)
                albd(p,ib) = albgrd(c,ib)
                albi(p,ib) = albgri(c,ib)
             end do
@@ -457,26 +486,26 @@ contains
       
       do fc = 1,num_urbanc
          c = filter_urbanc(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
          if (coszen(l) > 0._r8 .and. h2osno(c) > 0._r8) then
-            if (col%itype(c) == icol_roof) then
+            if (col_pp%itype(c) == icol_roof) then
                albsn_roof(l,1) = snal0
                albsn_roof(l,2) = snal1
-            else if (col%itype(c) == icol_road_imperv) then
+            else if (col_pp%itype(c) == icol_road_imperv) then
                albsn_improad(l,1) = snal0
                albsn_improad(l,2) = snal1
-            else if (col%itype(c) == icol_road_perv) then
+            else if (col_pp%itype(c) == icol_road_perv) then
                albsn_perroad(l,1) = snal0
                albsn_perroad(l,2) = snal1
             end if
          else
-            if (col%itype(c) == icol_roof) then
+            if (col_pp%itype(c) == icol_roof) then
                albsn_roof(l,1) = 0._r8
                albsn_roof(l,2) = 0._r8
-            else if (col%itype(c) == icol_road_imperv) then
+            else if (col_pp%itype(c) == icol_road_imperv) then
                albsn_improad(l,1) = 0._r8
                albsn_improad(l,2) = 0._r8
-            else if (col%itype(c) == icol_road_perv) then
+            else if (col_pp%itype(c) == icol_road_perv) then
                albsn_perroad(l,1) = 0._r8
                albsn_perroad(l,2) = 0._r8
             end if

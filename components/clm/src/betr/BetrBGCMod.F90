@@ -47,7 +47,7 @@ contains
   end subroutine betrbgc_init
 
   !-------------------------------------------------------------------------------
-  subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col ,   &
+  subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pp ,   &
        atm2lnd_vars, soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, waterflux_vars, chemstate_vars, &
        cnstate_vars, canopystate_vars, carbonstate_vars, carbonflux_vars,nitrogenstate_vars, nitrogenflux_vars,             &
        betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars, tracerflux_vars,         &
@@ -71,7 +71,7 @@ contains
     use TemperatureType              , only          : temperature_type
     use ChemStateType                , only          : chemstate_type
     use WaterfluxType                , only          : waterflux_type
-    use ColumnType                   , only          : column_type
+    use ColumnType                   , only          : column_physical_properties_type
     use BGCReactionsMod              , only          : bgc_reaction_type
     use atm2lndType                  , only          : atm2lnd_type
     use SoilHydrologyType            , only          : soilhydrology_type
@@ -93,7 +93,7 @@ contains
     integer                          , intent(in)    :: filter_soilp(:)            ! pft filter
     integer                          , intent(in)    :: lbj, ubj                   ! lower and upper bounds, make sure they are > 0
 
-    type(column_type)                , intent(in)    :: col                        ! column type
+    type(column_physical_properties_type)                , intent(in)    :: col_pp                        ! column type
     type(Waterstate_Type)            , intent(in)    :: waterstate_vars            ! water state variables
     type(soilstate_type)             , intent(in)    :: soilstate_vars             ! column physics variable
     type(temperature_type)           , intent(in)    :: temperature_vars           ! energy state variable
@@ -138,7 +138,7 @@ contains
 
     !obtain water table depth
     call get_zwt (bounds, num_soilc, filter_soilc,             &
-         col%zi(bounds%begc:bounds%endc, 0:nlevsoi),           &
+         col_pp%zi(bounds%begc:bounds%endc, 0:nlevsoi),           &
          soilstate_vars,                                       &
          waterstate_vars,                                      &
          temperature_vars,                                     &
@@ -162,7 +162,7 @@ contains
          tracerboundarycond_vars%jtops_col(bounds%begc:bounds%endc),        &
          num_soilc,                                &
          filter_soilc,                             &
-         col%dz(bounds%begc:bounds%endc, lbj:ubj), &
+         col_pp%dz(bounds%begc:bounds%endc, lbj:ubj), &
          soilstate_vars=soilstate_vars,            &
          waterstate_vars=waterstate_vars,          &
          temperature_vars=temperature_vars,        &
@@ -183,7 +183,7 @@ contains
          tracercoeff_vars=tracercoeff_vars)
 
     call bgc_reaction%set_boundary_conditions(bounds, num_soilc, filter_soilc, &
-         col%dz(bounds%begc:bounds%endc,1),                                    &
+         col_pp%dz(bounds%begc:bounds%endc,1),                                    &
          betrtracer_vars,                                                      &
          waterflux_vars,                                                       &
          tracerboundarycond_vars)
@@ -220,7 +220,7 @@ contains
          num_soilc,                                                 &
          filter_soilc,                                              &
          soilhydrology_vars%fracice_col(bounds%begc:bounds%endc,1), &
-         col%dz(bounds%begc:bounds%endc, 1:ubj),                    &
+         col_pp%dz(bounds%begc:bounds%endc, 1:ubj),                    &
          waterstate_vars,                                           &
          waterflux_vars,                                            &
          betrtracer_vars,                                           &
@@ -254,8 +254,8 @@ contains
          num_soilc,                                                           &
          filter_soilc,                                                        &
          Rfactor(bounds%begc:bounds%endc, lbj:ubj,1:betrtracer_vars%ngwmobile_tracers),                &
-         col%dz(bounds%begc:bounds%endc, lbj:ubj),                            &
-         col%zi(bounds%begc:bounds%endc,lbj-1:ubj),                           &
+         col_pp%dz(bounds%begc:bounds%endc, lbj:ubj),                            &
+         col_pp%zi(bounds%begc:bounds%endc,lbj-1:ubj),                           &
          waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj), &
          (/do_advection, do_diffusion/),                                      &
          dtime,                                                               &
@@ -272,7 +272,7 @@ contains
          filter_soilc,                                                             &
          dtime,                                                                    &
          tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, 1:ubj-1, : ), &
-         col%dz(bounds%begc:bounds%endc, 1:ubj),                                   &
+         col_pp%dz(bounds%begc:bounds%endc, 1:ubj),                                   &
          betrtracer_vars,                                                          &
          tracerboundarycond_vars,                                                  &
          tracerflux_vars,                                                          &
@@ -283,8 +283,8 @@ contains
          num_soilc,                                                      &
          filter_soilc,                                                   &
          atm2lnd_vars%forc_pbot_downscaled_col(bounds%begc:bounds%endc), &
-         col%zi(bounds%begc:bounds%endc, 0:ubj),                         &
-         col%dz(bounds%begc:bounds%endc, 1:ubj),                         &
+         col_pp%zi(bounds%begc:bounds%endc, 0:ubj),                         &
+         col_pp%dz(bounds%begc:bounds%endc, 1:ubj),                         &
          dtime,                                                          &
          soilhydrology_vars%fracice_col(bounds%begc:bounds%endc, 1:ubj), &
          soilhydrology_vars%zwts_col(bounds%begc:bounds%endc),           &
@@ -298,7 +298,7 @@ contains
        !update nitrogen storage pool
        call plantsoilnutrientflux_vars%summary(bounds, ubj, num_soilc,                                  &
             filter_soilc,                                                                               &
-            col%dz(bounds%begc:bounds%endc,1:ubj),                                                      &
+            col_pp%dz(bounds%begc:bounds%endc,1:ubj),                                                      &
             tracerflux_vars%tracer_flx_vtrans_col(bounds%begc:bounds%endc,betrtracer_vars%id_trc_nh3x), &
             tracerflux_vars%tracer_flx_vtrans_col(bounds%begc:bounds%endc,betrtracer_vars%id_trc_no3x))
     endif
@@ -1410,7 +1410,7 @@ contains
 
   !--------------------------------------------------------------------------------
   subroutine run_betr_one_step_with_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, &
-       jtops, qflx_drain_vr, col,                                                       &
+       jtops, qflx_drain_vr, col_pp,                                                       &
        betrtracer_vars, tracercoeff_vars, tracerstate_vars,  tracerflux_vars)
     !
     ! !DESCRIPTION:
@@ -1420,7 +1420,8 @@ contains
     use tracerfluxType        , only : tracerflux_type
     use tracerstatetype       , only : tracerstate_type
     use tracercoeffType       , only : tracercoeff_type
-    use ColumnType            , only : column_type
+    !DW use ColumnType            , only : column_type
+    use ColumnType            , only : column_physical_properties_type 
     use MathfuncMod           , only : safe_div
 
     ! !ARGUMENTS:
@@ -1430,7 +1431,7 @@ contains
     integer,                  intent(in)    :: filter_soilc(:)                    ! column filter_soilc
     integer,                  intent(in)    :: jtops(bounds%begc: )
     real(r8),                 intent(in)    :: qflx_drain_vr(bounds%begc: ,lbj: ) !
-    type(column_type),        intent(in)    :: col                                ! column type
+    type(column_physical_properties_type),        intent(in)    :: col_pp                                ! column type
     type(betrtracer_type),    intent(in)    :: betrtracer_vars                    ! betr configuration information
     type(tracercoeff_type),   intent(in)    :: tracercoeff_vars                   ! tracer phase conversion coefficients
     type(tracerflux_type),    intent(inout) :: tracerflux_vars
@@ -1450,7 +1451,7 @@ contains
          is_advective             => betrtracer_vars%is_advective              , & !
          aqu2bulkcef_mobile       => tracercoeff_vars%aqu2bulkcef_mobile_col   , & !
          tracer_conc_mobile       => tracerstate_vars%tracer_conc_mobile_col   , & !
-         dz                       => col%dz                                    , & !
+         dz                       => col_pp%dz                                    , & !
          tracer_flx_drain         => tracerflux_vars%tracer_flx_drain_col        & !
          )
 
@@ -1601,8 +1602,8 @@ contains
     ! calculate water flux from dew formation, and sublimation
     ! !USES:
     use clm_time_manager      , only : get_step_size
-    use ColumnType            , only : col
-    use LandunitType          , only : lun
+    use ColumnType            , only : col_pp
+    use LandunitType          , only : lun_pp
     use WaterfluxType         , only : waterflux_type
     use WaterstateType        , only : waterstate_type
     use tracerfluxType        , only : tracerflux_type
@@ -1625,8 +1626,8 @@ contains
     integer :: fc, c, j, l
 
     associate(                                                               & !
-         snl                =>    col%snl                                 ,  & ! Input:  [integer  (:)   ]  number of snow layers
-         dz                 =>    col%dz                                  ,  & ! Input:  [real(r8) (:,:) ]  layer depth (m)
+         snl                =>    col_pp%snl                                 ,  & ! Input:  [integer  (:)   ]  number of snow layers
+         dz                 =>    col_pp%dz                                  ,  & ! Input:  [real(r8) (:,:) ]  layer depth (m)
          h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col          ,  & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
          frac_h2osfc        =>    waterstate_vars%frac_h2osfc_col         ,  & ! Input:  [real(r8) (:)   ]
          qflx_dew_grnd      =>    waterflux_vars%qflx_dew_grnd_col        ,  & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
@@ -1638,8 +1639,8 @@ contains
          tracer_conc_mobile =>    tracerstate_vars%tracer_conc_mobile_col ,  & !
          is_h2o             =>    betrtracer_vars%is_h2o                  ,  & !
          tracernames        =>    betrtracer_vars%tracernames             ,  &
-         clandunit          =>    col%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit
-         ltype              =>    lun%itype                                , & ! Input:  [integer  (:)   ]  landunit type
+         clandunit          =>    col_pp%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit
+         ltype              =>    lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type
          ngwmobile_tracers  =>    betrtracer_vars%ngwmobile_tracers          &
          )
 
@@ -1690,7 +1691,7 @@ contains
     ! apply tracer flux from combining residual snow and ponding water
     ! !USES:
     use clm_time_manager      , only : get_step_size
-    use ColumnType            , only : col
+    use ColumnType            , only : col_pp
     use WaterfluxType         , only : waterflux_type
     use tracerfluxType        , only : tracerflux_type
     use tracerstatetype       , only : tracerstate_type
@@ -1709,7 +1710,7 @@ contains
     integer :: fc, c, j
 
     associate(                                                                                   & !
-         dz                 =>    col%dz                                                       , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
+         dz                 =>    col_pp%dz                                                       , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
          qflx_snow2topsoi   =>    waterflux_vars%qflx_snow2topsoi_col                          , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
          qflx_h2osfc2topsoi =>    waterflux_vars%qflx_h2osfc2topsoi_col                        , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s
          tracer_flx_h2osfc_snow_residual => tracerflux_vars%tracer_flx_h2osfc_snow_residual_col, & !

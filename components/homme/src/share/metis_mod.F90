@@ -21,8 +21,7 @@ contains
   subroutine genmetispart(GridEdge, GridVertex)
     use gridgraph_mod, only : GridVertex_t, GridEdge_t, freegraph, createsubgridgraph, printgridvertex
     use kinds, only : int_kind
-    use parallel_mod , only : iam, FrameWeight, PartitionForNodes,&
-         PartitionForFrames, FrameCount, numFrames
+    use parallel_mod , only : iam, FrameWeight, PartitionForNodes
     use dimensions_mod , only : nmpi_per_node, npart, nnodes, nelem
     use control_mod, only:  partmethod
     use params_mod, only : wrecursive
@@ -101,11 +100,7 @@ contains
 
     if(npart > 1) then 
 
-       !     PartitionForFrames=.FALSE.
-       if(PartitionForFrames) then 
-          numPartitions   = numframes
-          PartitionMethod = WRECURSIVE 
-       elseif (PartitionForNodes) then 
+       if (PartitionForNodes) then 
           numPartitions   = nnodes
           PartitionMethod = partmethod 
        else
@@ -129,118 +124,6 @@ contains
                numPartitions,dummy,options,edgecut,part)
        endif
        if(Debug) write(iulog,*)'genmetispart: point #5'
-       if(PartitionForFrames) then 
-
-          ! =================================================================
-          ! Modify the partition array to work with frame based partitioning 
-          ! =================================================================
-          if(iam .eq. 1) write(iulog,*)'genmetispart: FrameCount is: ',FrameCount
-
-          allocate(cnt(numframes))
-          allocate(oldnum(numframes))
-          allocate(Newnum(numframes))
-
-          ii = 1
-          do i=1,SIZE(FrameCount)
-             if(FrameCount(i) .ne. 0) then 
-                cnt(ii) = FrameCount(i)
-                oldnum(ii) = ii
-                ii = ii+1
-             endif
-          enddo
-
-          if(Debug) write(iulog,*)'genmetispart: point #6'
-          call NewPartitionNumber(newnum,oldnum,cnt)
-          if(iam .eq. 1) write(iulog,*)'genmetispart: After NewPartitionNumber cnt    : ',cnt
-          if(iam .eq. 1) write(iulog,*)'genmetispart: After NewPartitionNumber oldnum : ',oldnum
-          if(iam .eq. 1) write(iulog,*)'genmetispart: After NewPartitionNumber newnum : ',newnum
-
-          do ip = 1,nelem
-             part(ip)  = NewNum(part(ip))
-          enddo
-
-          if(iam .eq. 1) write(iulog,*)'genmetispart: ForFrames: After reassignment  : ',part 
-
-          if(Debug) write(iulog,*)'genmetispart: point #7'
-          do if = 1,numframes
-
-
-             ! =======================================
-             !  Figure out the new partitioning number 
-             ! =======================================
-             newPartition = NewNum(if)
-
-             nelem_fl = COUNT(part .eq. newPartition)
-
-             ! ===================================================
-             ! Allocate all the memory for frame level partitioning 
-             ! ===================================================
-
-             allocate(local2global_fl(nelem_fl))
-             allocate(part_fl(nelem_fl))
-             allocate(SubVertex(nelem_fl))
-             if(Debug) write(iulog,*)'genmetispart: point #8'
-
-             ! =====================================
-             !   Setup the index translation arrays
-             ! =====================================
-             call genLocal2Global(local2global_fl,part,NewPartition)
-             if(Debug) write(iulog,*)'genmetispart: point #9'
-
-             ! ======================================================
-             ! Create a set of the Vertices that represent a subgraph 
-             ! ======================================================
-             call CreateSubGridGraph(GridVertex,SubVertex,local2global_fl)
-             if(Debug) write(iulog,*)'genmetispart: point #10'
-
-             ! ==============================
-             !  Convert graph to Metis format
-             ! ==============================
-             call CreateMeshGraph(SubVertex,xadj,adjncy,adjwgt)
-             if(Debug) write(iulog,*)'genmetispart: point #11'
-
-             ! =======================
-             ! Partition the subgraph 
-             ! =======================
-             nodes_per_frame = cnt(if)
-             if(iam .eq. 1) write(6,100) nelem_fl,partmethod,nodes_per_frame
-             if(nodes_per_frame .gt. 1) then 
-                call PartitionGraph(partmethod,nelem_fl,xadj,adjncy, &
-                     vwgt,adjwgt,wgtflag,numflag, &
-                     nodes_per_frame,tpwgts,options,edgecut,part_fl)
-             else
-                part_fl(:) = 1
-             endif
-             if(Debug) write(iulog,*)'genmetispart: point #12'
-
-             ! ========================================================= 
-             ! Apply the Frame partitioning the the overall partitioning 
-             ! ========================================================= 
-             do i=1,nelem_fl
-                ig = local2global_fl(i)
-                part(ig) = part(ig) + (part_fl(i)-1)
-             enddo
-
-             ! ======================================
-             ! Free up the temporaries that were used
-             ! ======================================
-             deallocate(local2global_fl)
-             deallocate(part_fl)
-
-
-             call FreeGraph(SubVertex)
-             deallocate(SubVertex)
-
-          enddo
-          if(Debug) write(iulog,*)'genmetispart: point #13'
-
-          deallocate(newnum)
-          deallocate(oldnum)
-          deallocate(cnt)
-
-          if(iam .eq. 1) write(iulog,*)'genmetispart: Partitioning after Frame partitioning: ',part
-          !JMD call haltmp('genmetispart: After Frame based partitioning:')
-       endif
        ! ===============================
        !  Do not partitiion for nodes 
        ! ===============================

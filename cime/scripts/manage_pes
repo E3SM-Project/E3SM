@@ -9,7 +9,7 @@ from CIME.XML.files import Files
 from CIME.XML.pes import Pes
 from CIME.XML.component import Component
 import argparse, sys, os, logging
-import datetime, re
+import datetime, re, six
 
 queryhelp = """
 Query the peslist by grid and machine
@@ -250,7 +250,7 @@ class ManagePes(object):
             self.print_gridnodes([match])
             logger.info(" The new values would be")
             self.print_gridnodes([newmatch])
-            override = raw_input(" Do you want to override the match with"
+            override = six.moves.input(" Do you want to override the match with"
                                  " your pe-layout [yes/no] (default is no)\n")
             if override.lower() != "y" and override.lower() != "yes":
                 logger.info("Nothing done.")
@@ -337,7 +337,7 @@ class ManagePes(object):
                         gridname, machname, compsetname, pesizename)
             drv_config_file = Files().get_value("CONFIG_CPL_FILE")
             drv_comps = [x.lower() for x in
-                        Component(drv_config_file).get_valid_model_components()]
+                        Component(drv_config_file, "CPL").get_valid_model_components()]
 
             logger.info("                   " +
                         (len(drv_comps)*' {:10}').format(*drv_comps))

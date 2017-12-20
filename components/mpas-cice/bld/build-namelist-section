@@ -22,6 +22,7 @@ add_default($nl, 'config_pio_stride');
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
+add_default($nl, 'config_full_abort_write');
 
 #################################
 # Namelist group: decomposition #
@@ -92,7 +93,6 @@ add_default($nl, 'config_atmospheric_forcing_type');
 add_default($nl, 'config_forcing_start_time');
 add_default($nl, 'config_forcing_cycle_start');
 add_default($nl, 'config_forcing_cycle_duration');
-add_default($nl, 'config_forcing_restart_file');
 add_default($nl, 'config_forcing_precipitation_units');
 add_default($nl, 'config_forcing_sst_type');
 add_default($nl, 'config_update_ocean_fluxes');
@@ -106,6 +106,7 @@ add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
 add_default($nl, 'config_use_test_ice_shelf');
+add_default($nl, 'config_testing_system_test');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -384,6 +385,7 @@ add_default($nl, 'config_use_ocean_mixed_layer');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
+add_default($nl, 'config_ocean_surface_type');
 
 ###############################
 # Namelist group: diagnostics #

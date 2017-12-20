@@ -27,7 +27,6 @@ module seq_comm_mct
 
   private
 #include <mpif.h>
-  save
 
 !--------------------------------------------------------------------------
 ! Public interfaces
@@ -46,7 +45,6 @@ module seq_comm_mct
   public seq_comm_name
   public seq_comm_inst
   public seq_comm_suffix
-  public seq_comm_petlist
   public seq_comm_setptrs
   public seq_comm_setnthreads
   public seq_comm_getnthreads
@@ -66,7 +64,6 @@ module seq_comm_mct
   !!! Note - NUM_COMP_INST_XXX are cpp variables set in buildlib.csm_share
 
   integer, parameter :: ncomptypes = 8  ! total number of component types
-  integer, parameter :: nphysmod   = 7  ! number of physical component types
   integer, parameter :: ncouplers  = 1  ! number of couplers
   integer, parameter, public :: num_inst_atm = NUM_COMP_INST_ATM
   integer, parameter, public :: num_inst_lnd = NUM_COMP_INST_LND
@@ -89,6 +86,7 @@ module seq_comm_mct
   integer, public :: num_inst_min, num_inst_max
   integer, public :: num_inst_xao    ! for xao flux
   integer, public :: num_inst_frc    ! for fractions
+  integer, public :: num_inst_driver = 1
 
   !!! Each component instance needs two communicators: one internal to the
   !!! instance, and one for communicating with the coupler.
@@ -105,7 +103,7 @@ module seq_comm_mct
                                                 num_inst_ocn + num_inst_ice + &
                                                 num_inst_glc + num_inst_rof + &
                                                 num_inst_wav + num_inst_esp
-  integer, parameter :: ncomps = (1 + ncouplers + ncomptypes + nphysmod + num_inst_phys + num_cpl_phys)
+  integer, parameter :: ncomps = (1 + ncouplers + 2*ncomptypes + num_inst_phys + num_cpl_phys)
 
   integer, public :: GLOID
   integer, public :: CPLID
@@ -150,6 +148,9 @@ module seq_comm_mct
 
   integer, parameter, public :: seq_comm_namelen=16
 
+  ! suffix for log and timing files if multi coupler driver
+  character(len=seq_comm_namelen), public  :: cpl_inst_tag
+
   type seq_comm_type
     character(len=seq_comm_namelen) :: name     ! my name
     character(len=seq_comm_namelen) :: suffix   ! recommended suffix
@@ -161,16 +162,17 @@ module seq_comm_mct
     integer :: nthreads        ! number of omp threads per task
     integer :: iam             ! my task number in mpicom
     logical :: iamroot         ! am i the root task in mpicom
-    integer :: gloiam          ! my task number in mpi_comm_world
+
+    integer :: gloiam          ! my task number in global_comm
     integer :: gloroot         ! the global task number of each comps root on all pes
+
     integer :: pethreads       ! max number of threads on my task
     integer :: cplpe           ! a common task in mpicom from the cpl group for join mpicoms
                                ! cplpe is used to broadcast information from the coupler to the component
     integer :: cmppe           ! a common task in mpicom from the component group for join mpicoms
                                ! cmppe is used to broadcast information from the component to the coupler
     logical :: set             ! has this datatype been set
-    integer, pointer    :: petlist(:)  ! esmf pet list
-    logical :: petlist_allocated ! whether the petlist pointer variable was allocated
+
   end type seq_comm_type
 
   type(seq_comm_type) :: seq_comms(ncomps)
@@ -178,12 +180,14 @@ module seq_comm_mct
   character(*), parameter :: layout_concurrent = 'concurrent'
   character(*), parameter :: layout_sequential = 'sequential'
 
-  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,   3i6,' (',a,i6,')',' (',a,i3,')')"
+  character(*), parameter :: F11 = "(a,a,'(',i3,' ',a,')',a,   3i6,' (',a,i6,')',' (',a,i3,')','(',a,a,')')"
   character(*), parameter :: F12 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')','(',a,2i6,')')"
   character(*), parameter :: F13 = "(a,a,'(',i3,' ',a,')',a,2i6,6x,' (',a,i6,')',' (',a,i3,')')"
   character(*), parameter :: F14 = "(a,a,'(',i3,' ',a,')',a,    6x,' (',a,i6,')',' (',a,i3,')')"
-  integer :: Global_Comm
 
+  ! Exposed for use in the esp component, please don't use this elsewhere
+  integer, public :: Global_Comm
+  integer :: driver_comm
 
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
@@ -198,39 +202,26 @@ contains
     seq_comm_get_ncomps = ncomps
   end function seq_comm_get_ncomps
 
-
-  subroutine seq_comm_init(Comm_in, nmlfile)
-
+  subroutine seq_comm_init(global_comm_in, driver_comm_in, nmlfile, drv_comm_id)
     !----------------------------------------------------------
     !
     ! Arguments
     implicit none
-    integer, intent(in) :: Comm_in
+    integer, intent(in) :: global_comm_in
+    integer, intent(in) :: driver_comm_in
     character(len=*), intent(IN) :: nmlfile
+    integer, intent(in), optional :: drv_comm_id
     !
     ! Local variables
     !
     logical :: error_state
     integer :: ierr, n, count
     character(*), parameter :: subName =   '(seq_comm_init) '
-    integer :: mpi_group_world   ! MPI_COMM_WORLD group
-    integer :: mype,numpes,myncomps,max_threads,gloroot
-    integer :: atm_inst_tasks, lnd_inst_tasks, ocn_inst_tasks, ice_inst_tasks, &
-               glc_inst_tasks, rof_inst_tasks, wav_inst_tasks, esp_inst_tasks
-    integer :: current_task_rootpe, droot
-    integer :: amin(num_inst_atm), amax(num_inst_atm), astr(num_inst_atm)
-    integer :: lmin(num_inst_lnd), lmax(num_inst_lnd), lstr(num_inst_lnd)
-    integer :: imin(num_inst_ice), imax(num_inst_ice), istr(num_inst_ice)
-    integer :: omin(num_inst_ocn), omax(num_inst_ocn), ostr(num_inst_ocn)
-    integer :: gmin(num_inst_glc), gmax(num_inst_glc), gstr(num_inst_glc)
-    integer :: wmin(num_inst_wav), wmax(num_inst_wav), wstr(num_inst_wav)
-    integer :: rmin(num_inst_rof), rmax(num_inst_rof), rstr(num_inst_rof)
-    integer :: emin(num_inst_esp), emax(num_inst_esp), estr(num_inst_esp)
-    integer :: cmin,cmax,cstr
+    integer :: mype,numpes,myncomps,max_threads,gloroot, global_numpes
     integer :: pelist(3,1)       ! start, stop, stride for group
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
-    integer :: nu, i
+    integer :: nu
 
     integer :: &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, &
@@ -242,7 +233,6 @@ contains
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
-    character(len=24) :: esmf_logging
 
     namelist /ccsm_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
@@ -253,7 +243,7 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, esmf_logging
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -262,7 +252,8 @@ contains
        call shr_sys_abort()
     endif
     seq_comm_mct_initialized = .true.
-    Global_Comm = Comm_in
+    global_comm = global_comm_in
+    driver_comm = driver_comm_in
 
     !! Initialize seq_comms elements
 
@@ -271,7 +262,6 @@ contains
        seq_comms(n)%suffix = ' '
        seq_comms(n)%inst = 0
        seq_comms(n)%set = .false.
-       seq_comms(n)%petlist_allocated = .false.
        seq_comms(n)%mpicom = MPI_COMM_NULL    ! do some initialization here
        seq_comms(n)%iam = -1
        seq_comms(n)%iamroot = .false.
@@ -288,10 +278,17 @@ contains
     ! Initialize MPI
     ! Note that if no MPI, will call MCTs fake version
 
-    call mpi_comm_rank(GLOBAL_COMM, mype  , ierr)
-    call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank comm_world')
-    call mpi_comm_size(GLOBAL_COMM, numpes, ierr)
+    call mpi_comm_size(GLOBAL_COMM_IN, global_numpes , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size comm_world')
+    call mpi_comm_rank(DRIVER_COMM, mype  , ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank driver')
+    call mpi_comm_size(DRIVER_COMM, numpes, ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_size driver')
+
+    if (mod(global_numpes, numpes) .ne. 0) then
+       write(logunit,*) trim(subname),' ERROR: numpes driver: ', numpes, ' should divide global_numpes: ',global_numpes
+       call shr_sys_abort(trim(subname)//' ERROR decomposition error ')
+    endif
 
     ! Initialize gloiam on all IDs
 
@@ -304,63 +301,16 @@ contains
     ! Set ntasks, rootpe, pestride, nthreads for all components
 
     if (mype == 0) then
-
        !! Set up default component process parameters
-
-       atm_ntasks = numpes
-       atm_rootpe = 0
-       atm_pestride = 1
-       atm_nthreads = 1
-       atm_layout = trim(layout_concurrent)
-
-       lnd_ntasks = numpes
-       lnd_rootpe = 0
-       lnd_pestride = 1
-       lnd_nthreads = 1
-       lnd_layout = trim(layout_concurrent)
-
-       ocn_ntasks = numpes
-       ocn_rootpe = 0
-       ocn_pestride = 1
-       ocn_nthreads = 1
-       ocn_layout = trim(layout_concurrent)
-
-       ice_ntasks = numpes
-       ice_rootpe = 0
-       ice_pestride = 1
-       ice_nthreads = 1
-       ice_layout = trim(layout_concurrent)
-
-       glc_ntasks = numpes
-       glc_rootpe = 0
-       glc_pestride = 1
-       glc_nthreads = 1
-       glc_layout = trim(layout_concurrent)
-
-       rof_ntasks = numpes
-       rof_rootpe = 0
-       rof_pestride = 1
-       rof_nthreads = 1
-       rof_layout = trim(layout_concurrent)
-
-       wav_ntasks = numpes
-       wav_rootpe = 0
-       wav_pestride = 1
-       wav_nthreads = 1
-       wav_layout = trim(layout_concurrent)
-
-       esp_ntasks = numpes
-       esp_rootpe = 0
-       esp_pestride = 1
-       esp_nthreads = 1
-       esp_layout = trim(layout_concurrent)
-
-       cpl_ntasks = numpes
-       cpl_rootpe = 0
-       cpl_pestride = 1
-       cpl_nthreads = 1
-
-       esmf_logging = "ESMF_LOGKIND_NONE"
+       call comp_pelayout_init(numpes, atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout)
+       call comp_pelayout_init(numpes, lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout)
+       call comp_pelayout_init(numpes, ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, ice_layout)
+       call comp_pelayout_init(numpes, ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout)
+       call comp_pelayout_init(numpes, rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout)
+       call comp_pelayout_init(numpes, wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, wav_layout)
+       call comp_pelayout_init(numpes, glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, glc_layout)
+       call comp_pelayout_init(numpes, esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout)
+       call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
 
        ! Read namelist if it exists
 
@@ -375,8 +325,27 @@ contains
           close(nu)
        end if
        call shr_file_freeUnit(nu)
-
     end if
+
+    call shr_mpi_bcast(atm_nthreads,DRIVER_COMM,'atm_nthreads')
+    call shr_mpi_bcast(lnd_nthreads,DRIVER_COMM,'lnd_nthreads')
+    call shr_mpi_bcast(ocn_nthreads,DRIVER_COMM,'ocn_nthreads')
+    call shr_mpi_bcast(ice_nthreads,DRIVER_COMM,'ice_nthreads')
+    call shr_mpi_bcast(glc_nthreads,DRIVER_COMM,'glc_nthreads')
+    call shr_mpi_bcast(wav_nthreads,DRIVER_COMM,'wav_nthreads')
+    call shr_mpi_bcast(rof_nthreads,DRIVER_COMM,'rof_nthreads')
+    call shr_mpi_bcast(esp_nthreads,DRIVER_COMM,'esp_nthreads')
+    call shr_mpi_bcast(cpl_nthreads,DRIVER_COMM,'cpl_nthreads')
+
+    call shr_mpi_bcast(atm_layout,DRIVER_COMM,'atm_layout')
+    call shr_mpi_bcast(lnd_layout,DRIVER_COMM,'lnd_layout')
+    call shr_mpi_bcast(ocn_layout,DRIVER_COMM,'ocn_layout')
+    call shr_mpi_bcast(ice_layout,DRIVER_COMM,'ice_layout')
+    call shr_mpi_bcast(glc_layout,DRIVER_COMM,'glc_layout')
+    call shr_mpi_bcast(wav_layout,DRIVER_COMM,'wav_layout')
+    call shr_mpi_bcast(rof_layout,DRIVER_COMM,'rof_layout')
+    call shr_mpi_bcast(esp_layout,DRIVER_COMM,'esp_layout')
+
 
     !--- compute some other num_inst values
 
@@ -388,23 +357,12 @@ contains
     !--- checks for prognostic/present consistency in the driver
 
     error_state = .false.
-    num_inst_min = num_inst_atm
-    num_inst_min = min(num_inst_min, num_inst_lnd)
-    num_inst_min = min(num_inst_min, num_inst_ocn)
-    num_inst_min = min(num_inst_min, num_inst_ice)
-    num_inst_min = min(num_inst_min, num_inst_glc)
-    num_inst_min = min(num_inst_min, num_inst_wav)
-    num_inst_min = min(num_inst_min, num_inst_rof)
-! ESP is currently limited to one instance, should not affect other comps
-!    num_inst_min = min(num_inst_min, num_inst_esp)
-    num_inst_max = num_inst_atm
-    num_inst_max = max(num_inst_max, num_inst_lnd)
-    num_inst_max = max(num_inst_max, num_inst_ocn)
-    num_inst_max = max(num_inst_max, num_inst_ice)
-    num_inst_max = max(num_inst_max, num_inst_glc)
-    num_inst_max = max(num_inst_max, num_inst_wav)
-    num_inst_max = max(num_inst_max, num_inst_rof)
-    num_inst_max = max(num_inst_max, num_inst_esp)
+    num_inst_min = min(num_inst_atm, num_inst_lnd, num_inst_ocn,&
+         num_inst_ice, num_inst_glc, num_inst_wav, num_inst_rof,&
+         num_inst_esp)
+    num_inst_max = max(num_inst_atm, num_inst_lnd, num_inst_ocn,&
+         num_inst_ice, num_inst_glc, num_inst_wav, num_inst_rof,&
+         num_inst_esp)
 
     if (num_inst_min /= num_inst_max .and. num_inst_min /= 1) error_state = .true.
     if (num_inst_atm /= num_inst_min .and. num_inst_atm /= num_inst_max) error_state = .true.
@@ -414,14 +372,14 @@ contains
     if (num_inst_glc /= num_inst_min .and. num_inst_glc /= num_inst_max) error_state = .true.
     if (num_inst_wav /= num_inst_min .and. num_inst_wav /= num_inst_max) error_state = .true.
     if (num_inst_rof /= num_inst_min .and. num_inst_rof /= num_inst_max) error_state = .true.
-    if (num_inst_esp /= 1) then
-       write(logunit,*) trim(subname),' ERROR: ESP restricted to one instance'
-       error_state = .true.
-    end if
+    if (num_inst_esp /= num_inst_min .and. num_inst_esp /= num_inst_max) error_state = .true.
 
     if (error_state) then
        write(logunit,*) trim(subname),' ERROR: num_inst inconsistent'
-       call shr_sys_abort(trim(subname)//' ERROR: num_inst inconsistent')
+       write(logunit,*) num_inst_atm, num_inst_lnd, num_inst_ocn,&
+         num_inst_ice, num_inst_glc, num_inst_wav, num_inst_rof,&
+         num_inst_esp, num_inst_min, num_inst_max
+     call shr_sys_abort(trim(subname)//' ERROR: num_inst inconsistent')
     endif
 
     ! Initialize IDs
@@ -433,423 +391,43 @@ contains
     count = count + 1
     CPLID = count
 
-    count = count + 1
-    ALLATMID = count
-    count = count + 1
-    ALLLNDID = count
-    count = count + 1
-    ALLOCNID = count
-    count = count + 1
-    ALLICEID = count
-    count = count + 1
-    ALLGLCID = count
-    count = count + 1
-    ALLROFID = count
-    count = count + 1
-    ALLWAVID = count
-    count = count + 1
-    ALLESPID = count
-
-    count = count + 1
-    CPLALLATMID = count
-    count = count + 1
-    CPLALLLNDID = count
-    count = count + 1
-    CPLALLOCNID = count
-    count = count + 1
-    CPLALLICEID = count
-    count = count + 1
-    CPLALLGLCID = count
-    count = count + 1
-    CPLALLROFID = count
-    count = count + 1
-    CPLALLWAVID = count
-    count = count + 1
-    CPLALLESPID = count
-
-    do n = 1, num_inst_atm
-       count = count + 1
-       ATMID(n) = count
-       count = count + 1
-       CPLATMID(n) = count
-    end do
-
-    do n = 1, num_inst_lnd
-       count = count + 1
-       LNDID(n) = count
-       count = count + 1
-       CPLLNDID(n) = count
-    end do
-
-    do n = 1, num_inst_ocn
-       count = count + 1
-       OCNID(n) = count
-       count = count + 1
-       CPLOCNID(n) = count
-    end do
-
-    do n = 1, num_inst_ice
-       count = count + 1
-       ICEID(n) = count
-       count = count + 1
-       CPLICEID(n) = count
-    end do
-
-    do n = 1, num_inst_glc
-       count = count + 1
-       GLCID(n) = count
-       count = count + 1
-       CPLGLCID(n) = count
-    end do
-
-    do n = 1, num_inst_rof
-       count = count + 1
-       ROFID(n) = count
-       count = count + 1
-       CPLROFID(n) = count
-    end do
-
-    do n = 1, num_inst_wav
-       count = count + 1
-       WAVID(n) = count
-       count = count + 1
-       CPLWAVID(n) = count
-    end do
-
-    do n = 1, num_inst_esp
-       count = count + 1
-       ESPID(n) = count
-       CPLESPID(n) = -1
-    end do
-
-    if (count /= ncomps) then
-       write(logunit,*) trim(subname),' ERROR in ID count ',count,ncomps
-       call shr_sys_abort(trim(subname)//' ERROR in ID count')
-    endif
-
-    if (mype == 0) then
-       !--- validation of inputs ---
-       ! rootpes >= 0
-
-       error_state = .false.
-
-       if (atm_rootpe < 0) error_state = .true.
-       if (lnd_rootpe < 0) error_state = .true.
-       if (ice_rootpe < 0) error_state = .true.
-       if (ocn_rootpe < 0) error_state = .true.
-       if (glc_rootpe < 0) error_state = .true.
-       if (wav_rootpe < 0) error_state = .true.
-       if (rof_rootpe < 0) error_state = .true.
-       if (esp_rootpe < 0) error_state = .true.
-       if (cpl_rootpe < 0) error_state = .true.
-
-       if (error_state) then
-          write(logunit,*) trim(subname),' ERROR: rootpes must be >= 0'
-          call shr_sys_abort(trim(subname)//' ERROR: rootpes >= 0')
-       endif
-
-       !! Determine the process layout
-       !!
-       !! We will assign atm_ntasks / num_inst_atm tasks to each atmosphere
-       !! instance.  (This may lead to unallocated tasks if atm_ntasks is
-       !! not an integer multiple of num_inst_atm.)
-
-       if (trim(atm_layout) == trim(layout_concurrent)) then
-          atm_inst_tasks = atm_ntasks / num_inst_atm
-          droot = (atm_inst_tasks * atm_pestride)
-       elseif (trim(atm_layout) == trim(layout_sequential)) then
-          atm_inst_tasks = atm_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid atm_layout ')
-       endif
-       current_task_rootpe = atm_rootpe
-       do n = 1, num_inst_atm
-          amin(n) = current_task_rootpe
-          amax(n) = current_task_rootpe &
-                    + ((atm_inst_tasks - 1) * atm_pestride)
-          astr(n) = atm_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Land instance tasks
-
-       if (trim(lnd_layout) == trim(layout_concurrent)) then
-          lnd_inst_tasks = lnd_ntasks / num_inst_lnd
-          droot = (lnd_inst_tasks * lnd_pestride)
-       elseif (trim(lnd_layout) == trim(layout_sequential)) then
-          lnd_inst_tasks = lnd_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid lnd_layout ')
-       endif
-       current_task_rootpe = lnd_rootpe
-       do n = 1, num_inst_lnd
-          lmin(n) = current_task_rootpe
-          lmax(n) = current_task_rootpe &
-                    + ((lnd_inst_tasks - 1) * lnd_pestride)
-          lstr(n) = lnd_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Ocean instance tasks
-
-       if (trim(ocn_layout) == trim(layout_concurrent)) then
-          ocn_inst_tasks = ocn_ntasks / num_inst_ocn
-          droot = (ocn_inst_tasks * ocn_pestride)
-       elseif (trim(ocn_layout) == trim(layout_sequential)) then
-          ocn_inst_tasks = ocn_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid ocn_layout ')
-       endif
-       current_task_rootpe = ocn_rootpe
-       do n = 1, num_inst_ocn
-          omin(n) = current_task_rootpe
-          omax(n) = current_task_rootpe &
-                    + ((ocn_inst_tasks - 1) * ocn_pestride)
-          ostr(n) = ocn_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Sea ice instance tasks
-
-       if (trim(ice_layout) == trim(layout_concurrent)) then
-          ice_inst_tasks = ice_ntasks / num_inst_ice
-          droot = (ice_inst_tasks * ice_pestride)
-       elseif (trim(ice_layout) == trim(layout_sequential)) then
-          ice_inst_tasks = ice_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid ice_layout ')
-       endif
-       current_task_rootpe = ice_rootpe
-       do n = 1, num_inst_ice
-          imin(n) = current_task_rootpe
-          imax(n) = current_task_rootpe &
-                    + ((ice_inst_tasks - 1) * ice_pestride)
-          istr(n) = ice_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Glacier instance tasks
-
-       if (trim(glc_layout) == trim(layout_concurrent)) then
-          glc_inst_tasks = glc_ntasks / num_inst_glc
-          droot = (glc_inst_tasks * glc_pestride)
-       elseif (trim(glc_layout) == trim(layout_sequential)) then
-          glc_inst_tasks = glc_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid glc_layout ')
-       endif
-       current_task_rootpe = glc_rootpe
-       do n = 1, num_inst_glc
-          gmin(n) = current_task_rootpe
-          gmax(n) = current_task_rootpe &
-                    + ((glc_inst_tasks - 1) * glc_pestride)
-          gstr(n) = glc_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Runoff instance tasks
-
-       if (trim(rof_layout) == trim(layout_concurrent)) then
-          rof_inst_tasks = rof_ntasks / num_inst_rof
-          droot = (rof_inst_tasks * rof_pestride)
-       elseif (trim(rof_layout) == trim(layout_sequential)) then
-          rof_inst_tasks = rof_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid rof_layout ')
-       endif
-       current_task_rootpe = rof_rootpe
-       do n = 1, num_inst_rof
-          rmin(n) = current_task_rootpe
-          rmax(n) = current_task_rootpe &
-                    + ((rof_inst_tasks - 1) * rof_pestride)
-          rstr(n) = rof_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Wave instance tasks
-
-       if (trim(wav_layout) == trim(layout_concurrent)) then
-          wav_inst_tasks = wav_ntasks / num_inst_wav
-          droot = (wav_inst_tasks * wav_pestride)
-       elseif (trim(wav_layout) == trim(layout_sequential)) then
-          wav_inst_tasks = wav_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid wav_layout ')
-       endif
-       current_task_rootpe = wav_rootpe
-       do n = 1, num_inst_wav
-          wmin(n) = current_task_rootpe
-          wmax(n) = current_task_rootpe &
-                    + ((wav_inst_tasks - 1) * wav_pestride)
-          wstr(n) = wav_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! External System Processing instance tasks
-
-       if (trim(esp_layout) == trim(layout_concurrent)) then
-          esp_inst_tasks = esp_ntasks / num_inst_esp
-          droot = (esp_inst_tasks * esp_pestride)
-       elseif (trim(esp_layout) == trim(layout_sequential)) then
-          esp_inst_tasks = esp_ntasks
-          droot = 0
-       else
-          call shr_sys_abort(subname//' ERROR invalid esp_layout ')
-       endif
-       current_task_rootpe = esp_rootpe
-       do n = 1, num_inst_esp
-          emin(n) = current_task_rootpe
-          emax(n) = current_task_rootpe &
-                    + ((esp_inst_tasks - 1) * esp_pestride)
-          estr(n) = esp_pestride
-          current_task_rootpe = current_task_rootpe + droot
-       end do
-
-       !! Coupler tasks
-
-       cmin = cpl_rootpe
-       cmax = cpl_rootpe + (cpl_ntasks-1)*cpl_pestride
-       cstr = cpl_pestride
-    end if
-
-    call shr_mpi_bcast(atm_nthreads,GLOBAL_COMM,'atm_nthreads')
-    call shr_mpi_bcast(lnd_nthreads,GLOBAL_COMM,'lnd_nthreads')
-    call shr_mpi_bcast(ocn_nthreads,GLOBAL_COMM,'ocn_nthreads')
-    call shr_mpi_bcast(ice_nthreads,GLOBAL_COMM,'ice_nthreads')
-    call shr_mpi_bcast(glc_nthreads,GLOBAL_COMM,'glc_nthreads')
-    call shr_mpi_bcast(wav_nthreads,GLOBAL_COMM,'wav_nthreads')
-    call shr_mpi_bcast(rof_nthreads,GLOBAL_COMM,'rof_nthreads')
-    call shr_mpi_bcast(esp_nthreads,GLOBAL_COMM,'esp_nthreads')
-    call shr_mpi_bcast(cpl_nthreads,GLOBAL_COMM,'cpl_nthreads')
-
-    ! Create MPI communicator groups
-
     if (mype == 0) then
        pelist(1,1) = 0
        pelist(2,1) = numpes-1
        pelist(3,1) = 1
     end if
-    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
     call seq_comm_setcomm(GLOID, pelist,iname='GLOBAL')
 
     if (mype == 0) then
-       pelist(1,1) = cmin
-       pelist(2,1) = cmax
-       pelist(3,1) = cstr
+       pelist(1,1) = cpl_rootpe
+       pelist(2,1) = cpl_rootpe + (cpl_ntasks -1) * cpl_pestride
+       pelist(3,1) = cpl_pestride
     end if
-    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+    call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
     call seq_comm_setcomm(CPLID,pelist,cpl_nthreads,'CPL')
 
-    do n = 1, num_inst_atm
-       if (mype == 0) then
-          pelist(1,1) = amin(n)
-          pelist(2,1) = amax(n)
-          pelist(3,1) = astr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(ATMID(n), pelist, atm_nthreads, 'ATM', n, num_inst_atm)
-       call seq_comm_joincomm(CPLID, ATMID(n), CPLATMID(n), 'CPLATM', n, num_inst_atm)
-    end do
-    call seq_comm_jcommarr(ATMID,ALLATMID,'ALLATMID',1,1)
-    call seq_comm_joincomm(CPLID,ALLATMID,CPLALLATMID,'CPLALLATMID',1,1)
+    call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
+         CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
+    call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, lnd_ntasks, lnd_pestride, num_inst_lnd, &
+         CPLID, LNDID, CPLLNDID, ALLLNDID, CPLALLLNDID, 'LND', count, drv_comm_id)
+    call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, ice_ntasks, ice_pestride, num_inst_ice, &
+         CPLID, ICEID, CPLICEID, ALLICEID, CPLALLICEID, 'ICE', count, drv_comm_id)
+    call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, ocn_ntasks, ocn_pestride, num_inst_ocn, &
+         CPLID, OCNID, CPLOCNID, ALLOCNID, CPLALLOCNID, 'OCN', count, drv_comm_id)
+    call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, rof_ntasks, rof_pestride, num_inst_rof, &
+         CPLID, ROFID, CPLROFID, ALLROFID, CPLALLROFID, 'ROF', count, drv_comm_id)
+    call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, glc_ntasks, glc_pestride, num_inst_glc, &
+         CPLID, GLCID, CPLGLCID, ALLGLCID, CPLALLGLCID, 'GLC', count, drv_comm_id)
+    call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, wav_ntasks, wav_pestride, num_inst_wav, &
+         CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id)
+    call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
+         CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id)
 
-    do n = 1, num_inst_lnd
-       if (mype == 0) then
-          pelist(1,1) = lmin(n)
-          pelist(2,1) = lmax(n)
-          pelist(3,1) = lstr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(LNDID(n), pelist, lnd_nthreads, 'LND', n, num_inst_lnd)
-       call seq_comm_joincomm(CPLID, LNDID(n), CPLLNDID(n), 'CPLLND', n, num_inst_lnd)
-    end do
-    call seq_comm_jcommarr(LNDID,ALLLNDID,'ALLLNDID',1,1)
-    call seq_comm_joincomm(CPLID,ALLLNDID,CPLALLLNDID,'CPLALLLNDID',1,1)
-
-    do n = 1, num_inst_ocn
-       if (mype == 0) then
-          pelist(1,1) = omin(n)
-          pelist(2,1) = omax(n)
-          pelist(3,1) = ostr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(OCNID(n), pelist, ocn_nthreads, 'OCN', n, num_inst_ocn)
-       call seq_comm_joincomm(CPLID, OCNID(n), CPLOCNID(n), 'CPLOCN', n, num_inst_ocn)
-    end do
-    call seq_comm_jcommarr(OCNID,ALLOCNID,'ALLOCNID',1,1)
-    call seq_comm_joincomm(CPLID,ALLOCNID,CPLALLOCNID,'CPLALLOCNID',1,1)
-
-    do n = 1, num_inst_ice
-       if (mype == 0) then
-          pelist(1,1) = imin(n)
-          pelist(2,1) = imax(n)
-          pelist(3,1) = istr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(ICEID(n), pelist, ice_nthreads, 'ICE', n, num_inst_ice)
-       call seq_comm_joincomm(CPLID, ICEID(n), CPLICEID(n), 'CPLICE', n, num_inst_ice)
-    end do
-    call seq_comm_jcommarr(ICEID,ALLICEID,'ALLICEID',1,1)
-    call seq_comm_joincomm(CPLID,ALLICEID,CPLALLICEID,'CPLALLICEID',1,1)
-
-    do n = 1, num_inst_glc
-       if (mype == 0) then
-          pelist(1,1) = gmin(n)
-          pelist(2,1) = gmax(n)
-          pelist(3,1) = gstr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(GLCID(n), pelist, glc_nthreads, 'GLC', n, num_inst_glc)
-       call seq_comm_joincomm(CPLID, GLCID(n), CPLGLCID(n), 'CPLGLC', n, num_inst_glc)
-    end do
-    call seq_comm_jcommarr(GLCID,ALLGLCID,'ALLGLCID',1,1)
-    call seq_comm_joincomm(CPLID,ALLGLCID,CPLALLGLCID,'CPLALLGLCID',1,1)
-
-    do n = 1, num_inst_rof
-       if (mype == 0) then
-          pelist(1,1) = rmin(n)
-          pelist(2,1) = rmax(n)
-          pelist(3,1) = rstr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(ROFID(n), pelist, rof_nthreads, 'ROF', n, num_inst_rof)
-       call seq_comm_joincomm(CPLID, ROFID(n), CPLROFID(n), 'CPLROF', n, num_inst_rof)
-    end do
-    call seq_comm_jcommarr(ROFID,ALLROFID,'ALLROFID',1,1)
-    call seq_comm_joincomm(CPLID,ALLROFID,CPLALLROFID,'CPLALLROFID',1,1)
-
-    do n = 1, num_inst_wav
-       if (mype == 0) then
-          pelist(1,1) = wmin(n)
-          pelist(2,1) = wmax(n)
-          pelist(3,1) = wstr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(WAVID(n), pelist, wav_nthreads, 'WAV', n, num_inst_wav)
-       call seq_comm_joincomm(CPLID, WAVID(n), CPLWAVID(n), 'CPLWAV', n, num_inst_wav)
-    end do
-    call seq_comm_jcommarr(WAVID,ALLWAVID,'ALLWAVID',1,1)
-    call seq_comm_joincomm(CPLID,ALLWAVID,CPLALLWAVID,'CPLALLWAVID',1,1)
-
-    do n = 1, num_inst_esp
-       if (mype == 0) then
-          pelist(1,1) = emin(n)
-          pelist(2,1) = emax(n)
-          pelist(3,1) = estr(n)
-       end if
-       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
-       call seq_comm_setcomm(ESPID(n), pelist, esp_nthreads, 'ESP', n, num_inst_esp)
-    end do
-    call seq_comm_jcommarr(ESPID,ALLESPID,'ALLESPID',1,1)
-    call seq_comm_joincomm(CPLID,ALLESPID,CPLALLESPID,'CPLALLESPID',1,1)
-
+    if (count /= ncomps) then
+       write(logunit,*) trim(subname),' ERROR in ID count ',count,ncomps
+       call shr_sys_abort(trim(subname)//' ERROR in ID count')
+    endif
     !! Count the total number of threads
 
     max_threads = -1
@@ -865,7 +443,7 @@ contains
     do n = 1,ncomps
        gloroot = -999
        if (seq_comms(n)%iamroot) gloroot = seq_comms(n)%gloiam
-       call shr_mpi_max(gloroot,seq_comms(n)%gloroot,GLOBAL_COMM, &
+       call shr_mpi_max(gloroot,seq_comms(n)%gloroot,DRIVER_COMM, &
                         trim(subname)//' gloroot',all=.true.)
     enddo
 
@@ -903,30 +481,120 @@ contains
        call shr_sys_abort()
     endif
 
-    call mct_world_init(ncomps, GLOBAL_COMM, comms, comps)
+    call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
 
     deallocate(comps,comms)
 
-    ! ESMF logging (only has effect if ESMF libraries are used)
-    call mpi_bcast(esmf_logging, len(esmf_logging), MPI_CHARACTER, 0, GLOBAL_COMM, ierr)
-
-    select case(esmf_logging)
-    case ("ESMF_LOGKIND_SINGLE")
-       esmf_logfile_kind = ESMF_LOGKIND_SINGLE
-    case ("ESMF_LOGKIND_MULTI")
-       esmf_logfile_kind = ESMF_LOGKIND_MULTI
-    case ("ESMF_LOGKIND_NONE")
-       esmf_logfile_kind = ESMF_LOGKIND_NONE
-    case default
-       if (mype == 0) then
-          write(logunit,*) trim(subname),' ERROR: Invalid value for esmf_logging, ',esmf_logging
-       endif
-       call shr_sys_abort(trim(subname)//' ERROR: Invalid value for esmf_logging '//esmf_logging)
-    end select
 
     call seq_comm_printcomms()
 
   end subroutine seq_comm_init
+
+  subroutine comp_comm_init(driver_comm, comp_rootpe, comp_nthreads, comp_layout, &
+       comp_ntasks, comp_pestride, num_inst_comp, &
+       CPLID, COMPID, CPLCOMPID, ALLCOMPID, CPLALLCOMPID, name, count, drv_comm_id)
+    integer, intent(in) :: driver_comm
+    integer, intent(in) :: comp_rootpe
+    integer, intent(in) :: comp_nthreads
+    character(len=*), intent(in) :: comp_layout
+    integer, intent(in) :: comp_ntasks
+    integer, intent(in) :: comp_pestride
+    integer, intent(in) :: num_inst_comp
+    integer, intent(in) :: CPLID
+    integer, intent(out) :: COMPID(num_inst_comp)
+    integer, intent(out) :: CPLCOMPID(num_inst_comp)
+    integer, intent(out) :: ALLCOMPID
+    integer, intent(out) :: CPLALLCOMPID
+    integer, intent(inout) :: count
+    integer, intent(in), optional :: drv_comm_id
+    character(len=*), intent(in) :: name
+
+    character(len=*), parameter :: subname = "comp_comm_init"
+    integer :: comp_inst_tasks
+    integer :: droot
+    integer :: current_task_rootpe
+    integer :: cmin(num_inst_comp), cmax(num_inst_comp), cstr(num_inst_comp)
+    integer :: n
+    integer :: pelist (3,1)
+    integer :: ierr
+    integer :: mype
+
+    call mpi_comm_rank(driver_comm, mype, ierr)
+
+    count = count + 1
+    ALLCOMPID = count
+    count = count + 1
+    CPLALLCOMPID = count
+    do n = 1, num_inst_comp
+       count = count + 1
+       COMPID(n) = count
+       count = count + 1
+       CPLCOMPID(n) = count
+    enddo
+
+    if (mype == 0) then
+       !--- validation of inputs ---
+       ! rootpes >= 0
+       !! Determine the process layout
+       !!
+       !! We will assign comp_ntasks / num_inst_comp tasks to each component
+       !! instance.  (This may lead to unallocated tasks if comp_ntasks is
+       !! not an integer multiple of num_inst_comp.)
+
+       if (comp_rootpe < 0) then
+          call shr_sys_abort(trim(subname)//' ERROR: rootpes must be >= 0 for component '//trim(name))
+       endif
+
+       if (trim(comp_layout) == trim(layout_concurrent)) then
+          comp_inst_tasks = comp_ntasks / num_inst_comp
+          droot = (comp_inst_tasks * comp_pestride)
+       elseif (trim(comp_layout) == trim(layout_sequential)) then
+          comp_inst_tasks = comp_ntasks
+          droot = 0
+       else
+          call shr_sys_abort(subname//' ERROR invalid comp_layout for component '//trim(name))
+       endif
+       current_task_rootpe = comp_rootpe
+       do n = 1, num_inst_comp
+          cmin(n) = current_task_rootpe
+          cmax(n) = current_task_rootpe &
+               + ((comp_inst_tasks - 1) * comp_pestride)
+          cstr(n) = comp_pestride
+          current_task_rootpe = current_task_rootpe + droot
+       end do
+    endif
+    do n = 1, num_inst_comp
+       if (mype==0) then
+          pelist(1,1) = cmin(n)
+          pelist(2,1) = cmax(n)
+          pelist(3,1) = cstr(n)
+       endif
+       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+       if (present(drv_comm_id)) then
+          call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, drv_comm_id)
+       else
+          call seq_comm_setcomm(COMPID(n), pelist, comp_nthreads,name, n, num_inst_comp)
+       endif
+       call seq_comm_joincomm(CPLID, COMPID(n), CPLCOMPID(n), 'CPL'//name, n, num_inst_comp)
+    enddo
+    call seq_comm_jcommarr(COMPID, ALLCOMPID, 'ALL'//name//'ID', 1, 1)
+    call seq_comm_joincomm(CPLID, ALLCOMPID, CPLALLCOMPID, 'CPLALL'//name//'ID', 1, 1)
+
+  end subroutine comp_comm_init
+
+  subroutine comp_pelayout_init(numpes, ntasks, rootpe, pestride, nthreads, layout)
+    integer,intent(in) :: numpes
+    integer,intent(out) :: ntasks, rootpe, pestride, nthreads
+    character(len=*),optional :: layout
+
+    ntasks = numpes
+    rootpe = 0
+    pestride = 1
+    nthreads = 1
+    if(present(layout)) then
+       layout = trim(layout_concurrent)
+    endif
+  end subroutine comp_pelayout_init
 
 !---------------------------------------------------------
   subroutine seq_comm_clean()
@@ -947,12 +615,6 @@ contains
        call shr_sys_abort()
     end if
     seq_comm_mct_initialized = .false.
-
-    do id = 1, ncomps
-       if (seq_comms(id)%petlist_allocated) then
-          deallocate(seq_comms(id)%petlist)
-       end if
-    end do
 
     call mct_world_clean()
 
@@ -983,25 +645,15 @@ contains
        call shr_sys_abort()
     endif
 
-    call mpi_comm_group(GLOBAL_COMM, mpigrp_world, ierr)
+    call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
     call mpi_group_range_incl(mpigrp_world, 1, pelist, mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
-    call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
+    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
+
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     ntasks = ((pelist(2,1) - pelist(1,1)) / pelist(3,1)) + 1
-    allocate(seq_comms(ID)%petlist(ntasks))
-    seq_comms(ID)%petlist_allocated = .true.
-    cnt = 0
-    do ntask = pelist(1,1),pelist(2,1),pelist(3,1)
-        cnt = cnt + 1
-        if (cnt > ntasks) then
-           write(logunit,*) subname,' ERROR in petlist init ',ntasks,pelist(1:3,1),ntask,cnt
-           call shr_sys_abort(subname//' ERROR in petlist init')
-        endif
-        seq_comms(ID)%petlist(cnt) = ntask
-    enddo
 
     seq_comms(ID)%set = .true.
     seq_comms(ID)%ID = ID
@@ -1060,7 +712,8 @@ contains
 
     if (seq_comms(ID)%iamroot) then
        write(logunit,F11) trim(subname),'  initialize ID ',ID,seq_comms(ID)%name, &
-         ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads
+         ' pelist   =',pelist,' npes =',seq_comms(ID)%npes,' nthreads =',seq_comms(ID)%nthreads,&
+         ' suffix =',trim(seq_comms(ID)%suffix)
     endif
 
   end subroutine seq_comm_setcomm
@@ -1079,7 +732,6 @@ contains
     integer :: mpigrp
     integer :: mpicom
     integer :: ierr
-    integer :: n,nsize
     character(len=seq_comm_namelen) :: cname
     logical :: set_suffix
     integer,allocatable :: pe_t1(:),pe_t2(:)
@@ -1111,7 +763,7 @@ contains
 
     call mpi_group_union(seq_comms(ID1)%mpigrp,seq_comms(ID2)%mpigrp,mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
-    call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
+    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     seq_comms(ID)%set = .true.
@@ -1201,10 +853,9 @@ contains
     integer :: mpigrp, mpigrpp
     integer :: mpicom, nids
     integer :: ierr
-    integer :: n,nsize
+    integer :: n
     character(len=seq_comm_namelen) :: cname
     logical :: set_suffix
-    integer,allocatable :: pe_t1(:),pe_t2(:)
     character(*),parameter :: subName =   '(seq_comm_jcommarr) '
 
     ! check that IDs are in valid range, that IDs have
@@ -1237,6 +888,7 @@ contains
        call mpi_group_union(mpigrpp,seq_comms(IDs(n))%mpigrp,mpigrp,ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
     enddo
+    ! The allcompid is created across multiple drivers.
     call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
@@ -1317,13 +969,13 @@ contains
     character(*),parameter :: subName =   '(seq_comm_printcomms) '
     integer :: n,mype,npes,ierr
 
-    call mpi_comm_size(GLOBAL_COMM, npes  , ierr)
+    call mpi_comm_size(DRIVER_COMM, npes  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size comm_world')
-    call mpi_comm_rank(GLOBAL_COMM, mype  , ierr)
+    call mpi_comm_rank(DRIVER_COMM, mype  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank comm_world')
 
     call shr_sys_flush(logunit)
-    call mpi_barrier(GLOBAL_COMM,ierr)
+    call mpi_barrier(DRIVER_COMM,ierr)
     if (mype == 0) then
        do n = 1,ncomps
           write(logunit,'(a,4i6,2x,3a)') trim(subName),n, &
@@ -1630,21 +1282,6 @@ contains
     end if
 
   end function seq_comm_suffix
-!---------------------------------------------------------
-  subroutine seq_comm_petlist(ID,petlist)
-
-    implicit none
-    integer,intent(in) :: ID
-    integer,pointer :: petlist(:)
-    character(*),parameter :: subName =   '(seq_comm_petlist) '
-
-    if ((ID < 1) .or. (ID > ncomps)) then
-       nullify(petlist)
-    else
-       petlist => seq_comms(ID)%petlist
-    end if
-
-  end subroutine seq_comm_petlist
 !---------------------------------------------------------
 !---------------------------------------------------------
   integer function seq_comm_inst(ID)

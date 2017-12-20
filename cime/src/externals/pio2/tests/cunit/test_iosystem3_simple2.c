@@ -5,8 +5,9 @@
  * This is a simplified, C version of the fortran
  * pio_iosystem_tests3.F90.
  *
- * Ed Hartnett
+ * @author Ed Hartnett
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_tests.h>
 
@@ -36,8 +37,8 @@ int main(int argc, char **argv)
     MPI_Comm test_comm;
 
     /* Initialize test. */
-    if ((ret = pio_test_init(argc, argv, &my_rank, &ntasks, TARGET_NTASKS,
-                             &test_comm)))
+    if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, TARGET_NTASKS, TARGET_NTASKS,
+                              -1, &test_comm)))
         ERR(ERR_INIT);
 
     /* Test code runs on TARGET_NTASKS tasks. The left over tasks do
@@ -85,13 +86,11 @@ int main(int argc, char **argv)
         } /* next iotype */
 
         /* Finalize PIO systems. */
-        printf("%d pio finalizing\n", my_rank);
         if ((ret = PIOc_finalize(iosysid_world)))
             ERR(ret);
     } /* my_rank < TARGET_NTASKS */
 
     /* Finalize test. */
-    printf("%d %s finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ERR_AWFUL;
 

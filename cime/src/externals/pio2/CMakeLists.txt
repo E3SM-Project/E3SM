@@ -4,9 +4,12 @@ project (PIO C Fortran)
 
 # The project version number.
 set(VERSION_MAJOR   2   CACHE STRING "Project major version number.")
-set(VERSION_MINOR   0   CACHE STRING "Project minor version number.")
-set(VERSION_PATCH  28   CACHE STRING "Project patch version number.")
+set(VERSION_MINOR   3   CACHE STRING "Project minor version number.")
+set(VERSION_PATCH   0   CACHE STRING "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+
+# The size of the data buffer for write/read_darray().
+set(PIO_BUFFER_SIZE 134217728)
 
 #==============================================================================
 #  USER-DEFINED OPTIONS (set with "-DOPT=VAL" from command line)
@@ -142,8 +145,8 @@ set (CMAKE_Fortran_COMPILER_DIRECTIVE "CPR${CMAKE_Fortran_COMPILER_NAME}"
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/clib/config.h.in"
-  "${PROJECT_BINARY_DIR}/src/clib/config.h"
+  "${PROJECT_SOURCE_DIR}/cmake_config.h.in"
+  "${PROJECT_BINARY_DIR}/config.h"
   )
 
 #==============================================================================

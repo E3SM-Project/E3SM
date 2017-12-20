@@ -20,7 +20,7 @@ module CanopyTemperatureMod
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation 
   use CLMFatesInterfaceMod , only : hlm_fates_interface_type
   use SurfaceResistanceMod , only : calc_soilevap_stress
-  use EcophysConType       , only : ecophyscon
+  use VegetationPropertiesType, only : veg_vp
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
@@ -29,9 +29,9 @@ module CanopyTemperatureMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use LandunitType         , only : lun                
-  use ColumnType           , only : col                
-  use PatchType            , only : pft
+  use LandunitType         , only : lun_pp                
+  use ColumnType           , only : col_pp                
+  use VegetationType       , only : veg_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -97,6 +97,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,p      ! indices
+    integer  :: nlevbed      ! number of layers to bedrock
     integer  :: j            ! soil/snow level index
     integer  :: fp           ! lake filter pft index
     integer  :: fc           ! lake filter column index
@@ -119,15 +120,16 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                          & 
-         snl              =>    col%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                     
-         dz               =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
-         zii              =>    col%zii                               , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
-         z_0_town         =>    lun%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
-         z_d_town         =>    lun%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
-         urbpoi           =>    lun%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+         snl              =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                     
+         dz               =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
+         zii              =>    col_pp%zii                               , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
+         z_0_town         =>    lun_pp%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
+         z_d_town         =>    lun_pp%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
+         urbpoi           =>    lun_pp%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+         nlev2bed         =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ] number of layers to bedrock
 
-         z0mr             =>    ecophyscon%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
-         displar          =>    ecophyscon%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
+         z0mr             =>    veg_vp%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
+         displar          =>    veg_vp%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
 
          forc_hgt_t       =>    atm2lnd_vars%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in east direction (m/s)
@@ -213,8 +215,8 @@ contains
       do j = -nlevsno+1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
-            if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                 .or. col%itype(c) == icol_roof) .and. j > nlevurb) then
+            if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                 .or. col_pp%itype(c) == icol_roof) .and. j > nlevurb) then
                tssbef(c,j) = spval 
             else
                tssbef(c,j) = t_soisno(c,j)
@@ -229,9 +231,9 @@ contains
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
-         if (col%itype(c) == icol_road_perv) then
+         if (col_pp%itype(c) == icol_road_perv) then
             hr_road_perv = 0._r8
          end if
 
@@ -250,10 +252,10 @@ contains
          ! Saturated vapor pressure, specific humidity and their derivatives
          ! at ground surface
          qred = 1._r8
-         if (lun%itype(l)/=istwet .AND. lun%itype(l)/=istice  &
-              .AND. lun%itype(l)/=istice_mec) then
+         if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
+              .AND. lun_pp%itype(l)/=istice_mec) then
 
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)
                fac  = min(1._r8, wx/watsat(c,1))
                fac  = max( fac, 0.01_r8 )
@@ -265,9 +267,10 @@ contains
                     + frac_sno(c) + frac_h2osfc(c)
                soilalpha(c) = qred
 
-            else if (col%itype(c) == icol_road_perv) then
+            else if (col_pp%itype(c) == icol_road_perv) then
                ! Pervious road depends on water in total soil column
-               do j = 1, nlevsoi
+               nlevbed = nlev2bed(c)
+               do j = 1, nlevbed
                   if (t_soisno(c,j) >= tfrz) then
                      vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
                      eff_porosity = watsat(c,j)-vol_ice
@@ -290,11 +293,11 @@ contains
                end if
                soilalpha_u(c) = qred
 
-            else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
+            else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
                qred = 0._r8
                soilalpha_u(c) = spval
 
-            else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+            else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
                qred = 1._r8
                soilalpha_u(c) = spval
             end if
@@ -305,7 +308,7 @@ contains
          end if
 
          ! compute humidities individually for snow, soil, h2osfc for vegetated landunits
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
             call QSat(t_soisno(c,snl(c)+1), forc_pbot(c), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(c) .and. forc_q(c) > qsatg) then
@@ -362,7 +365,7 @@ contains
          ! Urban emissivities are currently read in from data file
 
          if (.not. urbpoi(l)) then
-            if (lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
+            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
                emg(c) = 0.97_r8
             else
                emg(c) = (1._r8-frac_sno(c))*0.96_r8 + frac_sno(c)*0.97_r8
@@ -406,9 +409,9 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         if( .not.(pft%is_fates(p))) then
-            z0m(p)    = z0mr(pft%itype(p)) * htop(p)
-            displa(p) = displar(pft%itype(p)) * htop(p)
+         if( .not.(veg_pp%is_fates(p))) then
+            z0m(p)    = z0mr(veg_pp%itype(p)) * htop(p)
+            displa(p) = displar(veg_pp%itype(p)) * htop(p)
          end if
       end do
 
@@ -420,16 +423,16 @@ contains
          ! Initial set (needed for history tape fields)
 
          eflx_sh_tot(p) = 0._r8
-         l = pft%landunit(p)
+         l = veg_pp%landunit(p)
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
-         else if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then 
+         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then 
             eflx_sh_tot_r(p) = 0._r8
          end if
          eflx_lh_tot(p) = 0._r8
          if (urbpoi(l)) then
             eflx_lh_tot_u(p) = 0._r8
-         else if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then 
+         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then 
             eflx_lh_tot_r(p) = 0._r8
          end if
          eflx_sh_veg(p) = 0._r8
@@ -456,11 +459,11 @@ contains
       ! Make forcing height a pft-level quantity that is the atmospheric forcing 
       ! height plus each pft's z0m+displa
       do p = bounds%begp,bounds%endp
-         if (pft%active(p)) then
-            g = pft%gridcell(p)
-            l = pft%landunit(p)
-            c = pft%column(p)
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (veg_pp%active(p)) then
+            g = veg_pp%gridcell(p)
+            l = veg_pp%landunit(p)
+            c = veg_pp%column(p)
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c) + displa(p)
                   forc_hgt_t_patch(p) = forc_hgt_t(g) + z0mg(c) + displa(p)
@@ -470,13 +473,13 @@ contains
                   forc_hgt_t_patch(p) = forc_hgt_t(g) + z0m(p) + displa(p)
                   forc_hgt_q_patch(p) = forc_hgt_q(g) + z0m(p) + displa(p)
                end if
-            else if (lun%itype(l) == istwet .or. lun%itype(l) == istice      &
-                 .or. lun%itype(l) == istice_mec) then
+            else if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice      &
+                 .or. lun_pp%itype(l) == istice_mec) then
                forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c)
                forc_hgt_t_patch(p) = forc_hgt_t(g) + z0mg(c)
                forc_hgt_q_patch(p) = forc_hgt_q(g) + z0mg(c)
                ! Appropriate momentum roughness length will be added in LakeFLuxesMod.
-            else if (lun%itype(l) == istdlak) then
+            else if (lun_pp%itype(l) == istdlak) then
                forc_hgt_u_patch(p) = forc_hgt_u(g)
                forc_hgt_t_patch(p) = forc_hgt_t(g)
                forc_hgt_q_patch(p) = forc_hgt_q(g)
@@ -490,7 +493,7 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = veg_pp%column(p)
 
          thm(p)  = forc_t(c) + 0.0098_r8*forc_hgt_t_patch(p)
       end do

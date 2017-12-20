@@ -2,7 +2,10 @@
 
 <?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<entry_id>
+<entry_id version="3.0">
+  <description>
+    <desc atm="SATM">Stub atm component</desc>
+  </description>
 
   <entry id="COMP_ATM">
     <type>char</type>
@@ -13,8 +16,11 @@
     <desc>Name of atmosphere component</desc>
   </entry>
 
-  <description>
-    <desc compset="_SATM">Stub atm component</desc>
-  </description>
+
+  <help>
+    =========================================
+    SATM naming conventions in compset name
+    =========================================
+  </help>
 
 </entry_id>

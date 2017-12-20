@@ -3,7 +3,7 @@
     <rest_file_extension>\.r.*</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
-      <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
+      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
       <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
     </rpointer>
   </comp_archive_spec>

@@ -4,8 +4,9 @@
  *
  * This is a simplified, C version of the fortran pio_iosystem_tests2.F90.
  *
- * Ed Hartnett
+ * @author Ed Hartnett
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_tests.h>
 
@@ -39,19 +40,14 @@ int main(int argc, char **argv)
     MPI_Comm test_comm;
 
     /* Initialize test. */
-    if ((ret = pio_test_init(argc, argv, &my_rank, &ntasks, TARGET_NTASKS,
-			     &test_comm)))
+    if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, TARGET_NTASKS, TARGET_NTASKS,
+                              0, &test_comm)))
         ERR(ERR_INIT);
-    
+
     /* Test code runs on TARGET_NTASKS tasks. The left over tasks do
      * nothing. */
     if (my_rank < TARGET_NTASKS)
     {
-
-        /* Turn on logging. */
-        if ((ret = PIOc_set_log_level(3)))
-            return ret;
-
         /* Initialize PIO system on world. */
         if ((ret = PIOc_Init_Intracomm(test_comm, 4, 1, 0, 1, &iosysid_world)))
             ERR(ret);
@@ -79,8 +75,6 @@ int main(int argc, char **argv)
             if ((ret = MPI_Comm_size(overlap_comm, &overlap_size)))
                 MPIERR(ret);
         }
-        printf("%d overlap_comm = %d overlap_rank = %d overlap_size = %d\n", my_rank,
-               overlap_comm, overlap_rank, overlap_size);
 
         /* Initialize PIO system for overlap comm. */
         if (overlap_comm != MPI_COMM_NULL)
@@ -89,17 +83,13 @@ int main(int argc, char **argv)
                 ERR(ret);
         }
 
-        printf("%d pio finalizing %d\n", my_rank, overlap_iosysid);
         /* Finalize PIO system. */
         if (overlap_comm != MPI_COMM_NULL)
-        {
-            printf("%d calling PIOc_finalize with iosysid = %d\n", my_rank, overlap_iosysid);
             if ((ret = PIOc_finalize(overlap_iosysid)))
                 ERR(ret);
-        }
+
         if ((ret = PIOc_finalize(iosysid_world)))
             ERR(ret);
-        printf("%d pio finalized\n", my_rank);
 
         /* Free MPI resources used by test. */
         if ((ret = MPI_Group_free(&overlap_group)))
@@ -109,11 +99,9 @@ int main(int argc, char **argv)
         if (overlap_comm != MPI_COMM_NULL)
             if ((ret = MPI_Comm_free(&overlap_comm)))
                 ERR(ret);
-        printf("%d %s SUCCESS!!\n", my_rank, TEST_NAME);
     }
 
     /* Finalize test. */
-    printf("%d %s finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ERR_AWFUL;
 

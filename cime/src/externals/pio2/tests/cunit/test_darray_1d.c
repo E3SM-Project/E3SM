@@ -2,8 +2,10 @@
  * Tests for PIO distributed arrays. This test uses 1 dimension,
  * everything very simple. ;-)
  *
- * Ed Hartnett, 2/27/17
+ * @author Ed Hartnett
+ * @date 2/27/17
  */
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 #include <pio_tests.h>
@@ -76,8 +78,6 @@ int create_decomposition_1d(int ntasks, int my_rank, int iosysid, int pio_type, 
                                compdof, ioid, NULL, NULL, NULL)))
         ERR(ret);
 
-    printf("%d decomposition initialized.\n", my_rank);
-
     return 0;
 }
 
@@ -92,7 +92,7 @@ int create_decomposition_1d(int ntasks, int my_rank, int iosysid, int pio_type, 
  * @param my_rank rank of this task.
  * @param test_comm the MPI communicator running the test.
  * @returns 0 for success, error code otherwise.
-*/
+ */
 int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *flavor,
                      int my_rank, MPI_Comm test_comm)
 {
@@ -108,10 +108,10 @@ int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *
     void *expected_in;
     PIO_Offset type_size;             /* Size of the data type. */
     /* My rank as each type. */
-    signed char my_byte_rank = my_rank;   
-    char my_char_rank = my_rank;   
-    short my_short_rank = my_rank;   
-    float my_float_rank = my_rank;   
+    signed char my_byte_rank = my_rank;
+    char my_char_rank = my_rank;
+    short my_short_rank = my_rank;
+    float my_float_rank = my_rank;
     double my_double_rank = my_rank;
 #ifdef _NETCDF4
     unsigned char my_ubyte_rank = my_rank;
@@ -148,11 +148,10 @@ int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *
             continue;
 
         /* NetCDF-4 types only work with netCDF-4 formats. */
-        printf("pio_type = %d flavor[fmt] = %d\n", pio_type, flavor[fmt]);
         if (pio_type > PIO_DOUBLE && flavor[fmt] != PIO_IOTYPE_NETCDF4C &&
             flavor[fmt] != PIO_IOTYPE_NETCDF4P)
             continue;
-        
+
         for (int with_fillvalue = 0; with_fillvalue < NUM_FILLVALUE_PRESENT_TESTS; with_fillvalue++)
         {
             /* Create the filename. */
@@ -160,8 +159,6 @@ int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *
                     pio_type, with_fillvalue);
 
             /* Create the netCDF output file. */
-            printf("rank: %d Creating sample file %s with format %d...\n", my_rank, filename,
-                   flavor[fmt]);
             if ((ret = PIOc_createfile(iosysid, &ncid, &flavor[fmt], filename, PIO_CLOBBER)))
                 ERR(ret);
 
@@ -199,7 +196,7 @@ int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *
             long long int64_test_data[2] = {my_rank, my_rank};
             unsigned long long uint64_test_data[2] = {my_rank, my_rank};
 #endif /* _NETCDF4 */
-            
+
             switch (pio_type)
             {
             case PIO_BYTE:
@@ -362,7 +359,6 @@ int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *
             free(bufr);
 
             /* Close the netCDF file. */
-            printf("%d Closing the sample data file...\n", my_rank);
             if ((ret = PIOc_closefile(ncid)))
                 ERR(ret);
         } /* with_fillvalue */
@@ -382,7 +378,7 @@ int test_darray_fill(int iosysid, int ioid, int pio_type, int num_flavors, int *
  * @param my_rank rank of this task.
  * @param test_comm the MPI communicator running the test.
  * @returns 0 for success, error code otherwise.
-*/
+ */
 int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
                            int *flavor, int my_rank, MPI_Comm test_comm)
 {
@@ -399,10 +395,10 @@ int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
     PIO_Offset type_size;             /* Size of the data type. */
 
     /* My rank as each type. */
-    signed char my_byte_rank = my_rank;   
-    char my_char_rank = my_rank;   
-    short my_short_rank = my_rank;   
-    float my_float_rank = my_rank;   
+    signed char my_byte_rank = my_rank;
+    char my_char_rank = my_rank;
+    short my_short_rank = my_rank;
+    float my_float_rank = my_rank;
     double my_double_rank = my_rank;
 #ifdef _NETCDF4
     unsigned char my_ubyte_rank = my_rank;
@@ -438,18 +434,15 @@ int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
             continue;
 
         /* NetCDF-4 types only work with netCDF-4 formats. */
-        printf("pio_type = %d flavor[fmt] = %d\n", pio_type, flavor[fmt]);
         if (pio_type > PIO_DOUBLE && flavor[fmt] != PIO_IOTYPE_NETCDF4C &&
             flavor[fmt] != PIO_IOTYPE_NETCDF4P)
             continue;
-        
+
         /* Create the filename. */
         sprintf(filename, "data_%s_iotype_%d_pio_type_%d_unlim.nc", TEST_NAME, flavor[fmt],
                 pio_type);
 
         /* Create the netCDF output file. */
-        printf("rank: %d Creating sample file %s with format %d...\n", my_rank, filename,
-               flavor[fmt]);
         if ((ret = PIOc_createfile(iosysid, &ncid, &flavor[fmt], filename, PIO_CLOBBER)))
             ERR(ret);
 
@@ -586,6 +579,10 @@ int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
         if (!(test_data_in = malloc(type_size * arraylen)))
             ERR(PIO_ENOMEM);
 
+        /* Set the record number for the unlimited dimension. */
+        if ((ret = PIOc_setframe(ncid, varid, 0)))
+            ERR(ret);
+
         /* Read the data. */
         if ((ret = PIOc_read_darray(ncid, varid, ioid, arraylen, test_data_in)))
             ERR(ret);
@@ -667,7 +664,6 @@ int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
         free(bufr);
 
         /* Close the netCDF file. */
-        printf("%d Closing the sample data file...\n", my_rank);
         if ((ret = PIOc_closefile(ncid)))
             ERR(ret);
     } /* next iotype */
@@ -687,7 +683,7 @@ int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
  * @param rearranger the rearranger in use.
  * @param test_comm the MPI communicator for this test.
  * @returns 0 for success, error code otherwise.
-*/
+ */
 int test_decomp_read_write(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank,
                            int pio_type, int rearranger, MPI_Comm test_comm)
 {
@@ -705,12 +701,10 @@ int test_decomp_read_write(int iosysid, int ioid, int num_flavors, int *flavor, 
         /* Create the filename. */
         sprintf(filename, "decomp_%s_iotype_%d.nc", TEST_NAME, flavor[fmt]);
 
-        printf("writing decomp file %s\n", filename);
         if ((ret = PIOc_write_nc_decomp(iosysid, filename, 0, ioid, NULL, NULL, 0)))
             return ret;
 
         /* Read the data. */
-        printf("reading decomp file %s\n", filename);
         if ((ret = PIOc_read_nc_decomp(iosysid, filename, &ioid2, test_comm, pio_type,
                                        title_in, history_in, &fortran_order_in)))
             return ret;
@@ -775,12 +769,11 @@ int test_decomp_read_write(int iosysid, int ioid, int num_flavors, int *flavor, 
             /*     return ERR_WRONG; */
             /* if (iodesc->num_aiotasks != TARGET_NTASKS) */
             /*     return ERR_WRONG; */
-            printf("iodesc->nrecvs = %d iodesc->num_aiotasks = %d\n", iodesc->nrecvs, iodesc->num_aiotasks);
             if (iodesc->ndof != EXPECTED_MAPLEN)
                 return ERR_WRONG;
             if (iodesc->rearranger != rearranger || iodesc->maxregions != 1)
                 return ERR_WRONG;
-            if (!iodesc->needsfill || iodesc->basetype != expected_basetype)
+            if (!iodesc->needsfill || iodesc->mpitype != expected_basetype)
                 return ERR_WRONG;
             /* Don't forget to add 1!! */
             if (iodesc->map[0] != my_rank + 1 || iodesc->map[1] != 0)
@@ -818,7 +811,7 @@ int main(int argc, char **argv)
 
     /* Initialize test. */
     if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, MIN_NTASKS,
-                              MIN_NTASKS, 3, &test_comm)))
+                              MIN_NTASKS, -1, &test_comm)))
         ERR(ERR_INIT);
 
     if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
@@ -836,7 +829,6 @@ int main(int argc, char **argv)
         /* Figure out iotypes. */
         if ((ret = get_iotypes(&num_flavors, flavor)))
             ERR(ret);
-        printf("Runnings tests for %d flavors\n", num_flavors);
 
         for (int r = 0; r < NUM_REARRANGERS_TO_TEST; r++)
         {
@@ -882,7 +874,6 @@ int main(int argc, char **argv)
     } /* endif my_rank < TARGET_NTASKS */
 
     /* Finalize the MPI library. */
-    printf("%d %s Finalizing...\n", my_rank, TEST_NAME);
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
 

@@ -45,11 +45,11 @@ contains
 
 
 !=================================================================================================!
-subroutine sl_init1(par, elem, n_domains)
+
+subroutine sl_init1(par, elem)
   use interpolate_mod,        only : interpolate_tracers_init
   use control_mod,            only : use_semi_lagrange_transport_ir
   type(parallel_t) :: par
-  integer, intent(in) :: n_domains
   type (element_t) :: elem(:)
   integer :: nslots
   
@@ -66,7 +66,6 @@ subroutine sl_init1(par, elem, n_domains)
         call ir_init(np, size(elem))
      end if
   endif
-
 end subroutine
 
 subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )

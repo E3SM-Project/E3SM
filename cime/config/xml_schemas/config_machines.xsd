@@ -5,7 +5,7 @@
   <xs:attribute name="MACH" type="xs:NCName"/>
   <xs:attribute name="compiler" type="xs:string"/>
   <xs:attribute name="mpilib" type="xs:string"/>
-  <xs:attribute name="debug" type="xs:boolean"/>
+  <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
   <xs:attribute name="unit_testing" type="xs:boolean"/>
   <xs:attribute name="type" type="xs:NCName"/>
@@ -13,19 +13,26 @@
   <xs:attribute name="name" type="xs:NCName"/>
 
   <!-- simple elements -->
+  <xs:simpleType name="upperBoolean">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="TRUE"/>
+      <xs:enumeration value="FALSE"/>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:element name="NODENAME_REGEX" type="xs:string"/>
   <xs:element name="DESC" type="xs:string"/>
   <xs:element name="OS" type="xs:NCName"/>
   <xs:element name="PROXY" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR" type="xs:string" />
+  <xs:element name="SAVE_TIMING_DIR_PROJECTS" type="xs:string" />
   <xs:element name="PROJECT" type="xs:NCName" />
+  <xs:element name="CHARGE_ACCOUNT" type="xs:NCName" />
   <xs:element name="COMPILERS" type="xs:string"/>
   <xs:element name="MPILIBS" type="xs:string"/>
   <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
   <xs:element name="DOUT_S_ROOT" type="xs:string"/>
-  <xs:element name="DOUT_L_MSROOT" type="xs:string"/>
   <xs:element name="BASELINE_ROOT" type="xs:string"/>
   <xs:element name="CCSM_CPRNC" type="xs:string"/>
   <xs:element name="PERL5LIB" type="xs:string"/>
@@ -33,7 +40,8 @@
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
-  <xs:element name="PES_PER_NODE" type="xs:integer"/>
+  <xs:element name="MAX_MPITASKS_PER_NODE" type="xs:integer"/>
+  <xs:element name="COSTPES_PER_NODE" type="xs:integer"/>
   <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
   <xs:element name="GMAKE" type="xs:string"/>
   <xs:element name="TESTS" type="xs:string"/>
@@ -72,8 +80,13 @@
 	<!-- PROJECT: A project or account number used for batch jobs
 	  can be overridden in environment or $HOME/.cime/config -->
 	<xs:element ref="PROJECT" minOccurs="0" maxOccurs="1"/>
-	<!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
+	<!-- CHARGE_ACCOUNT: The name of the account to charge for batch jobs
+	  can be overridden in environment or $HOME/.cime/config -->
+	<xs:element ref="CHARGE_ACCOUNT" minOccurs="0" maxOccurs="1"/>
+	<!-- SAVE_TIMING_DIR: (Acme only) directory for archiving timing output -->
 	<xs:element ref="SAVE_TIMING_DIR" minOccurs="0" maxOccurs="1"/>
+	<!-- SAVE_TIMING_DIR_PROJECTS: (Acme only) projects whose jobs archive timing output -->
+	<xs:element ref="SAVE_TIMING_DIR_PROJECTS" minOccurs="0" maxOccurs="1"/>
 	<!-- CIME_OUTPUT_ROOT: Base directory for case output,
 	     the bld and run directories are written below here -->
         <xs:element ref="CIME_OUTPUT_ROOT" minOccurs="1" maxOccurs="1"/>
@@ -83,9 +96,6 @@
         <xs:element ref="DIN_LOC_ROOT_CLMFORC" minOccurs="0" maxOccurs="1"/>
 	<!-- DOUT_S_ROOT: root directory of short term archive files -->
         <xs:element ref="DOUT_S_ROOT" minOccurs="1" maxOccurs="1"/>
-	<!-- DOUT_L_MSROOT: root directory on mass store system of
-	     long term archive files-->
-        <xs:element ref="DOUT_L_MSROOT" minOccurs="0" maxOccurs="1"/>
 	<!-- BASELINE_ROOT:  Root directory for system test baseline files -->
         <xs:element ref="BASELINE_ROOT" minOccurs="0" maxOccurs="1"/>
 	<!-- CCSM_CPRNC: location of the cprnc tool, compares model output in testing-->
@@ -105,9 +115,11 @@
 	<!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
 	     shared memory node on this machine-->
         <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
-	<!-- PES_PER_NODE: number of physical PES per shared node on
+	<!-- MAX_MPITASKS_PER_NODE: number of physical PES per shared node on
 	     this machine, in practice the MPI tasks per node will not exceed this value -->
-        <xs:element ref="PES_PER_NODE" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="MAX_MPITASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
+	<!-- Optional cost factor per node unit -->
+        <xs:element ref="COSTPES_PER_NODE" minOccurs="0" maxOccurs="1"/>
 	<!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
 	     the batch system?  See PROJECT above -->
         <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>
@@ -120,6 +132,7 @@
 	<!-- environment_variables: environment_variables to set on this system,
 	  see detail below-->
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
       </xs:sequence>
       <xs:attribute ref="MACH" use="required"/>
     </xs:complexType>
@@ -171,7 +184,7 @@
         <xs:element maxOccurs="unbounded" ref="command"/>
       </xs:sequence>
       <xs:attribute ref="compiler" />
-      <xs:attribute ref="debug" />
+      <xs:attribute ref="DEBUG" />
       <xs:attribute ref="mpilib"/>
     </xs:complexType>
   </xs:element>
@@ -185,13 +198,27 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="env"/>
       </xs:sequence>
-      <xs:attribute ref="debug"/>
+      <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="resource_limits">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="resource"/>
+      </xs:sequence>
+      <xs:attribute ref="DEBUG"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="unit_testing"/>
     </xs:complexType>
   </xs:element>
+
   <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="resource">
     <xs:complexType mixed="true">
       <xs:attribute ref="name" use="required"/>
     </xs:complexType>

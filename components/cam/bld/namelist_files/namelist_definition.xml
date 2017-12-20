@@ -1122,6 +1122,13 @@ IEFLX fixer options
 Default: 0
 </entry>
 
+<entry id="l_ieflx_fix" type="logical"  category="fixers"
+       group="phys_ctl_nl" valid_values="">
+Whether or not to turn on IEFLX fixer
+Default: false
+</entry>
+
+
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -2183,9 +2190,28 @@ Default: 1
 </entry>
 
 <entry id="micro_mg_precip_frac_method" type="char*16" category="microphys"
-       group="micro_mg_nl" valid_values="max_overlap,in_cloud" >
+       group="micro_mg_nl" valid_values="max_overlap,in_cloud,mass_gradient" >
 Type of precipitation fraction.
 Default: max_overlap
+</entry>
+
+<entry id="micro_mg_mass_gradient_alpha" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Parameter controlling the rate at which precipitation fraction decreases when
+the precipitation mass is *decreasing* as it falls (e.g. decreasing rain
+fraction due to evaporation). This value should be positive.
+Used only if micro_mg_precip_frac_method is set to mass_gradient.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="micro_mg_mass_gradient_beta" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Parameter controlling the rate at which precipitation fraction decreases when
+the precipitation mass is *increasing* as it falls (e.g. when precipitation
+falling from above is negligible compared to production concentrated in a small
+area). This value should be non-negative.
+Used only if micro_mg_precip_frac_method is set to mass_gradient.
+Default: Set by build-namelist.
 </entry>
 
 <entry id="micro_mg_berg_eff_factor" type="real" category="microphys"
@@ -3838,6 +3864,12 @@ Produce output for the AMWG diagnostic package.
 Default: .true.
 </entry>
 
+<entry id="history_verbose" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Produce verbose history output by default
+Default: .false.
+</entry>
+
 <entry id="history_vdiag" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Produce output for the AMWG variability diagnostics.
@@ -4181,6 +4213,20 @@ Use relaxation.
 Default: FALSE
 </entry>
 
+<entry id="scm_relaxation_low" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Lowest layer to apply relaxation.  Keep to default value to apply relaxation 
+at the surface.   
+Default: 1050.0 (hPa)
+</entry>
+
+<entry id="scm_relaxation_high" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Highest layer to apply relaxation.  Keep to default value to apply relaxation 
+at the model top.   
+Default: 0.e3 (hPa)
+</entry>
+
 <entry id="scm_observed_aero" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Initialize with observed aerosols from IOP file. 
@@ -4196,6 +4242,12 @@ Default: FALSE
 <entry id="lwrad_off" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Turn off LW radiation computation.
+Default: FALSE
+</entry>
+
+<entry id="precip_off" type="logical" category="scm"
+       group="cam_inparm" valid_values="">
+Turn off microphysics computation.
 Default: FALSE
 </entry>
 
@@ -5051,6 +5103,11 @@ Default: 'MMRVOLC'
        group="prescribed_volcaero_nl" valid_values="" >
 Remove the file containing prescribed volcanic aerosol concentrations from local disk when no longer needed.
 Default: FALSE
+</entry>
+
+<entry id="prescribed_volcaero_filetype" type="char*32" category="cam_chem"
+       group="prescribed_volcaero_nl" valid_values="VOLC_MIXING_RATIO,VOLC_CMIP6" >
+Default: 'VOLC_MIXING_RATIO'
 </entry>
 
 <entry id="prescribed_volcaero_type" type="char*32" category="cam_chem"

@@ -7,9 +7,9 @@ module EnergyFluxType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use clm_varcon     , only : spval
   use decompMod      , only : bounds_type
-  use LandunitType   , only : lun                
-  use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use LandunitType   , only : lun_pp                
+  use ColumnType     , only : col_pp                
+  use VegetationType      , only : veg_pp                
   !
   implicit none
   save
@@ -93,6 +93,13 @@ module EnergyFluxType
 
      ! Latent heat
      real(r8), pointer :: htvp_col                (:)   ! latent heat of vapor of water (or sublimation) [j/kg]
+
+     ! for couplig with pflotran
+     real(r8), pointer :: eflx_soil_grnd_col      (:)   ! col integrated soil ground heat flux (W/m2)  [+ = into ground]
+     real(r8), pointer :: eflx_rnet_soil_col      (:)   ! col soil net (sw+lw) radiation flux (W/m2) [+ = into soil]
+     real(r8), pointer :: eflx_fgr0_soil_col      (:)   ! col soil-air heat flux (W/m2) [+ = into soil]
+     real(r8), pointer :: eflx_fgr0_snow_col      (:)   ! col soil-snow heat flux (W/m2) [+ = into soil]
+     real(r8), pointer :: eflx_fgr0_h2osfc_col    (:)   ! col soil-surfacewater heat flux (W/m2) [+ = into soil]
 
      ! Balance Checks
      real(r8), pointer :: errsoi_patch            (:)   ! soil/lake energy conservation error   (W/m**2)
@@ -221,6 +228,13 @@ contains
     allocate( this%canopy_cond_patch       (begp:endp))             ; this%canopy_cond_patch       (:)   = nan
 
     allocate( this%htvp_col                (begc:endc))             ; this%htvp_col                (:)   = nan
+
+    ! for coupling with pflotran
+    allocate( this%eflx_soil_grnd_col      (begc:endc))             ; this%eflx_soil_grnd_col      (:)   = nan
+    allocate( this%eflx_rnet_soil_col      (begc:endc))             ; this%eflx_rnet_soil_col      (:)   = nan
+    allocate( this%eflx_fgr0_soil_col      (begc:endc))             ; this%eflx_fgr0_soil_col      (:)   = nan
+    allocate( this%eflx_fgr0_snow_col      (begc:endc))             ; this%eflx_fgr0_snow_col      (:)   = nan
+    allocate( this%eflx_fgr0_h2osfc_col    (begc:endc))             ; this%eflx_fgr0_h2osfc_col    (:)   = nan
 
     allocate(this%rresis_patch             (begp:endp,1:nlevgrnd))  ; this%rresis_patch            (:,:) = nan
     allocate(this%btran_patch              (begp:endp))             ; this%btran_patch             (:)   = nan
@@ -588,12 +602,12 @@ contains
 
     SHR_ASSERT_ALL((ubound(t_grnd_col) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
-    associate(snl => col%snl) ! Output: [integer (:)    ]  number of snow layers   
+    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
 
       do c = bounds%begc, bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             this%eflx_building_heat_col(c) = 0._r8
             this%eflx_urban_ac_col(c)      = 0._r8
             this%eflx_urban_heat_col(c)    = 0._r8
@@ -606,10 +620,10 @@ contains
     end do
 
       do p = bounds%begp, bounds%endp 
-         c = pft%column(p)
-         l = pft%landunit(p)
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
 
-         if (.not. lun%urbpoi(l)) then ! non-urban
+         if (.not. lun_pp%urbpoi(l)) then ! non-urban
             this%eflx_lwrad_net_u_patch(p) = spval
             this%eflx_lwrad_out_u_patch(p) = spval
             this%eflx_lh_tot_u_patch(p)    = spval
@@ -623,9 +637,9 @@ contains
     end associate
 
     do p = bounds%begp, bounds%endp 
-       l = pft%landunit(p)
+       l = veg_pp%landunit(p)
 
-       if (.not. lun%urbpoi(l)) then
+       if (.not. lun_pp%urbpoi(l)) then
           this%eflx_traffic_lun(l)        = spval
           this%eflx_wasteheat_lun(l)      = spval
 
