@@ -328,9 +328,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     character(SHR_KIND_CS)  :: tprof_option          ! tprof option units
     integer(SHR_KIND_IN)    :: tprof_n               ! Number until tprof interval
     integer(SHR_KIND_IN)    :: tprof_ymd             ! tprof date (YYYYMMDD)
-    integer(SHR_KIND_IN)    :: start_ymd             ! Start date (YYYYMMDD)
+    integer(SHR_KIND_IN)    :: start_ymd             ! Start date ([YY]YYYYMMDD)
     integer(SHR_KIND_IN)    :: start_tod             ! Start time of day (seconds)
-    integer(SHR_KIND_IN)    :: curr_ymd              ! Current ymd (YYYYMMDD)
+    integer(SHR_KIND_IN)    :: curr_ymd              ! Current ymd ([YY]YYYYMMDD)
     integer(SHR_KIND_IN)    :: curr_tod              ! Current tod (seconds)
     integer(SHR_KIND_IN)    :: ref_ymd               ! Reference date (YYYYMMDD)
     integer(SHR_KIND_IN)    :: ref_tod               ! Reference time of day (seconds)
@@ -528,7 +528,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        endif
 
        if ( stop_ymd < 0) then
-          stop_ymd = 999990101
+          ! If we want to go beyond this date we need date vars to be i8
+          stop_ymd = 2147480101
           stop_tod = 0
        endif
 
@@ -639,7 +640,8 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        end if
 
        ! --- Start time date ---------------------------------------------------
-       if ( (start_ymd < 101) .or. (start_ymd > 99991231)) then
+       ! If we want to go beyond this date we need date vars to be i8
+       if ( (start_ymd < 101) .or. (start_ymd > 2147471231)) then
           write(logunit,*) subname,' ERROR: illegal start_ymd',start_ymd
           call shr_sys_abort( subname//': ERROR invalid start_ymd')
        end if
