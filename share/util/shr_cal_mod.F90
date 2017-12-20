@@ -90,6 +90,7 @@ module shr_cal_mod
    public :: shr_cal_getDebug   ! get internal debug level
    public :: shr_cal_setDebug   ! set internal debug level
    public :: shr_cal_ymdtod2string ! translate ymdtod to string for filenames
+   public :: shr_cal_datetod2string ! translate date to string for filenames
 
 ! !PUBLIC DATA MEMBERS:
 
@@ -133,6 +134,10 @@ module shr_cal_mod
       module procedure shr_cal_validdate_long
    end interface shr_cal_validdate
 
+   interface  shr_cal_datetod2string
+      module procedure shr_cal_datetod2string_int
+      module procedure shr_cal_datetod2string_long
+   end interface shr_cal_datetod2string
 
    integer(SHR_KIND_IN),parameter,public :: shr_cal_calMaxLen = 64
    character(len=*),parameter,public :: &
@@ -1271,16 +1276,42 @@ subroutine shr_cal_getDebug(level)
 end subroutine shr_cal_getDebug
 
 !===============================================================================
-subroutine shr_cal_ymdtod2string(yy, mm, dd, tod, date_str)
-  integer(shr_kind_in), intent(in) :: yy, mm, dd, tod
+subroutine shr_cal_datetod2string_int(date_str, ymd, tod)
+  character(len=*), intent(out) :: date_str
+  integer(shr_kind_in), intent(in) :: ymd
+  integer(shr_kind_in), intent(in), optional :: tod
+
+  integer(shr_kind_in) :: yy, mm, dd
+
+  call shr_cal_date2ymd(ymd, yy, mm, dd)
+  call shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
+end subroutine shr_cal_datetod2string_int
+
+subroutine shr_cal_datetod2string_long(date_str, ymd, tod)
+  character(len=*), intent(out) :: date_str
+  integer(shr_kind_i8), intent(in) :: ymd
+  integer(shr_kind_in), intent(in), optional :: tod
+
+  integer(shr_kind_in) :: yy, mm, dd
+
+  call shr_cal_date2ymd(ymd, yy, mm, dd)
+  call shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
+end subroutine shr_cal_datetod2string_long
+
+subroutine shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
+  integer(shr_kind_in), intent(in) :: yy, mm, dd
+  integer(shr_kind_in), intent(in), optional :: tod
   character(len=*), intent(out) :: date_str
 
   character(len=6) :: year_str
 
   write(year_str,'(i6.4)') yy
   year_str = adjustl(year_str)
-  write(date_str,'(2a,i2.2,a,i2.2,a,i5.5)')  trim(year_str),'-',mm,'-',dd,'-',tod
-
+  if (present(tod)) then
+     write(date_str,'(2a,i2.2,a,i2.2,a,i5.5)')  trim(year_str),'-',mm,'-',dd,'-',tod
+  else
+     write(date_str,'(2a,i2.2,a,i2.2)')  trim(year_str),'-',mm,'-',dd
+  endif
 end subroutine shr_cal_ymdtod2string
 
 
