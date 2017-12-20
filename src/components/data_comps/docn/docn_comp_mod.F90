@@ -576,7 +576,7 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('docn_restart')
-       call shr_cal_ymdtod2string(yy,mm,dd,currentTOD, date_str)
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
        write(rest_file,"(6a)") &
             trim(case_name), '.docn',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
