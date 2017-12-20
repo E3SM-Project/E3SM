@@ -205,7 +205,7 @@ contains
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
 
-         call mpas_pool_get_array(statePool, 'ssh',ssh)
+         call mpas_pool_get_array(statePool, 'ssh',ssh, 1)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
