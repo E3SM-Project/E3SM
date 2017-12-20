@@ -23,7 +23,7 @@ SET(NAMELIST_FILES
 SET(NC_OUTPUT_FILES swtc61.nc )
 
 # compare exodus output vs internal cubed sphere output:
-SET(TESTCASE_REF_TOL 1E-14)
+SET(TESTCASE_REF_TOL 5E-14)
 #SET(TESTCASE_REF_TOL 1E-17)
 SET(NC_OUTPUT_REF swtc61.nc )
 SET(NC_OUTPUT_CHECKREF  exodus-swtc61.nc)
