@@ -332,7 +332,7 @@
     <desc compset="AQP1">CAM atmosphere in aquaplanet mode: </desc>
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
-    <desc compset="CAM4.*_BGC%B"></desc>
+    <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
   </description>
 
   <help>
