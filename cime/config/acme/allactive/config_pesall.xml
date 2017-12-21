@@ -6554,6 +6554,43 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="theta">
+      <pes compset=".*CAM5.+CLM45.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="M">
+        <comment>ne120 F-compset on 384 nodes</comment>
+        <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>10800</ntasks_atm>
+          <ntasks_cpl>10800</ntasks_cpl>
+          <ntasks_ice>10800</ntasks_ice>
+          <ntasks_lnd>1472</ntasks_lnd>
+          <ntasks_rof>1472</ntasks_rof>
+          <ntasks_ocn>1472</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>8</nthrds_atm>
+          <nthrds_cpl>8</nthrds_cpl>
+          <nthrds_ice>8</nthrds_ice>
+          <nthrds_lnd>8</nthrds_lnd>
+          <nthrds_rof>8</nthrds_rof>
+          <nthrds_ocn>8</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_lnd>10816</rootpe_lnd>
+          <rootpe_rof>10816</rootpe_rof>
+          <rootpe_ocn>10816</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+        </rootpe>
+      </pes>
+    </mach>
   </grid>
   <grid name="any">
     <mach name="edison|cori-haswell">
