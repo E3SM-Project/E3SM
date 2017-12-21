@@ -13,11 +13,11 @@ xlf:
 	"CC_SERIAL = xlc" \
 	"CXX_SERIAL = xlcxx" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
-	"FFLAGS_OPT = -O3" \
+	"FFLAGS_OPT = -O3 -qufmt=be" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -O0 -g -C" \
+	"FFLAGS_DEBUG = -O0 -g -C -qufmt=be" \
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
