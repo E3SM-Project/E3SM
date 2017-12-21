@@ -47,6 +47,7 @@
       <value compset="2003.*_CLM"       >2000_control</value>       
       <value compset="1850.*_CLM"       >1850_control</value> 
       <value compset="20TR.*_CLM"       >20thC_transient</value> 
+      <value compset="20TR.*_CLM45%[^_]*BGC">20thC_transient_bgc</value>
       <value compset="RCP6.*_CLM"       >1850-2100_rcp6_transient</value> 
       <value compset="RCP4.*_CLM"       >1850-2100_rcp4.5_transient</value> 
       <value compset="RCP2.*_CLM"       >1850-2100_rcp2.6_transient</value> 
@@ -63,7 +64,9 @@
       <value compset="RCP2.*_CLM.*_CISM">1850-2100_rcp2.6_glacierMEC_transient</value>
       <value compset="2013.*_CLM.*_CISM">1850-2100_rcp4.5_glacierMEC_transient</value>
       <value compset="GEOS.*_CLM"       >20thC_transient</value> 
+      <value compset="GEOS.*_CLM45%[^_]*BGC">20thC_transient_bgc</value>
       <value compset="AMIP.*_CLM"       >20thC_transient</value> 
+      <value compset="AMIP.*_CLM45%[^_]*BGC">20thC_transient_bgc</value>
       <value compset="CLM.*_CISM.*_TEST">glacierMEC_pd</value>
       <!-- Use rcp4.5 for PI to PDAY so will have data up to the current year available (for WACCM compsets that use PDAY) -->
       <value compset="PIPD_CAM5"        >1850-2100_rcp4.5_transient</value>
