@@ -303,6 +303,8 @@ class Case(object):
         return result
 
     def get_record_fields(self, variable, field):
+        """ get_record_fields gets individual requested field from an entry_id file
+        this routine is used only by xmlquery """
         # Empty result
         result = []
 

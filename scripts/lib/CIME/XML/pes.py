@@ -33,7 +33,7 @@ class Pes(GenericXML):
             o_grid_nodes = self.get_children("grid", root = overrides)
             opes_ntasks, opes_nthrds, opes_rootpe, oother_settings = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, True)
         # Get all the nodes
-        grid_nodes = self.get_children("grid")
+        grid_nodes = self.get_children("grid", no_validate=True)
         if o_grid_nodes:
             gn_set = set(grid_nodes)
             ogn_set = set(o_grid_nodes)
