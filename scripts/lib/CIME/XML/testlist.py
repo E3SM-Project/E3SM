@@ -123,9 +123,9 @@ class Testlist(GenericXML):
                         this_test_node[key] = value
 
                 # Get options that apply to all machines/compilers for this test
-                options = self.get_optional_child("options", root=tnode)
-                if options is not None:
-                    optionnodes = self.get_children("option", root=options)
+                options = self.get_children("options", root=tnode, no_validate=True)
+                if len(options) > 0:
+                    optionnodes = self.get_children("option", root=options[0])
                 else:
                     optionnodes = []
                 for mach in machnodes:
