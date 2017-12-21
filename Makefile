@@ -6,12 +6,12 @@ dummy:
 
 xlf:
 	( $(MAKE) all \
-	"FC_PARALLEL = mpxlf90" \
-	"CC_PARALLEL = mpcc" \
-	"CXX_PARALLEL = mpixlcxx" \
-	"FC_SERIAL = xlf90" \
-	"CC_SERIAL = xlc" \
-	"CXX_SERIAL = xlcxx" \
+	"FC_PARALLEL = mpifort" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpic++" \
+	"FC_SERIAL = xlf2003_r" \
+	"CC_SERIAL = xlc_r" \
+	"CXX_SERIAL = xlc++_r" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
 	"FFLAGS_OPT = -O3 -qufmt=be" \
 	"CFLAGS_OPT = -O3" \
