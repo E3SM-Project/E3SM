@@ -574,6 +574,7 @@ else
 endif
 
 ifeq "$(GEN_F90)" "true"
+	override CPPFLAGS += -Uvector
 	GEN_F90_MESSAGE="MPAS generated and was built with intermediate .f90 files."
 else
 	override GEN_F90=false
