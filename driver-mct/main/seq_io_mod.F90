@@ -307,30 +307,17 @@ end subroutine seq_io_enddef
 
 !===============================================================================
 
-character(len=10) function seq_io_date2yyyymmdd (date)
+character(len=24) function seq_io_date2yyyymmdd (date)
+
+  use shr_cal_mod, only : shr_cal_datetod2string
 
 ! Input arguments
 
-   integer, intent(in) :: date
-
-! Local workspace
-
-   integer :: year    ! year of yyyy-mm-dd
-   integer :: month   ! month of yyyy-mm-dd
-   integer :: day     ! day of yyyy-mm-dd
+   integer, intent(in) :: date  ! date expressed as an integer: yyyymmdd
 
 !-------------------------------------------------------------------------------
 
-   if (date < 0) then
-      call shr_sys_abort ('seq_io_date2yyyymmdd: negative date not allowed')
-   end if
-
-   year  = date / 10000
-   month = (date - year*10000) / 100
-   day   = date - year*10000 - month*100
-
-   write(seq_io_date2yyyymmdd,80) year, month, day
-80 format(i4.4,'-',i2.2,'-',i2.2)
+   call shr_cal_datetod2string(date_str = seq_io_date2yyyymmdd, ymd = date)
 
 end function seq_io_date2yyyymmdd
 
