@@ -1025,7 +1025,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
    logical                  :: lwrite_now
    logical                  :: whead, wdata  ! for writing restart/history cdf files
    real(r8)                 :: tbnds(2)
-   character(len=10) :: date_str
+   character(len=12) :: date_str
 
    integer(IN), parameter   :: maxout = 20
    integer(IN)       , save :: ntout = 0
