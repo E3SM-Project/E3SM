@@ -220,7 +220,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
       trim(case_name), '.cpl',cpl_inst_tag,'.hi.', trim(date_str),'.nc'
 
    time_units = 'days since ' &
-        // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
+        // trim(seq_io_date2yyyymmdd(start_ymd)) // ' ' // seq_io_sec2hms(start_tod)
 
    if (iamin_CPLID) then
 
@@ -446,7 +446,6 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
    integer(IN)    , save  :: cnt                 ! counts samples in tavg
    real(r8)       , save  :: tbnds(2)            ! CF1.0 time bounds
    character(len=18) :: date_str
-   character(len=6) :: year_str
 
    logical        , save  :: first_call = .true. ! flags 1st call of this routine
 
@@ -767,25 +766,21 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
       call seq_infodata_GetData( infodata,  case_name=case_name)
       call seq_timemgr_EClockGetData( EClock_d,  prev_ymd=prev_ymd,  prev_tod=prev_tod)
       call shr_cal_date2ymd(prev_ymd, yy, mm, dd)
-      write(year_str,'(i6.4)') yy
-      year_str = adjustl(year_str)
       if (seq_timemgr_histavg_type == seq_timemgr_type_nyear) then
-         write(hist_file, "(6a)") &
-            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',trim(year_str), '.nc'
-      elseif (seq_timemgr_histavg_type == seq_timemgr_type_nmonth) then
-         write(hist_file, "(6a, i2.2, a)") &
-            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',trim(year_str), '-', mm, '.nc'
-      elseif (seq_timemgr_histavg_type == seq_timemgr_type_nday) then
-         write(hist_file, "(6a, i2.2, a, i2.2, a)") &
-            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',  trim(year_str), '-', mm, '-', dd, '.nc'
+         call shr_cal_ymdtod2string(date_str, yy)
+      else if (seq_timemgr_histavg_type == seq_timemgr_type_nmonth) then
+         call shr_cal_ymdtod2string(date_str, yy, mm)
+      else if (seq_timemgr_histavg_type == seq_timemgr_type_nday) then
+         call shr_cal_ymdtod2string(date_str, yy, mm, dd)
       else
+         ! Notice that this uses curr_ymd and curr_tod rather than prev_ymd and prev_tod
          call shr_cal_datetod2string(date_str, curr_ymd, curr_tod)
-         write(hist_file, "(6a)") &
-            trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',  trim(date_str), '.nc'
-      endif
+      end if
+      write(hist_file, "(6a)") &
+           trim(case_name),  '.cpl',cpl_inst_tag,'.ha.',  trim(date_str), '.nc'
 
       time_units = 'days since ' &
-           // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
+           // trim(seq_io_date2yyyymmdd(start_ymd)) // ' ' // seq_io_sec2hms(start_tod)
 
       if (iamin_CPLID) then
 
@@ -1025,7 +1020,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
    logical                  :: lwrite_now
    logical                  :: whead, wdata  ! for writing restart/history cdf files
    real(r8)                 :: tbnds(2)
-   character(len=10) :: date_str
+   character(len=12) :: date_str
 
    integer(IN), parameter   :: maxout = 20
    integer(IN)       , save :: ntout = 0
@@ -1138,7 +1133,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
          if (ncnt(found) < 1 .or. ncnt(found) > samples_per_file) ncnt(found) = 1
 
          time_units = 'days since ' &
-              // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
+              // trim(seq_io_date2yyyymmdd(start_ymd)) // ' ' // seq_io_sec2hms(start_tod)
          tbnds2(found) = curr_time
 
          if (ncnt(found) == 1) then
