@@ -93,18 +93,15 @@ contains
 
 
 
-  subroutine preq_vertadv_v(v,T,nfields,eta_dot_dp_deta, dp,v_vadv,T_vadv)
+  subroutine preq_vertadv_v(v,eta_dot_dp_deta, dp,v_vadv)
     use kinds,              only : real_kind
     use dimensions_mod,     only : nlev, np, nlevp
     implicit none
 
-    integer, intent(in) :: nfields
     real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
-    real (kind=real_kind), intent(in) :: T(np,np,nlev,nfields)
     real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
     real (kind=real_kind), intent(in) :: dp(np,np,nlev)
     real (kind=real_kind), intent(out) :: v_vadv(np,np,2,nlev)
-    real (kind=real_kind), intent(out) :: T_vadv(np,np,nlev,nfields)
 
     ! ========================
     ! Local Variables
@@ -122,9 +119,6 @@ contains
     facp            = 0.5_real_kind*eta_dot_dp_deta(:,:,k+1)/dp(:,:,k)
     v_vadv(:,:,1,k)   = facp(:,:)*(v(:,:,1,k+1)- v(:,:,1,k))
     v_vadv(:,:,2,k)   = facp(:,:)*(v(:,:,2,k+1)- v(:,:,2,k))
-    do nf=1,nfields
-       T_vadv(:,:,k,nf)   = facp(:,:)*(T(:,:,k+1,nf)- T(:,:,k,nf))
-    enddo
     
     ! ===========================================================
     ! vertical advection
@@ -139,10 +133,6 @@ contains
        facm(:,:)   = 0.5_real_kind*eta_dot_dp_deta(:,:,k)/dp(:,:,k)
        v_vadv(:,:,1,k)=facp*(v(:,:,1,k+1)- v(:,:,1,k)) + facm*(v(:,:,1,k)- v(:,:,1,k-1))
        v_vadv(:,:,2,k)=facp*(v(:,:,2,k+1)- v(:,:,2,k)) + facm*(v(:,:,2,k)- v(:,:,2,k-1))
-       do nf=1,nfields
-          T_vadv(:,:,k,nf)   = facp*(T(:,:,k+1,nf)- T(:,:,k,nf)) + &
-               facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
-       enddo
     end do
     
     ! ===========================================================
@@ -154,9 +144,6 @@ contains
     facm            = 0.5_real_kind*eta_dot_dp_deta(:,:,k)/dp(:,:,k)
     v_vadv(:,:,1,k)   = facm*(v(:,:,1,k)- v(:,:,1,k-1))
     v_vadv(:,:,2,k)   = facm*(v(:,:,2,k)- v(:,:,2,k-1))
-    do nf=1,nfields
-       T_vadv(:,:,k,nf)   = facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
-    end do
     end subroutine preq_vertadv_v
 
 
