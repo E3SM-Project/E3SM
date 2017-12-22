@@ -55,6 +55,7 @@ module seq_rest_mod
    ! prep modules - coupler communication between different components
    use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox
    use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox_cnt
+   use prep_ocn_mod,    only: dummy_pgibugfix
    use prep_rof_mod,    only: prep_rof_get_l2racc_lx
    use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
@@ -225,6 +226,7 @@ contains
       if (ocn_present) then
          gsmap         => component_get_gsmap_cx(ocn(1))
          x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+         dummy_pgibugfix = associated(x2oacc_ox)
          x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
          xao_ox        => prep_aoflux_get_xao_ox()
          call seq_io_read(rest_file, gsmap, fractions_ox, 'fractions_ox')
@@ -478,6 +480,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
          if (ocn_present) then
             gsmap         => component_get_gsmap_cx(ocn(1))
             x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+            dummy_pgibugfix = associated(x2oacc_ox)
             x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
             xao_ox        => prep_aoflux_get_xao_ox()
             call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &

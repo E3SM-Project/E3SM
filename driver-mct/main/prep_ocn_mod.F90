@@ -48,6 +48,8 @@ module prep_ocn_mod
 
   public :: prep_ocn_get_x2oacc_ox
   public :: prep_ocn_get_x2oacc_ox_cnt
+  ! Sarat: Dummy variable added to workaround PGI compiler bug (PGI 17.9) as of Oct 23, 2017
+  public :: dummy_pgibugfix
 
   public :: prep_ocn_get_mapper_Sa2o
   public :: prep_ocn_get_mapper_Va2o
@@ -100,6 +102,8 @@ module prep_ocn_mod
   logical       :: flood_present  ! .true.  => rof is computing flood
   character(CS) :: vect_map       ! vector mapping type
   logical       :: x2o_average    ! logical for x2o averaging to 1 ocean instance from multi instances
+  ! Sarat: Dummy variable added to workaround PGI compiler bug (PGI 17.9) as of Oct 23, 2017
+  logical       :: dummy_pgibugfix 
   !================================================================================================
 
 contains
