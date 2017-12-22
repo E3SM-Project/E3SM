@@ -342,6 +342,24 @@ contains
   end subroutine ymdtod2string_noTOD
 
   @Test
+  subroutine ymdtod2string_noDay(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123, mm=4)
+    @assertEqual('0123-04', date_str)
+  end subroutine ymdtod2string_noDay
+
+  @Test
+  subroutine ymdtod2string_noMonth(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123)
+    @assertEqual('0123', date_str)
+  end subroutine ymdtod2string_noMonth
+
+  @Test
   subroutine ymdtod2string_yearTooLarge(this)
     class(TestShrCal), intent(inout) :: this
     character(len=18) :: date_str
