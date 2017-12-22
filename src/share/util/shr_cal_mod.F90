@@ -1304,13 +1304,27 @@ subroutine shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
   character(len=*), intent(out) :: date_str
 
   character(len=6) :: year_str
+  character(len=*), parameter :: subname = 'shr_cal_ymdtod2string'
 
+  if (yy > 999999) then
+     write(s_logunit,*) trim(subname),' : ERROR: year too large: ', yy
+     write(s_logunit,*) '(Currently, only years up to 999999 are supported)'
+     call shr_sys_abort(trim(subname)//' : year too large (max of 999999)')
+  end if
   write(year_str,'(i6.4)') yy
   year_str = adjustl(year_str)
   if (present(tod)) then
-     write(date_str,'(2a,i2.2,a,i2.2,a,i5.5)')  trim(year_str),'-',mm,'-',dd,'-',tod
+     if (len(date_str) < len_trim(year_str) + 1 + 2 + 1 + 2 + 1 + 5) then
+        call shr_sys_abort(trim(subname//' : output string too short'))
+     else
+        write(date_str,'(2a,i2.2,a,i2.2,a,i5.5)')  trim(year_str),'-',mm,'-',dd,'-',tod
+     end if
   else
-     write(date_str,'(2a,i2.2,a,i2.2)')  trim(year_str),'-',mm,'-',dd
+     if (len(date_str) < len_trim(year_str) + 1 + 2 + 1 + 2) then
+        call shr_sys_abort(trim(subname//' : output string too short'))
+     else
+        write(date_str,'(2a,i2.2,a,i2.2)')  trim(year_str),'-',mm,'-',dd
+     end if
   endif
 end subroutine shr_cal_ymdtod2string
 

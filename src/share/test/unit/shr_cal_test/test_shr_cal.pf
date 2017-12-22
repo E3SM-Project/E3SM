@@ -310,4 +310,67 @@ contains
     @assertEqual(99, sec_out)
   end subroutine advDateInt_long_minus1dayMinus1sec
 
+  ! ------------------------------------------------------------------------
+  ! Tests of shr_cal_ymdtod2string
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine ymdtod2string_smallYear(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123, mm=4, dd=5, tod=6789)
+    @assertEqual('0123-04-05-06789', date_str)
+  end subroutine ymdtod2string_smallYear
+
+  @Test
+  subroutine ymdtod2string_largeYear(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123456, mm=4, dd=5, tod=6789)
+    @assertEqual('123456-04-05-06789', date_str)
+  end subroutine ymdtod2string_largeYear
+
+  @Test
+  subroutine ymdtod2string_noTOD(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123, mm=4, dd=5)
+    @assertEqual('0123-04-05', date_str)
+  end subroutine ymdtod2string_noTOD
+
+  @Test
+  subroutine ymdtod2string_yearTooLarge(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=1234567, mm=4, dd=5)
+    @assertExceptionRaised('ABORTED: shr_cal_ymdtod2string : year too large (max of 999999)')
+  end subroutine ymdtod2string_yearTooLarge
+
+  @Test
+  subroutine ymdtod2string_stringTooShort(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=17) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123456, mm=4, dd=5, tod=6789)
+    @assertExceptionRaised('ABORTED: shr_cal_ymdtod2string : output string too short')
+  end subroutine ymdtod2string_stringTooShort
+
+  @Test
+  subroutine ymdtod2string_stringTooShort_noTOD(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=11) :: date_str
+
+    call shr_cal_ymdtod2string(date_str, yy=123456, mm=4, dd=5)
+    @assertExceptionRaised('ABORTED: shr_cal_ymdtod2string : output string too short')
+  end subroutine ymdtod2string_stringTooShort_noTOD
+
+  ! ------------------------------------------------------------------------
+  ! Tests of shr_cal_datetod2string
+  ! ------------------------------------------------------------------------
+
+
 end module test_shr_cal
