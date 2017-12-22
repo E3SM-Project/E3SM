@@ -4,7 +4,7 @@ module test_shr_cal
 
   use pfunit_mod
   use shr_cal_mod
-  use shr_kind_mod , only : r8 => shr_kind_r8
+  use shr_kind_mod , only : r8 => shr_kind_r8, i4 => shr_kind_in, i8 => shr_kind_i8
 
   implicit none
 
@@ -26,5 +26,48 @@ contains
   subroutine tearDown(this)
     class(TestShrCal), intent(inout) :: this
   end subroutine tearDown
+
+  @Test
+  subroutine date2ymd_int_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    integer(i4) :: date, year, month, day
+
+    date = 98760317
+    call shr_cal_date2ymd(date, year, month, day)
+    @assertEqual(9876, year)
+    @assertEqual(3, month)
+    @assertEqual(17, day)
+  end subroutine date2ymd_int_basic
+
+  @Test
+  subroutine date2ymd_long_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    integer(i8) :: date
+    integer(i4) :: year, month, day
+
+    date = 9876540317_i8
+    call shr_cal_date2ymd(date, year, month, day)
+    @assertEqual(987654, year)
+    @assertEqual(3, month)
+    @assertEqual(17, day)
+  end subroutine date2ymd_long_basic
+
+  @Test
+  subroutine ymd2date_int_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    integer(i4) :: date
+
+    call shr_cal_ymd2date(year=9876, month=3, day=17, date=date)
+    @assertEqual(98760317, date)
+  end subroutine ymd2date_int_basic
+
+  @Test
+  subroutine ymd2date_long_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    integer(i8) :: date
+
+    call shr_cal_ymd2date(year=987654, month=3, day=17, date=date)
+    @assertEqual(9876540317_i8, date)
+  end subroutine ymd2date_long_basic
 
 end module test_shr_cal

@@ -508,7 +508,7 @@ subroutine shr_cal_date2ymd_long (date,year,month,day)
 
 !EOP
 
-   integer(SHR_KIND_IN) :: tdate   ! temporary date
+   integer(SHR_KIND_I8) :: tdate   ! temporary date
    character(*),parameter :: subName = "(shr_cal_date2ymd_long)"
 
 !-------------------------------------------------------------------------------
@@ -713,7 +713,7 @@ subroutine shr_cal_ymd2date_long(year,month,day,date)
 
    if (debug > 1) write(s_logunit,*) trim(subname),'_a ',year,month,day
 
-   date = abs(year)*10000 + month*100 + day  ! coded calendar date
+   date = abs(year)*10000_SHR_KIND_I8 + month*100 + day  ! coded calendar date
    if (year < 0) date = -date
 
    if (debug > 1) write(s_logunit,*) trim(subname),'_b ',date
