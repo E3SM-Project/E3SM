@@ -372,5 +372,23 @@ contains
   ! Tests of shr_cal_datetod2string
   ! ------------------------------------------------------------------------
 
+  @Test
+  subroutine datetod2string_int_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_datetod2string(date_str = date_str, ymd = 1230405, tod = 6789)
+    @assertEqual('0123-04-05-06789', date_str)
+  end subroutine datetod2string_int_basic
+
+  @Test
+  subroutine datetod2string_long_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    character(len=18) :: date_str
+
+    call shr_cal_datetod2string(date_str = date_str, ymd = 9876540405_i8, tod = 6789)
+    @assertEqual('987654-04-05-06789', date_str)
+  end subroutine datetod2string_long_basic
+
 
 end module test_shr_cal
