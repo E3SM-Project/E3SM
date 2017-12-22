@@ -1,0 +1,30 @@
+module test_shr_cal
+
+  ! Tests of shr_cal_mod
+
+  use pfunit_mod
+  use shr_cal_mod
+  use shr_kind_mod , only : r8 => shr_kind_r8
+
+  implicit none
+
+  @TestCase
+  type, extends(TestCase) :: TestShrCal
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestShrCal
+
+  real(r8), parameter :: tol = 1.e-13_r8
+
+contains
+
+  subroutine setUp(this)
+    class(TestShrCal), intent(inout) :: this
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestShrCal), intent(inout) :: this
+  end subroutine tearDown
+
+end module test_shr_cal
