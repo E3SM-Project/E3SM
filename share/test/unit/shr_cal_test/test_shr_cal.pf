@@ -62,6 +62,41 @@ contains
   end subroutine date2ymd_long_basic
 
   ! ------------------------------------------------------------------------
+  ! Tests of shr_cal_date2julian
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine date2julian_int_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    integer(i4) :: date, sec
+    real(r8) :: jday
+    real(r8) :: expected
+
+    date = 98760317
+    sec = 86400/2
+    call shr_cal_date2julian(date = date, sec = sec, jday = jday, calendar = 'noleap')
+
+    expected = 31._r8 + 28._r8 + 17._r8 + 0.5_r8
+    @assertEqual(expected, jday)
+  end subroutine date2julian_int_basic
+
+  @Test
+  subroutine date2julian_long_basic(this)
+    class(TestShrCal), intent(inout) :: this
+    integer(i8) :: date
+    integer(i4) :: sec
+    real(r8) :: jday
+    real(r8) :: expected
+
+    date = 9876540317_i8
+    sec = 86400/2
+    call shr_cal_date2julian(date = date, sec = sec, jday = jday, calendar = 'noleap')
+
+    expected = 31._r8 + 28._r8 + 17._r8 + 0.5_r8
+    @assertEqual(expected, jday)
+  end subroutine date2julian_long_basic
+
+  ! ------------------------------------------------------------------------
   ! Tests of shr_cal_ymd2date
   ! ------------------------------------------------------------------------
 
