@@ -1,6 +1,122 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 12-22-2017
+Tag: cime5.4.0-alpha.16
+Answer Changes: None
+Tests: scripts_regression_tests.py
+       aux_clm test suite
+       scripts_regression_tests.py py2 and py3
+Dependencies:
+
+Brief Summary:
+    - Fix pylint issue.
+    - Allows available and default MPILIBS to be specified per compiler.
+    - Find test dir must use case object to fully resolve vars.
+    - Always use GLC_NEC=10 for CLM45/CLM5; remove tropicAtl grid in CESM.
+    - Updates for nersc systems.
+    - DATM and DROF jra55 mode, new grids tx0.1v3, TL319, JRA025.
+    - Fix typo in template.
+    - Remove unused doctests.
+    - Add the batch jobid to the lid.
+    - Fix typo of xcpl_comps dir in buildlib.csm_share.
+    - Fix max tasks for homebrew.
+    - Use the encoding flag to open in py3 to set utf-8.
+
+User interface changes: 
+    - Remove dead --test options.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+d1723aa fix pylint issue
+d7d96b5 Merge pull request #2160 from jedwards4b/allowmultiplempilibs
+2a53df8 Merge pull request #2156 from jedwards4b/findtestdir
+e127d7e Merge pull request #2150 from billsacks/always_glcmec
+39d7442 Merge pull request #2147 from jedwards4b/machine_updates
+c3780a5 Merge pull request #2136 from ESMCI/altuntas/jra55
+5ff8d82 fix typo in template
+ff04547 Merge pull request #2144 from ESMCI/jgfouca/remove_unused_doctest
+c072407 Merge pull request #2141 from jedwards4b/jobid_in_lid
+46627b1 Merge pull request #2143 from ESMCI/agsalin/xcpl_dir_fix
+60f3603 fix max tasks for homebrew
+4729f6a Merge pull request #2139 from jedwards4b/utf8_encoding
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+M	config/acme/machines/template.st_archive
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/Depends.intel
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	config/xml_schemas/config_machines.xsd
+M	doc/source/data_models/data-atm.rst
+M	doc/source/data_models/data-river.rst
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.qstatus
+M	scripts/Tools/case.setup
+M	scripts/Tools/case.submit
+M	scripts/Tools/case_diff
+M	scripts/Tools/check_case
+M	scripts/Tools/check_input_data
+M	scripts/Tools/check_lockedfiles
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/code_checker
+M	scripts/Tools/compare_namelists
+M	scripts/Tools/compare_test_results
+M	scripts/Tools/component_compare_baseline
+M	scripts/Tools/component_compare_copy
+M	scripts/Tools/component_compare_test
+M	scripts/Tools/component_generate_baseline
+M	scripts/Tools/cs.status
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/list_acme_tests
+M	scripts/Tools/normalize_cases
+M	scripts/Tools/pelayout
+M	scripts/Tools/preview_namelists
+M	scripts/Tools/preview_run
+M	scripts/Tools/save_provenance
+M	scripts/Tools/simple_compare
+M	scripts/Tools/standard_script_setup.py
+M	scripts/Tools/update_acme_tests
+M	scripts/Tools/wait_for_tests
+M	scripts/Tools/xmlchange
+M	scripts/Tools/xmlquery
+M	scripts/create_test
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/utils.py
+M	scripts/manage_pes
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/datm/datm_shr_mod.F90
+M	src/components/data_comps/drof/cime_config/config_component.xml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	tools/configure
+M	tools/load_balancing_tool/load_balancing_submit.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 12-14-2017
 Tag: cime5.4.0-alpha.15
 Answer Changes: None
