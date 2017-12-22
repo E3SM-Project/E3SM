@@ -220,7 +220,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
       trim(case_name), '.cpl',cpl_inst_tag,'.hi.', trim(date_str),'.nc'
 
    time_units = 'days since ' &
-        // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
+        // trim(seq_io_date2yyyymmdd(start_ymd)) // ' ' // seq_io_sec2hms(start_tod)
 
    if (iamin_CPLID) then
 
@@ -785,7 +785,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
       endif
 
       time_units = 'days since ' &
-           // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
+           // trim(seq_io_date2yyyymmdd(start_ymd)) // ' ' // seq_io_sec2hms(start_tod)
 
       if (iamin_CPLID) then
 
@@ -1138,7 +1138,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
          if (ncnt(found) < 1 .or. ncnt(found) > samples_per_file) ncnt(found) = 1
 
          time_units = 'days since ' &
-              // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
+              // trim(seq_io_date2yyyymmdd(start_ymd)) // ' ' // seq_io_sec2hms(start_tod)
          tbnds2(found) = curr_time
 
          if (ncnt(found) == 1) then
