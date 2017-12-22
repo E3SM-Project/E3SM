@@ -39,6 +39,7 @@ class GenericXML(object):
         logger.debug("Initializing {}".format(infile))
         self.tree = None
         self.root = None
+        self.locked = False
 
         if infile == None:
             # if file is not defined just return
@@ -86,6 +87,13 @@ class GenericXML(object):
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
 
+    def lock(self):
+        """
+        A subclass is doing caching, we need to lock the tree structure
+        in order to avoid invalidating cache.
+        """
+        self.locked = True
+
     #
     # API for individual node operations
     #
@@ -97,9 +105,13 @@ class GenericXML(object):
         return attrib_name in node.xml_element.attrib
 
     def set(self, node, attrib_name, value):
+        if attrib_name == "id":
+            expect(not self.locked, "locked")
         return node.xml_element.set(attrib_name, value)
 
     def pop(self, node, attrib_name):
+        if attrib_name == "id":
+            expect(not self.locked, "locked")
         return node.xml_element.attrib.pop(attrib_name)
 
     def attrib(self, node):
@@ -122,6 +134,7 @@ class GenericXML(object):
         """
         Add element node to self at root
         """
+        expect(not self.locked, "locked")
         root = root if root is not None else self.root
         root.xml_element.append(node.xml_element)
 
@@ -129,10 +142,12 @@ class GenericXML(object):
         return deepcopy(node)
 
     def remove_child(self, node, root=None):
+        expect(not self.locked, "locked")
         root = root if root is not None else self.root
         root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
+        expect(not self.locked, "locked")
         root = root if root is not None else self.root
         if attributes is None:
             node = _Element(ET.SubElement(root.xml_element, name))
@@ -178,9 +193,9 @@ class GenericXML(object):
             children.append(_Element(child))
 
         # Remove
-        if not no_validate:
-            validate = self.scan_children(name, attributes=attributes, root=root)
-            assert validate == children, "Validation failed for {}, {}\nScan found {} elements, get_children found {}".format(name, attributes, len(validate), len(children))
+        #if not no_validate:
+            #validate = self.scan_children(name, attributes=attributes, root=root)
+            #assert validate == children, "Validation failed for {}, {}\nScan found {} elements, get_children found {}".format(name, attributes, len(validate), len(children))
             # if validate != children:
             #     import pdb
             #     pdb.set_trace()

@@ -579,7 +579,7 @@ class EnvBatch(EnvBase):
     def get_children(self, name=None, attributes=None, root=None):
         if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
                         "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
-            nodes = EnvBase.scan_children(self, "entry", attributes={"id":name}, root=root)
+            nodes = EnvBase.get_children(self, "entry", attributes={"id":name}, root=root)
         else:
             nodes = EnvBase.scan_children(self, name, attributes=attributes, root=root)
 
