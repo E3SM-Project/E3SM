@@ -1309,16 +1309,22 @@ subroutine shr_cal_datetod2string_long(date_str, ymd, tod)
 end subroutine shr_cal_datetod2string_long
 
 subroutine shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
-  ! Converts year, month, day and optional time of day to a string like 'yyyy-mm-dd-ttttt'
-  ! (if tod is present) or 'yyyy-mm-dd' (if tod is absent).
+  ! Converts year, month, day and time of day to a string like 'yyyy-mm-dd-ttttt'.
+  !
+  ! The only required input is yy (year). Missing inputs will result in missing pieces in
+  ! the output string. However, if tod is present, then mm and dd must be present; if dd
+  ! is present, then mm must be present.
   !
   ! yyyy in the output string will have at least 4 but no more than 6 characters (with
   ! leading zeroes if necessary).
-  integer(shr_kind_in), intent(in) :: yy, mm, dd
-  integer(shr_kind_in), intent(in), optional :: tod
+  integer(shr_kind_in), intent(in) :: yy
+  integer(shr_kind_in), intent(in), optional :: mm, dd, tod
   character(len=*), intent(out) :: date_str
 
   character(len=6) :: year_str
+  character(len=3) :: month_str
+  character(len=3) :: day_str
+  character(len=6) :: time_str
   character(len=*), parameter :: subname = 'shr_cal_ymdtod2string'
 
   if (yy > 999999) then
@@ -1328,19 +1334,37 @@ subroutine shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
   end if
   write(year_str,'(i6.4)') yy
   year_str = adjustl(year_str)
-  if (present(tod)) then
-     if (len(date_str) < len_trim(year_str) + 1 + 2 + 1 + 2 + 1 + 5) then
-        call shr_sys_abort(trim(subname//' : output string too short'))
-     else
-        write(date_str,'(2a,i2.2,a,i2.2,a,i5.5)')  trim(year_str),'-',mm,'-',dd,'-',tod
-     end if
+
+  if (present(mm)) then
+     write(month_str,'(a,i2.2)') '-',mm
   else
-     if (len(date_str) < len_trim(year_str) + 1 + 2 + 1 + 2) then
-        call shr_sys_abort(trim(subname//' : output string too short'))
-     else
-        write(date_str,'(2a,i2.2,a,i2.2)')  trim(year_str),'-',mm,'-',dd
+     month_str = ' '
+  end if
+
+  if (present(dd)) then
+     if (.not. present(mm)) then
+        call shr_sys_abort(trim(subname)//' : if dd is present, then mm must be present, too')
      end if
-  endif
+     write(day_str,'(a,i2.2)') '-',dd
+  else
+     day_str = ' '
+  end if
+
+  if (present(tod)) then
+     if (.not. present(mm) .or. .not. present(dd)) then
+        call shr_sys_abort(trim(subname)//' : if tod is present, then mm and dd must be present, too')
+     end if
+     write(time_str,'(a,i5.5)') '-',tod
+  else
+     time_str = ' '
+  end if
+
+  if (len_trim(year_str) + len_trim(month_str) + len_trim(day_str) + len_trim(time_str) > len(date_str)) then
+     call shr_sys_abort(trim(subname//' : output string too short'))
+  else
+     date_str = trim(year_str) // trim(month_str) // trim(day_str) // trim(time_str)
+  end if
+
 end subroutine shr_cal_ymdtod2string
 
 
