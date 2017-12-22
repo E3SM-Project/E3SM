@@ -1277,6 +1277,11 @@ end subroutine shr_cal_getDebug
 
 !===============================================================================
 subroutine shr_cal_datetod2string_int(date_str, ymd, tod)
+  ! Converts coded date (yyyymmdd) and optional time of day to a string like
+  ! 'yyyy-mm-dd-ttttt' (if tod is present) or 'yyyy-mm-dd' (if tod is absent).
+  !
+  ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+  ! leading zeroes if necessary).
   character(len=*), intent(out) :: date_str
   integer(shr_kind_in), intent(in) :: ymd
   integer(shr_kind_in), intent(in), optional :: tod
@@ -1288,6 +1293,11 @@ subroutine shr_cal_datetod2string_int(date_str, ymd, tod)
 end subroutine shr_cal_datetod2string_int
 
 subroutine shr_cal_datetod2string_long(date_str, ymd, tod)
+  ! Converts coded date (yyyymmdd) and optional time of day to a string like
+  ! 'yyyy-mm-dd-ttttt' (if tod is present) or 'yyyy-mm-dd' (if tod is absent).
+  !
+  ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+  ! leading zeroes if necessary).
   character(len=*), intent(out) :: date_str
   integer(shr_kind_i8), intent(in) :: ymd
   integer(shr_kind_in), intent(in), optional :: tod
@@ -1299,6 +1309,11 @@ subroutine shr_cal_datetod2string_long(date_str, ymd, tod)
 end subroutine shr_cal_datetod2string_long
 
 subroutine shr_cal_ymdtod2string(date_str, yy, mm, dd, tod)
+  ! Converts year, month, day and optional time of day to a string like 'yyyy-mm-dd-ttttt'
+  ! (if tod is present) or 'yyyy-mm-dd' (if tod is absent).
+  !
+  ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+  ! leading zeroes if necessary).
   integer(shr_kind_in), intent(in) :: yy, mm, dd
   integer(shr_kind_in), intent(in), optional :: tod
   character(len=*), intent(out) :: date_str
