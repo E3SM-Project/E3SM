@@ -90,3 +90,5 @@ if __name__ == "__main__":
                                         if quiet and case_num == print_num:
                                             print "-o {} -c {} -r {} -t {}".format(core_dir, config_dir, res_dir, test_dir)
                                         case_num = case_num + 1
+
+# vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python

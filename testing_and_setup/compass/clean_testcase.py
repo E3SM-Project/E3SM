@@ -170,3 +170,4 @@ if __name__ == "__main__":
         history_file.write('***********************************************************************\n')
         history_file.close()
 
+# vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python
