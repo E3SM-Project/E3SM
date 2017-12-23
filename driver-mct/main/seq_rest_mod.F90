@@ -323,6 +323,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    character(CL) :: rest_file        ! Local path to restart filename
    integer(IN)   :: ierr             ! MPI error return
    type(mct_gsMap),pointer :: gsmap
+   character(len=6) :: year_char
 
    real(r8),allocatable :: ds(:)     ! for reshaping diag data for restart file
    real(r8),allocatable :: ns(:)     ! for reshaping diag data for restart file
@@ -368,8 +369,9 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
 
    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod)
    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
-   write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-        trim(case_name), '.cpl'//trim(tag)//'.r.',yy,'-',mm,'-',dd,'-',curr_tod,'.nc'
+   write(year_char,'(i6.4)') yy
+   write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
+        trim(case_name), '.cpl'//trim(tag)//'.r.',trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
 
    ! Write driver data to restart file
 
