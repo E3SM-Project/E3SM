@@ -341,6 +341,7 @@ CONTAINS
     use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
     use seq_comm_mct, only: num_inst_wav
     use esp_utils,    only: esp_pio_modify_variable
+    use shr_cal_mod, only: shr_cal_ymdtod2string
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -374,7 +375,7 @@ CONTAINS
     integer(IN)                      :: stepno                ! step number
     character(len=CL)                :: calendar              ! calendar type
     character(len=CS)                :: varname
-
+    character(len=18)                :: date_str
     character(len=*), parameter      :: F00   = "('(desp_comp_run) ',8a)"
     character(len=*), parameter      :: F04   = "('(desp_comp_run) ',2a,2i8,'s')"
     character(len=*), parameter      :: subName = "(desp_comp_run) "
@@ -431,7 +432,7 @@ CONTAINS
     if (.not. ANY(pause_sig)) then
       if ( (my_task == master_task) .and.                                     &
            ((loglevel > 1) .or. (trim(desp_mode) == test_mode))) then
-        write(logunit, '(2a,i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
+        write(logunit, '(2a,i6.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
              'WARNING: No pause signals found at ',yy,mm,dd,CurrentTOD
       end if
     end if
@@ -532,9 +533,10 @@ CONTAINS
 
     if (write_restart) then
       call t_startf('desp_restart')
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)")                     &
-           trim(case_name), '.desp'//trim(inst_suffix)//'.r.',                &
-           yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
+      call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+      write(rest_file,"(6a)")                     &
+           trim(case_name), '.desp',trim(inst_suffix),'.r.',                &
+           trim(date_str),'.nc'
       if (my_task == master_task) then
         nu = shr_file_getUnit()
         open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

@@ -12,7 +12,7 @@ module datm_comp_mod
   use shr_sys_mod
   use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian
+  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
@@ -629,6 +629,7 @@ CONTAINS
     real(R8)      :: tMin              ! minimum temperature
     character(CL) :: calendar          ! calendar type
 
+    character(len=18) :: date_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
@@ -1144,12 +1145,12 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+
+       write(rest_file,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.r.', trim(date_str), '.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.rs1.', trim(date_str), '.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
