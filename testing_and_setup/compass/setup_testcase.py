@@ -158,7 +158,7 @@ def write_namelist(namelist_dict, outfilename, infilename):#{{{
                 out_namelist.write('/\n')
 
             record_name = line.strip().strip('&').strip('\n')
-            out_namelist.write(line);
+            out_namelist.write(line)
         elif line.find('=') >= 0:
             opt, val = line.strip().strip('\n').split('=')
             if record_name != "NONE!!!":
@@ -663,7 +663,7 @@ def process_script_step(step, configs, indentation, script_file):#{{{
     if write_post_message:
         script_file.write('{}print "{}"\n'.format(indentation, step_post_message))
 
-    script_file.write("\n");
+    script_file.write("\n")
 #}}}
 
 def process_validation_step(validation_tag, configs, script):#{{{
