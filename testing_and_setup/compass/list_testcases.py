@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # Iterate over all cores
     for core_dir in os.listdir('.'):
-        if os.path.isdir(core_dir) and not core_dir == '.git':
+        if os.path.isdir(core_dir) and core_dir != '.git':
             # Iterate over all configurations within a core
             for config_dir in os.listdir(core_dir):
                 config_path = '%s/%s'%(core_dir, config_dir)

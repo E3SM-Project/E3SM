@@ -52,7 +52,7 @@ if __name__ == "__main__":
         regex = re.compile('(\d):')
         core_configuration = subprocess.check_output(['./list_testcases.py'])
         for line in core_configuration.split('\n'):
-            if not regex.search(line) == None:
+            if regex.search(line) is not None:
                 conf_arr = line.replace(":", " ").split()
                 case_num = int(conf_arr[0])
                 del conf_arr

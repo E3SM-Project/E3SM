@@ -344,7 +344,7 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
         stream_file.write('<immutable_stream name="%s"'%(stream_name))
         # Process all attributes on the stream
         for attr, val in stream.attrib.items():
-            if ( not attr.strip() == 'name' ):
+            if ( attr.strip() != 'name' ):
                 stream_file.write('\n                  %s="%s"'%(attr, val))
 
         stream_file.write('/>\n')
@@ -358,7 +358,7 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
 
         # Process all attributes
         for attr, val in stream.attrib.items():
-            if ( not attr.strip() == 'name' ):
+            if ( attr.strip() != 'name' ):
                 stream_file.write('\n        %s="%s"'%(attr, val))
 
         stream_file.write('>\n\n')
@@ -636,7 +636,7 @@ def process_script_step(step, configs, indentation, script_file):#{{{
             flag = argument.attrib['flag']
             val = argument.text
 
-            if not flag.strip() == "":
+            if flag.strip() != "":
                 comment = "%s %s"%(comment, flag)
                 command = "%s, '%s'"%(command, flag)
 
@@ -695,7 +695,7 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
 
     baseline_root = configs.get('script_paths', 'baseline_dir')
 
-    if not baseline_root == 'NONE':
+    if baseline_root != 'NONE':
         baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
 
     for child in compare_tag:
@@ -704,10 +704,10 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
             if not (missing_file1 or missing_file2):
                 process_field_definition(child, configs, script, file1, file2, False)
 
-            if not missing_file1 and not baseline_root == 'NONE':
+            if not missing_file1 and baseline_root != 'NONE':
                 process_field_definition(child, configs, script, file1, '%s/%s'%(baseline_root, file1), True)
 
-            if not missing_file2 and not baseline_root == 'NONE':
+            if not missing_file2 and baseline_root != 'NONE':
                 process_field_definition(child, configs, script, file2, '%s/%s'%(baseline_root, file2), True)
         # Process field comparision template
         elif child.tag == 'template':
@@ -735,7 +735,7 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
 
     # Build the path to the baselines
     baseline_root = configs.get('script_paths', 'baseline_dir')
-    if not baseline_root == 'NONE':
+    if baseline_root != 'NONE':
         baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
 
     # Determine template information, like path and filename
@@ -757,10 +757,10 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
                             if not (missing_file1 or missing_file2):
                                 process_field_definition(field, configs, script, file1, file2, False)
 
-                            if not missing_file1 and not baseline_root == 'NONE':
+                            if not missing_file1 and baseline_root != 'NONE':
                                 process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1), True)
 
-                            if not missing_file2 and not baseline_root == 'NONE':
+                            if not missing_file2 and baseline_root != 'NONE':
                                 process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2), True)
                         elif field.tag == 'template':
                             apply_compare_fields_template(field, compare_tag, configs, script)
@@ -1217,7 +1217,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
 
                                     nc.close()
 
-                                    if not file_hash.strip() == expected_hash.strip():
+                                    if file_hash.strip() != expected_hash.strip():
                                         print "*** ERROR: Base mesh has hash of '%s' which does not match expected hash of '%s'."%(file_hash, expected_hash)
                                         print " Deleting file..."
                                         subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
