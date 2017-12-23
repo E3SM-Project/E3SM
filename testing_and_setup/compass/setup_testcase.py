@@ -37,7 +37,7 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
     for namelists in config_root.iter('namelist'):
         # Determine the name of the namelist that will be generated
         try:
-            namelist_file = '%s/%s'%(case_path, namelists.attrib['name'])
+            namelist_file = '{}/{}'.format(case_path, namelists.attrib['name'])
         except:
             print "ERROR: <namelist> tag is missing the 'name' attribute"
             print "Exiting..."
@@ -52,7 +52,7 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
             sys.exit(1)
 
         if not configs.has_option("namelists", namelist_mode):
-            print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(config_file, namelist_mode)
+            print "Error. Configuration file '{}' requires paths for streams and namelist files for '{}' mode.".format(config_file, namelist_mode)
             print "Exiting..."
             sys.exit(1)
 
@@ -119,7 +119,7 @@ def apply_namelist_template(namelist_dict, template_tag, configs):#{{{
     template_info = get_template_info(template_tag, configs)
 
     # Build the full filename for the template
-    template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
+    template_file = '{}/{}'.format(template_info['template_path'], template_info['template_file'])
 
     # Parse the template
     template_tree = ET.parse(template_file)
@@ -162,7 +162,7 @@ def write_namelist(namelist_dict, outfilename, infilename):#{{{
         elif line.find('=') >= 0:
             opt, val = line.strip().strip('\n').split('=')
             if record_name != "NONE!!!":
-                out_namelist.write('    %s = %s\n'%(opt.strip(), namelist_dict[record_name][opt][0].strip()))
+                out_namelist.write('    {} = {}\n'.format(opt.strip(), namelist_dict[record_name][opt][0].strip()))
 
     if record_name != "NONE!!!":
         out_namelist.write('/\n')
@@ -182,7 +182,7 @@ def generate_streams_files(config_file, case_path, configs):#{{{
     for streams in config_root:
         if streams.tag == "streams":
             # Determine the path to the template streams file
-            streams_filename = '%s/%s'%(case_path, streams.attrib['name'])
+            streams_filename = '{}/{}'.format(case_path, streams.attrib['name'])
 
             try:
                 streams_mode = streams.attrib['mode']
@@ -192,7 +192,7 @@ def generate_streams_files(config_file, case_path, configs):#{{{
                 sys.exit(1)
 
             if not configs.has_option("streams", streams_mode):
-                print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(config_file, streams_mode)
+                print "Error. Configuration file '{}' requires paths for streams and namelist files for '{}' mode.".format(config_file, streams_mode)
                 print "Exiting..."
                 sys.exit(1)
 
@@ -206,7 +206,7 @@ def generate_streams_files(config_file, case_path, configs):#{{{
             configure_streams_file(streams_root, streams, configs)
 
             # Write out the streams file
-            write_streams_file(streams_root, config_file, streams_filename, '%s'%(case_path))
+            write_streams_file(streams_root, config_file, streams_filename, '{}'.format(case_path))
 
             del streams_root
             del streams_tree
@@ -239,7 +239,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
                     found = True
                     stream_to_modify = stream
                 else:
-                    print "ERROR: Stream %s found multiple times in template. Exiting..."%(name.strip())
+                    print "ERROR: Stream {} found multiple times in template. Exiting...".format(name.strip())
                     sys.exit(1)
 
     # If not found, need to create it
@@ -274,7 +274,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
                         if child.attrib['name'] == member_name:
                             stream_to_modify.remove(child)
                     except:
-                        print "   --- Tag: %s is missing a name attribute"%(child.tag)
+                        print "   --- Tag: {} is missing a name attribute".format(child.tag)
 
 #}}}
 
@@ -309,7 +309,7 @@ def apply_stream_template(streams_file, template_tag, configs):#{{{
     template_info = get_template_info(template_tag, configs)
 
     # Build full path to template file
-    template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
+    template_file = '{}/{}'.format(template_info['template_path'], template_info['template_file'])
 
     # Parse the template
     template_tree = ET.parse(template_file)
@@ -342,11 +342,11 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
         stream_name = stream.attrib['name']
 
         stream_file.write('\n')
-        stream_file.write('<immutable_stream name="%s"'%(stream_name))
+        stream_file.write('<immutable_stream name="{}"'.format(stream_name))
         # Process all attributes on the stream
         for attr, val in stream.attrib.items():
             if ( attr.strip() != 'name' ):
-                stream_file.write('\n                  %s="%s"'%(attr, val))
+                stream_file.write('\n                  {}="{}"'.format(attr, val))
 
         stream_file.write('/>\n')
 
@@ -355,12 +355,12 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
         stream_name = stream.attrib['name']
 
         stream_file.write('\n')
-        stream_file.write('<stream name="%s"'%(stream_name))
+        stream_file.write('<stream name="{}"'.format(stream_name))
 
         # Process all attributes
         for attr, val in stream.attrib.items():
             if ( attr.strip() != 'name' ):
-                stream_file.write('\n        %s="%s"'%(attr, val))
+                stream_file.write('\n        {}="{}"'.format(attr, val))
 
         stream_file.write('>\n\n')
 
@@ -369,9 +369,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             substream_name = substream.attrib['name']
             if 'packages' in substream.attrib.keys():
                 package_name = substream.attrib['packages']
-                entry = '\t<stream name="%s"'%(substream_name) + ' packages="%s" '%(package_name) +'/>\n'
+                entry = '\t<stream name="{}"'.format(substream_name) + ' packages="{}" '.format(package_name) +'/>\n'
             else:
-                entry = '\t<stream name="%s"'%(substream_name) +'/>\n'
+                entry = '\t<stream name="{}"'.format(substream_name) +'/>\n'
             stream_file.write(entry)
 
         # Write out all var_structs included in this stream
@@ -379,9 +379,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             var_struct_name = var_struct.attrib['name']
             if 'packages' in var_struct.attrib.keys():
                 package_name = var_struct.attrib['packages']
-                entry = '\t<var_struct name="%s"'%(var_struct_name) + ' packages="%s" '%(package_name) +'/>\n'
+                entry = '\t<var_struct name="{}"'.format(var_struct_name) + ' packages="{}" '.format(package_name) +'/>\n'
             else:
-                entry = '\t<var_struct name="%s"'%(var_struct_name) +'/>\n'
+                entry = '\t<var_struct name="{}"'.format(var_struct_name) +'/>\n'
             stream_file.write(entry)
 
         # Write out all var_arrays included in this stream
@@ -389,9 +389,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             var_array_name = var_array.attrib['name']
             if 'packages' in var_array.attrib.keys():
                 package_name = var_array.attrib['packages']
-                entry = '\t<var_array name="%s"'%(var_array_name) + ' packages="%s" '%(package_name) +'/>\n'
+                entry = '\t<var_array name="{}"'.format(var_array_name) + ' packages="{}" '.format(package_name) +'/>\n'
             else:
-                entry = '\t<var_array name="%s"'%(var_array_name) +'/>\n'
+                entry = '\t<var_array name="{}"'.format(var_array_name) +'/>\n'
             stream_file.write(entry)
 
         # Write out all vars included in this stream
@@ -399,9 +399,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             var_name = var.attrib['name']
             if 'packages' in var.attrib.keys():
                 package_name = var.attrib['packages']
-                entry = '\t<var name="%s"'%(var_name) + ' packages="%s" '%(package_name) +'/>\n'
+                entry = '\t<var name="{}"'.format(var_name) + ' packages="{}" '.format(package_name) +'/>\n'
             else:
-                entry = '\t<var name="%s"'%(var_name) +'/>\n'
+                entry = '\t<var name="{}"'.format(var_name) +'/>\n'
             stream_file.write(entry)
 
         stream_file.write('</stream>\n')
@@ -425,7 +425,7 @@ def generate_run_scripts(config_file, init_path, configs):#{{{
         if run_script.tag == 'run_script':
             # Determine the name of the script, and create the file
             script_name = run_script.attrib['name']
-            script_path = "%s/%s"%(init_path, script_name)
+            script_path = "{}/{}".format(init_path, script_name)
             script = open(script_path, "w")
 
             # Write the script header
@@ -453,7 +453,7 @@ def generate_run_scripts(config_file, init_path, configs):#{{{
             script.close()
 
             # Make the script executable
-            subprocess.check_call(['chmod', 'a+x', '%s'%(script_path)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+            subprocess.check_call(['chmod', 'a+x', '{}'.format(script_path)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 
     dev_null.close()
@@ -467,7 +467,7 @@ def generate_driver_scripts(config_file, configs):#{{{
     dev_null = open('/dev/null', 'r+')
 
     # init_path is where the driver script will live after it's generated.
-    init_path = '%s/%s'%(config.get('script_paths', 'work_dir'), config.get('script_paths', 'config_path'))
+    init_path = '{}/{}'.format(config.get('script_paths', 'work_dir'), config.get('script_paths', 'config_path'))
 
     # Ensure we're in a <driver_script> tag
     if config_root.tag == 'driver_script':
@@ -478,7 +478,7 @@ def generate_driver_scripts(config_file, configs):#{{{
             os.makedirs(init_path)
 
         # Create script file
-        script = open('%s/%s'%(init_path, name), 'w')
+        script = open('{}/{}'.format(init_path, name), 'w')
 
         # Write script header
         script.write('#!/usr/bin/env python\n')
@@ -500,11 +500,11 @@ def generate_driver_scripts(config_file, configs):#{{{
                 case_dict[case_name] = '1'
             if child.tag == 'template':
                 print " WARNING: use of templates outside of a case in a driver_script is not supported!"
-                print "          (name of template file is %s)"%(child.attrib['file'])
+                print "          (name of template file is {})".format(child.attrib['file'])
 
         for case_name in case_dict.keys():
-            script.write('parser.add_argument("--no_%s", dest="no_%s", help="If set, %s case will not be run during execution of this script.", action="store_true")\n'%(case_name, case_name, case_name))
-            script.write('parser.add_argument("--finalize_%s", dest="finalize_%s", help="If set, %s case will have symlinks replaced with the files they point to, this occurs after any case runs that have been requested..", action="store_true")\n'%(case_name, case_name, case_name))
+            script.write('parser.add_argument("--no_{}", dest="no_{}", help="If set, {} case will not be run during execution of this script.", action="store_true")\n'.format(case_name, case_name, case_name))
+            script.write('parser.add_argument("--finalize_{}", dest="finalize_{}", help="If set, {} case will have symlinks replaced with the files they point to, this occurs after any case runs that have been requested..", action="store_true")\n'.format(case_name, case_name, case_name))
 
         script.write('\n')
         script.write('args = parser.parse_args()\n')
@@ -519,9 +519,9 @@ def generate_driver_scripts(config_file, configs):#{{{
             # processing each step / define_env_var tag within it.
             if child.tag == 'case':
                 case = child.attrib['name']
-                script.write('if not args.no_%s:\n'%(case))
+                script.write('if not args.no_{}:\n'.format(case))
                 script.write('\tos.chdir(base_path)\n')
-                script.write('\tos.chdir(' + "'%s')\n"%(case))
+                script.write('\tos.chdir(' + "'{}')\n".format(case))
                 # Process children of <case> tag
                 for grandchild in child:
                     # Process <step> tags
@@ -548,9 +548,9 @@ def generate_driver_scripts(config_file, configs):#{{{
         script.write('\tsys.exit(1)\n')
 
         for case_name in case_dict.keys():
-            script.write('if args.finalize_%s:\n'%(case_name))
+            script.write('if args.finalize_{}:\n'.format(case_name))
             script.write('    old_dir = os.getcwd()\n')
-            script.write('    os.chdir("%s")\n'%(case_name))
+            script.write('    os.chdir("{}")\n'.format(case_name))
             script.write('    file_list = glob.glob("*")\n')
             script.write('    for file in file_list:\n')
             script.write('       if os.path.islink(file):\n')
@@ -567,7 +567,7 @@ def generate_driver_scripts(config_file, configs):#{{{
         del case_dict
 
         # Make script executable
-        subprocess.check_call(['chmod', 'a+x', '%s/%s'%(init_path, name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+        subprocess.check_call(['chmod', 'a+x', '{}/{}'.format(init_path, name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 #}}}
 
 def process_env_define_step(var_tag, configs, indentation, script_file):#{{{
@@ -586,7 +586,7 @@ def process_env_define_step(var_tag, configs, indentation, script_file):#{{{
         sys.exit(1)
 
     # Write line to define the environment variable
-    script_file.write("%sos.environ['%s'] = '%s'\n"%(indentation, var_name, var_val))
+    script_file.write("{}os.environ['{}'] = '{}'\n".format(indentation, var_name, var_val))
 #}}}
 
 def process_script_step(step, configs, indentation, script_file):#{{{
@@ -628,8 +628,8 @@ def process_script_step(step, configs, indentation, script_file):#{{{
     script_file.write("# Run command is:\n")
 
     # Build comment and command bases
-    comment = "# %s "%(executable)
-    command = "subprocess.check_call(['%s'"%(executable)
+    comment = "# {} ".format(executable)
+    command = "subprocess.check_call(['{}'".format(executable)
 
     # Process step arguments
     for argument in step:
@@ -638,30 +638,30 @@ def process_script_step(step, configs, indentation, script_file):#{{{
             val = argument.text
 
             if flag.strip() != "":
-                comment = "%s %s"%(comment, flag)
-                command = "%s, '%s'"%(command, flag)
+                comment = "{} {}".format(comment, flag)
+                command = "{}, '{}'".format(command, flag)
 
-            comment = "%s %s"%(comment, val)
-            command = "%s, '%s'"%(command, val)
+            comment = "{} {}".format(comment, val)
+            command = "{}, '{}'".format(command, val)
 
     # If a pre_message attribute was supplied, write it before adding the command.
     if write_pre_message:
-        script_file.write('%sprint "%s"\n'%(indentation, step_pre_message))
+        script_file.write('{}print "{}"\n'.format(indentation, step_pre_message))
 
     # Setup command redirection
     if quiet:
-        command = "%s], stdout=dev_null, stderr=dev_null"%(command)
+        command = "{}], stdout=dev_null, stderr=dev_null".format(command)
     else:
-        command = "%s]"%(command)
+        command = "{}]".format(command)
 
     # Write the comment, and the command. Also, ensure the command has the same
     # environment as the calling script.
-    script_file.write("%s%s\n"%(indentation, comment))
-    script_file.write("%s%s, env=os.environ.copy())\n"%(indentation, command))
+    script_file.write("{}{}\n".format(indentation, comment))
+    script_file.write("{}{}, env=os.environ.copy())\n".format(indentation, command))
 
     # If a post_message attribute was supplied, write it after the command.
     if write_post_message:
-        script_file.write('%sprint "%s"\n'%(indentation, step_post_message))
+        script_file.write('{}print "{}"\n'.format(indentation, step_post_message))
 
     script_file.write("\n");
 #}}}
@@ -697,7 +697,7 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
     baseline_root = configs.get('script_paths', 'baseline_dir')
 
     if baseline_root != 'NONE':
-        baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+        baseline_root = '{}/{}'.format(baseline_root, configs.get('script_paths', 'test_dir'))
 
     for child in compare_tag:
         # Process field comparisions
@@ -706,10 +706,10 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
                 process_field_definition(child, configs, script, file1, file2, False)
 
             if not missing_file1 and baseline_root != 'NONE':
-                process_field_definition(child, configs, script, file1, '%s/%s'%(baseline_root, file1), True)
+                process_field_definition(child, configs, script, file1, '{}/{}'.format(baseline_root, file1), True)
 
             if not missing_file2 and baseline_root != 'NONE':
-                process_field_definition(child, configs, script, file2, '%s/%s'%(baseline_root, file2), True)
+                process_field_definition(child, configs, script, file2, '{}/{}'.format(baseline_root, file2), True)
         # Process field comparision template
         elif child.tag == 'template':
             apply_compare_fields_template(child, compare_tag, configs, script)
@@ -737,12 +737,12 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
     # Build the path to the baselines
     baseline_root = configs.get('script_paths', 'baseline_dir')
     if baseline_root != 'NONE':
-        baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+        baseline_root = '{}/{}'.format(baseline_root, configs.get('script_paths', 'test_dir'))
 
     # Determine template information, like path and filename
     template_info = get_template_info(template_tag, configs)
 
-    template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
+    template_file = '{}/{}'.format(template_info['template_path'], template_info['template_file'])
 
     # Parse the template
     template_tree = ET.parse(template_file)
@@ -759,10 +759,10 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
                                 process_field_definition(field, configs, script, file1, file2, False)
 
                             if not missing_file1 and baseline_root != 'NONE':
-                                process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1), True)
+                                process_field_definition(field, configs, script, file1, '{}/{}'.format(baseline_root, file1), True)
 
                             if not missing_file2 and baseline_root != 'NONE':
-                                process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2), True)
+                                process_field_definition(field, configs, script, file2, '{}/{}'.format(baseline_root, file2), True)
                         elif field.tag == 'template':
                             apply_compare_fields_template(field, compare_tag, configs, script)
 
@@ -773,35 +773,35 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
 
 def process_field_definition(field_tag, configs, script, file1, file2, baseline_comp):#{{{
     # Build the path to the comparision script.
-    compare_executable = '%s/compare_fields.py'%(configs.get('script_paths', 'utility_scripts'))
+    compare_executable = '{}/compare_fields.py'.format(configs.get('script_paths', 'utility_scripts'))
 
     # Build the base command to compare the fields
-    base_command = "subprocess.check_call(['%s', '-q', '-1', '%s', '-2', '%s'"%(compare_executable, file1, file2)
+    base_command = "subprocess.check_call(['{}', '-q', '-1', '{}', '-2', '{}'".format(compare_executable, file1, file2)
 
     field_name = field_tag.attrib['name']
 
-    command = "%s, '-v', '%s'"%(base_command, field_name)
+    command = "{}, '-v', '{}'".format(base_command, field_name)
 
     # Determine norm thresholds
     if not baseline_comp:
         if 'l1_norm' in field_tag.attrib.keys():
-            command = "%s, '--l1', '%s'"%(command, field_tag.attrib['l1_norm'])
+            command = "{}, '--l1', '{}'".format(command, field_tag.attrib['l1_norm'])
         if 'l2_norm' in field_tag.attrib.keys():
-            command = "%s, '--l2', '%s'"%(command, field_tag.attrib['l2_norm'])
+            command = "{}, '--l2', '{}'".format(command, field_tag.attrib['l2_norm'])
         if 'linf_norm' in field_tag.attrib.keys():
-            command = "%s, '--linf', '%s'"%(command, field_tag.attrib['linf_norm'])
+            command = "{}, '--linf', '{}'".format(command, field_tag.attrib['linf_norm'])
     else:
-        command = "%s, '--l1', '0.0', '--l2', '0.0', '--linf', '0.0'"%(command)
+        command = "{}, '--l1', '0.0', '--l2', '0.0', '--linf', '0.0'".format(command)
 
     # Ensure the comparision script has the same environment as the calling script.
-    command = '%s], env=os.environ.copy())'%(command)
+    command = '{}], env=os.environ.copy())'.format(command)
 
     # Write the pass/fail logic.
     script.write('try:\n')
-    script.write('\t%s\n'%(command))
-    script.write("\tprint ' ** PASS Comparison of %s between %s and %s'\n"%(field_name, file1, file2))
+    script.write('\t{}\n'.format(command))
+    script.write("\tprint ' ** PASS Comparison of {} between {} and {}'\n".format(field_name, file1, file2))
     script.write('except:\n')
-    script.write("\tprint ' ** FAIL Comparison of %s between %s and %s'\n"%(field_name, file1, file2))
+    script.write("\tprint ' ** FAIL Comparison of {} between {} and {}'\n".format(field_name, file1, file2))
     script.write('\terror = True\n')
 #}}}
 #}}}
@@ -809,7 +809,7 @@ def process_field_definition(field_tag, configs, script, file1, file2, baseline_
 # *** Timer Comparison Functions *** ##{{{
 def process_compare_timers_step(compare_tag, configs, script):#{{{
     baseline_root = configs.get('script_paths', 'baseline_dir')
-    baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+    baseline_root = '{}/{}'.format(baseline_root, configs.get('script_paths', 'test_dir'))
 
     missing_rundir1 = True
     missing_rundir2 = True
@@ -839,10 +839,10 @@ def process_compare_timers_step(compare_tag, configs, script):#{{{
                 process_timer_definition(child, configs, script, rundir1, rundir2)
 
             if not missing_rundir1:
-                process_timer_definition(child, configs, script, '%s/%s'%(baseline_root, rundir1), rundir1)
+                process_timer_definition(child, configs, script, '{}/{}'.format(baseline_root, rundir1), rundir1)
 
             if not missing_rundir2:
-                process_timer_definition(child, configs, script, '%s/%s'%(baseline_root, rundir2), rundir2)
+                process_timer_definition(child, configs, script, '{}/{}'.format(baseline_root, rundir2), rundir2)
         elif child.tag == 'template':
             apply_compare_timers_template(child, compare_tag, configs, script)
 
@@ -851,7 +851,7 @@ def process_compare_timers_step(compare_tag, configs, script):#{{{
 def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{{{
     # Build the path to the baselines
     baseline_root = configs.get('script_paths', 'baseline_dir')
-    baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+    baseline_root = '{}/{}'.format(baseline_root, configs.get('script_paths', 'test_dir'))
 
     missing_rundir1 = True
     missing_rundir2 = True
@@ -870,7 +870,7 @@ def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{
 
     # Get the template information and build the template file
     template_info = get_template_info(template_tag, configs)
-    template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
+    template_file = '{}/{}'.format(template_info['template_path'], template_info['template_file'])
 
     # Parse template file
     template_tree = ET.parse(template_file)
@@ -886,10 +886,10 @@ def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{
                                 process_timer_definition(timer, configs, script, rundir1, rundir2)
 
                             if not missing_rundir1:
-                                process_timer_definition(timer, configs, script, '%s/%s'%(baseline_root, rundir1), rundir1)
+                                process_timer_definition(timer, configs, script, '{}/{}'.format(baseline_root, rundir1), rundir1)
 
                             if not missing_rundir2:
-                                process_timer_definition(timer, configs, script, '%s/%s'%(baseline_root, rundir2), rundir2)
+                                process_timer_definition(timer, configs, script, '{}/{}'.format(baseline_root, rundir2), rundir2)
                         elif timer.tag == 'template':
                             apply_compare_timers_template(timer, compare_tag, configs, script)
     del template_root
@@ -899,7 +899,7 @@ def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{
 #}}}
 
 def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
-    compare_script = '%s/compare_timers.py'%(configs.get('script_paths', 'utility_scripts'))
+    compare_script = '{}/compare_timers.py'.format(configs.get('script_paths', 'utility_scripts'))
 
     try:
         timer_name = timer_tag.attrib['name']
@@ -908,15 +908,15 @@ def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
         print "Exiting..."
         sys.exit(1)
 
-    command = 'subprocess.check_call(["%s", "-b", "%s", "-c", "%s", "-t", "%s"], env=os.environ.copy())'%(compare_script, basedir, compdir, timer_name)
+    command = 'subprocess.check_call(["{}", "-b", "{}", "-c", "{}", "-t", "{}"], env=os.environ.copy())'.format(compare_script, basedir, compdir, timer_name)
 
     script.write('\n')
-    script.write('if os.path.exists("%s") and os.path.exists("%s"):\n'%(basedir, compdir))
+    script.write('if os.path.exists("{}") and os.path.exists("{}"):\n'.format(basedir, compdir))
     script.write('\ttry:\n')
-    script.write('\t\t%s\n'%(command))
-    script.write("\t\tprint ' ** PASS Comparison of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
+    script.write('\t\t{}\n'.format(command))
+    script.write("\t\tprint ' ** PASS Comparison of timer {} between {} and {}'\n".format(timer_name, basedir, compdir))
     script.write('\texcept:\n')
-    script.write("\t\tprint ' ** FAIL Comparison of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
+    script.write("\t\tprint ' ** FAIL Comparison of timer {} between {} and {}'\n".format(timer_name, basedir, compdir))
     script.write("\t\terror = True\n")
 #}}}
 #}}}
@@ -952,7 +952,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
                         executable_full_path = config.get('executables', executable_name)
                         executable_parts = executable_full_path.split('/')
                         executable_link = executable_parts[ len(executable_parts) - 1]
-                        link_path = '%s/%s/%s'%(config.get('script_paths', 'work_dir'), config.get('script_paths', 'case_dir'), executable_link)
+                        link_path = '{}/{}/{}'.format(config.get('script_paths', 'work_dir'), config.get('script_paths', 'case_dir'), executable_link)
                         subprocess.check_call(['ln', '-sf', config.get('executables', executable_name), link_path], stdout=dev_null, stderr=dev_null)
                         grandchild.text = executable_link
                     elif arg_text.find('attr_') >= 0:
@@ -960,7 +960,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
                         try:
                             grandchild.text = model_run_tag.attrib[attr_array[1]]
                         except:
-                            print " <step> tag defined within a <model_run> tag requires attribute '%s', but it is not defined."%(attr_array[1])
+                            print " <step> tag defined within a <model_run> tag requires attribute '{}', but it is not defined.".format(attr_array[1])
                             print " Exiting..."
                             sys.exit(1)
 
@@ -973,7 +973,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
                 try:
                     child.attrib['value'] = model_run_tag.attrib[attr_array[1]]
                 except:
-                    print " <define_env_var> tag defined within a <model_run> tag requires attribute '%s', but it is not defined."%(attr_array[1])
+                    print " <define_env_var> tag defined within a <model_run> tag requires attribute '{}', but it is not defined.".format(attr_array[1])
                     print " Exiting..."
                     sys.exit(1)
 
@@ -998,8 +998,8 @@ def add_links(config_file, configs):#{{{
     dev_null = open('/dev/null', 'r+')
 
     # Determine the path for the case directory
-    test_path = '%s/%s'%(configs.get('script_paths', 'test_dir'), case)
-    base_path = '%s/%s'%(configs.get('script_paths', 'work_dir'), test_path)
+    test_path = '{}/{}'.format(configs.get('script_paths', 'test_dir'), case)
+    base_path = '{}/{}'.format(configs.get('script_paths', 'work_dir'), test_path)
 
     # Process all children tags
     for child in config_root:
@@ -1034,14 +1034,14 @@ def add_links(config_file, configs):#{{{
                             source_path = 'NONE'
 
                     if source_path == 'NONE':
-                        print "ERROR: source_path on <add_link> tag is '%s' which is not defined"%(source_path_name)
+                        print "ERROR: source_path on <add_link> tag is '{}' which is not defined".format(source_path_name)
                         print "Exiting..."
                         sys.exit(1)
 
                 else:
                     source_arr = source_path_name.split('_')
                     base_name = source_arr[0]
-                    subname = '%s_%s'%(source_arr[1], source_arr[2])
+                    subname = '{}_{}'.format(source_arr[1], source_arr[2])
 
                     if base_name == 'work':
                         file_base_path = 'work_dir'
@@ -1049,17 +1049,17 @@ def add_links(config_file, configs):#{{{
                         file_base_path = 'script_path'
 
                     if subname in {'core_dir', 'configuration_dir', 'resolution_dir', 'test_dir', 'case_dir'}:
-                        source_path = '%s/%s'%(configs.get('script_paths', file_base_path), configs.get('script_paths', subname))
+                        source_path = '{}/{}'.format(configs.get('script_paths', file_base_path), configs.get('script_paths', subname))
 
-                source_file = '%s/%s'%(source_path, source)
+                source_file = '{}/{}'.format(source_path, source)
             except:
-                source_file = '%s'%(source)
+                source_file = '{}'.format(source)
 
             dest = child.attrib['dest']
             old_cwd = os.getcwd()
             os.chdir(base_path)
 
-            subprocess.check_call(['ln', '-sfn', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+            subprocess.check_call(['ln', '-sfn', '{}'.format(source_file), '{}'.format(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
             os.chdir(old_cwd)
             del source
             del dest
@@ -1068,12 +1068,12 @@ def add_links(config_file, configs):#{{{
             source_attr = child.attrib['source']
             dest = child.attrib['dest']
             if not configs.has_option("executables", source_attr):
-                print 'ERROR: Configuration %s requires a definition of %s.'%(config_file, source_attr)
+                print 'ERROR: Configuration {} requires a definition of {}.'.format(config_file, source_attr)
                 sys.exit(1)
             else:
                 source = configs.get("executables", source_attr)
 
-            subprocess.check_call(['ln', '-sf', '%s'%(source), '%s/%s'%(base_path, dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+            subprocess.check_call(['ln', '-sf', '{}'.format(source), '{}/{}'.format(base_path, dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
             del source_attr
             del source
             del dest
@@ -1090,8 +1090,8 @@ def make_case_dir(config_file, base_path):#{{{
     case_name = config_root.attrib['case']
 
     # Build the case directory, if it doesn't already exist
-    if not os.path.exists('%s/%s'%(base_path, case_name)):
-        os.makedirs('%s/%s'%(base_path, case_name))
+    if not os.path.exists('{}/{}'.format(base_path, case_name)):
+        os.makedirs('{}/{}'.format(base_path, case_name))
 
     del config_root
     del config_tree
@@ -1131,9 +1131,9 @@ def get_defined_files(config_file, init_path, configs):#{{{
                 keyword_path = True
             else:
                 try:
-                    dest_path = '%s'%(configs.get('paths', dest_path_name))
+                    dest_path = '{}'.format(configs.get('paths', dest_path_name))
                 except:
-                    print " Path '%s' is not defined in the config file, but is required to get a file."%(dest_path_name)
+                    print " Path '{}' is not defined in the config file, but is required to get a file.".format(dest_path_name)
                     print " Exiting..."
                     sys.exit(1)
 
@@ -1141,7 +1141,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
             if keyword_path:
                 dest_arr = dest_path_name.split('_')
                 base_name = dest_arr[0]
-                subname = '%s_%s'%(dest_arr[1], dest_arr[2])
+                subname = '{}_{}'.format(dest_arr[1], dest_arr[2])
 
                 if base_name == 'work':
                     base_path = 'work_dir'
@@ -1149,9 +1149,9 @@ def get_defined_files(config_file, init_path, configs):#{{{
                     base_path = 'script_path'
 
                 if subname in {'core_dir', 'configuration_dir', 'resolution_dir', 'test_dir', 'case_dir'}:
-                    dest_path = '%s/%s'%(configs.get('script_paths', base_path), configs.get('script_paths', subname))
+                    dest_path = '{}/{}'.format(configs.get('script_paths', base_path), configs.get('script_paths', subname))
                 else:
-                    print " Path '%s' is not defined."%(dest_path_name)
+                    print " Path '{}' is not defined.".format(dest_path_name)
                     print " Exiting..."
                     sys.exit(1)
 
@@ -1160,7 +1160,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
                 os.makedirs(dest_path)
 
             # If the file doesn't exist in dest_path, process it's mirrors
-            if not os.path.exists('%s/%s'%(dest_path, file_name)):
+            if not os.path.exists('{}/{}'.format(dest_path, file_name)):
                 file_found = False
                 if not file_found:
                     for mirror in get_file:
@@ -1178,25 +1178,25 @@ def get_defined_files(config_file, init_path, configs):#{{{
                             if protocol == 'wget':
                                 if config.get('script_input_arguments', 'no_download') == 'no':
                                     try:
-                                        path = '%s/%s'%( mirror.attrib['url'], file_name)
+                                        path = '{}/{}'.format( mirror.attrib['url'], file_name)
                                     except:
                                         print " Mirror with protocol 'wget' is missing a 'url' attribute"
                                         print " Exiting..."
                                         sys.exit(1)
 
                                     try:
-                                        subprocess.check_call(['wget', '-q', '%s'%(path)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+                                        subprocess.check_call(['wget', '-q', '{}'.format(path)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
                                     except:
                                         print " Wget failed...."
 
                                     try:
-                                        subprocess.check_call(['mv', '%s'%(file_name), '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+                                        subprocess.check_call(['mv', '{}'.format(file_name), '{}/{}'.format(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
                                     except:
                                         print "  -- Web mirror attempt failed. Trying other mirrors..."
 
 
                         # If the file exists in dest_path, determine if it should be validated
-                        if os.path.exists('%s/%s'%(dest_path, file_name)):
+                        if os.path.exists('{}/{}'.format(dest_path, file_name)):
                             try:
                                 expected_hash = get_file.attrib['hash']
                                 validate_file = True
@@ -1205,27 +1205,27 @@ def get_defined_files(config_file, init_path, configs):#{{{
 
                             # Validate the file, if requested (i.e. file had a hash attribute)
                             if validate_file:
-                                if os.path.exists('%s/%s'%(dest_path, file_name)):
-                                    nc = netCDF4.Dataset('%s/%s'%(dest_path, file_name), 'r')
+                                if os.path.exists('{}/{}'.format(dest_path, file_name)):
+                                    nc = netCDF4.Dataset('{}/{}'.format(dest_path, file_name), 'r')
                                     try:
                                         file_hash = nc.file_id
                                     except:
                                         nc.close()
-                                        print " Downloaded file '%s' does not have a 'file_id' attribute."%(file_name)
+                                        print " Downloaded file '{}' does not have a 'file_id' attribute.".format(file_name)
                                         print " Deleting file and exiting..."
-                                        subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+                                        subprocess.check_call(['rm', '-f', '{}/{}'.format(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
                                         sys.exit(1)
 
                                     nc.close()
 
                                     if file_hash.strip() != expected_hash.strip():
-                                        print "*** ERROR: Base mesh has hash of '%s' which does not match expected hash of '%s'."%(file_hash, expected_hash)
+                                        print "*** ERROR: Base mesh has hash of '{}' which does not match expected hash of '{}'.".format(file_hash, expected_hash)
                                         print " Deleting file..."
-                                        subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+                                        subprocess.check_call(['rm', '-f', '{}/{}'.format(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
                     # IF validation valied, exit.
-                    if not os.path.exists('%s/%s'%(dest_path, file_name)):
-                        print " Failed to acquire required file '%s'."%(file_name)
+                    if not os.path.exists('{}/{}'.format(dest_path, file_name)):
+                        print " Failed to acquire required file '{}'.".format(file_name)
                         print " Exiting..."
                         sys.exit(1)
 
@@ -1251,7 +1251,7 @@ def get_template_info(template, configs):#{{{
         sys.exit(1)
 
     try:
-        template_path_modifier = '/%s'%(template.attrib['path'])
+        template_path_modifier = '/{}'.format(template.attrib['path'])
     except:
         template_path_modifier = ''
 
@@ -1269,12 +1269,12 @@ def get_template_info(template, configs):#{{{
         elif base == 'script':
             base_path = 'script_path'
 
-        sub_path = '%s_%s'%(template_arr[1], template_arr[2])
+        sub_path = '{}_{}'.format(template_arr[1], template_arr[2])
 
         if sub_path in {'core_dir', 'configuration_dir', 'resolution_dir', 'test_dir'}:
-            template_path = '%s/%s%s'%(configs.get('script_paths', base_path), configs.get('script_paths', sub_path), template_path_modifier)
+            template_path = '{}/{}{}'.format(configs.get('script_paths', base_path), configs.get('script_paths', sub_path), template_path_modifier)
         else:
-            print " Template path_base '%s' does not exist"%(template_path_base)
+            print " Template path_base '{}' does not exist".format(template_path_base)
             print " Exiting..."
             sys.exit(1)
 
@@ -1335,7 +1335,7 @@ if __name__ == "__main__":
         args.config_file = 'local.config'
 
     if not os.path.exists(args.config_file):
-        parser.error(" Configuration file '%s' does not exist. Please create and setup before running again."%(args.config_file))
+        parser.error(" Configuration file '{}' does not exist. Please create and setup before running again.".format(args.config_file))
 
     if not args.case_num and not ( args.core and args.configuration and args.resolution and args.test):
         print 'Must be run with either the --case_number argument, or the core, configuration, resolution, and test arguments.'
@@ -1386,11 +1386,11 @@ if __name__ == "__main__":
 
     config.set('script_paths', 'script_path', os.path.dirname(os.path.realpath(__file__)))
     config.set('script_paths', 'work_dir', os.path.abspath(args.work_dir) )
-    config.set('script_paths', 'utility_scripts', '%s/utility_scripts'%(config.get('script_paths', 'script_path')))
+    config.set('script_paths', 'utility_scripts', '{}/utility_scripts'.format(config.get('script_paths', 'script_path')))
 
     if not args.model_runtime:
-        config.set('script_input_arguments', 'model_runtime', '%s/runtime_definitions/mpirun.xml'%(config.get('script_paths', 'script_path')))
-        print ' WARNING: No runtime definition selected. Using the default of %s'%(config.get('script_input_arguments', 'model_runtime'))
+        config.set('script_input_arguments', 'model_runtime', '{}/runtime_definitions/mpirun.xml'.format(config.get('script_paths', 'script_path')))
+        print ' WARNING: No runtime definition selected. Using the default of {}'.format(config.get('script_input_arguments', 'model_runtime'))
     else:
         config.set('script_input_arguments', 'model_runtime', args.model_runtime)
 
@@ -1401,7 +1401,7 @@ if __name__ == "__main__":
     git_version = git_version.strip('\n')
     calling_command = ""
     for arg in sys.argv:
-        calling_command = "%s%s "%(calling_command, arg)
+        calling_command = "{}{} ".format(calling_command, arg)
     os.chdir(old_dir)
 
     # Iterate over all cases in the case_list.
@@ -1411,7 +1411,7 @@ if __name__ == "__main__":
         # If we're using a case_list, determine the core, configuration, and
         # resolution for the current test case.
         if use_case_list:
-            core_configuration = subprocess.check_output(['%s/list_testcases.py'%(config.get('script_paths', 'script_path')), '-n', '%d'%(int(case_num))])
+            core_configuration = subprocess.check_output(['{}/list_testcases.py'.format(config.get('script_paths', 'script_path')), '-n', '{:d}'.format(int(case_num))])
             config_options = core_configuration.strip('\n').split(' ')
             config.set('script_input_arguments', 'core', config_options[1])
             config.set('script_input_arguments', 'configuration', config_options[3])
@@ -1419,13 +1419,13 @@ if __name__ == "__main__":
             config.set('script_input_arguments', 'test', config_options[7])
 
         # Setup each xml file in the configuration directory:
-        test_path = '%s/%s/%s/%s'%(config.get('script_input_arguments', 'core'), config.get('script_input_arguments', 'configuration'), config.get('script_input_arguments', 'resolution'), config.get('script_input_arguments', 'test'))
-        work_dir = '%s/%s'%(config.get('script_paths', 'work_dir'), test_path)
+        test_path = '{}/{}/{}/{}'.format(config.get('script_input_arguments', 'core'), config.get('script_input_arguments', 'configuration'), config.get('script_input_arguments', 'resolution'), config.get('script_input_arguments', 'test'))
+        work_dir = '{}/{}'.format(config.get('script_paths', 'work_dir'), test_path)
 
         # Set paths to core, configuration, resolution, and case for use in functions
         config.set('script_paths', 'core_dir', config.get('script_input_arguments', 'core'))
-        config.set('script_paths', 'configuration_dir', '%s/%s'%(config.get('script_paths', 'core_dir'), config.get('script_input_arguments', 'configuration')))
-        config.set('script_paths', 'resolution_dir', '%s/%s'%(config.get('script_paths', 'configuration_dir'), config.get('script_input_arguments', 'resolution')))
+        config.set('script_paths', 'configuration_dir', '{}/{}'.format(config.get('script_paths', 'core_dir'), config.get('script_input_arguments', 'configuration')))
+        config.set('script_paths', 'resolution_dir', '{}/{}'.format(config.get('script_paths', 'configuration_dir'), config.get('script_input_arguments', 'resolution')))
         config.set('script_paths', 'test_dir', test_path)
         config.set('script_paths', 'config_path', test_path)
 
@@ -1433,10 +1433,10 @@ if __name__ == "__main__":
         write_history = False
 
         # Loop over all files in test_path that have the .xml extension.
-        for file in os.listdir('%s'%(test_path)):
+        for file in os.listdir('{}'.format(test_path)):
             if fnmatch.fnmatch(file, '*.xml'):
                 # Build full file name
-                config_file = '%s/%s'%(test_path, file)
+                config_file = '{}/{}'.format(test_path, file)
 
                 # Determine the type of the config file
                 # Could be config, driver_script, template, etc.
@@ -1451,9 +1451,9 @@ if __name__ == "__main__":
                     case_name = get_case_name(config_file)
 
                     # Set case_dir path for function calls
-                    config.set('script_paths', 'case_dir', '%s/%s'%(config.get('script_paths', 'test_dir'), case_name))
+                    config.set('script_paths', 'case_dir', '{}/{}'.format(config.get('script_paths', 'test_dir'), case_name))
 
-                    case_path = '%s/%s'%(work_dir, case_dir)
+                    case_path = '{}/{}'.format(work_dir, case_dir)
 
                     # Generate all namelists for this case
                     generate_namelist_files(config_file, case_path, config)
@@ -1462,27 +1462,27 @@ if __name__ == "__main__":
                     generate_streams_files(config_file, case_path, config)
 
                     # Ensure required files exist for this case
-                    get_defined_files(config_file, '%s'%(case_path), config)
+                    get_defined_files(config_file, '{}'.format(case_path), config)
 
                     # Process all links for this case
                     add_links(config_file, config)
 
                     # Generate run scripts for this case.
-                    generate_run_scripts(config_file, '%s'%(case_path), config)
+                    generate_run_scripts(config_file, '{}'.format(case_path), config)
 
-                    print " -- Set up case: %s/%s"%(work_dir, case_dir)
+                    print " -- Set up case: {}/{}".format(work_dir, case_dir)
                 # Process driver scripts
                 elif config_type == 'driver_script':
                     write_history = True
 
                     # Generate driver scripts.
                     generate_driver_scripts(config_file, config)
-                    print " -- Set up driver script in %s"%(work_dir)
+                    print " -- Set up driver script in {}".format(work_dir)
 
     # Write the history of this command to the command_history file, for
     # provenance.
     if write_history and not args.quiet:
-        history_file_path = '%s/command_history'%(config.get('script_paths', 'work_dir'))
+        history_file_path = '{}/command_history'.format(config.get('script_paths', 'work_dir'))
         if os.path.exists(history_file_path):
             history_file = open(history_file_path, 'a')
             history_file.write('\n')
@@ -1490,23 +1490,23 @@ if __name__ == "__main__":
             history_file = open(history_file_path, 'w')
 
         history_file.write('***********************************************************************\n')
-        history_file.write('git_version: %s\n'%(git_version))
-        history_file.write('command: %s\n'%(calling_command))
+        history_file.write('git_version: {}\n'.format(git_version))
+        history_file.write('command: {}\n'.format(calling_command))
         history_file.write('setup the following cases:\n')
         if use_case_list:
             for case_num in case_list:
-                core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(case_num))])
+                core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '{:d}'.format(int(case_num))])
                 config_options = core_configuration.strip('\n').split(' ')
                 history_file.write('\n')
-                history_file.write('\tcore: %s\n'%(config_options[1]))
-                history_file.write('\tconfiguration: %s\n'%(config_options[3]))
-                history_file.write('\tresolution: %s\n'%(config_options[5]))
-                history_file.write('\ttest: %s\n'%(config_options[7]))
+                history_file.write('\tcore: {}\n'.format(config_options[1]))
+                history_file.write('\tconfiguration: {}\n'.format(config_options[3]))
+                history_file.write('\tresolution: {}\n'.format(config_options[5]))
+                history_file.write('\ttest: {}\n'.format(config_options[7]))
         else:
-            history_file.write('core: %s\n'%(config.get('script_input_arguments', 'core')))
-            history_file.write('configuration: %s\n'%(config.get('script_input_arguments', 'configuration')))
-            history_file.write('resolution: %s\n'%(config.get('script_input_arguments', 'resolution')))
-            history_file.write('test: %s\n'%(config.get('script_input_arguments', 'test')))
+            history_file.write('core: {}\n'.format(config.get('script_input_arguments', 'core')))
+            history_file.write('configuration: {}\n'.format(config.get('script_input_arguments', 'configuration')))
+            history_file.write('resolution: {}\n'.format(config.get('script_input_arguments', 'resolution')))
+            history_file.write('test: {}\n'.format(config.get('script_input_arguments', 'test')))
 
         history_file.write('***********************************************************************\n')
         history_file.close()

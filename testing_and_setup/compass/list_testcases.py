@@ -54,21 +54,21 @@ if __name__ == "__main__":
         if os.path.isdir(core_dir) and core_dir != '.git':
             # Iterate over all configurations within a core
             for config_dir in os.listdir(core_dir):
-                config_path = '%s/%s'%(core_dir, config_dir)
+                config_path = '{}/{}'.format(core_dir, config_dir)
                 if os.path.isdir(config_path):
                     # Iterate over all resolutions within a configuration
                     for res_dir in os.listdir(config_path):
-                        res_path = '%s/%s'%(config_path, res_dir)
+                        res_path = '{}/{}'.format(config_path, res_dir)
                         if os.path.isdir(res_path):
                             # Iterate over all tests within a resolution
                             for test_dir in os.listdir(res_path):
-                                test_path = '%s/%s'%(res_path, test_dir)
+                                test_path = '{}/{}'.format(res_path, test_dir)
                                 if os.path.isdir(test_path):
                                     print_case = False
                                     # Iterate over all files within a test
                                     for case_file in os.listdir(test_path):
                                         if fnmatch.fnmatch(case_file, '*.xml'):
-                                            tree = ET.parse('%s/%s'%(test_path, case_file))
+                                            tree = ET.parse('{}/{}'.format(test_path, case_file))
                                             root = tree.getroot()
 
                                             # Check to make sure the test is either
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                                                 if (not args.configuration) or re.match(args.configuration, config_dir):
                                                     if (not args.resolution) or re.match(args.resolution, res_dir):
                                                         if (not args.test) or re.match(args.test, test_dir):
-                                                            print "  %d: -o %s -c %s -r %s -t %s"%(case_num, core_dir, config_dir, res_dir, test_dir)
+                                                            print "  {:d}: -o {} -c {} -r {} -t {}".format(case_num, core_dir, config_dir, res_dir, test_dir)
                                         if quiet and case_num == print_num:
-                                            print "-o %s -c %s -r %s -t %s"%(core_dir, config_dir, res_dir, test_dir)
+                                            print "-o {} -c {} -r {} -t {}".format(core_dir, config_dir, res_dir, test_dir)
                                         case_num = case_num + 1

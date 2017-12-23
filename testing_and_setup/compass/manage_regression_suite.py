@@ -23,7 +23,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
     if verbose:
         stdout = open(work_dir + '/manage_regression_suite.py.out', 'a')
         stderr  = stdout
-        print '     Script setup outputs to %s'%(work_dir + '/manage_regression_suite.py.out')
+        print '     Script setup outputs to {}'.format(work_dir + '/manage_regression_suite.py.out')
     else:
         dev_null = open('/dev/null', 'a')
         stderr = dev_null
@@ -40,28 +40,28 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
     try:
         test_core = test_tag.attrib['core']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'core' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'core' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_configuration = test_tag.attrib['configuration']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'configuration' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'configuration' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_resolution = test_tag.attrib['resolution']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'resolution' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'resolution' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_test = test_tag.attrib['test']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'test' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'test' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
@@ -79,16 +79,16 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
                                 '-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
                                 '-m', model_runtime, '-b', baseline_dir], stdout=stdout, stderr=stderr, env=os.environ.copy())
 
-    print "   -- Setup case '%s': -o %s -c %s -r %s -t %s"%(test_name, test_core, test_configuration, test_resolution, test_test)
+    print "   -- Setup case '{}': -o {} -c {} -r {} -t {}".format(test_name, test_core, test_configuration, test_resolution, test_test)
 
     # Write step into suite script to cd into the base of the regression suite
     suite_script.write("os.chdir(base_path)\n")
 
     # Write the step to define the output file
-    suite_script.write("case_output = open('case_outputs/%s', 'w')\n"%(case_output_name))
+    suite_script.write("case_output = open('case_outputs/{}', 'w')\n".format(case_output_name))
 
     # Write step to cd into test case directory
-    suite_script.write("os.chdir('%s/%s/%s/%s')\n"%(test_core, test_configuration, test_resolution, test_test))
+    suite_script.write("os.chdir('{}/{}/{}/{}')\n".format(test_core, test_configuration, test_resolution, test_test))
 
     for script in test_tag:
         # Process test case script
@@ -100,17 +100,17 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
                 print 'Exiting...'
                 sys.exit(1)
 
-            command = "subprocess.check_call(['time', '-p', '%s/%s/%s/%s/%s/%s']"%(work_dir, test_core, test_configuration, test_resolution, test_test, script_name)
-            command = '%s, stdout=case_output, stderr=case_output'%(command)
-            command = '%s, env=os.environ.copy())'%(command)
+            command = "subprocess.check_call(['time', '-p', '{}/{}/{}/{}/{}/{}']".format(work_dir, test_core, test_configuration, test_resolution, test_test, script_name)
+            command = '{}, stdout=case_output, stderr=case_output'.format(command)
+            command = '{}, env=os.environ.copy())'.format(command)
 
             # Write test case run step
-            suite_script.write("print ' ** Running case %s'\n"%(test_name))
+            suite_script.write("print ' ** Running case {}'\n".format(test_name))
             suite_script.write('try:\n')
-            suite_script.write('\t%s\n'%(command))
+            suite_script.write('\t{}\n'.format(command))
             suite_script.write("\tprint '      PASS'\n")
             suite_script.write('except:\n')
-            suite_script.write("\tprint '   ** FAIL (See case_outputs/%s for more information)'\n"%(case_output_name))
+            suite_script.write("\tprint '   ** FAIL (See case_outputs/{} for more information)'\n".format(case_output_name))
             suite_script.write("\ttest_failed = True\n")
 
     # Finish writing test case output
@@ -136,28 +136,28 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
     try:
         test_core = test_tag.attrib['core']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'core' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'core' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_configuration = test_tag.attrib['configuration']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'configuration' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'configuration' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_resolution = test_tag.attrib['resolution']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'resolution' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'resolution' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_test = test_tag.attrib['test']
     except:
-        print "ERROR: <test> tag with name '%s' is missing 'test' attribute."%(test_name)
+        print "ERROR: <test> tag with name '{}' is missing 'test' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
@@ -166,7 +166,7 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
     subprocess.check_call(['./clean_testcase.py', '-q', '--work_dir', work_dir, '-o', test_core, '-c',
                             test_configuration, '-r', test_resolution, '-t', test_test], stdout=dev_null, stderr=dev_null)
 
-    print "   -- Cleaned case '%s': -o %s -c %s -r %s -t %s"%(test_name, test_core, test_configuration, test_resolution, test_test)
+    print "   -- Cleaned case '{}': -o {} -c {} -r {} -t {}".format(test_name, test_core, test_configuration, test_resolution, test_test)
 
     dev_null.close()
 
@@ -180,12 +180,12 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, v
         print 'Exiting...'
         sys.exit(1)
 
-    if not os.path.exists('%s'%(work_dir)):
-        os.makedirs('%s'%(work_dir))
+    if not os.path.exists('{}'.format(work_dir)):
+        os.makedirs('{}'.format(work_dir))
 
     # Create regression suite run script
-    regression_script_name = '%s/%s.py'%(work_dir, suite_name)
-    regression_script = open('%s'%(regression_script_name), 'w')
+    regression_script_name = '{}/{}.py'.format(work_dir, suite_name)
+    regression_script = open('{}'.format(regression_script_name), 'w')
 
     # Write script header
     regression_script.write('#!/usr/bin/env python\n')
@@ -202,7 +202,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, v
     regression_script.write("if not os.path.exists('case_outputs'):\n")
     regression_script.write("\tos.makedirs('case_outputs')\n")
     regression_script.write('\n')
-    regression_script.write("base_path = '%s'\n"%(work_dir))
+    regression_script.write("base_path = '{}'\n".format(work_dir))
 
     if verbose:
         # flush existing regression suite output file
@@ -222,10 +222,10 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, v
     regression_script.write("\t\ttotaltime += runtime\n")
     regression_script.write("\t\tmins = np.floor(runtime/60.0)\n")
     regression_script.write("\t\tsecs = np.ceil(runtime - mins*60)\n")
-    regression_script.write("\t\tprint '%02d:%02d %s'%(mins, secs, afile)\n")
+    regression_script.write("\t\tprint '%02d:%02d {}'.format(mins, secs, afile)\n")
     regression_script.write("mins = np.floor(totaltime/60.0)\n")
     regression_script.write("secs = np.ceil(totaltime - mins*60)\n")
-    regression_script.write("print 'Total runtime %02d:%02d'%(mins, secs)\n")
+    regression_script.write("print 'Total runtime %02d:%02d'.format(mins, secs)\n")
     regression_script.write("\n")
 
     regression_script.write("if test_failed:\n")
@@ -235,7 +235,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, v
     regression_script.close()
 
     dev_null = open('/dev/null', 'a')
-    subprocess.check_call(['chmod', 'a+x', '%s'%(regression_script_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+    subprocess.check_call(['chmod', 'a+x', '{}'.format(regression_script_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
     dev_null.close()
 #}}}
 
@@ -248,7 +248,7 @@ def clean_suite(suite_tag, work_dir):#{{{
         sys.exit(1)
 
     # Remove the regression suite script, if it exists
-    regression_script = '%s/%s.py'%(work_dir, suite_name)
+    regression_script = '{}/{}.py'.format(work_dir, suite_name)
     if os.path.exists(regression_script):
         os.remove(regression_script)
 
@@ -276,37 +276,37 @@ def summarize_suite(suite_tag):#{{{
             try:
                 test_core = child.attrib['core']
             except:
-                print "<test> tag named '%s' is missing a 'core' attribute"%(test_name)
+                print "<test> tag named '{}' is missing a 'core' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_configuration = child.attrib['configuration']
             except:
-                print "<test> tag named '%s' is missing a 'configuration' attribute"%(test_name)
+                print "<test> tag named '{}' is missing a 'configuration' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_resolution = child.attrib['resolution']
             except:
-                print "<test> tag named '%s' is missing a 'resolution' attribute"%(test_name)
+                print "<test> tag named '{}' is missing a 'resolution' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_test = child.attrib['test']
             except:
-                print "<test> tag named '%s' is missing a 'test' attribute"%(test_name)
+                print "<test> tag named '{}' is missing a 'test' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
-            test_path = '%s/%s/%s/%s'%(test_core, test_configuration, test_resolution, test_test)
+            test_path = '{}/{}/{}/{}'.format(test_core, test_configuration, test_resolution, test_test)
             # Loop over all files in test_path that have the .xml extension.
-            for file in os.listdir('%s'%(test_path)):
+            for file in os.listdir('{}'.format(test_path)):
                 if fnmatch.fnmatch(file, '*.xml'):
                     # Build full file name
-                    config_file = '%s/%s'%(test_path, file)
+                    config_file = '{}/{}'.format(test_path, file)
 
                     config_tree = ET.parse(config_file)
                     config_root = config_tree.getroot()
@@ -341,9 +341,9 @@ def summarize_suite(suite_tag):#{{{
 
     print "\n"
     print " Summary of test cases:"
-    print "      Maximum MPI tasks used: %d"%(max_procs)
-    print "      Maximum OpenMP threads used: %d"%(max_threads)
-    print "      Maximum Total Cores used: %d"%(max_cores)
+    print "      Maximum MPI tasks used: {:d}".format(max_procs)
+    print "      Maximum OpenMP threads used: {:d}".format(max_threads)
+    print "      Maximum Total Cores used: {:d}".format(max_cores)
 #}}}
 
 if __name__ == "__main__":
@@ -365,7 +365,7 @@ if __name__ == "__main__":
         args.config_file = 'local.config'
 
     if not os.path.exists(args.config_file):
-        parser.error("Configuration file '%s' does not exist. Please create and setup before running again."%(args.config_file))
+        parser.error("Configuration file '{}' does not exist. Please create and setup before running again.".format(args.config_file))
 
     if not args.work_dir:
         args.work_dir = os.path.dirname(os.path.realpath(__file__))
@@ -373,8 +373,8 @@ if __name__ == "__main__":
     args.work_dir = os.path.abspath(args.work_dir)
 
     if not args.model_runtime:
-        args.model_runtime = '%s/runtime_definitions/mpirun.xml'%(os.path.dirname(os.path.realpath(__file__)))
-        print 'WARNING: No model runtime specified. Using the default of %s'%(args.model_runtime)
+        args.model_runtime = '{}/runtime_definitions/mpirun.xml'.format(os.path.dirname(os.path.realpath(__file__)))
+        print 'WARNING: No model runtime specified. Using the default of {}'.format(args.model_runtime)
 
     if not args.baseline_dir:
         args.baseline_dir = 'NONE'
@@ -418,9 +418,9 @@ if __name__ == "__main__":
         os.chdir(old_dir)
         calling_command = ""
         for arg in sys.argv:
-            calling_command = "%s%s "%(calling_command, arg)
+            calling_command = "{}{} ".format(calling_command, arg)
 
-        history_file_path = '%s/command_history'%(args.work_dir)
+        history_file_path = '{}/command_history'.format(args.work_dir)
         if os.path.exists(history_file_path):
             history_file = open(history_file_path, 'a')
             history_file.write('\n')
@@ -428,7 +428,7 @@ if __name__ == "__main__":
             history_file = open(history_file_path, 'w')
 
         history_file.write('***********************************************************************\n')
-        history_file.write('git_version: %s\n'%(git_version))
-        history_file.write('command: %s\n'%(calling_command))
+        history_file.write('git_version: {}\n'.format(git_version))
+        history_file.write('command: {}\n'.format(calling_command))
         history_file.write('***********************************************************************\n')
         history_file.close()
