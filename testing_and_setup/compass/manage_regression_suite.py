@@ -19,15 +19,16 @@ import argparse
 import xml.etree.ElementTree as ET
 import subprocess
 
-def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir, verbose):#{{{
+
+def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir, verbose):  # {{{
     if verbose:
         stdout = open(work_dir + '/manage_regression_suite.py.out', 'a')
-        stderr  = stdout
+        stderr = stdout
         print '     Script setup outputs to {}'.format(work_dir + '/manage_regression_suite.py.out')
     else:
         dev_null = open('/dev/null', 'a')
         stderr = dev_null
-        stdout  = dev_null
+        stdout = dev_null
 
     # Process test attributes
     try:
@@ -72,12 +73,12 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 
     if baseline_dir == 'NONE':
         subprocess.check_call(['./setup_testcase.py', '-q', '-f', config_file, '--work_dir', work_dir,
-                                '-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
-                                '-m', model_runtime], stdout=stdout, stderr=stderr, env=os.environ.copy())
+                               '-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
+                               '-m', model_runtime], stdout=stdout, stderr=stderr, env=os.environ.copy())
     else:
         subprocess.check_call(['./setup_testcase.py', '-q', '-f', config_file, '--work_dir', work_dir,
-                                '-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
-                                '-m', model_runtime, '-b', baseline_dir], stdout=stdout, stderr=stderr, env=os.environ.copy())
+                               '-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
+                               '-m', model_runtime, '-b', baseline_dir], stdout=stdout, stderr=stderr, env=os.environ.copy())
 
     print "   -- Setup case '{}': -o {} -c {} -r {} -t {}".format(test_name, test_core, test_configuration, test_resolution, test_test)
 
@@ -120,9 +121,10 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
         stdout.close()
     else:
         dev_null.close()
-#}}}
+# }}}
 
-def process_test_clean(test_tag, work_dir, suite_script):#{{{
+
+def process_test_clean(test_tag, work_dir, suite_script):  # {{{
     dev_null = open('/dev/null', 'a')
 
     # Process test attributes
@@ -161,18 +163,18 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
         print "Exiting..."
         sys.exit(1)
 
-
     # Clean test case
     subprocess.check_call(['./clean_testcase.py', '-q', '--work_dir', work_dir, '-o', test_core, '-c',
-                            test_configuration, '-r', test_resolution, '-t', test_test], stdout=dev_null, stderr=dev_null)
+                           test_configuration, '-r', test_resolution, '-t', test_test], stdout=dev_null, stderr=dev_null)
 
     print "   -- Cleaned case '{}': -o {} -c {} -r {} -t {}".format(test_name, test_core, test_configuration, test_resolution, test_test)
 
     dev_null.close()
 
-#}}}
+# }}}
 
-def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, verbose):#{{{
+
+def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, verbose):  # {{{
     try:
         suite_name = suite_tag.attrib['name']
     except KeyError:
@@ -237,9 +239,10 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, v
     dev_null = open('/dev/null', 'a')
     subprocess.check_call(['chmod', 'a+x', '{}'.format(regression_script_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
     dev_null.close()
-#}}}
+# }}}
 
-def clean_suite(suite_tag, work_dir):#{{{
+
+def clean_suite(suite_tag, work_dir):  # {{{
     try:
         suite_name = suite_tag.attrib['name']
     except KeyError:
@@ -256,9 +259,10 @@ def clean_suite(suite_tag, work_dir):#{{{
         # Process <test> children within the <regression_suite>
         if child.tag == 'test':
             process_test_clean(child, work_dir, regression_script)
-#}}}
+# }}}
 
-def summarize_suite(suite_tag):#{{{
+
+def summarize_suite(suite_tag):  # {{{
 
     max_procs = 1
     max_threads = 1
@@ -344,7 +348,8 @@ def summarize_suite(suite_tag):#{{{
     print "      Maximum MPI tasks used: {:d}".format(max_procs)
     print "      Maximum OpenMP threads used: {:d}".format(max_threads)
     print "      Maximum Total Cores used: {:d}".format(max_cores)
-#}}}
+# }}}
+
 
 if __name__ == "__main__":
     # Define and process input arguments
@@ -412,7 +417,7 @@ if __name__ == "__main__":
     if write_history:
         # Build variables for history output
         old_dir = os.getcwd()
-        os.chdir( os.path.dirname( os.path.realpath(__file__) ) )
+        os.chdir(os.path.dirname(os.path.realpath(__file__)))
         git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
         git_version = git_version.strip('\n')
         os.chdir(old_dir)

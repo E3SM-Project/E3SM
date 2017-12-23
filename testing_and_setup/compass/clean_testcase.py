@@ -16,6 +16,7 @@ import argparse
 import subprocess
 import xml.etree.ElementTree as ET
 
+
 if __name__ == "__main__":
     # Define and process input arguments
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -31,7 +32,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not args.case_num and ( not args.core and not args.configuration and not args.resolution and not args.test) and not args.clean_all:
+    if not args.case_num and (not args.core and not args.configuration and not args.resolution and not args.test) and not args.clean_all:
         print 'Must be run with either the --case_number argument, the --all argument, or all of the core, configuration, resolution, and test arguments.'
         parser.error(' Invalid configuration. Exiting...')
 
@@ -71,7 +72,7 @@ if __name__ == "__main__":
 
     # Build variables for history output
     old_dir = os.getcwd()
-    os.chdir( os.path.dirname( os.path.realpath(__file__) ) )
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
     git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
     git_version = git_version.strip('\n')
     os.chdir(old_dir)

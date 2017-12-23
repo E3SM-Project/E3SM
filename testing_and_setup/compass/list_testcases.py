@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Start case numbering at 1
     case_num = 1
 
-    script_path = os.path.dirname( os.path.realpath( __file__ ) )
+    script_path = os.path.dirname(os.path.realpath(__file__))
     os.chdir(script_path)
 
     # Iterate over all cores

@@ -28,8 +28,9 @@ try:
 except ImportError:
     from utils import defaultdict
 
-# *** Namelist setup functions *** #{{{
-def generate_namelist_files(config_file, case_path, configs):#{{{
+
+# *** Namelist setup functions *** # {{{
+def generate_namelist_files(config_file, case_path, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
 
@@ -42,7 +43,6 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
             print "ERROR: <namelist> tag is missing the 'name' attribute"
             print "Exiting..."
             sys.exit(1)
-
 
         try:
             namelist_mode = namelists.attrib['mode']
@@ -59,7 +59,7 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
         template_namelist = configs.get("namelists", namelist_mode)
 
         # Ingest namelist template into a dictionary
-        namelist_dict = defaultdict(lambda : defaultdict(list))
+        namelist_dict = defaultdict(lambda: defaultdict(list))
         ingest_namelist(template_namelist, namelist_dict)
 
         # Modify the dictionary to have the desired values
@@ -71,9 +71,10 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
 
     del config_root
     del config_tree
-#}}}
+# }}}
 
-def ingest_namelist(namelist_file, namelist_dict):#{{{
+
+def ingest_namelist(namelist_file, namelist_dict):  # {{{
     # Read the template file
     namelistfile = open(namelist_file, 'r')
     lines = namelistfile.readlines()
@@ -90,17 +91,19 @@ def ingest_namelist(namelist_file, namelist_dict):#{{{
             opt, val = line.strip().strip('\n').split('=')
             if record_name != "NONE!!!":
                 namelist_dict[record_name][opt].append(val)
-#}}}
+# }}}
 
-def set_namelist_val(namelist_dict, option_name, option_val):#{{{
+
+def set_namelist_val(namelist_dict, option_name, option_val):  # {{{
     # Set the value of the namelist option.
     for record, opts in namelist_dict.items():
         for opt, val in opts.items():
             if opt.strip() == option_name:
                 val[0] = option_val
-#}}}
+# }}}
 
-def configure_namelist(namelist_dict, namelist_tag, configs):#{{{
+
+def configure_namelist(namelist_dict, namelist_tag, configs):  # {{{
     # Iterate over all children within the namelist tag.
     for child in namelist_tag:
         # Process <option> tags
@@ -112,9 +115,10 @@ def configure_namelist(namelist_dict, namelist_tag, configs):#{{{
         elif child.tag == 'template':
             apply_namelist_template(namelist_dict, child, configs)
 
-#}}}
+# }}}
 
-def apply_namelist_template(namelist_dict, template_tag, configs):#{{{
+
+def apply_namelist_template(namelist_dict, template_tag, configs):  # {{{
     # Determine the template information, like it's path and the filename
     template_info = get_template_info(template_tag, configs)
 
@@ -139,9 +143,10 @@ def apply_namelist_template(namelist_dict, template_tag, configs):#{{{
     del template_root
     del template_tree
     del template_info
-#}}}
+# }}}
 
-def write_namelist(namelist_dict, outfilename, infilename):#{{{
+
+def write_namelist(namelist_dict, outfilename, infilename):  # {{{
     # Write the namelist out, using the infilename as a template to determine
     # the writing order.
     in_namelist = open(infilename, 'r')
@@ -168,15 +173,15 @@ def write_namelist(namelist_dict, outfilename, infilename):#{{{
         out_namelist.write('/\n')
 
     out_namelist.close()
-#}}}
-#}}}
+# }}}
+# }}}
 
-# *** Streams setup functions *** #{{{
 
-def generate_streams_files(config_file, case_path, configs):#{{{
+# *** Streams setup functions *** # {{{
+
+def generate_streams_files(config_file, case_path, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
-
 
     # Iterate over all sterams files to be generated
     for streams in config_root:
@@ -210,9 +215,10 @@ def generate_streams_files(config_file, case_path, configs):#{{{
 
             del streams_root
             del streams_tree
-#}}}
+# }}}
 
-def flush_streams(streams, remove_mutable, remove_immutable):#{{{
+
+def flush_streams(streams, remove_mutable, remove_immutable):  # {{{
     if remove_mutable:
         # Remove all mutable streams from the template streams file
         for stream in streams.findall('stream'):
@@ -222,9 +228,10 @@ def flush_streams(streams, remove_mutable, remove_immutable):#{{{
         # Remove all immutable streams from the template streams file
         for stream in streams.findall('immutable_stream'):
             streams.remove(stream)
-#}}}
+# }}}
 
-def modify_stream_definition(streams_file, stream_conf):#{{{
+
+def modify_stream_definition(streams_file, stream_conf):  # {{{
     # Determine the name of the stream to modify
     name_to_modify = stream_conf.attrib['name']
 
@@ -276,18 +283,19 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
                     except KeyError:
                         print "   --- Tag: {} is missing a name attribute".format(child.tag)
 
-#}}}
+# }}}
 
-def configure_streams_file(streams_file, streams_tag, configs):#{{{
+
+def configure_streams_file(streams_file, streams_tag, configs):  # {{{
     keep_mode = streams_tag.attrib['keep']
     remove_immutable = False
     remove_mutable = False
 
-    if ( keep_mode.strip() == 'immutable' ):
+    if keep_mode.strip() == 'immutable':
         remove_mutable = True
-    if ( keep_mode.strip() == 'mutable' ):
+    if keep_mode.strip() == 'mutable':
         remove_immutable = True
-    if ( keep_mode.strip() == 'none' ):
+    if keep_mode.strip() == 'none':
         remove_mutable = True
         remove_immutable = True
 
@@ -302,9 +310,10 @@ def configure_streams_file(streams_file, streams_tag, configs):#{{{
         # Process stream definitions / modifications
         elif child.tag == 'stream':
             modify_stream_definition(streams_file, child)
-#}}}
+# }}}
 
-def apply_stream_template(streams_file, template_tag, configs):#{{{
+
+def apply_stream_template(streams_file, template_tag, configs):  # {{{
     # Determine template information, like path and filename
     template_info = get_template_info(template_tag, configs)
 
@@ -327,9 +336,10 @@ def apply_stream_template(streams_file, template_tag, configs):#{{{
     del template_tree
     del template_root
     del template_info
-#}}}
+# }}}
 
-def write_streams_file(streams, config_file, filename, init_path):#{{{
+
+def write_streams_file(streams, config_file, filename, init_path):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
 
@@ -345,7 +355,7 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
         stream_file.write('<immutable_stream name="{}"'.format(stream_name))
         # Process all attributes on the stream
         for attr, val in stream.attrib.items():
-            if ( attr.strip() != 'name' ):
+            if attr.strip() != 'name':
                 stream_file.write('\n                  {}="{}"'.format(attr, val))
 
         stream_file.write('/>\n')
@@ -359,7 +369,7 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
 
         # Process all attributes
         for attr, val in stream.attrib.items():
-            if ( attr.strip() != 'name' ):
+            if attr.strip() != 'name':
                 stream_file.write('\n        {}="{}"'.format(attr, val))
 
         stream_file.write('>\n\n')
@@ -369,7 +379,7 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             substream_name = substream.attrib['name']
             if 'packages' in substream.attrib.keys():
                 package_name = substream.attrib['packages']
-                entry = '\t<stream name="{}"'.format(substream_name) + ' packages="{}" '.format(package_name) +'/>\n'
+                entry = '\t<stream name="{}"'.format(substream_name) + ' packages="{}" '.format(package_name) + '/>\n'
             else:
                 entry = '\t<stream name="{}"'.format(substream_name) +'/>\n'
             stream_file.write(entry)
@@ -379,9 +389,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             var_struct_name = var_struct.attrib['name']
             if 'packages' in var_struct.attrib.keys():
                 package_name = var_struct.attrib['packages']
-                entry = '\t<var_struct name="{}"'.format(var_struct_name) + ' packages="{}" '.format(package_name) +'/>\n'
+                entry = '\t<var_struct name="{}"'.format(var_struct_name) + ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<var_struct name="{}"'.format(var_struct_name) +'/>\n'
+                entry = '\t<var_struct name="{}"'.format(var_struct_name) + '/>\n'
             stream_file.write(entry)
 
         # Write out all var_arrays included in this stream
@@ -389,9 +399,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             var_array_name = var_array.attrib['name']
             if 'packages' in var_array.attrib.keys():
                 package_name = var_array.attrib['packages']
-                entry = '\t<var_array name="{}"'.format(var_array_name) + ' packages="{}" '.format(package_name) +'/>\n'
+                entry = '\t<var_array name="{}"'.format(var_array_name) + ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<var_array name="{}"'.format(var_array_name) +'/>\n'
+                entry = '\t<var_array name="{}"'.format(var_array_name) + '/>\n'
             stream_file.write(entry)
 
         # Write out all vars included in this stream
@@ -399,9 +409,9 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
             var_name = var.attrib['name']
             if 'packages' in var.attrib.keys():
                 package_name = var.attrib['packages']
-                entry = '\t<var name="{}"'.format(var_name) + ' packages="{}" '.format(package_name) +'/>\n'
+                entry = '\t<var name="{}"'.format(var_name) + ' packages="{}" '.format(package_name) + '/>\n'
             else:
-                entry = '\t<var name="{}"'.format(var_name) +'/>\n'
+                entry = '\t<var name="{}"'.format(var_name) + '/>\n'
             stream_file.write(entry)
 
         stream_file.write('</stream>\n')
@@ -411,11 +421,12 @@ def write_streams_file(streams, config_file, filename, init_path):#{{{
 
     del config_tree
     del config_root
-#}}}
-#}}}
+# }}}
+# }}}
 
-# *** Script Generation Functions *** #{{{
-def generate_run_scripts(config_file, init_path, configs):#{{{
+
+# *** Script Generation Functions *** # {{{
+def generate_run_scripts(config_file, init_path, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
     dev_null = open('/dev/null', 'r+')
@@ -455,13 +466,13 @@ def generate_run_scripts(config_file, init_path, configs):#{{{
             # Make the script executable
             subprocess.check_call(['chmod', 'a+x', '{}'.format(script_path)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
-
     dev_null.close()
     del config_tree
     del config_root
-#}}}
+# }}}
 
-def generate_driver_scripts(config_file, configs):#{{{
+
+def generate_driver_scripts(config_file, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
     dev_null = open('/dev/null', 'r+')
@@ -557,10 +568,8 @@ def generate_driver_scripts(config_file, configs):#{{{
             script.write('          link_path = os.readlink(file)\n')
             script.write('          os.unlink(file)\n')
             script.write('          shutil.copyfile(link_path, file)\n')
-            #script.write('          subprocess.check_call(["cp", "--remove-destination", link_path, file], stdout=dev_null, stderr=dev_null)\n')
             script.write('    os.chdir(old_dir)\n')
             script.write('\n')
-
 
         script.write('sys.exit(0)\n')
         script.close()
@@ -568,9 +577,10 @@ def generate_driver_scripts(config_file, configs):#{{{
 
         # Make script executable
         subprocess.check_call(['chmod', 'a+x', '{}/{}'.format(init_path, name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-#}}}
+# }}}
 
-def process_env_define_step(var_tag, configs, indentation, script_file):#{{{
+
+def process_env_define_step(var_tag, configs, indentation, script_file):  # {{{
     try:
         var_name = var_tag.attrib['name']
     except KeyError:
@@ -587,9 +597,10 @@ def process_env_define_step(var_tag, configs, indentation, script_file):#{{{
 
     # Write line to define the environment variable
     script_file.write("{}os.environ['{}'] = '{}'\n".format(indentation, var_name, var_val))
-#}}}
+# }}}
 
-def process_script_step(step, configs, indentation, script_file):#{{{
+
+def process_script_step(step, configs, indentation, script_file):  # {{{
     # Determine step attributes.
     if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
         print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
@@ -664,18 +675,20 @@ def process_script_step(step, configs, indentation, script_file):#{{{
         script_file.write('{}print "{}"\n'.format(indentation, step_post_message))
 
     script_file.write("\n")
-#}}}
+# }}}
 
-def process_validation_step(validation_tag, configs, script):#{{{
+
+def process_validation_step(validation_tag, configs, script):  # {{{
     for child in validation_tag:
         if child.tag == 'compare_fields':
             process_compare_fields_step(child, configs, script)
         if child.tag == 'compare_timers':
             process_compare_timers_step(child, configs, script)
-#}}}
+# }}}
 
-# *** Field Comparison Functions *** ##{{{
-def process_compare_fields_step(compare_tag, configs, script):#{{{
+
+# *** Field Comparison Functions *** # {{{
+def process_compare_fields_step(compare_tag, configs, script):  # {{{
     missing_file1 = False
     missing_file2 = False
     # Determine comparision attributes
@@ -713,9 +726,10 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
         # Process field comparision template
         elif child.tag == 'template':
             apply_compare_fields_template(child, compare_tag, configs, script)
-#}}}
+# }}}
 
-def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{{{
+
+def apply_compare_fields_template(template_tag, compare_tag, configs, script):  # {{{
     missing_file1 = False
     missing_file2 = False
     # Determine comparision attributes
@@ -769,9 +783,10 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
     del template_root
     del template_tree
     del template_info
-#}}}
+# }}}
 
-def process_field_definition(field_tag, configs, script, file1, file2, baseline_comp):#{{{
+
+def process_field_definition(field_tag, configs, script, file1, file2, baseline_comp):  # {{{
     # Build the path to the comparision script.
     compare_executable = '{}/compare_fields.py'.format(configs.get('script_paths', 'utility_scripts'))
 
@@ -803,11 +818,12 @@ def process_field_definition(field_tag, configs, script, file1, file2, baseline_
     script.write('except:\n')
     script.write("\tprint ' ** FAIL Comparison of {} between {} and {}'\n".format(field_name, file1, file2))
     script.write('\terror = True\n')
-#}}}
-#}}}
+# }}}
+# }}}
+
 
 # *** Timer Comparison Functions *** ##{{{
-def process_compare_timers_step(compare_tag, configs, script):#{{{
+def process_compare_timers_step(compare_tag, configs, script):  # {{{
     baseline_root = configs.get('script_paths', 'baseline_dir')
     baseline_root = '{}/{}'.format(baseline_root, configs.get('script_paths', 'test_dir'))
 
@@ -846,9 +862,10 @@ def process_compare_timers_step(compare_tag, configs, script):#{{{
         elif child.tag == 'template':
             apply_compare_timers_template(child, compare_tag, configs, script)
 
-#}}}
+# }}}
 
-def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{{{
+
+def apply_compare_timers_template(template_tag, compare_tag, configs, script):  # {{{
     # Build the path to the baselines
     baseline_root = configs.get('script_paths', 'baseline_dir')
     baseline_root = '{}/{}'.format(baseline_root, configs.get('script_paths', 'test_dir'))
@@ -896,9 +913,10 @@ def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{
     del template_tree
     del template_info
 
-#}}}
+# }}}
 
-def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
+
+def process_timer_definition(timer_tag, configs, script, basedir, compdir):  # {{{
     compare_script = '{}/compare_timers.py'.format(configs.get('script_paths', 'utility_scripts'))
 
     try:
@@ -918,10 +936,11 @@ def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
     script.write('\texcept:\n')
     script.write("\t\tprint ' ** FAIL Comparison of timer {} between {} and {}'\n".format(timer_name, basedir, compdir))
     script.write("\t\terror = True\n")
-#}}}
-#}}}
+# }}}
+# }}}
 
-def process_model_run_step(model_run_tag, configs, script):#{{{
+
+def process_model_run_step(model_run_tag, configs, script):  # {{{
     run_definition_file = configs.get('script_input_arguments', 'model_runtime')
     run_config_tree = ET.parse(run_definition_file)
     run_config_root = run_config_tree.getroot()
@@ -951,7 +970,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
                     if arg_text == 'model':
                         executable_full_path = config.get('executables', executable_name)
                         executable_parts = executable_full_path.split('/')
-                        executable_link = executable_parts[ len(executable_parts) - 1]
+                        executable_link = executable_parts[len(executable_parts) - 1]
                         link_path = '{}/{}/{}'.format(config.get('script_paths', 'work_dir'), config.get('script_paths', 'case_dir'), executable_link)
                         subprocess.check_call(['ln', '-sf', config.get('executables', executable_name), link_path], stdout=dev_null, stderr=dev_null)
                         grandchild.text = executable_link
@@ -985,11 +1004,12 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
     script.write('print "     *****************************"\n')
     script.write('print "\\n"\n')
     dev_null.close()
-#}}}
-#}}}
+# }}}
+# }}}
 
-# *** General Utility Functions *** #{{{
-def add_links(config_file, configs):#{{{
+
+# *** General Utility Functions *** # {{{
+def add_links(config_file, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
 
@@ -1083,9 +1103,10 @@ def add_links(config_file, configs):#{{{
     del config_tree
     del config_root
     dev_null.close()
-#}}}
+# }}}
 
-def make_case_dir(config_file, base_path):#{{{
+
+def make_case_dir(config_file, base_path):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
 
@@ -1099,9 +1120,10 @@ def make_case_dir(config_file, base_path):#{{{
     del config_tree
 
     return case_name
-#}}}
+# }}}
 
-def get_defined_files(config_file, init_path, configs):#{{{
+
+def get_defined_files(config_file, init_path, configs):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
     dev_null = open('/dev/null', 'w')
@@ -1139,7 +1161,6 @@ def get_defined_files(config_file, init_path, configs):#{{{
                     print " Path '{}' is not defined in the config file, but is required to get a file.".format(dest_path_name)
                     print " Exiting..."
                     sys.exit(1)
-
 
             if keyword_path:
                 dest_arr = dest_path_name.split('_')
@@ -1181,7 +1202,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
                             if protocol == 'wget':
                                 if config.get('script_input_arguments', 'no_download') == 'no':
                                     try:
-                                        path = '{}/{}'.format( mirror.attrib['url'], file_name)
+                                        path = '{}/{}'.format(mirror.attrib['url'], file_name)
                                     except KeyError:
                                         print " Mirror with protocol 'wget' is missing a 'url' attribute"
                                         print " Exiting..."
@@ -1196,7 +1217,6 @@ def get_defined_files(config_file, init_path, configs):#{{{
                                         subprocess.check_call(['mv', '{}'.format(file_name), '{}/{}'.format(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
                                     except subprocess.CalledProcessError:
                                         print "  -- Web mirror attempt failed. Trying other mirrors..."
-
 
                         # If the file exists in dest_path, determine if it should be validated
                         if os.path.exists('{}/{}'.format(dest_path, file_name)):
@@ -1235,9 +1255,10 @@ def get_defined_files(config_file, init_path, configs):#{{{
     del config_tree
     del config_root
     dev_null.close()
-#}}}
+# }}}
 
-def get_template_info(template, configs):#{{{
+
+def get_template_info(template, configs):  # {{{
     # Determine template attributes
     try:
         template_file = template.attrib['file']
@@ -1286,9 +1307,10 @@ def get_template_info(template, configs):#{{{
     info['template_path'] = template_path
 
     return info
-#}}}
+# }}}
 
-def get_config_file_type(config_file):#{{{
+
+def get_config_file_type(config_file):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
 
@@ -1299,9 +1321,10 @@ def get_config_file_type(config_file):#{{{
     del config_tree
 
     return file_type
-#}}}
+# }}}
 
-def get_case_name(config_file):#{{{
+
+def get_case_name(config_file):  # {{{
     config_tree = ET.parse(config_file)
     config_root = config_tree.getroot()
 
@@ -1313,8 +1336,9 @@ def get_case_name(config_file):#{{{
     del config_tree
 
     return name
-#}}}
-#}}}
+# }}}
+# }}}
+
 
 if __name__ == "__main__":
     # Define and process input arguments
@@ -1340,7 +1364,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.config_file):
         parser.error(" Configuration file '{}' does not exist. Please create and setup before running again.".format(args.config_file))
 
-    if not args.case_num and not ( args.core and args.configuration and args.resolution and args.test):
+    if not args.case_num and not (args.core and args.configuration and args.resolution and args.test):
         print 'Must be run with either the --case_number argument, or the core, configuration, resolution, and test arguments.'
         parser.error(' Invalid configuration. Exiting...')
 
@@ -1388,7 +1412,7 @@ if __name__ == "__main__":
         config.set('script_input_arguments', 'no_download', 'no')
 
     config.set('script_paths', 'script_path', os.path.dirname(os.path.realpath(__file__)))
-    config.set('script_paths', 'work_dir', os.path.abspath(args.work_dir) )
+    config.set('script_paths', 'work_dir', os.path.abspath(args.work_dir))
     config.set('script_paths', 'utility_scripts', '{}/utility_scripts'.format(config.get('script_paths', 'script_path')))
 
     if not args.model_runtime:
@@ -1399,7 +1423,7 @@ if __name__ == "__main__":
 
     # Build variables for history output
     old_dir = os.getcwd()
-    os.chdir( config.get('script_paths', 'script_path' ))
+    os.chdir(config.get('script_paths', 'script_path'))
     git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
     git_version = git_version.strip('\n')
     calling_command = ""
