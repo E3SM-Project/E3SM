@@ -38,7 +38,7 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
         # Determine the name of the namelist that will be generated
         try:
             namelist_file = '{}/{}'.format(case_path, namelists.attrib['name'])
-        except:
+        except KeyError:
             print "ERROR: <namelist> tag is missing the 'name' attribute"
             print "Exiting..."
             sys.exit(1)
@@ -46,7 +46,7 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
 
         try:
             namelist_mode = namelists.attrib['mode']
-        except:
+        except KeyError:
             print "ERROR: <namelist> tag is missing the 'mode' attribute."
             print "Exiting..."
             sys.exit(1)
@@ -186,7 +186,7 @@ def generate_streams_files(config_file, case_path, configs):#{{{
 
             try:
                 streams_mode = streams.attrib['mode']
-            except:
+            except KeyError:
                 print "ERROR: <streams> tag is missing the 'mode' attribute."
                 print "Exiting..."
                 sys.exit(1)
@@ -273,7 +273,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
                     try:
                         if child.attrib['name'] == member_name:
                             stream_to_modify.remove(child)
-                    except:
+                    except KeyError:
                         print "   --- Tag: {} is missing a name attribute".format(child.tag)
 
 #}}}
@@ -573,14 +573,14 @@ def generate_driver_scripts(config_file, configs):#{{{
 def process_env_define_step(var_tag, configs, indentation, script_file):#{{{
     try:
         var_name = var_tag.attrib['name']
-    except:
+    except KeyError:
         print "ERROR: <define_env_var> tag is missing 'name' attribte"
         print 'Exiting...'
         sys.exit(1)
 
     try:
         var_val = var_tag.attrib['value']
-    except:
+    except KeyError:
         print "ERROR: <define_env_var> tag is missing 'value' attribute"
         print 'Exiting...'
         sys.exit(1)
@@ -602,25 +602,25 @@ def process_script_step(step, configs, indentation, script_file):#{{{
             quiet = True
         else:
             quiet = False
-    except:
+    except KeyError:
         quiet = False
 
     try:
         step_pre_message = step.attrib['pre_message']
         write_pre_message = True
-    except:
+    except KeyError:
         write_pre_message = False
 
     try:
         step_post_message = step.attrib['post_message']
         write_post_message = True
-    except:
+    except KeyError:
         write_post_message = False
 
     try:
         executable_name = step.attrib['executable_name']
         executable = configs.get('executables', executable_name)
-    except:
+    except KeyError:
         executable = step.attrib['executable']
 
     # Write step header
@@ -681,12 +681,12 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
     # Determine comparision attributes
     try:
         file1 = compare_tag.attrib['file1']
-    except:
+    except KeyError:
         missing_file1 = True
 
     try:
         file2 = compare_tag.attrib['file2']
-    except:
+    except KeyError:
         missing_file2 = True
 
     if missing_file1 and missing_file2:
@@ -721,12 +721,12 @@ def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{
     # Determine comparision attributes
     try:
         file1 = compare_tag.attrib['file1']
-    except:
+    except KeyError:
         missing_file1 = True
 
     try:
         file2 = compare_tag.attrib['file2']
-    except:
+    except KeyError:
         missing_file2 = True
 
     if missing_file1 and missing_file2:
@@ -817,20 +817,20 @@ def process_compare_timers_step(compare_tag, configs, script):#{{{
     try:
         rundir1 = compare_tag.attrib['rundir1']
         missing_rundir1 = False
-    except:
+    except KeyError:
         missing_rundir1 = True
 
     try:
         rundir2 = compare_tag.attrib['rundir2']
         missing_rundir2 = False
-    except:
+    except KeyError:
         missing_rundir2 = True
 
     for child in compare_tag:
         if child.tag == 'timer':
             try:
                 child_name = child.attrib['name']
-            except:
+            except KeyError:
                 print "ERROR: <timer> tag is missing the 'name' attribute."
                 print "Exiting..."
                 sys.exit(1)
@@ -859,13 +859,13 @@ def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{
     try:
         rundir1 = compare_tag.attrib['rundir1']
         missing_rundir1 = False
-    except:
+    except KeyError:
         missing_rundir1 = True
 
     try:
         rundir2 = compare_tag.attrib['rundir2']
         missing_rundir2 = False
-    except:
+    except KeyError:
         missing_rundir2 = True
 
     # Get the template information and build the template file
@@ -903,7 +903,7 @@ def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
 
     try:
         timer_name = timer_tag.attrib['name']
-    except:
+    except KeyError:
         print "ERROR: <timer> tag is missing the 'name' attribute."
         print "Exiting..."
         sys.exit(1)
@@ -930,7 +930,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 
     try:
         executable_name = model_run_tag.attrib['executable']
-    except:
+    except KeyError:
         executable_name = 'model'
 
     script.write('print "\\n"\n')
@@ -959,7 +959,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
                         attr_array = arg_text.split('_')
                         try:
                             grandchild.text = model_run_tag.attrib[attr_array[1]]
-                        except:
+                        except KeyError:
                             print " <step> tag defined within a <model_run> tag requires attribute '{}', but it is not defined.".format(attr_array[1])
                             print " Exiting..."
                             sys.exit(1)
@@ -972,7 +972,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
                 attr_array = child.attrib['value'].split('_')
                 try:
                     child.attrib['value'] = model_run_tag.attrib[attr_array[1]]
-                except:
+                except KeyError:
                     print " <define_env_var> tag defined within a <model_run> tag requires attribute '{}', but it is not defined.".format(attr_array[1])
                     print " Exiting..."
                     sys.exit(1)
@@ -1007,7 +1007,7 @@ def add_links(config_file, configs):#{{{
         if child.tag == 'add_link':
             try:
                 source = child.attrib['source']
-            except:
+            except KeyError:
                 print " add_link tag missing a 'source' attribute."
                 print " Exiting..."
                 sys.exit(1)
@@ -1024,13 +1024,15 @@ def add_links(config_file, configs):#{{{
                 if not keyword_path:
                     try:
                         source_path = configs.get('paths', source_path_name)
-                    except:
+                    except (ConfigParser.NoOptionError,
+                            ConfigParser.NoSectionError):
                         source_path = 'NONE'
 
                     if source_path == 'NONE':
                         try:
                             source_path = configs.get('script_paths', source_path_name)
-                        except:
+                        except (ConfigParser.NoOptionError,
+                                ConfigParser.NoSectionError):
                             source_path = 'NONE'
 
                     if source_path == 'NONE':
@@ -1052,7 +1054,7 @@ def add_links(config_file, configs):#{{{
                         source_path = '{}/{}'.format(configs.get('script_paths', file_base_path), configs.get('script_paths', subname))
 
                 source_file = '{}/{}'.format(source_path, source)
-            except:
+            except KeyError:
                 source_file = '{}'.format(source)
 
             dest = child.attrib['dest']
@@ -1110,7 +1112,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
             # Determine dest_path
             try:
                 dest_path_name = get_file.attrib['dest_path']
-            except:
+            except KeyError:
                 print " get_file tag is missing the 'dest_path' attribute."
                 print " Exiting..."
                 sys.exit(1)
@@ -1118,7 +1120,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
             # Determine file_name
             try:
                 file_name = get_file.attrib['file_name']
-            except:
+            except KeyError:
                 print " get_file tag is missing a 'file_name' attribute."
                 print " Exiting..."
                 sys.exit(1)
@@ -1132,7 +1134,8 @@ def get_defined_files(config_file, init_path, configs):#{{{
             else:
                 try:
                     dest_path = '{}'.format(configs.get('paths', dest_path_name))
-                except:
+                except (ConfigParser.NoOptionError,
+                        ConfigParser.NoSectionError):
                     print " Path '{}' is not defined in the config file, but is required to get a file.".format(dest_path_name)
                     print " Exiting..."
                     sys.exit(1)
@@ -1169,7 +1172,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
                             # Determine the protocol for the mirror
                             try:
                                 protocol = mirror.attrib['protocol']
-                            except:
+                            except KeyError:
                                 print "Mirror is missing the 'protocol' attribute."
                                 print "Exiting..."
                                 sys.exit(1)
@@ -1179,19 +1182,19 @@ def get_defined_files(config_file, init_path, configs):#{{{
                                 if config.get('script_input_arguments', 'no_download') == 'no':
                                     try:
                                         path = '{}/{}'.format( mirror.attrib['url'], file_name)
-                                    except:
+                                    except KeyError:
                                         print " Mirror with protocol 'wget' is missing a 'url' attribute"
                                         print " Exiting..."
                                         sys.exit(1)
 
                                     try:
                                         subprocess.check_call(['wget', '-q', '{}'.format(path)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-                                    except:
+                                    except subprocess.CalledProcessError:
                                         print " Wget failed...."
 
                                     try:
                                         subprocess.check_call(['mv', '{}'.format(file_name), '{}/{}'.format(dest_path, file_name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-                                    except:
+                                    except subprocess.CalledProcessError:
                                         print "  -- Web mirror attempt failed. Trying other mirrors..."
 
 
@@ -1200,7 +1203,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
                             try:
                                 expected_hash = get_file.attrib['hash']
                                 validate_file = True
-                            except:
+                            except KeyError:
                                 validate_file = False
 
                             # Validate the file, if requested (i.e. file had a hash attribute)
@@ -1209,7 +1212,7 @@ def get_defined_files(config_file, init_path, configs):#{{{
                                     nc = netCDF4.Dataset('{}/{}'.format(dest_path, file_name), 'r')
                                     try:
                                         file_hash = nc.file_id
-                                    except:
+                                    except AttributeError:
                                         nc.close()
                                         print " Downloaded file '{}' does not have a 'file_id' attribute.".format(file_name)
                                         print " Deleting file and exiting..."
@@ -1238,21 +1241,21 @@ def get_template_info(template, configs):#{{{
     # Determine template attributes
     try:
         template_file = template.attrib['file']
-    except:
+    except KeyError:
         print "ERROR: <template> tag is missing 'file' attribute."
         print 'Exiting...'
         sys.exit(1)
 
     try:
         template_path_base = template.attrib['path_base']
-    except:
+    except KeyError:
         print "ERROR: <template> tag is missing 'path_base' attribute."
         print 'Exiting...'
         sys.exit(1)
 
     try:
         template_path_modifier = '/{}'.format(template.attrib['path'])
-    except:
+    except KeyError:
         template_path_modifier = ''
 
     # Determine template path from it's path_base attributes

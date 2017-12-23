@@ -36,7 +36,7 @@ if __name__ == "__main__":
         if args.number:
             quiet = True
             print_num = int(args.number)
-    except:
+    except ValueError:
         args.number = 0
         print_num = 0
 

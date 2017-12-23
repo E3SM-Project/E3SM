@@ -32,35 +32,35 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
     # Process test attributes
     try:
         test_name = test_tag.attrib['name']
-    except:
+    except KeyError:
         print "ERROR: <test> tag is missing 'name' attribute."
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_core = test_tag.attrib['core']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'core' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_configuration = test_tag.attrib['configuration']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'configuration' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_resolution = test_tag.attrib['resolution']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'resolution' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_test = test_tag.attrib['test']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'test' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
@@ -95,7 +95,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
         if script.tag == 'script':
             try:
                 script_name = script.attrib['name']
-            except:
+            except KeyError:
                 print "ERROR: <script> tag is missing 'name' attribute."
                 print 'Exiting...'
                 sys.exit(1)
@@ -128,35 +128,35 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
     # Process test attributes
     try:
         test_name = test_tag.attrib['name']
-    except:
+    except KeyError:
         print "ERROR: <test> tag is missing 'name' attribute."
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_core = test_tag.attrib['core']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'core' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_configuration = test_tag.attrib['configuration']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'configuration' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_resolution = test_tag.attrib['resolution']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'resolution' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
 
     try:
         test_test = test_tag.attrib['test']
-    except:
+    except KeyError:
         print "ERROR: <test> tag with name '{}' is missing 'test' attribute.".format(test_name)
         print "Exiting..."
         sys.exit(1)
@@ -175,7 +175,7 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, verbose):#{{{
     try:
         suite_name = suite_tag.attrib['name']
-    except:
+    except KeyError:
         print "ERROR: <regression_suite> tag is missing 'name' attribute."
         print 'Exiting...'
         sys.exit(1)
@@ -242,7 +242,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, v
 def clean_suite(suite_tag, work_dir):#{{{
     try:
         suite_name = suite_tag.attrib['name']
-    except:
+    except KeyError:
         print "ERROR: <regression_suite> tag is missing 'name' attribute."
         print 'Exiting...'
         sys.exit(1)
@@ -268,35 +268,35 @@ def summarize_suite(suite_tag):#{{{
         if child.tag == 'test':
             try:
                 test_name = child.attrib['name']
-            except:
+            except KeyError:
                 print "<test> tag is missing a 'name' attribute"
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_core = child.attrib['core']
-            except:
+            except KeyError:
                 print "<test> tag named '{}' is missing a 'core' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_configuration = child.attrib['configuration']
-            except:
+            except KeyError:
                 print "<test> tag named '{}' is missing a 'configuration' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_resolution = child.attrib['resolution']
-            except:
+            except KeyError:
                 print "<test> tag named '{}' is missing a 'resolution' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
 
             try:
                 test_test = child.attrib['test']
-            except:
+            except KeyError:
                 print "<test> tag named '{}' is missing a 'test' attribute".format(test_name)
                 print "Exiting..."
                 sys.exit(1)
@@ -316,13 +316,13 @@ def summarize_suite(suite_tag):#{{{
                             try:
                                 procs_str = model_run.attrib['procs']
                                 procs = int(procs_str)
-                            except:
+                            except (KeyError, ValueError):
                                 procs = 1
 
                             try:
                                 threads_str = model_run.attrib['threads']
                                 threads = int(threads_str)
-                            except:
+                            except (KeyError, ValueError):
                                 threads = 1
 
                             cores = threads * procs
