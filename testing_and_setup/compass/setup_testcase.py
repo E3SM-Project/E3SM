@@ -13,7 +13,8 @@ in this directory named 'general.config.{core}'. Each core may have different
 requirements as far as what is required within a configuration file.
 """
 
-import sys, os, glob, shutil, numpy, math
+import sys
+import os
 import fnmatch
 import argparse
 import xml.etree.ElementTree as ET

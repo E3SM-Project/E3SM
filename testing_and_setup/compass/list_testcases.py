@@ -12,7 +12,8 @@ Additionally, if -n is passed in to get information about a single test case,
 it will only print the flags needed to setup that specific test case.
 """
 
-import os, fnmatch
+import os
+import fnmatch
 import argparse
 import xml.etree.ElementTree as ET
 import re

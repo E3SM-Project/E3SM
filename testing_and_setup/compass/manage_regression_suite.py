@@ -12,12 +12,12 @@ When cleaning a regression suite, this script will remove any generated files
 for each individual test case, and the run script that runs all test cases.
 """
 
-import sys, os, glob, shutil, numpy, math
+import sys
+import os
 import fnmatch
 import argparse
 import xml.etree.ElementTree as ET
 import subprocess
-import ConfigParser
 
 def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir, verbose):#{{{
     if verbose:

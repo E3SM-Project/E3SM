@@ -7,7 +7,11 @@ It will remove directories / driver scripts that were generated as part of
 setting up a test case.
 """
 
-import sys, os, shutil, fnmatch, re
+import sys
+import os
+import shutil
+import fnmatch
+import re
 import argparse
 import subprocess
 import xml.etree.ElementTree as ET
