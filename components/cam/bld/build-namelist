@@ -3402,6 +3402,12 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'rrtmg_temp_fix');
 }
 
+if ($cfg->get('microphys') =~ /^p3/) {
+    add_default($nl, 'nucleate_ice_subgrid');
+    add_default($nl, 'so4_sz_thresh_icenuc');
+    add_default($nl, 'cld_macmic_num_steps');
+}
+
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl, 'prc_coef1');
     add_default($nl, 'prc_exp');
