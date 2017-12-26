@@ -13,11 +13,12 @@
   -->
 
   <description modifier_mode="1">
-    <desc rof="DROF[%NULL][%NYF][%IAF][%CPLHIST]">Data runoff model</desc>
+    <desc rof="DROF[%NULL][%NYF][%IAF][%CPLHIST][%JRA]">Data runoff model</desc>
     <desc option="NULL">NULL mode</desc>
     <desc option="NYF" >COREv2 normal year forcing:</desc>
     <desc option="IAF" >COREv2 interannual year forcing:</desc>
     <desc option="CPLHIST">CPLHIST mode:</desc>
+    <desc option="JRA">JRA55 interannual forcing</desc>
   </description>
 
   <entry id="COMP_ROF">
@@ -31,13 +32,14 @@
 
   <entry id="DROF_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL</valid_values>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,IAF_JRA,NULL</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values match="last">
       <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
       <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
       <value compset="_DROF%CPLHIST">CPLHIST</value>
+      <value compset="_DROF%JRA" >IAF_JRA</value>
       <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
     </values>
     <group>run_component_drof</group>
@@ -52,13 +54,29 @@
     default is DIATREN_ANN_RX1.</desc>
   </entry>
 
+  <entry id="DROF_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for drof when DROF_MODE is
+      CPLHIST.  NOTE: if this is set to 'null' (the default), then
+      domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+
   <entry id="DROF_CPLHIST_DIR">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
-    <desc>directory for coupler history data mode (only used for CPLHIST mode)</desc>
+    <desc>directory for coupler history data mode (only used when DROF_MODE is CPLHIST mode)</desc>
   </entry>
 
   <entry id="DROF_CPLHIST_CASE">
@@ -67,34 +85,46 @@
     <default_value>UNSET</default_value>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
-    <desc>case name for coupler history data mode (only used for CPLHIST mode)</desc>
+    <desc>case name for coupler history data mode (only used when DROF_MODE is CPLHIST mode)</desc>
   </entry>
 
   <entry id="DROF_CPLHIST_YR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
-    <desc>year align (only used for CPLHIST mode)</desc>
+    <desc>
+      Simulation year corresponding to DROF_CPLHIST_YR_START (only used
+      when DROF_MODE is CPLHIST). A common usage is to set this to
+      RUN_STARTDATE. With this setting, the forcing in the first year of
+      the run will be the forcing of year DROF_CPLHIST_YR_START. Another
+      use case is to align the calendar of transient forcing with the
+      model calendar. For example, setting
+      DROF_CPLHIST_YR_ALIGN=DROF_CPLHIST_YR_START will lead to the
+      forcing calendar being the same as the model calendar. The forcing
+      for a given model year would be the forcing of the same year. This
+      would be appropriate in transient runs where the model calendar is
+      setup to span the same year range as the forcing data.
+    </desc>
   </entry>
 
   <entry id="DROF_CPLHIST_YR_START">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
-    <desc>starting year to loop data over (only used for CPLHIST mode)</desc>
+    <desc>starting year to loop data over (only used when DROF_MODE is CPLHIST)</desc>
   </entry>
 
   <entry id="DROF_CPLHIST_YR_END">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>1</default_value>
+    <default_value>-999</default_value>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
-    <desc>ending year to loop data over (only used for CPLHIST mode)</desc>
+    <desc>ending year to loop data over (only used when DROF_MODE is CPLHIST)</desc>
   </entry>
 
   <help>

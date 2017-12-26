@@ -13,8 +13,8 @@ shr_reprosum_mod.o: shr_reprosum_mod.F90
 
 # These routines benefit from -qnostrict without violating the bfb test
 PERFOBJS=\
-prim_advection_mod_base.o \
-vertremap_mod_base.o \
+prim_advection_base.o \
+vertremap_base.o \
 edge_mod_base.o \
 derivative_mod_base.o \
 bndry_mod_base.o \
@@ -64,3 +64,8 @@ advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
 advance_wp2_wp3_module.o: advance_wp2_wp3_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
 ### end
+
+# lower -O flag for ne120-coupled cases
+ifneq (,$(and $(findstring a%ne120,$(shell $(CASEROOT)/xmlquery --value GRID --caseroot $(CASEROOT) )),$(findstring MPASO,$(shell $(CASEROOT)/xmlquery --value COMPSET --caseroot $(CASEROOT) ))))
+FFLAGS:=$(subst O3,O2,$(FFLAGS))
+endif

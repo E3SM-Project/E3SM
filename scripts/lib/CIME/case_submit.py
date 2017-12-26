@@ -7,7 +7,7 @@ jobs.
 """
 import socket
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
@@ -15,13 +15,18 @@ from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
-            mail_user=None, mail_type='never', batch_args=None):
+def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
+            skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
         else:
             job = "case.run"
+
+    rundir = case.get_value("RUNDIR")
+    continue_run = case.get_value("CONTINUE_RUN")
+    expect(os.path.isdir(rundir) or not continue_run,
+           " CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
 
     if resubmit:
         resub = case.get_value("RESUBMIT")
@@ -62,13 +67,13 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
     case.set_value("RUN_WITH_SUBMIT", True)
     case.flush()
 
-    logger.warn("submit_jobs {}".format(job))
+    logger.warning("submit_jobs {}".format(job))
     job_ids = case.submit_jobs(no_batch=no_batch, job=job, skip_pnl=skip_pnl,
-                               mail_user=mail_user, mail_type=mail_type,
-                               batch_args=batch_args)
+                               prereq=prereq, mail_user=mail_user,
+                               mail_type=mail_type, batch_args=batch_args)
 
     xml_jobids = []
-    for jobname, jobid in job_ids.iteritems():
+    for jobname, jobid in job_ids.items():
         logger.info("Submitted job {} with id {}".format(jobname, jobid))
         if jobid:
             xml_jobids.append("{}:{}".format(jobname, jobid))
@@ -77,8 +82,10 @@ def _submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
     if xml_jobid_text:
         case.set_value("JOB_IDS", xml_jobid_text)
 
-def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
-           mail_user=None, mail_type='never', batch_args=None):
+    return xml_jobid_text
+
+def submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
+           skip_pnl=False, mail_user=None, mail_type=None, batch_args=None):
     if case.get_value("TEST"):
         caseroot = case.get_value("CASEROOT")
         casebaseid = case.get_value("CASEBASEID")
@@ -93,9 +100,12 @@ def submit(case, job=None, resubmit=False, no_batch=False, skip_pnl=False,
                 ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
 
     try:
-        functor = lambda: _submit(case, job, resubmit, no_batch, skip_pnl,
-                                  mail_user, mail_type, batch_args)
-        run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"))
+        functor = lambda: _submit(case, job=job, no_batch=no_batch, prereq=prereq,
+                                  resubmit=resubmit, skip_pnl=skip_pnl,
+                                  mail_user=mail_user, mail_type=mail_type,
+                                  batch_args=batch_args)
+        run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"),
+                                custom_success_msg_functor=verbatim_success_msg)
     except:
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
@@ -116,7 +126,7 @@ def check_case(case):
     logger.info("Check case OK")
 
 def check_DA_settings(case):
-    if case.get_value("DATA_ASSIMILATION"):
-        script = case.get_value("DATA_ASSIMILATION_SCRIPT")
-        cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+    script = case.get_value("DATA_ASSIMILATION_SCRIPT")
+    cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+    if len(script) > 0 and os.path.isfile(script) and cycles > 0:
         logger.info("Data Assimilation enabled using script {} with {:d} cycles".format(script,cycles))

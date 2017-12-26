@@ -10,17 +10,18 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSW][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSW][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSW"> GSWP3 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
-    <desc option="CPLHIST"> Coupler hist data set </desc>
+    <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="1PT">single point tower site data set </desc>
     <desc option="NYF">COREv2 normal year forcing</desc>
     <desc option="IAF">COREv2 interannual forcing</desc>
+    <desc option="JRA">interannual JRA55 forcing</desc>
   </description>
 
   <entry id="COMP_ATM">
@@ -34,7 +35,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CPLHISTForcing</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CPLHIST,CORE_IAF_JRA</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -44,13 +45,14 @@
     <values match="last">
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
+      <value compset="%JRA">CORE_IAF_JRA</value>
       <value compset="%QIA">CLM_QIAN</value>
       <value compset="%WISOQIA">CLM_QIAN_WISO</value>
       <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
       <value compset="%1PT">CLM1PT</value>
-      <value compset="%CPLHIST">CPLHISTForcing</value>
+      <value compset="%CPLHIST">CPLHIST</value>
     </values>
   </entry>
 
@@ -82,12 +84,13 @@
 
   <entry id="DATM_TOPO">
     <type>char</type>
-    <valid_values>none,observed</valid_values>
+    <valid_values>none,observed,cplhist</valid_values>
     <default_value>observed</default_value>
     <values match="last">
       <!-- Only needed for compsets with active land; for other compsets, turn it off -->
       <value compset="_SLND">none</value>
       <value compset="_DLND">none</value>
+      <value compset="_DATM%CPLHIST">cplhist</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -111,61 +114,77 @@
     <desc>DATM CO2 time series</desc>
   </entry>
 
+  <entry id="DATM_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for datm when DATM_MODE is
+      CPLHIST, NOTE: if this is set to 'null' (the default), then
+      domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+
   <entry id="DATM_CPLHIST_DIR">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>directory for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+    <desc>directory for coupler history data mode (only used for when DATM_MODE is CPLHIST)</desc>
   </entry>
 
   <entry id="DATM_CPLHIST_CASE">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
-    <values match="last">
-      <value compset="1850_DATM%CPLHIST">b40.1850.track1.1deg.006a</value>
-    </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>case name for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+    <desc>case name used to determine stream filenames when DATM_MODE is CPLHIST</desc>
   </entry>
 
   <entry id="DATM_CPLHIST_YR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>1</default_value>
-    <values match="last">
-      <value compset="1850_DATM%CPLHIST">1</value>
-    </values>
+    <default_value>-999</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>Simulation year corresponding to starting year (only used for CPLHIST3HrWx mode)</desc>
+    <desc>
+      Simulation year corresponding to DATM_CPLHIST_YR_START (only used
+      when DATM_MODE is CPLHIST). A common usage is to set this to
+      RUN_STARTDATE. With this setting, the forcing in the first year of
+      the run will be the forcing of year DATM_CPLHIST_YR_START. Another
+      use case is to align the calendar of transient forcing with the
+      model calendar. For example, setting
+      DATM_CPLHIST_YR_ALIGN=DATM_CPLHIST_YR_START will lead to the
+      forcing calendar being the same as the model calendar. The forcing
+      for a given model year would be the forcing of the same year. This
+      would be appropriate in transient runs where the model calendar is
+      setup to span the same year range as the forcing data.
+    </desc>
   </entry>
 
   <entry id="DATM_CPLHIST_YR_START">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values match="last">
-      <value compset="1850_DATM%CPLHIST">960</value>
-    </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>starting year to loop data over (only used for CPLHIST3HrWx mode)</desc>
+    <desc>starting year to loop data over (only used when DATM_MODE is CPLHIST)</desc>
   </entry>
 
   <entry id="DATM_CPLHIST_YR_END">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values match="last">
-      <value compset="1850_DATM%CPLHIST">1030</value>
-    </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
-    <desc>ending year to loop data over (only used for CPLHIST3HrWx mode)</desc>
+    <desc>ending year to loop data over (only used when DATM_MODE is CPLHIST)</desc>
   </entry>
 
   <entry id="DATM_CLMNCEP_YR_ALIGN">

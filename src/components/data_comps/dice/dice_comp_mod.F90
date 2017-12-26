@@ -25,7 +25,7 @@ module dice_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
-  use dice_shr_mod   , only: ice_mode       ! namelist input
+  use dice_shr_mod   , only: datamode       ! namelist input
   use dice_shr_mod   , only: decomp         ! namelist input
   use dice_shr_mod   , only: rest_file      ! namelist input
   use dice_shr_mod   , only: rest_file_strm ! namelist input
@@ -396,7 +396,7 @@ CONTAINS
        seq_flds_i2o_per_cat, &
        SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, case_name)
-
+    use shr_cal_mod, only : shr_cal_ymdtod2string
     ! !DESCRIPTION: run method for dice model
     implicit none
 
@@ -431,6 +431,7 @@ CONTAINS
     real(R8)      :: jday, jday0       ! elapsed day counters
     character(CS) :: calendar          ! calendar type
     logical       :: write_restart     ! restart now
+    character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(dice_comp_run) ',2a,2i8,'s')"
@@ -458,7 +459,7 @@ CONTAINS
 
     !--- copy all fields from streams to i2x as default ---
 
-    if (trim(ice_mode) /= 'NULL') then
+    if (trim(datamode) /= 'NULL') then
        call t_startf('dice_strdata_advance')
        call shr_strdata_advance(SDICE,currentYMD,currentTOD,mpicom,'dice')
        call t_stopf('dice_strdata_advance')
@@ -472,9 +473,12 @@ CONTAINS
        call mct_aVect_zero(i2x)
     endif
 
-    call t_startf('dice_mode')
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
 
-    select case (trim(ice_mode))
+    call t_startf('dice_datamode')
+    select case (trim(datamode))
 
     case('COPYALL')
        ! do nothing extra
@@ -586,18 +590,14 @@ CONTAINS
 
        end do
 
-       !----------------------------------------------------------------------------
        ! compute atm/ice surface fluxes
-       !----------------------------------------------------------------------------
        call shr_flux_atmIce(iMask  ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:), &
             x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:),  &
             i2x%rAttr(kt,:)    ,i2x%rAttr(ksen,:)   ,i2x%rAttr(klat,:)   ,i2x%rAttr(klwup,:), &
             i2x%rAttr(kevap,:) ,i2x%rAttr(ktauxa,:) ,i2x%rAttr(ktauya,:) ,i2x%rAttr(ktref,:), &
             i2x%rAttr(kqref,:) )
 
-       !----------------------------------------------------------------------------
        ! compute ice/oce surface fluxes (except melth & meltw, see above)
-       !----------------------------------------------------------------------------
        do n=1,lsize
           if (iMask(n) == 0) then
              i2x%rAttr(kswpen,n) = spval
@@ -623,10 +623,11 @@ CONTAINS
           !         iFrac0(n) = i2x%rAttr(kiFrac,n)
        end do
 
-
     end select
 
+    !-------------------------------------------------
     ! optional per thickness category fields
+    !-------------------------------------------------
 
     if (seq_flds_i2o_per_cat) then
        do n=1,lsize
@@ -635,17 +636,22 @@ CONTAINS
        end do
     end if
 
-    call t_stopf('dice_mode')
+    call t_stopf('dice_datamode')
+
+    !--------------------
+    ! Write restart
+    !--------------------
 
     if (write_restart) then
        call t_startf('dice_restart')
        ! Write rpointer file
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.dice'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.dice'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy, mm, dd, currentTOD)
+       write(rest_file,"(6a)") &
+            trim(case_name), '.dice',trim(inst_suffix),'.r.', &
+            trim(date_str),'.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.dice',trim(inst_suffix),'.rs1.', &
+            trim(date_str),'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

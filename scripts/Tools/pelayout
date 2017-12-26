@@ -113,10 +113,10 @@ def print_pelayout(case, ntasks, nthreads, rootpes, arg_format, header):
     comp_classes = case.get_values("COMP_CLASSES")
 
     if (header is not None):
-        print header
+        print(header)
     # End if
     for comp in comp_classes:
-        print format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], arg_format)
+        print(format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], arg_format))
     # End for
 
 # End def print_pelayout
@@ -194,10 +194,6 @@ def modify_ntasks(case, new_tot_tasks):
 ###############################################################################
 def _main_func():
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     # Initialize command line parser and get command line options
     arg_format, set_ntasks, set_nthrds, header, caseroot = parse_command_line(sys.argv)
 

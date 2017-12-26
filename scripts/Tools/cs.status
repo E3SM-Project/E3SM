@@ -15,8 +15,6 @@ def parse_command_line(args, description):
 usage="""\n{0} <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Wait for all tests in a test area\033[0m
@@ -65,8 +63,9 @@ def cs_status(test_paths, summary=False):
             test_id_output[test_id] = output
 
     for test_id in sorted(test_id_output):
-        print test_id
-        print test_id_output[test_id],
+        print(test_id)
+        print(test_id_output[test_id])
+        print(' ')
 
 ###############################################################################
 def _main_func(description):

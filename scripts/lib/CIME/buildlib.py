@@ -5,17 +5,12 @@ common utilities for buildlib
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-import sys, os, argparse, doctest
-
+import sys, os, argparse
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_input(argv):
 ###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     parser = argparse.ArgumentParser()
 
@@ -44,13 +39,14 @@ def parse_input(argv):
 
 def build_cime_component_lib(case, compname, libroot, bldroot):
     cimeroot  = case.get_value("CIMEROOT")
+    comp_interface = case.get_value("COMP_INTERFACE")
     compclass = compname[1:]
 
     with open(os.path.join(bldroot,'Filepath'), 'w') as out:
         out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, "mct") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, comp_interface) + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
         elif compname.startswith('x'):
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
@@ -86,7 +82,4 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
-    rc, out, err = run_cmd(cmd)
-    expect(rc == 0, "Command {} failed rc={:d}\nout={}\nerr={}".format(cmd, rc, out, err))
-
-    print "Command {} completed with output {}\nerr {}".format(cmd, out, err)
+    run_cmd_no_fail(cmd, combine_output=True)

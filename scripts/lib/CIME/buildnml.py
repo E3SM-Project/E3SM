@@ -6,17 +6,13 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-import sys, os, argparse, doctest
+import sys, os, argparse
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_input(argv):
 ###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     parser = argparse.ArgumentParser()
 
@@ -98,7 +94,7 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
         with open(user_nl_file, "r") as file_usernl:
             lines_input = file_usernl.readlines()
     else:
-        logger.warn("WARNING: No file {} found in case directory".format(user_nl_file))
+        logger.warning("WARNING: No file {} found in case directory".format(user_nl_file))
 
     lines_output = []
     lines_output.append("&comp_inparm \n")

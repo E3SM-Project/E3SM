@@ -201,7 +201,7 @@ class CompilerBlock(object):
         variables that this setting depends on.
         """
         # Attributes on an element are the conditions on that element.
-        conditions = dict(elem.items())
+        conditions = dict(list(elem.items()))
         if self._compiler is not None:
             conditions["COMPILER"] = self._compiler
         # Deal with internal markup.
@@ -224,10 +224,6 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
-        # Skip this if the element's MPILIB is not valid.
-        if "MPILIB" in elem.keys() and \
-           not self._machobj.is_valid_MPIlib(elem.get("MPILIB")):
-            return
         setting, depends = self._elem_to_setting(elem)
         if name not in value_lists:
             value_lists[name] = PossibleValues(name, setting,

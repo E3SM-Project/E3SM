@@ -12,7 +12,7 @@ module datm_comp_mod
   use shr_sys_mod
   use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian
+  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
@@ -23,7 +23,7 @@ module datm_comp_mod
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
   use datm_shr_mod   , only: datm_shr_getNextRadCDay, datm_shr_esat, datm_shr_CORE2getFactors
-  use datm_shr_mod   , only: atm_mode       ! namelist input
+  use datm_shr_mod   , only: datamode       ! namelist input
   use datm_shr_mod   , only: decomp         ! namelist input
   use datm_shr_mod   , only: wiso_datm      ! namelist input
   use datm_shr_mod   , only: rest_file      ! namelist input
@@ -32,7 +32,6 @@ module datm_comp_mod
   use datm_shr_mod   , only: iradsw         ! namelist input
   use datm_shr_mod   , only: nullstr
 
-  !
   ! !PUBLIC TYPES:
 
   implicit none
@@ -630,6 +629,7 @@ CONTAINS
     real(R8)      :: tMin              ! minimum temperature
     character(CL) :: calendar          ! calendar type
 
+    character(len=18) :: date_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
@@ -666,9 +666,11 @@ CONTAINS
     call t_startf('datm_strdata_advance')
     call shr_strdata_advance(SDATM,currentYMD,currentTOD,mpicom,'datm')
     call t_stopf('datm_strdata_advance')
+
     call t_barrierf('datm_scatter_BARRIER',mpicom)
+
     call t_startf('datm_scatter')
-    if (trim(atm_mode) /= 'COPYALL') then
+    if (trim(datamode) /= 'COPYALL') then
        lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
           a2x%rAttr(kbid,n) = aerodep_spval
@@ -717,13 +719,14 @@ CONTAINS
     enddo
     call t_stopf('datm_scatter')
 
-    call t_startf('datm_mode')
-    select case (trim(atm_mode))
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('datm_datamode')
+    select case (trim(datamode))
 
     case('COPYALL')
-       ! do nothing extra
-
-    case('CPLHIST')
        ! do nothing extra
 
     case('CORE2_NYF','CORE2_IAF')
@@ -732,7 +735,7 @@ CONTAINS
              write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE2'
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE2')
           endif
-          if (trim(atm_mode) == 'CORE2_IAF' ) then
+          if (trim(datamode) == 'CORE2_IAF' ) then
              if (starcf < 1 ) then
                 write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE2_IAF'
                 call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE2_IAF')
@@ -776,7 +779,7 @@ CONTAINS
           !--- Dupont correction to NCEP Arctic air T  ---
           !--- don't correct during summer months (July-September)
           !--- ONLY correct when forcing year is 1997->2004
-          if (trim(atm_mode) == 'CORE2_IAF' ) then
+          if (trim(datamode) == 'CORE2_IAF' ) then
              a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) +  avstrm%rAttr(starcf,n)
              a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
           end if
@@ -840,6 +843,74 @@ CONTAINS
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
              a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n) + factor * dLWarc
           endif
+
+       enddo   ! lsize
+
+    case('CORE_IAF_JRA')
+       if (firstcall) then
+          if (sprec < 1 .or. sswdn < 1) then
+             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
+             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
+          endif
+          if (trim(datamode) == 'CORE_IAF_JRA' ) then
+             if (starcf < 1 ) then
+                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE_IAF_JRA'
+                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE_IAF_JRA')
+             endif
+          endif
+          if (trim(factorFn) == 'null') then
+            windFactor = 1.0_R8
+            winddFactor = 1.0_R8
+            qsatFactor = 1.0_R8
+          else
+            call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
+                 mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+          endif
+       endif
+       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+       rday = mod((rday - 1.0_R8),365.0_R8)
+       cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
+
+       lsize = mct_avect_lsize(a2x)
+       do n = 1,lsize
+          a2x%rAttr(kz,n) = 10.0_R8
+
+          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
+          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
+
+          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+
+          !--- density computation for JRA55 forcing ---
+          a2x%rAttr(kdens,n) = a2x%rAttr(kpbot,n)/(rdair*a2x%rAttr(ktbot,n) &
+                               *(1+0.608* a2x%rAttr(kshum,n)))
+
+          !-------------------------------------------------------------------------
+          ! PRECIPITATION DATA
+          !-------------------------------------------------------------------------
+
+          a2x%rAttr(krc,n) = 0.0_R8                    ! default zero
+          a2x%rAttr(ksc,n) = 0.0_R8
+          if (a2x%rAttr(ktbot,n) < tKFrz ) then        ! assign precip to rain/snow components
+             a2x%rAttr(krl,n) = 0.0_R8
+             a2x%rAttr(ksl,n) = avstrm%rAttr(sprec,n)
+          else
+             a2x%rAttr(krl,n) = avstrm%rAttr(sprec,n)
+             a2x%rAttr(ksl,n) = 0.0_R8
+          endif
+
+          !-------------------------------------------------------------------------
+          ! RADIATION DATA
+          !-------------------------------------------------------------------------
+
+          !--- fabricate required swdn components from net swdn ---
+          a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
+          a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
+          a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
+          a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
+
+          !--- compute net short-wave based on LY08 latitudinally-varying albedo ---
+          avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
+          a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)*(1.0_R8 - avg_alb)
 
        enddo   ! lsize
 
@@ -979,7 +1050,7 @@ CONTAINS
 
     end select
 
-    call t_stopf('datm_mode')
+    call t_stopf('datm_datamode')
 
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( start block )
@@ -1074,12 +1145,12 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+
+       write(rest_file,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.r.', trim(date_str), '.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.rs1.', trim(date_str), '.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')

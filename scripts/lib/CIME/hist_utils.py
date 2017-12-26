@@ -5,8 +5,12 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-import logging, glob, os, shutil, re, stat
+from CIME.utils import get_current_commit, get_timestamp, get_model
+
+import logging, glob, os, shutil, re, stat, filecmp
 logger = logging.getLogger(__name__)
+
+BLESS_LOG_NAME = "bless_log"
 
 def _iter_model_file_substrs(case):
     models = case.get_compset_components()
@@ -212,7 +216,13 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
             else:
                 comments += "    {} did NOT match {}\n".format(hist1, hist2)
                 comments += "    cat " + cprnc_log_file + "\n"
-                shutil.copy(cprnc_log_file, casedir)
+                expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
+                if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
+                    try:
+                        shutil.copy(cprnc_log_file, casedir)
+                    except OSError:
+                        logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
+
                 all_success = False
 
     if num_compared == 0:
@@ -311,7 +321,14 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
-    return _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
+    success, comments = _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
+    if get_model() == "acme":
+        bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
+        if os.path.exists(bless_log):
+            last_line = open(bless_log, "r").readlines()[-1]
+            comments += "\n  Most recent bless: {}".format(last_line)
+
+    return success, comments
 
 def get_extension(model, filepath):
     """
@@ -393,7 +410,7 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     # drop the date so that the name is generic
     newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
     if newestcpllogfile is None:
-        logger.warn("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+        logger.warning("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
     else:
         shutil.copyfile(newestcpllogfile,
                     os.path.join(basegen_dir, "cpl.log.gz"))
@@ -407,5 +424,11 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             except OSError:
                 # We tried. Not worth hard failure here.
                 pass
+
+    if get_model() == "acme":
+        bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
+        with open(bless_log, "a") as fd:
+            fd.write("sha:{} date:{}\n".format(get_current_commit(repo=case.get_value("CIMEROOT")),
+                                               get_timestamp(timestamp_format="%Y-%m-%d_%H:%M:%S")))
 
     return True, comments

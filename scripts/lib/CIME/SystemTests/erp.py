@@ -27,9 +27,6 @@ class ERP(RestartTest):
                              run_one_description = 'initial',
                              run_two_description = 'restart')
 
-    def _common_setup(self):
-        self._case.set_value("BUILD_THREADED",True)
-
     def _case_two_setup(self):
         # halve the number of tasks and threads
         for comp in self._case.get_values("COMP_CLASSES"):
@@ -37,10 +34,10 @@ class ERP(RestartTest):
             nthreads  = self._case1.get_value("NTHRDS_{}".format(comp))
             rootpe    = self._case1.get_value("ROOTPE_{}".format(comp))
             if ( nthreads > 1 ):
-                self._case.set_value("NTHRDS_{}".format(comp), nthreads/2)
+                self._case.set_value("NTHRDS_{}".format(comp), int(nthreads/2))
             if ( ntasks > 1 ):
-                self._case.set_value("NTASKS_{}".format(comp), ntasks/2)
-                self._case.set_value("ROOTPE_{}".format(comp), rootpe/2)
+                self._case.set_value("NTASKS_{}".format(comp), int(ntasks/2))
+                self._case.set_value("ROOTPE_{}".format(comp), int(rootpe/2))
 
         RestartTest._case_two_setup(self)
         # Note, some components, like CESM-CICE, have

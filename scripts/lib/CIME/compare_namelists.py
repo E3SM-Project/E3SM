@@ -1,4 +1,4 @@
-import os, re, logging
+import os, re, logging, six
 
 from collections import OrderedDict
 from CIME.utils  import expect
@@ -337,7 +337,7 @@ def _compare_values(name, gold_value, comp_value, case):
     comments = ""
     if (type(gold_value) != type(comp_value)):
         comments += "  variable '{}' did not have expected type '{}', instead is type '{}'\n".format(name, type(gold_value), type(comp_value))
-        return (False, comments)
+        return comments
 
     if (type(gold_value) is list):
         # Note, list values remain order sensitive
@@ -353,7 +353,7 @@ def _compare_values(name, gold_value, comp_value, case):
                 comments += "  list variable '{}' has extra value {}\n".format(name, comp_value_list_item)
 
     elif (type(gold_value) is OrderedDict):
-        for key, gold_value_dict_item in gold_value.iteritems():
+        for key, gold_value_dict_item in gold_value.items():
             if (key in comp_value):
                 comments += _compare_values("{} dict item {}".format(name, key),
                                             gold_value_dict_item, comp_value[key], case)
@@ -365,7 +365,7 @@ def _compare_values(name, gold_value, comp_value, case):
                 comments += "  dict variable '{}' has extra key {} with value {}\n".format(name, key, comp_value[key])
 
     else:
-        expect(type(gold_value) is str, "Unexpected type found: '{}'".format(type(gold_value)))
+        expect(isinstance(gold_value, six.string_types), "Unexpected type found: '{}'".format(type(gold_value)))
         norm_gold_value = _normalize_string_value(name, gold_value, case)
         norm_comp_value = _normalize_string_value(name, comp_value, case)
 
@@ -425,7 +425,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     ...   val3 = .false.
     ... /'''
     >>> comments = _compare_namelists(_parse_namelists(teststr1.splitlines(), 'foo'), _parse_namelists(teststr2.splitlines(), 'bar'), None)
-    >>> print comments
+    >>> print(comments)
     Missing namelist: nml1
     Differences in namelist 'nml2':
       BASE: val21 = 'foo'
@@ -444,7 +444,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     >>> teststr1 = '''&rad_cnst_nl
     ... icecldoptics           = 'mitchell'
     ... logfile                = 'cpl.log.150514-001533'
-    ... case_name              = 'ERB.f19_g16.B1850C5.skybridge_intel.C.150513-230221'
+    ... case_name              = 'ERB.f19_g16.B1850C5.sandiatoss3_intel.C.150513-230221'
     ... runid                  = 'FOO'
     ... model_version          = 'cam5_3_36'
     ... username               = 'jgfouca'
@@ -468,7 +468,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     >>> teststr2 = '''&rad_cnst_nl
     ... icecldoptics           = 'mitchell'
     ... logfile                = 'cpl.log.150514-2398745'
-    ... case_name              = 'ERB.f19_g16.B1850C5.skybridge_intel.C.150513-1274213'
+    ... case_name              = 'ERB.f19_g16.B1850C5.sandiatoss3_intel.C.150513-1274213'
     ... runid                  = 'BAR'
     ... model_version          = 'cam5_3_36'
     ... username               = 'hudson'
@@ -489,16 +489,16 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
     ...   'N:CFC11:CFC11', 'N:CFC12:CFC12', 'M:mam3_mode1:/something/else/inputdata/atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc',
     ...   'M:mam3_mode2:/something/else/inputdata/atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc', 'M:mam3_mode3:/something/else/inputdata/atm/cam/physprops/mam3_mode3_rrtmg_c110318.nc'
     ... /'''
-    >>> _compare_namelists(_parse_namelists(teststr1.splitlines(), 'foo'), _parse_namelists(teststr2.splitlines(), 'bar'), 'ERB.f19_g16.B1850C5.skybridge_intel')
+    >>> _compare_namelists(_parse_namelists(teststr1.splitlines(), 'foo'), _parse_namelists(teststr2.splitlines(), 'bar'), 'ERB.f19_g16.B1850C5.sandiatoss3_intel')
     ''
     """
     different_namelists = OrderedDict()
-    for namelist, gold_names in gold_namelists.iteritems():
+    for namelist, gold_names in gold_namelists.items():
         if (namelist not in comp_namelists):
             different_namelists[namelist] = ["Missing namelist: {}\n".format(namelist)]
         else:
             comp_names = comp_namelists[namelist]
-            for name, gold_value in gold_names.iteritems():
+            for name, gold_value in gold_names.items():
                 if (name not in comp_names):
                     different_namelists.setdefault(namelist, []).append("  missing variable: '{}'\n".format(name))
                 else:
@@ -516,7 +516,7 @@ def _compare_namelists(gold_namelists, comp_namelists, case):
             different_namelists[namelist] = ["Found extra namelist: {}\n".format(namelist)]
 
     comments = ""
-    for namelist, nlcomment in different_namelists.iteritems():
+    for namelist, nlcomment in different_namelists.items():
         if len(nlcomment) == 1:
             comments += nlcomment[0]
         else:

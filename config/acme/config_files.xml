@@ -124,7 +124,7 @@
     <type>char</type>
     <values>
       <value>$CIMEROOT/config/acme/config_archive.xml</value>
-      <value component="cpl"      >$CIMEROOT/src/drivers/mct/cime_config/config_archive.xml</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/config_archive.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/config_archive.xml</value>
@@ -344,7 +344,7 @@
     <values>
       <value component="mpaso"  >$SRCROOT/components/mpas-o/cime_config/config_component.xml</value>
       <value component="pop"  >$SRCROOT/components/pop/cime_config/config_component.xml</value>
-      <value component="aquap">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
+      <value component="aqp">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
       <value component="docn" >$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml</value>
       <value component="socn" >$CIMEROOT/src/components/stub_comps/socn/cime_config/config_component.xml</value>
       <value component="xocn" >$CIMEROOT/src/components/xcpl_comps/xocn/cime_config/config_component.xml</value>

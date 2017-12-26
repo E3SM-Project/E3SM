@@ -24,16 +24,14 @@ logger = logging.getLogger("xmlchange")
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--force]
+        usage="""\n{0} [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--force]
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# xmlchange REST_OPT=ndays,REST_N=4 \033[0m
-    > %s
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0}
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -131,6 +129,15 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
             newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
             expect(newval is not None,"No variable '%s' found" % xmlid)
 
+        # Subtle: If the user is making specific requests for walltime and queue, we need to
+        # store these choices in USER_REQUESTED_WALLTIME and/or USER_REQUESTED_QUEUE so they
+        # are not lost if the user does a case.setup --reset.
+        if xmlid == "JOB_WALLCLOCK_TIME":
+            case.set_value("USER_REQUESTED_WALLTIME", xmlval, subgroup)
+
+        if xmlid == "JOB_QUEUE":
+            case.set_value("USER_REQUESTED_QUEUE", xmlval, subgroup)
+
     if not noecho:
         argstr = ""
         for arg in sys.argv:
@@ -139,9 +146,6 @@ def xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup,
         append_case_status("xmlchange", "success", msg=msg, caseroot=caseroot)
 
 def _main_func(description):
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
     # pylint: disable=unused-variable
     caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, force , dry = parse_command_line(sys.argv, description)
 

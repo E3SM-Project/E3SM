@@ -23,7 +23,6 @@ def buildlib(caseroot, libroot, bldroot, compname=None):
             if dir1 == "cime_config":
                 compname = dir2
             else:
-                print "HERE %s"%dir1
                 compname = dir1.split('.')[1]
         build_cime_component_lib(case, compname, libroot, bldroot)
 

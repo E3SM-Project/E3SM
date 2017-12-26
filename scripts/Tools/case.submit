@@ -15,11 +15,12 @@ def parse_command_line(args, description):
         usage="""\n{0} [<casedir>] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Setup case \033[0m
     > {0}
+
+    \033[1;32m# Setup case, request mail at job begin and job end \033[0m
+    > {0} -m begin,end
 """.format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -29,9 +30,6 @@ OR
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to setup")
-
-    parser.add_argument("--test", action="store_true",
-                        help="Run case as a test.")
 
     parser.add_argument("--job", "-j",
                         help="Name of the job to be submitted, default is case.run"
@@ -50,35 +48,29 @@ OR
     parser.add_argument("--skip-preview-namelist", action="store_true",
                         help="Skip calling preview-namelist during case.run")
 
-    parser.add_argument("-M", "--mail-user", help="email to be used for batch notification.")
-
-    parser.add_argument("-m", "--mail-type", default="never",
-                        choices=("never", "all", "begin", "end", "fail"),
-                        help="when to send user email.")
+    CIME.utils.add_mail_type_args(parser)
 
     parser.add_argument("-a", "--batch-args",
                         help="Used to pass additional arguments to batch system. ")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
+    CIME.utils.resolve_mail_type_args(args)
 
-    return args.test, args.caseroot, args.job, args.no_batch, args.resubmit, \
-        args.skip_preview_namelist, args.mail_user, args.mail_type, \
+    return args.caseroot, args.job, args.no_batch, args.prereq, \
+        args.resubmit, args.skip_preview_namelist, args.mail_user, args.mail_type, \
         args.batch_args
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    test, caseroot, job, no_batch, resubmit, skip_pnl, \
+    caseroot, job, no_batch, prereq, resubmit, skip_pnl, \
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
-    if test:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     with Case(caseroot, read_only=False) as case:
-        submit(case, job=job, no_batch=no_batch, resubmit=resubmit, skip_pnl=skip_pnl,
-               mail_user=mail_user, mail_type=mail_type, batch_args=batch_args)
+        submit(case, job=job, no_batch=no_batch, prereq=prereq, resubmit=resubmit,
+               skip_pnl=skip_pnl, mail_user=mail_user, mail_type=mail_type,
+               batch_args=batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)

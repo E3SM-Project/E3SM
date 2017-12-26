@@ -7,6 +7,7 @@ which does not change the CAM input. Compares answers to non-DA run.
 import os.path
 import logging
 import glob
+import gzip
 
 import CIME.XML.standard_module_setup as sms
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
@@ -49,12 +50,12 @@ class DAE(SystemTestsCompareTwo):
         expect(os.path.isfile(da_file), "ERROR: da_file, '{}', does not exist".format(da_file))
 
         # Set up two data assimilation cycles each half of the full run
-        self._case.set_value("DATA_ASSIMILATION", "TRUE")
+        self._case.set_value("DATA_ASSIMILATION_ATM", "TRUE")
         self._case.set_value("DATA_ASSIMILATION_SCRIPT", da_file)
         self._case.set_value("DATA_ASSIMILATION_CYCLES", 2)
         stopn = self._case.get_value("STOP_N")
         expect((stopn % 2) == 0, "ERROR: DAE test requires that STOP_N be even")
-        stopn = stopn / 2
+        stopn = int(stopn / 2)
         self._case.set_value("STOP_N", stopn)
 
         self._case.flush()
@@ -93,12 +94,13 @@ class DAE(SystemTestsCompareTwo):
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
-            with open(fname) as dfile:
-                for line in dfile:
-                    expect(line[0:5] != 'ERROR', "ERROR, error line found in {}".format(fname))
-                    if line[0:8] == 'caseroot':
+            with gzip.open(fname, "r") as dfile:
+                for bline in dfile:
+                    line = bline.decode("utf-8")
+                    expect(not 'ERROR' in line, "ERROR, error line {} found in {}".format(line, fname))
+                    if 'caseroot' in line[0:8]:
                         found_caseroot = True
-                    elif line[0:5] == 'cycle':
+                    elif 'cycle' in line[0:5]:
                         found_cycle = True
                         expect(int(line[7:]) == cycle_num,
                                "ERROR: Wrong cycle ({:d}) found in {} (expected {:d})".format(int(line[7:]), fname, cycle_num))

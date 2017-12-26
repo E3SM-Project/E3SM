@@ -78,11 +78,14 @@ force_prognostic_true  TRUE => force prognostic behavior
 
 To change the namelist settings in ``dwav_in``, edit the file ``user_nl_dwav`` in your case directory.
 
+.. _dwav_mode:
+
 -------------------------------
-DROF_MODE, datamode and streams
+DWAV_MODE, datamode and streams
 -------------------------------
 
-The following tabe describes the valid values of ``DWAV_MODE``, and how it relates to the associated input streams and the ``datamode`` namelist variable.
+The following table describes the valid values of ``DWAV_MODE`` (defined in the ``config_component.xml`` file for DWAV), and how they relate to the associated input streams and the ``datamode`` namelist variable.
+CIME will generate a value of ``DWAV_MODE`` based on the compset.
 
 .. csv-table:: "Relationship between DWAV_MODE, datamode and streams"
    :header: "DWAV_MODE", "description-streams-datamode"

@@ -30,8 +30,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# case.run SMS\033[0m
@@ -64,9 +62,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--force-move", default=False, action="store_true",
                         help="Move the files even if it's unsafe to do so")
 
-    args = parser.parse_args()
-
-    CIME.utils.parse_args_and_handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.caseroot is not None:
         os.chdir(args.caseroot)
@@ -82,10 +78,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     caseroot, last_date, no_incomplete_logs, copy_only = parse_command_line(sys.argv, description)
 
     if last_date is not None and copy_only is False:

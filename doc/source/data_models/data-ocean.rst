@@ -13,21 +13,39 @@ DOCN has two distinct modes of operation.
 DOCN can run as a pure data model, reading in ocean SSTs (normally climatological) from input datasets, performing time/spatial  interpolations, and passing these to the coupler. 
 Alternatively, DOCN can compute updated SSTs by running as a slab ocean model where bottom ocean heat flux convergence and boundary layer depths are read in and used with the atmosphere/ocean and ice/ocean fluxes obtained from the driver.
 
-DOCN running in prescribed mode assumes that the only field in the input stream is SST and also that SST is in Celsius and must be converted to Kelvin. 
-All other fields are set to zero except for ocean salinity, which is set to a constant reference salinity value. 
-Normally the ice fraction data (used for prescribed CICE) is found in the same data files that provide SST data to the data ocean model since SST and ice fraction data are derived from the same observational data sets and are consistent with each other. 
-For DOCN prescribed mode, default yearly climatological datasets are provided for various model resolutions.
+DOCN running in prescribed mode assumes that the only field in the
+input stream is SST and also that SST is in Celsius and must be
+converted to Kelvin.  All other fields are set to zero except for
+ocean salinity, which is set to a constant reference salinity value.
+Normally the ice fraction data (used for prescribed CICE) is found in
+the same data files that provide SST data to the data ocean model
+since SST and ice fraction data are derived from the same
+observational data sets and are consistent with each other.  For DOCN
+prescribed mode, default yearly climatological datasets are provided
+for various model resolutions.
 
-DOCN running as a slab ocean model is used in conjunction with active ice mode running in full prognostic mode (e.g. CICE for CESM).
-This mode computes a prognostic sea surface temperature and a freeze/melt potential (surface Q-flux) used by the sea ice model. 
-This calculation requires an external SOM forcing data file that includes ocean mixed layer depths and bottom-of-the-slab Q-fluxes. 
-Scientifically appropriate bottom-of-the-slab Q-fluxes are normally ocean resolution dependent and are derived from the ocean model output of a fully coupled CCSM run. 
-Note that this mode no longer runs out of the box, the default testing SOM forcing file is not scientifically appropriate and is provided for testing and development purposes only. 
-Users must create scientifically appropriate data for their particular application or use one of the standard SOM forcing files from the full prognostic control runs. 
-For CESM, some of these are available in the `inputdata repository <https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/ocn/docn7/SOM/>`_. 
-The user then modifies the ``$DOCN_SOM_FILENAME`` variable in env_run.xml to point to the appropriate SOM forcing dataset. 
+DOCN running as a slab ocean model is used in conjunction with active
+ice mode running in full prognostic mode (e.g. CICE for CESM).  This
+mode computes a prognostic sea surface temperature and a freeze/melt
+potential (surface Q-flux) used by the sea ice model.  This
+calculation requires an external SOM forcing data file that includes
+ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
+Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
+ocean resolution dependent and are derived from the ocean model output
+of a fully coupled CCSM run.  Note that this mode no longer runs out
+of the box, the default testing SOM forcing file is not scientifically
+appropriate and is provided for testing and development purposes only.
+Users must create scientifically appropriate data for their particular
+application or use one of the standard SOM forcing files from the full
+prognostic control runs.  For CESM, some of these are available in the
+`inputdata repository
+<https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/ocn/docn7/SOM/>`_.
+The user then modifies the ``$DOCN_SOM_FILENAME`` variable in
+env_run.xml to point to the appropriate SOM forcing dataset.
 
-.. note:: A tool is available to derive valid `SOM forcing <http://www.cesm.ucar.edu/models/ccsm1.1/data8/SOM.pdf>`_ and more information on creating the SOM forcing is also available.
+.. note:: A tool is available to derive valid `SOM forcing
+<http://www.cesm.ucar.edu/models/cesm1.2/data8/doc/SOM.pdf>`_ and more
+information on creating the SOM forcing is also available.
 
 .. _docn-xml-vars:
 
@@ -35,9 +53,13 @@ The user then modifies the ``$DOCN_SOM_FILENAME`` variable in env_run.xml to poi
 xml variables
 -------------
 
-The following are xml variables that CIME supports for DOCN. 
-These variables are defined in ``$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml``.
-These variables will appear in ``env_run.xml`` and are used by the DOCN ``cime_config/buildnml`` script to generate the DOCN namelist file ``docn_in`` and the required associated stream files for the case.
+The following are xml variables that CIME supports for DOCN.  These
+variables are defined in
+``$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml``.
+These variables will appear in ``env_run.xml`` and are used by the
+DOCN ``cime_config/buildnml`` script to generate the DOCN namelist
+file ``docn_in`` and the required associated stream files for the
+case.
 
 .. note:: These xml variables are used by the the docn's **cime_config/buildnml** script in conjunction with docn's **cime_config/namelist_definition_docn.xml** file to generate the namelist file ``docn_in``.
 
@@ -78,28 +100,29 @@ These variables will appear in ``env_run.xml`` and are used by the DOCN ``cime_c
 datamode values
 ---------------
 
-The xml variable ``DOCN_MODE`` sets the streams that are associated with DOCN and also sets the namelist variable ``datamode`` that specifies what additional operations need to be done by DOCN on the streams before returning to the driver.
-One of the variables in ``shr_strdata_nml`` is ``datamode``, whose value is a character string.  Each data model has a unique set of ``datamode`` values that it supports. 
-The valid values for ``datamode`` are set in the file ``namelist_definition_docn.xml`` using the xml variable ``DOCN_MODE`` in the ``config_component.xml`` file for DOCN. 
-CIME will generate a value ``datamode`` that is compset dependent. 
+The xml variable ``DOCN_MODE`` (described in :ref:`docn_mode`) sets the streams that are associated with DOCN and also sets the namelist variable ``datamode``.
+``datamode`` (which appears in ``shr_strdata_nml``) specifies what additional operations need to be done by DOCN on the streams before returning to the driver.
 
-The following are the supported DOCN datamode values and their relationship to the ``DOCN_MODE`` xml variable value.
+Each data model has its own set of supported ``datamode`` values. The following are the supported DOCN ``datamode`` values, as defined in the file ``namelist_definition_docn.xml``.
 
 .. csv-table:: "Valid values for datamode namelist variable"
    :header: "datamode variable", "description"
    :widths: 20, 80
 
    "NULL", "Turns off the data model as a provider of data to the coupler.  The ocn_present flag will be set to false and the coupler will assume no exchange of data to or from the data model."
-   "COPYALL", "The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams, if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero."
+   "COPYALL", "The default science mode of the data model is the COPYALL mode. This mode will examine the fields found in all input data streams; if any input field names match the field names used internally, they are copied into the export array and passed directly to the coupler without any special user code.  Any required fields not found on an input stream will be set to zero."
    "SSTDATA", "assumes the only field in the input stream is SST. It also assumes the SST is in Celsius and must be converted to Kelvin.  All other fields are set to zero except for ocean salinity, which is set to a constant reference salinity value. Normally the ice fraction data is found in the same data files that provide SST data to the data ocean model. They are normally found in the same file because the SST and ice fraction data are derived from the same observational data sets and are consistent with each other. They are normally found in the same file because the SST and ice fraction data are derived from the same observational data sets and are consistent with each other."
    "IAF", "is the interannually varying version of SSTDATA"
    "SOM", "(slab ocean model) mode is a prognostic mode.  This mode computes a prognostic sea surface temperature and a freeze/melt potential (surface Q-flux) used by the sea ice model.  This calculation requires an external SOM forcing data file that includes ocean mixed layer depths and bottom-of-the-slab Q-fluxes. Scientifically appropriate bottom-of-the-slab Q-fluxes are normally ocean resolution dependent and are derived from the ocean model output of a fully coupled CCSM run.  Note that while this mode runs out of the box, the default SOM forcing file is not scientifically appropriate and is provided for testing and development purposes only. Users must create scientifically appropriate data for their particular application.  A tool is available to derive valid SOM forcing."
+
+.. _docn_mode:
 
 -------------------------------
 DOCN_MODE, datamode and streams
 -------------------------------
 
-The following tabe describes the valid values of ``DOCN_MODE``, and how it relates to the associated input streams and the ``datamode`` namelist variable.
+The following table describes the valid values of ``DOCN_MODE`` (defined in the ``config_component.xml`` file for DOCN), and how they relate to the associated input streams and the ``datamode`` namelist variable.
+CIME will generate a value of ``DOCN_MODE`` based on the compset.
 
 .. csv-table:: "Relationship between DOCN_MODE, datamode and streams"
    :header: "DOCN_MODE, "description-streams-datamode"

@@ -31,8 +31,8 @@ class Archive(GenericXML):
 
 
         model = get_model()
-        if 'cpl' not in components:
-            components.append('cpl')
+        if 'drv' not in components:
+            components.append('drv')
         if 'dart' not in components and model == 'cesm':
             components.append('dart')
 
@@ -55,4 +55,3 @@ class Archive(GenericXML):
                 logger.debug("adding archive spec for {}".format(comp))
                 components_node.append(specs)
         env_archive.add_child(components_node)
-

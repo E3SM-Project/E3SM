@@ -27,8 +27,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run the tool \033[0m
@@ -48,22 +46,19 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     caseroot = parse_command_line(sys.argv, description)
 
     logging.disable(logging.CRITICAL)
 
     with Case(caseroot, read_only=False) as case:
-        print "BATCH SUBMIT:"
+        print("BATCH SUBMIT:")
+        case.load_env()
         job = "case.test" if case.get_value("TEST") else "case.run"
         job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
         for job_id, cmd in job_id_to_cmd:
-            print "   ", job_id, "->", case.get_resolved_value(cmd)
-        print
-        print "MPIRUN:", case.get_resolved_value(case.get_mpirun_cmd())
+            print("   ", job_id, "->", case.get_resolved_value(cmd))
+        print()
+        print("MPIRUN:", case.get_resolved_value(case.get_mpirun_cmd()))
 
 if __name__ == "__main__":
     _main_func(__doc__)

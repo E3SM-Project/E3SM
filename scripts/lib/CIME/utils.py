@@ -2,10 +2,13 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob, string, random, imp, errno, signal
+import io, logging, gzip, sys, os, time, re, shutil, glob, string, random, imp
+import errno, signal, warnings, filecmp
 import stat as statlib
-import warnings
+import six
 from contextlib import contextmanager
+#pylint: disable=import-error
+from six.moves import configparser
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -28,6 +31,31 @@ def redirect_stderr(new_target):
     finally:
         sys.stderr = old_target # restore to the previous value
 
+@contextmanager
+def redirect_stdout_stderr(new_target):
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = new_target, new_target
+    try:
+        yield new_target
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
+@contextmanager
+def redirect_logger(new_target, logger_name):
+    ch = logging.StreamHandler(stream=new_target)
+    ch.setLevel(logging.DEBUG)
+    log = logging.getLogger(logger_name)
+    root_log = logging.getLogger()
+    orig_handlers = log.handlers
+    orig_root_loggers = root_log.handlers
+
+    try:
+        root_log.handlers = []
+        log.handlers = [ch]
+        yield log
+    finally:
+        root_log.handlers = orig_root_loggers
+        log.handlers = orig_handlers
 
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
@@ -46,7 +74,12 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("{} {}".format(error_prefix, error_msg))
+        try:
+            msg = str(error_prefix + " " + error_msg)
+        except UnicodeEncodeError:
+            msg = (error_prefix + " " + error_msg).encode('utf-8')
+        raise exc_type(msg)
+
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -74,7 +107,7 @@ def check_name(fullname, additional_chars=None, fullpath=False):
         name = fullname
     match = re.search(r"["+re.escape(chars)+"]", name)
     if match is not None:
-        logger.warn("Illegal character {} found in name {}".format(match.group(0), name))
+        logger.warning("Illegal character {} found in name {}".format(match.group(0), name))
         return False
     return True
 
@@ -86,11 +119,10 @@ def _read_cime_config_file():
     CIME_MODEL=acme,cesm
     PROJECT=someprojectnumber
     """
-    from ConfigParser import SafeConfigParser as config_parser
 
     cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
-    cime_config = config_parser()
+    cime_config = configparser.SafeConfigParser()
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
     else:
@@ -198,8 +230,7 @@ def _convert_to_fd(filearg, from_dir):
 
 _hack=object()
 
-def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
-                   from_dir=None, combine_output=False):
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
 
     # This code will try to import and run each buildnml as a subroutine
     # if that fails it will run it as a program in a seperate shell
@@ -211,27 +242,40 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
         mod = imp.load_source(subname, cmd)
         logger.info("   Calling {}".format(cmd))
         if logfile:
-            with redirect_stdout(open(logfile,"w")):
+            with redirect_logger(open(logfile,"w"), subname):
                 getattr(mod, subname)(*subargs)
         else:
             getattr(mod, subname)(*subargs)
+
     except SyntaxError:
         do_run_cmd = True
+
     except AttributeError:
         do_run_cmd = True
-    except:
-        raise
 
     if do_run_cmd:
         logger.info("   Running {} ".format(cmd))
         if case is not None:
             case.flush()
-        output = run_cmd_no_fail("{} {}".format(cmd, cmdargs), combine_output=combine_output,
+
+        fullcmd = cmd
+        if isinstance(cmdargs, list):
+            for arg in cmdargs:
+                fullcmd += " " + str(arg)
+        else:
+            fullcmd += " " + cmdargs
+
+        if logfile:
+            fullcmd += " > {} ".format(logfile)
+
+        output = run_cmd_no_fail("{}".format(fullcmd),
+                                 combine_output=True,
                                  from_dir=from_dir)
         logger.info(output)
         # refresh case xml object from file
         if case is not None:
             case.read_xml()
+
     return stat, output, errput
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
@@ -247,12 +291,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     # Real defaults for these value should be subprocess.PIPE
     if arg_stdout is _hack:
         arg_stdout = subprocess.PIPE
-    elif isinstance(arg_stdout, str):
+    elif isinstance(arg_stdout, six.string_types):
         arg_stdout = _convert_to_fd(arg_stdout, from_dir)
 
     if arg_stderr is _hack:
         arg_stderr = subprocess.STDOUT if combine_output else subprocess.PIPE
-    elif isinstance(arg_stderr, str):
+    elif isinstance(arg_stderr, six.string_types):
         arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
@@ -272,15 +316,29 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
                             env=env)
 
     output, errput = proc.communicate(input_str)
-    output = output.strip() if output is not None else output
-    errput = errput.strip() if errput is not None else errput
+    if output is not None:
+        try:
+            output = output.decode('utf-8').strip()
+        except AttributeError:
+            pass
+    if errput is not None:
+        try:
+            errput = errput.decode('utf-8').strip()
+        except AttributeError:
+            pass
+
     stat = proc.wait()
+    if six.PY2:
+        if isinstance(arg_stdout, file): # pylint: disable=undefined-variable
+            arg_stdout.close() # pylint: disable=no-member
+        if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout: # pylint: disable=undefined-variable
+            arg_stderr.close() # pylint: disable=no-member
+    else:
+        if isinstance(arg_stdout, io.IOBase):
+            arg_stdout.close() # pylint: disable=no-member
+        if isinstance(arg_stderr, io.IOBase) and arg_stderr is not arg_stdout:
+            arg_stderr.close() # pylint: disable=no-member
 
-    if isinstance(arg_stdout, file):
-        arg_stdout.close() # pylint: disable=no-member
-
-    if isinstance(arg_stderr, file) and arg_stderr is not arg_stdout:
-        arg_stderr.close() # pylint: disable=no-member
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
@@ -298,19 +356,17 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
 
-    >>> run_cmd_no_fail('echo foo')
-    'foo'
-
+    >>> run_cmd_no_fail('echo foo') == 'foo'
+    True
     >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
     SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error 'THE ERROR' from dir ...
 
-    >>> run_cmd_no_fail('grep foo', input_str='foo')
-    'foo'
-
-    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True)
-    'THE ERROR'
+    >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
+    True
+    >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
+    True
     """
     stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
     if stat != 0:
@@ -328,21 +384,22 @@ def check_minimum_python_version(major, minor):
     >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
     >>>
     """
-    expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
-           "Python {:d}, minor version {:d}+ is required, you have {:d}.{:d}".format(major, minor, sys.version_info[0], sys.version_info[1]))
+    msg = "Python " + str(major) + ", minor version " + str(minor) + " is required, you have " + str(sys.version_info[0]) + "." + str(sys.version_info[1])
+    expect(sys.version_info[0] > major or
+           (sys.version_info[0] == major and sys.version_info[1] >= minor), msg)
 
 def normalize_case_id(case_id):
     """
     Given a case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
-    'ERT.ne16_g37.B1850C5.skybridge_intel'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod')
-    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.G.20151121')
-    'ERT.ne16_g37.B1850C5.skybridge_intel'
-    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod.G.20151121')
-    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.G.20151121')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod.G.20151121')
+    'ERT.ne16_g37.B1850C5.sandiatoss3_intel.test-mod'
     """
     sep_count = case_id.count(".")
     expect(sep_count >= 3 and sep_count <= 6,
@@ -701,6 +758,48 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
+def get_charge_account(machobj=None):
+    """
+    Hierarchy for choosing CHARGE_ACCOUNT:
+    1. Environment variable CHARGE_ACCOUNT
+    2. File $HOME/.cime/config
+    3. config_machines.xml (if machobj provided)
+    4. default to same value as PROJECT
+
+    >>> import CIME
+    >>> import CIME.XML.machines
+    >>> machobj = CIME.XML.machines.Machines(machine="theta")
+    >>> project = get_project(machobj)
+    >>> charge_account = get_charge_account(machobj)
+    >>> project == charge_account
+    True
+    >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
+    >>> get_charge_account(machobj)
+    'ChargeAccount'
+    >>> del os.environ["CHARGE_ACCOUNT"]
+    """
+    charge_account = os.environ.get("CHARGE_ACCOUNT")
+    if (charge_account is not None):
+        logger.info("Using charge_account from env CHARGE_ACCOUNT: " + charge_account)
+        return charge_account
+
+    cime_config = get_cime_config()
+    if (cime_config.has_option('main','CHARGE_ACCOUNT')):
+        charge_account = cime_config.get('main','CHARGE_ACCOUNT')
+        if (charge_account is not None):
+            logger.info("Using charge_account from .cime/config: " + charge_account)
+            return charge_account
+
+    if machobj is not None:
+        charge_account = machobj.get_value("CHARGE_ACCOUNT")
+        if charge_account is not None:
+            logger.info("Using charge_account from config_machines.xml: " + charge_account)
+            return charge_account
+
+    logger.info("No charge_account info available, using value from PROJECT")
+    return get_project(machobj)
+
+
 def setup_standard_logging_options(parser):
     helpfile = "{}.log".format(sys.argv[0])
     helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
@@ -853,12 +952,20 @@ def convert_to_string(value, type_str=None, vid=""):
     """
     Convert value back to string.
     vid is only for generating better error messages.
+    >>> convert_to_string(6, type_str="integer") == '6'
+    True
+    >>> convert_to_string('6', type_str="integer") == '6'
+    True
+    >>> convert_to_string('6.0', type_str="real") == '6.0'
+    True
+    >>> convert_to_string(6.01, type_str="real") == '6.01'
+    True
     """
-    if value is not None and type(value) is not str:
+    if value is not None and not isinstance(value, six.string_types):
         if type_str == "char":
-            expect(type(value) is str, "Wrong type for entry id '{}'".format(vid))
+            expect(isinstance(value, six.string_types), "Wrong type for entry id '{}'".format(vid))
         elif type_str == "integer":
-            expect(type(value) is int, "Wrong type for entry id '{}'".format(vid))
+            expect(isinstance(value, six.integer_types), "Wrong type for entry id '{}'".format(vid))
             value = str(value)
         elif type_str == "logical":
             expect(type(value) is bool, "Wrong type for entry id '{}'".format(vid))
@@ -900,9 +1007,9 @@ def convert_to_babylonian_time(seconds):
     >>> convert_to_babylonian_time(3661)
     '01:01:01'
     """
-    hours = seconds / 3600
+    hours = int(seconds / 3600)
     seconds %= 3600
-    minutes = seconds / 60
+    minutes = int(seconds / 60)
     seconds %= 60
 
     return "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
@@ -944,7 +1051,7 @@ def compute_total_time(job_cost_map, proc_pool):
     running_jobs = {} # name -> (procs, est-time, start-time)
     while len(waiting_jobs) > 0 or len(running_jobs) > 0:
         launched_jobs = []
-        for jobname, data in waiting_jobs.iteritems():
+        for jobname, data in waiting_jobs.items():
             procs_for_job, time_for_job = data
             if procs_for_job <= proc_pool:
                 proc_pool -= procs_for_job
@@ -955,7 +1062,7 @@ def compute_total_time(job_cost_map, proc_pool):
             del waiting_jobs[launched_job]
 
         completed_jobs = []
-        for jobname, data in running_jobs.iteritems():
+        for jobname, data in running_jobs.items():
             procs_for_job, time_for_job, time_started = data
             if (current_time - time_started) >= time_for_job:
                 proc_pool += procs_for_job
@@ -1113,7 +1220,7 @@ def transform_vars(text, case=None, subgroup=None, overrides=None, default=None)
             if "-q {{ queue }}" in text:
                 text = ""
             else:
-                logger.warn("Could not replace variable '{}'".format(variable))
+                logger.warning("Could not replace variable '{}'".format(variable))
                 text = text.replace(whole_match, "")
 
     return text
@@ -1147,11 +1254,11 @@ def gzip_existing_file(filepath):
 
     >>> import tempfile
     >>> fd, filename = tempfile.mkstemp(text=True)
-    >>> _ = os.write(fd, "Hello World")
+    >>> _ = os.write(fd, b"Hello World")
     >>> os.close(fd)
     >>> gzfile = gzip_existing_file(filename)
-    >>> gunzip_existing_file(gzfile)
-    'Hello World'
+    >>> gunzip_existing_file(gzfile) == b'Hello World'
+    True
     >>> os.remove(gzfile)
     """
     expect(os.path.exists(filepath), "{} does not exists".format(filepath))
@@ -1191,12 +1298,10 @@ def find_system_test(testname, case):
     else:
         components = ["any"]
         components.extend( case.get_compset_components())
-        env_test = case.get_env("test")
         fdir = []
         for component in components:
-            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+            tdir = case.get_value("SYSTEM_TESTS_DIR",
                                       attribute={"component":component})
-
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
@@ -1210,6 +1315,7 @@ def find_system_test(testname, case):
                         if system_test_dir not in sys.path:
                             sys.path.append(system_test_dir)
                         system_test_path = "{}.{}".format(testname.lower(), testname)
+        expect(len(fdir) > 0, "Test {} not found, aborting".format(testname))
         expect(len(fdir) == 1, "Test {} found in multiple locations {}, aborting".format(testname, fdir))
     expect(system_test_path is not None, "No test {} found".format(testname))
 
@@ -1246,8 +1352,22 @@ def get_lids(case):
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
+    jobid = batch_jobid()
+    if jobid is not None:
+        lid = jobid+'.'+lid
     os.environ["LID"] = lid
     return lid
+
+def batch_jobid():
+    jobid = os.environ.get("PBS_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("SLURM_JOB_ID")
+    if jobid is None:
+        jobid = os.environ.get("LSB_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("COBALT_JOBID")
+    return jobid
+
 
 def analyze_build_log(comp, log, compiler):
     """
@@ -1272,19 +1392,23 @@ def analyze_build_log(comp, log, compiler):
             if re.search(warn_re, line):
                 warncnt += 1
             if re.search(error_re, line):
-                logger.warn(line)
+                logger.warning(line)
             if re.search(undefined_re, line):
-                logger.warn(line)
+                logger.warning(line)
 
     if warncnt > 0:
         logger.info("Component {} build complete with {} warnings".format(comp, warncnt))
 
 def is_python_executable(filepath):
+    first_line = None
     if os.path.isfile(filepath):
-        with open(filepath, "r") as f:
-            first_line = f.readline()
+        with open(filepath, "rt") as f:
+            try:
+                first_line = f.readline()
+            except:
+                pass
 
-        return first_line.startswith("#!") and "python" in first_line
+        return first_line is not None and first_line.startswith("#!") and "python" in first_line
     return False
 
 def get_umask():
@@ -1308,7 +1432,10 @@ def stringify_bool(val):
     expect(type(val) is bool, "Wrong type for val '{}'".format(repr(val)))
     return "TRUE" if val else "FALSE"
 
-def run_and_log_case_status(func, phase, caseroot='.'):
+def verbatim_success_msg(return_val):
+    return return_val
+
+def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
     try:
@@ -1318,17 +1445,43 @@ def run_and_log_case_status(func, phase, caseroot='.'):
         append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
-        append_case_status(phase, "success", caseroot=caseroot)
+        custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
+        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 
 def _check_for_invalid_args(args):
-    for arg in args:
-        # if arg contains a space then it was originally quoted and we can ignore it here.
-        if " " in arg or arg.startswith("--"):
-            continue
-        if arg.startswith("-") and len(arg) > 2:
-            sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+    if get_model() != "acme":
+        for arg in args:
+            # if arg contains a space then it was originally quoted and we can ignore it here.
+            if " " in arg or arg.startswith("--"):
+                continue
+            if arg.startswith("-") and len(arg) > 2:
+                sys.stderr.write( "WARNING: The {} argument is depricated. Multi-character arguments should begin with \"--\" and single character with \"-\"\n  Use --help for a complete list of available options\n".format(arg))
+
+def add_mail_type_args(parser):
+    parser.add_argument("--mail-user", help="email to be used for batch notification.")
+
+    parser.add_argument("-M", "--mail-type", action="append",
+                        help="when to send user email. Options are: never, all, begin, end, fail."
+                        "You can specify multiple types with either comma-separate args or multiple -M flags")
+
+def resolve_mail_type_args(args):
+    if args.mail_type is not None:
+        resolved_mail_types = []
+        for mail_type in args.mail_type:
+            resolved_mail_types.extend(mail_type.split(","))
+
+        for mail_type in resolved_mail_types:
+            expect(mail_type in ("never", "all", "begin", "end", "fail"),
+                   "Unsupported mail-type '{}'".format(mail_type))
+
+        args.mail_type = resolved_mail_types
+
+def copyifnewer(src, dest):
+    """ if dest does not exist or is older than src copy src to dest """
+    if not os.path.isfile(dest) or not filecmp.cmp(src, dest):
+        shutil.copy2(src, dest)
 
 class SharedArea(object):
     """
@@ -1366,3 +1519,16 @@ class Timeout(object):
     def __exit__(self, *_):
         if self._seconds is not None:
             signal.alarm(0)
+
+def filter_unicode(unistr):
+    """
+    Sometimes unicode chars can cause problems
+    """
+    return "".join([i if ord(i) < 128 else ' ' for i in unistr])
+
+def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
+    arg_logger.info(cmd)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir)
+    arg_logger.info(output)
+    arg_logger.info(errput)
+    expect(stat == 0, filter_unicode(errput))

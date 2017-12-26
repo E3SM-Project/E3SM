@@ -16,10 +16,12 @@
   <xs:element name="batch_directive" type="xs:string"/>
   <xs:element name="jobid_pattern" type="xs:string"/>
   <xs:element name="depend_string" type="xs:string"/>
+  <xs:element name="depend_separator" type="xs:string"/>
   <xs:element name="walltime_format" type="xs:string"/>
   <xs:element name="batch_mail_flag" type="xs:string"/>
   <xs:element name="batch_mail_type_flag" type="xs:string"/>
   <xs:element name="batch_mail_type" type="xs:string"/>
+  <xs:element name="batch_mail_default" type="xs:string"/>
   <xs:element name="template" type="xs:NCName"/>
   <xs:element name="task_count" type="xs:integer"/>
   <xs:element name="dependency" type="xs:string"/>
@@ -68,6 +70,9 @@
        a previous job has completed successfully -->
         <xs:element minOccurs="0" ref="depend_string"/>
 
+  <!-- depend_separator: How to separate multiple batch job dependencies -->
+        <xs:element minOccurs="0" ref="depend_separator"/>
+
   <!-- walltime_format: time format expected by batch system for the wall clock time field -->
         <xs:element minOccurs="0" ref="walltime_format"/>
 
@@ -77,6 +82,8 @@
         <xs:element minOccurs="0" ref="batch_mail_type_flag"/>
   <!-- batch_mail_flag: user email type expected by batch system -->
         <xs:element minOccurs="0" ref="batch_mail_type"/>
+  <!-- batch_mail_flag: default user email type -->
+        <xs:element minOccurs="0" ref="batch_mail_default"/>
 
   <!-- submit_args: A list of arguments to pass when submitting a job, queue, wallclock time
        and project are typical sub fields -->

@@ -244,9 +244,9 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
                     value = []
                     for comp in comp_classes:
                         try:
-                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                            nextval = get_value_as_string(case,var, attribute={"compclass" : comp}, resolved=resolved, subgroup=group)
                         except:
-                            nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=False, subgroup=group)
+                            nextval = get_value_as_string(case,var, attribute={"compclass" : comp}, resolved=False, subgroup=group)
 
                         if nextval is not None:
                             value.append(comp + ":" + "%s"%nextval)
@@ -275,10 +275,6 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
     return results
 
 def _main_func():
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
         value, no_resolve, raw, description, get_group, full, dtype, \
@@ -327,38 +323,38 @@ def _main_func():
         wrapper.fix_sentence_endings = True
 
     for group in sorted(iter(results)):
-        if (len(variables) > 1 or len(results.keys()) > 1 or full) and not get_group:
-            print "\nResults in group %s"%group
+        if (len(variables) > 1 or len(results) > 1 or full) and not get_group:
+            print("\nResults in group %s"%group)
         for var in variables:
             if var in results[group]:
                 if raw:
-                    print results[group][var]['raw']
+                    print(results[group][var]['raw'])
                 elif get_group:
-                    print "\t%s: %s"%(var, results[group][var]['get_group'])
+                    print("\t%s: %s"%(var, results[group][var]['get_group']))
                 elif value:
                     sys.stdout.write("%s"%results[group][var]['value'])
                 elif description:
                     if results[group][var]['desc'][0] is not None:
                         desc_text = ' '.join(results[group][var]['desc'][0].split())
-                        print "\t%s: %s"%(var, wrapper.fill(desc_text))
+                        print("\t%s: %s"%(var, wrapper.fill(desc_text)))
                 elif fileonly:
-                    print "\t%s: %s"%(var, results[group][var]['file'])
+                    print("\t%s: %s"%(var, results[group][var]['file']))
                 elif dtype:
-                    print  "\t%s: %s"%(var, results[group][var]['type'])
+                    print("\t%s: %s"%(var, results[group][var]['type']))
                 elif valid_values:
                     if 'valid_values' in results[group][var]:
-                        print  "\t%s: %s"%(var, results[group][var]["valid_values"])
+                        print("\t%s: %s"%(var, results[group][var]["valid_values"]))
                 elif full:
                     if results[group][var]['desc'][0] is not None:
                         desc_text = ' '.join(results[group][var]['desc'][0].split())
-                    print "\t%s: value=%s"%(var, results[group][var]['value'])
-                    print  "\t\ttype: %s"%(results[group][var]['type'][0])
+                    print("\t%s: value=%s"%(var, results[group][var]['value']))
+                    print("\t\ttype: %s"%(results[group][var]['type'][0]))
                     if 'valid_values' in results[group][var]:
-                        print  "\t\tvalid_values: %s"%(results[group][var]["valid_values"])
-                    print "\t\tdescription: %s"%(wrapper.fill(desc_text))
-                    print "\t\tfile: %s"%(results[group][var]['file'][0])
+                        print("\t\tvalid_values: %s"%(results[group][var]["valid_values"]))
+                    print("\t\tdescription: %s"%(wrapper.fill(desc_text)))
+                    print("\t\tfile: %s"%(results[group][var]['file'][0]))
                 else:
-                    print "\t%s: %s"%(var, results[group][var]['value'])
+                    print("\t%s: %s"%(var, results[group][var]['value']))
 
 
 if (__name__ == "__main__"):

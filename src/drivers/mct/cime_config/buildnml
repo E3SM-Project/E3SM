@@ -99,7 +99,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         if ncpl is not None:
-            cpl_dt = basedt / int(ncpl)
+            cpl_dt = int(basedt / int(ncpl))
             totaldt = cpl_dt * int(ncpl)
             if totaldt != basedt:
                 expect(False, " {} ncpl doesn't divide base dt evenly".format(comp))
@@ -144,20 +144,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     # Set up the pause_component_list if pause is active
     pauseo = case.get_value('PAUSE_OPTION')
-    if pauseo != 'never' and pauseo != 'none':
+    if pauseo is not None and pauseo != 'never' and pauseo != 'none':
         pausen = case.get_value('PAUSE_N')
-        pcl = nmlgen.get_default('pause_component_list')
-        nmlgen.add_default('pause_component_list', pcl)
-        # Check to make sure pause_component_list is valid
-        pcl = nmlgen.get_value('pause_component_list')
-        if pcl != 'none' and pcl != 'all':
-            pause_comps = pcl.split(':')
-            comp_classes = case.get_values("COMP_CLASSES")
-            for comp in pause_comps:
-                expect(comp == 'drv' or comp.upper() in comp_classes,
-                       "Invalid PAUSE_COMPONENT_LIST, {} is not a valid component type".format(comp))
-            # End for
-        # End if
         # Set esp interval
         if 'nstep' in pauseo:
             esp_time = mindt
@@ -213,7 +201,8 @@ def write_seq_maps_file(case, nmlgen, confdir):
     # The following is only approriate for config_grids.xml version 2.0 or later
     grid_version = Grids().get_version()
     if grid_version >= 2.0:
-        ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname", "glc2ocn_rmapname"]
+        ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname",
+                         "glc2ocn_liq_rmapname", "glc2ocn_ice_rmapname"]
         group_variables = nmlgen.get_group_variables("seq_maps")
         for name in group_variables:
             value = group_variables[name]
@@ -274,7 +263,8 @@ def write_drv_flds_in_file(case, nmlgen, files):
 
         # Now create drv_flds_in
         config = {}
-        definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv_flds"})]
+        definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
+        definition_file = [os.path.join(definition_dir, "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file, files=files)
         skip_entry_loop = True
         nmlgen.init_defaults(infiles, config, skip_entry_loop=skip_entry_loop)
@@ -296,7 +286,8 @@ def _create_component_modelio_namelists(case, files):
 
     # will need to create a new namelist generator
     infiles = []
-    definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"modelio"})]
+    definition_dir = os.path.dirname(files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv"}))
+    definition_file = [os.path.join(definition_dir, "namelist_definition_modelio.xml")]
 
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")

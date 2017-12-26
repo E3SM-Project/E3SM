@@ -13,7 +13,7 @@ from CIME.hist_utils import *
 
 import CIME.build as build
 
-import shutil, glob, gzip, time, traceback
+import shutil, glob, gzip, time, traceback, six
 
 logger = logging.getLogger(__name__)
 
@@ -88,16 +88,15 @@ class SystemTestsCommon(object):
                 try:
                     self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
-                except:
+                except BaseException as e:
                     success = False
-                    msg = sys.exc_info()[1].message
-
+                    msg = e.__str__()
                     if "BUILD FAIL" in msg:
                         # Don't want to print stacktrace for a model failure since that
                         # is not a CIME/infrastructure problem.
                         excmsg = msg
                     else:
-                        excmsg = "Exception during build:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
+                        excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
 
                     logger.warning(excmsg)
                     append_testlog(excmsg)
@@ -155,15 +154,15 @@ class SystemTestsCommon(object):
 
             self._check_for_memleak()
 
-        except:
+        except BaseException as e:
             success = False
-            msg = sys.exc_info()[1].message
+            msg = e.__str__()
             if "RUN FAIL" in msg:
                 # Don't want to print stacktrace for a model failure since that
                 # is not a CIME/infrastructure problem.
                 excmsg = msg
             else:
-                excmsg = "Exception during run:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
+                excmsg = "Exception during run:\n{}\n{}".format(msg, traceback.format_exc())
             logger.warning(excmsg)
             append_testlog(excmsg)
 
@@ -197,6 +196,7 @@ class SystemTestsCommon(object):
         Use for tests that have multiple cases
         """
         self._case = case
+        self._case.load_env(reset=True)
         self._caseroot = case.get_value("CASEROOT")
 
     def run_indv(self, suffix="base", st_archive=False):
@@ -240,10 +240,12 @@ class SystemTestsCommon(object):
         allgood = len(newestcpllogfiles)
         for cpllog in newestcpllogfiles:
             try:
-                if "SUCCESSFUL TERMINATION" in gzip.open(cpllog, 'rb').read():
+                if six.b("SUCCESSFUL TERMINATION") in gzip.open(cpllog, 'rb').read():
                     allgood = allgood - 1
-            except:
-                logger.info("{} is not compressed, assuming run failed".format(cpllog))
+            except BaseException as e:
+                msg = e.__str__()
+
+                logger.info("{} is not compressed, assuming run failed {}".format(cpllog, msg))
 
         return allgood==0
 
@@ -257,7 +259,7 @@ class SystemTestsCommon(object):
         run case needs indirection based on success.
         If success_change is True, success requires some files to be different
         """
-        success, comments = compare_test(self._case, suffix1, suffix2)
+        success, comments = self._do_compare_test(suffix1, suffix2)
         if success_change:
             success = not success
 
@@ -266,6 +268,13 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, suffix1, suffix2), status)
         return success
+
+    def _do_compare_test(self, suffix1, suffix2):
+        """
+        Wraps the call to compare_test to facilitate replacement in unit
+        tests
+        """
+        return compare_test(self._case, suffix1, suffix2)
 
     def _get_mem_usage(self, cpllog):
         """
@@ -281,7 +290,7 @@ class SystemTestsCommon(object):
                 fopen = open
             with fopen(cpllog, "rb") as f:
                 for line in f:
-                    m = meminfo.match(line)
+                    m = meminfo.match(line.decode('utf-8'))
                     if m:
                         memlist.append((float(m.group(1)), float(m.group(2))))
         # Remove the last mem record, it's sometimes artificially high
@@ -296,7 +305,7 @@ class SystemTestsCommon(object):
         """
         if cpllog is not None and os.path.isfile(cpllog):
             with gzip.open(cpllog, "rb") as f:
-                cpltext = f.read()
+                cpltext = f.read().decode('utf-8')
                 m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext)
                 if m:
                     return float(m.group(1))
@@ -345,7 +354,7 @@ class SystemTestsCommon(object):
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:
-                logging.warn("  Resetting {} for test".format(key))
+                logging.warning("  Resetting {} for test".format(key))
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
                 print("WARNING: Found difference in test {}: case: {} original value {}".format(key, diffs[key][0], diffs[key][1]))
@@ -398,25 +407,31 @@ class SystemTestsCommon(object):
                     # for backward compatibility
                     baselog = os.path.join(basecmp_dir, "cpl.log")
                 if os.path.isfile(baselog) and len(memlist) > 3:
-                    blmem = self._get_mem_usage(baselog)[-1][1]
+                    blmem = self._get_mem_usage(baselog)
+                    blmem = 0 if blmem == [] else blmem[-1][1]
                     curmem = memlist[-1][1]
                     diff = (curmem-blmem)/blmem
-                    if(diff < 0.1):
+                    if diff < 0.1 and self._test_status.get_status(MEMCOMP_PHASE) is None:
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
-                    else:
+                    elif self._test_status.get_status(MEMCOMP_PHASE) != TEST_FAIL_STATUS:
                         comment = "Error: Memory usage increase > 10% from baseline"
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                         append_testlog(comment)
+
                     # compare throughput to baseline
                     current = self._get_throughput(cpllog)
                     baseline = self._get_throughput(baselog)
                     #comparing ypd so bigger is better
                     if baseline is not None and current is not None:
                         diff = (baseline - current)/baseline
-                        if(diff < 0.25):
+                        tolerance = self._case.get_value("TEST_TPUT_TOLERANCE")
+                        if tolerance is None:
+                            tolerance = 0.25
+                        expect(tolerance > 0.0, "Bad value for throughput tolerance in test")
+                        if diff < tolerance and self._test_status.get_status(THROUGHPUT_PHASE) is None:
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
-                        else:
-                            comment = "Error: Computation time increase > 25% from baseline"
+                        elif self._test_status.get_status(THROUGHPUT_PHASE) != TEST_FAIL_STATUS:
+                            comment = "Error: Computation time increase > {:d} pct from baseline".format(int(tolerance*100))
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
                             append_testlog(comment)
 
@@ -463,7 +478,7 @@ class FakeTest(SystemTestsCommon):
                 f.write("#!/bin/bash\n")
                 f.write(self._script)
 
-            os.chmod(modelexe, 0755)
+            os.chmod(modelexe, 0o755)
 
             build.post_build(self._case, [])
 

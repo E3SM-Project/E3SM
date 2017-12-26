@@ -80,13 +80,12 @@ def create_namelists(case, component=None):
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
             if os.path.isfile(cmd):
-                logger.warn("\nWARNING: Using local buildnml file {}\n".format(cmd))
+                logger.warning("\nWARNING: Using local buildnml file {}\n".format(cmd))
             else:
                 # otherwise look in the component config_dir
                 cmd = os.path.join(config_dir, "buildnml")
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
-            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case,
-                           combine_output=True)
+            run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
 
     logger.info("Finished creating component namelists")
 

@@ -1,47 +1,81 @@
-#! /bin/csh -fx
+#!/usr/bin/env python
+from standard_script_setup import *
+from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging
+from CIME.case import Case
+import glob
 
-#==============================================================================
-# Purpose: Build the mct library
-#==============================================================================
+logger = logging.getLogger(__name__)
 
-cd $CASEROOT
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
 
-set CIMEROOT	= `./xmlquery  CIMEROOT	 --value `
-set CASETOOLS	= `./xmlquery  CASETOOLS --value `
-set GMAKE	= `./xmlquery  GMAKE	 --value `
-set GMAKE_J	= `./xmlquery  GMAKE_J	 --value `
-set MACH	= `./xmlquery  MACH	 --value `
-set OS		= `./xmlquery  OS	 --value `
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
 
-setenv MCT_DIR    $CIMEROOT/src/externals/mct   # mct directory
-setenv MCT_LIBDIR $1
-setenv LIBDIR $2
+description=description,
 
-cd $MCT_LIBDIR
-echo "Copying source to EXEROOT..."
-if ( (-M $MCT_DIR/mpi-serial/Makefile ) >= (-M mpi-serial/Makefile ) ) then
-  cp $MCT_DIR/mpi-serial/Makefile .
-endif
-cp -p $MCT_DIR/mpi-serial/*.h .
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-set runconf = 0
-set runclean = 0
+    CIME.utils.setup_standard_logging_options(parser)
 
-echo "Running configure..."
-echo "for OS=$OS MACH=$MACH LIBDIR=$LIBDIR"
-$GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mpi-serial
+    parser.add_argument("buildroot",
+                        help="build path root")
 
-if ($runclean == 1) then
-  $GMAKE clean
-endif
+    parser.add_argument("installpath",
+                        help="install path ")
 
-cp -p Makefile.conf Makefile.conf.old
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
 
-$GMAKE  SRCDIR=$MCT_DIR   || exit 1
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-cp -p lib*.a $LIBDIR/lib
-cp -p *.h $LIBDIR/include
-cp -p *.mod $LIBDIR/include
+    return args.buildroot, args.installpath, args.caseroot
 
-exit 0
+def buildlib(bldroot, installpath, caseroot):
+###############################################################################
+    with Case(caseroot, read_only=False) as case:
+        cimeroot = case.get_value("CIMEROOT")
+        mct_dir = os.path.join(cimeroot,"src","externals","mct")
+        for _file in glob.iglob(os.path.join(mct_dir, "mpi-serial","*.h")):
+            copyifnewer(_file, os.path.join(bldroot,os.path.basename(_file)))
 
+        gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
+        gmake_opts += " -C {} ".format(bldroot)
+        gmake_opts += " CASEROOT={} ".format(caseroot)
+        gmake_opts += "MODEL=mpi-serial {}".format(os.path.join(bldroot,"Makefile.conf"))
+
+        gmake_cmd = case.get_value("GMAKE")
+
+        # This runs the mpi-serial configure command
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger)
+
+        # Now we run the mpi-serial make command
+        gmake_opts = "-f {} ".format(os.path.join(mct_dir,"mpi-serial","Makefile"))
+        gmake_opts += " -C {} ".format(bldroot)
+        gmake_opts += " -j {} ".format(case.get_value("GMAKE_J"))
+        gmake_opts += " SRCDIR={} ".format(os.path.join(mct_dir))
+
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger)
+
+        copyifnewer(os.path.join(bldroot, "libmpi-serial.a"), os.path.join(installpath, "lib", "libmpi-serial.a"))
+        for _file in ("mpi.h", "mpif.h", "mpi.mod", "MPI.mod"):
+            if os.path.isfile(os.path.join(bldroot,_file)):
+                copyifnewer(os.path.join(bldroot, _file), os.path.join(installpath, "include", _file))
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    buildlib(bldroot, installpath, caseroot)
+
+if (__name__ == "__main__"):
+    _main(sys.argv, __doc__)

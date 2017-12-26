@@ -1,23 +1,66 @@
-#! /bin/csh -f
+#!/usr/bin/env python
+from standard_script_setup import *
+from CIME.utils import run_bld_cmd_ensure_logging
+from CIME.case import Case
 
-#==============================================================================
-# Purpose: Build gptl library
-#==============================================================================
+logger = logging.getLogger(__name__)
 
-cd $CASEROOT # CASEROOT is always assumed to be an environment variable
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
 
-set CIMEROOT	= `./xmlquery  CIMEROOT --value `
-set GMAKE	= `./xmlquery  GMAKE	--value `
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
 
-# NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in
-# the $CASE.build script
+description=description,
 
-setenv GPTL_DIR $CIMEROOT/src/share/timing   # gptl directory
-setenv GPTL_LIBDIR $1
-setenv SHAREDPATH  $2
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-cd $GPTL_LIBDIR
+    CIME.utils.setup_standard_logging_options(parser)
 
-$GMAKE  -f $GPTL_DIR/Makefile install  MACFILE=$CASEROOT/Macros.make MODEL=gptl || exit 1
+    parser.add_argument("buildroot",
+                        help="build path root")
 
-exit 0
+    parser.add_argument("installpath",
+                        help="install path ")
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return args.buildroot, args.installpath, args.caseroot
+
+def buildlib(bldroot, installpath, caseroot):
+###############################################################################
+    with Case(caseroot, read_only=False) as case:
+        gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
+        gmake_opts = "-f {}/Makefile install -C {} MACFILE={} MODEL=gptl GPTL_DIR={} GPTL_LIBDIR={}"\
+            " SHAREDPATH={}"\
+            .format(gptl_dir , bldroot, os.path.join(caseroot,"Macros.make"),
+                    gptl_dir, bldroot, installpath)
+        build_threaded = case.get_value("SMP") or case.get_value("BUILD_THREADED")
+        if build_threaded:
+            gmake_opts += " compile_threaded=true "
+
+        gmake_cmd = case.get_value("GMAKE")
+
+
+        # This runs the gptl make command
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger)
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    buildlib(bldroot, installpath, caseroot)
+
+if (__name__ == "__main__"):
+    _main(sys.argv, __doc__)

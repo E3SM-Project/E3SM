@@ -20,6 +20,7 @@ module shr_pio_mod
   public :: shr_pio_getioroot
   public :: shr_pio_finalize
   public :: shr_pio_getioformat
+  public :: shr_pio_getrearranger
 
   interface shr_pio_getiotype
      module procedure shr_pio_getiotype_fromid, shr_pio_getiotype_fromname
@@ -35,6 +36,9 @@ module shr_pio_mod
   end interface
   interface shr_pio_getindex
      module procedure shr_pio_getindex_fromid, shr_pio_getindex_fromname
+  end interface
+  interface shr_pio_getrearranger
+     module procedure shr_pio_getrearranger_fromid, shr_pio_getrearranger_fromname
   end interface
 
 
@@ -282,6 +286,25 @@ contains
     io_type = pio_comp_settings(shr_pio_getindex(component))%pio_iotype
 
   end function shr_pio_getiotype_fromname
+
+  function shr_pio_getrearranger_fromid(compid) result(io_type)
+    integer, intent(in) :: compid
+    integer :: io_type
+
+    io_type = pio_comp_settings(shr_pio_getindex(compid))%pio_rearranger
+
+  end function shr_pio_getrearranger_fromid
+
+
+  function shr_pio_getrearranger_fromname(component) result(io_type)
+    ! 'component' must be equal to some element of io_compname(:)
+    ! (but it is case-insensitive)
+    character(len=*), intent(in) :: component
+    integer :: io_type
+
+    io_type = pio_comp_settings(shr_pio_getindex(component))%pio_rearranger
+
+  end function shr_pio_getrearranger_fromname
 
   function shr_pio_getioformat_fromid(compid) result(io_format)
     integer, intent(in) :: compid

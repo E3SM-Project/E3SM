@@ -16,8 +16,6 @@ def parse_command_line(args, description):
         usage="""\n{0} suffix1 suffix2 [<casedir>] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Setup case \033[0m
@@ -48,7 +46,7 @@ def _main_func(description):
     suffix1, suffix2, caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot) as case:
         success, comments = compare_test(case, suffix1, suffix2)
-        print comments
+        print(comments)
 
     sys.exit(0 if success else 1)
 

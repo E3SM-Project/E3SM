@@ -71,7 +71,7 @@ def check_pelayouts_require_rebuild(case, models):
                 new_inst    = case.get_value("NINST_{}".format(comp))
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logging.warn("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
+                    logging.warning("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
                     run_cmd_no_fail("./case.build --clean {}".format(cleanflag))
 
@@ -107,29 +107,33 @@ def check_lockedfiles(case):
                 f1obj = case.get_env('batch')
                 f2obj = EnvBatch(caseroot, lfile)
             else:
-                logging.warn("Locked XML file '{}' is not current being handled".format(fpart))
+                logging.warning("Locked XML file '{}' is not current being handled".format(fpart))
                 continue
             diffs = f1obj.compare_xml(f2obj)
             if diffs:
-                logging.warn("File {} has been modified".format(lfile))
-                for key in diffs.keys():
-                    print("  found difference in {} : case {} locked {}"
-                          .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
 
+                logging.warning("File {} has been modified".format(lfile))
+                toggle_build_status = False
+                for key in diffs.keys():
+                    if key != "BUILD_COMPLETE":
+                        print("  found difference in {} : case {} locked {}"
+                              .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
+                        toggle_build_status = True
                 if objname == "env_mach_pes":
                     expect(False, "Invoke case.setup --reset ")
                 elif objname == "env_case":
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")
                 elif objname == "env_build":
-                    logging.warn("Setting build complete to False")
+                    logging.warning("Setting build complete to False")
                     case.set_value("BUILD_COMPLETE", False)
-                    if "PIO_VERSION" in diffs.keys():
+                    if "PIO_VERSION" in diffs:
                         case.set_value("BUILD_STATUS", 2)
                         logging.critical("Changing PIO_VERSION requires running "
                                          "case.build --clean-all and rebuilding")
-                    else:
+                    elif toggle_build_status:
                         case.set_value("BUILD_STATUS", 1)
+                    f2obj.set_value("BUILD_COMPLETE", False)
                 elif objname == "env_batch":
                     expect(False, "Batch configuration has changed, please run case.setup --reset")
                 else:

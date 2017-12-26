@@ -7,7 +7,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "utils", "python"))
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "fortran_unit_testing", "python"))
 
 from standard_script_setup import *
-from CIME.BuildTools.configure import configure
+from CIME.BuildTools.configure import configure, FakeCase
 from CIME.utils import run_cmd_no_fail, stringify_bool, expect
 from CIME.XML.machines import Machines
 from CIME.XML.compilers import Compilers
@@ -321,7 +321,8 @@ def _main():
               unit_testing=True)
     machspecific = EnvMachSpecific(build_dir, unit_testing=True)
 
-    machspecific.load_env(compiler, debug, mpilib)
+    fake_case = FakeCase(compiler, mpilib, debug)
+    machspecific.load_env(fake_case)
     os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)

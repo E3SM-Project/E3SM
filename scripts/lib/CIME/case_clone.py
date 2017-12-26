@@ -1,4 +1,4 @@
-import os, glob, shutil, string
+import os, glob, shutil
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect
 from CIME.user_mod_support import apply_user_mods
@@ -44,7 +44,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
     olduser = case.get_value("USER")
     newuser = os.environ.get("USER")
     if olduser != newuser:
-        cime_output_root = string.replace(cime_output_root, olduser, newuser)
+        cime_output_root = cime_output_root.replace(olduser, newuser)
         newcase.set_value("USER", newuser)
     newcase.set_value("CIME_OUTPUT_ROOT", cime_output_root)
 
@@ -68,8 +68,8 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
         newcase.set_value("BUILD_COMPLETE","TRUE")
         orig_bld_complete = case.get_value("BUILD_COMPLETE")
         if not orig_bld_complete:
-            logger.warn("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
-            logger.warn("Avoid this message by building case one before you clone.\n")
+            logger.warning("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
+            logger.warning("Avoid this message by building case one before you clone.\n")
     else:
         newcase.set_value("BUILD_COMPLETE","FALSE")
 
@@ -133,7 +133,7 @@ def create_case_clone(case, newcase, keepexe=False, mach_dir=None, project=None,
             success, comment = compare_files(os.path.join(newcaseroot, "env_build.xml"),
                                              os.path.join(newcaseroot, "LockedFiles", "env_build.xml"))
             if not success:
-                logger.warn(comment)
+                logger.warning(comment)
                 shutil.rmtree(newcase_root)
                 expect(False, "env_build.xml cannot be changed via usermods if keepexe is an option: \n "
                            "Failed to clone case, removed {}\n".format(newcase_root))

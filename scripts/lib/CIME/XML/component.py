@@ -75,7 +75,7 @@ class Component(EntryID):
 
         for valnode in self.get_nodes("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
-            for key,value in valnode.attrib.iteritems():
+            for key,value in valnode.attrib.items():
                 # determine if key is in attributes dictionary
                 match_count = 0
                 if attributes is not None and key in attributes:
@@ -162,7 +162,6 @@ class Component(EntryID):
             modifier_mode = '*'
         expect(modifier_mode in ('*','1','?','+'),
                "Invalid modifier_mode {} in file {}".format(modifier_mode, self.filename))
-
         optiondesc = {}
         if comp_class == "forcing":
             for node in desc_nodes:
@@ -176,30 +175,36 @@ class Component(EntryID):
                 desc = compsetname.split('_')[0]
             return desc
 
+
         # first pass just make a hash of the option descriptions
         for node in desc_nodes:
             option = node.get('option')
             if option is not None:
                 optiondesc[option] = node.text
+
         #second pass find a comp_class match
+        desc = ""
         for node in desc_nodes:
             compdesc = node.get(comp_class)
 
-            if compdesc is None:
-                continue
-            opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
-            parts = opt_parts.pop(0).split("%")
+            if compdesc is not None:
+                opt_parts = [ x.rstrip("]") for x in compdesc.split("[%") ]
+                parts = opt_parts.pop(0).split("%")
+                reqset = set(parts)
+                fullset = set(parts+opt_parts)
+                match, complist =  self._get_description_match(compsetname, reqset, fullset, modifier_mode)
+                if match:
+                    desc = node.text
+                    for opt in complist:
+                        if opt in optiondesc:
+                            desc += optiondesc[opt]
 
-            reqset = set(parts)
-            fullset = set(parts+opt_parts)
-            if self._get_description_match(compsetname, reqset, fullset, modifier_mode):
-                desc = node.text
-                break
+
         # cpl and esp components may not have a description
         if comp_class not in ['cpl','esp']:
             expect(len(desc) > 0,
-                   "No description found for comp_class {} matching compsetname {} in file {}"\
-                       .format(comp_class,compsetname, self.filename))
+                   "No description found for comp_class {} matching compsetname {} in file {}, expected match in {} % {}"\
+                       .format(comp_class,compsetname, self.filename, list(reqset), list(opt_parts)))
         return desc
 
     def _get_description_match(self, compsetname, reqset, fullset, modifier_mode):
@@ -207,50 +212,53 @@ class Component(EntryID):
 
         >>> obj = Component('testingonly', 'ATM')
         >>> obj._get_description_match("1850_DATM%CRU_FRED",set(["DATM"]), set(["DATM","CRU","HSI"]), "*")
-        True
+        (True, ['DATM', 'CRU'])
         >>> obj._get_description_match("1850_DATM%FRED_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "*")
-        False
+        (False, None)
         >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "?")
-        True
+        (True, ['DATM'])
         >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Expected exactly one modifer found 0
+        SystemExit: ERROR: Expected exactly one modifer found 0 in ['DATM']
         >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Expected exactly one modifer found 2
+        SystemExit: ERROR: Expected exactly one modifer found 2 in ['DATM', 'CRU', 'HSI']
         >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
-        True
+        (True, ['CAM50', 'WCCM', 'RCO2'])
 
         # The following is not allowed because the required WCCM field is missing
         >>> obj._get_description_match("1850_CAM50%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
-        False
+        (False, None)
         >>> obj._get_description_match("1850_CAM50_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "+")
-        False
+        (False, None)
         >>> obj._get_description_match("1850_CAM50%WCCM_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "+")
-        True
+        (True, ['CAM50', 'WCCM'])
         """
         match = False
         comparts = compsetname.split('_')
+        matchcomplist = None
+
         for comp in comparts:
             complist = comp.split('%')
             cset = set(complist)
             if cset == reqset or (cset > reqset and cset <= fullset):
                 if modifier_mode == '1':
                     expect(len(complist) == 2,
-                           "Expected exactly one modifer found {}".format(len(complist)-1))
+                           "Expected exactly one modifer found {} in {}".format(len(complist)-1,complist))
                 elif modifier_mode == '+':
                     expect(len(complist) >= 2,
-                           "Expected one or more modifers found {}".format(len(complist)-1))
+                           "Expected one or more modifers found {} in {}".format(len(complist)-1, list(reqset)))
                 elif modifier_mode == '?':
                     expect(len(complist) <= 2,
-                           "Expected 0 or one modifers found {}".format(len(complist)-1))
+                           "Expected 0 or one modifers found {} in {}".format(len(complist)-1, complist))
                 expect(not match,"Found multiple matches in file {} for {}".format(self.filename,comp))
                 match = True
+                matchcomplist = complist
                 # found a match
 
-        return match
+        return match, matchcomplist
 
 
 
@@ -281,6 +289,6 @@ class Component(EntryID):
             compsets[attrib] = text
 
         logger.info(" {}".format(helptext))
-        for v in sorted(compsets.iteritems()):
+        for v in sorted(compsets.items()):
             label, definition = v
             logger.info("   {:20s} : {}".format(label, definition))

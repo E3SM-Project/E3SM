@@ -270,7 +270,7 @@ class NamelistDefinition(EntryID):
             if not is_valid_fortran_namelist_literal(type_, scalar):
                 invalid.append(scalar)
         if len(invalid) > 0:
-            logger.warn("Invalid values {}".format(invalid))
+            logger.warning("Invalid values {}".format(invalid))
             return False
 
         # Now that we know that the strings as input are valid Fortran, do some
@@ -296,7 +296,7 @@ class NamelistDefinition(EntryID):
                 if scalar not in compare_list:
                     invalid.append(scalar)
             if len(invalid) > 0:
-                logger.warn("Invalid values {}".format(invalid))
+                logger.warning("Invalid values {}".format(invalid))
                 return False
 
         # Check size of input array.

@@ -26,7 +26,7 @@ from standard_script_setup import *
 from CIME.XML.machines import Machines
 from CIME.compare_test_results import compare_test_results
 
-import argparse, sys, os, doctest
+import argparse, sys, os
 
 _MACHINE = Machines()
 
@@ -37,8 +37,6 @@ def parse_command_line(args, description):
 usage="""\n{0} [-r <TESTROOT>] [-b <BRANCH> -c <COMPILER>] [-t <TESTID>] [<TEST> <TEST> ...] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# From most recent run, compare all changes \033[0m
@@ -58,8 +56,6 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    default_baseline_root = _MACHINE.get_value("BASELINE_ROOT")
     default_compiler      = _MACHINE.get_default_compiler()
     scratch_root          = _MACHINE.get_value("CIME_OUTPUT_ROOT")
     default_testroot      = os.path.join(scratch_root)
@@ -72,11 +68,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--hist-only", action="store_true",
                         help="Only analyze history files.")
 
-    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
-                        help="Name of baselines to use, corresponds to branch used.")
+    parser.add_argument("-b", "--baseline-name",
+                        help="Name of baselines to use. Default will use BASELINE_NAME_CMP first if possible, otherwise branch name.")
 
-    parser.add_argument("--baseline-root", default=default_baseline_root,
-                        help="Root of baselines.")
+    parser.add_argument("--baseline-root",
+                        help="Root of baselines. Default will use BASELINE_ROOT from the case.")
 
     parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="Compiler of run you want to compare")
@@ -97,10 +93,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     baseline_name, baseline_root, test_root, compiler, test_id, compare_tests, namelists_only, hist_only = \
         parse_command_line(sys.argv, description)
 

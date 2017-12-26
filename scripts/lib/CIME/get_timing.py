@@ -125,8 +125,11 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         ncpl = 0
         for compclass in self.case.get_values("COMP_CLASSES"):
-            ncpl = max(ncpl, self.case.get_value("{}_NCPL".format(compclass)))
-        ocn_ncpl = self.case.get_value("OCN_NCPL")
+            comp_ncpl = self.case.get_value("{}_NCPL".format(compclass))
+            if compclass == "OCN":
+                ocn_ncpl = comp_ncpl
+            if comp_ncpl is not None:
+                ncpl = max(ncpl, comp_ncpl)
 
         compset = self.case.get_value("COMPSET")
         if compset is None:
@@ -135,13 +138,18 @@ class _TimingParser:
         run_type = self.case.get_value("RUN_TYPE")
         stop_option = self.case.get_value("STOP_OPTION")
         stop_n = self.case.get_value("STOP_N")
+
         cost_pes = self.case.get_value("COST_PES")
+        costpes_per_node = self.case.get_value("COSTPES_PER_NODE")
+
         totalpes = self.case.get_value("TOTALPES")
-        MAX_MPITASKS_PER_NODE = self.case.get_value("MAX_MPITASKS_PER_NODE")
-        smt_factor = max(1,int(self.case.get_value("MAX_TASKS_PER_NODE") / MAX_MPITASKS_PER_NODE))
+        max_mpitasks_per_node = self.case.get_value("MAX_MPITASKS_PER_NODE")
+        smt_factor = max(1,int(self.case.get_value("MAX_TASKS_PER_NODE") / max_mpitasks_per_node))
 
         if cost_pes > 0:
             pecost = cost_pes
+        elif costpes_per_node:
+            pecost = self.case.num_nodes * costpes_per_node
         else:
             pecost = totalpes
 
@@ -179,7 +187,7 @@ class _TimingParser:
 
         try:
             shutil.copyfile(binfilename, finfilename)
-        except Exception, e:
+        except Exception as e:
             if not os.path.isfile(binfilename):
                 logger.critical("File {} not found".format(binfilename))
             else:
@@ -191,7 +199,7 @@ class _TimingParser:
             fin = open(finfilename, "r")
             self.finlines = fin.readlines()
             fin.close()
-        except Exception, e:
+        except Exception as e:
             logger.critical("Unable to open file {}".format(finfilename))
             raise e
 
@@ -228,7 +236,7 @@ class _TimingParser:
         cpl.offset = 0
         try:
             self.fout = open(foutfilename, "w")
-        except Exception, e:
+        except Exception as e:
             logger.critical("Could not open file for writing: {}".format(foutfilename))
             raise e
 
@@ -306,7 +314,7 @@ class _TimingParser:
 
         self.write("\n")
         self.write("  total pes active           : {} \n".format(totalpes*maxthrds*smt_factor ))
-        self.write("  pes per node               : {} \n".format(MAX_MPITASKS_PER_NODE))
+        self.write("  mpi tasks per node               : {} \n".format(max_mpitasks_per_node))
         self.write("  pe count for cost estimate : {} \n".format(pecost))
         self.write("\n")
 

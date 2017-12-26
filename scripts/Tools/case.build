@@ -20,8 +20,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [--verbose] [--clean [atm lnd pio ...]] [--clean-all]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Build case \033[0m
@@ -61,30 +59,33 @@ OR
     mutex_group.add_argument("--clean-all", action="store_true",
                              help="clean all objects including sharedlibobjects that may be used by other builds")
 
+    mutex_group.add_argument("--clean-depends", nargs="*", choices=comps+["csmshare"],
+                             help="clean Depends and Srcfiles only - "
+                             "this allows you to rebuild after adding new "
+                             "files in the source tree or in SourceMods")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    clean_depends = args.clean_depends if args.clean_depends is None or len(args.clean_depends) else comps
 
     cleanlist = args.clean if args.clean is None or len(args.clean) else comps
     buildlist = None if args.build is None or len(args.build) == 0 else args.build
 
-    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist = parse_command_line(sys.argv, description)
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist, clean_depends = parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot, read_only=False) as case:
         testname = case.get_value('TESTCASE')
 
-        if cleanlist is not None or clean_all:
-            build.clean(case, cleanlist, clean_all)
+        if cleanlist is not None or clean_all or clean_depends is not None:
+            build.clean(case, cleanlist=cleanlist, clean_all=clean_all, clean_depends=clean_depends)
         elif(testname is not None):
-            logging.warn("Building test for {} in directory {}".format(testname,
+            logging.warning("Building test for {} in directory {}".format(testname,
                                                                        caseroot))
             try:
                 # The following line can throw exceptions if the testname is

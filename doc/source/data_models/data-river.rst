@@ -13,7 +13,7 @@ This data can either be observational (climatological or interannual river data)
 xml variables
 -------------
 
-The following are xml variables that CIME supports for DROF. 
+The following are xml variables that CIME supports for DROF.
 These variables are defined in ``$CIMEROOT/src/components/data_comps/drof/cime_config/config_component.xml``.
 These variables will appear in ``env_run.xml`` and are used by the DROF ``cime_config/buildnml`` script to generate the DROF namelist file ``drof_in`` and the required associated stream files for the case.
 
@@ -23,13 +23,17 @@ These variables will appear in ``env_run.xml`` and are used by the DROF ``cime_c
    :header: "xml variable", "description"
    :widths: 15, 85
 
-   "DROF_MODE",             "Data mode"
-   "",                      "Valid values are: NULL,CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1"
-   "DROF_CPLHIST_CASE",     "Coupler history data mode case name"
-   "DROF_CPLHIST_DIR",      "Coupler history data mode directory containing coupler history data"
-   "DROF_CPLHIST_YR_ALIGN", "Coupler history data model simulation year corresponding to data starting year"
-   "DROF_CPLHIST_YR_START", "Coupler history data model starting year to loop data over"
-   "DROF_CPLHIST_YR_END",   "Coupler history data model ending year to loop data over"
+   "DROF_MODE",                "Data mode"
+   "",                         "Valid values are: NULL,CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,IAF_JRA"
+
+   "DROF_CPLHIST_DOMAIN_FILE", "Coupler history forcing data mode - full pathname of model domain file "
+   "DROF_CPLHIST_CASE",        "Coupler history forcing data mode - case name"
+   "DROF_CPLHIST_DIR",         "Coupler history forcing data mode - directory containing coupler history forcing data"
+   "DROF_CPLHIST_YR_ALIGN",    "Coupler history forcing data mode - simulation year corresponding to DROF_CPLHIST_YR_START"
+   "DROF_CPLHIST_YR_START",    "Coupler history forcing data mode - starting year to loop forcing data over"
+   "DROF_CPLHIST_YR_END",      "Coupler history forcing data mode - ending year to loop forcing data over"
+
+.. note:: If ``DROF_MODE`` is set to ``CPLHIST``, it is normally assumed that the model domain will be identical to **all** of the stream domains. To ensure this, the xml variables ``ROF_DOMAIN_PATH`` and ``ROF_DOMAIN_FILE`` are ignored and a valid setting **must be given** for ``DROF_CPLHIST_DOMAIN_FILE``. If ``DROF_CPLHIST_DOMAIN_FILE`` is set to ``null``, then the drof component domain information is read in from the first coupler history file in the target stream and  it is assumed that the first coupler stream file that is pointed to contains the domain  information for that stream. This is the default mode that should be used for this mode. Alternatively, ``DROF_CPLHIST_DOMAIN_FILE`` can be set to ``$ROF_DOMAIN_PATH/$ROF_DOMAIN_FILE`` in a non-default configuration.
 
 .. _drof-datamodes:
 
@@ -37,12 +41,10 @@ These variables will appear in ``env_run.xml`` and are used by the DROF ``cime_c
 datamode values
 --------------------
 
-The xml variable ``DROF_MODE`` sets the streams that are associated with DROF and also sets the namelist variable ``datamode`` that specifies what additional operations need to be done by DROF on the streams before returning to the driver.
-One of the variables in ``shr_strdata_nml`` is ``datamode``, whose value is a character string.  Each data model has a unique set of ``datamode`` values that it supports. 
-The valid values for ``datamode`` are set in the file ``namelist_definition_drof.xml`` using the xml variable ``DROF_MODE`` in the ``config_component.xml`` file for DROF. 
-CIME will generate a value ``datamode`` that is compset dependent. 
+The xml variable ``DROF_MODE`` (described in :ref:`drof_mode`) sets the streams that are associated with DROF and also sets the namelist variable ``datamode``.
+``datamode`` (which appears in ``shr_strdata_nml``) specifies what additional operations need to be done by DROF on the streams before returning to the driver.
 
-The following are the supported DROF datamode values and their relationship to the ``DROF_MODE`` xml variable value.
+Each data model has its own set of supported ``datamode`` values. The following are the supported DROF ``datamode`` values, as defined in the file ``namelist_definition_drof.xml``.
 
 .. csv-table:: "Valid values for datamode namelist variable"
    :header: "datamode variable", "description"
@@ -76,11 +78,14 @@ force_prognostic_true  TRUE => force prognostic behavior
 
 To change the namelist settings in ``drof_in``, edit the file ``user_nl_drof`` in your case directory.
 
+.. _drof_mode:
+
 -------------------------------
 DROF_MODE, datamode and streams
 -------------------------------
 
-The following tabe describes the valid values of ``DROF_MODE``, and how it relates to the associated input streams and the ``datamode`` namelist variable.
+The following table describes the valid values of ``DROF_MODE`` (defined in the ``config_component.xml`` file for DROF), and how they relate to the associated input streams and the ``datamode`` namelist variable.
+CIME will generate a value of ``DROF_MODE`` based on the compset.
 
 .. csv-table:: "Relationship between DROF_MODE, datamode and streams"
    :header: "DROF_MODE", "description-streams-datamode"
@@ -97,6 +102,9 @@ The following tabe describes the valid values of ``DROF_MODE``, and how it relat
    "", "datamode: COPYALL"
    "CPLHIST", "Reads in data from coupler history files generated by a previous run."
    "", "streams: rof.cplhist"
+   "", "datamode: COPYALL"
+   "IAF_JRA", "Reads in intra-annual forcing river data used for JRA-55 forcing runs."
+   "", "streams: rof.iaf_jra"
    "", "datamode: COPYALL"
 
 .. _drof-mode-independent-streams:

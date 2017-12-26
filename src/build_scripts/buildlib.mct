@@ -1,61 +1,87 @@
-#! /bin/tcsh -fx
+#!/usr/bin/env python
+from standard_script_setup import *
+from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging
+from CIME.case import Case
+import glob
 
-#==============================================================================
-# Purpose: Build the mct library
-#==============================================================================
+logger = logging.getLogger(__name__)
 
-cd $CASEROOT
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
 
-set CIMEROOT	= `./xmlquery  CIMEROOT	 --value `
-set CASETOOLS	= `./xmlquery  CASETOOLS --value `
-set GMAKE	= `./xmlquery  GMAKE	 --value `
-set GMAKE_J	= `./xmlquery  GMAKE_J	 --value `
-set MACH	= `./xmlquery  MACH	 --value `
-set MPILIB	= `./xmlquery  MPILIB	 --value `
-set OS		= `./xmlquery  OS	 --value `
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
 
-setenv MCT_DIR    $CIMEROOT/src/externals/mct   # mct directory
-setenv MCT_LIBDIR $1
-setenv LIBDIR $2
-echo "MCT_LIBDIR   $MCT_LIBDIR"
+description=description,
 
-  cd $MCT_LIBDIR
-  echo "Copying source to EXEROOT..."
-  if ( (-M $MCT_DIR/Makefile ) >= (-M Makefile ) ) then
-    cp $MCT_DIR/Makefile .
-  endif
-  if (! -d mct ) then
-    mkdir mct
-  endif
-  if ( (-M $MCT_DIR/mct/Makefile ) >= (-M mct/Makefile ) ) then
-    cp $MCT_DIR/mct/Makefile mct
-  endif
-  if (! -d mpeu ) then
-    mkdir mpeu
-  endif
-  if ( (-M $MCT_DIR/mpeu/Makefile ) >= (-M mpeu/Makefile ) ) then
-    cp $MCT_DIR/mpeu/Makefile mpeu
-  endif
-  set runconf = 0
-  set runclean = 0
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
-  echo "Running configure..."
-  echo "for OS=$OS MACH=$MACH"
-  $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
+    CIME.utils.setup_standard_logging_options(parser)
 
+    parser.add_argument("buildroot",
+                        help="build path root")
 
-  if ($runclean == 1) then
-    $GMAKE clean
-  endif
+    parser.add_argument("installpath",
+                        help="install path ")
 
-  cp -p Makefile.conf Makefile.conf.old
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
 
-  $GMAKE  SRCDIR=$MCT_DIR   || exit 1
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
+    return args.buildroot, args.installpath, args.caseroot
 
-  cp -p mct/lib*.a $LIBDIR/lib
-  cp -p mpeu/lib*.a $LIBDIR/lib
-  cp -p mct/*.mod $LIBDIR/include/
-  cp -p mpeu/*.mod $LIBDIR/include/
+def buildlib(bldroot, installpath, caseroot):
+###############################################################################
+    with Case(caseroot, read_only=False) as case:
+        cimeroot = case.get_value("CIMEROOT")
+        mct_dir = os.path.join(cimeroot,"src","externals","mct")
+        for _dir in ("mct", "mpeu"):
+            if not os.path.isdir(os.path.join(bldroot,_dir)):
+                os.makedirs(os.path.join(bldroot,_dir))
+            copyifnewer(os.path.join(mct_dir,_dir,"Makefile"),
+                        os.path.join(bldroot,_dir,"Makefile"))
 
-exit 0
+        gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
+        gmake_opts += " -C {} ".format(bldroot)
+        gmake_opts += " CASEROOT={} ".format(caseroot)
+        gmake_opts += "MODEL=mct {}".format(os.path.join(bldroot,"Makefile.conf"))
+
+        gmake_cmd = case.get_value("GMAKE")
+
+        # This runs the mpi-serial configure command
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger)
+
+        # Now we run the mct make command
+        gmake_opts = "-f {} ".format(os.path.join(mct_dir,"Makefile"))
+        gmake_opts += " -C {} ".format(bldroot)
+        gmake_opts += " -j {} ".format(case.get_value("GMAKE_J"))
+        gmake_opts += " SRCDIR={} ".format(os.path.join(mct_dir))
+
+        cmd = "{} {}".format(gmake_cmd, gmake_opts)
+        run_bld_cmd_ensure_logging(cmd, logger)
+
+        for _dir in ("mct", "mpeu"):
+            for _file in glob.iglob(os.path.join(bldroot,_dir,"*.a")):
+                logger.info("Installing {} to {}".format(_file,installpath))
+                copyifnewer(_file, os.path.join(installpath, "lib", os.path.basename(_file)))
+            for _file in glob.iglob(os.path.join(bldroot,_dir,"*.mod")):
+                logger.info("Installing {} to {}".format(_file,installpath))
+                copyifnewer(_file, os.path.join(installpath, "include", os.path.basename(_file)))
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    buildlib(bldroot, installpath, caseroot)
+
+if (__name__ == "__main__"):
+    _main(sys.argv, __doc__)

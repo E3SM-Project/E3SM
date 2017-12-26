@@ -96,11 +96,11 @@
     appropriate and is provided for testing and development purposes only.
     Users must create scientifically appropriate data for their particular
     application.  A tool is available to derive valid SOM forcing.
-    --- A setting of sst_aquapN (where N is an integer index value) is a
+    --- A setting of sst_aquapN (where "N" is an integer index value) is a
     type of prescribed SST mode used specifically for an aquaplanet setup in
     which global SSTs correspond to an analytic form set by the index value.
     Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds
-    to the QOBS profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
+    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
     With source code modifications, it is possible for users to create their own
     analytic SST distributions and match them to indices 11 or greater.
     </desc>
@@ -131,7 +131,7 @@
     <group>run_component_docn</group>
     <file>env_run.xml</file>
     <desc>Sets aquaplanet forcing filename instead of using an analytic form.
-    This is only used when DOCN_MODE=sst_aqpfile.</desc>
+    This is only used when DOCN_MODE=sst_aquapfile.</desc>
   </entry>
 
   <entry id="SSTICE_STREAM">

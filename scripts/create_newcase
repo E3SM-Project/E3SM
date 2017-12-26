@@ -128,6 +128,9 @@ OR
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files")
 
+    parser.add_argument("--driver",
+                        help="Select a driver. No selection implies mct driver")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.srcroot is not None:
@@ -162,7 +165,7 @@ OR
         args.user_mods_dir, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir
+        run_unsupported, args.answer, args.input_dir, args.driver
 
 ###############################################################################
 def _main_func(description):
@@ -174,7 +177,7 @@ def _main_func(description):
         user_mods_dir, pesfile, \
         user_grid, gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
-        answer, input_dir = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir, driver = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
@@ -199,7 +202,7 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir)
+                    input_dir=input_dir, driver=driver)
 
 ###############################################################################
 

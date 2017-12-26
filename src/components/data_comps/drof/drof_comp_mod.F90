@@ -19,7 +19,7 @@ module drof_comp_mod
   use shr_dmodel_mod  , only: shr_dmodel_translate_list, shr_dmodel_translateAV_list, shr_dmodel_translateAV
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
-  use drof_shr_mod   , only: rof_mode       ! namelist input
+  use drof_shr_mod   , only: datamode       ! namelist input
   use drof_shr_mod   , only: decomp         ! namelist input
   use drof_shr_mod   , only: rest_file      ! namelist input
   use drof_shr_mod   , only: rest_file_strm ! namelist input
@@ -180,6 +180,19 @@ CONTAINS
     call mct_aVect_zero(r2x)
     call t_stopf('drof_initmctavs')
 
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('drof_datamode')
+    select case (trim(datamode))
+
+    case('COPYALL')
+       ! do nothing extra
+
+    end select
+    call t_stopf('drof_datamode')
+
     !----------------------------------------------------------------------------
     ! Read restart
     !----------------------------------------------------------------------------
@@ -243,7 +256,7 @@ CONTAINS
   subroutine drof_comp_run(EClock, x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, case_name)
-
+    use shr_cal_mod, only : shr_cal_ymdtod2string
     ! !DESCRIPTION:  run method for drof model
     implicit none
 
@@ -274,6 +287,7 @@ CONTAINS
     logical       :: write_restart     ! restart now
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: nflds_r2x
+    character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(drof_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(drof_comp_run) ',2a,2i8,'s')"
@@ -330,18 +344,32 @@ CONTAINS
 
     call t_stopf('drof_r')
 
+    !-------------------------------------------------
+    ! Determine data model behavior based on the mode
+    !-------------------------------------------------
+
+    call t_startf('drof_datamode')
+    select case (trim(datamode))
+
+    case('COPYALL')
+       ! do nothing extra
+
+    end select
+    call t_stopf('drof_datamode')
+
     !--------------------
     ! Write restart
     !--------------------
 
     if (write_restart) then
        call t_startf('drof_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.drof'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.drof'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy, mm, dd, currentTOD)
+       write(rest_file,"(6a)") &
+            trim(case_name), '.drof',trim(inst_suffix),'.r.', &
+            trim(date_str),'.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.drof',trim(inst_suffix),'.rs1.', &
+            trim(date_str),'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
