@@ -322,7 +322,8 @@
 	<command name="load">esmf-7.0.0-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">gnu/7.1.0</command>
+        <command name="load">gnu/6.3.0</command>
+        <command name="load">openblas/0.2.14</command>
       </modules>
       <modules mpilib="mpt">
 	<command name="load">mpt/2.16</command>
@@ -332,7 +333,7 @@
 	<command name="load">pnetcdf/1.8.1</command>
       </modules>
       <modules mpilib="openmpi">
-	<command name="load">openmpi/3.0.0</command>
+	<command name="load">openmpi/2.1.0</command>
 	<command name="load">netcdf/4.4.1.1</command>
       </modules>
       <modules>
