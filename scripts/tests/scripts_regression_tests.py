@@ -2480,6 +2480,7 @@ def write_provenance_info():
 
 def _main_func():
     global MACHINE
+    config = CIME.utils.get_cime_config()
 
     if "--fast" in sys.argv:
         sys.argv.remove("--fast")
@@ -2506,9 +2507,12 @@ def _main_func():
     elif "CIME_MACHINE" in os.environ:
         mach_name = os.environ["CIME_MACHINE"]
         MACHINE = Machines(machine=mach_name)
+    elif config.has_option("create_test", "MACHINE"):
+        MACHINE = Machines(machine=config.get("create_test", "MACHINE"))
+    elif config.has_option("main", "MACHINE"):
+        MACHINE = Machines(machine=config.get("main", "MACHINE"))
     else:
         MACHINE = Machines()
-
 
     if "--compiler" in sys.argv:
         global TEST_COMPILER
@@ -2516,6 +2520,10 @@ def _main_func():
         TEST_COMPILER = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
+    elif config.has_option("create_test", "COMPILER"):
+        TEST_COMPILER = config.get("create_test", "COMPILER")
+    elif config.has_option("main", "COMPILER"):
+        TEST_COMPILER = config.get("main", "COMPILER")
 
     if "--mpilib" in sys.argv:
         global TEST_MPILIB
@@ -2530,6 +2538,8 @@ def _main_func():
         TEST_ROOT = sys.argv[trindex +1]
         del sys.argv[trindex+1]
         del sys.argv[trindex]
+    elif config.has_option("create_test", "TEST_ROOT"):
+        TEST_ROOT = config.get("create_test", "TEST_ROOT")
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
