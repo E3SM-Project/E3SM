@@ -1091,6 +1091,7 @@ contains
   real (kind=real_kind) :: v_gradphi(np,np,nlev)
   real (kind=real_kind) :: v_gradKE(np,np,nlev)     
   real (kind=real_kind) :: vdp(np,np,2,nlev)
+  real (kind=real_kind) :: wvor(np,np,2,nlev)
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
@@ -1220,9 +1221,14 @@ contains
         !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
         !call preq_vertadv_upwind(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
 
-        !    this loop constructs d( eta-dot * theta_dp_cp)/deta
-        !   d( eta_dot_dpdn * theta*cp)
-        !  so we need to compute theta_cp form theta_dp_cp and average to interfaces
+        ! this loop constructs d( eta-dot * theta_dp_cp)/deta
+        ! d( eta_dot_dpdn * theta*cp)
+        ! so we need to compute theta_cp form theta_dp_cp and average to interfaces
+        do k=2,nlev  ! simple averaging
+           theta_bar(:,:,k) = - ( (dpnh_dp(:,:,k) + dpnh_dp(:,:,k-1))/2 ) * &
+                (phi(:,:,k)-phi(:,:,k-1))/(exner(:,:,k)-exner(:,:,k-1))
+        enddo
+#if 0        
         if (theta_hydrostatic_mode) then
            do k=2,nlev   ! energy conserving formula in hydrostatic case:
               theta_bar(:,:,k) = - (phi(:,:,k)-phi(:,:,k-1))/(exner(:,:,k)-exner(:,:,k-1)) 
@@ -1230,11 +1236,9 @@ contains
         else
            do k=2,nlev  ! simple averaging
               theta_bar(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
-              !theta_bar(:,:,k) = (hvcoord%d_etam(k)*theta_cp(:,:,k)+&
-              !     hvcoord%d_etam(k-1)*theta_cp(:,:,k-1))/(2*hvcoord%d_etai(k))
            enddo
         endif
-
+#endif
 
         do k=1,nlev
            s_vadv(:,:,k,3)= &
@@ -1269,7 +1273,14 @@ contains
 #endif
 
      vertloop: do k=1,nlev
+        ! w-vorticity correction term added to u momentum equation for E conservation
+        KE(:,:,k) = (elem(ie)%state%w(:,:,k,n0)**2)/2  ! use KE() as a temp array
+        wvor(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
+        vtemp(:,:,:)  = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
+        wvor(:,:,1,k) = wvor(:,:,1,k) - elem(ie)%state%w(:,:,k,n0)*vtemp(:,:,1)
+        wvor(:,:,2,k) = wvor(:,:,2,k) - elem(ie)%state%w(:,:,k,n0)*vtemp(:,:,2)
                    
+
         ! ================================================
         ! w,theta,phi tendencies:
         ! ================================================
@@ -1298,6 +1309,9 @@ contains
 
         grad_kappastar(:,:,:,k) = gradient_sphere(kappa_star(:,:,k),deriv,elem(ie)%Dinv)
 
+        
+        
+
         do j=1,np
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
@@ -1309,7 +1323,7 @@ contains
                    - gradKE(i,j,1,k) - gradphi(i,j,1,k)*dpnh_dp(i,j,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,1,k)&
                   +theta_cp(i,j,k)*grad_kappastar(i,j,1,k)*exner(i,j,k)*log(pnh(i,j,k)/p0)&
-                  )*scale1
+                  -wvor(i,j,1,k) )*scale1
 
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
@@ -1317,7 +1331,7 @@ contains
                    - gradKE(i,j,2,k) - gradphi(i,j,2,k)*dpnh_dp(i,j,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,2,k) &
                   +theta_cp(i,j,k)*grad_kappastar(i,j,2,k)*exner(i,j,k)*log(pnh(i,j,k)/p0) &
-                  )*scale1
+                  -wvor(i,j,2,k) )*scale1
 
            end do
         end do     
@@ -1345,6 +1359,7 @@ contains
         elem(ie)%accum%KEu_vert2=0
         elem(ie)%accum%KEw_horiz1=0
         elem(ie)%accum%KEw_horiz2=0
+        elem(ie)%accum%KEw_horiz3=0
         elem(ie)%accum%KEw_vert1=0
         elem(ie)%accum%KEw_vert2=0
 
@@ -1374,10 +1389,13 @@ contains
                   elem(ie)%accum%KEu_horiz2(i,j)=elem(ie)%accum%KEu_horiz2(i,j)              &
                   -KE(i,j,k)*divdp(i,j,k)
                !  Form horiz advection of KE-w
-                  elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)-   &
-                  dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    
+                  elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)   &
+                  -dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)      
                   elem(ie)%accum%KEw_horiz2(i,j)=elem(ie)%accum%KEw_horiz2(i,j)-   &
-                  0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
+                       0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k)
+                  elem(ie)%accum%KEw_horiz3(i,j)=elem(ie)%accum%KEw_horiz3(i,j)   &
+                  -dp3d(i,j,k) * (elem(ie)%state%v(i,j,1,k,n0) * wvor(i,j,1,k) +  &
+                                  elem(ie)%state%v(i,j,2,k,n0) * wvor(i,j,2,k))
                !  Form vertical advection of KE-u 
                   elem(ie)%accum%KEu_vert1(i,j)=elem(ie)%accum%KEu_vert1(i,j)- &
                   (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
