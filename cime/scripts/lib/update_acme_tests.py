@@ -152,7 +152,9 @@ _TEST_SUITES = {
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SEQ_IOP.f19_g16.X",
                            "SMS.ne30_oECv3_ICG.A_WCYCL1850S",
-                           "SMS.f09_g16_a.MPASLIALB")
+                           "SMS.f09_g16_a.MPASLIALB",
+                           "SMS.ne30_oECv3.A_BGCEXP_BCRC_CNPRDCTC_1850",
+                           "SMS.ne30_oECv3.A_BGCEXP_BCRC_CNPECACNT_1850")
                           ),
     #acme tests for extra coverage
     "acme_extra_coverage" : (("acme_atm_extra_coverage",),None,
