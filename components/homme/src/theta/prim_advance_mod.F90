@@ -1099,7 +1099,6 @@ contains
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
   real (kind=real_kind) :: v_vadv(np,np,2,nlev)       ! velocity vertical advection
-  real (kind=real_kind) :: s_state(np,np,nlev,2)      ! scalars w,phi
   real (kind=real_kind) :: s_vadv(np,np,nlev,3)       ! w,phi, theta  vertical advection term
   real (kind=real_kind) :: stens(np,np,nlev,3)        ! tendencies w,phi,theta
 
@@ -1134,21 +1133,27 @@ contains
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
              kappa_star,pnh,dpnh,exner) 
 
+     dp3d_i(:,:,1) = dp3d(:,:,1)
+     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+     do k=2,nlev
+        dp3d_i(:,;,k)=((dp3d(:,:,k)+dp3d(:,:,k-1))/2
+     end do
+     
      v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)  
      v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
-
+     do k=2,nlev
+        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
+             dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (2*dp3d_i(:,:,k))
+        v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
+             dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
+     end do
+     
      if (theta_hydrostatic_mode) then
         ! traditional Hydrostatic integral
         do k=1,nlev
            !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
            temp(:,:,k) = kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
         enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)                                                                                            
-#endif
-        do k=2,nlev
-           v_i(:,:,1:2,k) = (elem(ie)%state%v(:,:,1:2,k,n0)+  elem(ie)%state%v(:,:,1:2,k-1,n0))/2
-        end do 
         dpnh_dp(:,:,:) = 1
         dpnh_dp_i(:,:,:) = 1
 
@@ -1158,17 +1163,17 @@ contains
 
      else
         ! d(p-nh) / d(p-hyrdostatic)
-       ! ================================            
-       ! average to get horizontal velocity, dp3d, and dpnh from levels to interfaces
-       ! and phi from interfaces to levels
-       ! ================================
-       dp3d_i(:,:,1)  = dp3d(:,:,1)
-       dpnh_i(:,:,1)  = dpnh(:,:,1)
+        ! ================================            
+        ! average to get horizontal velocity, dp3d, and dpnh from levels to interfaces
+        ! and phi from interfaces to levels
+        ! ================================
+        dp3d_i(:,:,1)  = dp3d(:,:,1)
+        dpnh_i(:,:,1)  = dpnh(:,:,1)
         do k=2,nlev
            v_i(:,:,1:2,k) = (elem(ie)%state%v(:,:,1:2,k,n0)+  elem(ie)%state%v(:,:,1:2,k-1,n0))/2
            dp3d_i(:,:,k) = (dp3d(:,:,k)+dp3d(:,:,k-1))/2
            dpnh_i(:,:,k) = (dpnh(:,:,k)+dpnh(:,:,k-1))/2
-        end do 
+        end do
         dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
         dpnh_i(:,:,nlevp) = dpnh(:,:,nlev)
         dpnh_dp_i(:,:,:) = dpnh_i(:,:,:)/dp3d_i(:,:,:)        
@@ -1228,7 +1233,6 @@ contains
            ! ==================================================
            sdot_sum(:,:) = sdot_sum(:,:) + divdp(:,:,k)
            eta_dot_dpdn(:,:,k+1) = sdot_sum(:,:)
-           
         end do
 
 
@@ -1251,12 +1255,7 @@ contains
         ! ===========================================================
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
         ! ==============================================
-        ! TO DO :  make different advection subroutine without s_state
-    !    s_state(:,:,:,1)=elem(ie)%state%w_i(:,:,1:nlev,n0)
-    !    s_state(:,:,:,2)=phi_i(:,:,1:nlev)
         call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),eta_dot_dpdn,dp3d,v_vadv)
-        !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
-        !call preq_vertadv_upwind(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
 
         !    this loop constructs d( eta-dot * theta_dp_cp)/deta
         !   d( eta_dot_dpdn * theta*cp)
