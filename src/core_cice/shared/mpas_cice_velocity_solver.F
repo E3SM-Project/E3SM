@@ -80,7 +80,8 @@ contains
          config_use_velocity_solver, &
          config_rotate_cartesian_grid, &
          config_include_metric_terms, &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -218,6 +219,26 @@ contains
           call MPAS_log_write("failure to add totalMassCell to iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
        endif
 
+       ! create the solveVelocityExchangeGroup aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'solveVelocityExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'solveVelocityExchangeGroup', 'solveVelocity', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add solveVelocity to solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+       ! create the icePressureExchangeGroup aggregated halo exchange
+       call mpas_dmpar_exch_group_create(domain, 'icePressureExchangeGroup', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to create icePressureExchangeGroup", MPAS_LOG_CRIT)
+       endif
+       call mpas_dmpar_exch_group_add_field(domain, 'icePressureExchangeGroup', 'icePressure', iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to add icePressure to icePressureExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
        ! create the airStressHaloExchangeGroup aggregated halo exchange
        call mpas_dmpar_exch_group_create(domain, 'airStressHaloExchangeGroup', iErr=ierr)
        if (ierr /= MPAS_DMPAR_NOERR) then
@@ -258,6 +279,41 @@ contains
        call mpas_dmpar_exch_group_add_field(domain, 'oceanStressHaloExchangeGroup', 'oceanStressV', iErr=ierr)
        if (ierr /= MPAS_DMPAR_NOERR) then
           call MPAS_log_write("failure to add oceanStressV to oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+       endif
+
+       ! build reusable buffers
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (config_reuse_halo_exch) then
+
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "velocityHaloExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "iceAreaTotalMassExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+          endif
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "solveVelocityExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+          endif
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "icePressureExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for icePressureExchangeGroup", MPAS_LOG_CRIT)
+          endif
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "airStressHaloExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "seaSurfaceTiltHaloExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+          call mpas_dmpar_exch_group_build_reusable_buffers(domain, "oceanStressHaloExchangeGroup", iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to build reusable buffers for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
        endif
 
     endif ! config_aggregate_halo_exch
@@ -663,7 +719,8 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_vertical_thermodynamics, &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     integer :: &
          ierr
@@ -699,13 +756,29 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
     if (config_aggregate_halo_exch) then
 
-       call mpas_dmpar_exch_group_full_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
-       if (ierr /= MPAS_DMPAR_NOERR) then
-          call MPAS_log_write("failure to perform halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
-       endif
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
 
     else
 
+       ! no aggregated halo exchange
        call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCellInitial')
        call MPAS_dmpar_field_halo_exch(domain, 'totalMassCell')
 
@@ -748,7 +821,35 @@ contains
 
     call mpas_timer_start("velocity mask halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'solveVelocity')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'solveVelocityExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'solveVelocityExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
+
+    else
+
+       ! no aggregated halo exchange
+       call MPAS_dmpar_field_halo_exch(domain, 'solveVelocity')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("velocity mask halo")
 
@@ -1014,7 +1115,8 @@ contains
          ierr
 
     logical, pointer :: &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     block => domain % blocklist
     do while (associated(block))
@@ -1093,13 +1195,29 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
     if (config_aggregate_halo_exch) then
 
-       call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-       if (ierr /= MPAS_DMPAR_NOERR) then
-          call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-       endif
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
 
     else
 
+       ! no aggregated halo exchange
        call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
        call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
@@ -1160,14 +1278,17 @@ contains
 
     logical, pointer :: &
          config_use_column_package, &
-         config_use_column_vertical_thermodynamics
+         config_use_column_vertical_thermodynamics, &
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     integer, pointer :: &
          nCellsSolve, &
          nCategories
 
     integer :: &
-         iCell
+         iCell, &
+         ierr
 
     block => domain % blocklist
     do while (associated(block))
@@ -1245,7 +1366,35 @@ contains
 
     call mpas_timer_start("ice strength halo")
 
-    call MPAS_dmpar_field_halo_exch(domain, 'icePressure')
+    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    if (config_aggregate_halo_exch) then
+
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'icePressureExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for icePressureExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'icePressureExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for icePressureExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
+
+    else
+
+       ! no aggregated halo exchange
+       call MPAS_dmpar_field_halo_exch(domain, 'icePressure')
+
+    endif ! config_aggregate_halo_exch
 
     call mpas_timer_stop("ice strength halo")
 
@@ -1281,7 +1430,8 @@ contains
          config_use_column_package, &
          config_use_column_vertical_thermodynamics, &
          config_use_air_stress, &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     type(MPAS_pool_type), pointer :: &
          meshPool, &
@@ -1328,13 +1478,29 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
     if (config_aggregate_halo_exch) then
 
-       call mpas_dmpar_exch_group_full_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
-       if (ierr /= MPAS_DMPAR_NOERR) then
-          call MPAS_log_write("failure to perform halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
-       endif
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
 
     else
 
+       ! no aggregated halo exchange
        call MPAS_dmpar_field_halo_exch(domain, 'airStressCellU')
        call MPAS_dmpar_field_halo_exch(domain, 'airStressCellV')
 
@@ -1786,7 +1952,8 @@ contains
          ierr
 
     logical, pointer :: &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     ! halo exchange surface tilt
     call cice_load_balance_timers(domain)
@@ -1796,13 +1963,29 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
     if (config_aggregate_halo_exch) then
 
-       call mpas_dmpar_exch_group_full_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
-       if (ierr /= MPAS_DMPAR_NOERR) then
-          call MPAS_log_write("failure to perform halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
-       endif
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
 
     else
 
+       ! no aggregated halo exchange
        call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltU')
        call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltV')
 
@@ -2173,7 +2356,8 @@ contains
 
     logical, pointer :: &
          config_revised_evp, &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     integer :: &
          ierr
@@ -2224,13 +2408,29 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
     if (config_aggregate_halo_exch) then
 
-       call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-       if (ierr /= MPAS_DMPAR_NOERR) then
-          call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-       endif
+       ! aggregated halo exchange
+       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+       if (.not. config_reuse_halo_exch) then
+
+          ! without reuse
+          call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       else
+
+          ! with reuse
+          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+          if (ierr /= MPAS_DMPAR_NOERR) then
+             call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+          endif
+
+       endif ! config_reuse_halo_exch
 
     else
 
+       ! no aggregated halo exchange
        call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
        call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
@@ -2914,7 +3114,8 @@ contains
 
     logical, pointer :: &
          configUseOceanStress, &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     integer, pointer :: &
          nVerticesSolve
@@ -3006,13 +3207,29 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
        if (config_aggregate_halo_exch) then
 
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
+          ! no aggregated halo exchange
           call MPAS_dmpar_field_halo_exch(domain, 'oceanStressU')
           call MPAS_dmpar_field_halo_exch(domain, 'oceanStressV')
 

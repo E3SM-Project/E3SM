@@ -1226,9 +1226,12 @@ contains
          ierr
 
     logical, pointer :: &
-         config_aggregate_halo_exch
+         config_aggregate_halo_exch, &
+         config_reuse_halo_exch
 
     call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+    call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+
     if (config_aggregate_halo_exch) then
 
        do iTimeLevel = 1, 2
@@ -1253,6 +1256,16 @@ contains
              thisTracer => thisTracer % next
 
           enddo  ! associated(thisTracer)
+
+          ! halo reuse
+          if (config_reuse_halo_exch) then
+
+             call mpas_dmpar_exch_group_build_reusable_buffers(domain, trim(exchangeGroupName), iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to build reusable buffers for "//trim(exchangeGroupName), MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        enddo ! iTimeLevel
 
@@ -1290,6 +1303,9 @@ contains
     integer :: &
          ierr
 
+    logical, pointer :: &
+         config_reuse_halo_exch
+
     if (present(timeLevelIn)) then
        timeLevel = timeLevelIn
     else
@@ -1300,10 +1316,25 @@ contains
 
     if (verboseTracers) call mpas_log_write('Halo group update:'//trim(exchangeGroupName))
 
-    call mpas_dmpar_exch_group_full_halo_exch(domain, trim(exchangeGroupName), iErr=ierr)
-    if (ierr /= MPAS_DMPAR_NOERR) then
-       call MPAS_log_write("failure to perform halo exchange for "//trim(exchangeGroupName), MPAS_LOG_CRIT)
-    endif
+    ! aggregated halo exchange
+    call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+    if (.not. config_reuse_halo_exch) then
+
+       ! without reuse
+       call mpas_dmpar_exch_group_full_halo_exch(domain, trim(exchangeGroupName), iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform halo exchange for "//trim(exchangeGroupName), MPAS_LOG_CRIT)
+       endif
+
+    else
+
+       ! with reuse
+       call mpas_dmpar_exch_group_reuse_halo_exch(domain, trim(exchangeGroupName), iErr=ierr)
+       if (ierr /= MPAS_DMPAR_NOERR) then
+          call MPAS_log_write("failure to perform reuse halo exchange for "//trim(exchangeGroupName), MPAS_LOG_CRIT)
+       endif
+
+    endif ! config_reuse_halo_exch
 
   end subroutine update_tracer_halo_exch_group
 
