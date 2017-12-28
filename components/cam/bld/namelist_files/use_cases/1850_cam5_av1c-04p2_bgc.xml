@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
-<phys_alltoall>1</phys_alltoall>
-<phys_loadbalance>2</phys_loadbalance>
-
 <!-- Solar constant from Lean (via Caspar Ammann) -->
 <solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1850_cntl_c100407.nc</solar_data_file>
 <solar_data_ymd>18500101</solar_data_ymd>
@@ -15,6 +12,28 @@
 <n2ovmr>275.425e-9</n2ovmr>
 <f11vmr>33.432e-12</f11vmr>
 <f12vmr>0.0</f12vmr>
+
+<!-- Add sub-monthly output for AR5 runs -->
+<mfilt>1,365,120,30</mfilt>
+<nhtfrq>0,-24,-1,-24</nhtfrq>
+
+<!-- Output some diagnostics for monitoring time varying forcing -->
+<fincl1>
+  'cb_ozone_c', 'cb_sulf_c'
+</fincl1>
+<fincl1 dyn="fv">
+  'cb_ozone_c', 'cb_sulf_c',
+  'MSKtem','VTH2d','UV2d','UW2d','U2d','V2d','TH2d','W2d','UTGWORO'
+</fincl1>
+
+<!-- Daily avg fields present in all runs -->
+<fincl2>'TREFHTMN','TREFHTMX','TREFHT','PRECC','PRECL','PSL'</fincl2>
+
+<!-- Fields for BGC runs -->
+<fincl3>'FSDS','FSNS','FLDS','FLNS','SHFLX','LHFLX',
+        'TS','TBOT','QBOT','TREFHT','QREFHT','PBLH','SFCO2_LND','CO2_BOT'</fincl3>
+
+<fincl4>'CO2','PS','SFCO2_OCN','SFCO2_FFF'</fincl4>
 
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc>.true.</use_hetfrz_classnuc>
