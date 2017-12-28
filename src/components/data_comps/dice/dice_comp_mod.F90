@@ -647,7 +647,6 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('dice_restart')
-       ! Write rpointer file
        call shr_cal_ymdtod2string(date_str, yy, mm, dd, currentTOD)
        write(rest_file,"(6a)") &
             trim(case_name), '.dice',trim(inst_suffix),'.r.', &
@@ -663,7 +662,6 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       ! Write restart info
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
             trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
