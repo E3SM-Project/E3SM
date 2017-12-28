@@ -2480,20 +2480,25 @@ def write_provenance_info():
 
 def _main_func():
     global MACHINE
+    global NO_CMAKE
+    global FAST_ONLY
+    global NO_BATCH
+    global TEST_COMPILER
+    global TEST_MPILIB
+    global TEST_ROOT
+    global GLOBAL_TIMEOUT
+    config = CIME.utils.get_cime_config()
 
     if "--fast" in sys.argv:
         sys.argv.remove("--fast")
-        global FAST_ONLY
         FAST_ONLY = True
 
     if "--no-batch" in sys.argv:
         sys.argv.remove("--no-batch")
-        global NO_BATCH
         NO_BATCH = True
 
     if "--no-cmake" in sys.argv:
         sys.argv.remove("--no-cmake")
-        global NO_CMAKE
         NO_CMAKE = True
 
     if "--machine" in sys.argv:
@@ -2506,36 +2511,45 @@ def _main_func():
     elif "CIME_MACHINE" in os.environ:
         mach_name = os.environ["CIME_MACHINE"]
         MACHINE = Machines(machine=mach_name)
+    elif config.has_option("create_test", "MACHINE"):
+        MACHINE = Machines(machine=config.get("create_test", "MACHINE"))
+    elif config.has_option("main", "MACHINE"):
+        MACHINE = Machines(machine=config.get("main", "MACHINE"))
     else:
         MACHINE = Machines()
 
-
     if "--compiler" in sys.argv:
-        global TEST_COMPILER
         midx = sys.argv.index("--compiler")
         TEST_COMPILER = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
+    elif config.has_option("create_test", "COMPILER"):
+        TEST_COMPILER = config.get("create_test", "COMPILER")
+    elif config.has_option("main", "COMPILER"):
+        TEST_COMPILER = config.get("main", "COMPILER")
 
     if "--mpilib" in sys.argv:
-        global TEST_MPILIB
         midx = sys.argv.index("--mpilib")
         TEST_MPILIB = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
+    elif config.has_option("create_test", "MPILIB"):
+        TEST_MPILIB = config.get("create_test", "MPILIB")
+    elif config.has_option("main", "MPILIB"):
+        TEST_MPILIB = config.get("main", "MPILIB")
 
     if "--test-root" in sys.argv:
-        global TEST_ROOT
         trindex = sys.argv.index("--test-root")
         TEST_ROOT = sys.argv[trindex +1]
         del sys.argv[trindex+1]
         del sys.argv[trindex]
+    elif config.has_option("create_test", "TEST_ROOT"):
+        TEST_ROOT = config.get("create_test", "TEST_ROOT")
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
 
     if "--timeout" in sys.argv:
-        global GLOBAL_TIMEOUT
         tidx = sys.argv.index("--machine")
         GLOBAL_TIMEOUT = int(sys.argv[tidx + 1])
 
