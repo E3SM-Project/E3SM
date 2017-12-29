@@ -148,6 +148,7 @@ module PhosphorusStateType
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
      procedure , private :: Summary_betr
+     procedure , public  :: readProfileP 
   end type phosphorusstate_type
   !------------------------------------------------------------------------
 
@@ -1398,7 +1399,62 @@ contains
     end associate
 
   end subroutine Restart
+ !-----------------------------------------------------------------------
+  subroutine readProfileP(this, bounds, cnstate_vars)
 
+    !
+    ! !DESCRIPTION:
+    ! setup inorganic P profile 
+    use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
+    use soilorder_varcon       , only : smax, ks_sorption
+    use clm_varcon             , only : dzsoi_decomp, zisoi
+    use CNStateType            , only : cnstate_type
+    implicit none
+    ! !ARGUMENTS:
+    class (phosphorusstate_type) :: this
+    type(bounds_type)          , intent(in)    :: bounds 
+
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
+
+    real(r8) :: a, b, d, zdep
+    integer  :: c, j
+
+    if (.not. cnstate_vars%pdatasets_present) then
+      call endrun(msg='ERROR:: P pools are required on surface dataset'//&
+      errMsg(__FILE__, __LINE__))
+    end if
+
+    do c = bounds%begc, bounds%endc
+
+      zdep=zisoi(nlevdecomp)
+      do j = 1, nlevdecomp
+        ! solve equilibrium between loosely adsorbed and solution
+        ! phosphorus
+        ! the P maps used in the initialization are generated for the top 50cm soils
+        ! assume soil below 50 cm has the same p pool concentration
+        ! divide 0.5m when convert p pools from g/m2 to g/m3
+        ! assume p pools evenly distributed at dif layers
+        if(cnstate_vars%isoilorder(c)==16)then
+          this%solutionp_vr_col(c,j)=0._r8
+          this%labilep_vr_col(c,j) = 0._r8
+          this%secondp_vr_col(c,j)=0._r8
+          this%occlp_vr_col(c,j) = 0._r8
+          this%primp_vr_col(c,j) = 0._r8
+        else
+          a = 1._r8
+          b = VMAX_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) + &
+            KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/zdep
+          d = -1.0* cnstate_vars%labp_col(c)/zdep * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+          this%solutionp_vr_col(c,j) = (-b+(b**2-4*a*d)**0.5)/(2*a)
+          this%labilep_vr_col(c,j) = cnstate_vars%labp_col(c)/zdep - this%solutionp_vr_col(c,j)
+          this%secondp_vr_col(c,j) = cnstate_vars%secp_col(c)/zdep
+          this%occlp_vr_col(c,j) = cnstate_vars%occp_col(c)/zdep
+          this%primp_vr_col(c,j) = cnstate_vars%prip_col(c)/zdep
+        endif
+      enddo
+    enddo
+
+  end subroutine readProfileP
   !-----------------------------------------------------------------------
   subroutine SetValues ( this, &
        num_patch, filter_patch, value_patch, &

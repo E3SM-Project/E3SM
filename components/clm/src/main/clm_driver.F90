@@ -1109,11 +1109,11 @@ contains
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      nitrogenstate_vars, nitrogenflux_vars)
 
-
-                 call PBalanceCheck(bounds_clump, &
+                 if(ep_betr%checkpmassyes())then
+                   call PBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      phosphorusstate_vars, phosphorusflux_vars)
-
+                 endif
                  call t_stopf('cnbalchk')
                end if
              else

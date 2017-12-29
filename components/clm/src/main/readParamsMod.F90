@@ -124,7 +124,6 @@ contains
     !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
      call get_proc_bounds(bounds_proc)
      call ep_betr%readParams(ncid, bounds_proc)
-     print*,'read readCNAllocBeTRParams'
      call readCNAllocBeTRParams(ncid)
     endif
 

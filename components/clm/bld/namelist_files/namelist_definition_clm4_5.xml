@@ -1461,6 +1461,11 @@ Turn on reaction in betr if it is true.
        group="betr_inparm" valid_values="" >
 Turn on two-stage Accelerated spinup if it is true.
 </entry>
+
+<entry id="fix_ip" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Fix the amount of inorganic phosphorus if it is true.
+</entry>
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->

@@ -67,6 +67,7 @@ module ColumnType
      ! other column characteristics
      logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
 
+     logical , pointer :: debug_flag           (:)
    contains
 
      procedure, public :: Init => col_pp_init
@@ -118,6 +119,7 @@ contains
 
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
 
+    allocate(this%debug_flag  (begc:endc))                     ; this%debug_flag  (:)   = .false.
   end subroutine col_pp_init
 
   !------------------------------------------------------------------------
@@ -153,6 +155,7 @@ contains
     deallocate(this%zibed      )
     deallocate(this%hydrologically_active)
 
+    deallocate(this%debug_flag )
   end subroutine col_pp_clean
 
 

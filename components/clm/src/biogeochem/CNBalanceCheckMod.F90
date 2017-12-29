@@ -120,10 +120,10 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begnb(c) = totcoln(c)
-!         if(c==2330)then
-!           print*,'begabgn =',nitrogenstate_vars%totabgn_col(c)
-!           print*,'begsoin =',nitrogenstate_vars%totblgn_col(c)
-!         endif
+         nitrogenstate_vars%begabgn_col(c)=nitrogenstate_vars%totabgn_col(c)
+         nitrogenstate_vars%begblgn_col(c)=nitrogenstate_vars%totblgn_col(c)
+!         col_pp%debug_flag(c) = (abs(grc_pp%latdeg(col_pp%gridcell(c))-82.4210526315788)+abs(grc_pp%londeg(col_pp%gridcell(c))-317.50) < 1.e-5 &
+!            .and. get_nstep()==2)
       end do
 
     end associate
@@ -476,6 +476,8 @@ contains
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begnb                 = ',col_begnb(c)
          write(iulog,*)'endnb                 = ',col_endnb(c)
+         write(iulog,*)'begabgn               = ',nitrogenstate_vars%begabgn_col(c)
+         write(iulog,*)'begblgn               = ',nitrogenstate_vars%begblgn_col(c)
          write(iulog,*)'delta_store           = ',col_endnb(c)-col_begnb(c)
          write(iulog,*)'net_flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
          write(iulog,*)'input_mass            = ',col_ninputs(c)*dt

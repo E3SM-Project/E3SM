@@ -103,8 +103,9 @@ module CNNitrogenStateType
      real(r8), pointer :: begnb_col                    (:)     ! col nitrogen mass, beginning of time step (gN/m**2)
      real(r8), pointer :: endnb_col                    (:)     ! col nitrogen mass, end of time step (gN/m**2)
      real(r8), pointer :: errnb_col                    (:)     ! colnitrogen balance error for the timestep (gN/m**2)
-
-
+     real(r8), pointer :: begabgn_col                  (:)
+     real(r8), pointer :: begblgn_col                  (:)
+     
      ! for newly-added coupled codes with pflotran (it should be included in total 'sminn' defined above when doing summation)
      real(r8), pointer :: smin_nh4sorb_vr_col          (:,:)   ! col (gN/m3) vertically-resolved soil mineral NH4 absorbed
      real(r8), pointer :: smin_nh4sorb_col             (:)     ! col (gN/m2) soil mineral NH4 pool absorbed
@@ -305,7 +306,9 @@ contains
     allocate(this%endnb_col   (begc:endc));     this%endnb_col   (:) =nan
     allocate(this%errnb_patch (begp:endp));     this%errnb_patch (:) =nan
     allocate(this%errnb_col   (begc:endc));     this%errnb_col   (:) =nan 
-    
+    allocate(this%begabgn_col (begc:endc));     this%begabgn_col (:) =nan
+    allocate(this%begblgn_col (begc:endc));     this%begblgn_col (:) =nan
+ 
     allocate(this%totpftn_beg_col     (begc:endc))   ; this%totpftn_beg_col     (:) = nan
     allocate(this%cwdn_beg_col        (begc:endc))   ; this%cwdn_beg_col        (:) = nan
     allocate(this%totlitn_beg_col     (begc:endc))   ; this%totlitn_beg_col     (:) = nan

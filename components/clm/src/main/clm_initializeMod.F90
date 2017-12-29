@@ -424,7 +424,7 @@ contains
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use clm_varctl                          , only : use_clm_interface, use_pflotran
     use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
-    use tracer_varcon         , only : is_active_betr_bgc    
+    use tracer_varcon         , only : is_active_betr_bgc,fix_ip    
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
     !
@@ -559,6 +559,7 @@ contains
     if(use_betr)then
       !allocate memory for betr simulator
       allocate(ep_betr, source=create_betr_simulation_alm())
+      !always set inorganic P profile
       !set internal filters for betr
       call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, nsoilorder=nsoilorder,boffline=.false.)
       call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
@@ -595,7 +596,9 @@ contains
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
     call clm_inst_biogeochem(bounds_proc)
-
+    if(use_betr .and. is_active_betr_bgc)then 
+      call phosphorusstate_vars%readProfileP(bounds_proc, cnstate_vars)
+    endif
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
     ! ------------------------------------------------------------------------
@@ -715,7 +718,11 @@ contains
             alm_fates, glc2lnd_vars, crop_vars)
 
     end if
-       
+    if(use_betr .and. is_active_betr_bgc .and. fix_ip)then
+      
+      call ep_betr%SetBiophysForcing(bounds_proc, col_pp, veg_pp, phosphorusstate_vars=phosphorusstate_vars)
+      call ep_betr%Set_iP_prof(bounds_proc)
+    endif   
     ! ------------------------------------------------------------------------
     ! If appropriate, create interpolated initial conditions
     ! ------------------------------------------------------------------------
