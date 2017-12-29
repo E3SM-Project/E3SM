@@ -180,6 +180,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
             "cmake",
             "-C Macros.cmake",
             test_spec_dir,
+            "-DCIMEROOT="+_CIMEROOT,
             "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
