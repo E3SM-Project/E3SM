@@ -33,8 +33,9 @@ module eos
 contains
 
 
-  subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,pnh_i_out,exner_i_out)
-  implicit none
+subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,kappa_star,pnh,exner,&
+     dpnh_dp_i,pnh_i_out)
+implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
 ! hydrostatic EOS:
@@ -55,26 +56,24 @@ contains
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)   
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: phi(np,np,nlev)
-  real (kind=real_kind), intent(in) :: phis(np,np)
+  real (kind=real_kind), intent(in) :: phi_i(np,np,nlevp)
   real (kind=real_kind), intent(in) :: kappa_star(np,np,nlev)   
-  real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
-  real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
-  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
-  real (kind=real_kind), intent(out), optional :: exner_i_out(np,np,nlevp)  ! exner nh pressure interfaces
+  real (kind=real_kind), intent(out) :: pnh(np,np,nlev)        ! nh nonhyrdo pressure
+  real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
+  real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
 
   !   local
-  real (kind=real_kind) :: phi_i(np,np,nlevp)
   real (kind=real_kind) :: kappa_star_i(np,np,nlev)
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)  
-  real (kind=real_kind) :: phinh_i(np,np,nlevp)
-  real (kind=real_kind) :: exner_i(np,np,nlevp) 
   real (kind=real_kind) :: rho_R_theta(np,np,nlev)
   real (kind=real_kind) :: pi(np,np,nlev)
+  real (kind=real_kind) :: exner_i(np,np,nlevp) 
+  real (kind=real_kind) :: pnh_i(np,np,nlevp)  
+  real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 
   integer :: k
 
+  ! hydrostatic pressure
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
@@ -87,30 +86,13 @@ contains
   if (theta_hydrostatic_mode) then
      ! hydrostatic pressure
      exner  = (pi/p0)**kappa_star
-     dpnh = dp3d
      pnh = pi ! copy hydrostatic pressure into output variable
-     if (present(exner_i_out)) then
-        do k=2,nlev
-           kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
-           exner_i_out(:,:,k) = (pi_i(:,:,k)/p0)**kappa_star_i(:,:,k)
-        enddo
-        ! how to approximate kappa_star at top and bottom of model?  
-        exner_i_out(:,:,1) = (pi_i(:,:,1)/p0)**kappa_star(:,:,1)
-        exner_i_out(:,:,nlev+1) = (pi_i(:,:,nlev+1)/p0)**kappa_star(:,:,nlev)
-     endif
+     dpnh_dp_i = 1
      if (present(pnh_i_out)) then  
        pnh_i_out=pnh_i 
      endif
   else
 
-!  this will be input 
-    do k=2,nlev
-      phinh_i(:,:,k) = (phi(:,:,k) + phi(:,:,k-1))/2
-    enddo
-    ! extrapolate phi to top of model, should it be found from 
-    ! the boundary condition from pressure at top of model?
-    phinh_i(:,:,1) = 3*phi(:,:,1)/2-phi(:,:,2)/2
-    phinh_i(:,:,nlevp) = phis(:,:)
 !==============================================================
 !  non-hydrostatic EOS
 !==============================================================
@@ -119,22 +101,20 @@ contains
 #endif
   do k=1,nlev
      ! rho_R_theta = -kappa * Theta / dphi/ds
-     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phinh_i(:,:,k)-phinh_i(:,:,k+1)) 
+     rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phi_i(:,:,k)-phi_i(:,:,k+1)) 
 
      if (minval(rho_R_theta(:,:,k))<0) then
         print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
-        print *,'phinh_i(k+1)-phi(k)',minval(phinh_i(:,:,k+1)-phinh_i(:,:,k))
+        print *,'phi_i(k+1)-phi(k)',minval(phi_i(:,:,k+1)-phi_i(:,:,k))
         call abortmp('error: rho<0')
      endif
     
      ! p/exner = rho* Rstar * theta and  (p/p0)^(1-kappa) = rho * Rstar * theta / p0
      ! form p = p0 * (rho * Rstar * theta / p0)^(1/(1-kappa))
      ! then exner = rho * Rstar * theta / p
-  !   pnh(:,:,k) = p0 * (rho_R_theta(:,:,k) / p0)**(1/(1-kappa_star(:,:,k)))
-  !   exner(:,:,k) =  (pnh(:,:,k)/p0)**kappa_star(:,:,k) !pnh(:,:,k)/ rho_R_theta(:,:,k)
       pnh(:,:,k) = p0 * (rho_R_theta(:,:,k)/p0)**(1/(1-kappa_star(:,:,k)))
-      exner(:,:,k) =  (pnh(:,:,k)/p0)**kappa_star(:,:,k)
-  enddo
+      exner(:,:,k) =  pnh(:,:,k)/ rho_R_theta(:,:,k)
+   enddo
 ! step 1:  compute pnh_i at interfaces
 ! step 2: is to compute other quantities at interfaces using pnh_i
 ! step 3:  use p_s - pi_s = 1.5*(p(nlev)-pi(nlev))-0.5*(p(nlev-1)-pi(nlev-1))
@@ -142,30 +122,34 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-   pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop    
-   do k=2,nlevp-1
-     pnh_i(:,:,k) = (pnh(:,:,k)+pnh(:,:,k-1))/2
-   enddo
-   pnh_i(:,:,nlevp) = 2*pnh(:,:,nlev) - pnh_i(:,:,nlev)
+   pnh_i(:,:,1) = pi_i(:,:,1)   ! hydrostatic ptop    
+   ! at surface we know pi, so only extrapolate (pnh-pi):
+   pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
 
- !  this might be right for conservation, maybe not right for eos inverse
- !  pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
-   do k=1,nlev
-      dpnh(:,:,k)=pnh_i(:,:,k+1)-pnh_i(:,:,k)
-   enddo
-   if (present(pnh_i_out)) then 
-     pnh_i_out=pnh_i    
+
+   ! compute d(pnh)/d(pi) at interfaces
+   ! use one-sided differences at boundaries
+   dp3d_i(:,:,1) = dp3d(:,:,1)
+   dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+   do k=2,nlev
+      dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+   end do
+
+   dpnh_dp_i(:,:,1)  = 2*(pnh(:,:,1)-pnh_i(:,:,1))/dp3d_i(:,:,1)
+   dpnh_dp_i(:,:,nlevp)  = 2*(pnh_i(:,:,nlevp)-pnh(:,:,nlev))/dp3d_i(:,:,nlevp)
+   do k=2,nlev
+      dpnh_dp_i(:,:,k) = (pnh(:,:,k)-pnh(:,:,k-1))/dp3d_i(:,:,k)        
+   end do
+   
+
+   if (present(pnh_i_out)) then
+      ! boundary values already computed.  interior only:
+      do k=2,nlev
+         pnh_i(:,:,k)=(hvcoord%d_etam(k)*pnh(:,:,k)+hvcoord%d_etam(k-1)*pnh(:,:,k-1))/&
+              (hvcoord%d_etai(k)*2)
+      enddo
+      pnh_i_out=pnh_i    
    endif
-
-  if (present(exner_i_out)) then
-    exner_i(:,:,1) = (pnh_i(:,:,1)/p0)**kappa_star(:,:,1)
-    do k=2,nlev 
-      kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
-      exner_i(:,:,k) = (pnh_i(:,:,k)/p0)**kappa_star_i(:,:,k)
-    enddo
-    exner_i(:,:,nlevp) = (pnh_i(:,:,nlevp)/p0)**kappa_star(:,:,nlev)
-    exner_i_out = exner_i     
-  end if 
    
   endif ! hydrostatic/nonhydrostatic version
   end subroutine get_pnh_and_exner

@@ -18,11 +18,13 @@ module model_init_mod
   use dimensions_mod,     only: np,nlev,nlevp,nelemd
   use eos          ,      only: get_pnh_and_exner,get_dry_phinh,get_dirk_jacobian
   use element_ops,        only: get_kappa_star
+  use element_state,      only: timelevels
+  use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode
   use time_mod,           only: timelevel_qdp, timelevel_t
   use physical_constants, only: g
-
+ 
   implicit none
   
 contains
@@ -37,24 +39,32 @@ contains
     integer                           :: nets,nete
 
     ! local variables
-    integer :: ie
+    integer :: ie,t
+    real (kind=real_kind) :: gradtemp(np,np,2,nelemd)
 
-    ! unit test for analytic jacobian used by IMEX methods
-    call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 
+    ! other theta specific model initialization should go here    
     do ie=nets,nete
-      ! compute gradphi at the model surface
-      elem(ie)%derived%gradphis(:,:,:) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+       gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+    enddo
+    call make_C0_vector(gradtemp,elem,hybrid,nets,nete)
+    
+    do ie=nets,nete
+      elem(ie)%derived%gradphis(:,:,:) = gradtemp(:,:,:,ie)
       ! compute w_i(nlevp)
       elem(ie)%state%w_i(:,:,nlevp,tl%n0) = (&
          elem(ie)%state%v(:,:,1,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,1) + &
          elem(ie)%state%v(:,:,2,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,2))/g
 
-      ! assign phinh_i(nlevp) to be phis
-      elem(ie)%state%phinh_i(:,:,nlevp,tl%n0) = elem(ie)%state%phis(:,:)
+      ! assign phinh_i(nlevp) to be phis at all timelevels
+      do t=1,timelevels
+         elem(ie)%state%phinh_i(:,:,nlevp,t) = elem(ie)%state%phis(:,:)
+      enddo
     enddo 
 
-    ! other theta specific model initialization should go here
+
+    ! unit test for analytic jacobian used by IMEX methods
+    call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
   
   end subroutine 
 
@@ -76,8 +86,10 @@ contains
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
   
   real (kind=real_kind) :: kappa_star(np,np,nlev),kappa_star_i(np,np,nlevp)
-  real (kind=real_kind) :: dp3d(np,np,nlev), phi(np,np,nlev), phis(np,np)
-  real (kind=real_kind) :: theta_dp_cp(np,np,nlev), dpnh_dp(np,np,nlev),dpnh(np,np,nlev)
+  real (kind=real_kind) :: dp3d(np,np,nlev), phis(np,np)
+  real (kind=real_kind) :: phi_i(np,np,nlevp)
+  real (kind=real_kind) :: theta_dp_cp(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev),	pnh_i(np,np,nlevp)
   real (kind=real_kind) :: norminfJ0(np,np)
@@ -92,23 +104,15 @@ contains
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
      enddo
      theta_dp_cp(:,:,:) = elem(ie)%state%theta_dp_cp(:,:,:,tl%n0)
-     phi(:,:,:)         = elem(ie)%state%phinh_i(:,:,1:nlev,tl%n0)
+     phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
-     if (theta_hydrostatic_mode) then
-        dpnh_dp(:,:,:)=1.d0
-     else
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-             kappa_star,pnh,dpnh,exner,pnh_i_out=pnh_i)
-        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-     end if
-     do k=1,nlev
-        kappa_star_i(:,:,k+1) = 0.5D0* (kappa_star(:,:,k+1)+kappa_star(:,:,k))
-     end do
+     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,&
+             kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
 
      dt=100.d0
-     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi,phis,kappa_star_i,pnh_i,1)
+     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,1)
 
     ! compute infinity norm of the initial Jacobian 
      norminfJ0=0.d0
@@ -135,8 +139,8 @@ contains
         ! the function that we are trying to estimate the numerical jacobian of
         ! phi + const + (dt*g)^2 (1-dp/dpi)is dt*g^2 dpnh/dpi = O(10,000)
         epsie=10.d0/(10.d0)**(j+1)
-        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi,phis,kappa_star_i,pnh_i,0,&
-             epsie,hvcoord,dpnh_dp,theta_dp_cp,kappa_star,pnh,exner)
+        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,0,&
+             epsie,hvcoord,dpnh_dp_i,theta_dp_cp,kappa_star,pnh,exner)
         if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > maxjacerrorvec(j)) then 
            maxjacerrorvec(j) = maxval(abs(JacD(:,:,:)-Jac2D(:,:,:)))
         end if

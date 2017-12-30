@@ -174,8 +174,7 @@ contains
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   integer :: k
   
   
@@ -191,8 +190,8 @@ contains
 
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-          dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
-          pnh,dpnh,exner)
+          dp,elem%state%phinh_i(:,:,:,nt),kappa_star,&
+          pnh,exner,dpnh_dp_i)
 
   
 #if (defined COLUMN_OPENMP)
@@ -219,7 +218,7 @@ contains
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   integer :: k
   
@@ -231,9 +230,12 @@ contains
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-       dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
-       pnh,dpnh,exner)
-  dpnh_dp = dpnh/dp
+       dp,elem%state%phinh_i(:,:,:,nt),kappa_star,&
+       pnh,exner,dpnh_dp_i)
+
+  do k=1,nlev
+     dpnh_dp(:,:,k)=(dpnh_dp_i(:,:,k)+dpnh_dp_i(:,:,k+1))/2
+  enddo
   end subroutine 
 
   !_____________________________________________________________________
@@ -247,7 +249,8 @@ contains
     integer,                intent(in)  :: nt
     integer,                intent(in)  :: ntQ
     
-    real (kind=real_kind), dimension(np,np,nlev) :: dp,dpnh,kappa_star
+    real (kind=real_kind), dimension(np,np,nlev) :: dp,kappa_star
+    real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
     integer :: k
 
     do k=1,nlev
@@ -258,8 +261,7 @@ contains
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-         dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
-         pnh,dpnh,exner)
+         dp,elem%state%phinh_i(:,:,:,nt),kappa_star,pnh,exner,dpnh_dp_i)
 
   end subroutine
 
@@ -274,11 +276,15 @@ contains
     integer,                intent(in)  :: nt
     integer,                intent(in)  :: ntQ
     
-    real (kind=real_kind), dimension(np,np,nlev) :: dp,dpnh,kappa_star
+    real (kind=real_kind), dimension(np,np,nlev) :: dp,kappa_star
     real (kind=real_kind) :: pnh(np,np,nlev)
     real (kind=real_kind) :: exner(np,np,nlev)
     real (kind=real_kind) :: temp(np,np,nlev)
+    real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+    real (kind=real_kind) :: phi_i(np,np,nlevp)
     integer :: k
+
+    phi_i = elem%state%phinh_i(:,:,:,nt)
 
     if(theta_hydrostatic_mode) then
        do k=1,nlev
@@ -289,24 +295,22 @@ contains
        call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
        
        call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-            dp,elem%state%phinh_i(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
-            pnh,dpnh,exner)
+            dp,elem%state%phinh_i(:,:,:,nt),kappa_star,pnh,exner,dpnh_dp_i)
 
-       do k=1,nlev
-          !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
+       ! traditional Hydrostatic integral
+       do k=nlev,1,-1
           temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
+          phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
        enddo
-       call preq_hydrostatic_v2(phi,elem%state%phis,temp)
-       
-    else
-       phi = elem%state%phinh_i(:,:,1:nlev,nt)
     endif
+
+    do k=1,nlev
+       phi(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/2
+    end do
     
   end subroutine
 
        
-
-
 
 
 
@@ -345,7 +349,7 @@ contains
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   integer :: k,nt,ntQ
@@ -368,13 +372,11 @@ contains
   ! debug
   kappa_star=kappa   
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phinh_i(:,:,:,nt),&
-       elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
-  do k=1,nlev
-     if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
+       elem%state%phinh_i(:,:,:,nt),kappa_star,pnh,exner,dpnh_dp_i)
+  do k=1,nlevp
+     if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*) 'WARNING: hydrostatic inverse FAILED!'
-        write(iulog,*) minval(dpnh(:,:,k)), minval(dp(:,:,k))
-        write(iulog,*) k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+        write(iulog,*) k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
      endif
   enddo
 
@@ -450,8 +452,8 @@ contains
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,dpnh,kappa_star,exner,cp_star, temp
-    real(real_kind) , dimension(np,np) :: phis
+    real(real_kind) , dimension(np,np,nlev) :: kappa_star,exner,cp_star, temp
+    real(real_kind) , dimension(np,np,nlevp):: dpnh_dp_i,phi_i
 
     integer :: k
 
@@ -459,30 +461,34 @@ contains
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
     ps  = elem%state%ps_v(:,:,  nt)
-    phis= elem%state%phis(:,:)
-    w   = elem%state%w_i   (:,:,1:nlev,nt)
-    phi = elem%state%phinh_i(:,:,1:nlev,nt)
+    phi_i = elem%state%phinh_i(:,:,:,nt)
 
     do k=1,nlev
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
-    enddo
+       w(:,:,k) = (elem%state%w_i(:,:,k,nt) + elem%state%w_i(:,:,k+1,nt))/2
+    end do
+
     call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
     call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
+    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi_i,kappa_star,&
+         pnh,exner,dpnh_dp_i)
 
     T     = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)*exner
     rho   = pnh/(kappa_star*cp_star*T)
 
     if(theta_hydrostatic_mode) then
+       ! overwrite w and phi_i computed above
        w = -(elem%derived%omega_p*pnh)/(rho*g)
        
-       do k=1,nlev
-          !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
+       do k=nlev,1,-1
           temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
+          phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
        enddo
-       call preq_hydrostatic_v2(phi,elem%state%phis,temp)
     endif
-    zm  = phi/g   
+
+    do k=1,nlev
+       zm(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/(2*g)
+    end do
 
   end subroutine get_state
 
@@ -547,7 +553,8 @@ contains
   integer :: k,tl, ntQ
   real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
 
-real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
+  real(real_kind), dimension(np,np,nlev) :: pnh,exner
+  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
 
   do k=1,nlev
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -560,14 +567,12 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
 
   ! verify discrete hydrostatic balance
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns),&
-       elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
+       elem%state%phinh_i(:,:,:,ns),kappa_star,pnh,exner,dpnh_dp_i)
   
-  do k=1,nlev
-     if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
+  do k=1,nlevp
+     if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
-        write(iulog,*) minval(dpnh(:,:,k)), minval(dp(:,:,k))
-        write(iulog,*)k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+        write(iulog,*)k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
      endif
   enddo
   

@@ -463,7 +463,6 @@ contains
        PEner(n) = PEner(n)*scale
        TOTE(n)=IEner(n)+PEner(n)+KEner(n)
        
-       
        do q=1,qsize
           do ie=nets,nete
              tmp(:,:,ie)=elem(ie)%accum%Qvar(:,:,q,n)
@@ -505,13 +504,13 @@ contains
     enddo
     KEH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH2 = KEH2*scale
-
+    
     do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEu_vert1
     enddo
     KEV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEV1 = KEV1*scale
-
+    
     do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEu_vert2
     enddo
@@ -529,7 +528,7 @@ contains
     enddo
     KEwH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH2 = KEwH2*scale
-
+    
     do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
     enddo
@@ -541,9 +540,6 @@ contains
     enddo
     KEwV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwV2 = KEwV2*scale
-
-
-
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 
@@ -580,20 +576,20 @@ contains
     enddo
     PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert2 = PEvert2*scale
-
+    
     !   KE->IE
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T01
     enddo
     T1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T1 = T1*scale
-
+    
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T2
     enddo
     T2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T2 = T2*scale
-
+    
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S1
     enddo
@@ -617,8 +613,6 @@ contains
     enddo
     P2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     P2 = P2*scale
-
-
 
 #else
     T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; 
@@ -794,9 +788,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind) :: phi(np,np,nlev)  
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
-    real (kind=real_kind) :: dpnh(np,np,nlev) 
+    real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
-    real (kind=real_kind) :: exner_i(np,np,nlevp)  ! exner nh pressure on interfaces
     real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! exner nh pressure on intefaces
     real (kind=real_kind) :: kappa_star(np,np,nlev)  ! exner nh pressure
 
@@ -818,13 +811,16 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1), &
-            elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner,exner_i,pnh_i)
+            kappa_star,pnh,exner,dpnh_dp_i,pnh_i)
+
+       call get_field(elem(ie),'phi',phi,hvcoord,t1,t1_qdp)
    
- !   KE   .5 dp/dn U^2
+       !   KE   .5 dp/dn U^2
        do k=1,nlev
           E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
-                elem(ie)%state%v(:,:,2,k,t1)**2 + &
-                elem(ie)%state%w_i(:,:,k,t1)**2 )/2 
+               elem(ie)%state%v(:,:,2,k,t1)**2 + &
+               (elem(ie)%state%w_i(:,:,k,t1)**2+elem(ie)%state%w_i(:,:,k+1,t1)**2)/2 &
+               )/2 
           sumlk(:,:,k) = E*dpt1(:,:,k)
        enddo
        suml=0
@@ -833,12 +829,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        elem(ie)%accum%KEner(:,:,n)=suml(:,:)
 
-       call get_phi(elem(ie),phi,hvcoord,t1,t1_qdp)
-    
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          suml = suml + phi(:,:,k)*dpt1(:,:,k)
+          suml = suml + phi(:,:,k)*dpt1(:,:,k)/2
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
@@ -849,11 +843,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
                 elem(ie)%state%theta_dp_cp(:,:,k,t1)*exner(:,:,k) 
-          suml2(:,:) = suml2(:,:) -dpnh(:,:,k)*phi(:,:,k)
+          suml2(:,:) = suml2(:,:)+phi(:,:,k)*pnh(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
             pnh_i(:,:,nlevp)* elem(ie)%state%phis(:,:)
-!            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
 
        if (theta_hydrostatic_mode) then
           ! hydrostatic case: combine IE and PE
