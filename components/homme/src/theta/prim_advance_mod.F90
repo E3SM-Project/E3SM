@@ -1362,7 +1362,7 @@ contains
      
 #ifdef ENERGY_DIAGNOSTICS
      ! =========================================================
-     ! diagnostics. not performance critical
+     ! diagnostics. not performance critical, dont thread
      ! =========================================================
      if (compute_diagnostics) then
         elem(ie)%accum%KEu_horiz1=0
@@ -1386,10 +1386,7 @@ contains
         elem(ie)%accum%S2=0
         elem(ie)%accum%P1=0
         elem(ie)%accum%P2=0
-        ! See element_state.F90 for an account of what these variables are defined as
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,d_eta_dot_dpdn_dn)
-#endif
+
         do k =1,nlev
           do j=1,np
             do i=1,np                
@@ -1424,13 +1421,13 @@ contains
                   
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
-                  -exner(i,j,k)*theta_vadv(i,j,k)                        
+                       -exner(i,j,k)*theta_vadv(i,j,k)                        
                !  Form IEvert2
                   elem(ie)%accum%IEvert2(i,j)=elem(ie)%accum%IEvert2(i,j)      &
-                  -pnh(i,j,k)*(phi_vadv_i(i,j,k+1)-phi_vadv_i(i,j,k))
+                       -pnh(i,j,k)*(phi_vadv_i(i,j,k+1)-phi_vadv_i(i,j,k))
                !  Form PEhoriz1
                   elem(ie)%accum%PEhoriz1(i,j)=(elem(ie)%accum%PEhoriz1(i,j))  &
-                  -phi(i,j,k)*divdp(i,j,k) 
+                       -phi(i,j,k)*divdp(i,j,k) 
                !  Form PEhoriz2                                                &
                   elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
                        -dp3d(i,j,k)* &
@@ -1438,18 +1435,18 @@ contains
                        elem(ie)%state%v(i,j,2,k,n0)*gradphinh(i,j,2,k))
                !  Form PEvert1
                   elem(ie)%accum%PEvert1(i,j) = (elem(ie)%accum%PEvert1(i,j))   &
-                  -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
+                       -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
                !  Form PEvert2
                   elem(ie)%accum%PEvert2(i,j) = elem(ie)%accum%PEvert2(i,j)     &
-                  -dp3d(i,j,k)*phi_vadv_i(i,j,k)
+                       -dp3d(i,j,k)*phi_vadv_i(i,j,k)
                !  Form T01
                   elem(ie)%accum%T01(i,j)=elem(ie)%accum%T01(i,j)               &
-                  -(elem(ie)%state%theta_dp_cp(i,j,k,n0))                       &
-                  *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
-                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
+                       -(elem(ie)%state%theta_dp_cp(i,j,k,n0))                       &
+                       *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
+                       gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
-                  -exner(i,j,k)*div_v_theta(i,j,k)
+                       -exner(i,j,k)*div_v_theta(i,j,k)
                !  Form T2  = -S2 (no reason to compute S2?)
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)-                &
                        ( (g*elem(ie)%state%w_i(i,j,k+1,n0)-v_gradphinh_i(i,j,k+1)) &
