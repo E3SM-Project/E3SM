@@ -70,13 +70,17 @@ module shr_flux_mod
    real(R8) :: loc_latice = shr_const_latice
    real(R8) :: loc_stebol = shr_const_stebol
 
+! These control convergence of the iterative flux calculation
+   real(r8) :: flux_con_tol = 0.0_R8
+   integer(IN) :: flux_con_max_iter = 2
+
 !===============================================================================
 contains
 !===============================================================================
 !===============================================================================
 subroutine shr_flux_adjust_constants( &
    zvir, cpair, cpvir, karman, gravit, &
-   latvap, latice, stebol)
+   latvap, latice, stebol, flux_convergence_tolerance, flux_convergence_max_iteration)
 
    ! Adjust local constants.  Used to support simple models.
 
@@ -88,6 +92,8 @@ subroutine shr_flux_adjust_constants( &
    real(R8), optional, intent(in) :: latvap
    real(R8), optional, intent(in) :: latice
    real(R8), optional, intent(in) :: stebol
+   real(r8), optional, intent(in)  :: flux_convergence_tolerance
+   integer(in), optional, intent(in) :: flux_convergence_max_iteration
    !----------------------------------------------------------------------------
 
    if (present(zvir))   loc_zvir   = zvir
@@ -98,6 +104,8 @@ subroutine shr_flux_adjust_constants( &
    if (present(latvap)) loc_latvap = latvap
    if (present(latice)) loc_latice = latice
    if (present(stebol)) loc_stebol = stebol
+   if (present(flux_convergence_tolerance)) flux_con_tol = flux_convergence_tolerance
+   if (present(flux_convergence_max_iteration)) flux_con_max_iter = flux_convergence_max_iteration
 
 end subroutine shr_flux_adjust_constants
 !===============================================================================
@@ -188,9 +196,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
 
    !--- local variables --------------------------------
    integer(IN) :: n      ! vector loop index
+   integer(IN) :: iter
    real(R8)    :: vmag   ! surface wind magnitude   (m/s)
    real(R8)    :: vmag_old   ! surface wind magnitude without gustiness (m/s)
-   real(R8)    :: thvbot ! virtual temperature      (K)
    real(R8)    :: ssq    ! sea surface humidity     (kg/kg)
    real(R8)    :: delt   ! potential T difference   (K)
    real(R8)    :: delq   ! humidity difference      (kg/kg)
@@ -202,6 +210,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    real(R8)    :: rh     ! sqrt of exchange coefficient (heat)             
    real(R8)    :: re     ! sqrt of exchange coefficient (water)            
    real(R8)    :: ustar  ! ustar             
+   real(r8)     :: ustar_prev
    real(R8)    :: qstar  ! qstar             
    real(R8)    :: tstar  ! tstar             
    real(R8)    :: hol    ! H (at zbot) over L
@@ -215,8 +224,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    real(R8)    :: u10n   ! 10m neutral wind 
    real(R8)    :: tau    ! stress at zbot
    real(R8)    :: cp     ! specific heat of moist air
-   real(R8)    :: bn     ! exchange coef funct for interpolation
-   real(R8)    :: bh     ! exchange coef funct for interpolation
    real(R8)    :: fac    ! vertical interpolation factor
    real(R8)    :: spval  ! local missing value
 
@@ -295,7 +302,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
          vmag       = vmag_old
         endif
 
-        thvbot = thbot(n) * (1.0_R8 + loc_zvir * qbot(n)) ! virtual temp (K)
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
         delt   = thbot(n) - ts(n)                  ! pot temp diff (K)
         delq   = qbot(n) - ssq                     ! spec hum dif (kg/kg)
@@ -305,79 +311,50 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         !------------------------------------------------------------
         ! first estimate of Z/L and ustar, tstar and qstar
         !------------------------------------------------------------
-   
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
         rdn    = sqrt(cdn(vmag))
         rhn    = (1.0_R8-stable) * 0.0327_R8 + stable * 0.018_R8 
         ren    = 0.0346_R8 
-   
+        
         !--- ustar, tstar, qstar ---
         ustar = rdn * vmag
         tstar = rhn * delt  
         qstar = ren * delq  
+        ustar_prev = ustar - ustar * flux_con_tol * 2.0_R8
+        iter = 0
+        do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter < flux_con_max_iter)
+           iter = iter + 1
+           ustar_prev = ustar
+           !--- compute stability & evaluate all stability functions ---
+           hol  = loc_karman*loc_g*zbot(n)*  &
+                (tstar/thbot(n)+qstar/(1.0_R8/loc_zvir+qbot(n)))/ustar**2
+           hol  = sign( min(abs(hol),10.0_R8), hol )
+           stable = 0.5_R8 + sign(0.5_R8 , hol)
+           xsq    = max(sqrt(abs(1.0_R8 - 16.0_R8*hol)) , 1.0_R8)
+           xqq    = sqrt(xsq)
+           psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
+           psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
    
-        !--- compute stability & evaluate all stability functions ---
-        hol  = loc_karman*loc_g*zbot(n)*  &
-               (tstar/thbot(n)+qstar/(1.0_R8/loc_zvir+qbot(n)))/ustar**2
-        hol  = sign( min(abs(hol),10.0_R8), hol )
-        stable = 0.5_R8 + sign(0.5_R8 , hol)
-        xsq    = max(sqrt(abs(1.0_R8 - 16.0_R8*hol)) , 1.0_R8)
-        xqq    = sqrt(xsq)
-        psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
-        psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
+           !--- shift wind speed using old coefficient ---
+           rd   = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh))
+           u10n = vmag * rd / rdn 
    
-        !--- shift wind speed using old coefficient ---
-        rd   = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh))
-        u10n = vmag * rd / rdn 
+           !--- update transfer coeffs at 10m and neutral stability ---
+           rdn = sqrt(cdn(u10n))
+           ren = 0.0346_R8
+           rhn = (1.0_R8-stable)*0.0327_R8 + stable * 0.018_R8 
+    
+           !--- shift all coeffs to measurement height and stability ---
+           rd = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh)) 
+           rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh)) 
+           re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh)) 
    
-        !--- update transfer coeffs at 10m and neutral stability ---
-        rdn = sqrt(cdn(u10n))
-        ren = 0.0346_R8
-        rhn = (1.0_R8-stable)*0.0327_R8 + stable * 0.018_R8 
-    
-        !--- shift all coeffs to measurement height and stability ---
-        rd = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh)) 
-        rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh)) 
-        re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh)) 
-   
-        !--- update ustar, tstar, qstar using updated, shifted coeffs --
-        ustar = rd * vmag 
-        tstar = rh * delt 
-        qstar = re * delq 
-    
-        !------------------------------------------------------------
-        ! iterate to converge on Z/L, ustar, tstar and qstar
-        !------------------------------------------------------------
-    
-        !--- compute stability & evaluate all stability functions ---
-        hol  = loc_karman*loc_g*zbot(n)* &
-               (tstar/thbot(n)+qstar/(1.0_R8/loc_zvir+qbot(n)))/ustar**2
-        hol  = sign( min(abs(hol),10.0_R8), hol )
-        stable = 0.5_R8 + sign(0.5_R8 , hol)
-        xsq    = max(sqrt(abs(1.0_R8 - 16.0_R8*hol)) , 1.0_R8)
-        xqq    = sqrt(xsq)
-        psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
-        psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
-    
-        !--- shift wind speed using old coeffs ---
-        rd   = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh))
-        u10n = vmag * rd/rdn 
-    
-        !--- update transfer coeffs at 10m and neutral stability ---
-        rdn = sqrt(cdn(u10n))
-        ren = 0.0346_R8
-        rhn = (1.0_R8 - stable)*0.0327_R8 + stable * 0.018_R8 
-   
-        !--- shift all coeffs to measurement height and stability ---
-        rd = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh)) 
-        rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh)) 
-        re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh)) 
-    
-        !--- update ustar, tstar, qstar using updated, shifted coeffs ---
-        ustar = rd * vmag 
-        tstar = rh * delt 
-        qstar = re * delq 
+           !--- update ustar, tstar, qstar using updated, shifted coeffs --
+           ustar = rd * vmag 
+           tstar = rh * delt 
+           qstar = re * delq 
+        enddo
     
         !------------------------------------------------------------
         ! compute the fluxes
@@ -602,7 +579,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
    !--- local variables --------------------------------
    integer(IN) :: n       ! vector loop index
-   integer(IN) :: i       ! iteration loop index
+   integer(IN) :: iter       ! iteration loop index
    integer(IN) :: lsecs   ! local seconds elapsed
    integer(IN) :: lonsecs ! incrememnt due to lon offset
    real(R8)    :: vmag    ! surface wind magnitude   (m/s)
@@ -618,6 +595,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: rh      ! sqrt of exchange coefficient (heat)             
    real(R8)    :: re      ! sqrt of exchange coefficient (water)            
    real(R8)    :: ustar   ! ustar             
+   real(R8)    :: ustar_prev   ! ustar             
    real(R8)    :: qstar   ! qstar             
    real(R8)    :: tstar   ! tstar             
    real(R8)    :: hol     ! H (at zbot) over L
@@ -631,8 +609,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: u10n    ! 10m neutral wind 
    real(R8)    :: tau     ! stress at zbot
    real(R8)    :: cp      ! specific heat of moist air
-   real(R8)    :: bn      ! exchange coef funct for interpolation
-   real(R8)    :: bh      ! exchange coef funct for interpolation
    real(R8)    :: fac     ! vertical interpolation factor
    real(R8)    :: DTiter  !              
    real(R8)    :: DSiter  !              
@@ -648,7 +624,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
    real(R8)    :: Qsol   ! solar heat flux (W/m2)             
    real(R8)    :: Qnsol  ! non-solar heat flux (W/m2) 
-   real(R8)    :: fsine  !              
 
    real(R8)    :: SSS  ! sea surface salinity              
    real(R8)    :: alphaT  !              
@@ -662,7 +637,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: Sfact   ! multiplicative term based on regime              
    real(R8)    :: Kdiff   ! diffusive term based on regime              
    real(R8)    :: Kvisc   ! viscosity term based on regime
-   real(R8)    :: hsign   !              
    real(R8)    :: rhocn   !              
    real(R8)    :: rcpocn  !              
    real(R8)    :: Nreset  ! value for multiplicative reset factor             
@@ -670,10 +644,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    logical     :: lmidnight
    logical     :: ltwopm
    logical     :: ltwoam
-   logical     :: lnoon
    logical     :: lfullday
    integer     :: nsum
-   integer     :: ier
    real(R8)    :: pexp   ! eqn 19
    real(R8)    :: AMP    ! eqn 18
    real(R8)    :: dif3   
@@ -733,42 +705,40 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
    al2 = log(zref/ztref)
 
-   if (flux_diurnal) then
-      ! equations 18 and 19
-      AMP = 1.0_R8/F0-1.0_R8
-      pexp = log( (1.0_R8/F1-F0) / (1.0_R8-F0) ) / log(R1)
+   ! equations 18 and 19
+   AMP = 1.0_R8/F0-1.0_R8
+   pexp = log( (1.0_R8/F1-F0) / (1.0_R8-F0) ) / log(R1)
 
-      if (.not. ocn_prognostic) then
-         ! Set swpen and ocean salinity from following analytic expressions
-         swpen(:) = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr)/1.0_R8)) + &
-              0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
-         ocnsal(:) = shr_const_ocn_ref_sal/1000.0_R8
-      else
-         ! use swpen and ocnsal from input argument
-      endif
+   if (.not. ocn_prognostic) then
+      ! Set swpen and ocean salinity from following analytic expressions
+      swpen(:) = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr)/1.0_R8)) + &
+           0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
+      ocnsal(:) = shr_const_ocn_ref_sal/1000.0_R8
+   else
+      ! use swpen and ocnsal from input argument
+   endif
  
-       if (cold_start) then
-!         if (s_loglev > 0) then
-            write(s_logunit,F00) "Initialize diurnal cycle fields"
-!         end if
-         warm       (:) = 0.0_R8
-         salt       (:) = 0.0_R8
-         speed      (:) = 0.0_R8
-         regime     (:) = 0.0_R8
-         qSolAvg    (:) = 0.0_R8
-         windAvg    (:) = 0.0_R8
-         warmMax    (:) = 0.0_R8
-         windMax    (:) = 0.0_R8 
-         warmMaxInc (:) = 0.0_R8
-         windMaxInc (:) = 0.0_R8
-         qSolInc    (:) = 0.0_R8
-         windInc    (:) = 0.0_R8
-         nInc       (:) = 0.0_R8
-         tSkin_day  (:) = ts(:)
-         tSkin_night(:) = ts(:)
-         cSkin_night(:) = 0.0_R8
-      endif
-   end if
+   if (cold_start) then
+      !         if (s_loglev > 0) then
+      write(s_logunit,F00) "Initialize diurnal cycle fields"
+      !         end if
+      warm       (:) = 0.0_R8
+      salt       (:) = 0.0_R8
+      speed      (:) = 0.0_R8
+      regime     (:) = 0.0_R8
+      qSolAvg    (:) = 0.0_R8
+      windAvg    (:) = 0.0_R8
+      warmMax    (:) = 0.0_R8
+      windMax    (:) = 0.0_R8 
+      warmMaxInc (:) = 0.0_R8
+      windMaxInc (:) = 0.0_R8
+      qSolInc    (:) = 0.0_R8
+      windInc    (:) = 0.0_R8
+      nInc       (:) = 0.0_R8
+      tSkin_day  (:) = ts(:)
+      tSkin_night(:) = ts(:)
+      cSkin_night(:) = 0.0_R8
+   endif
 
    DO n=1,nMax
 
@@ -783,53 +753,44 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          psixh    = 0.0
          rdn      = sqrt(cdn(vmag))
 
-         if (flux_diurnal) then
-            tBulk(n) = ts(n)+warm(n)    ! first guess for tBulk from read in ts,warm
-            tSkin(n) = tBulk(n)
-            Qsol     = swdn(n) + swup(n)
-            SSS      = 1000.0_R8*ocnsal(n)+salt(n) 
-            lambdaV = lambdaC
+         tBulk(n) = ts(n)+warm(n)    ! first guess for tBulk from read in ts,warm
+         tSkin(n) = tBulk(n)
+         Qsol     = swdn(n) + swup(n)
+         SSS      = 1000.0_R8*ocnsal(n)+salt(n) 
+         lambdaV = lambdaC
 
-            alphaT   = 0.000297_R8*(1.0_R8+0.0256_R8*(ts(n)-298.15_R8)+0.003_R8*(SSS - 35.0_R8))
-            betaS    = 0.000756_R8*(1.0_R8-0.0016_R8*(ts(n)-298.15_R8))
-            rhocn    = 1023.342_R8*(1.0_R8-0.000297_R8*(ts(n)-298.15_R8)+0.000756_R8 * (SSS - 35.0_R8))
-            rcpocn   = rhocn * 3990.0_R8*(1.0_R8-0.0012_R8*(SSS - 35.0_R8))
+         alphaT   = 0.000297_R8*(1.0_R8+0.0256_R8*(ts(n)-298.15_R8)+0.003_R8*(SSS - 35.0_R8))
+         betaS    = 0.000756_R8*(1.0_R8-0.0016_R8*(ts(n)-298.15_R8))
+         rhocn    = 1023.342_R8*(1.0_R8-0.000297_R8*(ts(n)-298.15_R8)+0.000756_R8 * (SSS - 35.0_R8))
+         rcpocn   = rhocn * 3990.0_R8*(1.0_R8-0.0012_R8*(SSS - 35.0_R8))
 
-            Rid =  shr_const_g * (alphaT*warm(n) - betaS*salt(n)) *pwr*shr_const_zsrflyr  / &
-                           ( pwr*MAX(tiny,speed(n)) )**2
+         Rid =  shr_const_g * (alphaT*warm(n) - betaS*salt(n)) *pwr*shr_const_zsrflyr  / &
+              ( pwr*MAX(tiny,speed(n)) )**2
 
-            Ribulk = 0.0
+         Ribulk = 0.0
 
-            !----------------------------------------------------------
-            ! convert elapsed time from GMT to local &
-            ! check elapsed time. reset warm if near lsecs = reset_sec
-            !----------------------------------------------------------
-            Nreset = 1.0_R8
-            resec = Nreset*dt
+         !----------------------------------------------------------
+         ! convert elapsed time from GMT to local &
+         ! check elapsed time. reset warm if near lsecs = reset_sec
+         !----------------------------------------------------------
+         Nreset = 1.0_R8
 
-            lonsecs   = ceiling(long(n)/360.0_R8*86400.0)
-            lsecs     = mod(secs + lonsecs,86400)
+         lonsecs   = ceiling(long(n)/360.0_R8*86400.0)
+         lsecs     = mod(secs + lonsecs,86400)
 
-            lmidnight = (lsecs >= 0     .and. lsecs < dt)        ! 0 = midnight
-            ltwopm    = (lsecs >= 48600 .and. lsecs < 48600+dt)  ! 48600 = 1:30pm
-            ltwoam    = (lsecs >= 5400  .and. lsecs < 5400 +dt)  ! 5400 = 1:30am
-            lnoon     = (lsecs >= 43200 .and. lsecs < 43200+dt)  ! 43200 = noon
-            lfullday  = (lsecs > 86400-dt .and. lsecs <= 86400)
-            nsum = nint(nInc(n))
+         lmidnight = (lsecs >= 0     .and. lsecs < dt)        ! 0 = midnight
+         ltwopm    = (lsecs >= 48600 .and. lsecs < 48600+dt)  ! 48600 = 1:30pm
+         ltwoam    = (lsecs >= 5400  .and. lsecs < 5400 +dt)  ! 5400 = 1:30am
+         lfullday  = (lsecs > 86400-dt .and. lsecs <= 86400)
+         nsum = nint(nInc(n))
 
-            if ( lmidnight ) then
-               Regime(n)  = 1.0_R8               !  RESET DIURNAL 
-               warm(n)    = 0.0_R8
-               salt(n)    = 0.0_R8
-               speed(n)   = 0.0_R8
-            endif
-
-         else   ! flux_diurnal
-            tBulk(n) = ts(n)
-            tSkin(n) = tBulk(n)
-         end if
+         if ( lmidnight ) then
+            Regime(n)  = 1.0_R8               !  RESET DIURNAL 
+            warm(n)    = 0.0_R8
+            salt(n)    = 0.0_R8
+            speed(n)   = 0.0_R8
+         endif
         
-         thvbot = thbot(n) * (1.0_R8 + shr_const_zvir * qbot(n)) ! virtual temp (K)
          ssq    = 0.98_R8 * qsat(tBulk(n)) / rbot(n)   ! sea surf hum (kg/kg)
          delt   = thbot(n) - tBulk(n)                  ! pot temp diff (K)
          delq   = qbot(n) - ssq                     ! spec hum dif (kg/kg)
@@ -852,114 +813,101 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          tstar = rhn * delt  
          qstar = ren * delq  
 
+        ustar_prev = ustar * (1_R8 - flux_con_tol * 2.0_R8)
+        iter = 0
          ! --- iterate ---
 
-         DO i = 1, iMax   ! iteration loop
-
+         do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter < flux_con_max_iter)
+            iter = iter + 1
+            ustar_prev = ustar
             !------------------------------------------------------------
             ! iterate to converge on FLUXES  Z/L, ustar, tstar and qstar
             ! and on Rid  in the DIURNAL CYCLE
             !------------------------------------------------------------
+            Smult = 0.0_R8 
+            Sfact = 0.0_R8
+            Kdiff = 0.0_R8
+            Kvisc = 0.0_R8
+            dif3 = 0.0_R8
 
-            if (flux_diurnal) then
+            ustarw  = ustar*sqrt(rbot(n)/rhocn)
+            Qnsol   = lwdn(n) - shr_const_stebol*(tSkin(n))**4 + &
+                 rbot(n)*ustar*(cp*tstar + shr_const_latvap*qstar)
+            Hd      = (Qnsol   + Qsol*(1.0_R8-swpen(n)) ) / rcpocn
+            Fd      = (prec(n) + rbot(n)*ustar*qstar ) * SSS / rhocn
 
-               Smult = 0.0_R8 
-               Sfact = 0.0_R8
-               Kdiff = 0.0_R8
-               Kvisc = 0.0_R8
-               dif3 = 0.0_R8
+            !--- COOL SKIN EFFECT ---
+            Dcool  = lambdaV*molvisc(tBulk(n)) / ustarw
+            Qdel   = Qnsol + Qsol * &
+                 (0.137_R8 + 11.0_R8*Dcool - 6.6e-5/Dcool *(1.0_R8 - exp((-1.0_R8*Dcool)/8.0e-4)))
+            Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
+            Hb = min(Hb , 0.0_R8)
+            lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
+                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
+            cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )   
 
-               ustarw  = ustar*sqrt(rbot(n)/rhocn)
-               Qnsol   = lwdn(n) - shr_const_stebol*(tSkin(n))**4 + &
-                         rbot(n)*ustar*(cp*tstar + shr_const_latvap*qstar)
-               Hd      = (Qnsol   + Qsol*(1.0_R8-swpen(n)) ) / rcpocn
-               Fd      = (prec(n) + rbot(n)*ustar*qstar ) * SSS / rhocn
+            !--- REGIME ---
+            doL = shr_const_zsrflyr*shr_const_karman*shr_const_g* &
+                 (alphaT*Hd + betaS*Fd ) / ustarw**3 
+            Rid = MAX(0.0_R8,Rid)
+            Smult = dt * (pwr+1.0_R8) / (shr_const_zsrflyr*pwr)
+            Sfact = dt * (pwr+1.0_R8) / (shr_const_zsrflyr)**2
+            FofRi = 1.0_R8/(1.0_R8 + AMP*(Rid/Rizero)**pexp)
 
-               !--- COOL SKIN EFFECT ---
-               Dcool  = lambdaV*molvisc(tBulk(n)) / ustarw
-               Qdel   = Qnsol + Qsol * &
-                  (0.137_R8 + 11.0_R8*Dcool - 6.6e-5/Dcool *(1.0_R8 - exp((-1.0_R8*Dcool)/8.0e-4)))
-               Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
-               Hb = min(Hb , 0.0_R8)
-               lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
-                    shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
-               cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )   
-
-               !--- REGIME ---
-               doL = shr_const_zsrflyr*shr_const_karman*shr_const_g* &
-                  (alphaT*Hd + betaS*Fd ) / ustarw**3 
-               Rid = MAX(0.0_R8,Rid)
-               Smult = dt * (pwr+1.0_R8) / (shr_const_zsrflyr*pwr)
-               Sfact = dt * (pwr+1.0_R8) / (shr_const_zsrflyr)**2
+            if ( (doL.gt.0.0_R8) .and. (Qsol.gt.0.0)  ) then
+               phid  = MIN(1.0_R8 + 5.0_R8 * doL, 5.0_R8 + doL)
                FofRi = 1.0_R8/(1.0_R8 + AMP*(Rid/Rizero)**pexp)
+               dif3 = (kappa0 + NUzero *FofRi)
 
-               if ( (doL.gt.0.0_R8) .and. (Qsol.gt.0.0)  ) then
-                  phid  = MIN(1.0_R8 + 5.0_R8 * doL, 5.0_R8 + doL)
-                  FofRi = 1.0_R8/(1.0_R8 + AMP*(Rid/Rizero)**pexp)
-                  dif3 = (kappa0 + NUzero *FofRi)
-
-                  if ((doL.le.lambdaL).and.(NINT(regime(n)).le.2)) then
-                     regime(n) = 2.0_R8
-                     Kdiff =  shr_const_karman * ustarw * shr_const_zsrflyr / phid
-                     Kvisc = Kdiff * (1.0_R8 - doL/lambdaL)**2 + &
-                             dif3 * (doL/lambdaL)**2 * (3.0_R8 - 2.0_R8 * doL/lambdaL)
-                     Kdiff = Kvisc
-                  else
+               if ((doL.le.lambdaL).and.(NINT(regime(n)).le.2)) then
+                  regime(n) = 2.0_R8
+                  Kdiff =  shr_const_karman * ustarw * shr_const_zsrflyr / phid
+                  Kvisc = Kdiff * (1.0_R8 - doL/lambdaL)**2 + &
+                       dif3 * (doL/lambdaL)**2 * (3.0_R8 - 2.0_R8 * doL/lambdaL)
+                  Kdiff = Kvisc
+               else
+                  regime(n) = 3.0_R8
+                  Kdiff =          kappa0 + NUzero * FofRi
+                  Kvisc = Prandtl* kappa0 + NUzero * FofRi
+               endif
+            else
+               if (regime(n).eq.1.0_R8) then
+                  Smult      = 0.0_R8
+               else
+                  if (Ribulk .gt. Ricr) then
                      regime(n) = 3.0_R8
                      Kdiff =          kappa0 + NUzero * FofRi
                      Kvisc = Prandtl* kappa0 + NUzero * FofRi
-                  endif
-               else
-                  if (regime(n).eq.1.0_R8) then
-                     Smult      = 0.0_R8
                   else
-                     if (Ribulk .gt. Ricr) then
-                        regime(n) = 3.0_R8
-                        Kdiff =          kappa0 + NUzero * FofRi
-                        Kvisc = Prandtl* kappa0 + NUzero * FofRi
-                     else
-                        regime(n) = 4.0_R8
-                        Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1/3) 
-                        Kvisc = Kdiff
-                     endif
+                     regime(n) = 4.0_R8
+                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1/3) 
+                     Kvisc = Kdiff
                   endif
-
                endif
 
-               !--- IMPLICIT INTEGRATION ---
+            endif
 
-               DTiter = (warm(n)  +(Smult*Hd))               /(1.+ Sfact*Kdiff) 
-               DSiter = (salt(n)  -(Smult*Fd))               /(1.+ Sfact*Kdiff)
-               DViter = (speed(n) +(Smult*ustarw*ustarw))    /(1.+ Sfact*Kvisc)
-               DTiter = MAX( 0.0_R8, DTiter)
-               DViter = MAX( 0.0_R8, DViter)  
+            !--- IMPLICIT INTEGRATION ---
 
-               Rid =(shr_const_g*(alphaT*DTiter-betaS*DSiter)*pwr*shr_const_zsrflyr)  / &
-                    (pwr*MAX(tiny,DViter))**2
-               Ribulk = Rid * pwr
-               Ribulk = 0.0_R8
-               tBulk(n) = ts(n) + DTiter
-               tSkin(n) = tBulk(n) + cskin(n)    
+            DTiter = (warm(n)  +(Smult*Hd))               /(1.+ Sfact*Kdiff) 
+            DSiter = (salt(n)  -(Smult*Fd))               /(1.+ Sfact*Kdiff)
+            DViter = (speed(n) +(Smult*ustarw*ustarw))    /(1.+ Sfact*Kvisc)
+            DTiter = MAX( 0.0_R8, DTiter)
+            DViter = MAX( 0.0_R8, DViter)  
 
-               !--need to update ssq,delt,delq as function of tBulk ----
+            Rid =(shr_const_g*(alphaT*DTiter-betaS*DSiter)*pwr*shr_const_zsrflyr)  / &
+                 (pwr*MAX(tiny,DViter))**2
+            Ribulk = Rid * pwr
+            Ribulk = 0.0_R8
+            tBulk(n) = ts(n) + DTiter
+            tSkin(n) = tBulk(n) + cskin(n)    
 
-               ssq    = 0.98_R8 * qsat(tBulk(n)) / rbot(n)   ! sea surf hum (kg/kg)
-               delt   = thbot(n) - tBulk(n)                  ! pot temp diff (K)
-               delq   = qbot(n) - ssq                        ! spec hum dif (kg/kg)
+            !--need to update ssq,delt,delq as function of tBulk ----
+
+            ssq    = 0.98_R8 * qsat(tBulk(n)) / rbot(n)   ! sea surf hum (kg/kg)
+            delt   = thbot(n) - tBulk(n)                  ! pot temp diff (K)
+            delq   = qbot(n) - ssq                        ! spec hum dif (kg/kg)
  
-            else ! not flux_diurnal
-
-               !--- if control case, regime should be 0
-               regime(n) = 0.0_R8
-               Smult     = 0.0_R8
-               Kdiff     = 0.0_R8
-               Kvisc     = 0.0_R8
-               warm(n)   = 0.0_R8
-               salt(n)   = 0.0_R8
-               speed(n)  = 0.0_R8
-               cSkin(n)  = 0.0_R8
-            endif                                             
-
             !--- UPDATE FLUX ITERATION ---
 
             !--- compute stability & evaluate all stability functions ---
@@ -1209,7 +1157,6 @@ subroutine shr_flux_atmIce(mask  ,zbot  ,ubot  ,vbot  ,thbot  &
    real(R8)    :: vmag   ! surface wind magnitude   (m/s)
    real(R8)    :: thvbot ! virtual temperature      (K)
    real(R8)    :: ssq    ! sea surface humidity     (kg/kg)
-   real(R8)    :: dssqdt ! derivative of ssq wrt Ts (kg/kg/K)
    real(R8)    :: delt   ! potential T difference   (K)
    real(R8)    :: delq   ! humidity difference      (kg/kg)
    real(R8)    :: stable ! stability factor
@@ -1287,7 +1234,6 @@ subroutine shr_flux_atmIce(mask  ,zbot  ,ubot  ,vbot  ,thbot  &
         vmag   = max(umin, sqrt(ubot(n)**2+vbot(n)**2))
         thvbot = thbot(n)*(1.0_R8 + loc_zvir * qbot(n)) ! virtual pot temp (K)
          ssq   =  qsat  (ts(n)) / rbot(n)           ! sea surf hum (kg/kg)
-        dssqdt = dqsatdt(ts(n)) / rbot(n)           ! deriv of ssq wrt Ts 
         delt   = thbot(n) - ts(n)                   ! pot temp diff (K)
         delq   = qbot(n) - ssq                        ! spec hum dif (kg/kg)
         alz    = log(zbot(n)/zref) 
