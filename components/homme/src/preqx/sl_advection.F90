@@ -17,7 +17,7 @@ module sl_advection
   use element_mod, only        : element_t
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
-  use control_mod, only        : integration, test_case, hypervis_order, use_semi_lagrange_transport
+  use control_mod, only        : integration, test_case, hypervis_order, use_semi_lagrange_transport, limiter_option
   use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer,&
                                  initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
@@ -259,7 +259,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         if (barrier) call mpi_barrier(hybrid%par%comm, ie)
         call t_stopf('QLT')
         call t_startf('QLT_local')
-        call qlt_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds)
+        call qlt_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds, limiter_option)
         if (barrier) call mpi_barrier(hybrid%par%comm, ie)
         call t_stopf('QLT_local')
      else

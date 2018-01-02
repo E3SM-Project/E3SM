@@ -69,12 +69,12 @@ module compose_mod
        integer             , intent(in) :: nets, nete
      end subroutine qlt_sl_run
 
-     subroutine qlt_sl_run_local(minq, maxq, nets, nete, use_ir)
+     subroutine qlt_sl_run_local(minq, maxq, nets, nete, use_ir, limiter_option)
        use kinds         , only : real_kind
        use dimensions_mod, only : nlev, np, qsize
        real(kind=real_kind), intent(in) :: minq(np*np,nlev,qsize,nets:nete)
        real(kind=real_kind), intent(in) :: maxq(np*np,nlev,qsize,nets:nete)
-       integer             , intent(in) :: nets, nete, use_ir
+       integer             , intent(in) :: nets, nete, use_ir, limiter_option
      end subroutine qlt_sl_run_local
 
      subroutine qlt_sl_check(minq, maxq, nets, nete)
