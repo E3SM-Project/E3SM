@@ -2,7 +2,7 @@ module seq_flux_mct
 
   use shr_kind_mod,      only: r8 => shr_kind_r8, in=>shr_kind_in
   use shr_sys_mod,       only: shr_sys_abort
-  use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_diurnal
+  use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
@@ -1216,10 +1216,12 @@ contains
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
     real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
+    character(len=shr_kind_cs) :: cime_model
     !
     !-----------------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
+         cime_model = cime_model, &
          read_restart=read_restart, &
          flux_albav=flux_albav, &
          dead_comps=dead_comps, &
@@ -1294,6 +1296,10 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
+       if (trim(cime_model) .eq. 'cesm') then
+          call shr_flux_adjust_constants(flux_convergence_tolerance=0.01_R8, &
+               flux_convergence_max_iteration=5)
+       endif
        first_call = .false.
     end if
 
