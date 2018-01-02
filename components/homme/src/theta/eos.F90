@@ -89,7 +89,7 @@ implicit none
      pnh = pi ! copy hydrostatic pressure into output variable
      dpnh_dp_i = 1
      if (present(pnh_i_out)) then  
-       pnh_i_out=pnh_i 
+       pnh_i_out=pi_i 
      endif
   else
 

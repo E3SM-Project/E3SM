@@ -73,11 +73,13 @@ contains
 
   integer :: k
   real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar, kappa_star
+  real(kind=real_kind), dimension(np,np,nlevp) :: phi_i
+  
 
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt,ntQ)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
-    case ('phi','geo');       call get_phi(elem,field,hvcoord,nt,ntQ)
+    case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt,ntQ)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
     case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
     case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
@@ -267,12 +269,13 @@ contains
 
 
 
-  subroutine get_phi(elem,phi,hvcoord,nt,ntQ)
+  subroutine get_phi(elem,phi,phi_i,hvcoord,nt,ntQ)
     implicit none
     
     type (element_t),       intent(in)  :: elem
     type (hvcoord_t),       intent(in)  :: hvcoord
     real (kind=real_kind),  intent(out) :: phi(np,np,nlev)
+    real (kind=real_kind),  intent(out) :: phi_i(np,np,nlevp)
     integer,                intent(in)  :: nt
     integer,                intent(in)  :: ntQ
     
@@ -281,7 +284,6 @@ contains
     real (kind=real_kind) :: exner(np,np,nlev)
     real (kind=real_kind) :: temp(np,np,nlev)
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
-    real (kind=real_kind) :: phi_i(np,np,nlevp)
     integer :: k
 
     phi_i = elem%state%phinh_i(:,:,:,nt)

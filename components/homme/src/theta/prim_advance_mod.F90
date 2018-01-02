@@ -1100,15 +1100,16 @@ contains
   real (kind=real_kind) :: stens(np,np,nlev,3) ! tendencies w,phi,theta
                                                ! w,phi tendencies not computed at nlevp
 
+  real (kind=real_kind) :: pi(np,np,nlev)                ! hydrostatic pressure
+  real (kind=real_kind) :: pi_i(np,np,nlevp)             ! hydrostatic pressure interfaces
+  real (kind=real_kind), dimension(np,np,nlev) :: vgrad_p
+
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie
 
-  real (kind=real_kind), dimension(np,np) :: ps_v
-  real (kind=real_kind), dimension(np,np,nlev) :: p, vgrad_p
-  real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
 
   call t_startf('compute_andor_apply_rhs')
 
@@ -1139,19 +1140,12 @@ contains
      end do
      
      if (theta_hydrostatic_mode) then
-        ! traditional Hydrostatic integral
-        do k=nlev,1,-1
-           !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
-           temp(:,:,k) = kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-           phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
+        do k=nlev,1,-1          ! traditional Hydrostatic integral
+           phi_i(:,:,k)=phi_i(:,:,k+1)+&
+                kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
         enddo
      endif
 
-     ps_v = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3)
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
      do k=1,nlev
         vtemp(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*dp3d(:,:,k)
         vtemp(:,:,2,k) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
@@ -1163,18 +1157,24 @@ contains
 
         divdp(:,:,k)=divergence_sphere(vtemp(:,:,:,k),deriv,elem(ie))
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
-
-        ! get hydrostatic pressure flux to compute omega=dp/dt
-        p(:,:,k) = hvcoord%hyam(k)*p0 + hvcoord%hybm(k)*ps_v
-        grad_p(:,:,:,k) = gradient_sphere( p(:,:,k), deriv, elem(ie)%Dinv);
-        vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*grad_p(:,:,1,k) + elem(ie)%state%v(:,:,2,k,n0)*grad_p(:,:,2,k)
      enddo
 
-     ! Compute omega_p according to CCM-3
-
-     call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
-     ! how will we compute this?  omega_p = 1/p Dp/Dt
-     !omega_p = 0
+     ! Compute omega_p = 1/pi Dpi/Dt
+     ! first compute hydrostatic pressure
+     pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     do k=1,nlev
+        pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+     enddo
+     do k=1,nlev
+        pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+     enddo
+     do k=1,nlev
+        ! get hydrostatic pressure flux to compute omega=dp/dt
+        vtemp(:,:,:,k) = gradient_sphere( pi(:,:,k), deriv, elem(ie)%Dinv);
+        vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1,k)+&
+             elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2,k)
+     enddo        
+     call preq_omega_ps(omega_p,hvcoord,pi,vgrad_p,divdp)
 
 
      ! ==================================================

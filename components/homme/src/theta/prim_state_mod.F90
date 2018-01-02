@@ -5,7 +5,7 @@
 module prim_state_mod
 
   use kinds,            only: real_kind, iulog
-  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nelemd
+  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nelemd, nlevp
   use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
   use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
@@ -89,8 +89,8 @@ contains
     real (kind=real_kind)  :: tmp1(nets:nete)
     real (kind=real_kind)  :: ps(np,np)
     real (kind=real_kind)  :: dp(np,np)
-    real (kind=real_kind)  :: phi(np,np,nlev)
-    real (kind=real_kind)  :: dphi(np,np,nlev-1)
+    real (kind=real_kind)  :: phi_i(np,np,nlevp)
+    real (kind=real_kind)  :: dphi(np,np,nlev)
     real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
 
@@ -208,12 +208,15 @@ contains
           call get_field(elem(ie),'dpnh_dp',tdiag,hvcoord,n0,n0q)
        endif
 
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
-       call get_phi(elem(ie),phi,hvcoord,n0,n0q)
-
-       do k=1,nlev-1
-          dphi(:,:,k)=phi(:,:,k)-phi(:,:,k+1)
+       ! layer thickness
+       call get_phi(elem(ie),dphi,phi_i,hvcoord,n0,n0q)
+       do k=1,nlev
+          dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
        enddo
+
+       ! surface pressure
+       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
@@ -786,7 +789,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind) :: phi(np,np,nlev)  
+    real (kind=real_kind) :: phi(np,np,nlev)
+    real (kind=real_kind) :: phi_i(np,np,nlevp)  
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
@@ -813,40 +817,48 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
             elem(ie)%state%phinh_i(:,:,:,t1), &
             kappa_star,pnh,exner,dpnh_dp_i,pnh_i)
 
-       call get_field(elem(ie),'phi',phi,hvcoord,t1,t1_qdp)
+       call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)
+
    
        !   KE   .5 dp/dn U^2
        do k=1,nlev
           E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
-               elem(ie)%state%v(:,:,2,k,t1)**2 + &
-               (elem(ie)%state%w_i(:,:,k,t1)**2+elem(ie)%state%w_i(:,:,k+1,t1)**2)/2 &
-               )/2 
+               elem(ie)%state%v(:,:,2,k,t1)**2  )/2
           sumlk(:,:,k) = E*dpt1(:,:,k)
+
+          E=(elem(ie)%state%w_i(:,:,k,t1)**2+elem(ie)%state%w_i(:,:,k+1,t1)**2)/4
+          suml2k(:,:,k) = E*dpt1(:,:,k)
        enddo
        suml=0
+       suml2=0
        do k=1,nlev
           suml(:,:) = suml(:,:) + sumlk(:,:,k)
+          suml2(:,:) = suml2(:,:) + suml2k(:,:,k)
        enddo
-       elem(ie)%accum%KEner(:,:,n)=suml(:,:)
+       if ( theta_hydrostatic_mode) then
+          elem(ie)%accum%KEner(:,:,n)=suml(:,:)
+       else
+          elem(ie)%accum%KEner(:,:,n)=suml(:,:)+ suml2(:,:)
+       endif
 
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          suml = suml + phi(:,:,k)*dpt1(:,:,k)/2
+          suml = suml + phi(:,:,k)*dpt1(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
 
-    !  IE = c_p^* dp/deta T - dp/ds phi  + psurf phisurf 
+    !  IE = c_p^* dp/deta T - pnh dphi/deta  + ptop phi_top
        suml=0
        suml2=0
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
                 elem(ie)%state%theta_dp_cp(:,:,k,t1)*exner(:,:,k) 
-          suml2(:,:) = suml2(:,:)+phi(:,:,k)*pnh(:,:,k)
+          suml2(:,:) = suml2(:,:)+(phi_i(:,:,k+1)-phi_i(:,:,k))*pnh(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-            pnh_i(:,:,nlevp)* elem(ie)%state%phis(:,:)
+            pnh_i(:,:,1)* phi_i(:,:,1)
 
        if (theta_hydrostatic_mode) then
           ! hydrostatic case: combine IE and PE
