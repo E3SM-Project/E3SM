@@ -2395,9 +2395,10 @@ contains
          workCategoryCell        ! work array with dimension(nCategories,nCells)
 
     logical, pointer :: &
-         configConservationCheck, & ! namelist configuration whether perform conservation check
-         configMonotonicityCheck, & ! namelist configuration whether perform monotonicity check
-         config_aggregate_halo_exch ! perform aggregated halo exchanges
+         configConservationCheck, &    ! namelist configuration whether perform conservation check
+         configMonotonicityCheck, &    ! namelist configuration whether perform monotonicity check
+         config_aggregate_halo_exch, & ! perform aggregated halo exchanges
+         config_reuse_halo_exch        ! reuse halo exchange cell lists
 
     ! dynamics time step
     real(kind=RKIND), pointer :: &
@@ -2451,13 +2452,29 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
        if (config_aggregate_halo_exch) then
 
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierrHalo)
-          if (ierrHalo /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierrHalo)
+             if (ierrHalo /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
+          ! no aggregated halo exchange
           call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
           call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
