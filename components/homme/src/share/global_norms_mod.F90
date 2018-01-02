@@ -950,7 +950,16 @@ contains
        nsize_use = nelemd
     endif
     if (nvars .gt. nrepro_vars) call abortmp('repro_sum_buffer_size exceeded')
+
+! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
+
+#if (defined HORIZ_OPENMP)
+!$OMP BARRIER
+!$OMP MASTER
+#endif
+
 #ifndef CAM
+    ! after all threads have updated global_shared_buf, check for NaNs:
     ! CAM already does this, no need to do it twice
     do n=1,nvars
        do i=1,nsize_use
@@ -959,13 +968,6 @@ contains
        enddo
     enddo
 #endif    
-
-! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
-
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-!$OMP MASTER
-#endif
 
     call repro_sum(global_shared_buf, global_shared_sum, nsize_use, nelemd, nvars, commid=comm)
 

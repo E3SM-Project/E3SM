@@ -89,7 +89,7 @@ Module shr_mpi_mod
      shr_mpi_maxr1
    end interface
 
-#include <mpif.h>         ! mpi library include file
+#include <mpif.h>
 
 !===============================================================================
 CONTAINS
