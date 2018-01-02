@@ -783,7 +783,7 @@ contains
     endif
 
     ! take secIn into account here since it's real
-    dSec = dSec - secIn
+    dSec = dSec + secIn
 
     ! i8 math, convert reals to nearest second
     i8dSec = nint(dSec,SHR_KIND_I8)
@@ -870,7 +870,7 @@ contains
     endif
 
     ! take secIn into account here since it's real
-    dSec = dSec - secIn
+    dSec = dSec + secIn
 
     ! i8 math, convert reals to nearest second
     i8dSec = nint(dSec,SHR_KIND_I8)
