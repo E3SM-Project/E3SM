@@ -89,17 +89,17 @@ class Pes(GenericXML):
                                 points = int(grid_match!="any")*3+int(mach_match!="any")*7+\
                                     int(compset_match!="any")*2+int(pesize_match!="any")
                                 if override and points > 0:
-                                    for node in pes_node:
+                                    for node in self.get_children(root=pes_node, no_validate=True):
                                         vid = self.name(node)
                                         logger.info("vid is {}".format(vid))
                                         if "ntasks" in vid:
-                                            for child in node:
+                                            for child in self.get_children(root=node, no_validate=True):
                                                 pes_ntasks[self.name(child).upper()] = int(self.text(child))
                                         elif "nthrds" in vid:
-                                            for child in node:
+                                            for child in self.get_children(root=node, no_validate=True):
                                                 pes_nthrds[self.name(child).upper()] = int(self.text(child))
                                         elif "rootpe" in vid:
-                                            for child in node:
+                                            for child in self.get_children(root=node, no_validate=True):
                                                 pes_rootpe[self.name(child).upper()] = int(self.text(child))
                                     # if the value is already upper case its something else we are trying to set
                                         elif vid == self.name(node):
