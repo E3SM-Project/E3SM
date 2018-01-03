@@ -1079,10 +1079,12 @@ contains
   real (kind=real_kind) :: gradphinh_i(np,np,2,nlevp) ! gradphi at interfaces
   real (kind=real_kind) :: mgrad(np,np,2,nlev)        ! gradphi metric term at cell centers
   real (kind=real_kind) :: gradKE(np,np,2,nlev)       ! grad(0.5 u^T u )
+  real (kind=real_kind) :: wvor(np,np,2,nlev)         ! w vorticity term
 
   real (kind=real_kind) :: grad_kappastar(np,np,2,nlev)
 
-  real (kind=real_kind) :: v_gradw(np,np,nlev)     
+  real (kind=real_kind) :: gradw_i(np,np,2,nlevp)
+  real (kind=real_kind) :: v_gradw_i(np,np,nlevp)     
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
   real (kind=real_kind) :: v_theta(np,np,2,nlev)
   real (kind=real_kind) :: div_v_theta(np,np,nlev)
@@ -1289,7 +1291,13 @@ contains
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
+     ! surface values
      gradphinh_i(:,:,:,nlevp) = elem(ie)%derived%gradphis(:,:,:)
+     v_gradphinh_i(:,:,nlevp) = v_i(:,:,1,nlevp)*gradphinh_i(:,:,1,nlevp) &
+          +v_i(:,:,2,nlevp)*gradphinh_i(:,:,2,nlevp)
+     gradw_i(:,:,:,nlevp)=gradient_sphere(elem(ie)%state%w_i(:,:,nlevp,n0),deriv,elem(ie)%Dinv)
+     v_gradw_i(:,:,nlevp) = v_i(:,:,1,nlevp)*gradw_i(:,:,1,nlevp) +&
+          v_i(:,:,2,nlevp)*gradw_i(:,:,2,nlevp)
 
 #if (defined COLUMN_OPENMP)
  !$omp parallel do private(k)
@@ -1301,10 +1309,10 @@ contains
         ! compute gradphi at interfaces and then average to levels
         gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
            
-        vtemp(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
-        v_gradw(:,:,k) = v_i(:,:,1,k)*vtemp(:,:,1,k) + v_i(:,:,2,k)*vtemp(:,:,2,k)
+        gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
+        v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
         ! w - tendency on interfaces 
-        stens(:,:,k,1) = (-w_vadv_i(:,:,k) - v_gradw(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
+        stens(:,:,k,1) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
 
         ! theta - tendency on levels
         v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%state%theta_dp_cp(:,:,k,n0)
@@ -1319,9 +1327,6 @@ contains
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
      end do
 
-     ! also compute at surface, for diagnostics:
-     v_gradphinh_i(:,:,nlevp) = v_i(:,:,1,k)*gradphinh_i(:,:,1,nlevp) &
-          +v_i(:,:,2,nlevp)*gradphinh_i(:,:,2,nlevp) 
 
 
 #if (defined COLUMN_OPENMP)
@@ -1331,6 +1336,15 @@ contains
      ! v1,v2 tendencies:                                                                                          
      ! ================================================           
      do k=1,nlev
+        ! w vorticity correction term
+        temp(:,:,k) = (elem(ie)%state%w_i(:,:,k,n0)**2 + &
+             elem(ie)%state%w_i(:,:,k+1,n0)**2)/4
+        wvor(:,:,:,k) = gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
+        wvor(:,:,1,k) = wvor(:,:,1,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,1,k) +&
+             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,1,k+1))/2
+        wvor(:,:,2,k) = wvor(:,:,2,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,2,k) +&
+             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,2,k+1))/2
+
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
@@ -1354,7 +1368,7 @@ contains
                    - gradKE(i,j,1,k) - mgrad(i,j,1,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,1,k)&
                   +theta_cp(i,j,k)*grad_kappastar(i,j,1,k)*exner(i,j,k)*log(pnh(i,j,k)/p0)&
-                  )*scale1
+                  -wvor(i,j,1,k) )*scale1
 
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
@@ -1362,8 +1376,7 @@ contains
                    - gradKE(i,j,2,k) - mgrad(i,j,2,k) &
                   -theta_cp(i,j,k)*gradexner(i,j,2,k) &
                   +theta_cp(i,j,k)*grad_kappastar(i,j,2,k)*exner(i,j,k)*log(pnh(i,j,k)/p0) &
-                  )*scale1
-
+                  -wvor(i,j,2,k) )*scale1
            end do
         end do     
      end do 
@@ -1380,6 +1393,7 @@ contains
         elem(ie)%accum%KEu_vert2=0
         elem(ie)%accum%KEw_horiz1=0
         elem(ie)%accum%KEw_horiz2=0
+        elem(ie)%accum%KEw_horiz3=0
         elem(ie)%accum%KEw_vert1=0
         elem(ie)%accum%KEw_vert2=0
 
@@ -1409,9 +1423,15 @@ contains
                     -KE(i,j,k)*divdp(i,j,k)
                !  Form horiz advection of KE-w
                elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)-   &
-                    dp3d(i,j,k) * elem(ie)%state%w_i(i,j,k,n0) * v_gradw(i,j,k)    
+                    dp3d(i,j,k) * (&
+                    elem(ie)%state%w_i(i,j,k,n0) * v_gradw_i(i,j,k)    + &
+                    elem(ie)%state%w_i(i,j,k+1,n0) * v_gradw_i(i,j,k+1) )/2
                elem(ie)%accum%KEw_horiz2(i,j)=elem(ie)%accum%KEw_horiz2(i,j)-   &
-                    0.5*(elem(ie)%state%w_i(i,j,k,n0))**2 * divdp(i,j,k) 
+                    divdp(i,j,k)*(elem(ie)%state%w_i(i,j,k,n0)**2 + &
+                    elem(ie)%state%w_i(i,j,k+1,n0)**2 ) /4
+               elem(ie)%accum%KEw_horiz3(i,j)=elem(ie)%accum%KEw_horiz3(i,j)   &
+                    -dp3d(i,j,k) * (elem(ie)%state%v(i,j,1,k,n0) * wvor(i,j,1,k) +  &
+                    elem(ie)%state%v(i,j,2,k,n0) * wvor(i,j,2,k))
                !  Form vertical advection of KE-u 
                elem(ie)%accum%KEu_vert1(i,j)=elem(ie)%accum%KEu_vert1(i,j)- &
                     (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &

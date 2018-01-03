@@ -133,7 +133,7 @@ contains
     real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: PEhorz1,PEhorz2
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
-    real (kind=real_kind) :: KEwH1,KEwH2,KEwV1,KEwV2
+    real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
@@ -539,6 +539,13 @@ contains
     KEwH2 = KEwH2*scale
     
     do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%KEw_horiz3
+    enddo
+    if(hybrid%masterthread) print *,'KEwH3'
+    KEwH3 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEwH3 = KEwH3*scale
+    
+    do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
     enddo
     if(hybrid%masterthread) print *,'KEwV1'
@@ -640,7 +647,7 @@ contains
 #else
     T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; 
     IEvert1=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
-    KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0;  KEwV1=0; KEwV2=0; 
+    KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
 
 
@@ -674,12 +681,13 @@ contains
           write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot
        else
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
-          write(iulog,'(a,3e22.14)')'KEw h-adv,sum~0:',KEwH1,KEwH2,KEwH1+KEwH2
+          write(iulog,'(a,3e22.14)')'KEw h-adv,sum=0:',KEwH1+KEwH3,KEwH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
           write(iulog,'(a,3e22.14)')'IE v-adv, sum=0:',IEvert1,IEvert2
+          write(iulog,'(a,2e22.14)')'KEw wvor, ~0:   ',KEwH3
           write(iulog,'(a,2e22.14)')'KE->PE, PE->KE :',P1,P2
           write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',T1+T2,S1+S2
           
