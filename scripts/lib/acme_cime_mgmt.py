@@ -12,14 +12,14 @@ MERGE_TAG_PREFIX = "to-acme-"
 def setup():
 ###############################################################################
     run_cmd_no_fail("git config merge.renameLimit 999999")
-    run_cmd_no_fail("git checkout master && git pull && git submodule update --init")
+    run_cmd_no_fail("git checkout master && git pull", verbose=True)
 
     remotes = run_cmd_no_fail("git remote")
     if ESMCI_REMOTE_NAME not in remotes:
-        run_cmd_no_fail("git remote add {} {}".format(ESMCI_REMOTE_NAME, ESMCI_URL))
+        run_cmd_no_fail("git remote add {} {}".format(ESMCI_REMOTE_NAME, ESMCI_URL), verbose=True)
 
-    run_cmd_no_fail("git fetch --prune {}".format(ESMCI_REMOTE_NAME))
-    run_cmd_no_fail("git fetch --prune {} --tags".format(ESMCI_REMOTE_NAME))
+    run_cmd_no_fail("git fetch --prune {}".format(ESMCI_REMOTE_NAME), verbose=True)
+    run_cmd_no_fail("git fetch --prune {} --tags".format(ESMCI_REMOTE_NAME), verbose=True)
 
 ###############################################################################
 def get_tag(prefix, expected_num=1):
@@ -50,8 +50,8 @@ def make_new_tag(prefix, old_tag, remote="origin", commit="HEAD"):
     new_tag = "{}{}".format(prefix, get_timestamp(timestamp_format="%m-%d-%Y"))
     expect(old_tag != new_tag, "New tag must have different name than old tag")
 
-    run_cmd_no_fail("git tag {} {}".format(new_tag, commit))
-    run_cmd_no_fail("git push {} {}".format(remote, new_tag))
+    run_cmd_no_fail("git tag {} {}".format(new_tag, commit), verbose=True)
+    run_cmd_no_fail("git push {} {}".format(remote, new_tag), verbose=True)
 
     return new_tag
 
@@ -77,13 +77,13 @@ def do_subtree_split(old_split_tag, new_split_tag, merge_tag):
 ###############################################################################
     subtree_branch = get_branch_from_tag(new_split_tag)
     run_cmd_no_fail("git subtree split {}.. --prefix=cime --onto={} --ignore-joins -b {}".\
-                        format(old_split_tag, merge_tag, subtree_branch))
+                        format(old_split_tag, merge_tag, subtree_branch), verbose=True)
     return subtree_branch
 
 ###############################################################################
 def do_subtree_pull():
 ###############################################################################
-    stat = run_cmd("git subtree pull --prefix=cime {} master".format(ESMCI_REMOTE_NAME))[0]
+    stat = run_cmd("git subtree pull --prefix=cime {} master".format(ESMCI_REMOTE_NAME), verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
         sys.exit(1)
@@ -92,14 +92,14 @@ def do_subtree_pull():
 def make_pr_branch(branch, branch_head):
 ###############################################################################
     pr_branch = "{}-pr".format(branch)
-    run_cmd_no_fail("git checkout --no-track -b {} {}".format(pr_branch, branch_head))
+    run_cmd_no_fail("git checkout --no-track -b {} {}".format(pr_branch, branch_head), verbose=True)
 
     return pr_branch
 
 ###############################################################################
 def merge_branch(branch, resume_count):
 ###############################################################################
-    stat = run_cmd("git merge -m 'Merge {}' -X rename-threshold=25 {}".format(branch, branch))[0]
+    stat = run_cmd("git merge -m 'Merge {}' -X rename-threshold=25 {}".format(branch, branch), verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume-{}".format(resume_count))
         sys.exit(1)
@@ -117,8 +117,8 @@ def merge_pr_branch_2():
 ###############################################################################
 def delete_tag(tag, remote="origin"):
 ###############################################################################
-    run_cmd_no_fail("git tag -d {}".format(tag))
-    run_cmd_no_fail("git push {} :refs/tags/{}".format(remote, tag))
+    run_cmd_no_fail("git tag -d {}".format(tag), verbose=True)
+    run_cmd_no_fail("git push {} :refs/tags/{}".format(remote, tag), verbose=True)
 
 ###############################################################################
 def acme_cime_split(resume_one, resume_two):
@@ -150,7 +150,7 @@ def acme_cime_split(resume_one, resume_two):
         merge_pr_branch_2()
 
     try:
-        run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch))
+        run_cmd_no_fail("git push -u {} {}".format(ESMCI_REMOTE_NAME, pr_branch), verbose=True)
     except:
         delete_tag(old_split_tag)
         raise
@@ -180,7 +180,7 @@ def acme_cime_merge(resume):
         pr_branch = "{}-pr".format(get_branch_from_tag(new_merge_tag))
 
     try:
-        run_cmd_no_fail("git push -u origin {}".format(pr_branch))
+        run_cmd_no_fail("git push -u origin {}".format(pr_branch), verbose=True)
     except:
         delete_tag(old_merge_tag, remote=ESMCI_REMOTE_NAME)
         raise
