@@ -666,6 +666,32 @@
     </values>
   </entry>
 
+  <entry id="flux_convergence">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Iterate atmocn flux calculation to this % difference
+    </desc>
+    <values>
+      <value cime_model='cesm'>0.01</value>
+      <value cime_model='acme'>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="flux_max_iteration">
+    <type>integer</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Iterate atmocn flux calculation a max of this value
+    </desc>
+    <values>
+      <value cime_model='cesm'>5</value>
+      <value cime_model='acme'>2</value>
+    </values>
+  </entry>
+
   <entry id="gust_fac">
     <type>real</type>
     <category>control</category>
