@@ -1212,16 +1212,16 @@ contains
     logical     :: read_restart    ! .true. => continue run
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
+    real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
+    integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     !
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
     real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
-    character(len=shr_kind_cs) :: cime_model
     !
     !-----------------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
-         cime_model = cime_model, &
          read_restart=read_restart, &
          flux_albav=flux_albav, &
          dead_comps=dead_comps, &
@@ -1232,6 +1232,9 @@ contains
     cold_start = .false.   ! use restart data or data from last timestep
 
     if (first_call) then
+       call seq_infodata_getData(infodata , &
+         flux_convergence=flux_convergence, &
+         flux_max_iteration=flux_max_iteration)
        if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
@@ -1296,10 +1299,8 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
-       if (trim(cime_model) .eq. 'cesm') then
-          call shr_flux_adjust_constants(flux_convergence_tolerance=0.01_R8, &
-               flux_convergence_max_iteration=5)
-       endif
+       call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
+            flux_convergence_max_iteration=flux_max_iteration)
        first_call = .false.
     end if
 
