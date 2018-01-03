@@ -359,6 +359,10 @@
 			description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is true The number of processors is appended to the end of the prefix at run-time."
 			possible_values="Any path/prefix to a processor decomposition file."
 		/>
+		<nml_option name="config_use_halo_exch" type="logical" default_value="true" units="unitless"
+			description="Determines if time integration halo exchanges are performed."
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_aggregate_halo_exch" type="logical" default_value="false" units="unitless"
 			description="Determines if aggregated halo exchanges are used in some places."
 			possible_values=".true. or .false."

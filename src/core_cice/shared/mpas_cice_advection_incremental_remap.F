@@ -2397,6 +2397,7 @@ contains
     logical, pointer :: &
          configConservationCheck, &    ! namelist configuration whether perform conservation check
          configMonotonicityCheck, &    ! namelist configuration whether perform monotonicity check
+         config_use_halo_exch, &       ! perform halo exchanges
          config_aggregate_halo_exch, & ! perform aggregated halo exchanges
          config_reuse_halo_exch        ! reuse halo exchange cell lists
 
@@ -2444,41 +2445,48 @@ contains
 
        if (verboseRun) call mpas_log_write('Doing initial halo updates for velocity, mass and tracers')
 
-       call cice_load_balance_timers(domain)
+       call cice_load_balance_timers(domain, "before")
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
 
-       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-       if (config_aggregate_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+       if (config_use_halo_exch) then
 
-          ! aggregated halo exchange
-          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-          if (.not. config_reuse_halo_exch) then
+          call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+          if (config_aggregate_halo_exch) then
 
-             ! without reuse
-             call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierrHalo)
-             if (ierrHalo /= MPAS_DMPAR_NOERR) then
-                call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-             endif
+             ! aggregated halo exchange
+             call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+             if (.not. config_reuse_halo_exch) then
+
+                ! without reuse
+                call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierrHalo)
+                if (ierrHalo /= MPAS_DMPAR_NOERR) then
+                   call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+                endif
+
+             else
+
+                ! with reuse
+                call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+                if (ierr /= MPAS_DMPAR_NOERR) then
+                   call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+                endif
+
+             endif ! config_reuse_halo_exch
 
           else
 
-             ! with reuse
-             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-             if (ierr /= MPAS_DMPAR_NOERR) then
-                call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-             endif
+             ! no aggregated halo exchange
+             call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+             call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
-          endif ! config_reuse_halo_exch
+          endif ! config_aggregate_halo_exch
 
-       else
+       endif ! config_use_halo_exch
 
-          ! no aggregated halo exchange
-          call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
-          call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
-
-       endif ! config_aggregate_halo_exch
+       call cice_load_balance_timers(domain, "after")
 
        ! mass and tracers
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)

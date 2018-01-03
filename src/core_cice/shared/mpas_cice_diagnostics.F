@@ -501,7 +501,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_load_balance_timers(domain)
+  subroutine cice_load_balance_timers(domain, label)
 
 #ifdef _MPI
 #ifndef NOMPIMOD
@@ -513,6 +513,9 @@ contains
     type(domain_type), intent(in) :: &
          domain
 
+    character(len=*), intent(in) :: &
+         label
+
 #ifdef _MPI
 
     logical, pointer :: &
@@ -523,9 +526,9 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_load_balance_timers", config_load_balance_timers)
     if (config_load_balance_timers) then
-       call mpas_timer_start("halo barrier")
+       call mpas_timer_start("halo barrier "//trim(label))
        call MPI_Barrier(domain % dminfo % comm, mpi_ierr)
-       call mpas_timer_stop("halo barrier")
+       call mpas_timer_stop("halo barrier "//trim(label))
     endif
 
 #endif
