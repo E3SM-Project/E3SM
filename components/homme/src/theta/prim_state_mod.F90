@@ -499,105 +499,105 @@ contains
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEu_horiz1
     enddo
-    if(hybrid%masterthread) print *,'KEH1'
+    !if(hybrid%masterthread) print *,'KEH1'
     KEH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH1 = KEH1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEu_horiz2
     enddo
-    if(hybrid%masterthread) print *,'KEH2'
+    !if(hybrid%masterthread) print *,'KEH2'
     KEH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH2 = KEH2*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEu_vert1
     enddo
-    if(hybrid%masterthread) print *,'KEV1'
+    !if(hybrid%masterthread) print *,'KEV1'
     KEV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEV1 = KEV1*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEu_vert2
     enddo
-    if(hybrid%masterthread) print *,'KEV2'
+    !if(hybrid%masterthread) print *,'KEV2'
     KEV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEV2 = KEV2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEw_horiz1
     enddo
-    if(hybrid%masterthread) print *,'KEwH1'
+    !if(hybrid%masterthread) print *,'KEwH1'
     KEwH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH1 = KEwH1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEw_horiz2
     enddo
-    if(hybrid%masterthread) print *,'KEwH2'
+    !if(hybrid%masterthread) print *,'KEwH2'
     KEwH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH2 = KEwH2*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEw_horiz3
     enddo
-    if(hybrid%masterthread) print *,'KEwH3'
+    !if(hybrid%masterthread) print *,'KEwH3'
     KEwH3 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH3 = KEwH3*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
     enddo
-    if(hybrid%masterthread) print *,'KEwV1'
+    !if(hybrid%masterthread) print *,'KEwV1'
     KEwV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwV1 = KEwV1*scale
 
     do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEw_vert2
     enddo
-    if(hybrid%masterthread) print *,'KEwV2'
+    !if(hybrid%masterthread) print *,'KEwV2'
     KEwV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwV2 = KEwV2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 
     enddo
-    if(hybrid%masterthread) print *,'IEvert1'
+    !if(hybrid%masterthread) print *,'IEvert1'
     IEvert1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     IEvert1 = IEvert1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert2
     enddo
-    if(hybrid%masterthread) print *,'IEvert2'
+    !if(hybrid%masterthread) print *,'IEvert2'
     IEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     IEvert2 = IEvert2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEhoriz1 
     enddo
-    if(hybrid%masterthread) print *,'PEhoriz1'
+    !if(hybrid%masterthread) print *,'PEhoriz1'
     PEhorz1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEhorz1 = PEhorz1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEhoriz2
     enddo
-    if(hybrid%masterthread) print *,'PEhoriz2'
+    !if(hybrid%masterthread) print *,'PEhoriz2'
     PEhorz2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEhorz2 = PEhorz2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEvert1
     enddo
-    if(hybrid%masterthread) print *,'PEver1'
+    !if(hybrid%masterthread) print *,'PEver1'
     PEvert1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert1 = PEvert1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEvert2
     enddo
-    if(hybrid%masterthread) print *,'PEver2'
+    !if(hybrid%masterthread) print *,'PEver2'
     PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert2 = PEvert2*scale
     
@@ -605,42 +605,42 @@ contains
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T01
     enddo
-    if(hybrid%masterthread) print *,'T01'
+    !if(hybrid%masterthread) print *,'T01'
     T1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T1 = T1*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T2
     enddo
-    if(hybrid%masterthread) print *,'T2'
+    !if(hybrid%masterthread) print *,'T2'
     T2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T2 = T2*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S1
     enddo
-    if(hybrid%masterthread) print *,'S1'
+    !if(hybrid%masterthread) print *,'S1'
     S1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     S1 = S1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S2
     enddo
-    if(hybrid%masterthread) print *,'S2'
+    !if(hybrid%masterthread) print *,'S2'
     S2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     S2 = S2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%P1
     enddo
-    if(hybrid%masterthread) print *,'P1'
+    !if(hybrid%masterthread) print *,'P1'
     P1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     P1 = P1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%P2
     enddo
-    if(hybrid%masterthread) print *,'P2'
+    !if(hybrid%masterthread) print *,'P2'
     P2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     P2 = P2*scale
 
