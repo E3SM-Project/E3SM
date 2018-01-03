@@ -1090,7 +1090,6 @@ contains
   real (kind=real_kind) :: div_v_theta(np,np,nlev)
   real (kind=real_kind) :: v_gradphi(np,np,nlev)
   real (kind=real_kind) :: v_gradKE(np,np,nlev)     
-  real (kind=real_kind) :: vdp(np,np,2,nlev)
   real (kind=real_kind) :: wvor(np,np,2,nlev)
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
@@ -1141,18 +1140,18 @@ contains
      ps_v = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3)
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,vtemp)
 #endif
      do k=1,nlev
-        vdp(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*dp3d(:,:,k)
-        vdp(:,:,2,k) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
+        vtemp(:,:,1) = elem(ie)%state%v(:,:,1,k,n0)*dp3d(:,:,k)
+        vtemp(:,:,2) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
 
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
         ! ================================
-        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vdp(:,:,:,k)
+        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vtemp(:,:,:)
 
-        divdp(:,:,k)=divergence_sphere(vdp(:,:,:,k),deriv,elem(ie))
+        divdp(:,:,k)=divergence_sphere(vtemp(:,:,:),deriv,elem(ie))
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
 
         ! get hydrostatic pressure flux to compute omega=dp/dt
@@ -1274,19 +1273,18 @@ contains
 
      vertloop: do k=1,nlev
         ! w-vorticity correction term added to u momentum equation for E conservation
-        KE(:,:,k) = (elem(ie)%state%w(:,:,k,n0)**2)/2  ! use KE() as a temp array
-        wvor(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
+        temp(:,:,k) = (elem(ie)%state%w(:,:,k,n0)**2)/2  
+        wvor(:,:,:,k) = gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
         vtemp(:,:,:)  = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
         wvor(:,:,1,k) = wvor(:,:,1,k) - elem(ie)%state%w(:,:,k,n0)*vtemp(:,:,1)
         wvor(:,:,2,k) = wvor(:,:,2,k) - elem(ie)%state%w(:,:,k,n0)*vtemp(:,:,2)
+        v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
                    
 
         ! ================================================
         ! w,theta,phi tendencies:
         ! ================================================
-        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
-        v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
-             +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
         stens(:,:,k,1) = (-s_vadv(:,:,k,1) - v_gradw(:,:,k))*scale1 - scale2*g*(1-dpnh_dp(:,:,k) )
         v_theta(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*               &
           elem(ie)%state%theta_dp_cp(:,:,k,n0)

@@ -646,7 +646,6 @@ contains
        if (theta_hydrostatic_mode) then
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
-          !write(iulog,'(a,3e22.14)')'IE  v-adv,sum~0:',IEvert1,PEvert1,IEvert1+PEvert1
           write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
           write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',(T1+PEhorz2),(S1+PEhorz1)
           
@@ -656,10 +655,8 @@ contains
           
           ddt_tot =  (IEner(2)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+PEhorz1)
-          !ddt_diss_adj = ddt_tot - (S1+PEhorz1 + IEvert1+PEvert1)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           ddt_tot = (TOTE(2)-TOTE(1))/dt
-          !write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_tot - ( IEvert1+PEvert1)
           write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot
        else
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
@@ -675,22 +672,22 @@ contains
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+T2+P1) 
-          ddt_diss_adj = ddt_tot -(T1+T2+P1+KEwH1+KEwH2)
-          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss_adj
+          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+          !ddt_diss_adj = ddt_tot -(T1+T2+P1)+KEwH1+KEwH2)
           !write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
           
           ddt_tot =  (IEner(2)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+S2)
-          ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
-          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss_adj
+          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
+          !ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
           !write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
           
           ddt_tot = (PEner(2)-PEner(1))/dt
           ddt_diss = ddt_tot - P2
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
           ddt_tot = (TOTE(2)-TOTE(1))/dt
-          ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
-          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot,ddt_diss
+          !ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
+          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot!,ddt_diss
        endif
 #else
        write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/dt
