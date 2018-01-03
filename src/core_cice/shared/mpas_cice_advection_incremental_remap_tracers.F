@@ -1132,20 +1132,28 @@ contains
     integer, intent(in), optional :: timeLevelIn
 
     logical, pointer :: &
+         config_use_halo_exch, &
          config_aggregate_halo_exch
 
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       call update_tracer_halo_exch_group(tracersHead, domain, timeLevelIn)
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-    else
+          call update_tracer_halo_exch_group(tracersHead, domain, timeLevelIn)
 
-       call update_tracer_halo(tracersHead, domain, timeLevelIn)
+       else
 
-    endif
+          call update_tracer_halo(tracersHead, domain, timeLevelIn)
+
+       endif
+
+    endif ! config_use_halo_exch
+
+    call cice_load_balance_timers(domain, "after")
 
   end subroutine cice_update_tracer_halo
 
