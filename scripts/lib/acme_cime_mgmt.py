@@ -47,7 +47,7 @@ def get_merge_tag(expected_num=1):
 ###############################################################################
 def make_new_tag(prefix, old_tag, remote="origin", commit="HEAD"):
 ###############################################################################
-    new_tag = "{}{}".format(prefix, get_timestamp(timestamp_format="%m-%d-%Y"))
+    new_tag = "{}{}".format(prefix, get_timestamp(timestamp_format="%Y-%m-%d"))
     expect(old_tag != new_tag, "New tag must have different name than old tag")
 
     run_cmd_no_fail("git tag {} {}".format(new_tag, commit), verbose=True)
@@ -144,6 +144,7 @@ def acme_cime_split(resume_one, resume_two):
         merge_pr_branch_1(subtree_branch)
     else:
         old_split_tag, new_split_tag = get_split_tag(expected_num=2)
+        logging.info("Resuming split with old tag {} and new tag {}".format(old_split_tag, new_split_tag))
         pr_branch = "{}-pr".format(get_branch_from_tag(new_split_tag))
 
     if not resume_two:
@@ -177,6 +178,7 @@ def acme_cime_merge(resume):
 
     else:
         old_merge_tag, new_merge_tag = get_merge_tag(expected_num=2)
+        logging.info("Resuming merge with old tag {} and new tag {}".format(old_merge_tag, new_merge_tag))
         pr_branch = "{}-pr".format(get_branch_from_tag(new_merge_tag))
 
     try:
