@@ -719,6 +719,7 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_vertical_thermodynamics, &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
@@ -749,42 +750,49 @@ contains
     endif
 
     ! halo exchange of initial ice area of cell
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("ice area halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'iceAreaTotalMassExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for iceAreaTotalMassExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCellInitial')
+          call MPAS_dmpar_field_halo_exch(domain, 'totalMassCell')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'iceAreaCellInitial')
-       call MPAS_dmpar_field_halo_exch(domain, 'totalMassCell')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("ice area halo")
+
+    call cice_load_balance_timers(domain, "after")
 
     ! interpolate area and mass from cells to vertices
     block => domain % blocklist
@@ -817,41 +825,48 @@ contains
     call velocity_calculation_mask(domain)
 
     ! halo exchange velocity mask
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("velocity mask halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'solveVelocityExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'solveVelocityExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'solveVelocityExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'solveVelocityExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for solveVelocityExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'solveVelocity')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'solveVelocity')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("velocity mask halo")
+
+    call cice_load_balance_timers(domain, "after")
 
   end subroutine calculation_masks
 
@@ -1115,6 +1130,7 @@ contains
          ierr
 
     logical, pointer :: &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
@@ -1188,42 +1204,49 @@ contains
     enddo
 
     ! halo exchange velocities
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("velocity halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+          call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
-       call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("velocity halo")
+
+    call cice_load_balance_timers(domain, "after")
 
   end subroutine new_ice_velocities!}}}
 
@@ -1279,6 +1302,7 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_vertical_thermodynamics, &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
@@ -1362,41 +1386,48 @@ contains
     enddo
 
     ! halo exchange ice strength
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("ice strength halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'icePressureExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for icePressureExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'icePressureExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for icePressureExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'icePressureExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for icePressureExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'icePressureExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for icePressureExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'icePressure')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'icePressure')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("ice strength halo")
+
+    call cice_load_balance_timers(domain, "after")
 
   end subroutine ice_strength
 
@@ -1430,6 +1461,7 @@ contains
          config_use_column_package, &
          config_use_column_vertical_thermodynamics, &
          config_use_air_stress, &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
@@ -1471,42 +1503,49 @@ contains
     endif ! .not. config_use_air_stress
 
     ! halo exchange air stress
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("air stress halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'airStressHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for airStressHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'airStressCellU')
+          call MPAS_dmpar_field_halo_exch(domain, 'airStressCellV')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'airStressCellU')
-       call MPAS_dmpar_field_halo_exch(domain, 'airStressCellV')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("air stress halo")
+
+    call cice_load_balance_timers(domain, "after")
 
     ! interpolate air stress
     block => domain % blocklist
@@ -1952,46 +1991,54 @@ contains
          ierr
 
     logical, pointer :: &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
     ! halo exchange surface tilt
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("sea surface tilt halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'seaSurfaceTiltHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for seaSurfaceTiltHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltU')
+          call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltV')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltU')
-       call MPAS_dmpar_field_halo_exch(domain, 'seaSurfaceTiltV')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("sea surface tilt halo")
+
+    call cice_load_balance_timers(domain, "after")
 
     block => domain % blocklist
     do while (associated(block))
@@ -2356,6 +2403,7 @@ contains
 
     logical, pointer :: &
          config_revised_evp, &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
@@ -2401,42 +2449,49 @@ contains
     endif
 
     ! halo exchange
-    call cice_load_balance_timers(domain)
+    call cice_load_balance_timers(domain, "before")
 
     call mpas_timer_start("Velocity solver halo")
 
-    call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-    if (config_aggregate_halo_exch) then
+    call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+    if (config_use_halo_exch) then
 
-       ! aggregated halo exchange
-       call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-       if (.not. config_reuse_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+       if (config_aggregate_halo_exch) then
 
-          ! without reuse
-          call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! aggregated halo exchange
+          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+          if (.not. config_reuse_halo_exch) then
+
+             ! without reuse
+             call mpas_dmpar_exch_group_full_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          else
+
+             ! with reuse
+             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
+             if (ierr /= MPAS_DMPAR_NOERR) then
+                call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
+             endif
+
+          endif ! config_reuse_halo_exch
 
        else
 
-          ! with reuse
-          call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'velocityHaloExchangeGroup', iErr=ierr)
-          if (ierr /= MPAS_DMPAR_NOERR) then
-             call MPAS_log_write("failure to perform reuse halo exchange for velocityHaloExchangeGroup", MPAS_LOG_CRIT)
-          endif
+          ! no aggregated halo exchange
+          call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
+          call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
 
-       endif ! config_reuse_halo_exch
+       endif ! config_aggregate_halo_exch
 
-    else
-
-       ! no aggregated halo exchange
-       call MPAS_dmpar_field_halo_exch(domain, 'uVelocity')
-       call MPAS_dmpar_field_halo_exch(domain, 'vVelocity')
-
-    endif ! config_aggregate_halo_exch
+    endif ! config_use_halo_exch
 
     call mpas_timer_stop("Velocity solver halo")
+
+    call cice_load_balance_timers(domain, "after")
 
   end subroutine single_subcycle_velocity_solver!}}}
 
@@ -3114,6 +3169,7 @@ contains
 
     logical, pointer :: &
          configUseOceanStress, &
+         config_use_halo_exch, &
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
@@ -3200,42 +3256,49 @@ contains
     if (configUseOceanStress) then
 
        ! halo exchange ocean stress
-       call cice_load_balance_timers(domain)
+       call cice_load_balance_timers(domain, "before")
 
        call mpas_timer_start("ocean stress halo")
 
-       call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
-       if (config_aggregate_halo_exch) then
+       call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
+       if (config_use_halo_exch) then
 
-          ! aggregated halo exchange
-          call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
-          if (.not. config_reuse_halo_exch) then
+          call MPAS_pool_get_config(domain % configs, "config_aggregate_halo_exch", config_aggregate_halo_exch)
+          if (config_aggregate_halo_exch) then
 
-             ! without reuse
-             call mpas_dmpar_exch_group_full_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
-             if (ierr /= MPAS_DMPAR_NOERR) then
-                call MPAS_log_write("failure to perform halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
-             endif
+             ! aggregated halo exchange
+             call MPAS_pool_get_config(domain % configs, "config_reuse_halo_exch", config_reuse_halo_exch)
+             if (.not. config_reuse_halo_exch) then
+
+                ! without reuse
+                call mpas_dmpar_exch_group_full_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
+                if (ierr /= MPAS_DMPAR_NOERR) then
+                   call MPAS_log_write("failure to perform halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+                endif
+
+             else
+
+                ! with reuse
+                call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
+                if (ierr /= MPAS_DMPAR_NOERR) then
+                   call MPAS_log_write("failure to perform reuse halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
+                endif
+
+             endif ! config_reuse_halo_exch
 
           else
 
-             ! with reuse
-             call mpas_dmpar_exch_group_reuse_halo_exch(domain, 'oceanStressHaloExchangeGroup', iErr=ierr)
-             if (ierr /= MPAS_DMPAR_NOERR) then
-                call MPAS_log_write("failure to perform reuse halo exchange for oceanStressHaloExchangeGroup", MPAS_LOG_CRIT)
-             endif
+             ! no aggregated halo exchange
+             call MPAS_dmpar_field_halo_exch(domain, 'oceanStressU')
+             call MPAS_dmpar_field_halo_exch(domain, 'oceanStressV')
 
-          endif ! config_reuse_halo_exch
+          endif ! config_aggregate_halo_exch
 
-       else
-
-          ! no aggregated halo exchange
-          call MPAS_dmpar_field_halo_exch(domain, 'oceanStressU')
-          call MPAS_dmpar_field_halo_exch(domain, 'oceanStressV')
-
-       endif ! config_aggregate_halo_exch
+       endif ! config_use_halo_exch
 
        call mpas_timer_stop("ocean stress halo")
+
+       call cice_load_balance_timers(domain, "after")
 
        block => domain % blocklist
        do while (associated(block))

@@ -70,7 +70,8 @@ contains
          cice_column_reinitialize_diagnostics_dynamics
 
     use cice_diagnostics, only: &
-         cice_check_state
+         cice_check_state, &
+         cice_load_balance_timers
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -105,6 +106,9 @@ contains
     call mpas_timer_start("Halo")
     call mpas_timer_stop("Halo")
 #endif
+
+    ! halo barrier diagnostics for coupling/forcing
+    call cice_load_balance_timers(domain, "coupling")
 
     ! set time diagnostics
     call cice_set_time_diagnostics(domain)
