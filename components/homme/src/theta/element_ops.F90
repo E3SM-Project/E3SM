@@ -375,10 +375,11 @@ contains
   kappa_star=kappa   
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
        elem%state%phinh_i(:,:,:,nt),kappa_star,pnh,exner,dpnh_dp_i)
-  do k=1,nlevp
+  do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*) 'WARNING: hydrostatic inverse FAILED!'
         write(iulog,*) k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
+        write(iulog,*) 'pi,pnh',p(1,1,k),pnh(1,1,k)
      endif
   enddo
 
@@ -553,12 +554,13 @@ contains
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   integer :: k,tl, ntQ
-  real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
+  real(real_kind), dimension(np,np,nlev) :: dp, kappa_star, pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
 
   do k=1,nlev
+    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,ns)
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
   enddo
@@ -570,11 +572,11 @@ contains
   ! verify discrete hydrostatic balance
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,ns),dp,&
        elem%state%phinh_i(:,:,:,ns),kappa_star,pnh,exner,dpnh_dp_i)
-  
-  do k=1,nlevp
+  do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
         write(iulog,*)k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
+        write(iulog,*) 'pi,pnh',pi(1,1,k),pnh(1,1,k)
      endif
   enddo
   

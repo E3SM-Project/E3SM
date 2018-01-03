@@ -404,7 +404,7 @@ contains
        deallocate(tmp3d)
     endif
 
-    if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+    if(hybrid%masterthread) then 
        if ( test_case(1:10) == "baroclinic" ) then
           write(iulog,101) "2-norm relative vorticity = ",relvort
 101       format (A30,E24.15)
@@ -497,86 +497,100 @@ contains
     !   Vertical transport terms
 #ifdef ENERGY_DIAGNOSTICS
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEu_horiz1
+       tmp(:,:,ie) = elem(ie)%accum%KEu_horiz1
     enddo
+    if(hybrid%masterthread) print *,'KEH1'
     KEH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH1 = KEH1*scale
 
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEu_horiz2
+       tmp(:,:,ie) = elem(ie)%accum%KEu_horiz2
     enddo
+    if(hybrid%masterthread) print *,'KEH2'
     KEH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEH2 = KEH2*scale
     
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEu_vert1
+       tmp(:,:,ie) = elem(ie)%accum%KEu_vert1
     enddo
+    if(hybrid%masterthread) print *,'KEV1'
     KEV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEV1 = KEV1*scale
     
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEu_vert2
+       tmp(:,:,ie) = elem(ie)%accum%KEu_vert2
     enddo
+    if(hybrid%masterthread) print *,'KEV2'
     KEV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEV2 = KEV2*scale
 
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEw_horiz1
+       tmp(:,:,ie) = elem(ie)%accum%KEw_horiz1
     enddo
+    if(hybrid%masterthread) print *,'KEwH1'
     KEwH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH1 = KEwH1*scale
 
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEw_horiz2
+       tmp(:,:,ie) = elem(ie)%accum%KEw_horiz2
     enddo
+    if(hybrid%masterthread) print *,'KEwH2'
     KEwH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwH2 = KEwH2*scale
     
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
+       tmp(:,:,ie) = elem(ie)%accum%KEw_vert1
     enddo
+    if(hybrid%masterthread) print *,'KEwV1'
     KEwV1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwV1 = KEwV1*scale
 
     do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEw_vert2
     enddo
+    if(hybrid%masterthread) print *,'KEwV2'
     KEwV2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEwV2 = KEwV2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 
     enddo
+    if(hybrid%masterthread) print *,'IEvert1'
     IEvert1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     IEvert1 = IEvert1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert2
     enddo
+    if(hybrid%masterthread) print *,'IEvert2'
     IEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     IEvert2 = IEvert2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEhoriz1 
     enddo
+    if(hybrid%masterthread) print *,'PEhoriz1'
     PEhorz1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEhorz1 = PEhorz1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEhoriz2
     enddo
+    if(hybrid%masterthread) print *,'PEhoriz2'
     PEhorz2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEhorz2 = PEhorz2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEvert1
     enddo
+    if(hybrid%masterthread) print *,'PEver1'
     PEvert1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert1 = PEvert1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEvert2
     enddo
+    if(hybrid%masterthread) print *,'PEver2'
     PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert2 = PEvert2*scale
     
@@ -584,36 +598,42 @@ contains
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T01
     enddo
+    if(hybrid%masterthread) print *,'T01'
     T1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T1 = T1*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T2
     enddo
+    if(hybrid%masterthread) print *,'T2'
     T2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T2 = T2*scale
     
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S1
     enddo
+    if(hybrid%masterthread) print *,'S1'
     S1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     S1 = S1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S2
     enddo
+    if(hybrid%masterthread) print *,'S2'
     S2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     S2 = S2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%P1
     enddo
+    if(hybrid%masterthread) print *,'P1'
     P1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     P1 = P1*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%P2
     enddo
+    if(hybrid%masterthread) print *,'P2'
     P2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     P2 = P2*scale
 
@@ -624,7 +644,7 @@ contains
 #endif
 
 
-    if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+    if(hybrid%masterthread) then 
        if(moisture /= "dry")then
           if (qsize>=1) then
              write(iulog,'(a,E23.15,a,E23.15,a)') "    dry M = ",Mass-Q1mass(1),' kg/m^2'
@@ -659,7 +679,7 @@ contains
           write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
-          write(iulog,'(a,3e22.14)')'IE v-adv, sum~0:',IEvert1,IEvert2,IEvert1+IEvert2
+          write(iulog,'(a,3e22.14)')'IE v-adv, sum=0:',IEvert1,IEvert2
           write(iulog,'(a,2e22.14)')'KE->PE, PE->KE :',P1,P2
           write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',T1+T2,S1+S2
           

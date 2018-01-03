@@ -115,10 +115,6 @@ implicit none
       pnh(:,:,k) = p0 * (rho_R_theta(:,:,k)/p0)**(1/(1-kappa_star(:,:,k)))
       exner(:,:,k) =  pnh(:,:,k)/ rho_R_theta(:,:,k)
    enddo
-! step 1:  compute pnh_i at interfaces
-! step 2: is to compute other quantities at interfaces using pnh_i
-! step 3:  use p_s - pi_s = 1.5*(p(nlev)-pi(nlev))-0.5*(p(nlev-1)-pi(nlev-1))
-! to get the value of pnh_i at nlevp
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
@@ -157,7 +153,7 @@ implicit none
 
 
   !_____________________________________________________________________
-  subroutine get_dry_phinh(hvcoord,phis,theta_dp_cp,dp,phi)
+  subroutine get_dry_phinh(hvcoord,phis,theta_dp_cp,dp,phi_i)
 !
 ! Use Equation of State to compute geopotential
 !
@@ -185,13 +181,12 @@ implicit none
   real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(out) :: phi(np,np,nlev) ! geopotential 
+  real (kind=real_kind), intent(out) :: phi_i(np,np,nlevp)
  
   !   local
   real (kind=real_kind) :: p(np,np,nlev) ! pressure at cell centers 
   real (kind=real_kind) :: p_i(np,np,nlevp)  ! pressure on interfaces
-  real (kind=real_kind) :: phi_i(np,np,nlevp)
-  real (kind=real_kind) :: exner(np,np,nlev)
+
   real (kind=real_kind) :: rho_R_theta(np,np,nlev)
 
   integer :: k
@@ -201,28 +196,19 @@ implicit none
   do k=1,nlev
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
-  p(:,:,nlev) = (p_i(:,:,nlevp)+p_i(:,:,nlev))/2
-  do k=nlev-1,1,-1
-    p(:,:,k) = 2*p_i(:,:,k+1)-p(:,:,k+1)
-   !  exner(:,:,k) = (p(:,:,k)/p0)**kappa                                                                            
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k+1)+p_i(:,:,k))/2
   enddo
-
+ 
   phi_i(:,:,nlevp) = phis(:,:)
-  do k=nlev,1,-1
- ! phi = -theta* d exner /dp = -theta * exner / p
+  do k=1,nlev
      phi_i(:,:,k) = phi_i(:,:,k+1)+(theta_dp_cp(:,:,k)*kappa*(p(:,:,k)/p0)**(kappa-1))/p0
   enddo
-
-  phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2 
-  do k=2,nlev
-     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1) 
-  enddo
-
-    
   end subroutine
 
+  
   !_____________________________________________________________________
-  subroutine get_moist_phinh(hvcoord,phis,theta_dp_cp,dp,kappa_star,phi)
+  subroutine get_moist_phinh(hvcoord,phis,theta_dp_cp,dp,kappa_star,phi_i)
 !
 ! Use Equation of State to compute geopotential
 !
@@ -249,23 +235,19 @@ implicit none
   real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
   real (kind=real_kind), intent(in)   :: phis(np,np)
   real (kind=real_kind), intent(in)   :: kappa_star(np,np,nlev)
-  real (kind=real_kind), intent(out)  :: phi(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: phi_i(np,np,nlevp)
   
 ! local variables
   real (kind=real_kind) :: p(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlevp)
-  real (kind=real_kind) :: phi_i(np,np,nlevp)
 
   integer :: k
   p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
-  p(:,:,nlev) = (p_i(:,:,nlevp)+p_i(:,:,nlev))/2
-  do k=nlev-1,1,-1
-    p(:,:,k) = 2*p_i(:,:,k+1)-p(:,:,k+1)
-   !  exner(:,:,k) = (p(:,:,k)/p0)**kappa                                                                            
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k)+p_i(:,:,k+1))/2
   enddo
 
   phi_i(:,:,nlevp) = phis(:,:)
@@ -274,16 +256,9 @@ implicit none
      phi_i(:,:,k) = phi_i(:,:,k+1)+ &
        (theta_dp_cp(:,:,k)*kappa_star(:,:,k)*(p(:,:,k)/p0)**(kappa_star(:,:,k)-1))/p0
   enddo
-
-  phi(:,:,1) = (phi_i(:,:,1) + phi_i(:,:,2))/2
-  do k=2,nlev
-     phi(:,:,k) = 2*phi_i(:,:,k) - phi(:,:,k-1)
-  enddo
-
-
-
   end subroutine
 
+  
 
   subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi,phis,kappa_star_i,pnh_i,exact,epsie,hvcoord,dpnh_dp, &
     theta_dp_cp,kappa_star,pnh,exner)

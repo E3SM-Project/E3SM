@@ -50,7 +50,8 @@ contains
   integer :: q
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
-  real (kind=real_kind), dimension(np,np,nlev)  :: phi_ref, theta_ref
+  real (kind=real_kind), dimension(np,np,nlev)  :: theta_ref
+  real (kind=real_kind), dimension(np,np,nlevp) :: phi_ref
   real (kind=real_kind), dimension(np,np,nlev,5)  :: ttmp
 
   call t_startf('vertical_remap')
@@ -130,7 +131,7 @@ contains
         ! depends on theta, so do this after updating theta:
         call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
         
-        elem(ie)%state%phinh_i(:,:,1:nlev,np1)=ttmp(:,:,:,4)/dp + phi_ref(:,:,:)
+        elem(ie)%state%phinh_i(:,:,1:nlev,np1)=ttmp(:,:,:,4)/dp + phi_ref(:,:,1:nlev)
         
      endif
 
