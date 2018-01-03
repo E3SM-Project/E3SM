@@ -19,6 +19,7 @@
     config_number_of_blocks = 0
     config_explicit_proc_decomp = false
     config_proc_decomp_file_prefix = 'graphs/graph.info.part.'
+    config_use_halo_exch = true
     config_aggregate_halo_exch = false
     config_reuse_halo_exch = false
     config_load_balance_timers = false
