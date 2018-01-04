@@ -28,22 +28,30 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("repo", nargs="?",
                         help="Location of repo to use, default is based on current location")
 
-    parser.add_argument("--resume", action="store_true",
+    parser.add_argument("-r", "--resume", action="store_true",
                         help="Resume merge after fixing conflicts")
+
+    parser.add_argument("-a", "--abort", action="store_true",
+                        help="Resume split after fixing conflicts")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.repo, args.resume
+    expect(not (args.resume and args.abort), "Makes no sense to abort and resume")
+
+    return args.repo, args.resume, args.abort
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    repo, resume = parse_command_line(sys.argv, description)
+    repo, resume, abort = parse_command_line(sys.argv, description)
 
     if repo is not None:
         os.chdir(repo)
 
-    acme_cime_merge(resume)
+    if abort:
+        abort_merge()
+    else:
+        acme_cime_merge(resume)
 
 ###############################################################################
 
