@@ -1,5 +1,72 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 1-4-2018
+Tag: cime5.4.0-alpha.17
+Answer Changes: Round Off allactive
+Tests: ERS_Ld7.f19_g17.B1850.hobart_pgi.allactive-defaultio
+       scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Add flux convergence criteria.
+    - Pass CIMEROOT to CMake unit test builds.
+    - scripts_regression_tests.py should use values in .cime/config if provided.
+    - Testing/multiinst baselines.
+    - Fix pylint error that I introduced in #2168.
+    - Generalize some paths to support a standalone CISM checkout.
+    - Revert to previous cheyenne gnu environment.
+    - Y10k fix.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1b4fa36 Merge pull request #2180 from jedwards4b/flux_convergence
+6a07ef1 Merge pull request #2176 from billsacks/run_tests_pass_cimeroot
+8932a90 Merge pull request #2173 from jedwards4b/srt_use_cimeconfig
+5a9d270 Merge pull request #2170 from mnlevy1981/testing/multiinst_baselines
+cade91d Merge pull request #2169 from billsacks/fix_pylint_error
+9e6cee6 Merge pull request #2168 from billsacks/cism_standalone
+d59c285 Merge pull request #2167 from billsacks/backout_cheyenne_gnu
+abc6354 Merge pull request #2145 from jedwards4b/y10k_fix
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/machines/config_machines.xml
+M	scripts/Tools/Makefile
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/desp/desp_comp_mod.F90
+M	src/components/data_comps/dice/dice_comp_mod.F90
+M	src/components/data_comps/dlnd/dlnd_comp_mod.F90
+M	src/components/data_comps/docn/docn_comp_mod.F90
+M	src/components/data_comps/drof/drof_comp_mod.F90
+M	src/components/data_comps/dwav/dwav_comp_mod.F90
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/y100k/README
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/y100k/shell_commands
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_io_mod.F90
+M	src/drivers/mct/main/seq_rest_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+M	src/drivers/mct/unit_test/CMakeLists.txt
+M	src/share/test/unit/CMakeLists.txt
+A	src/share/test/unit/shr_cal_test/CMakeLists.txt
+A	src/share/test/unit/shr_cal_test/test_shr_cal.pf
+M	src/share/util/CMakeLists.txt
+M	src/share/util/shr_cal_mod.F90
+M	src/share/util/shr_flux_mod.F90
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 12-22-2017
 Tag: cime5.4.0-alpha.16
