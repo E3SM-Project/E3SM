@@ -617,6 +617,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl">
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal  -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
@@ -633,6 +634,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl" MPILIB="impi">
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
   <!-- When using Intel MPI, can't use the Cray compiler wrappers. -->
   <MPI_LIB_NAME>impi</MPI_LIB_NAME>
   <MPIFC> mpiifort </MPIFC>
@@ -667,6 +669,7 @@ for mct, etc.
 
 <compiler COMPILER="intel18" MACH="cori-knl">
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS> 
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
   <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
@@ -677,6 +680,7 @@ for mct, etc.
 
 <compiler COMPILER="intel18" MACH="cori-knl" MPILIB="impi">
   <!-- When using Intel MPI, can't use the Cray compiler wrappers. -->
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
   <MPI_LIB_NAME>impi</MPI_LIB_NAME>
   <MPIFC> mpiifort </MPIFC>
   <MPICC> mpiicc </MPICC>
