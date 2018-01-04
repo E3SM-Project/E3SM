@@ -1,7 +1,6 @@
 #ifdef AIX
 @PROCESS ALIAS_SIZE(805306368)
 #endif
-
 module dice_comp_mod
 
   ! !USES:
@@ -96,7 +95,7 @@ module dice_comp_mod
   !--------------------------------------------------------------------------
   integer(IN),parameter :: ktrans = 42
   character(16),parameter  :: avofld(1:ktrans) = &
-     (/"So_t            ","So_s            ","So_u            ","So_v            ", &
+       (/"So_t            ","So_s            ","So_u            ","So_v            ", &
        "So_dhdx         ","So_dhdy         ","Fioo_q          ","Sa_z            ", &
        "Sa_u            ","Sa_v            ","Sa_ptem         ","Sa_tbot         ", &
        "Sa_shum         ","Sa_dens         ","Faxa_swndr      ","Faxa_swvdr      ", &
@@ -109,7 +108,7 @@ module dice_comp_mod
        "Fioi_taux       ","Fioi_tauy       " /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
-     (/"to              ","s               ","uo              ","vo              ", &
+       (/"to              ","s               ","uo              ","vo              ", &
        "dhdx            ","dhdy            ","q               ","z               ", &
        "ua              ","va              ","ptem            ","tbot            ", &
        "shum            ","dens            ","swndr           ","swvdr           ", &
