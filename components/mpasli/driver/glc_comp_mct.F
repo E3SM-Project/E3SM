@@ -1348,27 +1348,27 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         !call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         !call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
-         !call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         !call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
-         !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
+         call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
+         call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
+         call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-            !basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
-            !surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-            !basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
+            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
+            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
             !OceanDensity (i) = x2g_g % rAttr(, n)
          end do
 
          block => block % next
     end do
 
-
+!Jer update to V2: ensure these comments below are redundant...
 !Need to loop over blocks
 !Jer: Need to define local pointers to MPAS-LI arrays, get these arrays, and point to them with local pointers
 !Jer: Need to assign local pointers to x2g arrays (as in CESM)

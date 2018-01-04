@@ -21,6 +21,13 @@ module mpaso_cpl_indices
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
 
+  integer :: index_o2x_So_blt !boundary layer temperature
+  integer :: index_o2x_So_bls !boundary layer salinity
+  integer :: index_o2x_So_htv !ocean heat-transfer velocity
+  integer :: index_o2x_So_hsv !ocean salt-transfer velocity
+  integer :: index_o2x_So_phieff !ocean effective density  
+
+
   ! ocn -> drv  (BGC)
 
   integer :: index_o2x_So_algae1
@@ -87,6 +94,15 @@ module mpaso_cpl_indices
   integer :: index_x2o_Foxx_rofl       ! river runoff flux                (kg/m2/s)
   integer :: index_x2o_Foxx_rofi       ! ice runoff flux                  (kg/m2/s)
 
+  ! ocn -> drv for calculation of ocean-ice sheet interactions
+  
+  integer :: index_o2x_So_blt !boundary layer temperature
+  integer :: index_o2x_So_bls !boundary layer salinity
+  integer :: index_o2x_So_htv !ocean heat-transfer velocity
+  integer :: index_o2x_So_hsv !ocean salt-transfer velocity
+  integer :: index_o2x_So_phieff !ocean effective density  
+
+
   ! drv -> ocn (BGC)
 
   integer :: index_x2o_Fioi_algae1
@@ -133,6 +149,12 @@ contains
     index_o2x_Fioo_frazil   = mct_avect_indexra(o2x,'Fioo_frazil',perrWith='quiet')
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
+
+    index_o2x_So_blt	    = mct_avect_indexra(o2x,'So_blt')
+    index_o2x_So_bls	    = mct_avect_indexra(o2x,'So_bls')
+    index_o2x_So_htv	    = mct_avect_indexra(o2x,'So_htv')
+    index_o2x_So_hsv	    = mct_avect_indexra(o2x,'So_hsv')
+    index_o2x_So_phieff     = mct_avect_indexra(o2x,'So_phieff')
 
     index_o2x_So_algae1     = mct_avect_indexra(o2x,'So_algae1',perrWith='quiet')
     index_o2x_So_algae2     = mct_avect_indexra(o2x,'So_algae2',perrWith='quiet')
@@ -195,6 +217,15 @@ contains
     index_x2o_Faxa_dstwet4  = mct_avect_indexra(x2o,'Faxa_dstwet4')
     index_x2o_Sa_co2prog    = mct_avect_indexra(x2o,'Sa_co2prog',perrWith='quiet')
     index_x2o_Sa_co2diag    = mct_avect_indexra(x2o,'Sa_co2diag',perrWith='quiet')
+
+    index_x2o_Fogx_qicelo = mct_avect_indexra(x2o,'Fogx_qicelo',perrWith='quiet')
+    index_x2o_Fogx_qiceho = mct_avect_indexra(x2o,'Fogx_qiceho',perrWith='quiet')    
+    index_x2o_Sg_blit	 = mct_avect_indexra(x2o,'Sg_blit',perrWith='quiet')
+    index_x2o_Sg_blis	 = mct_avect_indexra(x2o,'Sg_blis',perrWith='quiet')
+    index_x2o_Sg_lithop  = mct_avect_indexra(x2o,'Sg_lithop',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating',perrWith='quiet')
 
     index_x2o_Fioi_algae1   = mct_avect_indexra(x2o,'Fioi_algae1',perrWith='quiet')
     index_x2o_Fioi_algae2   = mct_avect_indexra(x2o,'Fioi_algae2',perrWith='quiet')

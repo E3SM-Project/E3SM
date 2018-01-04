@@ -18,22 +18,42 @@ module glc_cpl_indices
 
   ! drv -> glc
 
-  integer, public :: index_x2g_Flgl_qice = 0 !Jer: removed multiple fields, now that these are confined to coupler
-  integer, public :: index_x2g_Fogo_qicel = 0 
-  integer, public :: index_x2g_Sl_tsrf   = 0 !Jer: removed multiple fields, now that these are confined to coupler
-  integer, public :: index_x2g_Fogo_qiceh = 0 !Jer:need to rename this everywhere...
+  !Jer: these are renamed in updated code to index_g2x_Fogx_qicelo and index_g2x_Fogx_qiceho (I believe)
+  !integer, public :: index_x2g_Fogo_qicel = 0 
+  !integer, public :: index_x2g_Fogo_qiceh = 0 !Jer:need to rename this everywhere...
+
+  integer, public :: index_x2g_Flgl_qice = 0 !Ice sheet surface mass balance
+  integer, public :: index_x2g_Sl_tsrf   = 0 !Ice sheet upper surface boundary temperature
+
+  integer, public :: index_x2g_So_blt    = 0 !Ice shelf boundary layer ocean temperature
+  integer, public :: index_x2g_So_bls    = 0 !Ice shelf boundary layer ocean salinity
+  integer, public :: index_x2g_So_htv    = 0 !Ice shelf ocean heat transfer velocity
+  integer, public :: index_x2g_So_hsv    = 0 !Ice shelf ocean salinity transfer velocity
+  integer, public :: index_x2g_So_phieff = 0 !Ocean effective pressure
+  integer, public :: index_x2g_Fogx_qiceli = 0 !Subshelf mass flux
+  integer, public :: index_x2g_Fogx_qicehi = 0 !Subshelf heat flux for the ice sheet
 
   ! glc -> drv
-
-  integer, public :: index_g2x_Fogg_rofi = 0   ! frozen runoff -> ocn
-  integer, public :: index_g2x_Figg_rofi = 0   ! frozen runoff -> ice
-  integer, public :: index_g2x_Fogg_rofl = 0   ! liquid runoff -> ocn
+  
+  integer, public :: index_g2x_Fogg_rofi = 0 ! frozen runoff -> ocn
+  integer, public :: index_g2x_Figg_rofi = 0 ! frozen runoff -> ice
+  integer, public :: index_g2x_Fogg_rofl = 0 ! liquid runoff -> ocn
+  integer, public :: index_g2x_Sg_topo = 0 ! surface elevation
+  integer, public :: index_g2x_Flgg_hflx = 0 ! heat flux
+  integer, public :: index_g2x_Sg_tbot = 0 !bottom-layer temperature
+  integer, public :: index_g2x_Sg_dztbot = 0 !distance from bottom-layer temperature to ice-ocean interface (to compute T gradient)
+  integer, public :: index_g2x_Sg_lithop = 0 !ice sheet lithostatic pressure
+  integer, public :: index_g2x_Fogx_qicelo = 0 !Subshelf heat flux for ocean !<--- Jer: is this correct comment?
+  integer, public :: index_g2x_Fogx_qiceho = 0 !Subshelf heat flux for the ice sheet
+  integer, public :: index_g2x_Sg_blis = 0 !Boundary layer interface salinity for ocean
+  integer, public :: index_g2x_Sg_blit = 0 !Boundary layer interface temperature for ocean
+  
+  integer, public :: index_g2x_Sg_icemask = 0 !complete grounded/floating ice mask
+  integer, public :: index_g2x_Sg_icemask_grounded = 0 !grounded mask
+  integer, public :: index_g2x_Sg_icemask_floating = 0 !floating mask
+  integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0 !ice mask for coupled fluxes
   integer, public :: index_g2x_Sg_ice_covered = 0
-  integer, public :: index_g2x_Sg_topo        = 0
-  integer, public :: index_g2x_Flgg_hflx      = 0
-  integer, public :: index_g2x_Sg_icemask     = 0
-  integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0
-
+  
 contains
 
   subroutine glc_cpl_indices_set( )
@@ -108,6 +128,31 @@ contains
 
     index_x2g_Flgl_qice = mct_avect_indexra(x2g,'Flgl_qice')
     ! surface mass balance (kg/m^2/s)
+
+    !Following block are input boundary conditions for ice sheet model
+    index_x2g_Fogx_qiceli =		  mct_avect_indexra(x2g,'Fogx_qiceli')
+    index_x2g_Fogx_qicehi =		  mct_avect_indexra(x2g,'Fogx_qicehi')
+    index_x2g_So_phieff =		  mct_avect_indexra(x2g,'So_phieff')
+
+    !Following block of x2g/g2x vectors are used internally within coupler for subshelf melt flux
+    !calculations (and so do not have directly-related export-side arrays)
+    index_x2g_So_blt =  		  mct_avect_indexra(x2g,'So_blt')
+    index_x2g_So_bls =  		  mct_avect_indexra(x2g,'So_bls')
+    index_x2g_So_htv =  		  mct_avect_indexra(x2g,'So_htv')
+    index_x2g_So_hsv =  		  mct_avect_indexra(x2g,'So_hsv')
+    index_g2x_Sg_tbot = 		  mct_avect_indexra(g2x,'Sg_tbot')
+    index_g2x_Sg_dztbot =		  mct_avect_indexra(g2x,'Sg_dztbot')
+    index_g2x_Sg_lithop =		  mct_avect_indexra(g2x,'Sg_lithop')
+    
+    !Following block are GLC outputs for other components.
+    index_g2x_Sg_icemask_grounded =	  mct_avect_indexra(g2x,'Sg_icemask_grounded')
+    index_g2x_Sg_icemask_floating =	  mct_avect_indexra(g2x,'Sg_icemask_floating')
+
+    !Following block are subshelf melt routine outputs for ocean import
+    index_g2x_Fogx_qicelo =		  mct_avect_indexra(g2x,'Fogx_qicelo')
+    index_g2x_Fogx_qiceho =		  mct_avect_indexra(g2x,'Fogx_qiceho')
+    index_g2x_Sg_blis = 		  mct_avect_indexra(g2x,'Sg_blis')
+    index_g2x_Sg_blit = 		  mct_avect_indexra(g2x,'Sg_blit')
 
     call mct_aVect_clean(x2g)
     call mct_aVect_clean(g2x)
