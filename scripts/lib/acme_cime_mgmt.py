@@ -76,7 +76,7 @@ def get_branch_from_tag(tag):
 def do_subtree_split(old_split_tag, new_split_tag, merge_tag):
 ###############################################################################
     subtree_branch = get_branch_from_tag(new_split_tag)
-    run_cmd_no_fail("git subtree split {}.. --prefix=cime --onto={} --ignore-joins -b {}".\
+    run_cmd_no_fail("git subtree split {}.. --prefix=cime --onto={} -b {}".\
                         format(old_split_tag, merge_tag, subtree_branch), verbose=True)
     return subtree_branch
 
@@ -101,6 +101,9 @@ def merge_branch(branch):
     stat = run_cmd("git merge -m 'Merge {}' -X rename-threshold=25 {}".format(branch, branch), verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
+        logging.info("If the histories are unrelated, you may need to rebase the branch manually:")
+        logging.info("git rebase $pr_branch --onto $merge_tag")
+        logging.info("Then repeat the above merge command")
         sys.exit(1)
 
 ###############################################################################
@@ -177,3 +180,23 @@ def acme_cime_merge(resume):
         raise
 
     delete_tag(old_merge_tag, remote=ESMCI_REMOTE_NAME)
+
+###############################################################################
+def abort_split():
+###############################################################################
+    _, new_split_tag = get_split_tag(expected_num=2)
+    pr_branch = get_branch_from_tag(new_split_tag)
+    delete_tag(new_split_tag)
+    run_cmd_no_fail("git checkout master", verbose=True)
+    run_cmd_no_fail("git reset --hard origin/master", verbose=True)
+    run_cmd("git branch -D {}".format(pr_branch), verbose=True)
+
+###############################################################################
+def abort_merge():
+###############################################################################
+    _, new_merge_tag = get_merge_tag(expected_num=2)
+    pr_branch = get_branch_from_tag(new_merge_tag)
+    delete_tag(new_merge_tag, remote=ESMCI_REMOTE_NAME)
+    run_cmd_no_fail("git checkout master", verbose=True)
+    run_cmd_no_fail("git reset --hard origin/master", verbose=True)
+    run_cmd("git branch -D {}".format(pr_branch), verbose=True)
