@@ -172,7 +172,7 @@ OR
                             help="Use this testlist to lookup tests, default specified in config_files.xml")
 
         parser.add_argument("testargs", nargs="*",
-                            help="Tests or test suites to run."
+                            help="Tests to run."
                             " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
 
     else:
