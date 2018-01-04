@@ -217,12 +217,15 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
     with open(taylor_diag_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
+
+        keys_td = []
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
-            if key.split()[0] in ['PRECT','PSL','SWCF','LWCF']:  #only include variables in a a certain list for taylor diagram
+            if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:  #only include variables in a a certain list for taylor diagram
                 metrics = metrics_dic['metrics']
                 row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
-                #row = [key, metrics['unit'], round(metrics['test_regrid']['mean'],3), round(metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['mean'] - metrics['ref_regrid']['mean'],3), round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['rmse'],3), round(metrics['misc']['corr'],3)]
                 writer.writerow(row)
+
+                keys_td.append(keys)
 
     
     with open(taylor_diag_path, 'r') as taylor_csv:
@@ -428,8 +431,8 @@ def create_viewer(root_dir, parameters, ext):
                             row_name_and_fnm.append((row_name, fnm))
                         else:  # 3d variables
                             for plev in parameter.plevs:
-                                row_name = '{} {} {} {}'.format(
-                                    var, str(int(plev)) + ' mb', region, ref_name)
+                                row_name = '{}-{} {} {}'.format(
+                                    var, str(int(plev)) + 'mb', region, ref_name)
                                 fnm = '{}-{}-{}-{}-{}'.format(
                                     ref_name, var, int(plev), season, region)
                                 row_name_and_fnm.append((row_name, fnm))
