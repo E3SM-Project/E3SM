@@ -164,16 +164,16 @@ class TestScheduler(object):
         self._baseline_cmp_name = baseline_cmp_name # Implies comparison should be done if not None
         self._baseline_gen_name = baseline_gen_name # Implies generation should be done if not None
 
+        # Compute baseline_root
+        self._baseline_root = baseline_root if baseline_root is not None \
+                              else self._machobj.get_value("BASELINE_ROOT")
+
+        if self._project is not None:
+            self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
+
+        self._baseline_root = os.path.abspath(self._baseline_root)
+
         if baseline_cmp_name or baseline_gen_name:
-            # Compute baseline_root
-            self._baseline_root = baseline_root if baseline_root is not None \
-                else self._machobj.get_value("BASELINE_ROOT")
-
-            if self._project is not None:
-                self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
-
-            self._baseline_root = os.path.abspath(self._baseline_root)
-
             if self._baseline_cmp_name:
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_cmp_name)
                 expect(os.path.isdir(full_baseline_dir),
@@ -190,8 +190,6 @@ class TestScheduler(object):
                 expect(allow_baseline_overwrite or len(existing_baselines) == 0,
                        "Baseline directories already exists {}\n" \
                        "Use -o to avoid this error".format(existing_baselines))
-        else:
-            self._baseline_root = None
 
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
@@ -499,8 +497,7 @@ class TestScheduler(object):
         envtest.set_value("TEST_ARGV", test_argv)
         envtest.set_value("CLEANUP", self._clean)
 
-        if self._baseline_gen_name or self._baseline_cmp_name:
-            envtest.set_value("BASELINE_ROOT", self._baseline_root)
+        envtest.set_value("BASELINE_ROOT", self._baseline_root)
         envtest.set_value("GENERATE_BASELINE", self._baseline_gen_name is not None)
         envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
