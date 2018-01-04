@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job
 
 from copy import deepcopy
 from collections import OrderedDict
@@ -178,9 +178,10 @@ class EnvBatch(EnvBase):
         overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
 
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
-        with open(job, "w") as fd:
+        output_name = get_batch_script_for_job(job)
+        with open(output_name, "w") as fd:
             fd.write(output_text)
-        os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        os.chmod(output_name, os.stat(output_name).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def set_job_defaults(self, batch_jobs, case):
         if self._batchtype is None:
@@ -466,7 +467,7 @@ class EnvBatch(EnvBase):
                "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         submitcmd = ''
-        for string in (batchsubmit, submitargs, batchredirect, job):
+        for string in (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job)):
             if  string is not None:
                 submitcmd += string + " "
 

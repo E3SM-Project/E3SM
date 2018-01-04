@@ -9,7 +9,7 @@ from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import get_cime_root, run_and_log_case_status, get_model
+from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
 from CIME.test_status       import *
 
 import shutil, six
@@ -83,21 +83,18 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Remove batch scripts
     if reset or clean:
-        if os.path.exists("case.run"):
-            os.remove("case.run")
+        case_run, case_test = get_batch_script_for_job("case.run"), get_batch_script_for_job("case.test")
+        if os.path.exists(case_run):
+            os.remove(case_run)
 
         if not test_mode:
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
 
             # backup and then clean test script
-            if os.path.exists("case.test"):
-                os.remove("case.test")
-                logger.info("Successfully cleaned test script case.test")
-
-            if os.path.exists("case.testdriver"):
-                os.remove("case.testdriver")
-                logger.info("Successfully cleaned test script case.testdriver")
+            if os.path.exists(case_test):
+                os.remove(case_test)
+                logger.info("Successfully cleaned test script {}".format(case_test))
 
         logger.info("Successfully cleaned batch script case.run")
 
@@ -148,7 +145,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         if nthrds > 1:
             case.set_value("BUILD_THREADED",True)
 
-        if os.path.exists("case.run"):
+        if os.path.exists(get_batch_script_for_job("case.run")):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
 
             case.initialize_derived_attributes()

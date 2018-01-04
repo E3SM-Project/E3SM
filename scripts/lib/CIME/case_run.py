@@ -257,17 +257,6 @@ def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 def case_run(case, skip_pnl=False):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
-    run_with_submit = case.get_value("RUN_WITH_SUBMIT")
-    expect(run_with_submit,
-           "You are not calling the run script via the submit script. "
-           "As a result, short-term archiving will not be called automatically."
-           "Please submit your run using the submit script like so:"
-           " ./case.submit Time: {}".format(get_timestamp()))
-
-    # Forces user to use case.submit if they re-submit
-    if case.get_value("TESTCASE") is None:
-        case.set_value("RUN_WITH_SUBMIT", False)
-
     prerun_script = case.get_value("PRERUN_SCRIPT")
     postrun_script = case.get_value("POSTRUN_SCRIPT")
 
