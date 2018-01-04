@@ -379,7 +379,7 @@ CONTAINS
     !-------------------------------------------------------------------------------
     ! Notes:
     !-------------------------------------------------------------------------------
-
+    shr_file_getUnit = -1
     if (present (unit)) then
        inquire( unit, opened=opened )
        if (unit < 0 .or. unit > shr_file_maxUnit) then

@@ -435,8 +435,6 @@ contains
     !EOP
 
     !----- local ----
-    integer(SHR_KIND_IN) :: index_first_non_blank
-    integer(SHR_KIND_IN) :: rCode ! return code
     integer(SHR_KIND_IN) :: t01 = 0 ! timer
     character, parameter :: tab_char = char(9)
 
@@ -488,8 +486,7 @@ contains
     !EOP
 
     !----- local ----
-    integer(SHR_KIND_IN) :: rCode              ! return code
-    integer(SHR_KIND_IN) :: index, inlength, i ! temporaries
+    integer(SHR_KIND_IN) :: inlength, i ! temporaries
 
     !----- formats -----
     character(*),parameter :: subName =   "(shr_string_remove_tabs) "
@@ -537,7 +534,6 @@ contains
     !EOP
 
     !----- local ----
-    integer(SHR_KIND_IN) :: rCode  ! return code
     integer(SHR_KIND_IN) :: n,icnt ! counters
     integer(SHR_KIND_IN) :: t01 = 0 ! timer
 
@@ -840,7 +836,6 @@ contains
     !EOP
 
     !----- local -----
-    integer(SHR_KIND_IN)   :: n       ! counter
     integer(SHR_KIND_IN)   :: rCode   ! return code
     integer(SHR_KIND_IN) :: t01 = 0 ! timer
 
@@ -959,7 +954,7 @@ contains
     !EOP
 
     !----- local -----
-    integer(SHR_KIND_IN)   :: i,j,n   ! generic indecies
+    integer(SHR_KIND_IN)   :: i,n,j   ! generic indecies
     integer(SHR_KIND_IN)   :: kFlds   ! number of fields in list
     integer(SHR_KIND_IN)   :: i0,i1   ! name = list(i0:i1)
     integer(SHR_KIND_IN)   :: rCode   ! return code

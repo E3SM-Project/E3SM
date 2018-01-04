@@ -278,7 +278,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    else
       spval = shr_const_spval
    endif
-
+   u10n = spval
+   rh = spval
+   psixh = spval
+   hol=spval
    al2 = log(zref/ztref)
 
    DO n=1,nMax
@@ -581,7 +584,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    integer(IN) :: lsecs   ! local seconds elapsed
    integer(IN) :: lonsecs ! incrememnt due to lon offset
    real(R8)    :: vmag    ! surface wind magnitude   (m/s)
-   real(R8)    :: thvbot  ! virtual temperature      (K)
    real(R8)    :: ssq     ! sea surface humidity     (kg/kg)
    real(R8)    :: delt    ! potential T difference   (K)
    real(R8)    :: delq    ! humidity difference      (kg/kg)
@@ -638,7 +640,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: rhocn   !
    real(R8)    :: rcpocn  !
    real(R8)    :: Nreset  ! value for multiplicative reset factor
-   real(R8)    :: resec   ! reset offset value in seconds
    logical     :: lmidnight
    logical     :: ltwopm
    logical     :: ltwoam
@@ -698,9 +699,11 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
       write(s_logunit,F00) "ERROR: flux_diurnal must be true"
       call shr_sys_abort(subName//"flux diurnal must be true")
    endif
-
    spval = shr_const_spval
-
+   rh = spval
+   dviter = spval
+   dtiter = spval
+   dsiter = spval
    al2 = log(zref/ztref)
 
    ! equations 18 and 19
@@ -843,7 +846,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
             Hb = min(Hb , 0.0_R8)
             lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
-                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
+                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1.0_R8/3.0_R8)
             cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )
 
             !--- REGIME ---
@@ -880,7 +883,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                      Kvisc = Prandtl* kappa0 + NUzero * FofRi
                   else
                      regime(n) = 4.0_R8
-                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1/3)
+                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1.0_R8/3.0_R8)
                      Kvisc = Kdiff
                   endif
                endif

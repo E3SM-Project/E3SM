@@ -1582,7 +1582,6 @@ contains
     !EOP
 
     !----- local -----
-    integer(SHR_KIND_IN)   :: n
     logical                :: exists
 
     !----- formats -----
