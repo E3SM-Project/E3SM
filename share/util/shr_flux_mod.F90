@@ -321,7 +321,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         ustar = rdn * vmag
         tstar = rhn * delt
         qstar = ren * delq
-        ustar_prev = ustar * 2.0_R8
+        ustar_prev = ustar*2.0_R8
         iter = 0
         do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter < flux_con_max_iter)
            iter = iter + 1
@@ -355,7 +355,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
            tstar = rh * delt
            qstar = re * delq
         enddo
-
         !------------------------------------------------------------
         ! compute the fluxes
         !------------------------------------------------------------
@@ -556,7 +555,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),parameter :: umin  =  0.5_R8 ! minimum wind speed       (m/s)
    real(R8),parameter :: zref  = 10.0_R8 ! reference height           (m)
    real(R8),parameter :: ztref =  2.0_R8 ! reference height for air T (m)
-   integer(IN),parameter  :: iMax = 3
 
    real(R8),parameter :: lambdaC  = 6.0_R8
    real(R8),parameter :: lambdaL  = 0.0_R8
@@ -815,9 +813,11 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
         ustar_prev = ustar * 2.0_R8
         iter = 0
-         ! --- iterate ---
-
-         do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter < flux_con_max_iter)
+        ! --- iterate ---
+        ! Originally this code did three iterations while the non-diurnal version did two
+        ! So in the new loop this is <= flux_con_max_iter instead of < so that the same defaults
+        ! will give the same answers in both cases.
+        do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter <= flux_con_max_iter)
             iter = iter + 1
             ustar_prev = ustar
             !------------------------------------------------------------
