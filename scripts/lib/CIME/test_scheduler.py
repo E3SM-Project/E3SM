@@ -157,7 +157,7 @@ class TestScheduler(object):
 
         if parallel_jobs is None:
             self._parallel_jobs = min(len(test_names),
-                                      self._machobj.get_value("MAX_TASKS_PER_NODE"))
+                                      self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
         else:
             self._parallel_jobs = parallel_jobs
 
@@ -203,7 +203,7 @@ class TestScheduler(object):
 
         # Oversubscribe by 1/4
         if proc_pool is None:
-            pes = int(self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
+            pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
             self._proc_pool = int(pes * 1.25)
         else:
             self._proc_pool = int(proc_pool)
