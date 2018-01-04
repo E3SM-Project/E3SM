@@ -829,16 +829,21 @@ contains
     lchnk  = state%lchnk
     ncol   = state%ncol
 
-    taux_tmp(1:pcols)          =  taux(1:pcols)         
-    tauy_tmp(1:pcols)          =  tauy(1:pcols)         
-    shflx_tmp(1:pcols)         =  shflx(1:pcols)        
-    cflx_tmp (1:pcols,1:pcnst) =  cflx(1:pcols,1:pcnst)
+    !BSINGH - Modifications for pergro test:
+    !For pergro test, we would like to zero out all contributions from the land model
+    !Therefore, we are storing the flux variables into temporary variables
+    !Note that fluxes are intent-in variables whose values will stay the same in this routine
+
+    taux_tmp(1:ncol)          =  taux(1:ncol)         
+    tauy_tmp(1:ncol)          =  tauy(1:ncol)         
+    shflx_tmp(1:ncol)         =  shflx(1:ncol)        
+    cflx_tmp (1:ncol,1:pcnst) =  cflx(1:ncol,1:pcnst)
 
     if(pergro_mods) then
-       taux_tmp (1:pcols  ) = 0.0_r8
-       tauy_tmp (1:pcols  ) = 0.0_r8
-       shflx_tmp(1:pcols  ) = 0.0_r8       
-       cflx_tmp (1:pcols,1) = 0.0_r8
+       taux_tmp (1:ncol  ) = 0.0_r8
+       tauy_tmp (1:ncol  ) = 0.0_r8
+       shflx_tmp(1:ncol  ) = 0.0_r8       
+       cflx_tmp (1:ncol,1) = 0.0_r8
     endif
 
     call pbuf_get_field(pbuf, tauresx_idx,  tauresx)

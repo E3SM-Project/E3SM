@@ -127,6 +127,7 @@ module clubb_intr
   logical            :: clubb_do_deep
   logical            :: micro_do_icesupersat
   logical            :: history_budget
+  logical            :: pergro_mods                  !logical to tun on/off perturbation grwoth test mods
 
   integer            :: history_budget_histfile_num
   integer            :: edsclr_dim       ! Number of scalars to transport in CLUBB
@@ -231,6 +232,7 @@ module clubb_intr
                        do_tms_out                      = do_tms,      &
                        history_budget_out              = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
+                       pergro_mods_out                 = pergro_mods, &
                        micro_do_icesupersat_out        = micro_do_icesupersat, &
                        micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)
 
@@ -1210,6 +1212,7 @@ end subroutine clubb_init_cnst
    real(r8)  qvtend(pcols,pver)
    real(r8)  qitend(pcols,pver)
    real(r8)  initend(pcols,pver)
+   real(r8) :: wsx(pcols), wsy(pcols), shf(pcols), cflx(pcols,pcnst)
    logical            :: lqice(pcnst)
    
    integer :: ixorg
@@ -1539,6 +1542,24 @@ end subroutine clubb_init_cnst
    ! ------------------------------------------------- !
 
    call t_startf('adv_clubb_core_col_loop')
+   
+   !BSINGH - Modifications for pergro test:
+   !For pergro test, we would like to zero out all contributions from the land model
+   !Therefore, we are storing the cam_in variables into temporary variables
+   !Note that cam_in is an intent-in variable whose values will stay the same in this routine
+   wsx(1:ncol)          = cam_in%wsx(1:ncol)
+   wsy(1:ncol)          = cam_in%wsy(1:ncol)
+   shf(1:ncol)          = cam_in%shf(1:ncol)
+   cflx(1:ncol,1:pcnst) = cam_in%cflx(1:ncol,1:pcnst)
+   
+   !Zero-out fluxes if pergro_mods is active
+   if ( pergro_mods ) then
+      wsx(1:ncol)    = 0.0_r8
+      wsy(1:ncol)    = 0.0_r8
+      shf(1:ncol)    = 0.0_r8
+      cflx(1:ncol,1) = 0.0_r8
+   endif
+
    !  Loop over all columns in lchnk to advance CLUBB core
    do i=1,ncol   ! loop over columns
 
@@ -1701,10 +1722,10 @@ end subroutine clubb_init_cnst
       wm_zm           = zt2zm(wm_zt)
       
       !  Surface fluxes provided by host model
-      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
+      wpthlp_sfc = shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
+      wprtp_sfc  = cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
+      upwp_sfc   = wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
+      vpwp_sfc   = wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
@@ -2009,7 +2030,7 @@ end subroutine clubb_init_cnst
       enddo
      
       ! Take into account the surface fluxes of heat and moisture
-      te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
+      te_b(i) = te_b(i)+(shf(i)+(cflx(i,1))*(latvap+latice))*hdtime
 
       ! Limit the energy fixer to find highest layer where CLUBB is active
       ! Find first level where wp2 is higher than lowest threshold
@@ -2418,9 +2439,9 @@ end subroutine clubb_init_cnst
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
    do i=1,ncol
       rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(pver))
-      call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
+      call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), wsx(i), wsy(i), &
                        rrho, ustar2(i) )
-      call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &
+      call calc_obklen( th(i,pver), thv(i,pver), cflx(i,1), shf(i), rrho, ustar2(i), &
                         kinheat(i), kinwat(i), kbfs(i), obklen(i) )  
    enddo
    
