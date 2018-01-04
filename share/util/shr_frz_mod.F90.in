@@ -89,7 +89,7 @@ contains
 #endif
 
     !----------------------------------------------------------------------------
-
+    shr_frz_freezetemp = -274.0_R8
     if (tfrz_option == TFREEZE_OPTION_MINUS1P8) then
        shr_frz_freezetemp = -1.8_R8
     elseif (tfrz_option == TFREEZE_OPTION_LINEAR_SALT) then

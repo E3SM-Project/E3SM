@@ -31,8 +31,6 @@ CONTAINS
 
     ! --- Memory stats ---
     integer :: msize                   ! memory size (high water)
-    integer :: mrss                    ! resident size (current memory use)
-    integer :: msize0,msize1           ! temporary size
     integer :: mrss0,mrss1,mrss2       ! temporary rss
     integer :: mshare,mtext,mdatastack
     logical :: lprt
