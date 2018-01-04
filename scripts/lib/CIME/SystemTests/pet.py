@@ -46,6 +46,7 @@ class PET(SystemTestsCompareTwo):
         # to the batch submission, things break. Setting MAX_TASKS_PER_NODE to half of
         # it original value prevents this.
         self._case.set_value("MAX_TASKS_PER_NODE", int(self._case.get_value("MAX_TASKS_PER_NODE") / 2))
+        self._case.set_value("MAX_MPITASKS_PER_NODE", int(self._case.get_value("MAX_MPITASKS_PER_NODE") / 2))
 
         # Need to redo case_setup because we may have changed the number of threads
         case_setup(self._case, reset=True)
