@@ -1,6 +1,3 @@
-#ifdef AIX
-@PROCESS ALIAS_SIZE(805306368)
-#endif
 module docn_comp_mod
 
   ! !USES:

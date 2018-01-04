@@ -18,33 +18,33 @@ module seq_domain_mct
 #include <mpif.h>
   save
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: seq_domain_check
   public :: seq_domain_compare
   public :: seq_domain_areafactinit
 
-!--------------------------------------------------------------------------
-! Public variables
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public variables
+  !--------------------------------------------------------------------------
 
   real(R8), parameter :: eps_tiny   = 1.0e-16_R8 ! roundoff eps
   real(R8), parameter :: eps_big    = 1.0e+02_R8 ! big eps
   real(R8), parameter :: eps_frac_samegrid = 1.0e-9_R8 ! epsilon for fractions for samegrid
 
-!--------------------------------------------------------------------------
-! Private interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private interfaces
+  !--------------------------------------------------------------------------
 
   private :: seq_domain_check_grid
 
-!================================================================================
+  !================================================================================
 contains
-!================================================================================
+  !================================================================================
 
-!================================================================================
+  !================================================================================
 
   subroutine seq_domain_check( infodata, &
        atm, ice, lnd, ocn, rof, glc, &
@@ -82,13 +82,13 @@ contains
     type(seq_map)   , pointer :: mapper_l2g !
     type(seq_map)   , pointer :: mapper_a2l !
     type(seq_map)   , pointer :: mapper_l2a !
-                                            !
+    !
     type(mct_gGrid) , pointer :: atmdom_a   ! atm domain
     type(mct_gGrid) , pointer :: icedom_i   ! ice domain
     type(mct_gGrid) , pointer :: lnddom_l   ! lnd domain
     type(mct_gGrid) , pointer :: ocndom_o   ! ocn domain
     type(mct_gGrid) , pointer :: glcdom_g   ! glc domain
-                                            !
+    !
     type(mct_gsMap) , pointer :: gsMap_a    ! atm global seg map
     type(mct_gsMap) , pointer :: gsMap_i    ! ice global seg map
     type(mct_gsMap) , pointer :: gsMap_l    ! lnd global seg map
@@ -350,8 +350,8 @@ contains
     ! Check ice/ocean grid consistency
     !------------------------------------------------------------------------------
 
-     if (ocn_present .and. ice_present) then
-!    if (samegrid_oi) then       ! doesn't yet exist
+    if (ocn_present .and. ice_present) then
+       !    if (samegrid_oi) then       ! doesn't yet exist
 
        npts = ocnsize
        allocate(mask(npts),stat=rcode)
@@ -369,8 +369,8 @@ contains
        deallocate(mask,stat=rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' deallocate mask')
 
-!    endif
-     endif
+       !    endif
+    endif
 
     !------------------------------------------------------------------------------
     ! Check atm/lnd grid consistency
@@ -496,7 +496,7 @@ contains
 
   end subroutine seq_domain_check
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_compare(dom1, dom2, mpicom, eps)
 
@@ -529,7 +529,7 @@ contains
 
   end subroutine seq_domain_compare
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_check_fracmask(dom1)
 
@@ -565,7 +565,7 @@ contains
     ndiff = 0
     do n = 1,npts
        if (abs(dfrac(n)) > eps_tiny .and. abs(dmask(n)) < eps_tiny) then
-!debug            write(logunit,*)'n= ',n,' dfrac= ',dfrac(n),' dmask= ',dmask(n)
+          !debug            write(logunit,*)'n= ',n,' dfrac= ',dfrac(n),' dmask= ',dmask(n)
           ndiff = ndiff + 1
        endif
     enddo
@@ -581,9 +581,9 @@ contains
     deallocate(dfrac,stat=rcode)
     if(rcode /= 0) call shr_sys_abort(subname//' deallocate dfrac')
 
- end subroutine seq_domain_check_fracmask
+  end subroutine seq_domain_check_fracmask
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_check_grid(dom1, dom2, attr, eps, mpicom, mask)
 
@@ -704,7 +704,7 @@ contains
 
   end subroutine seq_domain_check_grid
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_domain_areafactinit(domain, mdl2drv, drv2mdl, &
        samegrid, mpicom, iamroot, comment)
@@ -788,6 +788,6 @@ contains
 
   end subroutine seq_domain_areafactinit
 
-!===============================================================================
+  !===============================================================================
 
 end module seq_domain_mct
