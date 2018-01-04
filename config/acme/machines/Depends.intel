@@ -13,10 +13,6 @@ eos.o \
 hevi_mod.o \
 uwshcu.o
 
-# CLM's SatellitePhenologyMod is compiled incorrectly with intel 15.0.0 at -O2
-REDUCED_OPT_OBJS=\
-SatellitePhenologyMod.o
-
 # shr_wv_sat_mod does not need to have better than ~0.1% precision, and benefits
 # enormously from a lower precision in the vector functions.
 REDUCED_PRECISION_OBJS=\
@@ -36,8 +32,6 @@ kissvec.o
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3 -fp-model fast -no-prec-div $<
-  $(REDUCED_OPT_OBJS): %.o: %.F90
-	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O1 $<
   $(REDUCED_PRECISION_OBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
   $(SHR_RANDNUM_FORT_OBJS): %.o: %.F90
