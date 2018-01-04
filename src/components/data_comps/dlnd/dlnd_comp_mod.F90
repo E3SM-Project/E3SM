@@ -1,3 +1,6 @@
+#ifdef AIX
+@PROCESS ALIAS_SIZE(805306368)
+#endif
 module dlnd_comp_mod
 
   ! !USES:
