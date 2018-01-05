@@ -849,7 +849,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
             Hb = min(Hb , 0.0_R8)
             lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
-                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75_R8)**(-1.0_R8/3.0_R8)
+                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75_R8)**(-1/3)
             cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )
 
             !--- REGIME ---
@@ -886,7 +886,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                      Kvisc = Prandtl* kappa0 + NUzero * FofRi
                   else
                      regime(n) = 4.0_R8
-                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1.0_R8/3.0_R8)
+                     Kdiff = shr_const_karman*ustarw*shr_const_zsrflyr *(1.0_R8-7.0_R8*doL)**(1/3)
                      Kvisc = Kdiff
                   endif
                endif
