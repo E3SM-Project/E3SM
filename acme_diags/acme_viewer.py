@@ -14,6 +14,7 @@ from acme_diags.driver.utils import get_set_name
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
 import matplotlib.pyplot as plt
 import matplotlib
+
 # Dict of
 # {
 #   set_num: {
@@ -211,6 +212,7 @@ def _create_csv_from_dict(output_dir, season):
 def _create_csv_from_dict_taylor_diag(output_dir, season):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
     taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
+    control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
 
     col_names = ['Variables', 'Model std', 'Obs std', 'correlation']
 
@@ -218,20 +220,27 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
         writer.writerow(col_names)
 
-        keys_td = []
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             if key.split()[0] in ['PRECT', 'PSL', 'SWCF', 'LWCF'] and '_'.join((key.split()[0], key.split()[2].split('_')[0])) in ['PRECT_GPCP','PSL_ERA-Interim','SWCF_ceres','LWCF_ceres']:  #only include variables in a a certain list for taylor diagram
                 metrics = metrics_dic['metrics']
                 row = [key, round(metrics['test_regrid']['std'],3), round(metrics['ref_regrid']['std'],3), round(metrics['misc']['corr'],3)]
                 writer.writerow(row)
 
-                keys_td.append(keys)
-
     
     with open(taylor_diag_path, 'r') as taylor_csv:
         reader = csv.reader(taylor_csv, delimiter = ",")
         data =  list(reader)
         row_count=len(data)
+   
+    # read control run data
+    with open(control_runs_path, 'r') as control_runs_taylor_csv:
+        reader = csv.reader(control_runs_taylor_csv, delimiter = ",")
+        control_runs_data =  list(reader)
+
+    keys_control_runs = []
+    for i in range(0, len(control_runs_data)):
+        keys_control_runs.append(control_runs_data[i][0])
+    print keys_control_runs
    
     # generate taylor diagram plot if there is metrics saved for any variable within the list.
     marker = ['o', 'd', 's', '>', '<', 'v' , '^'] 
@@ -246,14 +255,23 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
         # Add samples to taylor diagram
         for irow in range(1,row_count):
             std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
-            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = 'red', markeredgecolor = 'red', linestyle = 'None')
+            print std_norm, correlation
+            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = color[0], markeredgecolor = color[0], linestyle = 'None')
 
+        # Add samples for control:
+        for irow in range(1,row_count):
+            if data[irow][0] in keys_control_runs:
+                control_irow = keys_control_runs.index(data[irow][0])
+                print control_irow
+                std_norm, correlation = float(control_runs_data[control_irow][1])/float(control_runs_data[control_irow][2]), float(control_runs_data[control_irow][3])
+                print std_norm, correlation
+                taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+' B1850', markerfacecolor = color[1], markeredgecolor = color[1], linestyle = 'None')
         # Add a figure legend
         fig.legend(taylordiag.samplePoints,
                    [ p.get_label() for p in taylordiag.samplePoints],
                    numpoints=1,  loc='upper right', bbox_to_anchor=(.9, .9), prop={'size':10})
 
-        plt.title(season + ': Spatial Variability', y = 1.1)
+        plt.title(season + ': Spatial Variability', y = 1.08)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
 
     return taylor_diag_path

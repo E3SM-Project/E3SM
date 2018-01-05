@@ -36,13 +36,13 @@ class TaylorDiagram(object):
         rlocs = np.concatenate((np.arange(10)/10.,[0.95,0.99]))
         tlocs = np.arccos(rlocs)        # Conversion to polar angles
         gl1 = GF.FixedLocator(tlocs)    # Positions
-        gl2 = GF.FixedLocator(np.linspace(0,1.75,8))
+        gl2 = GF.FixedLocator(np.linspace(0,1.5,7))
         tf1 = GF.DictFormatter(dict(zip(tlocs, map(str,rlocs))))
 
         # Standard deviation axis extent
         self.smin = 0.0
         #self.smax = 1.5*self.refstd
-        self.smax = 1.75
+        self.smax = 1.5
 
         ghelper = FA.GridHelperCurveLinear(tr,
                                            extremes=(0,np.pi/2, # 1st quadrant

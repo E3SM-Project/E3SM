@@ -9,6 +9,7 @@ def get_all_files_in_dir(directory, pattern):
 
 
 rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
+control_runs_files = get_all_files_in_dir('acme_diags/driver/control_runs', '*.csv')
 
 data_files = [
     (sys.prefix + '/share/acme_diags/zonal_mean_xy',
@@ -44,6 +45,9 @@ data_files = [
       ]),
     (sys.prefix + '/share/acme_diags/colormaps',
      rgb_files
+     ),
+    (sys.prefix + '/share/acme_diags/control_runs', 
+     control_runs_files
      )
 ]
 
