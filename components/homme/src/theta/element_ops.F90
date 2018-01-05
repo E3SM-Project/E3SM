@@ -350,10 +350,6 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
   integer :: k,nt,ntQ
 
   do k=1,nlev
@@ -367,21 +363,7 @@ contains
       (Cp*dp(:,:,k))
   enddo
 
-  call get_dry_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phinh_i(:,:,:,nt))
-
-
-  ! debug
-  kappa_star=kappa   
-  call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
-       elem%state%phinh_i(:,:,:,nt),kappa_star,pnh,exner,dpnh_dp_i)
-  do k=1,nlev
-     if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
-        write(iulog,*) 'WARNING: hydrostatic inverse FAILED!'
-        write(iulog,*) k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
-        write(iulog,*) 'pi,pnh',p(1,1,k),pnh(1,1,k)
-     endif
-  enddo
+  call tests_finalize(elem,hvcoord,nt,ntQ)
 
   end subroutine set_thermostate
 
@@ -401,18 +383,33 @@ contains
   ! set prognostic state variables at level midpoints
   elem%state%v   (i,j,1,k,n0:n1)   = u
   elem%state%v   (i,j,2,k,n0:n1)   = v
-  elem%state%w_i  (i,j,k,  n0:n1)  = w
   elem%state%dp3d(i,j,k,  n0:n1)   = dp
   elem%state%ps_v(i,j,    n0:n1)   = ps
-  elem%state%phinh_i(i,j,k, n0:n1) = g*zm
   elem%state%phis(i,j)             = phis
   elem%state%theta_dp_cp(i,j,k,n0:n1)=T*Cp*dp*((p/p0)**(-kappa))
 
   end subroutine set_state
 
+
+  subroutine set_state_i(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
+  !
+  ! set state variables at node(i,j,k) at layer interfaces
+  ! used by idealized tests for dry initial conditions
+  ! so we use constants cp, kappa  
+  !
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
+  integer,          intent(in)    :: i,j,k,n0,n1
+  type(element_t),  intent(inout) :: elem
+
+  ! set prognostic state variables at level midpoints
+  elem%state%w_i  (i,j,k,  n0:n1)  = w
+  elem%state%phinh_i(i,j,k, n0:n1) = g*zm
+
+  end subroutine set_state_i
+
   !_____________________________________________________________________
   subroutine set_elem_state(u,v,w,T,ps,phis,p,dp,zm,g,elem,n0,n1,ntQ)
-
+  ! FIX THIS: add zi,wi to argument list
   ! set element state variables
   ! works for both dry and moist initial conditions
 
@@ -444,7 +441,8 @@ contains
 
   !_____________________________________________________________________
   subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
-
+  ! FIX THIS: should it return zm to compute forcing at midpoints?
+  !           is there any forcing at interfaces?
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
@@ -538,7 +536,8 @@ contains
   elem%derived%FM(:,:,1,:) = f_d * ( elem%state%v(:,:,1,:,n) - u0 )
   elem%derived%FM(:,:,2,:) = f_d * ( elem%state%v(:,:,2,:,n) - v0)
   elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w_i(:,:,1:nlev,n)  )
-
+  ! FIX THIS:
+  stop 'after applying forcing, update w'
   end subroutine 
 
   !_____________________________________________________________________
@@ -557,7 +556,7 @@ contains
   real(real_kind), dimension(np,np,nlev) :: dp, kappa_star, pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
-  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
+  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
   do k=1,nlev
     pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,ns)
@@ -567,7 +566,8 @@ contains
 
   ntQ=1
   call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-  call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phinh_i(:,:,:,ns))
+  call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,&
+       elem%state%phinh_i(:,:,:,ns))
 
   ! verify discrete hydrostatic balance
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,ns),dp,&

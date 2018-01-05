@@ -39,7 +39,7 @@ contains
   use hybvcoord_mod,  only: hvcoord_t
   use control_mod,    only: rsplit
   use hybrid_mod,     only: hybrid_t
-  use physical_constants, only : Cp
+  use physical_constants, only : Cp,g
 
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout) :: elem(:)
@@ -132,7 +132,11 @@ contains
         call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
         
         elem(ie)%state%phinh_i(:,:,1:nlev,np1)=ttmp(:,:,:,4)/dp + phi_ref(:,:,1:nlev)
-        
+
+        ! update w b.c.:
+        elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
+       
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp

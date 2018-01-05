@@ -155,6 +155,12 @@ contains
 
 ! default weights for computing mean dynamics fluxes
     eta_ave_w = 1d0/qsplit
+
+!   this should not be needed, but in case physics update u without updating w b.c.:
+    do ie=nets,nete
+       elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
+            elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
+    enddo
  
 #ifndef CAM
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
@@ -582,11 +588,16 @@ contains
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
   integer :: k,ie
-
+  ! FIX THIS: FM forcing at interfaces?
   do ie=nets,nete
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
+
+     ! finally update w at the surface: 
+     elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
   enddo
+  
   end subroutine applyCAMforcing_dynamics
 
 
@@ -616,7 +627,7 @@ contains
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
   real (kind=real_kind) :: nu_scale_top
-  integer :: k,kptr,i,j,ie,ic,nt
+  integer :: k2,k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
 
@@ -637,7 +648,7 @@ contains
   real (kind=real_kind) :: ps_ref(np,np)
 
   real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
-  real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
+  real (kind=real_kind) :: phi_ref(np,np,nlevp,nets:nete)
   real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
   call t_startf('advance_hypervis')
@@ -835,10 +846,11 @@ contains
            p_i(:,:,k+1)=p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
         enddo
 #if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k)
+!$omp parallel do default(shared), private(k,k2)
 #endif
         do k=1,nlev
-           
+           ! for w averaging, we didn't compute dissipation at surface, so just use one level
+           k2=max(k,nlev)
            ! p(:,:,k) = (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2)
            exner(:,:,k)  = ( (p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)/2) /p0)**kappa
            if (theta_hydrostatic_mode) then
@@ -849,7 +861,8 @@ contains
            else
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
-                   elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
+                   (elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
+                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2  +&
                    stens(:,:,k,4,ie) ) / &
                    (exner(:,:,k)*Cp)  
            endif
@@ -864,14 +877,13 @@ contains
 
 ! convert theta_dp_cp -> theta
   do ie=nets,nete            
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        elem(ie)%state%theta_dp_cp(:,:,k,nt)=&
-             elem(ie)%state%theta_dp_cp(:,:,k,nt)*Cp*elem(ie)%state%dp3d(:,:,k,nt)
-     enddo
-  enddo
+     elem(ie)%state%theta_dp_cp(:,:,:,nt)=&
+          elem(ie)%state%theta_dp_cp(:,:,:,nt)*Cp*elem(ie)%state%dp3d(:,:,:,nt)
+     
+     ! finally update w at the surface: 
+     elem(ie)%state%w_i(:,:,nlevp,nt) = (elem(ie)%state%v(:,:,1,nlev,nt)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,nt)*elem(ie)%derived%gradphis(:,:,2))/g
+  enddo	
 
 
   call t_stopf('advance_hypervis')
@@ -1018,6 +1030,10 @@ contains
         elem(ie)%state%theta_dp_cp(:,:,k,nt)=&
              elem(ie)%state%theta_dp_cp(:,:,k,nt)*Cp*elem(ie)%state%dp3d(:,:,k,nt)
      enddo
+
+     ! finally update w at the surface: 
+     elem(ie)%state%w_i(:,:,nlevp,nt) = (elem(ie)%state%v(:,:,1,nlev,nt)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,nt)*elem(ie)%derived%gradphis(:,:,2))/g
   enddo
 
 
@@ -1582,7 +1598,7 @@ contains
         elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
         elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
-     ! finally update w(np1,nlevp) 
+     ! finally update w at the surface: 
      elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
           elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
   end do
