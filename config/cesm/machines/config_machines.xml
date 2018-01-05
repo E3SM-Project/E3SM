@@ -1971,7 +1971,7 @@
       <DIN_LOC_ROOT_CLMFORC>/data/Model_Data/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
       <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
-      <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+      <CCSM_CPRNC>/data/software/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
       <GMAKE_J>4</GMAKE_J>
       <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
       <SUPPORTED_BY>rgknox at lbl dot gov and sserbin at bnl gov</SUPPORTED_BY>
