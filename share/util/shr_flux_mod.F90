@@ -738,6 +738,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    dtiter = spval
    dsiter = spval
    al2 = log(zref/ztref)
+  !--- for cold air outbreak calc --------------------------------
+   tdiff= tbot - ts
 
    ! equations 18 and 19
    AMP = 1.0_R8/F0-1.0_R8
