@@ -70,8 +70,6 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
   character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
   integer              , public :: tasknum
-  integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
-  character(len=MAX_STRING_LEN) :: remap_type     ! selected remapping option
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
   integer              , public :: runtype 

@@ -21,8 +21,6 @@ module namelist_mod
     numnodes,      &
     sub_case,      &
     tasknum,       &       ! used dg model in AIX machine
-    remapfreq,     &       ! number of steps per remapping call
-    remap_type,    &       ! selected remapping option
     statefreq,     &       ! number of steps per printstate call
     restartfreq,   &
     restartfile,   &       ! name of the restart file for INPUT
@@ -204,8 +202,6 @@ module namelist_mod
       numnodes,      &
       ne,            &             ! element resolution factor
       tasknum,       &
-      remapfreq,     &             ! number of steps per remapping call
-      remap_type,    &             ! selected remapping option
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
       theta_hydrostatic_mode,       &   
@@ -353,8 +349,6 @@ module namelist_mod
     restartdir    = "./restart/"
     runtype       = 0
     statefreq     = 1
-    remapfreq     = 240
-    remap_type    = "parabolic"
     tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
@@ -593,8 +587,6 @@ module namelist_mod
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)

@@ -7,9 +7,18 @@
 #SBATCH -p ec                 # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:10:00           # run time (hh:mm:ss)
 #SBATCH --account=FY150001
+#PBS -l walltime=10:00
+#PBS -l nodes=4
+#PBS -q acme
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
+if ( ${?PBS_ENVIRONMENT} ) then   # redsky
+    if ($PBS_ENVIRONMENT != PBS_INTERACTIVE ) cd $PBS_O_WORKDIR
+endif
+if ( ${?PBS_NNODES} ) then   # redsky
+    set NCPU = $PBS_NNODES
+endif
 if ( ${?SLURM_NNODES} ) then   # skybridge
     set NCPU = $SLURM_NNODES
     @ NCPU *= 16

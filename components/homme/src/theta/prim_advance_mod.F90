@@ -671,7 +671,7 @@ contains
 ! compute reference states
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
-     ps_ref(:,:) = sum(elem(ie)%state%dp3d(:,:,:,nt),3)
+     ps_ref(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,nt),3)
      do k=1,nlev
         dp_ref(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
@@ -1333,8 +1333,8 @@ contains
         stens(:,:,k,1) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
 
         ! theta - tendency on levels
-        v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%state%theta_dp_cp(:,:,k,n0)
-        v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%state%theta_dp_cp(:,:,k,n0)
+        v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*theta_dp_cp(:,:,k)
+        v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*theta_dp_cp(:,:,k)
         div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
         stens(:,:,k,3)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
     
