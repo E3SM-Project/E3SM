@@ -358,6 +358,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
            tstar = rh * delt
            qstar = re * delq
         enddo
+        if (iter < 1) then
+           call shr_sys_abort('No iterations performed ' //  // errMsg(sourcefile, __LINE__))
+        end if
         !------------------------------------------------------------
         ! compute the fluxes
         !------------------------------------------------------------
@@ -846,7 +849,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
             Hb = min(Hb , 0.0_R8)
             lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
-                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1.0_R8/3.0_R8)
+                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75_R8)**(-1.0_R8/3.0_R8)
             cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )
 
             !--- REGIME ---
@@ -942,7 +945,9 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             qstar = re * delq
 
          ENDDO   ! end iteration loop
-
+         if (iter < 1) then
+            call shr_sys_abort('No iterations performed ' //  // errMsg(sourcefile, __LINE__))
+         end if
          !--- COMPUTE FLUXES TO ATMOSPHERE AND OCEAN ---
          tau = rbot(n) * ustar * ustar
 
