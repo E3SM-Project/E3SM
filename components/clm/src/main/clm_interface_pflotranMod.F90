@@ -871,39 +871,8 @@ contains
     allocate(clm_pf_idata%fr_decomp_c(1:clm_pf_idata%ndecomp_pools,1:clm_pf_idata%ndecomp_pools))
 
     ! -----------------------------------------------------------------
-
-    ! (4) Create PFLOTRAN model
-    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
-
-    call pflotranModelSetupMappingFiles(pflotran_m)
-
-    ! PFLOTRAN ck file (*.ck) NOT works well when coupling with CLM. So it's off and restart PF from CLM.
-    !restart_stamp = ""
-    !call pflotranModelSetupRestart(pflotran_m, restart_stamp)
-    initth_pf2clm = .false.
-    !if (restart_stamp .ne. "") then
-    !   initth_pf2clm = .true.
-    !endif
-
-    select type (simulation => pflotran_m%simulation)
-      class is (simulation_subsurface_type)
-         realization => simulation%realization
-      class default
-         pflotran_m%option%io_buffer = "This version of clm-pflotran only works with subsurface simulations."
-         write(*, '(/A/)') pflotran_m%option%io_buffer
-         call printErrMsg(pflotran_m%option)
-    end select
-
-    if(pflotran_m%option%nsurfflowdof > 0) then
-       pflotran_m%option%io_buffer = "This version of clm-pflotran DOES NOT work with PF Surface simulation."
-       write(*, '(/A/)') pflotran_m%option%io_buffer
-       call printErrMsg(pflotran_m%option)
-    endif
-    pf_surfaceflow = .false.
-
-    !------------------------------------------------
-
     ! Number of cells and Indexing in CLM domain's clumps on current process ('bounds')
+    ! AND, pass those to interface data (must be done before initializing pflotran model)
 
 #ifdef COLUMN_MODE
     ! soil column-wised for mapping.
@@ -969,17 +938,69 @@ contains
     clm_pf_idata%nlclm_2dbot = clm_bot_npts
     clm_pf_idata%ngclm_2dbot = clm_bot_npts
 
-    ! PFLOTRAN: 3-D Subsurface domain (local and ghosted cells)
-    clm_pf_idata%nlpf_sub = realization%patch%grid%nlmax
-    clm_pf_idata%ngpf_sub = realization%patch%grid%ngmax
-
-    ! For CLM/PF: ground surface NOT defined, so need to set the following to zero.
+    ! For CLM/PF: ground surface NOT defined (currently),
+    ! so need to set the following to zero.
     clm_pf_idata%nlclm_srf = 0
     clm_pf_idata%ngclm_srf = 0
+
+    ! -----------------------------------------------------------------
+
+    ! (4) Create PFLOTRAN model
+    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
+
+    ! PFLOTRAN ck file (*.ck) NOT works well when coupling with CLM. So it's off and restart PF from CLM.
+    !restart_stamp = ""
+    !call pflotranModelSetupRestart(pflotran_m, restart_stamp)
+    initth_pf2clm = .false.
+    !if (restart_stamp .ne. "") then
+    !   initth_pf2clm = .true.
+    !endif
+
+    select type (simulation => pflotran_m%simulation)
+      class is (simulation_subsurface_type)
+         realization => simulation%realization
+      class default
+         pflotran_m%option%io_buffer = "This version of clm-pflotran only works with subsurface simulations."
+         write(*, '(/A/)') pflotran_m%option%io_buffer
+         call printErrMsg(pflotran_m%option)
+    end select
+
+    if(pflotran_m%option%nsurfflowdof > 0) then
+       pflotran_m%option%io_buffer = "This version of clm-pflotran DOES NOT work with PF Surface simulation."
+       write(*, '(/A/)') pflotran_m%option%io_buffer
+       call printErrMsg(pflotran_m%option)
+    endif
+    pf_surfaceflow = .false.
+
+#ifdef COLUMN_MODE
+    ! if 'column-wised' mapping, vertical-flow/transport only mode IS ON by default
+    if(pflotran_m%option%nflowdof > 0) then
+      pflotran_m%option%flow%only_vertical_flow = PETSC_TRUE
+    endif
+    if(pflotran_m%option%ntrandof > 0) then
+      pflotran_m%option%transport%only_vertical_tran = PETSC_TRUE
+    endif
+
+    ! checking if 'option%mapping_files' turned off by default
+    if(pflotran_m%option%mapping_files) then
+       pflotran_m%option%io_buffer = " COLUMN_MODE coupled clm-pflotran DOES NOT need MAPPING_FILES ON."
+       write(*, '(/A/)') pflotran_m%option%io_buffer
+       call printErrMsg(pflotran_m%option)
+    endif
+#endif
+
+    !------------------------------------------------
+    ! (5) CLM-PFLOTRAN mesh mapping
+
+    call pflotranModelSetupMappingFiles(pflotran_m)
+
+    ! For CLM/PF: ground surface NOT defined (currently),
+    ! so need to set the following to zero.
     clm_pf_idata%nlpf_srf  = 0
     clm_pf_idata%ngpf_srf  = 0
 
     ! Initialize maps for transferring data between CLM and PFLOTRAN.
+    ! NOTE that all PF cell numbers will be set after maps initializing.
     if(associated(pflotran_m%map_clm_sub_to_pf_sub) .and. &
        pflotran_m%map_clm_sub_to_pf_sub%id == CLM_3DSUB_TO_PF_3DSUB) then
        call pflotranModelInitMapping(pflotran_m, clm_all_cell_ids_nindex, &
@@ -1017,30 +1038,19 @@ contains
     deallocate(clm_top_cell_ids_nindex)
     deallocate(clm_bot_cell_ids_nindex)
 
-#ifdef COLUMN_MODE
-    ! if 'column-wised' mapping, vertical-flow/transport only mode IS ON by default
-    if(pflotran_m%option%nflowdof > 0) then
-      pflotran_m%option%flow%only_vertical_flow = PETSC_TRUE
-    endif
-    if(pflotran_m%option%ntrandof > 0) then
-      pflotran_m%option%transport%only_vertical_tran = PETSC_TRUE
-    endif
+    !------------------------------------------------
 
-    ! checking if 'option%mapping_files' turned off by default
-    if(pflotran_m%option%mapping_files) then
-       pflotran_m%option%io_buffer = " COLUMN_MODE coupled clm-pflotran DOES NOT need MAPPING_FILES ON."
-       write(*, '(/A/)') pflotran_m%option%io_buffer
-       call printErrMsg(pflotran_m%option)
-    endif
-#endif
+    ! (6) Allocate vectors for data transfer between CLM and PFLOTRAN, after knowing data sizes.
 
-
-    ! Allocate vectors for data transfer between CLM and PFLOTRAN.
     ! call CLMPFLOTRANIDataCreateVec(MPI_COMM_WORLD)
     !  (a NOTE here - f.m.yuan-2017/09/14:
     ! '       MPI_COMM_WORLD' used above is OK with mpich, but causing MPI_FINALIZE error with openmpi.
     !         Don't know why and what impacts on simulation)
     call CLMPFLOTRANIDataCreateVec(mpicom)
+
+
+    !------------------------------------------------
+    ! additional settings for model controlling
 
     ! if BGC is on
     if(pflotran_m%option%ntrandof > 0) then
@@ -1053,27 +1063,29 @@ contains
     endif
 
     ! coupled module controls betweeen PFLOTRAN and CLM45
-    if(pflotran_m%option%iflowmode==RICHARDS_MODE) then
-      pf_hmode = .true.
-      pf_tmode = .false.
-      pf_frzmode = .false.
+    if(pflotran_m%option%iflowmode/=NULL_MODE) then
+       pf_hmode = .true.
+       if (pflotran_m%option%use_isothermal) then
+         pf_tmode = .false.
+      else
+         pf_tmode = .true.
+      endif
 
-    elseif(pflotran_m%option%iflowmode==TH_MODE) then
-      pf_hmode = .true.
-      pf_tmode = .true.
       if (pflotran_m%option%use_th_freezing) then
          pf_frzmode = .true.
       else
          pf_frzmode = .false.
       endif
+    else
+      pf_hmode = .false.
     endif
 
     if(pflotran_m%option%ntrandof.gt.0) then
       pf_cmode = .true.        ! initialized as '.false.' in clm initialization
     endif
 
-
-    ! Initialize PFLOTRAN states
+    !------------------------------------------------
+    ! (7) Initialize PFLOTRAN states
     call pflotranModelStepperRunInit(pflotran_m)
 
     end associate
@@ -1174,6 +1186,7 @@ contains
 
     endif
 
+#if 0
     ! (2) CLM thermal BC to PFLOTRAN-CLM interface
     if (pf_tmode) then
         call get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
@@ -1188,6 +1201,7 @@ contains
         call pflotranModelUpdateHSourceSink( pflotran_m )   ! H SrcSink
         call pflotranModelSetSoilHbcsFromCLM( pflotran_m )  ! H bc
     end if
+#endif
 
     ! (4)
     if (pf_cmode) then
@@ -1229,7 +1243,7 @@ contains
     call mpi_barrier(mpicom, ierr)
 
     ! (6) update CLM variables from PFLOTRAN
-
+#if 0
     if (pf_hmode) then
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
         call update_soil_moisture_pf2clm(clm_interface_data, bounds, filters, ifilter)
@@ -1245,6 +1259,7 @@ contains
         call pflotranModelGetTemperatureFromPF( pflotran_m )  ! thermal states
         call update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
     endif
+#endif
 
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF( pflotran_m)      ! bgc variables
@@ -2370,6 +2385,7 @@ contains
     nstep = get_nstep()
     dtime = get_step_size()
 
+#if 0
     ! (1) pass the clm_qflx to the vecs
     ! NOTE the following unit conversions:
     ! qflx_soil_top and qflx_tran_veg are in [mm/sec] from CLM;
@@ -2643,6 +2659,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayF90(clm_pf_idata%press_maxponding_clmp, press_maxponding_clmp_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+#endif
 
   end associate
   end subroutine get_clm_bcwflx
@@ -2727,6 +2744,7 @@ contains
     nstep = get_nstep()
     dtime = get_step_size()
 
+#if 0
     ! (1) pass the clm_gflux/gtemp to the vec
 
     call VecGetArrayF90(clm_pf_idata%eflux_subsurf_clmp, geflx_subsurf_clmp_loc, ierr)
@@ -2844,6 +2862,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayF90(clm_pf_idata%area_top_face_clms, area_clms_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+#endif
 
   end associate
   end subroutine get_clm_bceflx
@@ -3537,6 +3556,7 @@ contains
     dtime = get_step_size()
     nstep = get_nstep()
 
+#if 0
     ! from PF==>CLM
     call VecGetArrayReadF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
@@ -3593,6 +3613,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     call VecRestoreArrayReadF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+#endif
 
     end associate
   end subroutine update_bcflow_pf2clm
