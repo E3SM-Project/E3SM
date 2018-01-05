@@ -30,7 +30,7 @@ module prim_advance_mod
   use parallel_mod,       only: abortmp, global_shared_buf, global_shared_sum, iam, parallel_t
   use physical_constants, only: Cp, cp, cpwater_vapor, g, kappa, Rgas, Rwater_vapor, p0 
   use physics_mod,        only: virtual_specific_heat, virtual_temperature
-  use prim_si_mod,        only: preq_vertadv_upwind, preq_vertadv_v, preq_hydrostatic_v2, preq_omega_ps
+  use prim_si_mod,        only: preq_vertadv_v1, preq_omega_ps
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
   use test_mod,           only: set_prescribed_wind
@@ -1235,9 +1235,9 @@ contains
 
 
         ! ===========================================================
-        ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
+        ! Compute vertical advection of v from eq. CCM2 (3.b.1)
         ! ==============================================
-        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),eta_dot_dpdn,dp3d,v_vadv)
+        call preq_vertadv_v1(elem(ie)%state%v(:,:,:,:,n0),eta_dot_dpdn,dp3d,v_vadv)
 
         ! compute (cp*theta) at interfaces
         ! for energy conservation, use averaging consistent with EOS
