@@ -1,9 +1,3 @@
-!===============================================================================
-! SVN $Id: shr_flux_mod.F90 70843 2015-05-26 22:42:14Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/branches/aofluxd/shr/shr_flux_mod.F90 $
-!===============================================================================
-!BOP ===========================================================================
-!
 ! !MODULE: flux_mod -- CCSM shared flux calculations.
 !
 ! !DESCRIPTION:
@@ -74,15 +68,25 @@ module shr_flux_mod
 ! These control convergence of the iterative flux calculation
    real(r8) :: flux_con_tol = 0.0_R8
    integer(IN) :: flux_con_max_iter = 2
+
    character(len=*), parameter :: sourcefile = &
      __FILE__
+
+   !--- cold air outbreak parameters  (Mahrt & Sun 1995,MWR) -------------
+   logical :: use_coldair_outbreak_mod = .false.
+   real(R8),parameter    :: alpha = 1.4_R8
+   real(R8),parameter    :: maxscl =2._R8  ! maximum wind scaling for flux
+   real(R8),parameter    :: td0 = -10._R8   ! start t-ts for scaling
+
 !===============================================================================
 contains
 !===============================================================================
 !===============================================================================
 subroutine shr_flux_adjust_constants( &
    zvir, cpair, cpvir, karman, gravit, &
-   latvap, latice, stebol, flux_convergence_tolerance, flux_convergence_max_iteration)
+   latvap, latice, stebol, flux_convergence_tolerance, &
+   flux_convergence_max_iteration, &
+   coldair_outbreak_mod)
 
    ! Adjust local constants.  Used to support simple models.
 
@@ -96,6 +100,7 @@ subroutine shr_flux_adjust_constants( &
    real(R8), optional, intent(in) :: stebol
    real(r8), optional, intent(in)  :: flux_convergence_tolerance
    integer(in), optional, intent(in) :: flux_convergence_max_iteration
+   logical, optional, intent(in) :: coldair_outbreak_mod
    !----------------------------------------------------------------------------
 
    if (present(zvir))   loc_zvir   = zvir
@@ -108,7 +113,7 @@ subroutine shr_flux_adjust_constants( &
    if (present(stebol)) loc_stebol = stebol
    if (present(flux_convergence_tolerance)) flux_con_tol = flux_convergence_tolerance
    if (present(flux_convergence_max_iteration)) flux_con_max_iter = flux_convergence_max_iteration
-
+   if(present(coldair_outbreak_mod)) use_coldair_outbreak_mod = coldair_outbreak_mod
 end subroutine shr_flux_adjust_constants
 !===============================================================================
 ! !BOP =========================================================================
@@ -239,6 +244,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    real(R8)    :: Tk     ! dummy arg ~ temperature (K)
    real(R8)    :: xd     ! dummy arg ~ ?
    real(R8)    :: gprec  ! dummy arg ~ ?
+   !--- for cold air outbreak calc --------------------------------
+   real(R8)    :: tdiff(nMax)               ! tbot - ts
+   real(R8)    :: vscl
+
 
    qsat(Tk)   = 640380.0_R8 / exp(5107.4_R8/Tk)
    cdn(Umps)  =   0.0027_R8 / Umps + 0.000142_R8 + 0.0000764_R8 * Umps
@@ -284,6 +293,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    rh = spval
    psixh = spval
    hol=spval
+
+  !--- for cold air outbreak calc --------------------------------
+   tdiff= tbot - ts
+
    al2 = log(zref/ztref)
 
    DO n=1,nMax
@@ -306,6 +319,17 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         else
          vmag       = vmag_old
         endif
+         if (use_coldair_outbreak_mod) then
+            ! Cold Air Outbreak Modification:
+            ! Increase windspeed for negative tbot-ts
+            ! based on Mahrt & Sun 1995,MWR
+
+            if (tdiff(n).lt.td0) then
+               vscl=min((1._R8+alpha*(abs(tdiff(n)-td0)**0.5_R8/abs(vmag))),maxscl)
+               vmag=vmag*vscl
+               vmag_old=vmag_old*vscl
+            endif
+         endif
 
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
         delt   = thbot(n) - ts(n)                  ! pot temp diff (K)
@@ -667,6 +691,10 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: molvisc ! molecular viscosity
    real(R8)    :: molPr   ! molecular Prandtl number
 
+   !--- for cold air outbreak calc --------------------------------
+   real(R8)    :: tdiff(nMax)               ! tbot - ts
+   real(R8)    :: vscl
+
 
    qsat(Tk)   = 640380.0_R8 / exp(5107.4_R8/Tk)
    cdn(Umps)  =   0.0027_R8 / Umps + 0.000142_R8 + 0.0000764_R8 * Umps
@@ -753,6 +781,16 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          !--- compute some initial and useful flux quantities ---
 
          vmag     = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+         if (use_coldair_outbreak_mod) then
+            ! Cold Air Outbreak Modification:
+            ! Increase windspeed for negative tbot-ts
+            ! based on Mahrt & Sun 1995,MWR
+
+            if (tdiff(n).lt.td0) then
+               vscl=min((1._R8+alpha*(abs(tdiff(n)-td0)**0.5_R8/abs(vmag))),maxscl)
+               vmag=vmag*vscl
+            endif
+         endif
          alz      = log(zbot(n)/zref)
          hol      = 0.0
          psimh    = 0.0
