@@ -750,7 +750,7 @@ contains
     endif
 
     ! halo exchange of initial ice area of cell
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("ice area halo")
 
@@ -792,7 +792,7 @@ contains
 
     call mpas_timer_stop("ice area halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel prep after")
 
     ! interpolate area and mass from cells to vertices
     block => domain % blocklist
@@ -825,7 +825,7 @@ contains
     call velocity_calculation_mask(domain)
 
     ! halo exchange velocity mask
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("velocity mask halo")
 
@@ -866,7 +866,7 @@ contains
 
     call mpas_timer_stop("velocity mask halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel prep after")
 
   end subroutine calculation_masks
 
@@ -1204,7 +1204,7 @@ contains
     enddo
 
     ! halo exchange velocities
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("velocity halo")
 
@@ -1246,7 +1246,7 @@ contains
 
     call mpas_timer_stop("velocity halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel prep after")
 
   end subroutine new_ice_velocities!}}}
 
@@ -1386,7 +1386,7 @@ contains
     enddo
 
     ! halo exchange ice strength
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("ice strength halo")
 
@@ -1427,7 +1427,7 @@ contains
 
     call mpas_timer_stop("ice strength halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel prep after")
 
   end subroutine ice_strength
 
@@ -1503,7 +1503,7 @@ contains
     endif ! .not. config_use_air_stress
 
     ! halo exchange air stress
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("air stress halo")
 
@@ -1545,7 +1545,7 @@ contains
 
     call mpas_timer_stop("air stress halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel prep after")
 
     ! interpolate air stress
     block => domain % blocklist
@@ -1996,7 +1996,7 @@ contains
          config_reuse_halo_exch
 
     ! halo exchange surface tilt
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel prep before")
 
     call mpas_timer_start("sea surface tilt halo")
 
@@ -2038,7 +2038,7 @@ contains
 
     call mpas_timer_stop("sea surface tilt halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel prep after")
 
     block => domain % blocklist
     do while (associated(block))
@@ -2449,7 +2449,7 @@ contains
     endif
 
     ! halo exchange
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "vel before")
 
     call mpas_timer_start("Velocity solver halo")
 
@@ -2491,7 +2491,7 @@ contains
 
     call mpas_timer_stop("Velocity solver halo")
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "vel after")
 
   end subroutine single_subcycle_velocity_solver!}}}
 
@@ -3256,7 +3256,7 @@ contains
     if (configUseOceanStress) then
 
        ! halo exchange ocean stress
-       call cice_load_balance_timers(domain, "before")
+       call cice_load_balance_timers(domain, "vel prep before")
 
        call mpas_timer_start("ocean stress halo")
 
@@ -3298,7 +3298,7 @@ contains
 
        call mpas_timer_stop("ocean stress halo")
 
-       call cice_load_balance_timers(domain, "after")
+       call cice_load_balance_timers(domain, "vel prep after")
 
        block => domain % blocklist
        do while (associated(block))
