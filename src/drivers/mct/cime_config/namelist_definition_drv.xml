@@ -666,6 +666,19 @@
     </values>
   </entry>
 
+  <entry id="flux_diurnal">
+     <type>logical</type>
+     <category>control</category>
+     <group>seq_infodata_inparm</group>
+     <desc>
+      If true, turn on diurnal cycle in computing atm/ocn fluxes
+      default: false
+     </desc>
+     <values>
+      <value>.false.</value>
+     </values>
+   </entry>
+
   <entry id="flux_convergence">
     <type>real</type>
     <category>control</category>
