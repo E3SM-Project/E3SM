@@ -257,7 +257,11 @@ contains
     !--- read data ---
     read(nUnit,'(a)',END=999) str
     call shr_string_leftalign_and_convert_tabs(str)
-    strm%dataSource = str(1:SHR_KIND_CS)
+    if(len_trim(str)<= len(strm%dataSource)) then
+       strm%dataSource = str(1:len(strm%dataSource))
+    else
+       call shr_sys_abort('dataSource too long for variable ' // errMsg(sourcefile, __LINE__))
+    endif
     if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * format = ', trim(strm%dataSource)
 
     close(nUnit)
@@ -492,7 +496,11 @@ contains
           call shr_stream_abort(subName//"ERROR: no time variable name")
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
-          strm%domTvarName = subStr(1:SHR_KIND_CS)
+          if(len_trim(substr) <= len(strm%domTVarName)) then
+             strm%domTvarName = subStr(1:len(strm%domTVarName))
+          else
+             call shr_stream_abort(subName//"ERROR: string too long for variable name")
+          endif
        endif
        !--- get longitude variable name ---
        n = shr_string_listGetIndexF(fldListModel,"lon")
@@ -502,7 +510,11 @@ contains
           call shr_stream_abort(subName//"ERROR: no lon variable name")
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
-          strm%domXvarName = subStr(1:SHR_KIND_CS)
+          if(len_trim(substr) <= len(strm%domXVarName)) then
+             strm%domXvarName = subStr(1:len(strm%domXVarName))
+          else
+             call shr_stream_abort(subName//"ERROR: string too long for variable name")
+          endif
        endif
        !--- get latitude variable name ---
        n = shr_string_listGetIndexF(fldListModel,"lat")
@@ -512,7 +524,11 @@ contains
           call shr_stream_abort(subName//"ERROR: no lat variable name")
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
-          strm%domYvarName = subStr(1:SHR_KIND_CS)
+          if(len_trim(substr) <= len(strm%domYVarName)) then
+             strm%domYvarName = subStr(1:len(strm%domYVarName))
+          else
+             call shr_stream_abort(subName//"ERROR: string too long for variable name")
+          endif
        endif
        !--- get vertical variable name ---
        n = shr_string_listGetIndexF(fldListModel,"hgt")
@@ -523,7 +539,11 @@ contains
           strm%domZvarName = 'unknownname'
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
-          strm%domZvarName = subStr(1:SHR_KIND_CS)
+          if(len_trim(substr) <= len(strm%domZVarName)) then
+             strm%domZvarName = subStr(1:len(strm%domZVarName))
+          else
+             call shr_stream_abort(subName//"ERROR: string too long for variable name")
+          endif
        endif
        !--- get area variable name ---
        n = shr_string_listGetIndexF(fldListModel,"area")
@@ -534,7 +554,11 @@ contains
           strm%domAreaName = 'unknownname'
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
-          strm%domAreaName = subStr(1:SHR_KIND_CS)
+          if(len_trim(substr) <= len(strm%domAreaName)) then
+             strm%domAreaName = subStr(1:len(strm%domAreaName))
+          else
+             call shr_stream_abort(subName//"ERROR: string too long for variable name")
+          endif
        endif
        !--- get mask variable name ---
        n = shr_string_listGetIndexF(fldListModel,"mask")
@@ -545,7 +569,11 @@ contains
           strm%domMaskName = 'unknownname'
        else
           call shr_string_listGetName (fldListFile,n,substr,rc)
-          strm%domMaskName = subStr(1:SHR_KIND_CS)
+          if(len_trim(substr) <= len(strm%domMaskName)) then
+             strm%domMaskName = subStr(1:len(strm%domMaskName))
+          else
+             call shr_stream_abort(subName//"ERROR: string too long for variable name")
+          endif
        endif
     end if
 
