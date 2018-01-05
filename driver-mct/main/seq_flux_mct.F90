@@ -1214,6 +1214,7 @@ contains
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
+    logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     !
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
     real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
@@ -1233,8 +1234,10 @@ contains
 
     if (first_call) then
        call seq_infodata_getData(infodata , &
+         coldair_outbreak_mod=coldair_outbreak_mod,  &
          flux_convergence=flux_convergence, &
          flux_max_iteration=flux_max_iteration)
+
        if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
@@ -1300,7 +1303,8 @@ contains
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
        call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
-            flux_convergence_max_iteration=flux_max_iteration)
+            flux_convergence_max_iteration=flux_max_iteration, &
+            coldair_outbreak_mod=coldair_outbreak_mod)
        first_call = .false.
     end if
 
