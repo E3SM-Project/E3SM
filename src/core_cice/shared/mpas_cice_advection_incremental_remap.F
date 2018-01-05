@@ -2445,7 +2445,7 @@ contains
 
        if (verboseRun) call mpas_log_write('Doing initial halo updates for velocity, mass and tracers')
 
-       call cice_load_balance_timers(domain, "before")
+       call cice_load_balance_timers(domain, "advection before")
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
@@ -2486,7 +2486,7 @@ contains
 
        endif ! config_use_halo_exch
 
-       call cice_load_balance_timers(domain, "after")
+       call cice_load_balance_timers(domain, "advection after")
 
        ! mass and tracers
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)
