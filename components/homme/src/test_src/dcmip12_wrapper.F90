@@ -461,7 +461,7 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   real(rl),           intent(in)            :: dt                       ! time-step size
 
   integer  :: ie, k
-  real(rl) :: ztop, zc, z(np,np,nlev)
+  real(rl) :: ztop, zc, z(np,np,nlev), z_i(np,np,nlevp)
   real(rl) :: f_d(nlev) 
 
   if (test_case == "mtest1") then
@@ -473,6 +473,7 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   endif
 
   forall(k=1:nlev) z(:,:,k)=zm(k)
+  forall(k=1:nlevp) z_i(:,:,k)=zi(k)
 
   ! Compute damping as a function of layer-midpoint height
   !where(zm .ge. zh)
@@ -485,7 +486,7 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   !f_d = -f_d/tau
 
   do ie=nets,nete
-     call set_forcing_rayleigh_friction(elem(ie),z,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),n)
+     call set_forcing_rayleigh_friction(elem(ie),z,z_i,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),n)
   enddo
 
 

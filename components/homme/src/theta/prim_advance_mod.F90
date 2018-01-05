@@ -588,7 +588,6 @@ contains
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
   integer :: k,ie
-  ! FIX THIS: FM forcing at interfaces?
   do ie=nets,nete
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
@@ -920,23 +919,25 @@ contains
   integer :: k,kptr,ie
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
+  real (kind=real_kind), dimension(np,np,nlevp,2,nets:nete)     :: stens_i 
 
 
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: delz
+  real (kind=real_kind) :: delz,delz_i
 
   real (kind=real_kind) :: theta_ref(np,np,nlev)
 
   real (kind=real_kind) :: theta_prime(np,np,nlev)
-  real (kind=real_kind) :: phi_prime(np,np,nlev)
+  real (kind=real_kind) :: phi_prime(np,np,nlevp)
   real (kind=real_kind) :: dp_prime(np,np,nlev)
-  real (kind=real_kind) :: w_prime(np,np,nlev)
+  real (kind=real_kind) :: w_prime(np,np,nlevp)
   real (kind=real_kind) :: u_prime(np,np,2,nlev)
 
   !if(test_case .ne. 'dcmip2016_test3') call abortmp("dcmip16_mu is currently limited to dcmip16 test 3")
 
   call t_startf('advance_physical_vis')
   delz = 20d3/nlev
+  delz_i = 20d3/nlevp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute reference states
@@ -949,21 +950,22 @@ contains
 
      ! perturbation variables
      u_prime(:,:,:,:)  = elem(ie)%state%v(:,:,:,:,nt)          -state0(ie)%v(:,:,:,:,1)
-     w_prime(:,:,:)    = elem(ie)%state%w_i(:,:,1:nlev,nt)     -state0(ie)%w_i(:,:,1:nlev,1)
+     w_prime(:,:,:)    = elem(ie)%state%w_i(:,:,:,nt)     -state0(ie)%w_i(:,:,:,1)
      dp_prime(:,:,:)   = elem(ie)%state%dp3d(:,:,:,nt)         -state0(ie)%dp3d(:,:,:,1)
-     phi_prime(:,:,:)  = elem(ie)%state%phinh_i(:,:,1:nlev,nt) -state0(ie)%phinh_i(:,:,1:nlev,1)
+     phi_prime(:,:,:)  = elem(ie)%state%phinh_i(:,:,:,nt) -state0(ie)%phinh_i(:,:,:,1)
      theta_prime(:,:,:)= elem(ie)%state%theta_dp_cp(:,:,:,nt)-theta_ref(:,:,:)
 
      ! vertical viscosity
-     call laplace_z(u_prime,    vtens(:,:,:,:,ie),2,delz)
-     call laplace_z(dp_prime,   stens(:,:,:,1,ie),1,delz)
-     call laplace_z(theta_prime,stens(:,:,:,2,ie),1,delz)
-     call laplace_z(w_prime,    stens(:,:,:,3,ie),1,delz)
-     call laplace_z(phi_prime,  stens(:,:,:,4,ie),1,delz)
+     call laplace_z(u_prime,    vtens(:,:,:,:,ie),2,nlev,delz)
+     call laplace_z(dp_prime,   stens(:,:,:,1,ie),1,nlev,delz)
+     call laplace_z(theta_prime,stens(:,:,:,2,ie),1,nlev,delz)
+     call laplace_z(w_prime,    stens_i(:,:,:,1,ie),1,nlevp,delz_i)
+     call laplace_z(phi_prime,  stens_i(:,:,:,2,ie),1,nlevp,delz_i)
 
      ! add in horizontal viscosity
      ! multiply by mass matrix for DSS
      ! horiz viscosity already has mass matrix built in
+     ! for interface quantities, only use 1:nlev (dont apply at surface)
      do k=1,nlev
         lap_v = vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
 
@@ -976,10 +978,10 @@ contains
         stens(:,:,k,2,ie) = (stens(:,:,k,2,ie)*elem(ie)%spheremp(:,:) + &
              laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)  )
 
-        stens(:,:,k,3,ie) = (stens(:,:,k,3,ie)*elem(ie)%spheremp(:,:) + &
+        stens(:,:,k,3,ie) = (stens_i(:,:,k,1,ie)*elem(ie)%spheremp(:,:) + &
              laplace_sphere_wk(elem(ie)%state%w_i(:,:,k,nt),deriv,elem(ie),var_coef=.false.) )
 
-        stens(:,:,k,4,ie) = (stens(:,:,k,4,ie)*elem(ie)%spheremp(:,:) + &
+        stens(:,:,k,4,ie) = (stens_i(:,:,k,2,ie)*elem(ie)%spheremp(:,:) + &
              laplace_sphere_wk(elem(ie)%state%phinh_i(:,:,k,nt),deriv,elem(ie),var_coef=.false.) ) 
 
      enddo

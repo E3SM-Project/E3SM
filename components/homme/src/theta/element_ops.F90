@@ -441,10 +441,11 @@ contains
 
   !_____________________________________________________________________
   subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
-  ! FIX THIS: should it return zm to compute forcing at midpoints?
-  !           is there any forcing at interfaces?
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
+    ! currently all forcing is done on u,v and T/theta - no forcing
+    ! is computed for interface variables.   This routine will have to be updated
+    ! if we add a test case that computes forcing for interface variables
 
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
     real(real_kind), dimension(np,np),      intent(inout) :: ps
@@ -508,7 +509,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)
+  subroutine set_forcing_rayleigh_friction(elem, zm, zi, ztop, zc, tau, u0,v0, n)
   !
   ! test cases which use rayleigh friciton will call this with the relaxation coefficient
   ! f_d, and the reference state u0,v0.  Currently assume w0 = 0
@@ -517,6 +518,7 @@ contains
 
   type(element_t), intent(inout):: elem
   real(real_kind), intent(in)   :: zm(np,np,nlev) ! height at layer midpoints
+  real(real_kind), intent(in)   :: zi(np,np,nlevp) ! height at interfaces
   real(real_kind), intent(in)   :: ztop           ! top of atm height
   real(real_kind), intent(in)   :: zc             ! cutoff height
   real(real_kind), intent(in)   :: tau            ! damping timescale
@@ -535,9 +537,13 @@ contains
 
   elem%derived%FM(:,:,1,:) = f_d * ( elem%state%v(:,:,1,:,n) - u0 )
   elem%derived%FM(:,:,2,:) = f_d * ( elem%state%v(:,:,2,:,n) - v0)
+
+  ! compute forcing for 1:nlev. w is determined by boundary condition at nlevp:
+  f_d=0.0d0
+  where(zi(:,:,1:nlev) .ge. zc);   f_d = sin(dd_pi/2 *(zm - zc)/(ztop - zc))**2; end where
+  where(zi(:,:,1:nlev) .ge. ztop); f_d = 1.0d0; end where
+  f_d = -f_d/tau
   elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w_i(:,:,1:nlev,n)  )
-  ! FIX THIS:
-  stop 'after applying forcing, update w'
   end subroutine 
 
   !_____________________________________________________________________
