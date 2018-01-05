@@ -2557,9 +2557,8 @@ void gll_np4_eval (const Real x, Real y[4]) {
 void ir_project_np4 (
   const Int lev, const Int nets, const Int ie,
   const Int nnc, const Int np, const Int nlev, const Int qsize,
-  const Real* dep_points_r, const Real* neigh_corners_r,
-  const Real* Qj_src_r, const Real* jac_tgt_r, const Real* rho_tgt_r, const Int tl_np1,
-  Real* q_r, Real* q_min_r, Real* q_max_r)
+  const Real* dep_points_r, const Real* Qj_src_r, const Real* jac_tgt_r,
+  const Real* rho_tgt_r, const Int tl_np1, Real* q_r, Real* q_min_r, Real* q_max_r)
 {
   ir_assert(g_remapper);
   using ir::slice;
@@ -2575,8 +2574,7 @@ void ir_project_np4 (
   FA2<const Real>
     jac_tgt(jac_tgt_r, np, np);
   FA3<const Real>
-    dep_points(reinterpret_cast<const Real*>(dep_points_r), 3, np, np),
-    neigh_corners(reinterpret_cast<const Real*>(neigh_corners_r), 3, 4, nnc);
+    dep_points(reinterpret_cast<const Real*>(dep_points_r), 3, np, np);
   FA4<const Real>
     Qj_src(Qj_src_r, np, np, qsize+1, nnc),
     rho_tgt(rho_tgt_r, np, np, nlev, tl_np1+1);
@@ -2598,9 +2596,6 @@ void ir_project_np4 (
   IR_ALIGN(tgi[ir::GLL::np_max]);
   IR_ALIGN(svo_coord[2]);
   IR_ALIGN(tvo_coord[2]);
-
-  //todo Move this to ir_init.
-  g_remapper->init_local_mesh_if_needed(ie, neigh_corners);
 
   const Int np2 = np*np, np4 = np2*np2;
   const ir::Basis basis(np, 0);
@@ -2804,7 +2799,6 @@ void ir_project (
   const Int nnc, const Int np, const Int nlev, const Int qsize,
   // Geometry.
   const Cartesian3D* dep_points_r,     // dep_points(1:np, 1:np), unit vectors
-  const Cartesian3D* neigh_corners_r,  // neigh_corners(1:4, 1:nnc), unit vectors
   // Fields.
   const Real* Qj_src_r,                //   Qj_src(1:np, 1:np, 2:qsize+1, 1:nnc) and
                                        // rhoj_src(1:np, 1:np, 1        , 1:nnc)
@@ -2820,7 +2814,6 @@ void ir_project (
   if (np == 4) {
     ir_project_np4(lev, nets, ie, nnc, np, nlev, qsize, 
                    reinterpret_cast<const Real*>(dep_points_r),
-                   reinterpret_cast<const Real*>(neigh_corners_r),
                    Qj_src_r, jac_tgt_r, rho_tgt_r, tl_np1,
                    q_r, q_min_r, q_max_r);
     return;
@@ -2838,8 +2831,7 @@ void ir_project (
   FA2<const Real>
     jac_tgt(jac_tgt_r, np, np);
   FA3<const Real>
-    dep_points(reinterpret_cast<const Real*>(dep_points_r), 3, np, np),
-    neigh_corners(reinterpret_cast<const Real*>(neigh_corners_r), 3, 4, nnc);
+    dep_points(reinterpret_cast<const Real*>(dep_points_r), 3, np, np);
   FA4<const Real>
     Qj_src(Qj_src_r, np, np, qsize+1, nnc),
     rho_tgt(rho_tgt_r, np, np, nlev, tl_np1+1);
@@ -2848,9 +2840,6 @@ void ir_project (
   FA5<Real>
     q_min(q_min_r, np, np, nlev, qsize, ie0+1),
     q_max(q_max_r, np, np, nlev, qsize, ie0+1);
-
-  //todo Move this to ir_init.
-  g_remapper->init_local_mesh_if_needed(ie, neigh_corners);
 
   const Int np2 = np*np, np4 = np2*np2;
   const ir::Basis basis(np, 0);
@@ -3032,15 +3021,21 @@ extern "C" void ir_study_ (
   homme::study(*elem_global_id, corners, *desc_global_ids, *desc_neigh_corners, *n + 1);
 }
 
+extern "C" void ir_init_local_mesh_ (
+  homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc)
+{
+  homme::g_remapper->init_local_mesh_if_needed(
+    *ie - 1, homme::FA3<const homme::Real>(
+      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc));
+}
+
 extern "C" void ir_project_ (
   homme::Int* lev, homme::Int* ie, homme::Int* nnc, homme::Int* np, homme::Int* nlev,
   homme::Int* qsize, homme::Int* nets, homme::Int* nete,
-  homme::Cartesian3D* dep_points, homme::Cartesian3D** neigh_corners,
-  homme::Real* neigh_q, homme::Real* J_t, homme::Real* dp3d, homme::Int* tl_np1,
-  homme::Real* q, homme::Real* minq, homme::Real* maxq)
+  homme::Cartesian3D* dep_points, homme::Real* neigh_q, homme::Real* J_t,
+  homme::Real* dp3d, homme::Int* tl_np1, homme::Real* q, homme::Real* minq,
+  homme::Real* maxq)
 {
   homme::ir_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
-                    dep_points, *neigh_corners, neigh_q,
-                    J_t, dp3d, *tl_np1 - 1,
-                    q, minq, maxq);
+                    dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
 }

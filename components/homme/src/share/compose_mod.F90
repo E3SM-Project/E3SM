@@ -23,10 +23,14 @@ module compose_mod
      end subroutine qlt_set_ie2gci
 
      ! For sl_advection's use of QLT.
-     subroutine qlt_sl_set_pointers_begin(nets, nete, np, nlev, qsize, qsize_d, &
-          timelevels, need_conservation)
-       integer, intent(in) :: nets, nete, np, nlev, qsize, qsize_d, timelevels, &
+     subroutine qlt_sl_init(np, nlev, qsize, qsize_d, timelevels, &
+          need_conservation)
+       integer, intent(in) :: np, nlev, qsize, qsize_d, timelevels, &
             need_conservation
+     end subroutine qlt_sl_init
+
+     subroutine qlt_sl_set_pointers_begin(nets, nete)
+       integer, intent(in) :: nets, nete
      end subroutine qlt_sl_set_pointers_begin
 
      subroutine qlt_sl_set_spheremp(ie, spheremp)
@@ -90,6 +94,12 @@ module compose_mod
        integer, intent(in) :: np, nelem
      end subroutine ir_init
 
+     subroutine ir_init_local_mesh(ie, neigh_corners, num_neighbors)
+       use coordinate_systems_mod, only : cartesian3D_t
+       integer, intent(in) :: ie, num_neighbors
+       type(cartesian3D_t), intent(in) :: neigh_corners(:,:)
+     end subroutine ir_init_local_mesh
+
      subroutine ir_study(globalID, corners, globalIDs, neigh_corners, n)
        use coordinate_systems_mod, only : cartesian3D_t
        integer, intent(in) :: globalID, globalIDs(:), n
@@ -97,16 +107,13 @@ module compose_mod
      end subroutine ir_study
 
      subroutine ir_project(lev, ie, nnc, np, nlev, qsize, nets, nete, &
-          dep_points, neigh_corners, &
-          Qj_src, &
-          metdet, dp3d, tl_np1, &
-          q, minq, maxq)
+          dep_points, Qj_src, metdet, dp3d, tl_np1, q, minq, maxq)
        use coordinate_systems_mod, only : cartesian3D_t
        use kinds, only : real_kind
        use dimensions_mod, only : qsize_d, max_neigh_edges
        use element_state, only : timelevels
        integer, intent(in) :: lev, ie, nnc, np, nlev, qsize, nets, nete, tl_np1
-       type(cartesian3D_t), intent(in) :: dep_points(np,np), neigh_corners(:,:)
+       type(cartesian3D_t), intent(in) :: dep_points(np,np)
        real(kind=real_kind), intent(in) :: Qj_src(np,np,qsize+1,max_neigh_edges+1), &
             metdet(np,np), dp3d(np,np,nlev,timelevels)
        real(kind=real_kind), intent(out) :: q(np,np,nlev,qsize_d), &

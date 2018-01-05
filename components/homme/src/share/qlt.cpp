@@ -1,3 +1,6 @@
+#define THREAD_QLT_RUN
+#include "config.h.c"
+
 //>> cedr.hpp
 #ifndef INCLUDE_CEDR_HPP
 #define INCLUDE_CEDR_HPP
@@ -2030,22 +2033,39 @@ void QLT<ES>::run () {
   // Number of data per slot.
   const Int l2rndps = md_.a_d.prob2bl2r[md_.nprobtypes];
   const Int r2lndps = md_.a_d.prob2br2l[md_.nprobtypes];
+
   // Leaves to root.
   for (size_t il = 0; il < ns_->levels.size(); ++il) {
     auto& lvl = ns_->levels[il];
+
     // Set up receives.
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp master
+#endif
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
       const auto& mmd = lvl.kids[i];
       mpi::irecv(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
                  NodeSets::mpitag, &lvl.kids_req[i]);
     }
+
     //todo Replace with simultaneous waitany and isend.
     Timer::start(Timer::waitall);
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp master
+#endif
     mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp barrier
+#endif
     Timer::stop(Timer::waitall);
+
     // Combine kids' data.
     //todo Kernelize, interacting with waitany todo above.
-    for (const auto& n : lvl.nodes) {
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp for
+#endif
+    for (Int ni = 0; ni < lvl.nodes.size(); ++ni) {
+      auto& n = lvl.nodes[ni];
       if ( ! n->nkids) continue;
       cedr_kernel_assert(n->nkids == 2);
       // Total density.
@@ -2057,6 +2077,9 @@ void QLT<ES>::run () {
         const bool sum_only = problem_type & ProblemType::shapepreserve;
         const Int bsz = md_.get_problem_type_l2r_bulk_size(problem_type);
         const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+#if defined THREAD_QLT_RUN && defined COLUMN_OPENMP
+#       pragma omp parallel for
+#endif
         for (Int bi = bis; bi < bie; ++bi) {
           const Int bdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
           Real* const me = &bd_.l2r_data(n->offset*l2rndps + bdi);
@@ -2070,19 +2093,29 @@ void QLT<ES>::run () {
         }
       }
     }
+
     // Send to parents.
-    for (size_t i = 0; i < lvl.me.size(); ++i) {
-      const auto& mmd = lvl.me[i];
-      mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
-                 NodeSets::mpitag, &lvl.me_req[i]);
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp master
+#endif
+    {
+      for (size_t i = 0; i < lvl.me.size(); ++i) {
+        const auto& mmd = lvl.me[i];
+        mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
+                   NodeSets::mpitag, &lvl.me_req[i]);
+      }
+      if (il+1 == ns_->levels.size()) {
+        Timer::start(Timer::waitall);
+        mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
+        Timer::stop(Timer::waitall);
+      }
     }
-    if (il+1 == ns_->levels.size()) {
-      Timer::start(Timer::waitall);
-      mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
-      Timer::stop(Timer::waitall);
-    }
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp barrier
+#endif
   }
   Timer::stop(Timer::qltrunl2r); Timer::start(Timer::qltrunr2l);
+
   // Root.
   if ( ! ns_->levels.empty() && ns_->levels.back().nodes.size() == 1 &&
        ! ns_->levels.back().nodes[0]->parent) {
@@ -2090,6 +2123,12 @@ void QLT<ES>::run () {
     for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
       const Int problem_type = md_.get_problem_type(pti);
       const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP && defined COLUMN_OPENMP
+#     pragma omp parallel
+#endif
+#if defined THREAD_QLT_RUN && (defined HORIZ_OPENMP || defined COLUMN_OPENMP)
+#     pragma omp for
+#endif
       for (Int bi = bis; bi < bie; ++bi) {
         const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
         const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
@@ -2110,26 +2149,45 @@ void QLT<ES>::run () {
       }
     }
   }
+
   // Root to leaves.
   for (size_t il = ns_->levels.size(); il > 0; --il) {
     auto& lvl = ns_->levels[il-1];
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp master
+#endif
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
       mpi::irecv(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
                  NodeSets::mpitag, &lvl.me_req[i]);
     }
+
     //todo Replace with simultaneous waitany and isend.
     Timer::start(Timer::waitall);
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp master
+#endif
     mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp barrier
+#endif
     Timer::stop(Timer::waitall);
+
     // Solve QP for kids' values.
     //todo Kernelize, interacting with waitany todo above.
     Timer::start(Timer::snp);
-    for (const auto& n : lvl.nodes) {
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp for
+#endif
+    for (Int ni = 0; ni < lvl.nodes.size(); ++ni) {
+      auto& n = lvl.nodes[ni];
       if ( ! n->nkids) continue;
       for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
         const Int problem_type = md_.get_problem_type(pti);
         const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+#if defined THREAD_QLT_RUN && defined COLUMN_OPENMP
+#       pragma omp parallel for
+#endif
         for (Int bi = bis; bi < bie; ++bi) {
           const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
           const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
@@ -2165,20 +2223,29 @@ void QLT<ES>::run () {
       }
     }
     Timer::stop(Timer::snp);
+
     // Send.
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+#   pragma omp master
+#endif
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
       const auto& mmd = lvl.kids[i];
       mpi::isend(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
                  NodeSets::mpitag, &lvl.kids_req[i]);
     }
   }
+
   // Wait on sends to clean up.
+#if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
+# pragma omp master
+#endif
   for (size_t il = 0; il < ns_->levels.size(); ++il) {
     auto& lvl = ns_->levels[il];
     if (il+1 < ns_->levels.size())
       mpi::waitall(lvl.me_req.size(), lvl.me_req.data());
     mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
   }
+
   Timer::stop(Timer::qltrunr2l);
 }
 
@@ -3365,6 +3432,7 @@ int main (int argc, char** argv) {
 
 // Homme-specific impl details.
 //todo Move to a separate file, qlt_homme.cpp.
+
 namespace homme {
 namespace qlt = cedr::qlt;
 using cedr::Int;
@@ -3462,6 +3530,20 @@ struct Data {
   std::vector<const Real*> spheremp, dp3d_c;
   std::vector<Real*> q_c, qdp_pc;
 
+  struct Check {
+    Kokkos::View<Real**, Kokkos::Serial>
+      mass_p, mass_c, mass_lo, mass_hi,
+      q_lo, q_hi, q_min_l, q_max_l, qd_lo, qd_hi;
+    Check (const Int nlev, const Int qsize)
+      : mass_p("mass_p", nlev, qsize), mass_c("mass_c", nlev, qsize),
+        mass_lo("mass_lo", nlev, qsize), mass_hi("mass_hi", nlev, qsize),
+        q_lo("q_lo", nlev, qsize), q_hi("q_hi", nlev, qsize),
+        q_min_l("q_min_l", nlev, qsize), q_max_l("q_max_l", nlev, qsize),
+        qd_lo("qd_lo", nlev, qsize), qd_hi("qd_hi", nlev, qsize)
+    {}
+  };
+  std::shared_ptr<Check> check;
+
   Data (Int lcl_ncell, Int np_, Int nlev_, Int qsize_, Int qsize_d_, Int timelevels_)
     : np(np_), nlev(nlev_), qsize(qsize_), qsize_d(qsize_d_), timelevels(timelevels_),
       spheremp(lcl_ncell, nullptr), dp3d_c(lcl_ncell, nullptr), q_c(lcl_ncell, nullptr),
@@ -3493,30 +3575,37 @@ void insert (const Data::Ptr& d, const Int ie, const Int ptridx, Real* array,
 
 static void run_qlt (QLT& q) {
 #ifdef HORIZ_OPENMP
-# prama omp barrier
+# pragma omp barrier
+# ifndef THREAD_QLT_RUN
+#  pragma omp master
+# endif
 #endif
   q.qlt->run();
 #ifdef HORIZ_OPENMP
-# prama omp barrier
+# pragma omp barrier
 #endif
 }
 
-void run (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_r) {
+void run (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_r,
+          const Int nets, const Int nete) {
   static constexpr Int max_np = 4;
-  const Int np = d.np, nlev = d.nlev, qsize = d.qsize, ncell = d.spheremp.size();
+  const Int np = d.np, nlev = d.nlev, qsize = d.qsize, ncell = nete - nets + 1;
   cedr_assert(np <= max_np);
 
   FA5<const Real>
     q_min(q_min_r, np, np, nlev, qsize, ncell),
     q_max(q_max_r, np, np, nlev, qsize, ncell);
 
-  for (Int ie = 0; ie < ncell; ++ie) {
+  for (Int ie = nets; ie <= nete; ++ie) {
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<const Real> qdp_p(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
     FA4<const Real> q_c(d.q_c[ie], np, np, nlev, d.qsize_d);
     const Int lci = qlt.ie2lci[ie];
 
+#ifdef COLUMN_OPENMP
+#   pragma omp parallel for
+#endif
     for (Int k = 0; k < nlev; ++k)
       for (Int q = 0; q < qsize; ++q) {
         const Int ti = k*qsize + q;
@@ -3527,8 +3616,8 @@ void run (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_r) {
             const Real rhomij = dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
             rhom += rhomij;
             Qm += q_c(i,j,k,q) * rhomij;
-            Qm_min += q_min(i,j,k,q,ie) * rhomij;
-            Qm_max += q_max(i,j,k,q,ie) * rhomij;
+            Qm_min += q_min(i,j,k,q,ie-nets) * rhomij;
+            Qm_max += q_max(i,j,k,q,ie-nets) * rhomij;
             Qm_prev += qdp_p(i,j,k,q,d.n0_qdp) * spheremp(i,j);
           }
 
@@ -3541,23 +3630,28 @@ void run (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_r) {
 }
 
 void run_local (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_r,
-                const bool scalar_bounds, const Int limiter_option) {
+                const Int nets, const Int nete, const bool scalar_bounds,
+                const Int limiter_option) {
   static constexpr Int max_np = 4, max_np2 = max_np*max_np;
   const Int np = d.np, np2 = np*np, nlev = d.nlev, qsize = d.qsize,
-    ncell = d.spheremp.size();
+    ncell = nete - nets + 1;
   cedr_assert(np <= max_np);
 
   FA5<const Real>
     q_min(q_min_r, np, np, nlev, qsize, ncell),
     q_max(q_max_r, np, np, nlev, qsize, ncell);
 
-  for (Int ie = 0; ie < ncell; ++ie) {
+  for (Int ie = nets; ie <= nete; ++ie) {
+    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<      Real> qdp_c(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
     FA4<      Real> q_c(d.q_c[ie], np, np, nlev, d.qsize_d);
     const Int lci = qlt.ie2lci[ie];
 
+#ifdef COLUMN_OPENMP
+#   pragma omp parallel for
+#endif
     for (Int k = 0; k < nlev; ++k)
       for (Int q = 0; q < qsize; ++q) {
         const Int ti = k*qsize + q;
@@ -3576,8 +3670,8 @@ void run_local (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_
 
         //todo Replace with ReconstructSafely.
         if (scalar_bounds) {
-          qlo[0] = q_min(0,0,k,q,ie);
-          qhi[0] = q_max(0,0,k,q,ie);
+          qlo[0] = q_min(0,0,k,q,ie0);
+          qhi[0] = q_max(0,0,k,q,ie0);
           const Int N = std::min(max_np2, np2);
           for (Int i = 1; i < N; ++i) qlo[i] = qlo[0];
           for (Int i = 1; i < N; ++i) qhi[i] = qhi[0];
@@ -3595,8 +3689,8 @@ void run_local (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_
         } else {
           for (Int j = 0, cnt = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i, ++cnt) {
-              qlo[cnt] = q_min(i,j,k,q,ie);
-              qhi[cnt] = q_max(i,j,k,q,ie);
+              qlo[cnt] = q_min(i,j,k,q,ie0);
+              qhi[cnt] = q_max(i,j,k,q,ie0);
             }
           int info = cedr::local::solve_1eq_bc_qp(
             np2, wa, wa, Qm, qlo, qhi, y, x);
@@ -3619,93 +3713,146 @@ void run_local (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_
   }
 }
 
-void check (QLT& qlt, const Data& d, const Real* q_min_r, const Real* q_max_r) {
+void check (QLT& qlt, Data& d, const Real* q_min_r, const Real* q_max_r,
+            const Int nets, const Int nete) {
   using cedr::mpi::reduce;
 
-  const Int np = d.np, nlev = d.nlev, qsize = d.qsize, ncell = d.spheremp.size();
+  const Int np = d.np, nlev = d.nlev, qsize = d.qsize, ncell = nete - nets + 1;
 
-  Kokkos::View<Real**, Kokkos::HostSpace>
-    mass_p_g("mass_p_g", nlev, qsize), mass_c_g("mass_c_g", nlev, qsize),
-    mass_lo_g("mass_lo_g", nlev, qsize), mass_hi_g("mass_hi_g", nlev, qsize),
-    q_lo_g("q_lo_g", nlev, qsize), q_hi_g("q_hi_g", nlev, qsize),
-    q_min_g("q_min_g", nlev, qsize), q_max_g("q_max_g", nlev, qsize),
-    qd_lo_g("qd_lo_g", nlev, qsize), qd_hi_g("qd_hi_g", nlev, qsize);
-  {
-    Kokkos::View<Real**, Kokkos::HostSpace>
-      mass_p("mass_p", nlev, qsize), mass_c("mass_c", nlev, qsize),
-      mass_lo("mass_lo", nlev, qsize), mass_hi("mass_hi", nlev, qsize),
-      q_lo("q_lo", nlev, qsize), q_hi("q_hi", nlev, qsize),
-      q_min_l("q_min_l", nlev, qsize), q_max_l("q_max_l", nlev, qsize),
-      qd_lo("qd_lo", nlev, qsize), qd_hi("qd_hi", nlev, qsize);
-    FA5<const Real>
-      q_min(q_min_r, np, np, nlev, qsize, ncell),
-      q_max(q_max_r, np, np, nlev, qsize, ncell);
-    Kokkos::deep_copy(q_lo,  1e200);
-    Kokkos::deep_copy(q_hi, -1e200);
-    Kokkos::deep_copy(q_min_l,  1e200);
-    Kokkos::deep_copy(q_max_l, -1e200);
-    Kokkos::deep_copy(qd_lo, 0);
-    Kokkos::deep_copy(qd_hi, 0);
+  Kokkos::View<Real**, Kokkos::Serial>
+    mass_p("mass_p", nlev, qsize), mass_c("mass_c", nlev, qsize),
+    mass_lo("mass_lo", nlev, qsize), mass_hi("mass_hi", nlev, qsize),
+    q_lo("q_lo", nlev, qsize), q_hi("q_hi", nlev, qsize),
+    q_min_l("q_min_l", nlev, qsize), q_max_l("q_max_l", nlev, qsize),
+    qd_lo("qd_lo", nlev, qsize), qd_hi("qd_hi", nlev, qsize);
+  FA5<const Real>
+    q_min(q_min_r, np, np, nlev, qsize, ncell),
+    q_max(q_max_r, np, np, nlev, qsize, ncell);
+  Kokkos::deep_copy(q_lo,  1e200);
+  Kokkos::deep_copy(q_hi, -1e200);
+  Kokkos::deep_copy(q_min_l,  1e200);
+  Kokkos::deep_copy(q_max_l, -1e200);
+  Kokkos::deep_copy(qd_lo, 0);
+  Kokkos::deep_copy(qd_hi, 0);
 
-    for (Int ie = 0; ie < ncell; ++ie) {
-      FA2<const Real> spheremp(d.spheremp[ie], np, np);
-      FA5<const Real> qdp_pc(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
-      FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
-      FA4<const Real> q_c(d.q_c[ie], np, np, nlev, d.qsize_d);
-      for (Int k = 0; k < nlev; ++k)
-        for (Int q = 0; q < qsize; ++q)
-          for (Int j = 0; j < np; ++j)
-            for (Int i = 0; i < np; ++i) {
-              mass_p(k,q) += qdp_pc(i,j,k,q,d.n0_qdp) * spheremp(i,j);
-              mass_c(k,q) += qdp_pc(i,j,k,q,d.n1_qdp) * spheremp(i,j);
-              if (q_c(i,j,k,q) < q_min(i,j,k,q,ie))
-                qd_lo(k,q) = std::max(qd_lo(k,q), q_min(i,j,k,q,ie) - q_c(i,j,k,q));
-              if (q_c(i,j,k,q) > q_max(i,j,k,q,ie))
-                qd_hi(k,q) = std::max(qd_hi(k,q), q_c(i,j,k,q) - q_max(i,j,k,q,ie));
-              // Safety problem.
-              mass_lo(k,q) += q_min(i,j,k,q,ie) * dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
-              mass_hi(k,q) += q_max(i,j,k,q,ie) * dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
-              q_lo(k,q) = std::min(q_lo(k,q), q_min(i,j,k,q,ie));
-              q_hi(k,q) = std::max(q_hi(k,q), q_max(i,j,k,q,ie));
-              q_min_l(k,q) = std::min(q_min_l(k,q), q_min(i,j,k,q,ie));
-              q_max_l(k,q) = std::max(q_max_l(k,q), q_max(i,j,k,q,ie));
-            }
-    }
-
-    reduce(*qlt.p, mass_p.data(), mass_p_g.data(), nlev*qsize, MPI_SUM, qlt.p->root());
-    reduce(*qlt.p, mass_c.data(), mass_c_g.data(), nlev*qsize, MPI_SUM, qlt.p->root());
-    reduce(*qlt.p, qd_lo.data(), qd_lo_g.data(), nlev*qsize, MPI_MAX, qlt.p->root());
-    reduce(*qlt.p, qd_hi.data(), qd_hi_g.data(), nlev*qsize, MPI_MAX, qlt.p->root());
-    // Safety problem.
-    reduce(*qlt.p, mass_lo.data(), mass_lo_g.data(), nlev*qsize, MPI_SUM, qlt.p->root());
-    reduce(*qlt.p, mass_hi.data(), mass_hi_g.data(), nlev*qsize, MPI_SUM, qlt.p->root());
-    reduce(*qlt.p, q_lo.data(), q_lo_g.data(), nlev*qsize, MPI_MIN, qlt.p->root());
-    reduce(*qlt.p, q_hi.data(), q_hi_g.data(), nlev*qsize, MPI_MAX, qlt.p->root());
-    reduce(*qlt.p, q_min_l.data(), q_min_g.data(), nlev*qsize, MPI_MIN, qlt.p->root());
-    reduce(*qlt.p, q_max_l.data(), q_max_g.data(), nlev*qsize, MPI_MAX, qlt.p->root());
+  for (Int ie = nets; ie <= nete; ++ie) {
+    const Int ie0 = ie - nets;
+    FA2<const Real> spheremp(d.spheremp[ie], np, np);
+    FA5<const Real> qdp_pc(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
+    FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
+    FA4<const Real> q_c(d.q_c[ie], np, np, nlev, d.qsize_d);
+    for (Int k = 0; k < nlev; ++k)
+      for (Int q = 0; q < qsize; ++q)
+        for (Int j = 0; j < np; ++j)
+          for (Int i = 0; i < np; ++i) {
+            mass_p(k,q) += qdp_pc(i,j,k,q,d.n0_qdp) * spheremp(i,j);
+            mass_c(k,q) += qdp_pc(i,j,k,q,d.n1_qdp) * spheremp(i,j);
+            if (q_c(i,j,k,q) < q_min(i,j,k,q,ie0))
+              qd_lo(k,q) = std::max(qd_lo(k,q), q_min(i,j,k,q,ie0) - q_c(i,j,k,q));
+            if (q_c(i,j,k,q) > q_max(i,j,k,q,ie0))
+              qd_hi(k,q) = std::max(qd_hi(k,q), q_c(i,j,k,q) - q_max(i,j,k,q,ie0));
+            // Safety problem.
+            mass_lo(k,q) += q_min(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
+            mass_hi(k,q) += q_max(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
+            q_lo(k,q) = std::min(q_lo(k,q), q_min(i,j,k,q,ie0));
+            q_hi(k,q) = std::max(q_hi(k,q), q_max(i,j,k,q,ie0));
+            q_min_l(k,q) = std::min(q_min_l(k,q), q_min(i,j,k,q,ie0));
+            q_max_l(k,q) = std::max(q_max_l(k,q), q_max(i,j,k,q,ie0));
+          }
   }
 
-  if (qlt.p->amroot()) {
-    const Real tol = 1e4*std::numeric_limits<Real>::epsilon();
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp master
+#endif
+  {
+    if ( ! d.check)
+      d.check = std::make_shared<Data::Check>(nlev, qsize);
+    auto& c = *d.check;
+    Kokkos::deep_copy(c.mass_p, 0);
+    Kokkos::deep_copy(c.mass_c, 0);
+    Kokkos::deep_copy(c.mass_lo, 0);
+    Kokkos::deep_copy(c.mass_hi, 0);
+    Kokkos::deep_copy(c.q_lo,  1e200);
+    Kokkos::deep_copy(c.q_hi, -1e200);
+    Kokkos::deep_copy(c.q_min_l,  1e200);
+    Kokkos::deep_copy(c.q_max_l, -1e200);
+    Kokkos::deep_copy(c.qd_lo, 0);
+    Kokkos::deep_copy(c.qd_hi, 0);
+  }
+
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp critical
+#endif
+  {
+    auto& c = *d.check;
     for (Int k = 0; k < nlev; ++k)
       for (Int q = 0; q < qsize; ++q) {
-        const Real rd = cedr::util::reldif(mass_p_g(k,q), mass_c_g(k,q));
-        if (rd > tol)
-          pr(puf(k) pu(q) pu(mass_p_g(k,q)) pu(mass_c_g(k,q)) pu(rd));
-        if (mass_lo_g(k,q) <= mass_c_g(k,q) && mass_c_g(k,q) <= mass_hi_g(k,q)) {
-          // Local problems should be feasible.
-          if (qd_lo_g(k,q) > 0)
-            pr(puf(k) pu(q) pu(qd_lo_g(k,q)));
-          if (qd_hi_g(k,q) > 0)
-            pr(puf(k) pu(q) pu(qd_hi_g(k,q)));
-        } else {
-          // Safety problem must hold.
-          if (q_lo_g(k,q) < q_min_g(k,q))
-            pr(puf(k) pu(q) pu(q_lo_g(k,q) - q_min_g(k,q)) pu(q_min_g(k,q)));
-          if (q_hi_g(k,q) > q_max_g(k,q))
-            pr(puf(k) pu(q) pu(q_max_g(k,q) - q_hi_g(k,q)) pu(q_max_g(k,q)));
-        }
+        c.mass_p(k,q) += mass_p(k,q);
+        c.mass_c(k,q) += mass_c(k,q);
+        c.qd_lo(k,q) = std::max(c.qd_lo(k,q), qd_lo(k,q));
+        c.qd_hi(k,q) = std::max(c.qd_hi(k,q), qd_hi(k,q));
+        c.mass_lo(k,q) += mass_lo(k,q);
+        c.mass_hi(k,q) += mass_hi(k,q);
+        c.q_lo(k,q) = std::min(c.q_lo(k,q), q_lo(k,q));
+        c.q_hi(k,q) = std::max(c.q_hi(k,q), q_hi(k,q));
+        c.q_min_l(k,q) = std::min(c.q_min_l(k,q), q_min_l(k,q));
+        c.q_max_l(k,q) = std::max(c.q_max_l(k,q), q_max_l(k,q));
       }
+  }
+
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+# pragma omp master
+#endif
+  {
+    Kokkos::View<Real**, Kokkos::Serial>
+      mass_p_g("mass_p_g", nlev, qsize), mass_c_g("mass_c_g", nlev, qsize),
+      mass_lo_g("mass_lo_g", nlev, qsize), mass_hi_g("mass_hi_g", nlev, qsize),
+      q_lo_g("q_lo_g", nlev, qsize), q_hi_g("q_hi_g", nlev, qsize),
+      q_min_g("q_min_g", nlev, qsize), q_max_g("q_max_g", nlev, qsize),
+      qd_lo_g("qd_lo_g", nlev, qsize), qd_hi_g("qd_hi_g", nlev, qsize);
+
+    const auto& p = *qlt.p;
+    const auto& c = *d.check;
+    const auto root = qlt.p->root();
+    const auto N = nlev*qsize;
+
+    reduce(p, c.mass_p.data(), mass_p_g.data(), N, MPI_SUM, root);
+    reduce(p, c.mass_c.data(), mass_c_g.data(), N, MPI_SUM, root);
+    reduce(p, c.qd_lo.data(), qd_lo_g.data(), N, MPI_MAX, root);
+    reduce(p, c.qd_hi.data(), qd_hi_g.data(), N, MPI_MAX, root);
+    // Safety problem.
+    reduce(p, c.mass_lo.data(), mass_lo_g.data(), N, MPI_SUM, root);
+    reduce(p, c.mass_hi.data(), mass_hi_g.data(), N, MPI_SUM, root);
+    reduce(p, c.q_lo.data(), q_lo_g.data(), N, MPI_MIN, root);
+    reduce(p, c.q_hi.data(), q_hi_g.data(), N, MPI_MAX, root);
+    reduce(p, c.q_min_l.data(), q_min_g.data(), N, MPI_MIN, root);
+    reduce(p, c.q_max_l.data(), q_max_g.data(), N, MPI_MAX, root);
+
+    if (qlt.p->amroot()) {
+      const Real tol = 1e4*std::numeric_limits<Real>::epsilon();
+      for (Int k = 0; k < nlev; ++k)
+        for (Int q = 0; q < qsize; ++q) {
+          const Real rd = cedr::util::reldif(mass_p_g(k,q), mass_c_g(k,q));
+          if (rd > tol)
+            pr(puf(k) pu(q) pu(mass_p_g(k,q)) pu(mass_c_g(k,q)) pu(rd));
+          if (mass_lo_g(k,q) <= mass_c_g(k,q) && mass_c_g(k,q) <= mass_hi_g(k,q)) {
+            // Local problems should be feasible.
+            if (qd_lo_g(k,q) > 0)
+              pr(puf(k) pu(q) pu(qd_lo_g(k,q)));
+            if (qd_hi_g(k,q) > 0)
+              pr(puf(k) pu(q) pu(qd_hi_g(k,q)));
+          } else {
+            // Safety problem must hold.
+            if (q_lo_g(k,q) < q_min_g(k,q))
+              pr(puf(k) pu(q) pu(q_lo_g(k,q) - q_min_g(k,q)) pu(q_min_g(k,q)));
+            if (q_hi_g(k,q) > q_max_g(k,q))
+              pr(puf(k) pu(q) pu(q_max_g(k,q) - q_hi_g(k,q)) pu(q_max_g(k,q)));
+          }
+        }
+    }
   }
 }
 } // namespace sl
@@ -3744,13 +3891,11 @@ qlt_set_ie2gci_ (const homme::Int* ie, const homme::Int* gci) {
 
 static homme::sl::Data::Ptr g_sl;
 
-//todo Need to be tid aware if HORIZ_OPENMP.
-extern "C" homme::Int qlt_sl_set_pointers_begin_ (
-  homme::Int* nets, homme::Int* nete, const homme::Int* np, const homme::Int* nlev,
-  const homme::Int* qsize, const homme::Int* qsized, const homme::Int* timelevels,
+extern "C" homme::Int qlt_sl_init_ (
+  const homme::Int* np, const homme::Int* nlev, const homme::Int* qsize,
+  const homme::Int* qsized, const homme::Int* timelevels,
   const homme::Int* need_conservation)
 {
-  if (g_sl) return 0;
   cedr_assert(g_qlt);
   g_sl = std::make_shared<homme::sl::Data>(g_qlt->qlt->nlclcells(), *np, *nlev, *qsize,
                                            *qsized, *timelevels);
@@ -3759,6 +3904,10 @@ extern "C" homme::Int qlt_sl_set_pointers_begin_ (
   homme::sl::check(*g_qlt, *g_sl);
   return 1;
 }
+
+extern "C" homme::Int qlt_sl_set_pointers_begin_ (
+  homme::Int* nets, homme::Int* nete)
+{}
 
 extern "C" void qlt_sl_set_spheremp_ (homme::Int* ie, homme::Real* v)
 { homme::sl::insert(g_sl, *ie - 1, 0, v); }
@@ -3774,27 +3923,28 @@ extern "C" void qlt_sl_set_pointers_end_ () {}
 
 // Run QLT.
 extern "C" void qlt_sl_run_ (const homme::Real* minq, const homme::Real* maxq,
-                             homme::Int*, homme::Int*) {
+                             homme::Int* nets, homme::Int* nete) {
   cedr_assert(minq != maxq);
   cedr_assert(g_qlt);
   cedr_assert(g_sl);
-  homme::sl::run(*g_qlt, *g_sl, minq, maxq);
+  homme::sl::run(*g_qlt, *g_sl, minq, maxq, *nets-1, *nete-1);
 }
 
 // Run the cell-local limiter problem.
 extern "C" void qlt_sl_run_local_ (const homme::Real* minq, const homme::Real* maxq,
-                                   homme::Int*, homme::Int*, homme::Int* use_ir,
+                                   homme::Int* nets, homme::Int* nete, homme::Int* use_ir,
                                    homme::Int* limiter_option) {
   cedr_assert(minq != maxq);
   cedr_assert(g_qlt);
   cedr_assert(g_sl);
-  homme::sl::run_local(*g_qlt, *g_sl, minq, maxq, *use_ir, *limiter_option);
+  homme::sl::run_local(*g_qlt, *g_sl, minq, maxq, *nets-1, *nete-1, *use_ir,
+                       *limiter_option);
 }
 
 // Check properties for this transport step.
 extern "C" void qlt_sl_check_ (const homme::Real* minq, const homme::Real* maxq,
-                               homme::Int*, homme::Int*) {
+                               homme::Int* nets, homme::Int* nete) {
   cedr_assert(g_qlt);
   cedr_assert(g_sl);
-  homme::sl::check(*g_qlt, *g_sl, minq, maxq);
+  homme::sl::check(*g_qlt, *g_sl, minq, maxq, *nets-1, *nete-1);
 }

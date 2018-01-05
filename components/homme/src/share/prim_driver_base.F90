@@ -275,8 +275,6 @@ contains
        call genmetispart(GridEdge,GridVertex)
     endif
 
-    call kokkos_init()
-
     call t_stopf('PartitioningTime')
 
     !call t_startf('PrintMetricTime')
@@ -480,6 +478,7 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
+    call kokkos_init()
     if (use_semi_lagrange_transport .and. use_semi_lagrange_transport_qlt) then
        call qlt_init(par%comm, GridVertex)
        call qlt_unittest(par%comm, ierr)
@@ -511,16 +510,16 @@ contains
     ith=0
     nets=1
     nete=nelemd
+
+    if (use_semi_lagrange_transport) then
+       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
+    end if
+
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
     call Prim_Advec_Init1(par, elem)
-
-
-    if ( use_semi_lagrange_transport) then
-      call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
-    end if
 
     call TimeLevel_init(tl)
 

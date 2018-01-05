@@ -43,15 +43,15 @@ module sl_advection
 
 contains
 
-
 !=================================================================================================!
 
 subroutine sl_init1(par, elem)
   use interpolate_mod,        only : interpolate_tracers_init
-  use control_mod,            only : use_semi_lagrange_transport_ir
+  use control_mod,            only : use_semi_lagrange_transport_ir, use_semi_lagrange_transport_qlt
+  use element_state,          only : timelevels
   type(parallel_t) :: par
   type (element_t) :: elem(:)
-  integer :: nslots
+  integer :: nslots, ie, num_neighbors, need_conservation
   
   if (use_semi_lagrange_transport) then
      call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
@@ -64,6 +64,17 @@ subroutine sl_init1(par, elem)
      if (use_semi_lagrange_transport_ir) then
         call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
         call ir_init(np, size(elem))
+        do ie = 1, size(elem)
+           num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
+           call ir_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors)
+        end do
+     end if
+     if (use_semi_lagrange_transport_qlt) then
+        need_conservation = 1
+        ! The IR method is locally conservative, so we don't need QLT to handle
+        ! conservation.
+        if (use_semi_lagrange_transport_ir) need_conservation = 0
+        call qlt_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
      end if
   endif
 end subroutine
@@ -71,7 +82,6 @@ end subroutine
 subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
   use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
   use dimensions_mod,         only : max_neigh_edges
-  use element_state,          only : timelevels
   use bndry_mod,              only : ghost_exchangevfull
   use interpolate_mod,        only : interpolate_tracers, minmax_tracers
   use control_mod   ,         only : qsplit
@@ -111,7 +121,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   real(kind=real_kind)                          :: u           (np,np,qsize+1)
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
-  integer                                       :: num_neighbors, need_conservation, scalar_q_bounds
+  integer                                       :: num_neighbors, scalar_q_bounds
 
   call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
   call t_startf('Prim_Advec_Tracers_remap_ALE')
@@ -124,21 +134,25 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   if (use_semi_lagrange_transport_ir) then
      if (barrier) call mpi_barrier(hybrid%par%comm, ie)
      call t_startf('IR_ghost_pack')
+     n = qsize + 1 ! Number of fields to unpack.
      do ie = nets, nete
-        kptr = 0
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(k,kptr,q)
+#endif
         do k = 1, nlev
+           kptr = (k-1)*n
            ! Send rho*Jacobian[ref elem -> sphere].
            !todo What's the difference between derived.dp and state.dp3d?
            !elem(ie)%state%Q(:,:,k,1) = elem(ie)%state%dp3d(:,:,k,tl%n0) * elem(ie)%metdet(:,:)
            elem(ie)%state%Q(:,:,k,1) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
-           call ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, 1, kptr, elem(ie)%desc)
+           call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,1), np, 1, kptr, elem(ie)%desc)
            kptr = kptr + 1
            do q = 1, qsize
               ! Remap the curious quantity
               !     (tracer density)*Jacobian[ref elem -> sphere],
               ! not simply the tracer mixing ratio.
               elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp) * elem(ie)%metdet(:,:)
-              call ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), np, 1, kptr, elem(ie)%desc)
+              call amb_ghostVpack_unoriented(ghostbuf_tr, elem(ie)%state%Q(:,:,k,q), np, 1, kptr, elem(ie)%desc)
               kptr = kptr + 1
            enddo
         enddo
@@ -154,7 +168,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
      call t_startf('IR_project')
      do ie = nets, nete
         num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
-        n = qsize + 1 ! Number of fields to unpack.
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(k,kptr,dep_points,u,neigh_q)
+#endif
         do k = 1, nlev
            call ALE_departure_from_gll(dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
 
@@ -162,10 +178,10 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
            kptr = (k-1)*n
            u(:,:,1        ) = elem(ie)%derived%dp(:,:,k) * elem(ie)%metdet(:,:)
            u(:,:,2:qsize+1) = elem(ie)%state%Q(:,:,k,1:qsize)
-           call ghostVunpack_unoriented(ghostbuf_tr, neigh_q, np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
+           call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q, np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
 
            call ir_project(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
-                dep_points, elem(ie)%desc%neigh_corners, &
+                dep_points, &
                 neigh_q, &                     ! (tracer density)*Jacobian[ref elem -> sphere] on source mesh.
                 elem(ie)%metdet, &             ! Jacobian[ref elem -> sphere] on target element.
                 elem(ie)%state%dp3d, tl%np1, & ! Total density to get mixing ratios.
@@ -235,18 +251,12 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
   ! QLT works with either classical SL or IR.
   if (use_semi_lagrange_transport_qlt) then
-     need_conservation = 1
-     ! The IR method is locally conservative, so we don't need QLT to handle
-     ! conservation.
-     if (use_semi_lagrange_transport_ir) need_conservation = 0
-
      scalar_q_bounds = 0
      ! The IR method has uniform bounds on q throughout a cell.
      if (use_semi_lagrange_transport_ir) scalar_q_bounds = 1
 
-     call qlt_sl_set_pointers_begin(nets, nete, np, nlev, qsize, qsize_d, &
-          timelevels, need_conservation)
-     do ie = 1, size(elem)
+     call qlt_sl_set_pointers_begin(nets, nete)
+     do ie = nets, nete
         call qlt_sl_set_spheremp(ie, elem(ie)%spheremp)
         call qlt_sl_set_Qdp(ie, elem(ie)%state%Qdp, n0_qdp, np1_qdp)
         call qlt_sl_set_dp3d(ie, elem(ie)%state%dp3d, tl%np1)
@@ -1064,5 +1074,62 @@ subroutine ir_dss(elem, nets, nete, hybrid, np1_qdp)
      end do
   end do
 end subroutine ir_dss
+
+! Replacement for edge_mod_base::ghostvpack_unoriented, which has a strange
+! 'threadsafe' module variable that causes a race condition when HORIZ and
+! COLUMN threading are on at the same time.
+subroutine amb_ghostvpack_unoriented(edge,v,nc,vlyr,kptr,desc)
+  use edgetype_mod, only : edgedescriptor_t, ghostbuffer3d_t 
+  implicit none
+  type (Ghostbuffer3D_t),intent(inout) :: edge
+  integer,              intent(in)   :: vlyr
+  integer,              intent(in)   :: nc
+  real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
+  integer,              intent(in)   :: kptr
+  type (EdgeDescriptor_t),intent(in) :: desc
+
+  integer :: k,l,l_local,is
+
+  do l_local=1,desc%actual_neigh_edges
+     l=desc%loc2buf(l_local)
+     is = desc%putmapP_ghost(l)
+     do k=1,vlyr
+        edge%buf(:,:,kptr+k,is) = v(:,:,k)  
+     enddo
+  end do
+end subroutine amb_ghostvpack_unoriented
+
+subroutine amb_ghostvunpack_unoriented(edge,v,nc,vlyr,kptr,desc,GlobalId,u)
+  use edgetype_mod, only : Ghostbuffer3d_t, EdgeDescriptor_t
+  implicit none
+
+  type (Ghostbuffer3D_t),intent(inout)  :: edge
+  integer,               intent(in)     :: vlyr
+  integer,               intent(in)     :: nc
+  real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
+  integer,               intent(in)     :: kptr
+  type (EdgeDescriptor_t),intent(in)    :: desc
+  integer(kind=int_kind),intent(in)     :: GlobalId
+  real (kind=real_kind), intent(in)     :: u(nc,nc,vlyr)
+
+  integer :: k,l,n,is,m,pid,gid
+
+  m=0
+  gid = GlobalID
+  do n=1,desc%actual_neigh_edges+1
+     l = desc%loc2buf(m+1)
+     pid = desc%globalID(l)
+     if (m==desc%actual_neigh_edges .OR. pid < gid) then
+        gid = -1
+        v(:,:,:,n) = u(:,:,:)
+     else
+        m = m+1
+        is = desc%getmapP_ghost(l)
+        do k=1,vlyr
+           v(:,:,k,n) = edge%buf(:,:,kptr+k,is) 
+        enddo
+     end if
+  end do
+end subroutine amb_ghostvunpack_unoriented
 
 end module 
