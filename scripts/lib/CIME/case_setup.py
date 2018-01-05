@@ -70,8 +70,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
-    cimeroot = get_cime_root(case)
-
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
@@ -205,7 +203,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             logger.debug("Building {} usernl files".format(model))
             _build_usernl_files(case, model, comp)
             if comp == "cism":
-                run_cmd_no_fail("{}/../components/cism/cime_config/cism.template {}".format(cimeroot, caseroot))
+                glcroot = case.get_value("COMP_ROOT_DIR_GLC")
+                run_cmd_no_fail("{}/cime_config/cism.template {}".format(glcroot, caseroot))
 
         _build_usernl_files(case, "drv", "cpl")
 

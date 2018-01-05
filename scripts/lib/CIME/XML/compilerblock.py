@@ -225,10 +225,6 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
-        # Skip this if the element's MPILIB is not valid.
-        if self._db.has(elem, "MPILIB") and \
-           not self._machobj.is_valid_MPIlib(self._db.get(elem, "MPILIB")):
-            return
         setting, depends = self._elem_to_setting(elem)
         if name not in value_lists:
             value_lists[name] = PossibleValues(name, setting,

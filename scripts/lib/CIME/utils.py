@@ -1298,12 +1298,10 @@ def find_system_test(testname, case):
     else:
         components = ["any"]
         components.extend( case.get_compset_components())
-        env_test = case.get_env("test")
         fdir = []
         for component in components:
-            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+            tdir = case.get_value("SYSTEM_TESTS_DIR",
                                       attribute={"component":component})
-
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
@@ -1354,8 +1352,22 @@ def get_lids(case):
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
+    jobid = batch_jobid()
+    if jobid is not None:
+        lid = jobid+'.'+lid
     os.environ["LID"] = lid
     return lid
+
+def batch_jobid():
+    jobid = os.environ.get("PBS_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("SLURM_JOB_ID")
+    if jobid is None:
+        jobid = os.environ.get("LSB_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("COBALT_JOBID")
+    return jobid
+
 
 def analyze_build_log(comp, log, compiler):
     """

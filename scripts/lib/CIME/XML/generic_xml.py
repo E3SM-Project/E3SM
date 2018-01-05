@@ -69,9 +69,9 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logger.debug("read: " + str(infile))
-
-        with open(infile, 'r') as fd:
+        logger.debug("read: " + infile)
+        file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
+        with file_open(infile) as fd:
             self.read_fd(fd)
 
         if schema is not None and self.get_version() > 1.0:

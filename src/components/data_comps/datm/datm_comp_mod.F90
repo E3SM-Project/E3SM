@@ -12,7 +12,7 @@ module datm_comp_mod
   use shr_sys_mod
   use shr_kind_mod   , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only: shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod    , only: shr_cal_date2julian
+  use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
   use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
@@ -73,7 +73,7 @@ module datm_comp_mod
 
   real(R8)           :: dTarc(12)
   data   dTarc      / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
-                     -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
+       -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
   integer(IN) :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
   integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet,kco2p,kco2d
@@ -125,11 +125,11 @@ module datm_comp_mod
        "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
        "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
        "Faoo_fdms_ocn   ",  &
-       ! add values for bias correction / anomaly forcing
+                                ! add values for bias correction / anomaly forcing
        "Sa_precsf       ", &
        "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
        "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      ",&
-       ! isotopic forcing
+                                ! isotopic forcing
        "Faxa_rainc_18O  ","Faxa_rainc_HDO  ","Faxa_rainl_18O  ","Faxa_rainl_HDO  ",&
        "Faxa_snowc_18O  ","Faxa_snowc_HDO  ","Faxa_snowl_18O  ","Faxa_snowl_HDO  ",&
        "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " &
@@ -152,11 +152,11 @@ module datm_comp_mod
        "taux            ","tauy            ","lat             ","sen             ", &
        "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
        "dms             ", &
-       ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
+                                ! add values for bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
        "precsf          ", &
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
-       ! isotopic forcing
+                                ! isotopic forcing
        "rainc_18O       ","rainc_HDO       ","rainl_18O       ","rainl_HDO       ", &
        "snowc_18O       ","snowc_HDO       ","snowl_18O       ","snowl_HDO       ", &
        "shum_16O        ","shum_18O        ","shum_HDO        " &
@@ -175,7 +175,7 @@ module datm_comp_mod
        "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
        "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
        "strm_swup       ","strm_prec       ","strm_tarcf      ", &
-       ! add bias correction / anomaly forcing streams
+                                ! add bias correction / anomaly forcing streams
        "strm_precsf     ", &
        "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
        "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    ", &
@@ -188,12 +188,12 @@ module datm_comp_mod
        "shum            ","tdew            ","rh              ","lwdn            ", &
        "swdn            ","swdndf          ","swdndr          ","precc           ", &
        "precl           ","precn           ","co2prog         ","co2diag         ", &
-       ! add precsf
+                                ! add precsf
        "swup            ","prec            ","tarcf           ","precsf          ", &
-       ! add anomaly forcing streams
+                                ! add anomaly forcing streams
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
-       ! isotopic forcing
+                                ! isotopic forcing
        "rh_18O          ","rh_HDO          ", &
        "precn_16O       ","precn_18O       ","precn_HDO       "  &
        /)
@@ -207,9 +207,9 @@ module datm_comp_mod
 
   save
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   !===============================================================================
   subroutine datm_comp_init(Eclock, x2a, a2x, &
        seq_flds_x2a_fields, seq_flds_a2x_fields, &
@@ -247,7 +247,7 @@ CONTAINS
     integer                , intent(in)    :: phase               ! initialization phase index
     real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
 
-  !--- local variables ---
+    !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
     integer(IN)   :: lsize     ! local size
     integer(IN)   :: kmask       ! field reference
@@ -629,6 +629,7 @@ CONTAINS
     real(R8)      :: tMin              ! minimum temperature
     character(CL) :: calendar          ! calendar type
 
+    character(len=18) :: date_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
@@ -842,6 +843,74 @@ CONTAINS
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
              a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n) + factor * dLWarc
           endif
+
+       enddo   ! lsize
+
+    case('CORE_IAF_JRA')
+       if (firstcall) then
+          if (sprec < 1 .or. sswdn < 1) then
+             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
+             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
+          endif
+          if (trim(datamode) == 'CORE_IAF_JRA' ) then
+             if (starcf < 1 ) then
+                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE_IAF_JRA'
+                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE_IAF_JRA')
+             endif
+          endif
+          if (trim(factorFn) == 'null') then
+             windFactor = 1.0_R8
+             winddFactor = 1.0_R8
+             qsatFactor = 1.0_R8
+          else
+             call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
+                  mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+          endif
+       endif
+       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+       rday = mod((rday - 1.0_R8),365.0_R8)
+       cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
+
+       lsize = mct_avect_lsize(a2x)
+       do n = 1,lsize
+          a2x%rAttr(kz,n) = 10.0_R8
+
+          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
+          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
+
+          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+
+          !--- density computation for JRA55 forcing ---
+          a2x%rAttr(kdens,n) = a2x%rAttr(kpbot,n)/(rdair*a2x%rAttr(ktbot,n) &
+               *(1+0.608* a2x%rAttr(kshum,n)))
+
+          !-------------------------------------------------------------------------
+          ! PRECIPITATION DATA
+          !-------------------------------------------------------------------------
+
+          a2x%rAttr(krc,n) = 0.0_R8                    ! default zero
+          a2x%rAttr(ksc,n) = 0.0_R8
+          if (a2x%rAttr(ktbot,n) < tKFrz ) then        ! assign precip to rain/snow components
+             a2x%rAttr(krl,n) = 0.0_R8
+             a2x%rAttr(ksl,n) = avstrm%rAttr(sprec,n)
+          else
+             a2x%rAttr(krl,n) = avstrm%rAttr(sprec,n)
+             a2x%rAttr(ksl,n) = 0.0_R8
+          endif
+
+          !-------------------------------------------------------------------------
+          ! RADIATION DATA
+          !-------------------------------------------------------------------------
+
+          !--- fabricate required swdn components from net swdn ---
+          a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
+          a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
+          a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
+          a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
+
+          !--- compute net short-wave based on LY08 latitudinally-varying albedo ---
+          avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
+          a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)*(1.0_R8 - avg_alb)
 
        enddo   ! lsize
 
@@ -1076,12 +1145,12 @@ CONTAINS
 
     if (write_restart) then
        call t_startf('datm_restart')
-       write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.r.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-       write(rest_file_strm,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)") &
-            trim(case_name), '.datm'//trim(inst_suffix)//'.rs1.', &
-            yy,'-',mm,'-',dd,'-',currentTOD,'.bin'
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+
+       write(rest_file,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.r.', trim(date_str), '.nc'
+       write(rest_file_strm,"(6a)") &
+            trim(case_name), '.datm',trim(inst_suffix),'.rs1.', trim(date_str), '.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
           open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
