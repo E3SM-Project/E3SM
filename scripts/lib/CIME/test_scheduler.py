@@ -124,7 +124,6 @@ class TestScheduler(object):
                 self._project = self._machobj.get_value("PROJECT")
         else:
             self._project = project
-
             # Needed in case default root depends on PROJECT
             self._machobj.set_value("PROJECT", project)
 

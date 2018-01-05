@@ -629,49 +629,6 @@
     If set to on, this component set/ grid specification is scientifically supported</desc>
   </entry>
 
-  <entry id="CCSM_CCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <values match="last">
-      <!-- estimated cost (used only for development purposes) -->
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A -->
-      <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV -->
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- C -->
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- CECO -->
-      <value compset="_DATM.*_SLND.*_CICE.*_DOCN%SOM_DROF.*_SGLC_SWAV"		> 1</value> <!-- D -->
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- G,H -->
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- GECO -->
-      <value compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-2</value> <!-- I -->
-      <value compset="_DATM.*_CLM.*_SICE_SOCN_MOSART.*_SGLC_SWAV"               >-2</value> <!-- IM -->
-      <value compset="_SATM_DLND.*_SICE_SOCN_SROF_CISM_SWAV"			>-5</value> <!-- TG -->
-      <value compset="_SATM_DLND.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-5</value> <!-- U -->
-      <value compset="_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV"			>-6</value> <!-- U -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>0</value>  <!-- E -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- F -->
-      <value compset="_CAM4.*_CLM.*_DICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- K -->
-      <value compset="_CAM4.*_DLND.*_DICE.*_DOCN.*_SROF_SGLC_SWAV"		>0</value>  <!-- L -->
-      <value compset="_CAM4%TMOZ.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"		>1</value>  <!-- FMOZ -->
-      <value compset="GEOS_CAM4%TBAM.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"	>3</value>  <!-- FSDBAM -->
-      <value compset="_CAM5"							>1</value>
-      <value compset="_CAM[45]%W"						>3</value>
-      <value compset="_CAM[45]%WCSC"						>1</value>
-      <value compset="_CAM5%MOZM"						>3</value>
-      <value compset="_CAM4%MOZS"						>3</value>
-      <value compset="_CAM4%SMA[37]"						>3</value>
-      <value compset="_CAM4%SSOA"						>3</value>
-      <value compset="_CAM4%TMOZ"						>1</value>
-      <value compset="_CAM4.*_BGC%BDRD"						>2</value>
-      <value compset="_CAM4.*_BGC%BPRP"						>2</value>
-      <value compset="CAM.*_CLM.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>2</value> <!-- BDAR -->
-      <value compset="DATM.*_DLND.*_DICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- CDAR -->
-      <value compset="DATM.*_DLND.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- GDAR -->
-    </values>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of compset where B is 1 (DO NOT EDIT)</desc>
-  </entry>
-
   <entry id="GLC_NEC">
     <type>integer</type>
     <valid_values>0,1,3,5,10,36</valid_values>

@@ -59,13 +59,10 @@ class Compilers(GenericXML):
             self.set_compiler(compiler)
 
         if self._version > 1.0:
-            # Run an XPath query to extract the list of flag variable names.
-            ns = {"xs": "http://www.w3.org/2001/XMLSchema"}
-            flag_xpath = ".//xs:group[@name='compilerVars']/xs:choice/xs:element[@type='flagsVar']"
-            flag_elems = ET.parse(schema).getroot().findall(flag_xpath, ns)
-            self.flag_vars = set(elem.get('name') for elem in flag_elems)
-
-
+            schema_db = GenericXML(infile=schema)
+            compiler_vars = schema_db.get_child("{http://www.w3.org/2001/XMLSchema}group", attributes={"name":"compilerVars"})
+            choice  = schema_db.get_child(name="{http://www.w3.org/2001/XMLSchema}choice", root=compiler_vars)
+            self.flag_vars = set(schema_db.get(elem, "name") for elem in schema_db.get_children(root=choice, attributes={"type":"flagsVar"}, no_validate=True))
 
     def get_compiler(self):
         """
@@ -79,7 +76,7 @@ class Compilers(GenericXML):
         """
         expect(self.compiler_nodes is not None, "Compiler not set, use parent get_node?")
         for compiler_node in self.compiler_nodes:
-            result = self.get_optional_node(nodename, attributes, root=compiler_node)
+            result = self.get_optional_child(name=nodename, attributes=attributes, root=compiler_node)
             if result is not None:
                 return result
 
@@ -87,7 +84,7 @@ class Compilers(GenericXML):
 
     def _is_compatible(self, compiler_node, compiler, machine, os_, mpilib):
         for xmlid, value in [ ("COMPILER", compiler), ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
-            if value is not None and xmlid in compiler_node.attrib and value != compiler_node.get(xmlid):
+            if value is not None and self.has(compiler_node, xmlid) and value != self.get(compiler_node, xmlid):
                 return False
 
         return True
@@ -107,7 +104,7 @@ class Compilers(GenericXML):
 
         if self.compiler != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib or self.compiler_nodes is None:
             self.compiler_nodes = []
-            nodes = self.get_nodes("compiler")
+            nodes = self.get_children(name="compiler")
             for node in nodes:
                 if self._is_compatible(node, compiler, machine, os_, mpilib):
                     self.compiler_nodes.append(node)
@@ -130,7 +127,7 @@ class Compilers(GenericXML):
 
         node = self.get_optional_compiler_node(name, attributes=attribute)
         if node is not None:
-            value = node.text
+            value = self.text(node)
 
         if value is None:
             # if all else fails
@@ -153,7 +150,7 @@ class Compilers(GenericXML):
 
             # Do worst matches first
             for compiler_node in reversed(self.compiler_nodes):
-                _add_to_macros(compiler_node, macros)
+                _add_to_macros(self, compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
                                         self.machine, macros_file=macros_file,
                                         output_format=output_format)
@@ -195,12 +192,14 @@ class Compilers(GenericXML):
         value_lists = dict()
         node_list = []
         if xml is None:
-            node_list = self.get_nodes("compiler")
+            node_list = self.get_children(name="compiler")
         else:
-            node_list = ET.parse(xml).findall("compiler")
+            gen_xml = GenericXML()
+            gen_xml.read_fd(xml)
+            node_list = gen_xml.get_children(name="compiler")
 
         for compiler_elem in node_list:
-            block = CompilerBlock(writer, compiler_elem, self._machobj)
+            block = CompilerBlock(writer, compiler_elem, self._machobj, self)
             # If this block matches machine settings, use it.
             if block.matches_machine():
                 block.add_settings_to_lists(self.flag_vars, value_lists)
@@ -237,13 +236,11 @@ class Compilers(GenericXML):
             if big_append_tree is not None:
                 big_append_tree.write_out(writer)
 
-
-
-def _add_to_macros(node, macros):
-    for child in node:
-        name = child.tag
-        attrib = child.attrib
-        value = child.text
+def _add_to_macros(db, node, macros):
+    for child in db.get_children(root=node, no_validate=True):
+        name = db.name(child)
+        attrib = db.attrib(child)
+        value = db.text(child)
 
         if not attrib:
             if name.startswith("ADD_"):
