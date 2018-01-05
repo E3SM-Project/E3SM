@@ -35,6 +35,7 @@ module shr_stream_mod
   use shr_log_mod, only : s_loglev   => shr_log_Level
   use shr_log_mod, only : s_logunit  => shr_log_Unit
   use shr_log_mod, only : OOBMsg => shr_log_OOBMsg
+  use shr_log_mod, only: errMsg => shr_log_errMsg
   use pio, only : file_desc_t
   use perf_mod
 
@@ -159,7 +160,9 @@ module shr_stream_mod
   integer(SHR_KIND_IN),parameter :: initarr_size = 3     ! size of initarr
   integer(SHR_KIND_IN),save :: debug = 0        ! edit/turn-on for debug write statements
   logical             ,save :: doabort = .true. ! flag if abort on error
-
+  character(len=*), parameter :: sourcefile = &
+       __FILE__
+!===============================================================================
   !===============================================================================
 contains
   !===============================================================================
