@@ -435,7 +435,6 @@ contains
 
     !EOP
 
-    integer :: rc
     integer :: k
     character(*),parameter :: subName = "(shr_cal_elapsDaysStrtMonth)"
 
@@ -768,7 +767,7 @@ contains
     !-------------------------------------------------------------------------------
     ! NOTE:
     !-------------------------------------------------------------------------------
-
+    dSec = 0.0_SHR_KIND_R8
     !--- calculate delta-time in seconds ---
     if     (trim(units) == 'days'   ) then
        dSec = delta * SHR_CONST_CDAY
@@ -855,7 +854,7 @@ contains
     !-------------------------------------------------------------------------------
     ! NOTE:
     !-------------------------------------------------------------------------------
-
+    dSec = 0.0_SHR_KIND_R8
     !--- calculate delta-time in seconds ---
     if     (trim(units) == 'days'   ) then
        dSec = delta * SHR_CONST_CDAY

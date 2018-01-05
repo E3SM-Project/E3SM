@@ -153,7 +153,6 @@ contains
     integer(SHR_KIND_IN), intent(in) :: n  ! timer number
 
     !----- local -----
-    real (SHR_KIND_R8) :: elapse      ! elapsed time returned by system counter
 
     !----- i/o formats -----
     character(len=*),parameter :: F00 = "('(shr_timer_stop) ',a,i5)"

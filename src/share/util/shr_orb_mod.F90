@@ -565,7 +565,6 @@ CONTAINS
        eccen3 = eccen2*eccen
 
        ! A series of cases for fvelp, which is in radians.
-
        if (abs(cossum) .le. 1.0E-8_SHR_KIND_R8) then
           if (sinsum .eq. 0.0_SHR_KIND_R8) then
              fvelp = 0.0_SHR_KIND_R8
@@ -576,7 +575,7 @@ CONTAINS
           endif
        else if (cossum .lt. 0.0_SHR_KIND_R8) then
           fvelp = atan(sinsum/cossum) + pi
-       else if (cossum .gt. 0.0_SHR_KIND_R8) then
+       else ! cossum > 1.0e-8
           if (sinsum .lt. 0.0_SHR_KIND_R8) then
              fvelp = atan(sinsum/cossum) + 2.0_SHR_KIND_R8*pi
           else

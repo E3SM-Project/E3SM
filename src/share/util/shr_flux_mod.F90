@@ -24,6 +24,7 @@ module shr_flux_mod
    use shr_sys_mod     ! shared system routines
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
+   use shr_log_mod, only: errMsg => shr_log_errMsg
 
    implicit none
 
@@ -73,7 +74,8 @@ module shr_flux_mod
 ! These control convergence of the iterative flux calculation
    real(r8) :: flux_con_tol = 0.0_R8
    integer(IN) :: flux_con_max_iter = 2
-
+   character(len=*), parameter :: sourcefile = &
+     __FILE__
 !===============================================================================
 contains
 !===============================================================================
@@ -278,7 +280,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    else
       spval = shr_const_spval
    endif
-
+   u10n = spval
+   rh = spval
+   psixh = spval
+   hol=spval
    al2 = log(zref/ztref)
 
    DO n=1,nMax
@@ -355,6 +360,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
            tstar = rh * delt
            qstar = re * delq
         enddo
+        if (iter < 1) then
+           call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
+        end if
         !------------------------------------------------------------
         ! compute the fluxes
         !------------------------------------------------------------
@@ -581,7 +589,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    integer(IN) :: lsecs   ! local seconds elapsed
    integer(IN) :: lonsecs ! incrememnt due to lon offset
    real(R8)    :: vmag    ! surface wind magnitude   (m/s)
-   real(R8)    :: thvbot  ! virtual temperature      (K)
    real(R8)    :: ssq     ! sea surface humidity     (kg/kg)
    real(R8)    :: delt    ! potential T difference   (K)
    real(R8)    :: delq    ! humidity difference      (kg/kg)
@@ -638,7 +645,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: rhocn   !
    real(R8)    :: rcpocn  !
    real(R8)    :: Nreset  ! value for multiplicative reset factor
-   real(R8)    :: resec   ! reset offset value in seconds
    logical     :: lmidnight
    logical     :: ltwopm
    logical     :: ltwoam
@@ -698,9 +704,11 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
       write(s_logunit,F00) "ERROR: flux_diurnal must be true"
       call shr_sys_abort(subName//"flux diurnal must be true")
    endif
-
    spval = shr_const_spval
-
+   rh = spval
+   dviter = spval
+   dtiter = spval
+   dsiter = spval
    al2 = log(zref/ztref)
 
    ! equations 18 and 19
@@ -843,7 +851,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
             Hb = min(Hb , 0.0_R8)
             lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
-                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
+                 shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75_R8)**(-1/3)
             cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )
 
             !--- REGIME ---
@@ -939,7 +947,9 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             qstar = re * delq
 
          ENDDO   ! end iteration loop
-
+         if (iter < 1) then
+            call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
+         end if
          !--- COMPUTE FLUXES TO ATMOSPHERE AND OCEAN ---
          tau = rbot(n) * ustar * ustar
 
