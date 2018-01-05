@@ -58,11 +58,11 @@ module component_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-   logical  :: iamroot_GLOID, iamroot_CPLID         ! GLOID, CPLID masterproc
-   logical  :: iamin_CPLID                          ! true => pe associated with CPLID
-   integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator
-   integer  :: nthreads_GLOID, nthreads_CPLID
-   logical  :: drv_threading
+  logical  :: iamroot_GLOID, iamroot_CPLID         ! GLOID, CPLID masterproc
+  logical  :: iamin_CPLID                          ! true => pe associated with CPLID
+  integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator
+  integer  :: nthreads_GLOID, nthreads_CPLID
+  logical  :: drv_threading
 
   !===============================================================================
 
