@@ -24,6 +24,7 @@ module shr_flux_mod
    use shr_sys_mod     ! shared system routines
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
+   use shr_log_mod, only: errMsg => shr_log_errMsg
 
    implicit none
 
@@ -73,7 +74,8 @@ module shr_flux_mod
 ! These control convergence of the iterative flux calculation
    real(r8) :: flux_con_tol = 0.0_R8
    integer(IN) :: flux_con_max_iter = 2
-
+   character(len=*), parameter :: sourcefile = &
+     __FILE__
 !===============================================================================
 contains
 !===============================================================================
@@ -359,7 +361,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
            qstar = re * delq
         enddo
         if (iter < 1) then
-           call shr_sys_abort('No iterations performed ' //  // errMsg(sourcefile, __LINE__))
+           call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
         end if
         !------------------------------------------------------------
         ! compute the fluxes
@@ -946,7 +948,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
          ENDDO   ! end iteration loop
          if (iter < 1) then
-            call shr_sys_abort('No iterations performed ' //  // errMsg(sourcefile, __LINE__))
+            call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
          end if
          !--- COMPUTE FLUXES TO ATMOSPHERE AND OCEAN ---
          tau = rbot(n) * ustar * ustar
