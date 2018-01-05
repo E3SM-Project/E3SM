@@ -211,7 +211,7 @@ contains
        ! layer thickness
        call get_phi(elem(ie),dphi,phi_i,hvcoord,n0,n0q)
        do k=1,nlev
-          dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
+          dphi(:,:,k)=-(phi_i(:,:,k+1)-phi_i(:,:,k))
        enddo
 
        ! surface pressure
@@ -819,7 +819,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
-    real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! exner nh pressure on intefaces
+    real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! pressure on intefaces
     real (kind=real_kind) :: kappa_star(np,np,nlev)  ! exner nh pressure
 
 
@@ -838,10 +838,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
        call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
-       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
-            elem(ie)%state%phinh_i(:,:,:,t1), &
-            kappa_star,pnh,exner,dpnh_dp_i,pnh_i)
 
+       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
+            elem(ie)%state%phinh_i(:,:,:,t1),kappa_star,pnh,exner,dpnh_dp_i,pnh_i)
        call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)
 
    

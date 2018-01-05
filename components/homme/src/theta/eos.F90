@@ -71,7 +71,7 @@ implicit none
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 
-  integer :: k
+  integer :: i,j,k
 
   ! hydrostatic pressure
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
@@ -104,8 +104,14 @@ implicit none
      rho_R_theta(:,:,k) = theta_dp_cp(:,:,k)*kappa_star(:,:,k)/(phi_i(:,:,k)-phi_i(:,:,k+1)) 
 
      if (minval(rho_R_theta(:,:,k))<0) then
-        print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
-        print *,'phi_i(k+1)-phi(k)',minval(phi_i(:,:,k+1)-phi_i(:,:,k))
+        do i=1,np
+           do j=1,np
+              if ( rho_R_theta(i,j,k)<0 ) then
+                 print *,'i,j,k, p/exner = ',i,j,k,rho_R_theta(i,j,k)
+                 print *,'k,phi_i(k),phi_i(k+1):',k,(phi_i(i,j,k)),(phi_i(i,j,k+1))
+              endif
+           enddo
+        enddo
         call abortmp('error: rho<0')
      endif
     
@@ -201,7 +207,7 @@ implicit none
   enddo
  
   phi_i(:,:,nlevp) = phis(:,:)
-  do k=1,nlev
+  do k=nlev,1,-1
      phi_i(:,:,k) = phi_i(:,:,k+1)+(theta_dp_cp(:,:,k)*kappa*(p(:,:,k)/p0)**(kappa-1))/p0
   enddo
   end subroutine
@@ -252,7 +258,6 @@ implicit none
 
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
- ! phi = -theta* d exner /dp = -theta * exner / p                                                    
      phi_i(:,:,k) = phi_i(:,:,k+1)+ &
        (theta_dp_cp(:,:,k)*kappa_star(:,:,k)*(p(:,:,k)/p0)**(kappa_star(:,:,k)-1))/p0
   enddo
