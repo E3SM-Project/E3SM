@@ -232,7 +232,7 @@ class EnvMachSpecific(EnvBase):
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
-            cmds.append("{} {} {}".format(mod_cmd, action, argument))
+            cmds.append("{} {} {}".format(mod_cmd, action, "" if argument is None else argument))
         return cmds
 
     def _load_module_modules(self, modules_to_load):
@@ -260,7 +260,7 @@ class EnvMachSpecific(EnvBase):
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
-            cmd += " && {} {} {}".format(sh_mod_cmd, action, argument)
+            cmd += " && {} {} {}".format(sh_mod_cmd, action, "" if argument is None else argument)
 
         cmd += " && env"
         output = run_cmd_no_fail(cmd)
