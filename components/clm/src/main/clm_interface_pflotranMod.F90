@@ -871,39 +871,8 @@ contains
     allocate(clm_pf_idata%fr_decomp_c(1:clm_pf_idata%ndecomp_pools,1:clm_pf_idata%ndecomp_pools))
 
     ! -----------------------------------------------------------------
-
-    ! (4) Create PFLOTRAN model
-    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
-
-    call pflotranModelSetupMappingFiles(pflotran_m)
-
-    ! PFLOTRAN ck file (*.ck) NOT works well when coupling with CLM. So it's off and restart PF from CLM.
-    !restart_stamp = ""
-    !call pflotranModelSetupRestart(pflotran_m, restart_stamp)
-    initth_pf2clm = .false.
-    !if (restart_stamp .ne. "") then
-    !   initth_pf2clm = .true.
-    !endif
-
-    select type (simulation => pflotran_m%simulation)
-      class is (simulation_subsurface_type)
-         realization => simulation%realization
-      class default
-         pflotran_m%option%io_buffer = "This version of clm-pflotran only works with subsurface simulations."
-         write(*, '(/A/)') pflotran_m%option%io_buffer
-         call printErrMsg(pflotran_m%option)
-    end select
-
-    if(pflotran_m%option%nsurfflowdof > 0) then
-       pflotran_m%option%io_buffer = "This version of clm-pflotran DOES NOT work with PF Surface simulation."
-       write(*, '(/A/)') pflotran_m%option%io_buffer
-       call printErrMsg(pflotran_m%option)
-    endif
-    pf_surfaceflow = .false.
-
-    !------------------------------------------------
-
     ! Number of cells and Indexing in CLM domain's clumps on current process ('bounds')
+    ! AND, pass those to interface data (must be done before initializing pflotran model)
 
 #ifdef COLUMN_MODE
     ! soil column-wised for mapping.
@@ -969,17 +938,69 @@ contains
     clm_pf_idata%nlclm_2dbot = clm_bot_npts
     clm_pf_idata%ngclm_2dbot = clm_bot_npts
 
-    ! PFLOTRAN: 3-D Subsurface domain (local and ghosted cells)
-    clm_pf_idata%nlpf_sub = realization%patch%grid%nlmax
-    clm_pf_idata%ngpf_sub = realization%patch%grid%ngmax
-
-    ! For CLM/PF: ground surface NOT defined, so need to set the following to zero.
+    ! For CLM/PF: ground surface NOT defined (currently),
+    ! so need to set the following to zero.
     clm_pf_idata%nlclm_srf = 0
     clm_pf_idata%ngclm_srf = 0
+
+    ! -----------------------------------------------------------------
+
+    ! (4) Create PFLOTRAN model
+    call pflotranModelCreate(mpicom, pflotran_inputdir, pflotran_prefix, pflotran_m)
+
+    ! PFLOTRAN ck file (*.ck) NOT works well when coupling with CLM. So it's off and restart PF from CLM.
+    !restart_stamp = ""
+    !call pflotranModelSetupRestart(pflotran_m, restart_stamp)
+    initth_pf2clm = .false.
+    !if (restart_stamp .ne. "") then
+    !   initth_pf2clm = .true.
+    !endif
+
+    select type (simulation => pflotran_m%simulation)
+      class is (simulation_subsurface_type)
+         realization => simulation%realization
+      class default
+         pflotran_m%option%io_buffer = "This version of clm-pflotran only works with subsurface simulations."
+         write(*, '(/A/)') pflotran_m%option%io_buffer
+         call printErrMsg(pflotran_m%option)
+    end select
+
+    if(pflotran_m%option%nsurfflowdof > 0) then
+       pflotran_m%option%io_buffer = "This version of clm-pflotran DOES NOT work with PF Surface simulation."
+       write(*, '(/A/)') pflotran_m%option%io_buffer
+       call printErrMsg(pflotran_m%option)
+    endif
+    pf_surfaceflow = .false.
+
+#ifdef COLUMN_MODE
+    ! if 'column-wised' mapping, vertical-flow/transport only mode IS ON by default
+    if(pflotran_m%option%nflowdof > 0) then
+      pflotran_m%option%flow%only_vertical_flow = PETSC_TRUE
+    endif
+    if(pflotran_m%option%ntrandof > 0) then
+      pflotran_m%option%transport%only_vertical_tran = PETSC_TRUE
+    endif
+
+    ! checking if 'option%mapping_files' turned off by default
+    if(pflotran_m%option%mapping_files) then
+       pflotran_m%option%io_buffer = " COLUMN_MODE coupled clm-pflotran DOES NOT need MAPPING_FILES ON."
+       write(*, '(/A/)') pflotran_m%option%io_buffer
+       call printErrMsg(pflotran_m%option)
+    endif
+#endif
+
+    !------------------------------------------------
+    ! (5) CLM-PFLOTRAN mesh mapping
+
+    call pflotranModelSetupMappingFiles(pflotran_m)
+
+    ! For CLM/PF: ground surface NOT defined (currently),
+    ! so need to set the following to zero.
     clm_pf_idata%nlpf_srf  = 0
     clm_pf_idata%ngpf_srf  = 0
 
     ! Initialize maps for transferring data between CLM and PFLOTRAN.
+    ! NOTE that all PF cell numbers will be set after maps initializing.
     if(associated(pflotran_m%map_clm_sub_to_pf_sub) .and. &
        pflotran_m%map_clm_sub_to_pf_sub%id == CLM_3DSUB_TO_PF_3DSUB) then
        call pflotranModelInitMapping(pflotran_m, clm_all_cell_ids_nindex, &
@@ -1017,30 +1038,19 @@ contains
     deallocate(clm_top_cell_ids_nindex)
     deallocate(clm_bot_cell_ids_nindex)
 
-#ifdef COLUMN_MODE
-    ! if 'column-wised' mapping, vertical-flow/transport only mode IS ON by default
-    if(pflotran_m%option%nflowdof > 0) then
-      pflotran_m%option%flow%only_vertical_flow = PETSC_TRUE
-    endif
-    if(pflotran_m%option%ntrandof > 0) then
-      pflotran_m%option%transport%only_vertical_tran = PETSC_TRUE
-    endif
+    !------------------------------------------------
 
-    ! checking if 'option%mapping_files' turned off by default
-    if(pflotran_m%option%mapping_files) then
-       pflotran_m%option%io_buffer = " COLUMN_MODE coupled clm-pflotran DOES NOT need MAPPING_FILES ON."
-       write(*, '(/A/)') pflotran_m%option%io_buffer
-       call printErrMsg(pflotran_m%option)
-    endif
-#endif
+    ! (6) Allocate vectors for data transfer between CLM and PFLOTRAN, after knowing data sizes.
 
-
-    ! Allocate vectors for data transfer between CLM and PFLOTRAN.
     ! call CLMPFLOTRANIDataCreateVec(MPI_COMM_WORLD)
     !  (a NOTE here - f.m.yuan-2017/09/14:
     ! '       MPI_COMM_WORLD' used above is OK with mpich, but causing MPI_FINALIZE error with openmpi.
     !         Don't know why and what impacts on simulation)
     call CLMPFLOTRANIDataCreateVec(mpicom)
+
+
+    !------------------------------------------------
+    ! additional settings for model controlling
 
     ! if BGC is on
     if(pflotran_m%option%ntrandof > 0) then
@@ -1072,8 +1082,8 @@ contains
       pf_cmode = .true.        ! initialized as '.false.' in clm initialization
     endif
 
-
-    ! Initialize PFLOTRAN states
+    !------------------------------------------------
+    ! (7) Initialize PFLOTRAN states
     call pflotranModelStepperRunInit(pflotran_m)
 
     end associate
