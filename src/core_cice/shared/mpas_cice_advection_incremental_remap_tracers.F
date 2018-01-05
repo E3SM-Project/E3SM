@@ -1135,7 +1135,7 @@ contains
          config_use_halo_exch, &
          config_aggregate_halo_exch
 
-    call cice_load_balance_timers(domain, "before")
+    call cice_load_balance_timers(domain, "advection before")
 
     call MPAS_pool_get_config(domain % configs, "config_use_halo_exch", config_use_halo_exch)
     if (config_use_halo_exch) then
@@ -1153,7 +1153,7 @@ contains
 
     endif ! config_use_halo_exch
 
-    call cice_load_balance_timers(domain, "after")
+    call cice_load_balance_timers(domain, "advection after")
 
   end subroutine cice_update_tracer_halo
 
