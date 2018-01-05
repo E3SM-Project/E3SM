@@ -7,6 +7,8 @@
 template to create a case short term archiving script. This should only ever be called
 by case.submit when on batch system. This script only exists as a way of providing
 batch directives. Use case.submit from the command line to run your case.
+
+DO NOT RUN THIS SCRIPT MANUALLY
 """
 
 import sys, os, time

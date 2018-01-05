@@ -1532,3 +1532,6 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
     arg_logger.info(output)
     arg_logger.info(errput)
     expect(stat == 0, filter_unicode(errput))
+
+def get_batch_script_for_job(job):
+    return "." + job

@@ -1,6 +1,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
-from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, get_timestamp, run_sub_or_cmd
+from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status, run_sub_or_cmd
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -257,17 +257,6 @@ def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 def case_run(case, skip_pnl=False):
 ###############################################################################
     # Set up the run, run the model, do the postrun steps
-    run_with_submit = case.get_value("RUN_WITH_SUBMIT")
-    expect(run_with_submit,
-           "You are not calling the run script via the submit script. "
-           "As a result, short-term archiving will not be called automatically."
-           "Please submit your run using the submit script like so:"
-           " ./case.submit Time: {}".format(get_timestamp()))
-
-    # Forces user to use case.submit if they re-submit
-    if case.get_value("TESTCASE") is None:
-        case.set_value("RUN_WITH_SUBMIT", False)
-
     prerun_script = case.get_value("PRERUN_SCRIPT")
     postrun_script = case.get_value("POSTRUN_SCRIPT")
 
