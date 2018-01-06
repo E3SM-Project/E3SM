@@ -1296,7 +1296,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
    type(mct_aVect), pointer :: o2x_o        ! model to drv bundle
    type(mct_aVect), pointer :: x2o_o        ! drv to model bundle
    type(mct_ggrid), pointer :: dom_o
-   integer(in)              :: k,n,if,ic,ip ! generic index
+    integer(in)              :: k,n,nf,ic,ip ! generic index
    integer(in)              :: kArea        ! index of area field in aVect
    integer(in)              :: kLat         ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki  ! fraction indices
@@ -1349,11 +1349,11 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
       do n=1,lSize
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
-         if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
+             nf = f_area; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + do
          if (trim(cime_model) == 'acme') then
-            if = f_wfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
+                nf = f_wfrz; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
          else if (trim(cime_model) == 'cesm') then
-            if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
+                nf = f_hfrz; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
          end if
       end do
       if (trim(cime_model) == 'acme') then
@@ -1383,20 +1383,20 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
       ic = c_ocn_or
       do n=1,lSize
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
-         if = f_hlwup; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do*xao_o%rAttr(index_xao_Faox_lwup,n)
-         if = f_hlatv; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do*xao_o%rAttr(index_xao_Faox_lat,n)
-         if = f_hsen ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do*xao_o%rAttr(index_xao_Faox_sen,n)
-         if = f_wevap; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do*xao_o%rAttr(index_xao_Faox_evap,n)
+                nf = f_hlwup; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + do*xao_o%rAttr(index_xao_Faox_lwup,n)
+                nf = f_hlatv; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + do*xao_o%rAttr(index_xao_Faox_lat,n)
+                nf = f_hsen ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + do*xao_o%rAttr(index_xao_Faox_sen,n)
+                nf = f_wevap; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + do*xao_o%rAttr(index_xao_Faox_evap,n)
 
          if ( flds_wiso_ocn )then
-            if = f_wevap_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                   nf = f_wevap_16O;
+                   budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         do*xao_o%rAttr(index_xao_Faox_evap_16O,n)
-            if = f_wevap_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                   nf = f_wevap_18O;
+                   budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         do*xao_o%rAttr(index_xao_Faox_evap_18O,n)
-            if = f_wevap_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                   nf = f_wevap_HDO;
+                   budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         do*xao_o%rAttr(index_xao_Faox_evap_HDO,n)
          end if
 
@@ -1447,10 +1447,10 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
          do n=1,lSize
             do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
             di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
-            if = f_hlwup; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_lwup,n)
-            if = f_hlatv; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_lat,n)
-            if = f_hsen ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_sen,n)
-            if = f_wevap; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_evap,n)
+                      nf = f_hlwup; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_lwup,n)
+                      nf = f_hlatv; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_lat,n)
+                      nf = f_hsen ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_sen,n)
+                      nf = f_wevap; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_evap,n)
          end do
       endif
 
@@ -1459,59 +1459,59 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
       do n=1,lSize
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
-         if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
-         if = f_wmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
-         if = f_hmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
-         if = f_wsalt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_salt,n) * SFLXtoWFLX
-         if = f_hswnet; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_swnet,n)
-         if = f_hlwdn ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_lwdn,n)
-         if = f_wrain ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain,n)
-         if = f_wsnow ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow,n)
-         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl,n)
-         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi,n)
+                      nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + do
+                      nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
+                      nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
+                      nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Fioi_salt,n) * SFLXtoWFLX
+                      nf = f_hswnet; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_swnet,n)
+                      nf = f_hlwdn ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_lwdn,n)
+                      nf = f_wrain ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain,n)
+                      nf = f_wsnow ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow,n)
+                      nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl,n)
+                      nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi,n)
 
          if ( flds_wiso_ocn )then
-            if = f_wmelt_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wmelt_16O;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Fioi_meltw_16O,n)
-            if = f_wmelt_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wmelt_18O;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Fioi_meltw_18O,n)
-            if = f_wmelt_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wmelt_HDO;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Fioi_meltw_HDO,n)
 
-            if = f_wrain_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wrain_16O;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                      (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain_16O,n)
-            if = f_wrain_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wrain_18O;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain_18O,n)
-            if = f_wrain_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wrain_HDO;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Faxa_rain_HDO,n)
 
-            if = f_wsnow_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wsnow_16O;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow_16O,n)
-            if = f_wsnow_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wsnow_18O;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow_18O,n)
-            if = f_wsnow_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                         nf = f_wsnow_HDO;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         (do+di)*x2o_o%rAttr(index_x2o_Faxa_snow_HDO,n)
-            if = f_wroff_16O ;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_16O,n)
-            if = f_wioff_16O ;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_16O,n)
-            if = f_wroff_18O ;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_18O,n)
-            if = f_wioff_18O ;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_18O,n)
-            if = f_wroff_HDO ;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_HDO,n)
-            if = f_wioff_HDO ;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_HDO,n)
+                         nf = f_wroff_16O ;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_16O,n)
+                         nf = f_wioff_16O ;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_16O,n)
+                         nf = f_wroff_18O ;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_18O,n)
+                         nf = f_wioff_18O ;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_18O,n)
+                         nf = f_wroff_HDO ;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofl_HDO,n)
+                         nf = f_wioff_HDO ;
+                         budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*x2o_o%rAttr(index_x2o_Foxx_rofi_HDO,n)
          end if
       end do
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
@@ -1551,7 +1551,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
    type(mct_aVect), pointer :: i2x_i        ! model to drv bundle
    type(mct_aVect), pointer :: x2i_i        ! drv to model bundle
    type(mct_ggrid), pointer :: dom_i
-   integer(in)              :: k,n,ic,if,ip ! generic index
+                integer(in)              :: k,n,ic,nf,ip ! generic index
    integer(in)              :: kArea        ! index of area field in aVect
    integer(in)              :: kLat         ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki  ! fraction indices
@@ -1617,36 +1617,36 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          endif
          do =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ko,n)
          di =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ki,n)
-         if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di
-         if = f_hmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_melth,n)
-         if = f_wmelt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_meltw,n)
-         if = f_wsalt ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_salt,n) * SFLXtoWFLX
-         if = f_hswnet; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_swnet,n) &
+                         nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di
+                         nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_melth,n)
+                         nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_meltw,n)
+                         nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - di*i2x_i%rAttr(index_i2x_Fioi_salt,n) * SFLXtoWFLX
+                         nf = f_hswnet; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_swnet,n) &
                                                                     - di*i2x_i%rAttr(index_i2x_Fioi_swpen,n)
-         if = f_hlwup ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_lwup,n)
-         if = f_hlatv ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_lat,n)
-         if = f_hsen  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_sen,n)
-         if = f_wevap ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_evap,n)
+                         nf = f_hlwup ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_lwup,n)
+                         nf = f_hlatv ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_lat,n)
+                         nf = f_hsen  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_sen,n)
+                         nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*i2x_i%rAttr(index_i2x_Faii_evap,n)
 
          if ( flds_wiso_ice )then
-            if = f_wmelt_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
+                            nf = f_wmelt_16O;
+                            budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
                                         di*i2x_i%rAttr(index_i2x_Fioi_meltw_16O,n)
-            if = f_wmelt_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
+                            nf = f_wmelt_18O;
+                            budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
                                         di*i2x_i%rAttr(index_i2x_Fioi_meltw_18O,n)
-            if = f_wmelt_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
+                            nf = f_wmelt_HDO;
+                            budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
                                         di*i2x_i%rAttr(index_i2x_Fioi_meltw_HDO,n)
 
-            if = f_wevap_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                            nf = f_wevap_16O;
+                            budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*i2x_i%rAttr(index_i2x_Faii_evap_16O,n)
-            if = f_wevap_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                            nf = f_wevap_18O;
+                            budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*i2x_i%rAttr(index_i2x_Faii_evap_18O,n)
-            if = f_wevap_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                            nf = f_wevap_HDO;
+                            budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*i2x_i%rAttr(index_i2x_Faii_evap_HDO,n)
          end if
       end do
@@ -1685,36 +1685,36 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
          endif
          do =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ko,n)
          di =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ki,n)
-         if = f_area ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di
-         if = f_hlwdn; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_lwdn,n)
-         if = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_rain,n)
-         if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
-         if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
+                            nf = f_area ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di
+                            nf = f_hlwdn; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_lwdn,n)
+                            nf = f_wrain; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_rain,n)
+                            nf = f_wsnow; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
+                            nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
          if (trim(cime_model) == 'acme') then
-            if = f_wfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
+                               nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
          else if (trim(cime_model) == 'cesm') then
-            if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
+                               nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
          end if
          if ( flds_wiso_ice_x2i )then
-            if  = f_wrain_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                               nf  = f_wrain_16O;
+                               budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*x2i_i%rAttr(index_x2i_Faxa_rain_16O,n)
-            if  = f_wrain_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                               nf  = f_wrain_18O;
+                               budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*x2i_i%rAttr(index_x2i_Faxa_rain_18O,n)
-            if  = f_wrain_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                               nf  = f_wrain_HDO;
+                               budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*x2i_i%rAttr(index_x2i_Faxa_rain_HDO,n)
 
-            if  = f_wsnow_16O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                               nf  = f_wsnow_16O;
+                               budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*x2i_i%rAttr(index_x2i_Faxa_snow_16O,n)
-            if  = f_wsnow_18O;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                               nf  = f_wsnow_18O;
+                               budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*x2i_i%rAttr(index_x2i_Faxa_snow_18O,n)
-            if  = f_wsnow_HDO;
-            budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
+                               nf  = f_wsnow_HDO;
+                               budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                                         di*x2i_i%rAttr(index_x2i_Faxa_snow_HDO,n)
          end if
       end do
@@ -1773,7 +1773,7 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
 !EOP
 
    !--- local ---
-   integer(in)      :: ic,if,ip,is ! data array indicies
+                      integer(in)      :: ic,nf,ip,is ! data array indicies
    integer(in)      :: ica,icl,icn,ics,ico
    integer(in)      :: icar,icxs,icxr,icas
    integer(in)      :: n           ! loop counter
@@ -1878,21 +1878,21 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' AREA BUDGET (m2/m2): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
-      do if = f_a, f_a_end
-         write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
-                   dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
-                   dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
+                                  do nf = f_a, f_a_end
+                                     write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
+                                          dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
+                                          dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
+                                          dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
       enddo
 
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' HEAT BUDGET (W/m2): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
-      do if = f_h, f_h_end
-         write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
-                   dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
-                                      dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
+                                  do nf = f_h, f_h_end
+                                     write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
+                                          dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
+                                          dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
+                                          dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
       enddo
       write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_h:f_h_end,ica,ip)),sum(dataGpr(f_h:f_h_end,icl,ip)), &
          sum(dataGpr(f_h:f_h_end,icn,ip)),sum(dataGpr(f_h:f_h_end,ics,ip)),sum(dataGpr(f_h:f_h_end,ico,ip)), &
@@ -1902,11 +1902,11 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
-      do if = f_w, f_w_end
-         write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
-                   dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
-                                      dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
+                                  do nf = f_w, f_w_end
+                                     write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
+                                          dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
+                                          dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
+                                          dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
       enddo
       write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_w:f_w_end,ica,ip)),sum(dataGpr(f_w:f_w_end,icl,ip)), &
          sum(dataGpr(f_w:f_w_end,icn,ip)),sum(dataGpr(f_w:f_w_end,ics,ip)),sum(dataGpr(f_w:f_w_end,ico,ip)), &
@@ -1919,11 +1919,11 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
             write(logunit,FAH) subname,trim(str)//' '//isoname(is)//' WATER BUDGET (kg/m2s*1e6): period = ', &
                                trim(pname(ip)),': date = ',cdate,sec
             write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
-            do if = iso0(is), isof(is)
-               write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
-                            dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
-                                               dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                            dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
+                                        do nf = iso0(is), isof(is)
+                                           write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
+                                                dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
+                                                dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
+                                                dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
             enddo
             write(logunit,FA1)    '   *SUM*', sum(dataGpr(iso0(is):isof(is),ica,ip)),sum(dataGpr(iso0(is):isof(is),icl,ip)), &
                sum(dataGpr(iso0(is):isof(is),icn,ip)),sum(dataGpr(iso0(is):isof(is),ics,ip)), &
@@ -1974,11 +1974,11 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' HEAT BUDGET (W/m2): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
-      do if = f_h, f_h_end
-         write(logunit,FA1)    fname(if),-dataGpr(if,icar,ip),dataGpr(if,icxs,ip), &
-                                          dataGpr(if,icxr,ip),-dataGpr(if,icas,ip), &
-                                         -dataGpr(if,icar,ip)+dataGpr(if,icxs,ip)+ &
-                                          dataGpr(if,icxr,ip)-dataGpr(if,icas,ip)
+                                  do nf = f_h, f_h_end
+                                     write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
+                                          dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
+                                          -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
+                                          dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
       enddo
       write(logunit,FA1)    '   *SUM*',-sum(dataGpr(f_h:f_h_end,icar,ip)),sum(dataGpr(f_h:f_h_end,icxs,ip)), &
                                        sum(dataGpr(f_h:f_h_end,icxr,ip)),-sum(dataGpr(f_h:f_h_end,icas,ip)), &
@@ -1988,11 +1988,11 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
-      do if = f_w, f_w_end
-         write(logunit,FA1)    fname(if),-dataGpr(if,icar,ip),dataGpr(if,icxs,ip), &
-                                         dataGpr(if,icxr,ip),-dataGpr(if,icas,ip), &
-                                         -dataGpr(if,icar,ip)+dataGpr(if,icxs,ip)+ &
-                                         dataGpr(if,icxr,ip)-dataGpr(if,icas,ip)
+                                  do nf = f_w, f_w_end
+                                     write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
+                                          dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
+                                          -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
+                                          dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
       enddo
       write(logunit,FA1)    '   *SUM*',-sum(dataGpr(f_w:f_w_end,icar,ip)),sum(dataGpr(f_w:f_w_end,icxs,ip)), &
                                        sum(dataGpr(f_w:f_w_end,icxr,ip)),-sum(dataGpr(f_w:f_w_end,icas,ip)), &
@@ -2005,11 +2005,11 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
             write(logunit,FAH) subname,trim(str)//isoname(is)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)), &
                                ': date = ',cdate,sec
             write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
-            do if = iso0(is), isof(is)
-               write(logunit,FA1)    fname(if),-dataGpr(if,icar,ip),dataGpr(if,icxs,ip), &
-                                               dataGpr(if,icxr,ip),-dataGpr(if,icas,ip), &
-                                               -dataGpr(if,icar,ip)+dataGpr(if,icxs,ip)+ &
-                                               dataGpr(if,icxr,ip)-dataGpr(if,icas,ip)
+                                        do nf = iso0(is), isof(is)
+                                           write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
+                                                dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
+                                                -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
+                                                dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
             enddo
             write(logunit,FA1)    '   *SUM*',-sum(dataGpr(iso0(is):isof(is),icar,ip)),sum(dataGpr(iso0(is):isof(is),icxs,ip)), &
                                              sum(dataGpr(iso0(is):isof(is),icxr,ip)),-sum(dataGpr(iso0(is):isof(is),icas,ip)), &
@@ -2019,11 +2019,11 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
             write(logunit,FAH) subname,trim(str)//isoname(is)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),&
                                ': date = ',cdate,sec
             write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
-            do if = iso0(is), isof(is)
-               write(logunit,FA1)    fname(if),-dataGpr(if,icar,ip),dataGpr(if,icxs,ip), &
-                                               dataGpr(if,icxr,ip),-dataGpr(if,icas,ip), &
-                                               -dataGpr(if,icar,ip)+dataGpr(if,icxs,ip)+ &
-                                               dataGpr(if,icxr,ip)-dataGpr(if,icas,ip)
+                                        do nf = iso0(is), isof(is)
+                                           write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
+                                                dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
+                                                -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
+                                                dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
             enddo
             write(logunit,FA1)    '   *SUM*',-sum(dataGpr(iso0(is):isof(is),icar,ip)),sum(dataGpr(iso0(is):isof(is),icxs,ip)), &
                                              sum(dataGpr(iso0(is):isof(is),icxr,ip)),-sum(dataGpr(iso0(is):isof(is),icas,ip)), &
@@ -2043,37 +2043,37 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,*) ' '
       write(logunit,FAH) subname,'NET AREA BUDGET (m2/m2): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0) '     atm','     lnd','     ocn','  ice nh','  ice sh',' *SUM*  '
-      do if = f_a,f_a_end
-         write(logunit,FA1)    fname(if),dataGpr(if,c_atm_ar,ip), &
-                                         dataGpr(if,c_lnd_lr,ip), &
-                                         dataGpr(if,c_ocn_or,ip), &
-                                         dataGpr(if,c_inh_ir,ip), &
-                                         dataGpr(if,c_ish_ir,ip), &
-                                         dataGpr(if,c_atm_ar,ip)+ &
-                                         dataGpr(if,c_lnd_lr,ip)+ &
-                                         dataGpr(if,c_ocn_or,ip)+ &
-                                         dataGpr(if,c_inh_ir,ip)+ &
-                                         dataGpr(if,c_ish_ir,ip)
+                               do nf = f_a,f_a_end
+                                  write(logunit,FA1)    fname(nf),dataGpr(nf,c_atm_ar,ip), &
+                                       dataGpr(nf,c_lnd_lr,ip), &
+                                       dataGpr(nf,c_ocn_or,ip), &
+                                       dataGpr(nf,c_inh_ir,ip), &
+                                       dataGpr(nf,c_ish_ir,ip), &
+                                       dataGpr(nf,c_atm_ar,ip)+ &
+                                       dataGpr(nf,c_lnd_lr,ip)+ &
+                                       dataGpr(nf,c_ocn_or,ip)+ &
+                                       dataGpr(nf,c_inh_ir,ip)+ &
+                                       dataGpr(nf,c_ish_ir,ip)
       enddo
 
       write(logunit,*) ' '
       write(logunit,FAH) subname,'NET HEAT BUDGET (W/m2): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
-      do if = f_h, f_h_end
-         write(logunit,FA1r)   fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
-                                         dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip), &
-                                         dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip), &
-                                         dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip), &
-                                         dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip), &
-                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip), &
-                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip), &
-                                         dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip)+ &
-                                         dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip)+ &
-                                         dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip)+ &
-                                         dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip)+ &
-                                         dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip)+ &
-                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)+ &
-                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip)
+                               do nf = f_h, f_h_end
+                                  write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
+                                       dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip), &
+                                       dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip), &
+                                       dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip), &
+                                       dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip), &
+                                       dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip), &
+                                       dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip), &
+                                       dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip)+ &
+                                       dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip)+ &
+                                       dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip)+ &
+                                       dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip)+ &
+                                       dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip)+ &
+                                       dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
+                                       dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
       enddo
       write(logunit,FA1r)'   *SUM*',sum(dataGpr(f_h:f_h_end,c_atm_ar,ip))+sum(dataGpr(f_h:f_h_end,c_atm_as,ip)), &
                                     sum(dataGpr(f_h:f_h_end,c_lnd_lr,ip))+sum(dataGpr(f_h:f_h_end,c_lnd_ls,ip)), &
@@ -2093,21 +2093,21 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       write(logunit,*) ' '
       write(logunit,FAH) subname,'NET WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
       write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
-      do if = f_w, f_w_end
-         write(logunit,FA1r)   fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
-                                         dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip), &
-                                         dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip), &
-                                         dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip), &
-                                         dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip), &
-                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip), &
-                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip), &
-                                         dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip)+ &
-                                         dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip)+ &
-                                         dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip)+ &
-                                         dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip)+ &
-                                         dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip)+ &
-                                         dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)+ &
-                                         dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip)
+                               do nf = f_w, f_w_end
+                                  write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
+                                       dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip), &
+                                       dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip), &
+                                       dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip), &
+                                       dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip), &
+                                       dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip), &
+                                       dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip), &
+                                       dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip)+ &
+                                       dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip)+ &
+                                       dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip)+ &
+                                       dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip)+ &
+                                       dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip)+ &
+                                       dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
+                                       dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
       enddo
       write(logunit,FA1r)'   *SUM*',sum(dataGpr(f_w:f_w_end,c_atm_ar,ip))+sum(dataGpr(f_w:f_w_end,c_atm_as,ip)), &
                                     sum(dataGpr(f_w:f_w_end,c_lnd_lr,ip))+sum(dataGpr(f_w:f_w_end,c_lnd_ls,ip)), &
@@ -2131,21 +2131,21 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
             write(logunit,FAH) subname,'NET '//isoname(is)//' WATER BUDGET (kg/m2s*1e6): period = ', &
                                trim(pname(ip)),': date = ',cdate,sec
             write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
-            do if = iso0(is), isof(is)
-               write(logunit,FA1r)   fname(if),dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip), &
-                                               dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip), &
-                                               dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip), &
-                                               dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip), &
-                                               dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip), &
-                                               dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip), &
-                                               dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip), &
-                                               dataGpr(if,c_atm_ar,ip)+dataGpr(if,c_atm_as,ip)+ &
-                                               dataGpr(if,c_lnd_lr,ip)+dataGpr(if,c_lnd_ls,ip)+ &
-                                               dataGpr(if,c_rof_rr,ip)+dataGpr(if,c_rof_rs,ip)+ &
-                                               dataGpr(if,c_ocn_or,ip)+dataGpr(if,c_ocn_os,ip)+ &
-                                               dataGpr(if,c_inh_ir,ip)+dataGpr(if,c_inh_is,ip)+ &
-                                               dataGpr(if,c_ish_ir,ip)+dataGpr(if,c_ish_is,ip)+ &
-                                               dataGpr(if,c_glc_gr,ip)+dataGpr(if,c_glc_gs,ip)
+                                     do nf = iso0(is), isof(is)
+                                        write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
+                                             dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip), &
+                                             dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip), &
+                                             dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip), &
+                                             dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip), &
+                                             dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip), &
+                                             dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip), &
+                                             dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip)+ &
+                                             dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip)+ &
+                                             dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip)+ &
+                                             dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip)+ &
+                                             dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip)+ &
+                                             dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
+                                             dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
             enddo
             write(logunit,FA1r)'   *SUM*',sum(dataGpr(iso0(is):isof(is),c_atm_ar,ip))+sum(dataGpr(iso0(is):isof(is),c_atm_as,ip)),&
                                           sum(dataGpr(iso0(is):isof(is),c_lnd_lr,ip))+sum(dataGpr(iso0(is):isof(is),c_lnd_ls,ip)),&
