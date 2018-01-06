@@ -115,7 +115,7 @@ contains
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
         ttmp(:,:,:,3)=elem(ie)%state%theta_dp_cp(:,:,:,np1)   ! - theta_ref*dp_star*Cp
-        ttmp(:,:,:,4)=elem(ie)%state%phinh_i(:,:,1:nlev,np1)*dp_star
+        ttmp(:,:,:,4)=(elem(ie)%state%phinh_i(:,:,1:nlev,np1)-phi_ref(:,:,1:nlev))*dp_star
         ttmp(:,:,:,5)=elem(ie)%state%w_i(:,:,1:nlev,np1)*dp_star
     
         call t_startf('vertical_remap1_1')
