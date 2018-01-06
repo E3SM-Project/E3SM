@@ -1051,7 +1051,7 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
    integer(in)              :: kLat              ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki,kr    ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_o,dr    ! area of a grid cell
+    real(r8)                 :: ca_o,ca_r    ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_rof = .false.
 
@@ -1095,37 +1095,37 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
    kArea = mct_aVect_indexRA(dom_r%data,afldname)
    lSize = mct_avect_lSize(x2r_r)
    do n=1,lSize
-      dr =  dom_r%data%rAttr(kArea,n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofsur,n) &
-                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
-                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
-                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
+       ca_r =  dom_r%data%rAttr(kArea,n)
+       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofsur,n) &
+            + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
+            + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
+            + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
       if (index_x2r_Flrl_irrig /= 0) then
-          nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_irrig,n)
+          nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*x2r_r%rAttr(index_x2r_Flrl_irrig,n)
       end if
 
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofi,n)
+       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofi,n)
 
       if ( flds_wiso_rof )then
           nf = f_wroff_16O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*x2r_r%rAttr(index_x2r_Flrl_rofl_16O,n)
+               ca_r*x2r_r%rAttr(index_x2r_Flrl_rofl_16O,n)
           nf = f_wroff_18O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*x2r_r%rAttr(index_x2r_Flrl_rofl_18O,n)
+               ca_r*x2r_r%rAttr(index_x2r_Flrl_rofl_18O,n)
           nf = f_wroff_HDO;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,n)
+               ca_r*x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,n)
 
           nf = f_wioff_16O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*x2r_r%rAttr(index_x2r_Flrl_rofi_16O,n)
+               ca_r*x2r_r%rAttr(index_x2r_Flrl_rofi_16O,n)
           nf = f_wioff_18O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*x2r_r%rAttr(index_x2r_Flrl_rofi_18O,n)
+               ca_r*x2r_r%rAttr(index_x2r_Flrl_rofi_18O,n)
           nf = f_wioff_HDO;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,n)
+               ca_r*x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,n)
       end if
    end do
    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
@@ -1154,42 +1154,42 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
    kArea = mct_aVect_indexRA(dom_r%data,afldname)
    lSize = mct_avect_lSize(r2x_r)
    do n=1,lSize
-      dr =  dom_r%data%rAttr(kArea,n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - dr*r2x_r%rAttr(index_r2x_Forr_rofl,n) &
-                                                                + dr*r2x_r%rAttr(index_r2x_Flrr_flood,n)
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - dr*r2x_r%rAttr(index_r2x_Forr_rofi,n) &
-                                                                - dr*r2x_r%rAttr(index_r2x_Firr_rofi,n)
+       ca_r =  dom_r%data%rAttr(kArea,n)
+       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_r*r2x_r%rAttr(index_r2x_Forr_rofl,n) &
+            + ca_r*r2x_r%rAttr(index_r2x_Flrr_flood,n)
+       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_r*r2x_r%rAttr(index_r2x_Forr_rofi,n) &
+            - ca_r*r2x_r%rAttr(index_r2x_Firr_rofi,n)
 
       if ( flds_wiso_rof )then
           nf = f_wroff_16O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-                                     dr*r2x_r%rAttr(index_r2x_Forr_rofl_16O,n)
+               ca_r*r2x_r%rAttr(index_r2x_Forr_rofl_16O,n)
           nf = f_wroff_18O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-                                     dr*r2x_r%rAttr(index_r2x_Forr_rofl_18O,n)
+               ca_r*r2x_r%rAttr(index_r2x_Forr_rofl_18O,n)
           nf = f_wroff_HDO;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-                                     dr*r2x_r%rAttr(index_r2x_Forr_rofl_HDO,n)
+               ca_r*r2x_r%rAttr(index_r2x_Forr_rofl_HDO,n)
 
           nf = f_wioff_16O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-                                     dr*r2x_r%rAttr(index_r2x_Forr_rofi_16O,n)
+               ca_r*r2x_r%rAttr(index_r2x_Forr_rofi_16O,n)
           nf = f_wioff_18O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-                                     dr*r2x_r%rAttr(index_r2x_Forr_rofi_18O,n)
+               ca_r*r2x_r%rAttr(index_r2x_Forr_rofi_18O,n)
           nf = f_wioff_HDO;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-                                     dr*r2x_r%rAttr(index_r2x_Forr_rofi_HDO,n)
+               ca_r*r2x_r%rAttr(index_r2x_Forr_rofi_HDO,n)
 
           nf = f_wroff_16O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*r2x_r%rAttr(index_r2x_Flrr_flood_16O,n)
+               ca_r*r2x_r%rAttr(index_r2x_Flrr_flood_16O,n)
           nf = f_wroff_18O;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*r2x_r%rAttr(index_r2x_Flrr_flood_18O,n)
+               ca_r*r2x_r%rAttr(index_r2x_Flrr_flood_18O,n)
           nf = f_wroff_HDO;
           budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-                                     dr*r2x_r%rAttr(index_r2x_Flrr_flood_HDO,n)
+               ca_r*r2x_r%rAttr(index_r2x_Flrr_flood_HDO,n)
       end if
    end do
    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
@@ -1228,7 +1228,7 @@ subroutine seq_diag_glc_mct( glc, frac_g, infodata)
    integer(in)              :: kLat              ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki,kr,kg ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_o,dr,dg ! area of a grid cell
+    real(r8)                 :: ca_o,dg ! area of a grid cell
    logical,save             :: first_time = .true.
 
    !----- formats -----
