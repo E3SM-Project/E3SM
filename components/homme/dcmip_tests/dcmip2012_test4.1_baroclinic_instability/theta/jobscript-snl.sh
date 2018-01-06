@@ -1,12 +1,16 @@
 #!/bin/tcsh 
 #
+#SBATCH -p ec
 #SBATCH --job-name dcmip4
 #SBATCH --account=FY150001
 #SBATCH -N 12
 #SBATCH --time=1:30:00
 #XXSBATCH -N 20
 #XXSBATCH --time=5:00:00
-#SBATCH -p ec
+#PBS -q acme
+#PBS -l walltime=1:30:00                                                                                           
+#PBS -l nodes=12    
+
 #
 #  nonhydro x1:  54 nodes, 7.4h        KG5 dt=.5
 #           x1:  20 nodes, 2.5h        ars232  dt=120
@@ -18,6 +22,10 @@
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
+if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+  set NCPU = $PBS_NNODES
+  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
+endif
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
     @ NCPU *= 16
