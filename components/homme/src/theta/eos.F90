@@ -127,7 +127,7 @@ implicit none
    pnh_i(:,:,1) = pi_i(:,:,1)   ! hydrostatic ptop    
    ! at surface we know pi, so only extrapolate (pnh-pi):
    pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
-
+   !pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (pnh(:,:,nlev)-pi(:,:,nlev))
 
    ! compute d(pnh)/d(pi) at interfaces
    ! use one-sided differences at boundaries
