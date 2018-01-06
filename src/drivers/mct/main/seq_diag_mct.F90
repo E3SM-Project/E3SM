@@ -614,7 +614,7 @@ subroutine seq_diag_atm_mct( atm, frac_a, infodata, do_a2x, do_x2a)
    integer(in)              :: kLat              ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki       ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_a,dl       ! area of a grid cell
+    real(r8)                 :: ca_a       ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_atm = .false.
 
@@ -829,7 +829,7 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
    integer(in)              :: kLat         ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki  ! fraction indices
    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: do,dl  ! area of a grid cell
+    real(r8)                 :: ca_l, do  ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_lnd = .false.
 
@@ -885,52 +885,52 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
       lSize = mct_avect_lSize(l2x_l)
       ic = c_lnd_lr
       do n=1,lSize
-         dl =  dom_l%data%rAttr(kArea,n) * frac_l%rAttr(kl,n)
-         if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl
-         if = f_hswnet; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_swnet,n)
-         if = f_hlwup ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_lwup,n)
-         if = f_hlatv ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_lat,n)
-         if = f_hsen  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_sen,n)
-         if = f_wevap ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_evap,n)
-         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
-                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
-                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
-                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
+          ca_l =  dom_l%data%rAttr(kArea,n) * frac_l%rAttr(kl,n)
+          if = f_area  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l
+          if = f_hswnet; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_swnet,n)
+          if = f_hlwup ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_lwup,n)
+          if = f_hlatv ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_lat,n)
+          if = f_hsen  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_sen,n)
+          if = f_wevap ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_evap,n)
+          if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
          if (index_l2x_Flrl_irrig /= 0) then
-            if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
+             if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
          end if
-         if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
+          if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
 
          if ( flds_wiso_lnd )then
             if = f_wevap_16O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*l2x_l%rAttr(index_l2x_Fall_evap_16O,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Fall_evap_16O,n)
             if = f_wevap_18O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*l2x_l%rAttr(index_l2x_Fall_evap_18O,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Fall_evap_18O,n)
             if = f_wevap_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*l2x_l%rAttr(index_l2x_Fall_evap_HDO,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Fall_evap_HDO,n)
 
             if = f_wroff_16O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*l2x_l%rAttr(index_l2x_Flrl_rofl_16O,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Flrl_rofl_16O,n)
             if = f_wroff_18O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*l2x_l%rAttr(index_l2x_Flrl_rofl_18O,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Flrl_rofl_18O,n)
             if = f_wroff_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*l2x_l%rAttr(index_l2x_Flrl_rofl_HDO,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Flrl_rofl_HDO,n)
 
             if = f_wioff_16O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*l2x_l%rAttr(index_l2x_Flrl_rofi_16O,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi_16O,n)
             if = f_wioff_18O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*l2x_l%rAttr(index_l2x_Flrl_rofi_18O,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi_18O,n)
             if = f_wioff_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*l2x_l%rAttr(index_l2x_Flrl_rofi_HDO,n)
+                  ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi_HDO,n)
          end if
       end do
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
@@ -967,51 +967,51 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
       lSize = mct_avect_lSize(x2l_l)
       ic = c_lnd_ls
       do n=1,lSize
-         dl =  dom_l%data%rAttr(kArea,n) * frac_l%rAttr(kl,n)
-         if = f_area ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl
-         if = f_hlwdn; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*x2l_l%rAttr(index_x2l_Faxa_lwdn,n)
-         if = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*x2l_l%rAttr(index_x2l_Faxa_rainc,n) &
-                                                                   + dl*x2l_l%rAttr(index_x2l_Faxa_rainl,n)
-         if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*x2l_l%rAttr(index_x2l_Faxa_snowc,n) &
-                                                                   + dl*x2l_l%rAttr(index_x2l_Faxa_snowl,n)
-         if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*x2l_l%rAttr(index_x2l_Flrr_flood,n)
+          ca_l =  dom_l%data%rAttr(kArea,n) * frac_l%rAttr(kl,n)
+          if = f_area ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l
+          if = f_hlwdn; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*x2l_l%rAttr(index_x2l_Faxa_lwdn,n)
+          if = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*x2l_l%rAttr(index_x2l_Faxa_rainc,n) &
+               + ca_l*x2l_l%rAttr(index_x2l_Faxa_rainl,n)
+          if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + ca_l*x2l_l%rAttr(index_x2l_Faxa_snowc,n) &
+               + ca_l*x2l_l%rAttr(index_x2l_Faxa_snowl,n)
+          if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - ca_l*x2l_l%rAttr(index_x2l_Flrr_flood,n)
 
          if ( flds_wiso_lnd )then
             if = f_wrain_16O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_rainc_16O,n) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_rainl_16O,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_rainc_16O,n) + &
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_rainl_16O,n)
             if = f_wrain_18O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_rainc_18O,n) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_rainl_18O,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_rainc_18O,n) + &
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_rainl_18O,n)
             if = f_wrain_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_rainc_HDO,n) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_rainl_HDO,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_rainc_HDO,n) + &
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_rainl_HDO,n)
 
             if = f_wsnow_16O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_snowc_16O,n) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_snowl_16O,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_snowc_16O,n) + &
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_snowl_16O,n)
             if = f_wsnow_18O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_snowc_18O,n) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_snowl_18O,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_snowc_18O,n) + &
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_snowl_18O,n)
             if = f_wsnow_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_snowc_HDO,n) + &
-                                        dl*x2l_l%rAttr(index_x2l_Faxa_snowl_HDO,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_snowc_HDO,n) + &
+                  ca_l*x2l_l%rAttr(index_x2l_Faxa_snowl_HDO,n)
 
             if = f_wroff_16O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*x2l_l%rAttr(index_x2l_Flrr_flood_16O,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Flrr_flood_16O,n)
             if = f_wroff_18O;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*x2l_l%rAttr(index_x2l_Flrr_flood_18O,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Flrr_flood_18O,n)
             if = f_wroff_HDO;
             budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - &
-                                        dl*x2l_l%rAttr(index_x2l_Flrr_flood_HDO,n)
+                  ca_l*x2l_l%rAttr(index_x2l_Flrr_flood_HDO,n)
          end if
       end do
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
@@ -1051,7 +1051,7 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
    integer(in)              :: kLat              ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki,kr    ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: do,dl,dr    ! area of a grid cell
+    real(r8)                 :: do,dr    ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_rof = .false.
 
@@ -1228,7 +1228,7 @@ subroutine seq_diag_glc_mct( glc, frac_g, infodata)
    integer(in)              :: kLat              ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki,kr,kg ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: do,dl,dr,dg ! area of a grid cell
+    real(r8)                 :: do,dr,dg ! area of a grid cell
    logical,save             :: first_time = .true.
 
    !----- formats -----
@@ -1301,7 +1301,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
    integer(in)              :: kLat         ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki  ! fraction indices
    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_i,do,dl  ! area of a grid cell
+    real(r8)                 :: ca_i,do  ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_ocn = .false.
    character(len=cs)        :: cime_model
@@ -1556,7 +1556,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
    integer(in)              :: kLat         ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki  ! fraction indices
    integer(in)              :: lSize        ! size of aVect
-                real(r8)                 :: ca_i,do,dl  ! area of a grid cell
+                real(r8)                 :: ca_i,do,ca_l  ! area of a grid cell
    logical,save             :: first_time        = .true.
    logical,save             :: flds_wiso_ice     = .false.
    logical,save             :: flds_wiso_ice_x2i = .false.
