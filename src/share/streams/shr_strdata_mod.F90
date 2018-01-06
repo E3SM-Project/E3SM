@@ -931,7 +931,8 @@ contains
              call t_stopf(trim(lstr)//trim(timname)//'_zero')
           endif
           if (debug > 0) then
-             write(logunit,*) trim(subname),' SDAT av = ',n,minval(SDAT%avs(n)%rAttr),maxval(SDAT%avs(n)%rAttr),sum(SDAT%avs(n)%rAttr)
+             write(logunit,*) trim(subname),' SDAT av = ',n,minval(SDAT%avs(n)%rAttr),&
+                  maxval(SDAT%avs(n)%rAttr),sum(SDAT%avs(n)%rAttr)
           endif
 
        enddo
