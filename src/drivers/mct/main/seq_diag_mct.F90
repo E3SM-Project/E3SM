@@ -27,7 +27,7 @@
 ! !INTERFACE: ------------------------------------------------------------------
 
 module seq_diag_mct
-! !USES:
+  ! !USES:
 
    use shr_kind_mod, only: r8 => shr_kind_r8, in=>shr_kind_in
    use shr_kind_mod, only: i8 => shr_kind_i8,  cl=>shr_kind_cl, cs=>shr_kind_cs
@@ -50,11 +50,11 @@ module seq_diag_mct
    save
    private
 
-! !PUBLIC TYPES:
+  ! !PUBLIC TYPES:
 
    ! none
 
-!PUBLIC MEMBER FUNCTIONS:
+  !PUBLIC MEMBER FUNCTIONS:
 
    public seq_diag_zero_mct
    public seq_diag_atm_mct
@@ -70,7 +70,7 @@ module seq_diag_mct
    public seq_diag_avloc_mct
    public seq_diag_avdiff_mct
 
-!EOP
+  !EOP
 
    !----------------------------------------------------------------------------
    ! Local data
@@ -208,7 +208,7 @@ module seq_diag_mct
 
    logical          :: flds_wiso             ! If water isotope fields are active
 
-! !PUBLIC DATA MEMBERS
+  ! !PUBLIC DATA MEMBERS
 
    !--- time-averaged (annual?) global budge diagnostics ---
    !--- note: call sum0 then save budg_dataG and budg_ns on restart from/to root pe ---
@@ -227,7 +227,7 @@ module seq_diag_mct
 
    integer(in),parameter :: debug = 0 ! internal debug level
 
-! !PRIVATE DATA MEMBERS
+  ! !PRIVATE DATA MEMBERS
 
    integer :: index_a2x_Faxa_swnet
    integer :: index_a2x_Faxa_lwdn
@@ -411,7 +411,7 @@ module seq_diag_mct
    integer :: index_x2i_Faxa_snow_18O
    integer :: index_x2i_Faxa_snow_HDO
 
-!===============================================================================
+  !===============================================================================
 contains
 !===============================================================================
 
@@ -2510,5 +2510,4 @@ SUBROUTINE seq_diag_avdiff_mct(AV1,AV2,ID,comment)
 
 end subroutine seq_diag_avdiff_mct
 
-!===============================================================================
 end module seq_diag_mct
