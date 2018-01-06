@@ -58,7 +58,7 @@ class EnvBase(EntryID):
                 expect(self.name(root) == "group", "Unexpected elem '{}' for {}, attrs {}".format(self.name(root), self.filename, self.attrib(root)))
                 group_id = self.get(root, "id")
                 if group_id in self._group_map and entry_id in self._group_map[group_id]:
-                        return [self._group_map[group_id][entry_id]]
+                    return [self._group_map[group_id][entry_id]]
                 else:
                     return []
 

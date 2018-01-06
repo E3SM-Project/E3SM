@@ -12,7 +12,7 @@ from CIME.BuildTools.configure import configure
 from CIME.utils             import get_cime_root, run_and_log_case_status, get_model, get_batch_script_for_job
 from CIME.test_status       import *
 
-import shutil, six
+import shutil
 
 logger = logging.getLogger(__name__)
 
