@@ -824,12 +824,11 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
    type(mct_aVect), pointer :: l2x_l        ! model to drv bundle
    type(mct_aVect), pointer :: x2l_l        ! drv to model bundle
    type(mct_ggrid), pointer :: dom_l
-    integer(in)              :: k,n,ic,nf,ip ! generic index
+    integer(in)              :: n,ic,nf,ip ! generic index
    integer(in)              :: kArea        ! index of area field in aVect
-   integer(in)              :: kLat         ! index of lat field in aVect
-   integer(in)              :: kl,ka,ko,ki  ! fraction indices
+    integer(in)              :: kl           ! fraction indices
    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_l, ca_o  ! area of a grid cell
+    real(r8)                 :: ca_l         ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_lnd = .false.
 
@@ -1046,12 +1045,10 @@ subroutine seq_diag_rof_mct( rof, frac_r, infodata)
    type(mct_aVect), pointer :: r2x_r
    type(mct_aVect), pointer :: x2r_r
    type(mct_ggrid), pointer :: dom_r
-    integer(in)              :: k,n,ic,nf,ip      ! generic index
+    integer(in)              :: n,ic,nf,ip      ! generic index
    integer(in)              :: kArea             ! index of area field in aVect
-   integer(in)              :: kLat              ! index of lat field in aVect
-   integer(in)              :: kl,ka,ko,ki,kr    ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_o,ca_r    ! area of a grid cell
+    real(r8)                 :: ca_r    ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_rof = .false.
 
@@ -1223,12 +1220,10 @@ subroutine seq_diag_glc_mct( glc, frac_g, infodata)
    type(mct_aVect), pointer :: g2x_g
    type(mct_aVect), pointer :: x2g_g
    type(mct_ggrid), pointer :: dom_g
-    integer(in)              :: k,n,ic,nf,ip      ! generic index
+    integer(in)              :: n,ic,nf,ip      ! generic index
    integer(in)              :: kArea             ! index of area field in aVect
-   integer(in)              :: kLat              ! index of lat field in aVect
-   integer(in)              :: kl,ka,ko,ki,kr,kg ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_o,ca_g ! area of a grid cell
+    real(r8)                 :: ca_g ! area of a grid cell
    logical,save             :: first_time = .true.
 
    !----- formats -----
@@ -1296,10 +1291,9 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, infodata, do_o2x, do_x2o, do_xa
    type(mct_aVect), pointer :: o2x_o        ! model to drv bundle
    type(mct_aVect), pointer :: x2o_o        ! drv to model bundle
    type(mct_ggrid), pointer :: dom_o
-    integer(in)              :: k,n,nf,ic,ip ! generic index
+    integer(in)              :: n,nf,ic,ip ! generic index
    integer(in)              :: kArea        ! index of area field in aVect
-   integer(in)              :: kLat         ! index of lat field in aVect
-   integer(in)              :: kl,ka,ko,ki  ! fraction indices
+    integer(in)              :: ko,ki  ! fraction indices
    integer(in)              :: lSize        ! size of aVect
     real(r8)                 :: ca_i,ca_o  ! area of a grid cell
    logical,save             :: first_time    = .true.
@@ -1551,12 +1545,12 @@ subroutine seq_diag_ice_mct( ice, frac_i, infodata, do_i2x, do_x2i)
    type(mct_aVect), pointer :: i2x_i        ! model to drv bundle
    type(mct_aVect), pointer :: x2i_i        ! drv to model bundle
    type(mct_ggrid), pointer :: dom_i
-                integer(in)              :: k,n,ic,nf,ip ! generic index
+                integer(in)              :: n,ic,nf,ip ! generic index
    integer(in)              :: kArea        ! index of area field in aVect
    integer(in)              :: kLat         ! index of lat field in aVect
-   integer(in)              :: kl,ka,ko,ki  ! fraction indices
+                integer(in)              :: ko,ki  ! fraction indices
    integer(in)              :: lSize        ! size of aVect
-                real(r8)                 :: ca_i,ca_o,ca_l  ! area of a grid cell
+                real(r8)                 :: ca_i,ca_o ! area of a grid cell
    logical,save             :: first_time        = .true.
    logical,save             :: flds_wiso_ice     = .false.
    logical,save             :: flds_wiso_ice_x2i = .false.
@@ -1776,8 +1770,6 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
                       integer(in)      :: ic,nf,ip,is ! data array indicies
    integer(in)      :: ica,icl,icn,ics,ico
    integer(in)      :: icar,icxs,icxr,icas
-   integer(in)      :: n           ! loop counter
-   integer(in)      :: nday        ! number of days in time avg
    integer(in)      :: cdate,sec   ! coded date, seconds
    integer(in)      :: yr,mon,day  ! date
    integer(in)      :: iam         ! pe number
@@ -2206,10 +2198,8 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
    integer(in)                      :: npts,nptsg  ! number of local/global pts in AV
    integer(in)                      :: kflds       ! number of fields in AV
    real(r8),                pointer :: sumbuf (:)  ! sum buffer
-   real(r8),                pointer :: minbuf (:)  ! min buffer
    real(r8),                pointer :: maxbuf (:)  ! max buffer
    real(r8),                pointer :: sumbufg(:)  ! sum buffer reduced
-   real(r8),                pointer :: minbufg(:)  ! min buffer reduced
    real(r8),                pointer :: maxbufg(:)  ! max buffer reduced
    integer(i8),             pointer :: isumbuf (:) ! integer local sum
    integer(i8),             pointer :: isumbufg(:) ! integer global sum
@@ -2218,15 +2208,10 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
    integer(in)                      :: iam         ! pe number
    integer(in)                      :: km,ka       ! field indices
    integer(in)                      :: ns          ! size of local AV
-   integer(in)                      :: rcode       ! error code
    real(r8),                pointer :: weight(:)   ! weight
    type(mct_string)                 :: mstring     ! mct char type
    character(CL)                    :: lcomment    ! should be long enough
    character(CL)                    :: itemc       ! string converted to char
-
-   type(mct_avect)                  :: AV1         ! local avect with one field
-   type(mct_avect)                  :: AVr1        ! avect on root with one field
-   type(mct_avect)                  :: AVr2        ! avect on root with one field
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_avect_mct) '
