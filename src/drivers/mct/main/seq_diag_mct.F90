@@ -1686,9 +1686,11 @@ contains
           nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
           if (trim(cime_model) == 'acme') then
-             nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
+             nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
+                  (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
           else if (trim(cime_model) == 'cesm') then
-             nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
+             nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
+                  (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
           end if
           if ( flds_wiso_ice_x2i )then
              nf  = f_wrain_16O;
@@ -1917,11 +1919,15 @@ contains
                               dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
                               dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
                       enddo
-                      write(logunit,FA1)    '   *SUM*', sum(dataGpr(iso0(is):isof(is),ica,ip)),sum(dataGpr(iso0(is):isof(is),icl,ip)), &
-                           sum(dataGpr(iso0(is):isof(is),icn,ip)),sum(dataGpr(iso0(is):isof(is),ics,ip)), &
+                      write(logunit,FA1)    '   *SUM*', sum(dataGpr(iso0(is):isof(is),ica,ip)),&
+                           sum(dataGpr(iso0(is):isof(is),icl,ip)), &
+                           sum(dataGpr(iso0(is):isof(is),icn,ip)),&
+                           sum(dataGpr(iso0(is):isof(is),ics,ip)), &
                            sum(dataGpr(iso0(is):isof(is),ico,ip)), &
-                           sum(dataGpr(iso0(is):isof(is),ica,ip))+sum(dataGpr(iso0(is):isof(is),icl,ip))+ &
-                           sum(dataGpr(iso0(is):isof(is),icn,ip))+sum(dataGpr(iso0(is):isof(is),ics,ip))+ &
+                           sum(dataGpr(iso0(is):isof(is),ica,ip))+&
+                           sum(dataGpr(iso0(is):isof(is),icl,ip))+ &
+                           sum(dataGpr(iso0(is):isof(is),icn,ip))+&
+                           sum(dataGpr(iso0(is):isof(is),ics,ip))+ &
                            sum(dataGpr(iso0(is):isof(is),ico,ip))
                    end do
                 end if
@@ -2003,10 +2009,14 @@ contains
                               -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
                               dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
                       enddo
-                      write(logunit,FA1)    '   *SUM*',-sum(dataGpr(iso0(is):isof(is),icar,ip)),sum(dataGpr(iso0(is):isof(is),icxs,ip)), &
-                           sum(dataGpr(iso0(is):isof(is),icxr,ip)),-sum(dataGpr(iso0(is):isof(is),icas,ip)), &
-                           -sum(dataGpr(iso0(is):isof(is),icar,ip))+sum(dataGpr(iso0(is):isof(is),icxs,ip))+ &
-                           sum(dataGpr(iso0(is):isof(is),icxr,ip))-sum(dataGpr(iso0(is):isof(is),icas,ip))
+                      write(logunit,FA1)    '   *SUM*',-sum(dataGpr(iso0(is):isof(is),icar,ip)),&
+                           sum(dataGpr(iso0(is):isof(is),icxs,ip)), &
+                           sum(dataGpr(iso0(is):isof(is),icxr,ip)), &
+                           -sum(dataGpr(iso0(is):isof(is),icas,ip)), &
+                           -sum(dataGpr(iso0(is):isof(is),icar,ip)) &
+                           +sum(dataGpr(iso0(is):isof(is),icxs,ip))+ &
+                           sum(dataGpr(iso0(is):isof(is),icxr,ip)) &
+                           -sum(dataGpr(iso0(is):isof(is),icas,ip))
                       write(logunit,*) ' '
                       write(logunit,FAH) subname,trim(str)//isoname(is)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),&
                            ': date = ',cdate,sec
@@ -2017,10 +2027,14 @@ contains
                               -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
                               dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
                       enddo
-                      write(logunit,FA1)    '   *SUM*',-sum(dataGpr(iso0(is):isof(is),icar,ip)),sum(dataGpr(iso0(is):isof(is),icxs,ip)), &
-                           sum(dataGpr(iso0(is):isof(is),icxr,ip)),-sum(dataGpr(iso0(is):isof(is),icas,ip)), &
-                           -sum(dataGpr(iso0(is):isof(is),icar,ip))+sum(dataGpr(iso0(is):isof(is),icxs,ip))+ &
-                           sum(dataGpr(iso0(is):isof(is),icxr,ip))-sum(dataGpr(iso0(is):isof(is),icas,ip))
+                      write(logunit,FA1)    '   *SUM*',-sum(dataGpr(iso0(is):isof(is),icar,ip)),&
+                           sum(dataGpr(iso0(is):isof(is),icxs,ip)), &
+                           sum(dataGpr(iso0(is):isof(is),icxr,ip)), &
+                           -sum(dataGpr(iso0(is):isof(is),icas,ip)), &
+                           -sum(dataGpr(iso0(is):isof(is),icar,ip)) &
+                           +sum(dataGpr(iso0(is):isof(is),icxs,ip))+ &
+                           sum(dataGpr(iso0(is):isof(is),icxr,ip)) &
+                           -sum(dataGpr(iso0(is):isof(is),icas,ip))
                    end do
                 end if
              enddo
@@ -2139,20 +2153,35 @@ contains
                            dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
                            dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
                    enddo
-                   write(logunit,FA1r)'   *SUM*',sum(dataGpr(iso0(is):isof(is),c_atm_ar,ip))+sum(dataGpr(iso0(is):isof(is),c_atm_as,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_lnd_lr,ip))+sum(dataGpr(iso0(is):isof(is),c_lnd_ls,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_rof_rr,ip))+sum(dataGpr(iso0(is):isof(is),c_rof_rs,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_ocn_or,ip))+sum(dataGpr(iso0(is):isof(is),c_ocn_os,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_inh_ir,ip))+sum(dataGpr(iso0(is):isof(is),c_inh_is,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_ish_ir,ip))+sum(dataGpr(iso0(is):isof(is),c_ish_is,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_glc_gr,ip))+sum(dataGpr(iso0(is):isof(is),c_glc_gs,ip)),&
-                        sum(dataGpr(iso0(is):isof(is),c_atm_ar,ip))+sum(dataGpr(iso0(is):isof(is),c_atm_as,ip))+&
-                        sum(dataGpr(iso0(is):isof(is),c_lnd_lr,ip))+sum(dataGpr(iso0(is):isof(is),c_lnd_ls,ip))+&
-                        sum(dataGpr(iso0(is):isof(is),c_rof_rr,ip))+sum(dataGpr(iso0(is):isof(is),c_rof_rs,ip))+&
-                        sum(dataGpr(iso0(is):isof(is),c_ocn_or,ip))+sum(dataGpr(iso0(is):isof(is),c_ocn_os,ip))+&
-                        sum(dataGpr(iso0(is):isof(is),c_inh_ir,ip))+sum(dataGpr(iso0(is):isof(is),c_inh_is,ip))+&
-                        sum(dataGpr(iso0(is):isof(is),c_ish_ir,ip))+sum(dataGpr(iso0(is):isof(is),c_ish_is,ip))+&
-                        sum(dataGpr(iso0(is):isof(is),c_glc_gr,ip))+sum(dataGpr(iso0(is):isof(is),c_glc_gs,ip))
+                   write(logunit,FA1r)'   *SUM*',&
+                        sum(dataGpr(iso0(is):isof(is),c_atm_ar,ip))+ &
+                        sum(dataGpr(iso0(is):isof(is),c_atm_as,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_lnd_lr,ip))+ &
+                        sum(dataGpr(iso0(is):isof(is),c_lnd_ls,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_rof_rr,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_rof_rs,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_ocn_or,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_ocn_os,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_inh_ir,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_inh_is,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_ish_ir,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_ish_is,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_glc_gr,ip))+ &
+                        sum(dataGpr(iso0(is):isof(is),c_glc_gs,ip)),&
+                        sum(dataGpr(iso0(is):isof(is),c_atm_ar,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_atm_as,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_lnd_lr,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_lnd_ls,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_rof_rr,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_rof_rs,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_ocn_or,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_ocn_os,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_inh_ir,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_inh_is,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_ish_ir,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_ish_is,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_glc_gr,ip))+&
+                        sum(dataGpr(iso0(is):isof(is),c_glc_gs,ip))
                 end do
              end if
 
