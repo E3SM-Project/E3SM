@@ -1228,7 +1228,7 @@ subroutine seq_diag_glc_mct( glc, frac_g, infodata)
    integer(in)              :: kLat              ! index of lat field in aVect
    integer(in)              :: kl,ka,ko,ki,kr,kg ! fraction indices
    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_o,dg ! area of a grid cell
+    real(r8)                 :: ca_o,ca_g ! area of a grid cell
    logical,save             :: first_time = .true.
 
    !----- formats -----
@@ -1257,10 +1257,10 @@ subroutine seq_diag_glc_mct( glc, frac_g, infodata)
    kArea = mct_aVect_indexRA(dom_g%data,afldname)
    lSize = mct_avect_lSize(g2x_g)
    do n=1,lSize
-      dg =  dom_g%data%rAttr(kArea,n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - dg*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - dg*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
-                                                                - dg*g2x_g%rAttr(index_g2x_Figg_rofi,n)
+       ca_g =  dom_g%data%rAttr(kArea,n)
+       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
+       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
+            - ca_g*g2x_g%rAttr(index_g2x_Figg_rofi,n)
    end do
    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
