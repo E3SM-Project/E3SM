@@ -27,20 +27,23 @@
 ! !INTERFACE: ------------------------------------------------------------------
 
 module seq_diag_mct
-
 ! !USES:
 
    use shr_kind_mod, only: r8 => shr_kind_r8, in=>shr_kind_in
    use shr_kind_mod, only: i8 => shr_kind_i8,  cl=>shr_kind_cl, cs=>shr_kind_cs
-   use shr_sys_mod       ! system calls
-   use shr_mpi_mod       ! mpi wrappers
-   use shr_const_mod     ! shared constants
-   use mct_mod           ! mct wrappers
-   use esmf
-
-   use seq_comm_mct  ! mpi comm groups & related
-   use seq_timemgr_mod
-   use component_type_mod
+  use shr_sys_mod, only : shr_sys_abort, shr_sys_flush
+  use shr_mpi_mod, only : shr_mpi_max, shr_mpi_sum
+  use shr_const_mod, only: shr_const_rearth, shr_const_pi, shr_const_latice, &
+       shr_const_ice_ref_sal, shr_const_ocn_ref_sal, shr_const_isspval
+  use mct_mod, only: mct_ggrid, mct_avect, mct_avect_lsize, mct_string, &
+       mct_string_tochar, mct_gsmap, mct_aVect_indexRA, MCT_AVECT_NRATTR, &
+       mct_string_clean, mct_avect_getrlist
+  use esmf, only : esmf_clock
+  use shr_log_mod, only: s_logunit=>shr_log_unit
+  use seq_comm_mct, only: logunit, cplid, seq_comm_setptrs, seq_comm_clean
+  use seq_timemgr_mod, only : seq_timemgr_EClockGetData
+  use component_type_mod, only : COMPONENT_GET_DOM_CX, COMPONENT_GET_C2X_CX, &
+       COMPONENT_GET_X2C_CX, COMPONENT_TYPE
    use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
 
    implicit none
