@@ -76,11 +76,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
            "inputdata root is not a directory: {}".format(din_loc_root))
 
-    # Check that userdefine settings are specified before expanding variable
-    # for vid, value in case:
-    #     expect(not (isinstance(value, six.string_types) and "USERDEFINED_required_build" in value),
-    #            "Parameter '{}' must be defined".format(vid))
-
     # Remove batch scripts
     if reset or clean:
         case_run, case_test = get_batch_script_for_job("case.run"), get_batch_script_for_job("case.test")
