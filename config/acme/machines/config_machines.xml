@@ -422,7 +422,7 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.0.128</command>
+      <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
