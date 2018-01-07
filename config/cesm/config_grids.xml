@@ -895,7 +895,14 @@
 
    <!-- VR-CESM grids with CAM-SE -->
 
-    <model_grid alias="ne0CONUSne30x8_ne0CONUSne30x8_mg17" not_compset="_POP">
+    <model_grid alias="ne0TESTONLYne5x4_ne0TESTONLYne5x4_mg37" not_compset="_POP">
+      <grid name="atm">ne0np4TESTONLY.ne5x4</grid>
+      <grid name="lnd">ne0np4TESTONLY.ne5x4</grid>
+      <grid name="ocnice">ne0np4TESTONLY.ne5x4</grid>
+      <mask>gx3v7</mask>
+    </model_grid>
+
+    <model_grid alias="ne0CONUSne30x8_ne0CONUSne30x8_mt12" not_compset="_POP">
       <grid name="atm">ne0np4CONUS.ne30x8</grid>
       <grid name="lnd">ne0np4CONUS.ne30x8</grid>
       <grid name="ocnice">ne0np4CONUS.ne30x8</grid>
@@ -1272,6 +1279,18 @@
       <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</file>
       <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
       <support>Experimental for very high resolution experiments</support>
+    </domain>
+
+    <domain name="ne0np4TESTONLY.ne5x4">
+      <nx>3863</nx> <ny>1</ny>
+      <desc>ne0np4TESTONLY.ne5x4 is a low-resolution refined SE grid for testing:</desc>
+      <support>Test support only</support>
+    </domain>
+
+    <domain name="ne0np4CONUS.ne30x8">
+      <nx>174098</nx> <ny>1</ny>
+      <desc>ne0np4CONUS.ne30x8 is a Spectral Elem 1-deg grid with a 1/8 deg refined region over the continental United States:</desc>
+      <support>Test support only</support>
     </domain>
 
     <domain name="TL319">
