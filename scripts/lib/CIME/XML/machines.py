@@ -67,7 +67,7 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.get_children(root=self.machine_node, no_validate=True)
+        nodes = self.get_children(root=self.machine_node)
         node_names = []
         for node in nodes:
             node_names.append(self.name(node))

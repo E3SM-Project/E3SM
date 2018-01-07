@@ -34,14 +34,34 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="header"/>
+        <xs:element ref="group"/>
         <xs:element ref="module_system"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="resource_limits"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
-        <xs:element minOccurs="0" maxOccurs="unbounded" ref="entry"/>
       </xs:sequence>
       <xs:attribute ref="id" use="required"/>
       <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="group">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="type"/>
+        <xs:element ref="desc"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required" />
+      <xs:attribute ref="value" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -142,14 +162,4 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="entry">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="type"/>
-        <xs:element ref="desc"/>
-      </xs:sequence>
-      <xs:attribute ref="id" use="required" />
-      <xs:attribute ref="value" use="required"/>
-    </xs:complexType>
-  </xs:element>
 </xs:schema>

@@ -5,7 +5,7 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 import xml.etree.ElementTree as ET
 from distutils.spawn import find_executable
-import getpass
+import getpass, shutil
 import six
 from copy import deepcopy
 
@@ -94,6 +94,20 @@ class GenericXML(object):
         """
         self.locked = True
 
+    def unlock(self):
+        self.locked = False
+
+    def change_file(self, newfile, copy=False):
+        if copy:
+            new_case = os.path.dirname(newfile)
+            if not os.path.exists(new_case):
+                os.makedirs(new_case)
+            shutil.copy(self.filename, newfile)
+
+        self.tree = None
+        self.filename = newfile
+        self.read(newfile)
+
     #
     # API for individual node operations
     #
@@ -159,7 +173,7 @@ class GenericXML(object):
 
         return node
 
-    def get_children(self, name=None, attributes=None, root=None, no_validate=False):
+    def get_children(self, name=None, attributes=None, root=None):
         """
         This is the critical function, its interface and performance are crucial.
 
@@ -191,15 +205,6 @@ class GenericXML(object):
                         continue
 
             children.append(_Element(child))
-
-        # Remove
-        #if not no_validate:
-            #validate = self.scan_children(name, attributes=attributes, root=root)
-            #assert validate == children, "Validation failed for {}, {}\nScan found {} elements, get_children found {}".format(name, attributes, len(validate), len(children))
-            # if validate != children:
-            #     import pdb
-            #     pdb.set_trace()
-            #     validate = self.scan_children(name, attributes=attributes, root=root)
 
         return children
 
