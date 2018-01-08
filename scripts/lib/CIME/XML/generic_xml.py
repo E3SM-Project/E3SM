@@ -163,7 +163,7 @@ class GenericXML(object):
                     continue
                 else:
                     match = True
-                    for key, value in attributes.iteritems():
+                    for key, value in attributes.items():
                         if key not in child.attrib:
                             match = False
                             break
