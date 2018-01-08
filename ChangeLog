@@ -1,5 +1,335 @@
 ======================================================================
 
+Originator: Chris Fischer	 
+Date: 1-4-2018
+Tag: cime5.4.0-alpha.17
+Answer Changes: Round Off allactive
+Tests: ERS_Ld7.f19_g17.B1850.hobart_pgi.allactive-defaultio
+       scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Add flux convergence criteria.
+    - Pass CIMEROOT to CMake unit test builds.
+    - scripts_regression_tests.py should use values in .cime/config if provided.
+    - Testing/multiinst baselines.
+    - Fix pylint error that I introduced in #2168.
+    - Generalize some paths to support a standalone CISM checkout.
+    - Revert to previous cheyenne gnu environment.
+    - Y10k fix.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1b4fa36 Merge pull request #2180 from jedwards4b/flux_convergence
+6a07ef1 Merge pull request #2176 from billsacks/run_tests_pass_cimeroot
+8932a90 Merge pull request #2173 from jedwards4b/srt_use_cimeconfig
+5a9d270 Merge pull request #2170 from mnlevy1981/testing/multiinst_baselines
+cade91d Merge pull request #2169 from billsacks/fix_pylint_error
+9e6cee6 Merge pull request #2168 from billsacks/cism_standalone
+d59c285 Merge pull request #2167 from billsacks/backout_cheyenne_gnu
+abc6354 Merge pull request #2145 from jedwards4b/y10k_fix
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/machines/config_machines.xml
+M	scripts/Tools/Makefile
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/desp/desp_comp_mod.F90
+M	src/components/data_comps/dice/dice_comp_mod.F90
+M	src/components/data_comps/dlnd/dlnd_comp_mod.F90
+M	src/components/data_comps/docn/docn_comp_mod.F90
+M	src/components/data_comps/drof/drof_comp_mod.F90
+M	src/components/data_comps/dwav/dwav_comp_mod.F90
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/y100k/README
+A	src/drivers/mct/cime_config/testdefs/testmods_dirs/drv/y100k/shell_commands
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_io_mod.F90
+M	src/drivers/mct/main/seq_rest_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+M	src/drivers/mct/unit_test/CMakeLists.txt
+M	src/share/test/unit/CMakeLists.txt
+A	src/share/test/unit/shr_cal_test/CMakeLists.txt
+A	src/share/test/unit/shr_cal_test/test_shr_cal.pf
+M	src/share/util/CMakeLists.txt
+M	src/share/util/shr_cal_mod.F90
+M	src/share/util/shr_flux_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 12-22-2017
+Tag: cime5.4.0-alpha.16
+Answer Changes: None
+Tests: scripts_regression_tests.py
+       aux_clm test suite
+       scripts_regression_tests.py py2 and py3
+Dependencies:
+
+Brief Summary:
+    - Fix pylint issue.
+    - Allows available and default MPILIBS to be specified per compiler.
+    - Find test dir must use case object to fully resolve vars.
+    - Always use GLC_NEC=10 for CLM45/CLM5; remove tropicAtl grid in CESM.
+    - Updates for nersc systems.
+    - DATM and DROF jra55 mode, new grids tx0.1v3, TL319, JRA025.
+    - Fix typo in template.
+    - Remove unused doctests.
+    - Add the batch jobid to the lid.
+    - Fix typo of xcpl_comps dir in buildlib.csm_share.
+    - Fix max tasks for homebrew.
+    - Use the encoding flag to open in py3 to set utf-8.
+
+User interface changes: 
+    - Remove dead --test options.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+d1723aa fix pylint issue
+d7d96b5 Merge pull request #2160 from jedwards4b/allowmultiplempilibs
+2a53df8 Merge pull request #2156 from jedwards4b/findtestdir
+e127d7e Merge pull request #2150 from billsacks/always_glcmec
+39d7442 Merge pull request #2147 from jedwards4b/machine_updates
+c3780a5 Merge pull request #2136 from ESMCI/altuntas/jra55
+5ff8d82 fix typo in template
+ff04547 Merge pull request #2144 from ESMCI/jgfouca/remove_unused_doctest
+c072407 Merge pull request #2141 from jedwards4b/jobid_in_lid
+46627b1 Merge pull request #2143 from ESMCI/agsalin/xcpl_dir_fix
+60f3603 fix max tasks for homebrew
+4729f6a Merge pull request #2139 from jedwards4b/utf8_encoding
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/template.case.run
+M	config/acme/machines/template.case.test
+M	config/acme/machines/template.st_archive
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/Depends.intel
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/template.case.run
+M	config/cesm/machines/template.case.test
+M	config/cesm/machines/template.st_archive
+M	config/xml_schemas/config_machines.xsd
+M	doc/source/data_models/data-atm.rst
+M	doc/source/data_models/data-river.rst
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case.qstatus
+M	scripts/Tools/case.setup
+M	scripts/Tools/case.submit
+M	scripts/Tools/case_diff
+M	scripts/Tools/check_case
+M	scripts/Tools/check_input_data
+M	scripts/Tools/check_lockedfiles
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/code_checker
+M	scripts/Tools/compare_namelists
+M	scripts/Tools/compare_test_results
+M	scripts/Tools/component_compare_baseline
+M	scripts/Tools/component_compare_copy
+M	scripts/Tools/component_compare_test
+M	scripts/Tools/component_generate_baseline
+M	scripts/Tools/cs.status
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/list_acme_tests
+M	scripts/Tools/normalize_cases
+M	scripts/Tools/pelayout
+M	scripts/Tools/preview_namelists
+M	scripts/Tools/preview_run
+M	scripts/Tools/save_provenance
+M	scripts/Tools/simple_compare
+M	scripts/Tools/standard_script_setup.py
+M	scripts/Tools/update_acme_tests
+M	scripts/Tools/wait_for_tests
+M	scripts/Tools/xmlchange
+M	scripts/Tools/xmlquery
+M	scripts/create_test
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/utils.py
+M	scripts/manage_pes
+M	scripts/query_config
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/datm/datm_shr_mod.F90
+M	src/components/data_comps/drof/cime_config/config_component.xml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	tools/configure
+M	tools/load_balancing_tool/load_balancing_submit.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 12-14-2017
+Tag: cime5.4.0-alpha.15
+Answer Changes: None
+Tests: external pio2 test suite using pnetcdf/1.9.0 candidate as well as
+       pnetcdf/1.8.1 and netcdf 4.4.1.1
+       scrtips_regression_tests.py
+Dependencies:
+
+Brief Summary:
+    - PIO2 update.
+    - Replace fancy quotes with standard ones.
+    - Add some debug info and correct PYTHON.
+    - Allow python to be specified in environment.
+    - Avoid continue run if resubmit_sets_continue_run is false.
+    - PIO1 update.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1fec3c1 Merge pull request #2125 from jedwards4b/pio2_update
+851918d replace fancy quotes with standard ones
+fdd3ddf add some debug info and correct PYTHON
+994a250 Merge pull request #2138 from jedwards4b/python_path_fix
+e189ba6 Merge pull request #2133 from jedwards4b/continue_run_check
+261cb8a Merge pull request #2124 from jedwards4b/pio1_update
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/case_run.py
+M       scripts/tests/CMakeLists.txt
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/externals/pio1/pio/pio_types.F90
+M       src/externals/pio2/configure.ac
+M       src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+M       src/externals/pio2/doc/source/mach_walkthrough.txt
+M       src/externals/pio2/src/clib/pio_darray.c
+M       src/externals/pio2/src/clib/pio_getput_int.c
+M       src/externals/pio2/src/clib/pio_msg.c
+M       src/externals/pio2/src/clib/pio_nc4.c
+M       src/externals/pio2/src/clib/pioc_support.c
+M       src/externals/pio2/src/flib/pio_types.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer	 
+Date: 12-11-1017
+Tag: cime5.4.0-alpha.14
+Answer Changes: None
+Tests: code_checker, by-hand, scripts_regression_tests.py
+       scripts_regression_tests.py (with python 3.6.2)
+
+Dependencies:
+
+Brief Summary:
+    - No iteritems method in python3, use six compatibility library.
+    - Fix couple mistakes introduced by ACME split, Pylint errors and timing problem for cesm.
+    - Minor bugfix, root arugment was ignored.
+    - Jgfouca/branch for acme split 12-08-2017.
+    - Add debug print statements to describe current workload.
+    - Fix issue in declaration.
+    - Provide access functions for the setting of pio_rearranger variables.
+    - Move GMAKE and GMAKE_J options to env_run so that changing them doesn't
+      require a rebuild.
+    - Fix processor overflow in create_test.
+    - Miscellaneous tool improvement.
+    - Add ability to customize CaseStatus success message for a phase. 
+    - DOCN mode fix.
+    - Fix bug in compare namelists.
+    - Fixes a memory leak in gptl.
+
+User interface changes: 
+    - simple-py-prof sets PYTHONPATH for you, list_acme_tests assumes you want
+      to list tests
+    - jobid now added to CaseStatus case_submit entry.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+f48881a Merge pull request #2130 from jedwards4b/py3_compatibility
+90ffcf7 Merge pull request #2129 from ESMCI/jgfouca/fix_pylint_and_cesm_timing
+036ac18 Merge pull request #2127 from ESMCI/jgfouca/xml_bugfix
+9dfce92 Merge pull request #2126 from ESMCI/jgfouca/branch-for-acme-split-12-08-2017-pr
+9c01c47 Merge pull request #2122 from ESMCI/jgfouca/create_test_add_workload_output
+c0ce363 fix issue in declaration
+f99b947 hot fix for pr 2121
+bc6f180 Merge pull request #2120 from jedwards4b/mv_gmake_to_run
+1dd0b61 Merge pull request #2119 from ESMCI/jgfouca/cime/fix_create_test_proc_overflow
+0934a32 Merge pull request #2117 from ESMCI/jgfouca/misc_improve_tools
+530c337 Merge pull request #2113 from ESMCI/jgfouca/custom_success_msg_case_status
+cb0f58a Merge pull request #2114 from jedwards4b/DOCN_MODE_fix
+148a8a9 Merge pull request #2111 from ESMCI/jgfouca/compare_nml_bugfix
+2789236 Merge pull request #2110 from ESMCI/mfdeakin-sandia/gptl/memleak
+
+
+Modified files: git diff --name-status [previous_tag]
+M	.gitignore
+M	ChangeLog
+M	config/acme/allactive/config_compsets.xml
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/config_grids.xml
+A	config/acme/machines/Depends.summitdev.pgiacc
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+A	config/acme/machines/syslog.theta
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/config_machines_template.xml
+M	doc/source/users_guide/porting-cime.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/list_acme_tests
+M	scripts/Tools/simple-py-prof
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/acme_cime_mgmt.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	scripts/tests/user_mods_test3/shell_commands
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/share/timing/gptl.c
+M	src/share/util/shr_pio_mod.F90
+M	tools/cprnc/CMakeLists.txt
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 12-04-2017
 Tag: cime5.4.0-alpha.13

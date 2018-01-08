@@ -123,11 +123,11 @@ class NamelistGenerator(object):
             # over later settings).
             self._namelist.merge_nl(new_namelist)
 
-        if skip_entry_loop is None:
+        if not skip_entry_loop:
             for entry in entry_nodes:
-                self.add_default(entry.get("id"))
+                self.add_default(self._definition.get(entry, "id"))
         else:
-            return entry_nodes
+            return [self._definition.get(entry, "id") for entry in entry_nodes]
 
     @staticmethod
     def quote_string(string):

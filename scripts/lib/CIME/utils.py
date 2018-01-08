@@ -373,7 +373,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
         errput = output if not errput else errput
-        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir))
+        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput.encode('utf-8'), os.getcwd() if from_dir is None else from_dir))
 
     return output
 
@@ -1298,12 +1298,10 @@ def find_system_test(testname, case):
     else:
         components = ["any"]
         components.extend( case.get_compset_components())
-        env_test = case.get_env("test")
         fdir = []
         for component in components:
-            tdir = env_test.get_value("SYSTEM_TESTS_DIR",
+            tdir = case.get_value("SYSTEM_TESTS_DIR",
                                       attribute={"component":component})
-
             if tdir is not None:
                 tdir = os.path.abspath(tdir)
                 system_test_file = os.path.join(tdir  ,"{}.py".format(testname.lower()))
@@ -1354,8 +1352,22 @@ def get_lids(case):
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
+    jobid = batch_jobid()
+    if jobid is not None:
+        lid = jobid+'.'+lid
     os.environ["LID"] = lid
     return lid
+
+def batch_jobid():
+    jobid = os.environ.get("PBS_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("SLURM_JOB_ID")
+    if jobid is None:
+        jobid = os.environ.get("LSB_JOBID")
+    if jobid is None:
+        jobid = os.environ.get("COBALT_JOBID")
+    return jobid
+
 
 def analyze_build_log(comp, log, compiler):
     """
@@ -1520,3 +1532,6 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
     arg_logger.info(output)
     arg_logger.info(errput)
     expect(stat == 0, filter_unicode(errput))
+
+def get_batch_script_for_job(job):
+    return "." + job

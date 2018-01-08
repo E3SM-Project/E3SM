@@ -5,16 +5,12 @@ common utilities for buildlib
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-import sys, os, argparse, doctest
+import sys, os, argparse
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_input(argv):
 ###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     parser = argparse.ArgumentParser()
 

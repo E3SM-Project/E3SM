@@ -44,9 +44,9 @@ module atm_comp_mct
   integer(IN)            :: compid              ! mct comp id
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
@@ -237,8 +237,8 @@ CONTAINS
     call seq_infodata_GetData(infodata, case_name=case_name)
 
     call datm_comp_run(EClock, x2a, a2x, &
-       SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, nextsw_cday, case_name)
+         SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, nextsw_cday, case_name)
 
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )
 

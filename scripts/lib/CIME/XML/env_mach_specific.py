@@ -26,36 +26,29 @@ class EnvMachSpecific(EnvBase):
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
         items = ("module_system", "environment_variables", "resource_limits", "mpirun", "run_exe","run_misc_suffix")
-        default_run_exe_node = machobj.get_node("default_run_exe")
-        default_run_misc_suffix_node = machobj.get_node("default_run_misc_suffix")
+        default_run_suffix = machobj.get_child("default_run_suffix")
+        default_run_exe_node = machobj.get_child("default_run_exe", root=default_run_suffix)
+        default_run_misc_suffix_node = machobj.get_child("default_run_misc_suffix", root=default_run_suffix)
 
         for item in items:
             nodes = machobj.get_first_child_nodes(item)
             if item == "run_exe" or item == "run_misc_suffix":
-                newnode = ET.Element(item)
-                newnode.tag = "entry"
-                newnode.set("id", item)
                 if len(nodes) == 0:
-                    if item == "run_exe":
-                        value = default_run_exe_node.text
-                    else:
-                        value =  default_run_misc_suffix_node.text
+                    value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
                 else:
                     value = nodes[0].text
-                newnode.set("value", value)
-                newnode = self.add_sub_node(newnode, "type", "char")
-                if item == "run_exe":
-                    newnode = self.add_sub_node(newnode, "desc", "executable name")
-                else:
-                    newnode = self.add_sub_node(newnode, "desc", "redirect for job output")
 
-                self.add_child(newnode)
+                entity_node = self.make_child("entry", {"id":item, "value":value})
+
+                self.make_child("type", root=entity_node, text="char")
+                self.make_child("desc", root=entity_node, text=("executable name" if item == "run_exe" else "redirect for job output"))
+
             else:
                 for node in nodes:
                     self.add_child(node)
 
     def _get_modules_for_case(self, case):
-        module_nodes = self.get_nodes("modules")
+        module_nodes = self.get_children("modules", root=self.get_child("module_system"))
         modules_to_load = None
         if module_nodes is not None:
             modules_to_load = self._compute_module_actions(module_nodes, case)
@@ -63,7 +56,7 @@ class EnvMachSpecific(EnvBase):
         return modules_to_load
 
     def _get_envs_for_case(self, case):
-        env_nodes = self.get_nodes("environment_variables")
+        env_nodes = self.get_children("environment_variables")
 
         envs_to_set = None
         if env_nodes is not None:
@@ -88,7 +81,7 @@ class EnvMachSpecific(EnvBase):
         self._get_resources_for_case(case)
 
     def _get_resources_for_case(self, case):
-        resource_nodes = self.get_nodes("resource_limits")
+        resource_nodes = self.get_children("resource_limits")
         if resource_nodes is not None:
             nodes = self._compute_resource_actions(resource_nodes, case)
             for name, val in nodes:
@@ -186,11 +179,11 @@ class EnvMachSpecific(EnvBase):
         compiler, mpilib = case.get_value("COMPILER"), case.get_value("MPILIB")
 
         for node in nodes:
-            if (self._match_attribs(node.attrib, case)):
-                for child in node:
-                    expect(child.tag == child_tag, "Expected {} element".format(child_tag))
-                    if (self._match_attribs(child.attrib, case)):
-                        val = child.text
+            if (self._match_attribs(self.attrib(node), case)):
+                for child in self.get_children(root=node, no_validate=True):
+                    expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
+                    if (self._match_attribs(self.attrib(child), case)):
+                        val = self.text(child)
                         if val is not None:
                             # We allow a couple special substitutions for these fields
                             for repl_this, repl_with in [("$COMPILER", compiler), ("$MPILIB", mpilib)]:
@@ -200,7 +193,7 @@ class EnvMachSpecific(EnvBase):
                             expect("$" not in val, "Not safe to leave unresolved items in env var value: '{}'".format(val))
 
                         # intentional unindent, result is appended even if val is None
-                        result.append( (child.get("name"), val) )
+                        result.append( (self.get(child, "name"), val) )
 
         return result
 
@@ -332,29 +325,29 @@ class EnvMachSpecific(EnvBase):
         """
         Return the module system used on this machine
         """
-        module_system = self.get_node("module_system")
-        return module_system.get("type")
+        module_system = self.get_child("module_system")
+        return self.get(module_system, "type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_optional_node("init_path", attributes={"lang":lang})
-        return init_nodes.text if init_nodes is not None else None
+        init_nodes = self.get_optional_child("init_path", attributes={"lang":lang}, root=self.get_child("module_system"))
+        return self.text(init_nodes) if init_nodes is not None else None
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
-        return cmd_nodes.text if cmd_nodes is not None else None
+        cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
+        return self.text(cmd_nodes) if cmd_nodes is not None else None
 
     def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
-        mpirun_nodes = self.get_nodes("mpirun")
+        mpirun_nodes = self.get_children("mpirun")
         best_match = None
         best_num_matched = -1
         default_match = None
         best_num_matched_default = -1
         args = []
         for mpirun_node in mpirun_nodes:
-            xml_attribs = mpirun_node.attrib
+            xml_attribs = self.attrib(mpirun_node)
             all_match = True
             matches = 0
             is_default = False
@@ -398,18 +391,18 @@ class EnvMachSpecific(EnvBase):
 
         # Now that we know the best match, compute the arguments
         if not exe_only:
-            arg_node = self.get_optional_node("arguments", root=the_match)
+            arg_node = self.get_optional_child("arguments", root=the_match)
             if arg_node is not None:
-                arg_nodes = self.get_nodes("arg", root=arg_node)
+                arg_nodes = self.get_children("arg", root=arg_node)
                 for arg_node in arg_nodes:
-                    arg_value = transform_vars(arg_node.text,
+                    arg_value = transform_vars(self.text(arg_node),
                                                case=case,
                                                subgroup=job,
-                                               default=arg_node.get("default"))
+                                               default=self.get(arg_node, "default"))
                     args.append(arg_value)
 
-        exec_node = self.get_node("executable", root=the_match)
+        exec_node = self.get_child("executable", root=the_match)
         expect(exec_node is not None,"No executable found")
-        executable = exec_node.text
+        executable = self.text(exec_node)
 
         return executable, args
