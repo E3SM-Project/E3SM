@@ -6,17 +6,13 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-import sys, os, argparse, doctest
+import sys, os, argparse
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_input(argv):
 ###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     parser = argparse.ArgumentParser()
 

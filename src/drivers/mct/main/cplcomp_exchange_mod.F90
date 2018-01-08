@@ -18,9 +18,9 @@ module cplcomp_exchange_mod
 #include <mpif.h>
   save
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public :: seq_map_init_exchange   ! union of cpl/component pes
   public :: seq_map_map_exchange    ! union of cpl/component pes
@@ -29,9 +29,9 @@ module cplcomp_exchange_mod
   public :: seq_mctext_gGridInit
   public :: seq_mctext_avExtend
 
-!--------------------------------------------------------------------------
-! Private interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private interfaces
+  !--------------------------------------------------------------------------
 
   ! Shared routines for extension and computation of gsmaps, avs, and ggrids
   private :: seq_mctext_gsmapIdentical
@@ -39,15 +39,15 @@ module cplcomp_exchange_mod
   private :: seq_mctext_gsmapCreate
   private :: seq_mctext_avCreate
 
-!--------------------------------------------------------------------------
-! Public data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public data
+  !--------------------------------------------------------------------------
 
   integer,public :: seq_mctext_decomp
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   character(*),parameter :: subName = '(seq_mctext_mct)'
   real(r8),parameter :: c1 = 1.0_r8
@@ -187,13 +187,13 @@ contains
 
     if (seq_comm_iamroot(CPLID)) then
        write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
-          mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
+            mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
        call shr_sys_flush(logunit)
     endif
 
   end subroutine seq_map_init_exchange
 
- !===============================================================================
+  !===============================================================================
 
   subroutine seq_map_map_exchange( comp, flow, dom_flag, dom_tmp, string, msgtag )
 

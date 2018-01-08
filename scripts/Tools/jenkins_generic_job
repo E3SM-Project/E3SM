@@ -24,8 +24,6 @@ def parse_command_line(args, description):
 usage="""\n{0} [-g] [-d] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run the tests and compare baselines \033[0m
@@ -124,10 +122,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name = \
         parse_command_line(sys.argv, description)
 

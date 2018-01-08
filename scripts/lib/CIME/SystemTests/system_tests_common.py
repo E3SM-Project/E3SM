@@ -35,9 +35,6 @@ class SystemTestsCommon(object):
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
 
-    def __del__(self):
-        self._case.set_value("RUN_WITH_SUBMIT", False)
-
     def _init_environment(self, caseroot):
         """
         Do initializations of environment variables that are needed in __init__

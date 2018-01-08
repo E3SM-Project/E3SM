@@ -2,7 +2,7 @@ module seq_flux_mct
 
   use shr_kind_mod,      only: r8 => shr_kind_r8, in=>shr_kind_in
   use shr_sys_mod,       only: shr_sys_abort
-  use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_diurnal
+  use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
@@ -17,9 +17,9 @@ module seq_flux_mct
   private
   save
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public seq_flux_init_mct
   public seq_flux_initexch_mct
@@ -29,9 +29,9 @@ module seq_flux_mct
   public seq_flux_atmocn_mct
   public seq_flux_atmocnexch_mct
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   real(r8), pointer       :: lats(:)  ! latitudes  (degrees)
   real(r8), pointer       :: lons(:)  ! longitudes (degrees)
@@ -189,9 +189,9 @@ module seq_flux_mct
   type(mct_gsMap) :: gsmap_ae, gsmap_oe              ! gsmaps for atm/ocn on exch grid
   integer(in)     :: nloc_a2o,nloc_o2a,nloc_o,nloc_a,nloc_ae,nloc_oe
 
-!===============================================================================
+  !===============================================================================
 contains
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_init_mct(comp, fractions)
 
@@ -451,7 +451,7 @@ contains
 
   end subroutine seq_flux_init_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_initexch_mct(atm, ocn, mpicom_cplid, cplid)
 
@@ -507,17 +507,17 @@ contains
        endif
 
        call shr_mct_queryConfigFile(mpicom_cplid, ConfigFilename, &
-          trim(MapLabel),fileName,trim(MapTypeLabel),maptype)
+            trim(MapLabel),fileName,trim(MapTypeLabel),maptype)
 
        !--- hardwire decomposition to gsmap_o
        if (n == 1) then
           Smaptype = "src"
           call shr_mct_sMatReaddnc(sMata2o, gsmap_a, gsmap_o, Smaptype, &
-             filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
+               filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
        elseif (n == 2) then
           Smaptype = "dst"
           call shr_mct_sMatReaddnc(sMato2a, gsmap_o, gsmap_a, Smaptype, &
-             filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
+               filename=fileName, mytask=mytask, mpicom=mpicom_cplid)
        else
           call shr_sys_abort(trim(subname)//' do error2')
        endif
@@ -670,7 +670,7 @@ contains
 
   end subroutine seq_flux_initexch_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_ocnalb_mct( infodata, ocn, a2x_o, fractions_o, xao_o )
 
@@ -787,13 +787,13 @@ contains
           avsdf = xao_o%rAttr(index_xao_So_avsdf,n)
           anidf = xao_o%rAttr(index_xao_So_anidf,n)
           swupc = a2x_o%rAttr(index_a2x_Faxa_swndr,n)*(-anidr) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swndf,n)*(-anidf) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n)*(-avsdr) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)*(-avsdf)
+               & + a2x_o%rAttr(index_a2x_Faxa_swndf,n)*(-anidf) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n)*(-avsdr) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)*(-avsdf)
           swdnc = a2x_o%rAttr(index_a2x_Faxa_swndr,n) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swndf,n) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n) &
-              & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)
+               & + a2x_o%rAttr(index_a2x_Faxa_swndf,n) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n) &
+               & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)
           if ( anidr == 1.0_r8 ) then ! dark side of earth
              swupc = 0.0_r8
              swdnc = 0.0_r8
@@ -806,7 +806,7 @@ contains
        ! Will only do albedo calculation if nextsw_cday is not -1.
 
        call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday,orb_eccen=eccen, &
-          orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr)
+            orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr)
        if (nextsw_cday >= -0.5_r8) then
           calday = nextsw_cday
           call shr_orb_decl(calday, eccen, mvelpp,lambm0, obliqr, delta, eccf)
@@ -817,9 +817,9 @@ contains
              cosz = shr_orb_cosz( calday, rlat, rlon, delta )
              if (cosz  >  0.0_r8) then !--- sun hit --
                 anidr = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
-                        (.150_r8*(cosz         - 0.100_r8 ) *   &
-                                 (cosz         - 0.500_r8 ) *   &
-                                 (cosz         - 1.000_r8 )  )
+                     (.150_r8*(cosz         - 0.100_r8 ) *   &
+                     (cosz         - 0.500_r8 ) *   &
+                     (cosz         - 1.000_r8 )  )
                 avsdr = anidr
                 anidf = albdif
                 avsdf = albdif
@@ -851,9 +851,9 @@ contains
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
     endif
 
-    end subroutine seq_flux_ocnalb_mct
+  end subroutine seq_flux_ocnalb_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_atmocnexch_mct( infodata, atm, ocn, fractions_a, fractions_o, &
        xao_a, xao_o)
@@ -1011,26 +1011,26 @@ contains
 
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc_a2o , zbot , ubot, vbot, thbot, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-                          uGust, lwdn , swdn , swup, prec, &
-                          fswpen, ocnsal, ocn_prognostic, flux_diurnal,   &
-                          lats , lons , warm , salt , speed, regime,      &
-                          warmMax, windMax, qSolAvg, windAvg,             &
-                          warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
-                          tbulk, tskin, tskin_day, tskin_night, &
-                          cskin, cskin_night, tod, dt,          &
-                          duu10n,ustar, re  , ssq , missval = 0.0_r8, &
-                          cold_start=cold_start)
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            uGust, lwdn , swdn , swup, prec, &
+            fswpen, ocnsal, ocn_prognostic, flux_diurnal,   &
+            lats , lons , warm , salt , speed, regime,      &
+            warmMax, windMax, qSolAvg, windAvg,             &
+            warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
+            tbulk, tskin, tskin_day, tskin_night, &
+            cskin, cskin_night, tod, dt,          &
+            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
-                          duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
+            duu10n,ustar, re  , ssq , missval = 0.0_r8 )
     endif
 
     !--- create temporary aVects on exchange, atm, or ocn decomp as needed
@@ -1105,7 +1105,7 @@ contains
     do n = 1,nloc_o2a
        io = sMato2a%data%iAttr(ko,n)
        ia = sMato2a%data%iAttr(ka,n)
-!tcx   wt = sMato2a%data%rAttr(kw,n)
+       !tcx   wt = sMato2a%data%rAttr(kw,n)
        wt = sMato2a%data%rAttr(kw,n) * fractions_oe%rAttr(kf,io)
        xaop_ae%rAttr(index_sen   ,ia) = xaop_ae%rAttr(index_sen   ,ia) + sen(n) * wt
        xaop_ae%rAttr(index_lat   ,ia) = xaop_ae%rAttr(index_lat   ,ia) + lat(n) * wt
@@ -1170,7 +1170,7 @@ contains
 
   end subroutine seq_flux_atmocnexch_mct
 
-!===============================================================================
+  !===============================================================================
 
   subroutine seq_flux_atmocn_mct(infodata, tod, dt, a2x, o2x, xao)
 
@@ -1212,6 +1212,9 @@ contains
     logical     :: read_restart    ! .true. => continue run
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
+    real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
+    integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
+    logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     !
     real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
     real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
@@ -1230,6 +1233,11 @@ contains
     cold_start = .false.   ! use restart data or data from last timestep
 
     if (first_call) then
+       call seq_infodata_getData(infodata , &
+         coldair_outbreak_mod=coldair_outbreak_mod,  &
+         flux_convergence=flux_convergence, &
+         flux_max_iteration=flux_max_iteration)
+
        if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
@@ -1294,6 +1302,9 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
+       call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
+            flux_convergence_max_iteration=flux_max_iteration, &
+            coldair_outbreak_mod=coldair_outbreak_mod)
        first_call = .false.
     end if
 
@@ -1324,7 +1335,7 @@ contains
           vbot(n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
-!wiso note: shum_* should be multiplied by Rstd_* here?
+          !wiso note: shum_* should be multiplied by Rstd_* here?
           shum_16O(n) = 1.e-2_r8 ! H216O specific humidity ~ kg/kg
           shum_HDO(n) = 1.e-2_r8 ! HD16O specific humidity ~ kg/kg
           shum_18O(n) = 1.e-2_r8 ! H218O specific humidity ~ kg/kg
@@ -1387,13 +1398,13 @@ contains
                 emask(n) = 0
                 !write(logunit,*) 'aoflux tcx1',n,dens(n),tocn(n)
              endif
-!           !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
+             !           !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
              uGust(n) = 0.0_r8
              lwdn (n) = a2x%rAttr(index_a2x_Faxa_lwdn ,n)
              prec (n) = a2x%rAttr(index_a2x_Faxa_rainc,n) &
-                    & + a2x%rAttr(index_a2x_Faxa_rainl,n) &
-                    & + a2x%rAttr(index_a2x_Faxa_snowc,n) &
-                    & + a2x%rAttr(index_a2x_Faxa_snowl,n)
+                  & + a2x%rAttr(index_a2x_Faxa_rainl,n) &
+                  & + a2x%rAttr(index_a2x_Faxa_snowc,n) &
+                  & + a2x%rAttr(index_a2x_Faxa_snowl,n)
              prec_gust (n) = a2x%rAttr(index_a2x_Faxa_rainc,n)
              fswpen(n)= o2x%rAttr(index_o2x_So_fswpen ,n)
              ocnsal(n)= o2x%rAttr(index_o2x_So_s      ,n)
@@ -1426,32 +1437,32 @@ contains
 
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc , zbot , ubot, vbot, thbot, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-                          uGust, lwdn , swdn , swup, prec, &
-                          fswpen, ocnsal, ocn_prognostic, flux_diurnal,    &
-                          lats, lons , warm , salt , speed, regime,       &
-                          warmMax, windMax, qSolAvg, windAvg,             &
-                          warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
-                          tbulk, tskin, tskin_day, tskin_night, &
-                          cskin, cskin_night, tod, dt,          &
-                          duu10n,ustar, re  , ssq, &
-                          !missval should not be needed if flux calc
-                          !consistent with mrgx2a fraction
-                          !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
-                          cold_start=cold_start)
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            uGust, lwdn , swdn , swup, prec, &
+            fswpen, ocnsal, ocn_prognostic, flux_diurnal,    &
+            lats, lons , warm , salt , speed, regime,       &
+            warmMax, windMax, qSolAvg, windAvg,             &
+            warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
+            tbulk, tskin, tskin_day, tskin_night, &
+            cskin, cskin_night, tod, dt,          &
+            duu10n,ustar, re  , ssq, &
+                                !missval should not be needed if flux calc
+                                !consistent with mrgx2a fraction
+                                !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+            cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-                          shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-                          tocn , emask, sen , lat , lwup , &
-                          roce_16O, roce_HDO, roce_18O,    &
-                          evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-                          duu10n,ustar, re  , ssq)
-                          !missval should not be needed if flux calc
-                          !consistent with mrgx2a fraction
-                          !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            duu10n,ustar, re  , ssq)
+       !missval should not be needed if flux calc
+       !consistent with mrgx2a fraction
+       !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
     endif
 
     do n = 1,nloc
@@ -1497,6 +1508,6 @@ contains
 
   end subroutine seq_flux_atmocn_mct
 
-!===============================================================================
+  !===============================================================================
 
 end module seq_flux_mct
