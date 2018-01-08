@@ -2443,18 +2443,18 @@
     <modules>
       <command name="purge"/>
       <command name="load">cmake</command>
-      <command name="load">perl xml-libxml switch python/2.7.11</command>
+      <command name="load">perl xml-libxml switch python/2.7</command>
     </modules>
     <modules compiler="intel">
-      <command name="load">intel/2015.6.233</command>
+      <command name="load">intel/2016.4.072</command>
       <command name="load">mkl</command>
     </modules>
     <modules compiler="intel" mpilib="mpi-serial">
-      <command name="load">netcdf/4.4.0-intel-s</command>
+      <command name="load">netcdf/4.4.1.1-intel-s</command>
     </modules>
     <modules compiler="intel" mpilib="!mpi-serial">
       <command name="load">openmpi</command>
-      <command name="load">netcdf/4.4.0-intel-p</command>
+      <command name="load">netcdf/4.4.1.1-intel-p</command>
     </modules>
      </module_system>
 </machine>
@@ -2506,18 +2506,18 @@
     <modules>
       <command name="purge"/>
       <command name="load">cmake</command>
-      <command name="load">perl xml-libxml switch python/2.7.11</command>
+      <command name="load">perl xml-libxml switch python/2.7</command>
     </modules>
     <modules compiler="intel">
-      <command name="load">intel/2015.6.233</command>
+      <command name="load">intel/2016.4.072</command>
       <command name="load">mkl</command>
     </modules>
     <modules compiler="intel" mpilib="mpi-serial">
-      <command name="load">netcdf/4.4.0-intel-s</command>
+      <command name="load">netcdf/4.4.1.1-intel-s</command>
     </modules>
     <modules compiler="intel" mpilib="!mpi-serial">
       <command name="load">openmpi</command>
-      <command name="load">netcdf/4.4.0-intel-p</command>
+      <command name="load">netcdf/4.4.1.1-intel-s</command>
     </modules>
      </module_system>
 </machine>
