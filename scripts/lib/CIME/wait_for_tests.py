@@ -53,7 +53,7 @@ def get_test_output(test_path):
 def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
     # We assume all cases were created from the same code repo
-    first_result_case = os.path.dirname(results.iteritems().next()[1][0])
+    first_result_case = os.path.dirname(results.items().next()[1][0])
     try:
         srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
     except:
