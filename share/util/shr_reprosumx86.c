@@ -67,17 +67,16 @@
 
 void shr_reprosumx86_fix_start(unsigned short *old_cw) {
 #ifdef x86
-  unsigned short new_cw;
+    unsigned short new_cw;
 
-  _FPU_GETCW(*old_cw);
-  new_cw = (*old_cw & ~_FPU_EXTENDED) | _FPU_DOUBLE;
-  _FPU_SETCW(new_cw);
+    _FPU_GETCW(*old_cw);
+    new_cw = (*old_cw & ~_FPU_EXTENDED) | _FPU_DOUBLE;
+    _FPU_SETCW(new_cw);
 #endif
 }
 
 void shr_reprosumx86_fix_end(unsigned short *old_cw) {
 #ifdef x86
-  _FPU_SETCW(*old_cw);
+    _FPU_SETCW(*old_cw);
 #endif
 }
-
