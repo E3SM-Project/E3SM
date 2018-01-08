@@ -476,6 +476,17 @@
     </queues>
   </batch_system>
 
+  <!-- modex is PBS -->
+  <batch_system MACH="modex" type="pbs">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="36:00:00" default="true">batch</queue>
+    </queues>
+  </batch_system>
+
   <batch_jobs>
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">

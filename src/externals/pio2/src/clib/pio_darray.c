@@ -485,6 +485,7 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
 #endif
     int mpierr = MPI_SUCCESS;  /* Return code from MPI functions. */
     int ierr = PIO_NOERR;      /* Return code. */
+    size_t io_data_size;          /* potential size of data on io task */
 
     LOG((1, "PIOc_write_darray ncid = %d varid = %d ioid = %d arraylen = %d",
          ncid, varid, ioid, arraylen));
@@ -532,7 +533,7 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
     if (fillvalue)
         if (memcmp(fillvalue, vdesc->fillvalue, vdesc->pio_type_size))
             return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
-    
+
     /* Move to end of list or the entry that matches this ioid. */
     for (wmb = &file->buffer; wmb->next; wmb = wmb->next)
         if (wmb->ioid == ioid && wmb->recordvar == vdesc->rec_var)
@@ -560,13 +561,12 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
     }
     LOG((2, "wmb->num_arrays = %d arraylen = %d vdesc->mpi_type_size = %d\n",
          wmb->num_arrays, arraylen, vdesc->mpi_type_size));
-
 #if PIO_USE_MALLOC
     /* Try realloc first and call flush if realloc fails. */
     if (arraylen > 0)
     {
         size_t data_size = (1 + wmb->num_arrays) * arraylen * vdesc->mpi_type_size;
-        
+
         if ((realloc_data = realloc(wmb->data, data_size)))
         {
             needsflush = 0;
@@ -588,6 +588,12 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
     if (needsflush == 0)
         needsflush = (maxfree <= 1.1 * (1 + wmb->num_arrays) * arraylen * vdesc->mpi_type_size);
 #endif
+    /* the limit of data_size < INT_MAX is due to a bug in ROMIO which limits
+       the size of contiguous data to INT_MAX, a fix has been proposed in
+       https://github.com/pmodels/mpich/pull/2888 */
+    io_data_size = (1 + wmb->num_arrays) * iodesc->maxiobuflen * vdesc->mpi_type_size;
+    if(io_data_size > INT_MAX)
+	needsflush = 2;
 
     /* Tell all tasks on the computation communicator whether we need
      * to flush data. */

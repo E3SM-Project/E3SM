@@ -28,12 +28,12 @@ class Pes(GenericXML):
         other_settings = {}
         o_grid_nodes = []
         # Get any override nodes
-        overrides = self.get_optional_node("overrides")
+        overrides = self.get_optional_child("overrides")
         if overrides is not None:
-            o_grid_nodes = self.get_nodes("grid", root = overrides)
+            o_grid_nodes = self.get_children("grid", root = overrides)
             opes_ntasks, opes_nthrds, opes_rootpe, oother_settings = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, True)
         # Get all the nodes
-        grid_nodes = self.get_nodes("grid")
+        grid_nodes = self.get_children("grid", no_validate=True)
         if o_grid_nodes:
             gn_set = set(grid_nodes)
             ogn_set = set(o_grid_nodes)
@@ -69,18 +69,18 @@ class Pes(GenericXML):
         pesize_choice = None
         max_points = -1
         pes_ntasks, pes_nthrds, pes_rootpe, other_settings = {}, {}, {}, {}
-        pe_select = []
+        pe_select = None
         for grid_node in grid_nodes:
-            grid_match = grid_node.get("name")
+            grid_match = self.get(grid_node, "name")
             if grid_match == "any" or  re.search(grid_match,grid):
-                mach_nodes = self.get_nodes("mach",root=grid_node)
+                mach_nodes = self.get_children("mach",root=grid_node)
                 for mach_node in mach_nodes:
-                    mach_match = mach_node.get("name")
+                    mach_match = self.get(mach_node, "name")
                     if mach_match == "any" or re.search(mach_match, machine):
-                        pes_nodes = self.get_nodes("pes", root=mach_node)
+                        pes_nodes = self.get_children("pes", root=mach_node)
                         for pes_node in pes_nodes:
-                            pesize_match = pes_node.get("pesize")
-                            compset_match = pes_node.get("compset")
+                            pesize_match = self.get(pes_node, "pesize")
+                            compset_match = self.get(pes_node, "compset")
                             if (pesize_match == "any" or (pesize_opts is not None and \
                                                           re.search(pesize_match, pesize_opts))) and \
                                                           (compset_match == "any" or \
@@ -89,21 +89,21 @@ class Pes(GenericXML):
                                 points = int(grid_match!="any")*3+int(mach_match!="any")*7+\
                                     int(compset_match!="any")*2+int(pesize_match!="any")
                                 if override and points > 0:
-                                    for node in pes_node:
-                                        vid = node.tag
+                                    for node in self.get_children(root=pes_node, no_validate=True):
+                                        vid = self.name(node)
                                         logger.info("vid is {}".format(vid))
                                         if "ntasks" in vid:
-                                            for child in node:
-                                                pes_ntasks[child.tag.upper()] = int(child.text)
+                                            for child in self.get_children(root=node, no_validate=True):
+                                                pes_ntasks[self.name(child).upper()] = int(self.text(child))
                                         elif "nthrds" in vid:
-                                            for child in node:
-                                                pes_nthrds[child.tag.upper()] = int(child.text)
+                                            for child in self.get_children(root=node, no_validate=True):
+                                                pes_nthrds[self.name(child).upper()] = int(self.text(child))
                                         elif "rootpe" in vid:
-                                            for child in node:
-                                                pes_rootpe[child.tag.upper()] = int(child.text)
+                                            for child in self.get_children(root=node, no_validate=True):
+                                                pes_rootpe[self.name(child).upper()] = int(self.text(child))
                                     # if the value is already upper case its something else we are trying to set
-                                        elif vid == node.tag:
-                                            other_settings[vid] = node.text
+                                        elif vid == self.name(node):
+                                            other_settings[vid] = self.text(node)
 
                                 else:
                                     if points > max_points:
@@ -121,21 +121,21 @@ class Pes(GenericXML):
                                         logger.warning("points = {:d}".format(points))
                                         expect(False, "More than one PE layout matches given PE specs")
         if not override:
-            for node in pe_select:
-                vid = node.tag
+            for node in self.get_children(root=pe_select, no_validate=True):
+                vid = self.name(node)
                 logger.debug("vid is {}".format(vid))
                 if "ntasks" in vid:
-                    for child in node:
-                        pes_ntasks[child.tag.upper()] = int(child.text)
+                    for child in self.get_children(root=node, no_validate=True):
+                        pes_ntasks[self.name(child).upper()] = int(self.text(child))
                 elif "nthrds" in vid:
-                    for child in node:
-                        pes_nthrds[child.tag.upper()] = int(child.text)
+                    for child in self.get_children(root=node, no_validate=True):
+                        pes_nthrds[self.name(child).upper()] = int(self.text(child))
                 elif "rootpe" in vid:
-                    for child in node:
-                        pes_rootpe[child.tag.upper()] = int(child.text)
+                    for child in self.get_children(root=node, no_validate=True):
+                        pes_rootpe[self.name(child).upper()] = int(self.text(child))
             # if the value is already upper case its something else we are trying to set
-                elif vid == node.tag and vid != "comment":
-                    other_settings[vid] = node.text
+                elif vid == self.name(node) and vid != "comment":
+                    other_settings[vid] = self.text(node)
             if grid_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
                 logger.info("Pes setting: grid match    is {} ".format(grid_choice ))
             if mach_choice != 'any' or logger.isEnabledFor(logging.DEBUG):

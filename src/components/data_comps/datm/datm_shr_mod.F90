@@ -158,10 +158,11 @@ CONTAINS
 
     datamode = trim(SDATM%dataMode)
     if (trim(datamode) == 'NULL'      .or. &
-        trim(datamode) == 'CORE2_NYF' .or. &
-        trim(datamode) == 'CORE2_IAF' .or. &
-        trim(datamode) == 'CLMNCEP'   .or. &
-        trim(datamode) == 'COPYALL'   ) then
+         trim(datamode) == 'CORE2_NYF' .or. &
+         trim(datamode) == 'CORE2_IAF' .or. &
+         trim(datamode) == 'CORE_IAF_JRA' .or. &
+         trim(datamode) == 'CLMNCEP'   .or. &
+         trim(datamode) == 'COPYALL'   ) then
        if (my_task == master_task) then
           write(logunit,F00) ' datm datamode = ',trim(datamode)
           call shr_sys_flush(logunit)

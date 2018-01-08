@@ -13,6 +13,7 @@ from collections import OrderedDict
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
+import six
 from update_acme_tests import get_recommended_test_time
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
 from CIME.test_status import *
@@ -123,7 +124,6 @@ class TestScheduler(object):
                 self._project = self._machobj.get_value("PROJECT")
         else:
             self._project = project
-
             # Needed in case default root depends on PROJECT
             self._machobj.set_value("PROJECT", project)
 
@@ -156,23 +156,23 @@ class TestScheduler(object):
 
         if parallel_jobs is None:
             self._parallel_jobs = min(len(test_names),
-                                      self._machobj.get_value("MAX_TASKS_PER_NODE"))
+                                      self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
         else:
             self._parallel_jobs = parallel_jobs
 
         self._baseline_cmp_name = baseline_cmp_name # Implies comparison should be done if not None
         self._baseline_gen_name = baseline_gen_name # Implies generation should be done if not None
 
+        # Compute baseline_root
+        self._baseline_root = baseline_root if baseline_root is not None \
+                              else self._machobj.get_value("BASELINE_ROOT")
+
+        if self._project is not None:
+            self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
+
+        self._baseline_root = os.path.abspath(self._baseline_root)
+
         if baseline_cmp_name or baseline_gen_name:
-            # Compute baseline_root
-            self._baseline_root = baseline_root if baseline_root is not None \
-                else self._machobj.get_value("BASELINE_ROOT")
-
-            if self._project is not None:
-                self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
-
-            self._baseline_root = os.path.abspath(self._baseline_root)
-
             if self._baseline_cmp_name:
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_cmp_name)
                 expect(os.path.isdir(full_baseline_dir),
@@ -189,8 +189,6 @@ class TestScheduler(object):
                 expect(allow_baseline_overwrite or len(existing_baselines) == 0,
                        "Baseline directories already exists {}\n" \
                        "Use -o to avoid this error".format(existing_baselines))
-        else:
-            self._baseline_root = None
 
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
@@ -202,7 +200,7 @@ class TestScheduler(object):
 
         # Oversubscribe by 1/4
         if proc_pool is None:
-            pes = int(self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
+            pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
             self._proc_pool = int(pes * 1.25)
         else:
             self._proc_pool = int(proc_pool)
@@ -498,8 +496,7 @@ class TestScheduler(object):
         envtest.set_value("TEST_ARGV", test_argv)
         envtest.set_value("CLEANUP", self._clean)
 
-        if self._baseline_gen_name or self._baseline_cmp_name:
-            envtest.set_value("BASELINE_ROOT", self._baseline_root)
+        envtest.set_value("BASELINE_ROOT", self._baseline_root)
         envtest.set_value("GENERATE_BASELINE", self._baseline_gen_name is not None)
         envtest.set_value("COMPARE_BASELINE", self._baseline_cmp_name is not None)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
@@ -774,6 +771,14 @@ class TestScheduler(object):
                             threads_in_flight[test] = (new_thread, procs_needed, next_phase)
                             new_thread.start()
                             num_threads_launched_this_iteration += 1
+
+                            logger.debug("  Current workload:")
+                            total_procs = 0
+                            for the_test, the_data in six.iteritems(threads_in_flight):
+                                logger.debug("    {}: {} -> {}".format(the_test, the_data[2], the_data[1]))
+                                total_procs += the_data[1]
+
+                            logger.debug("    Total procs in use: {}".format(total_procs))
                         else:
                             if not threads_in_flight:
                                 msg = "Phase '{}' for test '{}' required more processors, {:d}, than this machine can provide, {:d}".format(next_phase, test, procs_needed, self._procs_avail)
@@ -781,7 +786,11 @@ class TestScheduler(object):
                                 self._update_test_status(test, next_phase, TEST_PEND_STATUS)
                                 self._update_test_status(test, next_phase, TEST_FAIL_STATUS)
                                 self._log_output(test, msg)
-                                self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                if next_phase == RUN_PHASE:
+                                    self._update_test_status_file(test, SUBMIT_PHASE, TEST_PASS_STATUS)
+                                    self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
+                                else:
+                                    self._update_test_status_file(test, next_phase, TEST_FAIL_STATUS)
                                 num_threads_launched_this_iteration += 1
 
             if not work_to_do:
