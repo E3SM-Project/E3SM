@@ -74,6 +74,12 @@ def run_diag(parameter):
     ref_name = parameter.ref_name
     regions = parameter.regions
 
+    if getattr(parameter, 'multiprocessing', False):
+        # only force mpl when running with multiprocessing
+        print('FORCING MPL')
+        print('FORCING MPL')
+        parameter.backend = 'mpl'
+
     for season in seasons:
         try:
             filename1 = utils.get_test_filename(parameter, season)
