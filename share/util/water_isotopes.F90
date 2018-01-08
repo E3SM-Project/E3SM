@@ -1,4 +1,3 @@
-
 module water_isotopes
 !-----------------------------------------------------------------------
 !
@@ -9,7 +8,7 @@ module water_isotopes
 !
 ! This code works over species indices, rather than the constituent indices
 ! used in the water_tracers module. As such, MAKE SURE you call these
-! routines with species indicies! The tracer variable names do not need to 
+! routines with species indicies! The tracer variable names do not need to
 ! match the species names, which are privided just for diagnostic output.
 !
 ! * This module MUST be includable by CAM and CLM * (be careful with uses)
@@ -33,7 +32,7 @@ module water_isotopes
                            SHR_CONST_VSMOW_16O, &
                            SHR_CONST_VSMOW_18O, &
                            SHR_CONST_VSMOW_D , &
-                           SHR_CONST_VSMOW_H 
+                           SHR_CONST_VSMOW_H
 
   implicit none
 
@@ -60,13 +59,13 @@ module water_isotopes
 
   public :: wiso_get_roce        ! retrive ocean isotope ratio.
   public :: wiso_flxoce          ! calculate isotopic ocean evaporation.
-  public :: wiso_ssatf           ! supersaturation function        
+  public :: wiso_ssatf           ! supersaturation function
   public :: wiso_heff            ! effective humidity function
 
   !Data checking routines:
 
   public :: wiso_get_rstd        !retrive standard isotope ratio
-  public :: wiso_get_fisub       !retrive isotope subsitutions 
+  public :: wiso_get_fisub       !retrive isotope subsitutions
                                  !aka number of iso. atoms per molec.
   public :: wiso_ratio           !calculate mass ratio of isotope .
   public :: wiso_delta           !calculate the delta value for isotopes.
@@ -85,10 +84,10 @@ module water_isotopes
 
 ! Module parameters
   integer , parameter, public :: pwtspec = 4    ! number of water species (h2o,hdo,h218o,h216o)
-  
+
 ! Tunable prameters for fractionation scheme
   real(r8), parameter :: dkfac    = 0.58_r8           ! diffusive evap. kinetic power law
-!  real(r8), parameter :: tkini    = SHR_CONST_TKTRIP  ! min temp. for kinetic effects as ice appears 
+!  real(r8), parameter :: tkini    = SHR_CONST_TKTRIP  ! min temp. for kinetic effects as ice appears
 !  real(r8), parameter :: tkini    = 258.15_r8         !From Bony et. al., 2008
   real(r8), parameter :: tkini    = 253.15_r8         !From Jouzel and Merlivat, 1984
 
@@ -101,7 +100,7 @@ module water_isotopes
 !bTdegC (Hoffman)
   real(r8), parameter :: ssatmx   = 2.00_r8           ! maximum supersaturation
   real(r8), parameter :: fkhum    = 0.25_r8           ! effective humidity factor
-  real(r8), parameter :: tzero    = SHR_CONST_TKTRIP  ! supercooled water in stratiform  
+  real(r8), parameter :: tzero    = SHR_CONST_TKTRIP  ! supercooled water in stratiform
 
   character(len=8), dimension(pwtspec), parameter, public :: & ! species names
       spnam  = (/ 'H2O     ', 'H216O   ', 'HD16O   ', 'H218O   ' /)
@@ -115,12 +114,6 @@ module water_isotopes
   real(r8), dimension(pwtspec), parameter :: &  ! isotopic subs.
       fisub = (/ 1._r8, 1._r8, 2._r8, 1._r8 /)
 
-  real(r8), dimension(pwtspec), parameter :: &  ! molecular weights
-      mwisp = (/ 18._r8, 18._r8, 19._r8, 20._r8 /)
-
-  real(r8), dimension(pwtspec), parameter :: &  ! mol. weight ratio
-      epsmw = (/ 1._r8, 1._r8, 19._r8/18._r8, 20._r8/18._r8 /)
-
   ! TBD: Ideally this should be controlled by something like a namelist parameter,
   ! but it needs to be something that can be made consistent between models.
   real(r8), dimension(pwtspec), parameter :: &  ! diffusivity ratio (note D/H, not HDO/H2O)
@@ -129,11 +122,7 @@ module water_isotopes
 !      difrm = (/ 1._r8, 1._r8, 0.9836504_r8, 0.9686999_r8 /)   ! this with expk
 !      difrm = (/ 1._r8, 1._r8, 0.9755_r8, 0.9723_r8 /)         ! Merlivat 1978 (tuned for isoCAM3)
        difrm = (/ 1._r8, 1._r8, 0.9757_r8, 0.9727_r8 /)         ! Merlivat 1978 (direct from paper)
-!      difrm = (/ 1._r8, 1._r8, 0.9839_r8, 0.9691_r8 /)         ! Cappa etal 2003 
-
-! Isotopic ratios in natural abundance (SMOW)
-  real(r8), dimension(pwtspec), parameter :: &  ! SMOW isotope ratios
-      rnat  = (/ 1._r8, 0.9976_r8, 155.76e-6_r8, 2005.20e-6_r8 /)
+!      difrm = (/ 1._r8, 1._r8, 0.9839_r8, 0.9691_r8 /)         ! Cappa etal 2003
 
 ! Prescribed isotopic ratios (largely arbitrary and tunable)
   real(r8), dimension(pwtspec), parameter :: &  ! model standard isotope ratio
@@ -145,7 +134,7 @@ module water_isotopes
 !     rstd  = (/ SHR_CONST_RSTD_H2ODEV, SHR_CONST_RSTD_H2ODEV, SHR_CONST_RSTD_H2ODEV, SHR_CONST_RSTD_H2ODEV /)   !all 1.0
 
 ! Isotope enrichment at ocean surface (better to be computed or read from file)
-  real(r8), dimension(pwtspec), parameter :: &  ! mean ocean surface enrichent 
+  real(r8), dimension(pwtspec), parameter :: &  ! mean ocean surface enrichent
 !      boce  = (/ 1._r8, 1._r8, 1.004_r8, 1.0005_r8 /)
 !      boce  = (/ 1._r8, 1._r8, 1.0128_r8, 1.0016_r8, 1.0008_r8, 1.00671_r8 /)  ! LGM
       boce  = (/ 1._r8, 1._r8, 1._r8, 1._r8 /)
@@ -226,7 +215,7 @@ contains
     real(r8), parameter :: difair = 2.36e-5_r8          ! molecular diffusivity of air
     real(r8), parameter :: muair  = 1.7e-5_r8           ! dynamic viscosity of air
                                                      ! about 17 degC, 1.73 at STP (Salby)
-    real(r8), parameter :: gravit = shr_const_g      ! gravity 
+    real(r8), parameter :: gravit = shr_const_g      ! gravity
     real(r8), parameter :: karman = shr_const_karman ! Von Karman constant
 
 !---------------------------- Arguments --------------------------------
@@ -241,11 +230,11 @@ contains
     real(r8) z0                 ! roughness length (constant in cam 9.5e-5)
     real(r8) reno               ! surface reynolds number
     real(r8) tmr                ! ratio of turbulen to molecular resistance
-    real(r8) enn		! diffusive power
+    real(r8) enn	        ! diffusive power
     real(r8) sc                 ! Schmidt number (Prandtl number)
     real(r8) vmu                ! kinematic viscocity of air
     real(r8) difn               ! ratio of difusivities to the power of n
-    real(r8) difrmj		! isotopic diffusion with substitutions
+    real(r8) difrmj	        ! isotopic diffusion with substitutions
 
     real(r8) kmol               ! Merlivals k_mol
 !-----------------------------------------------------------------------
@@ -299,7 +288,7 @@ contains
 
     implicit none
 
-    real(r8), parameter :: gravit = shr_const_g      ! gravity 
+    real(r8), parameter :: gravit = shr_const_g      ! gravity
     real(r8), parameter :: karman = shr_const_karman ! Von Karman constant
 
 !---------------------------- Arguments --------------------------------
@@ -358,7 +347,7 @@ contains
       wiso_alpl = exp(alpal(isp)*tk**3 + alpbl(isp)*tk**2 + alpcl(isp)*tk + alpdl(isp) + alpel(isp)/tk**3)
     else
       wiso_alpl = exp(alpal(isp)/tk**3 + alpbl(isp)/tk**2 + alpcl(isp)/tk + alpdl(isp))
-    end if 
+    end if
 
 #ifdef NOFRAC
     wiso_alpl = 1._r8
@@ -551,8 +540,6 @@ end function wiso_akci
   real(r8) qstar                        ! spec. hum,. mixing scale
   real(r8) Roce                         ! water tracer ratio of ocean surface
   real(r8) alpha                        ! fractionation factor
-  real(r8) rh                           ! relative humidity
-  real(r8) rate                         ! tracer ratio in evaporation
   real(r8) R_std                        ! tracer ratio in evaporation
 !-----------------------------------------------------------------------
 !
@@ -590,14 +577,14 @@ end function wiso_akci
 !
 !         rh = qbot/ssq                                         !calculate relative humidity
 !
-!If RH is 100%, then assume no evaporation occurs (although isotopic equilibration does, which needs to be coded in) 
+!If RH is 100%, then assume no evaporation occurs (although isotopic equilibration does, which needs to be coded in)
 !
-!         if(rh /= 1) then                                     
+!         if(rh /= 1) then
 !           Rate = alpkn*(Roce/alpha - (rh*wtbot/qbot))/(1-rh)  !calculate ratio in flux
 !         else
 !           Rate = 0                                            !Assume no evaporation occurs if RH is 100%
 !         end if
-! 
+!
 !         qflx = Rate*qe                                        !convert to specific humidity (qi)
 
   return
@@ -726,4 +713,3 @@ end function wiso_ssatf
 
 !=========================================================================
 end module water_isotopes
-
