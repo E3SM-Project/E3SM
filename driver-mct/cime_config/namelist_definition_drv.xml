@@ -653,16 +653,56 @@
     </values>
   </entry>
 
-  <entry id="flux_diurnal">
+  <entry id="coldair_outbreak_mod">
     <type>logical</type>
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      If true, turn on diurnal cycle in computing atm/ocn fluxes
-      default: false
+      if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
+      <value cime_model='acme'>.false.</value>
+      <value cime_model='cesm'>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="flux_diurnal">
+     <type>logical</type>
+     <category>control</category>
+     <group>seq_infodata_inparm</group>
+     <desc>
+      If true, turn on diurnal cycle in computing atm/ocn fluxes
+      default: false
+     </desc>
+     <values>
       <value>.false.</value>
+     </values>
+   </entry>
+
+  <entry id="flux_convergence">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Iterate atmocn flux calculation to this % difference
+      Setting this to zero will always do flux_max_iteration
+    </desc>
+    <values>
+      <value cime_model='cesm'>0.0</value>
+      <value cime_model='acme'>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="flux_max_iteration">
+    <type>integer</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Iterate atmocn flux calculation a max of this value
+    </desc>
+    <values>
+      <value cime_model='cesm'>5</value>
+      <value cime_model='acme'>2</value>
     </values>
   </entry>
 
