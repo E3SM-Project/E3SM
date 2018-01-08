@@ -187,9 +187,9 @@ contains
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do exi = 1,num_inst_xao
-!       if (iamroot_CPLID .and. exi == 1) then
-!          write(logunit,F00) 'Calling map_atm2ocn_mct for mapping xao_ax to xao_ox'
-!       end if
+       !       if (iamroot_CPLID .and. exi == 1) then
+       !          write(logunit,F00) 'Calling map_atm2ocn_mct for mapping xao_ax to xao_ox'
+       !       end if
 
        mapper_Fa2o => prep_ocn_get_mapper_Fa2o()
        call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true.)
