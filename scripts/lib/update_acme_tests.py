@@ -95,7 +95,7 @@ _TEST_SUITES = {
 
     "acme_atm_integration" : (None, None,
                               ("ERS_Ln9.ne4_ne4.FC5" ,
-                               "ERP_Ln9.ne4_ne4.FC5AQUAP",
+                               "ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
                                "PET_Ln5.ne4_ne4.FC5AV1C-L",
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
