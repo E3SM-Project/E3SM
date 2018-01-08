@@ -2,7 +2,7 @@
 functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd
+from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job
 from CIME.provenance            import save_build_provenance
 from CIME.preview_namelists     import create_namelists, create_dirs
 from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
@@ -379,7 +379,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
     expect(os.path.isdir(caseroot), "'{}' is not a valid directory".format(caseroot))
     os.chdir(caseroot)
 
-    expect(os.path.exists("case.run"),
+    expect(os.path.exists(get_batch_script_for_job("case.run")),
            "ERROR: must invoke case.setup script before calling build script ")
 
     cimeroot = case.get_value("CIMEROOT")

@@ -262,7 +262,7 @@ def _save_postrun_provenance_cesm(case, lid):
     save_timing = case.get_value("SAVE_TIMING")
     if save_timing:
         rundir = case.get_value("RUNDIR")
-        timing_dir = os.path.join(timing_dir, case.get_value("CASE"))
+        timing_dir = os.path.join("timing", case.get_value("CASE"))
         shutil.move(os.path.join(rundir,"timing"),
                     os.path.join(timing_dir,"timing."+lid))
 

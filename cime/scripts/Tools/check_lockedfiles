@@ -12,8 +12,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# check_lockedfiles SMS\033[0m
@@ -35,10 +33,6 @@ OR
     return args.caseroot
 
 def _main_func(description):
-    if "--test" in sys.argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     caseroot = parse_command_line(sys.argv, description)
 
     with Case(case_root=caseroot, read_only=True) as case:

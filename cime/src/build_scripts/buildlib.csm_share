@@ -14,8 +14,6 @@ OR
 {0} --verbose
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run \033[0m
@@ -49,7 +47,7 @@ def buildlib(bldroot, installpath, caseroot):
         cimeroot = case.get_value("CIMEROOT")
         filepath = [os.path.join(caseroot,"SourceMods","src.share"),
                     os.path.join(cimeroot,"src","drivers","mct","shr"),
-                    os.path.join(cimeroot,"src","components","xcpl_models","xshare"),
+                    os.path.join(cimeroot,"src","components","xcpl_comps","xshare"),
                     os.path.join(cimeroot,"src","share","streams"),
                     os.path.join(cimeroot,"src","share","util"),
                     os.path.join(cimeroot,"src","share","RandNum","src"),
@@ -123,7 +121,4 @@ def _main(argv, documentation):
     buildlib(bldroot, installpath, caseroot)
 
 if (__name__ == "__main__"):
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
     _main(sys.argv, __doc__)

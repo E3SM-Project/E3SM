@@ -1090,7 +1090,7 @@ using a fortran linker.
   </FFLAGS>
   <CFLAGS>
     <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS> 
+  </CFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
 </compiler>
 
@@ -1106,8 +1106,18 @@ using a fortran linker.
   </FFLAGS>
   <CFLAGS>
     <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS> 
+  </CFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="modex">
+  <SLIBS>
+    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_PATH}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
+  </SLIBS>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
 </compiler>
 
 </config_compilers>

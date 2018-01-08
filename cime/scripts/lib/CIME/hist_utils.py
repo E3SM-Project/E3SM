@@ -403,16 +403,6 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
             if os.path.exists(baseline):
                 os.remove(baseline)
 
-            #special care for multi-instance cases,
-            #only keep first instance and
-            #remove instance string from filename
-            m = re.search("(.*%s.*)_([0-9]{4})(.h.*)" % model, baseline)
-            if m is not None:
-                if m.group(2) != '0001':
-                    continue
-                baseline = m.group(1)+m.group(3)
-
-                logger.debug("Found multiinstance hist file {}".format(hist))
             shutil.copy(hist, baseline)
             comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
