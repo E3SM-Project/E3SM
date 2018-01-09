@@ -123,7 +123,7 @@ class Testlist(GenericXML):
                         this_test_node[key] = value
 
                 # Get options that apply to all machines/compilers for this test
-                options = self.get_children("options", root=tnode, no_validate=True)
+                options = self.get_children("options", root=tnode)
                 if len(options) > 0:
                     optionnodes = self.get_children("option", root=options[0])
                 else:

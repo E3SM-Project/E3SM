@@ -185,7 +185,6 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
-    logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
     character(*), parameter :: subName = "(rof_run_mct) "
     !-------------------------------------------------------------------------------
@@ -204,7 +203,7 @@ CONTAINS
 
     call drof_comp_run(EClock, x2r, r2x, &
        SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+       inst_suffix, logunit, case_name=case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

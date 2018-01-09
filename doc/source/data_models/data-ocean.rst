@@ -188,41 +188,21 @@ Field names
 -----------
 
 DOCN defines a set of pre-defined internal field names as well as mappings for how those field names map to the fields sent to the coupler.
-In general, the stream input file should translate the stream input variable names into the ``docn_fld`` names below for use within the data ocn model.
+
+.. note:: In general, the stream input file should translate the stream input variable names into the ``docn_fld`` names below for use within the data ocn model.
 
 .. csv-table:: "DOCN internal field names"
    :header: "docn_fld (avifld)", "driver_fld (avofld)"
    :widths: 30, 30
 
-   "ifrac", "Si_ifrac" 
-   "pslv", "Sa_pslv" 
-   "duu10n", "So_duu10n" 
-   "taux", "Foxx_taux" 
-   "tauy", "Foxx_tauy" 
-   "swnet", "Foxx_swnet" 
-   "lat", "Foxx_lat" 
-   "sen", "Foxx_sen" 
-   "lwup", "Foxx_lwup" 
-   "lwdn", "Faxa_lwdn" 
-   "melth", "Fioi_melth" 
-   "salt", "Fioi_salt" 
-   "prec", "Faxa_prec" 
-   "snow", "Faxa_snow" 
-   "rain", "Faxa_rain" 
-   "evap", "Foxx_evap" 
-   "meltw", "Fioi_meltw" 
-   "rofl", "Foxx_rofl" 
-   "rofi", "Foxx_rofi" 
    "t", "So_t" 
    "u", "So_u" 
    "v", "So_v" 
    "dhdx", "So_dhdx" 
    "dhdy", "So_dhdy" 
    "s", "So_s" 
-   "q", "Fioo_q" 
-   "h", "strm_h" 
-   "qbot", "strm_qbot" 
-   "fswpen", "So_fswpen" 
+   "h", "strm_h" (internal to docn_comp_mod only)
+   "qbot", "strm_qbot" (internal to docn_comp_mod only)
 
 .. _creating-sstdata-input-from-prognostic-run:
 

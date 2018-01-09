@@ -2032,7 +2032,7 @@
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of instances for each component</desc>
+    <desc>The mpi processor stride associated with the mpi tasks</desc>
   </entry>
 
   <entry id="TOTALPES">
