@@ -1234,20 +1234,16 @@ contains
         ! this loop constructs d( eta-dot * theta_dp_cp)/deta
         ! d( eta_dot_dpdn * theta*cp)
         ! so we need to compute theta_cp form theta_dp_cp and average to interfaces
-        do k=2,nlev  ! simple averaging
+#define NEWBAR
+#ifdef NEWBAR
+        do k=2,nlev  ! E conserving averaging
            theta_bar(:,:,k) = - ( (dpnh_dp(:,:,k) + dpnh_dp(:,:,k-1))/2 ) * &
                 (phi(:,:,k)-phi(:,:,k-1))/(exner(:,:,k)-exner(:,:,k-1))
         enddo
-#if 0        
-        if (theta_hydrostatic_mode) then
-           do k=2,nlev   ! energy conserving formula in hydrostatic case:
-              theta_bar(:,:,k) = - (phi(:,:,k)-phi(:,:,k-1))/(exner(:,:,k)-exner(:,:,k-1)) 
-           enddo
-        else
-           do k=2,nlev  ! simple averaging
-              theta_bar(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
-           enddo
-        endif
+#else
+        do k=2,nlev  ! simple averaging
+           theta_bar(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
+        enddo
 #endif
 
         do k=1,nlev
@@ -1283,14 +1279,15 @@ contains
 #endif
      vertloop: do k=1,nlev
         ! w-vorticity correction term added to u momentum equation for E conservation
+        vtemp(:,:,:)  = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
+
         temp(:,:,k) = (elem(ie)%state%w(:,:,k,n0)**2)/2  
         wvor(:,:,:,k) = gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
-        vtemp(:,:,:)  = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
         wvor(:,:,1,k) = wvor(:,:,1,k) - elem(ie)%state%w(:,:,k,n0)*vtemp(:,:,1)
         wvor(:,:,2,k) = wvor(:,:,2,k) - elem(ie)%state%w(:,:,k,n0)*vtemp(:,:,2)
+
         v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
              +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
-                   
 
         ! ================================================
         ! w,theta,phi tendencies:
