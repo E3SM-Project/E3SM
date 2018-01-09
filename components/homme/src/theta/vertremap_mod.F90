@@ -107,7 +107,7 @@ contains
 
      if (rsplit>0) then
         ! remove hydrostatic phi befor remap
-        call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
+        !call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
         !removing theta_ref does not help much and will not conserve theta*dp
         !call set_theta_ref(hvcoord,dp_star,theta_ref)
  
@@ -115,8 +115,14 @@ contains
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
         ttmp(:,:,:,3)=elem(ie)%state%theta_dp_cp(:,:,:,np1)   ! - theta_ref*dp_star*Cp
-        ttmp(:,:,:,4)=(elem(ie)%state%phinh_i(:,:,1:nlev,np1)-phi_ref(:,:,1:nlev))*dp_star
-        ttmp(:,:,:,5)=elem(ie)%state%w_i(:,:,1:nlev,np1)*dp_star
+        do k=1,nlev
+           ttmp(:,:,k,4)=elem(ie)%state%phinh_i(:,:,k+1,np1)-&
+                elem(ie)%state%phinh_i(:,:,k,np1)
+           ttmp(:,:,k,5)=elem(ie)%state%w_i(:,:,k+1,np1)-&
+                elem(ie)%state%w_i(:,:,k,np1)
+        enddo
+        ttmp(:,:,:,4)=ttmp(:,:,:,4)*dp_star
+        ttmp(:,:,:,5)=ttmp(:,:,:,5)*dp_star
     
         call t_startf('vertical_remap1_1')
         call remap1(ttmp,np,5,dp_star,dp)
@@ -126,14 +132,17 @@ contains
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
         elem(ie)%state%theta_dp_cp(:,:,:,np1)=ttmp(:,:,:,3) ! + theta_ref*dp*Cp
-        elem(ie)%state%w_i(:,:,1:nlev,np1)=ttmp(:,:,:,5)/dp 
       
         ! depends on theta, so do this after updating theta:
-        call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
+        !call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
         
-        elem(ie)%state%phinh_i(:,:,1:nlev,np1)=ttmp(:,:,:,4)/dp + phi_ref(:,:,1:nlev)
-
-        ! update w b.c.:
+        do k=nlev,1,-1
+           elem(ie)%state%phinh_i(:,:,k,np1)=&
+                elem(ie)%state%phinh_i(:,:,k+1,np1)-ttmp(:,:,k,4)/dp(:,:,k)
+           elem(ie)%state%w_i(:,:,k,np1)=&
+                elem(ie)%state%w_i(:,:,k+1,np1)-ttmp(:,:,k,5)/dp(:,:,k)
+        enddo
+        ! since u changed, update w b.c.:
         elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
        

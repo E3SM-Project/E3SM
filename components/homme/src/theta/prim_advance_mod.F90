@@ -35,7 +35,6 @@ module prim_advance_mod
   use time_mod,           only: timelevel_qdp, timelevel_t
   use test_mod,           only: set_prescribed_wind
   use viscosity_theta,    only: biharmonic_wk_theta
-  use viscosity_mod,      only: make_c0
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -1134,18 +1133,13 @@ contains
   real (kind=real_kind) ::  wtemp(np,np,nelemd)
 
   call t_startf('compute_andor_apply_rhs')
-
-  ! w boundary condition.  CLEAN THIS UP
+#if 0
+  ! w boundary condition. just in case:
   do ie=nets,nete
-     phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
-     gradphinh_i(:,:,:,nlevp) = gradient_sphere(phi_i(:,:,nlevp),deriv,elem(ie)%Dinv)   
-     wtemp(:,:,ie) = (elem(ie)%state%v(:,:,1,nlev,n0)*gradphinh_i(:,:,1,nlevp) &
-          +elem(ie)%state%v(:,:,2,nlev,n0)*gradphinh_i(:,:,2,nlevp))/g
+     elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
   enddo
-  call make_C0(wtemp,elem,hybrid,nets,nete)
-  do ie=nets,nete
-     elem(ie)%state%w_i(:,:,nlevp,n0)=wtemp(:,:,ie)
-  enddo
+#endif
 
   do ie=nets,nete
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
