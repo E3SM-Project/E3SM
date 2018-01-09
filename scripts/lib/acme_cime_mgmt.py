@@ -174,7 +174,7 @@ def acme_cime_merge(resume):
         pr_branch = get_branch_from_tag(new_merge_tag)
 
     try:
-        run_cmd_no_fail("git push -u origin {}".format(pr_branch))
+        run_cmd_no_fail("git push -u origin {}".format(pr_branch), verbose=True)
     except:
         delete_tag(old_merge_tag, remote=ESMCI_REMOTE_NAME)
         raise
