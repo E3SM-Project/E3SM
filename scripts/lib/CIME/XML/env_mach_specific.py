@@ -30,6 +30,8 @@ class EnvMachSpecific(EnvBase):
         default_run_exe_node = machobj.get_child("default_run_exe", root=default_run_suffix)
         default_run_misc_suffix_node = machobj.get_child("default_run_misc_suffix", root=default_run_suffix)
 
+        group_node = self.make_child("group", {"id":"compliant_values"})
+
         for item in items:
             nodes = machobj.get_first_child_nodes(item)
             if item == "run_exe" or item == "run_misc_suffix":
@@ -38,7 +40,7 @@ class EnvMachSpecific(EnvBase):
                 else:
                     value = nodes[0].text
 
-                entity_node = self.make_child("entry", {"id":item, "value":value})
+                entity_node = self.make_child("entry", {"id":item, "value":value}, root=group_node)
 
                 self.make_child("type", root=entity_node, text="char")
                 self.make_child("desc", root=entity_node, text=("executable name" if item == "run_exe" else "redirect for job output"))
@@ -180,7 +182,7 @@ class EnvMachSpecific(EnvBase):
 
         for node in nodes:
             if (self._match_attribs(self.attrib(node), case)):
-                for child in self.get_children(root=node, no_validate=True):
+                for child in self.get_children(root=node):
                     expect(self.name(child) == child_tag, "Expected {} element".format(child_tag))
                     if (self._match_attribs(self.attrib(child), case)):
                         val = self.text(child)
@@ -232,7 +234,7 @@ class EnvMachSpecific(EnvBase):
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""
-            cmds.append("{} {} {}".format(mod_cmd, action, argument))
+            cmds.append("{} {} {}".format(mod_cmd, action, "" if argument is None else argument))
         return cmds
 
     def _load_module_modules(self, modules_to_load):
@@ -260,7 +262,7 @@ class EnvMachSpecific(EnvBase):
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
-            cmd += " && {} {} {}".format(sh_mod_cmd, action, argument)
+            cmd += " && {} {} {}".format(sh_mod_cmd, action, "" if argument is None else argument)
 
         cmd += " && env"
         output = run_cmd_no_fail(cmd)
