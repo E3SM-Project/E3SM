@@ -101,9 +101,9 @@ module component_type_mod
 
   public :: component_type
 
-   !----------------------------------------------------------------------------
-   ! Component type instances
-   !----------------------------------------------------------------------------
+  !----------------------------------------------------------------------------
+  ! Component type instances
+  !----------------------------------------------------------------------------
 
   type(component_type), target :: atm(num_inst_atm)
   type(component_type), target :: lnd(num_inst_lnd)

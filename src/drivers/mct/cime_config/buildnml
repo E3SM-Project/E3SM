@@ -318,7 +318,7 @@ def _create_component_modelio_namelists(case, files):
 
                 # set default values
                 for entry in entries:
-                    nmlgen.add_default(entry.get("id"))
+                    nmlgen.add_default(entry)
 
                 # overwrite defaults
                 moddiri = case.get_value('EXEROOT') + "/" + model

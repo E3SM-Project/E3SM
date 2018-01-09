@@ -64,7 +64,6 @@ def _submit(case, job=None, no_batch=False, prereq=None, resubmit=False,
     #Load Modules
     case.load_env()
 
-    case.set_value("RUN_WITH_SUBMIT", True)
     case.flush()
 
     logger.warning("submit_jobs {}".format(job))

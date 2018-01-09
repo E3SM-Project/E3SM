@@ -53,13 +53,13 @@ class Batch(GenericXML):
         expect(self.batch_system_node is not None, "Batch system not set, use parent get_node?")
 
         if self.machine_node is not None:
-            result = self.get_optional_node(nodename, attributes, root=self.machine_node)
+            result = self.get_optional_child(nodename, attributes, root=self.machine_node)
             if result is None:
-                return self.get_optional_node(nodename, attributes, root=self.batch_system_node)
+                return self.get_optional_child(nodename, attributes, root=self.batch_system_node)
             else:
                 return result
         else:
-            return self.get_optional_node(nodename, attributes, root=self.batch_system_node)
+            return self.get_optional_child(nodename, attributes, root=self.batch_system_node)
 
     def set_batch_system(self, batch_system, machine=None):
         """
@@ -67,9 +67,9 @@ class Batch(GenericXML):
         """
         machine = machine if machine is not None else self.machine
         if self.batch_system != batch_system or self.batch_system_node is None:
-            nodes = self.get_nodes("batch_system",{"type" : batch_system})
+            nodes = self.get_children("batch_system",{"type" : batch_system})
             for node in nodes:
-                mach = node.get("MACH")
+                mach = self.get(node, "MACH")
                 if mach is None:
                     self.batch_system_node = node
                 elif mach == machine:
@@ -91,7 +91,7 @@ class Batch(GenericXML):
 
         node = self.get_optional_batch_node(name)
         if node is not None:
-            value = node.text
+            value = self.text(node)
 
         if value is None:
             # if all else fails
@@ -111,13 +111,13 @@ class Batch(GenericXML):
         and the second a dict of qualifiers for the job
         """
         jobs = []
-        bnode = self.get_node("batch_jobs")
-        for jnode in bnode:
-            if jnode.tag == "job":
-                name = jnode.get("name")
+        bnode = self.get_child("batch_jobs")
+        for jnode in self.get_children(root=bnode, no_validate=True):
+            if self.name(jnode) == "job":
+                name = self.get(jnode, "name")
                 jdict = {}
-                for child in jnode:
-                    jdict[child.tag] = child.text
+                for child in self.get_children(root=jnode, no_validate=True):
+                    jdict[self.name(child)] = self.text(child)
 
             jobs.append((name, jdict))
 

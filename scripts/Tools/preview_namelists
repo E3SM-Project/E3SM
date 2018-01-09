@@ -12,7 +12,7 @@ from CIME.preview_namelists import create_namelists
 from CIME.case              import Case
 from CIME.utils             import expect
 
-import argparse, doctest
+import argparse
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -24,8 +24,6 @@ def parse_command_line(args, description):
                         help="Case directory to build")
     parser.add_argument('--component',
                         help="Specify component's namelist to build.")
-    parser.add_argument('--test', action='store_true',
-                        help="Run preview_namelist in test mode.")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
@@ -35,9 +33,6 @@ def parse_command_line(args, description):
 def _main_func(description):
 ###############################################################################
     args = parse_command_line(sys.argv, description)
-    if args.test:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
 
     expect(os.path.isfile(os.path.join(args.caseroot, "CaseStatus")),
            "case.setup must be run prior to running preview_namelists")

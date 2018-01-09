@@ -29,27 +29,30 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("repo", nargs="?",
                         help="Location of repo to use, default is based on current location")
 
-    parser.add_argument("--resume-one", action="store_true",
-                        help="Resume split after fixing conflicts at point one")
+    parser.add_argument("-r", "--resume", action="store_true",
+                        help="Resume split after fixing conflicts")
 
-    parser.add_argument("--resume-two", action="store_true",
-                        help="Resume split after fixing conflicts at point two")
+    parser.add_argument("-a", "--abort", action="store_true",
+                        help="Resume split after fixing conflicts")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    expect(not (args.resume_one and args.resume_two), "Makes no sense to have two resume points")
+    expect(not (args.resume and args.abort), "Makes no sense to abort and resume")
 
-    return args.repo, args.resume_one, args.resume_two
+    return args.repo, args.resume, args.abort
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    repo, resume_one, resume_two = parse_command_line(sys.argv, description)
+    repo, resume, abort = parse_command_line(sys.argv, description)
 
     if repo is not None:
         os.chdir(repo)
 
-    acme_cime_split(resume_one, resume_two)
+    if abort:
+        abort_split()
+    else:
+        acme_cime_split(resume)
 
 ###############################################################################
 

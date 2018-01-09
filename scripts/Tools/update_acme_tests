@@ -21,8 +21,6 @@ def parse_command_line(args, description):
 usage="""\n{0} testlist.xml [<test category> <test category> ...] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Update all acme test suites for all platforms \033[0m
@@ -64,10 +62,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        CIME.utils.run_cmd_no_fail("python -m doctest {}/update_acme_tests.py -v".format(CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None))
-        return
-
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
 
     update_acme_tests(test_list_path, categories, platform)

@@ -1,9 +1,3 @@
-!===============================================================================
-! SVN $Id: mct_mod.F90 65614 2014-11-20 00:39:07Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116/shr/mct_mod.F90 $
-!===============================================================================
-!BOP ===========================================================================
-!
 ! !MODULE: mct_mod -- provides a standard API naming convention for MCT code
 !
 ! !DESCRIPTION:
@@ -237,7 +231,7 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
 !EOP
 
    !--- local ---
-   integer(IN)          :: i,j,k,n      ! generic indicies
+   integer(IN)          :: k            ! generic indicies
    integer(IN)          :: ks,ke        ! start and stop k indices
    integer(IN)          :: nflds        ! number of flds in AV to diagnose
    integer(IN)          :: nsize        ! grid point size of AV
@@ -538,7 +532,6 @@ subroutine mct_aVect_getRAttr(aVect,str,data,rcode)
 
    !--- local ---
    integer(IN) :: k,n,m
-   integer(IN) :: aVsize
 
    !--- formats ---
    character(*),parameter :: subName = "(mct_aVect_getRAttr) "
@@ -605,7 +598,6 @@ subroutine mct_aVect_putRAttr(aVect,str,data,rcode)
 
    !--- local ---
    integer(IN) :: k,n,m
-   integer(IN) :: aVsize
 
    !--- formats ---
    character(*),parameter :: subName = "(mct_aVect_putRAttr) "
@@ -890,9 +882,7 @@ subroutine mct_avect_mult(av,av1,fld1,avlist)
    integer(IN) :: n,m            ! generic indicies
    integer(IN) :: npts           ! number of points (local) in an aVect field
    integer(IN) :: nfld           ! number of fields (local) in an aVect field
-   integer(IN) :: nfldi          ! number of fields (local) in an aVect field
    integer(IN) :: nptsx          ! number of points (local) in an aVect field
-   integer(IN) :: nptsi          ! number of points (local) in an aVect field
    integer(IN) :: kfld           ! field number of fld1 in av1
    integer(IN),dimension(:),allocatable :: kfldin   ! field numbers of avlist in av
    type(mct_list)   :: blist     ! avlist as a List
@@ -1001,9 +991,7 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
    integer(IN) :: n,m            ! generic indicies
    integer(IN) :: npts           ! number of points (local) in an aVect field
    integer(IN) :: nfld           ! number of fields (local) in an aVect field
-   integer(IN) :: nfldi          ! number of fields (local) in an aVect field
    integer(IN) :: nptsx          ! number of points (local) in an aVect field
-   integer(IN) :: nptsi          ! number of points (local) in an aVect field
    logical     :: lmspval        ! local mask spval
    integer(IN),dimension(:),allocatable :: kfldin   ! field numbers of avlist in av
    type(mct_list)   :: blist     ! avlist as a List

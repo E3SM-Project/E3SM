@@ -28,45 +28,41 @@ def parse_command_line(args, description):
     if model == "cesm":
         help_str = \
 """
-%s --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
+{0} --xml-category [CATEGORY] [--xml-machine ...] [--xml-compiler ...] [ --xml-testlist ...]
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run all tests in the xml prealpha category and yellowstone machine \033[0m
-    > %s --xml-machine yellowstone --xml-category prealpha
-""" % ((os.path.basename(args[0]), ) * 4)
+    > {0} --xml-machine yellowstone --xml-category prealpha
+""".format(os.path.basename(args[0]))
 
     else:
         help_str = \
 """
-%s <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
+{0} <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run single test \033[0m
-    > %s <TESTNAME>
+    > {0} <TESTNAME>
 
     \033[1;32m# Run test suite \033[0m
-    > %s <SUITE>
+    > {0} <SUITE>
 
     \033[1;32m# Run two tests \033[0m
-    > %s <TESTNAME1> <TESTNAME2>
+    > {0} <TESTNAME1> <TESTNAME2>
 
     \033[1;32m# Run two suites \033[0m
-    > %s <SUITE1> <SUITE2>
+    > {0} <SUITE1> <SUITE2>
 
     \033[1;32m# Run all tests in a suite except for one \033[0m
-    > %s <SUITE> ^<TESTNAME>
+    > {0} <SUITE> ^<TESTNAME>
 
     \033[1;32m# Run all tests in a suite except for tests that are in another suite \033[0m
-    > %s <SUITE1> ^<SUITE2>
-""" % ((os.path.basename(args[0]), ) * 9)
+    > {0} <SUITE1> ^<SUITE2>
+""".format(os.path.basename(args[0]))
 
     parser = argparse.ArgumentParser(usage=help_str,
                                      description=description,
@@ -176,7 +172,7 @@ OR
                             help="Use this testlist to lookup tests, default specified in config_files.xml")
 
         parser.add_argument("testargs", nargs="*",
-                            help="Tests or test suites to run."
+                            help="Tests to run."
                             " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
 
     else:
@@ -618,13 +614,6 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
-        libroot = CIME.utils.get_python_libs_root()
-
-        CIME.utils.run_cmd_no_fail("PYTHONPATH=%s python -m doctest %s/CIME/test_scheduler.py -v" %
-                                   (libroot, libroot), arg_stdout=None, arg_stderr=None)
-        return
-
     test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, \
     test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
     project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \

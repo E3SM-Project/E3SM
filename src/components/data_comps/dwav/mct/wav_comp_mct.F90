@@ -1,7 +1,7 @@
 module wav_comp_mct
 
   ! !USES:
-  
+
   use esmf
   use mct_mod
   use perf_mod
@@ -69,7 +69,7 @@ CONTAINS
     integer           :: phase                     ! phase of method
     logical           :: wav_present               ! flag
     logical           :: wav_prognostic            ! flag
-    integer(IN)       :: shrlogunit                ! original log unit 
+    integer(IN)       :: shrlogunit                ! original log unit
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
@@ -189,7 +189,7 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit   ! original log unit 
+    integer(IN)                      :: shrlogunit   ! original log unit
     integer(IN)                      :: shrloglev    ! original log level
     logical                          :: read_restart ! start from restart
     character(CL)                    :: case_name    ! case name
@@ -207,10 +207,10 @@ CONTAINS
          infodata=infodata)
 
     call seq_infodata_GetData(infodata, case_name=case_name)
-       
+
     call dwav_comp_run(EClock, x2w, w2x, &
-       SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+         SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
@@ -228,7 +228,7 @@ CONTAINS
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
     type(mct_aVect)             ,intent(inout) :: x2w
-    type(mct_aVect)             ,intent(inout) :: w2x        
+    type(mct_aVect)             ,intent(inout) :: w2x
 
     !--- formats ---
     character(*), parameter :: subName = "(wav_final_mct) "

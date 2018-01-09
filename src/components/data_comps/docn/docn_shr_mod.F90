@@ -76,7 +76,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / docn_nml / &
-        decomp, restfilm, restfils, force_prognostic_true
+         decomp, restfilm, restfils, force_prognostic_true
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -141,19 +141,19 @@ CONTAINS
     ! Validate mode
 
     if (trim(datamode) == 'NULL'          .or. &
-        trim(datamode) == 'SSTDATA'       .or. &
-        trim(datamode) == 'SST_AQUAPANAL' .or. &
-        trim(datamode) == 'SST_AQUAPFILE' .or. &
-        trim(datamode) == 'COPYALL'       .or. &
-        trim(datamode) == 'IAF'           .or. &
-        trim(datamode) == 'SOM'           .or. &
-        trim(datamode) == 'SOM_AQUAP') then
-      if (my_task == master_task) then
-         write(logunit,F00) ' docn datamode = ',trim(datamode)
-      end if
+         trim(datamode) == 'SSTDATA'       .or. &
+         trim(datamode) == 'SST_AQUAPANAL' .or. &
+         trim(datamode) == 'SST_AQUAPFILE' .or. &
+         trim(datamode) == 'COPYALL'       .or. &
+         trim(datamode) == 'IAF'           .or. &
+         trim(datamode) == 'SOM'           .or. &
+         trim(datamode) == 'SOM_AQUAP') then
+       if (my_task == master_task) then
+          write(logunit,F00) ' docn datamode = ',trim(datamode)
+       end if
     else
-      write(logunit,F00) ' ERROR illegal docn datamode = ',trim(datamode)
-      call shr_sys_abort()
+       write(logunit,F00) ' ERROR illegal docn datamode = ',trim(datamode)
+       call shr_sys_abort()
     endif
 
     !----------------------------------------------------------------------------

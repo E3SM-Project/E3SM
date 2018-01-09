@@ -5,7 +5,7 @@ module prep_atm_mod
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_atm, num_inst_ocn, num_inst_ice, num_inst_lnd, num_inst_xao, &
-                              num_inst_frc, num_inst_max, CPLID, ATMID, logunit
+       num_inst_frc, num_inst_max, CPLID, ATMID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
@@ -526,10 +526,10 @@ contains
        enddo
     endif
 
-!    call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector)
-!    call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector)
+    !    call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector)
     call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
     call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)

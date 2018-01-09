@@ -47,7 +47,7 @@ module shr_megan_mod
   endtype shr_megan_megcomp_t
 
   type shr_megan_comp_ptr
-    type(shr_megan_megcomp_t), pointer :: ptr
+     type(shr_megan_megcomp_t), pointer :: ptr
   endtype shr_megan_comp_ptr
 
   ! chemical compound in CAM mechanism that has MEGAN emissions
