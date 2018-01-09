@@ -106,7 +106,6 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    !----- local variables -----
    real   (R8),allocatable          :: lats(:),lons(:)
    integer(IN)                      :: rcode   ! netCDF routine return code
-   integer(IN)                      ::  i
    integer(IN)                      ::  len
    integer(IN)                      ::  latlen
    integer(IN)                      ::  lonlen
@@ -316,7 +315,6 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    !----- local variables -----
    real   (R8),allocatable          :: lats(:),lons(:)
    integer(IN)                      :: rcode   ! netCDF routine return code
-   integer(IN)                      ::  i
    integer(IN)                      ::  len      = 0
    integer(IN)                      ::  latlen   = 0
    integer(IN)                      ::  lonlen   = 0
@@ -949,4 +947,3 @@ end subroutine get_close
 !===============================================================================
 
 end module shr_scam_mod
-

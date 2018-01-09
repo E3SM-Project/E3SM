@@ -80,16 +80,17 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
 
         config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
-        f = open(file_build, "w")
         bldroot = os.path.join(exeroot, "cpl", "obj")
         if not os.path.isdir(bldroot):
             os.makedirs(bldroot)
         logger.info("Building {} with output to {} ".format(cime_model, file_build))
-        stat = run_cmd("{}/buildexe {} {} {}"
+
+        with open(file_build, "w") as fd:
+            stat = run_cmd("{}/buildexe {} {} {} "
                        .format(config_dir, caseroot, libroot, bldroot),
-                       from_dir=bldroot, verbose=False, arg_stdout=f,
+                       from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
-        f.close()
+
         analyze_build_log("{} exe".format(cime_model), file_build, compiler)
         expect(stat == 0, "BUILD FAIL: buildexe failed, cat {}".format(file_build))
 

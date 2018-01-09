@@ -954,7 +954,7 @@ contains
     !EOP
 
     !----- local -----
-    integer(SHR_KIND_IN)   :: i,n,j   ! generic indecies
+    integer(SHR_KIND_IN)   :: i,n   ! generic indecies
     integer(SHR_KIND_IN)   :: kFlds   ! number of fields in list
     integer(SHR_KIND_IN)   :: i0,i1   ! name = list(i0:i1)
     integer(SHR_KIND_IN)   :: rCode   ! return code
