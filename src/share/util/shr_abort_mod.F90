@@ -14,10 +14,10 @@ module shr_abort_mod
   use shr_log_mod , only : s_logunit => shr_log_Unit
 
 #ifdef CPRNAG
-   ! NAG does not provide this as an intrinsic, but it does provide modules
-   ! that implement commonly used POSIX routines.
-   use f90_unix_proc, only: abort
-#endif  
+  ! NAG does not provide this as an intrinsic, but it does provide modules
+  ! that implement commonly used POSIX routines.
+  use f90_unix_proc, only: abort
+#endif
 
   implicit none
 

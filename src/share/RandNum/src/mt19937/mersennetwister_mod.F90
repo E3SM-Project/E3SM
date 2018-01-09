@@ -69,7 +69,7 @@
 ! -------------------------------------------------------------
 
 module MersenneTwister_mod
-! -------------------------------------------------------------
+  ! -------------------------------------------------------------
   implicit none
   private
 
@@ -78,29 +78,29 @@ module MersenneTwister_mod
   ! Period parameters
   integer, parameter :: i8 = selected_int_kind(13)
   integer, parameter :: blockSize = 624,         &
-                        M         = 397,         &
-                        MATRIX_A  = -1727483681, & ! constant vector a         (0x9908b0dfUL)
-                        UMASK     = -2147483648_i8,& ! most significant w-r bits (0x80000000UL)
-                        LMASK     =  2147483647    ! least significant r bits  (0x7fffffffUL)
+       M         = 397,         &
+       MATRIX_A  = -1727483681, & ! constant vector a         (0x9908b0dfUL)
+       UMASK     = -2147483648_i8,& ! most significant w-r bits (0x80000000UL)
+       LMASK     =  2147483647    ! least significant r bits  (0x7fffffffUL)
   ! Tempering parameters
   integer, parameter :: TMASKB= -1658038656, & ! (0x9d2c5680UL)
-                        TMASKC= -272236544     ! (0xefc60000UL)
+       TMASKC= -272236544     ! (0xefc60000UL)
   ! -------
 
   ! The type containing the state variable
   type randomNumberSequence
-    integer                            :: currentElement ! = blockSize
-    integer, dimension(0:blockSize -1) :: state ! = 0
+     integer                            :: currentElement ! = blockSize
+     integer, dimension(0:blockSize -1) :: state ! = 0
   end type randomNumberSequence
 
   interface new_RandomNumberSequence
-    module procedure initialize_scalar, initialize_vector
+     module procedure initialize_scalar, initialize_vector
   end interface new_RandomNumberSequence
 
   public :: randomNumberSequence
   public :: new_RandomNumberSequence, finalize_RandomNumberSequence, &
-            getRandomInt, getRandomPositiveInt, getRandomReal
-! -------------------------------------------------------------
+       getRandomInt, getRandomPositiveInt, getRandomReal
+  ! -------------------------------------------------------------
 contains
   ! -------------------------------------------------------------
   ! Private functions
@@ -130,15 +130,15 @@ contains
     integer :: k
 
     do k = 0, blockSize - M - 1
-      twister%state(k) = ieor(twister%state(k + M), &
-                              twist(twister%state(k), twister%state(k + 1)))
+       twister%state(k) = ieor(twister%state(k + M), &
+            twist(twister%state(k), twister%state(k + 1)))
     end do
     do k = blockSize - M, blockSize - 2
-      twister%state(k) = ieor(twister%state(k + M - blockSize), &
-                              twist(twister%state(k), twister%state(k + 1)))
+       twister%state(k) = ieor(twister%state(k + M - blockSize), &
+            twist(twister%state(k), twister%state(k + 1)))
     end do
     twister%state(blockSize - 1) = ieor(twister%state(M - 1), &
-                                        twist(twister%state(blockSize - 1), twister%state(0)))
+         twist(twister%state(blockSize - 1), twister%state(0)))
     twister%currentElement = 0
 
   end subroutine nextState
@@ -170,7 +170,7 @@ contains
     twister%state(0) = iand(seed, -1)
     do i = 1,  blockSize - 1 ! ubound(twister%state)
        twister%state(i) = 1812433253 * ieor(twister%state(i-1), &
-                                            ishft(twister%state(i-1), -30)) + i
+            ishft(twister%state(i-1), -30)) + i
        twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
     end do
     twister%currentElement = blockSize
@@ -190,39 +190,39 @@ contains
        i = mod(k + nWraps, blockSize)
        j = mod(k - 1,      size(seed))
        if(i == 0) then
-         twister%state(i) = twister%state(blockSize - 1)
-         twister%state(1) = ieor(twister%state(1),                                 &
-                                 ieor(twister%state(1-1),                          &
-                                      ishft(twister%state(1-1), -30)) * 1664525) + &
-                            seed(j) + j ! Non-linear
-         twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
-         nWraps = nWraps + 1
+          twister%state(i) = twister%state(blockSize - 1)
+          twister%state(1) = ieor(twister%state(1),                                 &
+               ieor(twister%state(1-1),                          &
+               ishft(twister%state(1-1), -30)) * 1664525) + &
+               seed(j) + j ! Non-linear
+          twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
+          nWraps = nWraps + 1
        else
-         twister%state(i) = ieor(twister%state(i),                                 &
-                                 ieor(twister%state(i-1),                          &
-                                      ishft(twister%state(i-1), -30)) * 1664525) + &
-                            seed(j) + j ! Non-linear
-         twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
-      end if
+          twister%state(i) = ieor(twister%state(i),                                 &
+               ieor(twister%state(i-1),                          &
+               ishft(twister%state(i-1), -30)) * 1664525) + &
+               seed(j) + j ! Non-linear
+          twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
+       end if
     end do
 
     !
     ! Walk through the state array, beginning where we left off in the block above
     !
     do i = mod(nFirstLoop, blockSize) + nWraps + 1, blockSize - 1
-      twister%state(i) = ieor(twister%state(i),                                 &
-                              ieor(twister%state(i-1),                          &
-                                   ishft(twister%state(i-1), -30)) * 1566083941) - i ! Non-linear
-      twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
+       twister%state(i) = ieor(twister%state(i),                                 &
+            ieor(twister%state(i-1),                          &
+            ishft(twister%state(i-1), -30)) * 1566083941) - i ! Non-linear
+       twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
     end do
 
     twister%state(0) = twister%state(blockSize - 1)
 
     do i = 1, mod(nFirstLoop, blockSize) + nWraps
-      twister%state(i) = ieor(twister%state(i),                                 &
-                              ieor(twister%state(i-1),                          &
-                                   ishft(twister%state(i-1), -30)) * 1566083941) - i ! Non-linear
-      twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
+       twister%state(i) = ieor(twister%state(i),                                 &
+            ieor(twister%state(i-1),                          &
+            ishft(twister%state(i-1), -30)) * 1566083941) - i ! Non-linear
+       twister%state(i) = iand(twister%state(i), -1) ! for >32 bit machines
     end do
 
     twister%state(0) = UMASK
@@ -276,18 +276,17 @@ contains
 
     localInt = getRandomInt(twister)
     if(localInt < 0) then
-      getRandomReal = dble(localInt + 2.0d0**32)/(2.0d0**32 - 1.0d0)
+       getRandomReal = dble(localInt + 2.0d0**32)/(2.0d0**32 - 1.0d0)
     else
-      getRandomReal = dble(localInt            )/(2.0d0**32 - 1.0d0)
+       getRandomReal = dble(localInt            )/(2.0d0**32 - 1.0d0)
     end if
   end function getRandomReal
   ! --------------------
   subroutine finalize_RandomNumberSequence(twister)
     type(randomNumberSequence), intent(inout) :: twister
 
-      twister%currentElement = blockSize
-      twister%state(:) = 0
+    twister%currentElement = blockSize
+    twister%state(:) = 0
   end subroutine finalize_RandomNumberSequence
   ! --------------------
 end module MersenneTwister_mod
-

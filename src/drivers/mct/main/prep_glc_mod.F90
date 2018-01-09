@@ -847,7 +847,7 @@ contains
     real(r8) :: ablat_renorm_factor   ! ratio between global ablation on the two grids
 
     real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
-                                ! This is the area that can contribute SMB to the ice sheet model.
+    ! This is the area that can contribute SMB to the ice sheet model.
 
 
     !---------------------------------------------------------------

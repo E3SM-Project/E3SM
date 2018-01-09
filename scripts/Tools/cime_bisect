@@ -9,7 +9,7 @@ from standard_script_setup import *
 from CIME.utils import expect, run_cmd_no_fail, run_cmd
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, doctest, re
+import argparse, sys, os, re
 
 _MACHINE = Machines()
 
@@ -20,8 +20,6 @@ def parse_command_line(args, description):
         usage="""\n{0} <testargs> <last-known-good-commit> [<bad>] [--compare=<baseline-id>] [--no-batch]  [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Bisect ERS.f45_g37.B1850C5 which got broken in the last 4 commits \033[0m
@@ -174,10 +172,6 @@ def cime_bisect(testargs, good, bad, testroot, compiler, project, baseline_name,
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     testargs, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, check_memleak, all_commits = \
         parse_command_line(sys.argv, description)
 

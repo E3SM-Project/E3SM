@@ -43,7 +43,7 @@ module shr_fire_emis_mod
   endtype shr_fire_emis_comp_t
 
   type shr_fire_emis_comp_ptr
-    type(shr_fire_emis_comp_t), pointer :: ptr ! points to fire emis data obj (shr_fire_emis_comp_t)
+     type(shr_fire_emis_comp_t), pointer :: ptr ! points to fire emis data obj (shr_fire_emis_comp_t)
   endtype shr_fire_emis_comp_ptr
 
   ! chemical compound in CAM mechanism that has fire emissions

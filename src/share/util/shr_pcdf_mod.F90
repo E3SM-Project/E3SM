@@ -157,7 +157,6 @@ subroutine shr_pcdf_readwrite(type,iosystem,pio_iotype,filename,&
 
 
   type(file_desc_t)     :: fid
-  type(var_desc_t)      :: varid
   type(io_desc_t)       :: iodescd
   type(io_desc_t)       :: iodesci
   integer(IN), pointer  :: ldof(:)
@@ -602,24 +601,13 @@ subroutine shr_pcdf_readr1d(fid,fname,iodesc,r1d)
 
   !--- local ---
   type(var_desc_t) :: varid
-  integer(IN)      :: dimid(4),ndims
-  integer(IN)      :: vsize,fsize
+  integer(IN)      :: ndims
   integer(IN)      :: rcode
   character(len=*),parameter :: subname = '(shr_pcdf_readr1d) '
 
   !-------------
 
   rcode = pio_inq_varid(fid,trim(fname),varid)
-
-!--tcraig, here vsize is global, fsize is local, what check if any?
-!  rcode = pio_inq_varndims(fid, varid, ndims)
-!  rcode = pio_inq_vardimid(fid, varid, dimid(1:ndims))
-!  rcode = pio_inq_dimlen(fid, dimid(1), vsize)
-!  fsize = size(r1d)
-!  if (vsize /= fsize) then
-!     write(shr_log_unit,*) subname,' ERROR: vsize,fsize = ',vsize,fsize
-!     call shr_sys_abort(trim(subname)//' ERROR: vsize,fsize')
-!  endif
 
   call pio_read_darray(fid,varid,iodesc,r1d,rcode)
 
@@ -637,8 +625,6 @@ subroutine shr_pcdf_writer1d(fid,fname,iodesc,r1d)
 
   !--- local ---
   type(var_desc_t) :: varid
-  integer(IN)      :: dimid(4)
-  integer(IN)      :: vsize,fsize
   real(R8)         :: lfillvalue
   integer(IN)      :: rcode
   character(len=*),parameter :: subname = '(shr_pcdf_writer1d) '
@@ -665,24 +651,14 @@ subroutine shr_pcdf_readi1d(fid,fname,iodesc,i1d)
 
   !--- local ---
   type(var_desc_t) :: varid
-  integer(IN)      :: dimid(4),ndims
-  integer(IN)      :: vsize,fsize
+  integer(IN)      :: ndims
+  integer(IN)      :: vsize
   integer(IN)      :: rcode
   character(len=*),parameter :: subname = '(shr_pcdf_readi1d) '
 
   !-------------
 
   rcode = pio_inq_varid(fid,trim(fname),varid)
-
-!--tcraig, here vsize is global, fsize is local, what check if any?
-!  rcode = pio_inq_varndims(fid, varid, ndims)
-!  rcode = pio_inq_vardimid(fid, varid, dimid(1:ndims))
-!  rcode = pio_inq_dimlen(fid, dimid(1), vsize)
-!  fsize = size(i1d)
-!  if (vsize /= fsize) then
-!     write(shr_log_unit,*) subname,' ERROR: vsize,fsize = ',vsize,fsize
-!     call shr_sys_abort(trim(subname)//' ERROR: vsize,fsize')
-!  endif
 
   call pio_read_darray(fid,varid,iodesc,i1d,rcode)
 
@@ -700,8 +676,6 @@ subroutine shr_pcdf_writei1d(fid,fname,iodesc,i1d)
 
   !--- local ---
   type(var_desc_t) :: varid
-  integer(IN)      :: dimid(4)
-  integer(IN)      :: vsize,fsize
   integer(IN)      :: lfillvalue
   integer(IN)      :: rcode
   character(len=*),parameter :: subname = '(shr_pcdf_writei1d) '

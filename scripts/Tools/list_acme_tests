@@ -9,7 +9,7 @@ from standard_script_setup import *
 from CIME.utils import expect
 import update_acme_tests
 
-import sys, argparse, os, doctest
+import sys, argparse, os
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -18,8 +18,6 @@ def parse_command_line(args, description):
 usage="""\n{0} <thing-to-list> [<test category> <test category> ...] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# List all tested compsets \033[0m
@@ -37,25 +35,25 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("thing_to_list", choices=("compsets", "grids", "testcases", "tests"),
-                        help="The thing you want to list")
+    parser.add_argument("suites", nargs="+",
+                        help="The tests suites to list. Test suites: {}".format(", ".join(update_acme_tests.get_test_suites())))
 
-    parser.add_argument("categories", nargs="*",
-                        help="The test categories to list. Default will list all. Test categories: {}".format(", ".join(update_acme_tests.get_test_suites())))
+    parser.add_argument("-t", "--thing-to-list", choices=("compsets", "grids", "testcases", "tests"), default="tests",
+                        help="The thing you want to list")
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    if (not args.categories):
-        args.categories = update_acme_tests.get_test_suites()
+    if (not args.suites):
+        args.suites = update_acme_tests.get_test_suites()
 
-    return args.thing_to_list, args.categories
+    return args.thing_to_list, args.suites
 
 ###############################################################################
-def list_tests(thing_to_list, categories):
+def list_tests(thing_to_list, suites):
 ###############################################################################
     things = set()
-    for category in categories:
-        tests = update_acme_tests.get_test_suite(category)
+    for suite in suites:
+        tests = update_acme_tests.get_test_suite(suite)
         for test in tests:
             testcase, _, grid, compset = CIME.utils.parse_test_name(test)[:4]
             if (thing_to_list == "compsets"):
@@ -69,20 +67,16 @@ def list_tests(thing_to_list, categories):
             else:
                 expect(False, "Unrecognized thing to list '{}'".format(thing_to_list))
 
-    print("Tested {} for test categories: {}".format(thing_to_list, ", ".join(categories)))
+    print("Tested {} for test suites: {}".format(thing_to_list, ", ".join(suites)))
     for item in sorted(things):
-        print(" ", item)
+        print("  {}".format(item))
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
+    thing_to_list, suites = parse_command_line(sys.argv, description)
 
-    thing_to_list, categories = parse_command_line(sys.argv, description)
-
-    list_tests(thing_to_list, categories)
+    list_tests(thing_to_list, suites)
 
 if __name__ == "__main__":
     _main_func(__doc__)

@@ -14,14 +14,14 @@ module unload netcdf
 module swap intel intel/17.0.1
 module load cmake/3.7.2
 module load netcdf-mpi/4.4.1.1
-module load pnetcdf/1.8.0
-module switch mpt mpt/2.15
+module load pnetcdf/1.8.1
+module switch mpt mpt/2.16
 echo "MODULE LIST..."
 module list
 
 export CC=mpicc
 export FC=mpif90
-
+export MPI_TYPE_DEPTH=24
 export PIO_DASHBOARD_ROOT=/glade/scratch/jedwards/dashboard
 export PIO_COMPILER_ID=Intel-`$CC --version | head -n 1 | cut -d' ' -f3`
 

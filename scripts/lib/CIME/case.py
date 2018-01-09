@@ -303,6 +303,8 @@ class Case(object):
         return result
 
     def get_record_fields(self, variable, field):
+        """ get_record_fields gets individual requested field from an entry_id file
+        this routine is used only by xmlquery """
         # Empty result
         result = []
 
@@ -310,7 +312,7 @@ class Case(object):
             # Wait and resolve in self rather than in env_file
             logger.debug("(get_record_field) Searching in {}".format(env_file.__class__.__name__))
             if field == "varid":
-                roots = env_file.get_nodes("entry")
+                roots = env_file.scan_children("entry")
             else:
                 roots = env_file.get_nodes_by_id(variable)
             for root in roots:
@@ -320,7 +322,7 @@ class Case(object):
                     elif field == "desc":
                         result.append(env_file.get_description(root))
                     elif field == "varid":
-                        result.append(root.get("id"))
+                        result.append(env_file.get(root, "id"))
                     elif field == "group":
                         result.extend(env_file.get_groups(root))
                     elif field == "valid_values":
@@ -333,7 +335,7 @@ class Case(object):
 
         if not result:
             for env_file in self._env_generic_files:
-                roots = env_file.get_nodes(variable)
+                roots = env_file.scan_children(variable)
                 for root in roots:
                     if root is not None:
                         if field == "raw":
@@ -871,7 +873,7 @@ class Case(object):
         # archiving system
         #--------------------------------------------
         env_archive = self.get_env("archive")
-        infile_node = files.get_node("entry", {"id":"ARCHIVE_SPEC_FILE"})
+        infile_node = files.get_child("entry", {"id":"ARCHIVE_SPEC_FILE"})
         infile = files.get_default_value(infile_node)
         infile = self.get_resolved_value(infile)
         logger.debug("archive defaults located in {}".format(infile))
@@ -1011,6 +1013,7 @@ class Case(object):
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "case.qstatus"),
+                    os.path.join(toolsdir, "case.st_archive"),
                     os.path.join(toolsdir, "case.cmpgen_namelists"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "preview_run"),
@@ -1460,14 +1463,14 @@ class Case(object):
 
     def is_save_timing_dir_project(self,project):
         """
-        Check whether the project is permitted to archive performance data in the location 
+        Check whether the project is permitted to archive performance data in the location
         specified for the current machine
         """
         save_timing_dir_projects = self.get_value("SAVE_TIMING_DIR_PROJECTS")
         if not save_timing_dir_projects:
             return False
         else:
-            save_timing_dir_projects = save_timing_dir_projects.split(",")
+            save_timing_dir_projects = save_timing_dir_projects.split(",") # pylint: disable=no-member
             for save_timing_dir_project in save_timing_dir_projects:
                 regex = re.compile(save_timing_dir_project)
                 if regex.match(project):

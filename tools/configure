@@ -114,7 +114,7 @@ def parse_command_line(args):
     elif "MPILIB" in os.environ:
         mpilib = os.environ["MPILIB"]
     else:
-        mpilib = machobj.get_default_MPIlib()
+        mpilib = machobj.get_default_MPIlib(attributes={"compiler":compiler})
         os.environ["MPILIB"] = mpilib
 
     expect(opts['machobj'].is_valid_MPIlib(mpilib),
