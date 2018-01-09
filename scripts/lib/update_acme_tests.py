@@ -107,7 +107,7 @@ _TEST_SUITES = {
                           "ERS_Ld31.ne4_ne4.FC5AV1C-L",
                           "ERP_Lm3.ne4_ne4.FC5AV1C-L",
                           "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
-                          ("ERP_Ln5.ne30_ne30.FC5AV1C-L"),                          
+                          ("ERP_Ln5.ne30_ne30.FC5AV1C-L"),
                           "SMS_Ly1.ne4_ne4.FC5AV1C-L")
                          ),
     #atmopheric tests for hi-res
@@ -141,6 +141,10 @@ _TEST_SUITES = {
                          "SMS.f09_g16_a.IGCLM45_MLI"
                         ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","mach_mods")
                         )),
+
+    "acme_test_me" : (None, "01:00:00",
+                      ("ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
+                      )),
 
     "acme_integration" : (("acme_developer", "acme_atm_integration"),"03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
