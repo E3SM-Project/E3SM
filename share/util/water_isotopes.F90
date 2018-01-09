@@ -230,11 +230,11 @@ contains
     real(r8) z0                 ! roughness length (constant in cam 9.5e-5)
     real(r8) reno               ! surface reynolds number
     real(r8) tmr                ! ratio of turbulen to molecular resistance
-    real(r8) enn	        ! diffusive power
+    real(r8) enn                ! diffusive power
     real(r8) sc                 ! Schmidt number (Prandtl number)
     real(r8) vmu                ! kinematic viscocity of air
     real(r8) difn               ! ratio of difusivities to the power of n
-    real(r8) difrmj	        ! isotopic diffusion with substitutions
+    real(r8) difrmj             ! isotopic diffusion with substitutions
 
     real(r8) kmol               ! Merlivals k_mol
 !-----------------------------------------------------------------------
