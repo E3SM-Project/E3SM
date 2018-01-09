@@ -409,7 +409,7 @@ contains
       ! one dimensional pointers
       !
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL
-      real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate
+      real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate, latCell
       integer, dimension(:), pointer :: maxLevelCell
 
       !
@@ -512,6 +512,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -633,7 +634,7 @@ contains
                if ( trim(groupItr % memberName) == 'ecosysTracers' ) then
                   call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
                   call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, forcingPool, nTracerGroup, &
-                     nCellsSolve, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature,    &
+                     nCellsSolve, latCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, &
                      indexSalinity, tracerGroupTend, err)
 
                   call ocn_tracer_ecosys_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
