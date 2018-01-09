@@ -7,7 +7,7 @@ module clm_initializeMod
   use spmdMod          , only : masterproc, iam
   use shr_sys_mod      , only : shr_sys_flush
   use shr_log_mod      , only : errMsg => shr_log_errMsg
-  use decompMod        , only : bounds_type, get_proc_bounds 
+  use decompMod        , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
@@ -69,6 +69,8 @@ contains
     use SoilTemperatureMod        , only: init_soil_temperature
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
     use dynSubgridControlMod      , only: dynSubgridControl_init
+    use filterMod                 , only: allocFilters
+    use reweightMod               , only: reweight_wrapup
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -78,6 +80,7 @@ contains
     integer           :: begg, endg              ! processor bounds
     integer           :: icemec_class            ! current icemec class (1..maxpatch_glcmec)
     type(bounds_type) :: bounds_proc             
+    type(bounds_type) :: bounds_clump            ! clump bounds
     integer ,pointer  :: amask(:)                ! global land mask
     integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
     integer ,pointer  :: edgesOnCell(:,:)        ! index to determine distance between neighbors from dcEdge
@@ -88,6 +91,8 @@ contains
     integer           :: nCells_loc              ! number of grid cell level connectivity saved locally
     integer           :: nEdges_loc              ! number of edge length saved locally
     integer           :: maxEdges                ! max number of edges/neighbors
+    integer           :: nclumps                 ! number of clumps on this processor
+    integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -308,6 +313,21 @@ contains
        call decompInit_glcp(ns, ni, nj)
     endif
 
+    ! Set filters
+
+    call t_startf('init_filters')
+    call allocFilters()
+    call t_stopf('init_filters')
+
+    nclumps = get_proc_clumps()
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    do nc = 1, nclumps
+       call get_clump_bounds(nc, bounds_clump)
+       call reweight_wrapup(bounds_clump, &
+            ldomain%glcmask(bounds_clump%begg:bounds_clump%endg)*1._r8)
+    end do
+    !$OMP END PARALLEL DO
+
     ! ------------------------------------------------------------------------
     ! Remainder of initialization1
     ! ------------------------------------------------------------------------
@@ -375,7 +395,7 @@ contains
     use initInterpMod         , only : initInterp
     use DaylengthMod          , only : InitDaylength, daylength
     use fileutils             , only : getfil
-    use filterMod             , only : allocFilters, filter
+    use filterMod             , only : filter
     use dynSubgridDriverMod   , only : dynSubgrid_init
     use reweightMod           , only : reweight_wrapup
     use subgridWeightsMod     , only : init_subgrid_weights_mod
@@ -690,14 +710,6 @@ contains
 
     end if
        
-    ! ------------------------------------------------------------------------
-    ! Initialize filters and weights
-    ! ------------------------------------------------------------------------
-    
-    call t_startf('init_filters')
-    call allocFilters()
-    call t_stopf('init_filters')
-
     ! ------------------------------------------------------------------------
     ! If appropriate, create interpolated initial conditions
     ! ------------------------------------------------------------------------
