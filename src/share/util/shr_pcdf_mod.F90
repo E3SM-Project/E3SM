@@ -601,7 +601,6 @@ subroutine shr_pcdf_readr1d(fid,fname,iodesc,r1d)
 
   !--- local ---
   type(var_desc_t) :: varid
-  integer(IN)      :: ndims
   integer(IN)      :: rcode
   character(len=*),parameter :: subname = '(shr_pcdf_readr1d) '
 
@@ -651,8 +650,6 @@ subroutine shr_pcdf_readi1d(fid,fname,iodesc,i1d)
 
   !--- local ---
   type(var_desc_t) :: varid
-  integer(IN)      :: ndims
-  integer(IN)      :: vsize
   integer(IN)      :: rcode
   character(len=*),parameter :: subname = '(shr_pcdf_readi1d) '
 
