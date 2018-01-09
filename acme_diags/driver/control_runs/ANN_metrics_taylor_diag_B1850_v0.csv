@@ -5,6 +5,3 @@ LWCF global ceres_ebaf_toa_v2.8,11.847,11.054,0.914
 SWCF global ceres_ebaf_toa_v4.0,23.221,20.424,0.863
 LWCF global ceres_ebaf_toa_v4.0,11.847,12.238,0.922
 PSL global ERA-Interim,8.854,8.137,0.986
-PRECT global ERA-Interim,2.103,2.286,0.916
-PSL global MERRA2,8.854,8.315,0.976
-PRECT global MERRA2,2.103,2.625,0.824
