@@ -403,7 +403,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        ep_betr,                                                                       &
-       alm_fates)
+       alm_fates, glc2lnd_vars)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -412,6 +412,10 @@ contains
     use subgridRestMod   , only : SubgridRest, subgridRest_read_cleanup
     use accumulMod       , only : accumulRest
     use histFileMod      , only : hist_restart_ncd
+    use glc2lndMod       , only : glc2lnd_type
+    use decompMod        , only : get_proc_clumps, get_clump_bounds
+    use decompMod        , only : bounds_type
+    use reweightMod      , only : reweight_wrapup
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -443,10 +447,14 @@ contains
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
+    type(glc2lnd_type)             , intent(inout) :: glc2lnd_vars
     !
     ! !LOCAL VARIABLES:
-    type(file_desc_t) :: ncid ! netcdf id
-    integer :: i              ! index
+    type(file_desc_t) :: ncid         ! netcdf id
+    integer           :: nc
+    integer           :: i            ! index
+    integer           :: nclumps      ! number of clumps on this processor
+    type(bounds_type) :: bounds_clump ! clump-level bounds
     !-----------------------------------------------------------------------
 
     ! Open file
@@ -458,6 +466,21 @@ contains
     call restFile_dimcheck( ncid )
 
     call SubgridRest(bounds, ncid, flag='read')
+
+    ! Now that we have updated subgrid information, update the filters, active flags,
+    ! etc. accordingly. We do these updates as soon as possible so that the updated
+    ! filters and active flags are available to other restart routines - e.g., for the
+    ! sake of subgridAveMod calls like c2g.
+    !
+    ! The reweight_wrapup call needs to be done inside a clump loop, so we set that up
+    ! here.
+    nclumps = get_proc_clumps()
+    !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    do nc = 1, nclumps
+       call get_clump_bounds(nc, bounds_clump)
+       call reweight_wrapup(bounds_clump, glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+    end do
+    !$OMP END PARALLEL DO
 
     call accumulRest( ncid, flag='read' )
 

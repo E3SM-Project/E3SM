@@ -30,6 +30,7 @@ module dynSubgridDriverMod
   use WaterstateType      , only : waterstate_type
   use TemperatureType     , only : temperature_type
   use glc2lndMod          , only : glc2lnd_type
+  use dynLandunitAreaMod  , only : update_landunit_weights
 
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
@@ -42,6 +43,7 @@ module dynSubgridDriverMod
 
   public :: dynSubgrid_init             ! initialize transient land cover
   public :: dynSubgrid_driver           ! top-level driver for transient land cover
+  public :: dynSubgrid_wrapup_weight_changes ! reconcile various variables after subgrid weights change
   !
   ! !PRIVATE TYPES:
   type(prior_weights_type) :: prior_weights ! saved weights from before the subgrid weight updates
@@ -50,7 +52,7 @@ module dynSubgridDriverMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynSubgrid_init(bounds, dgvs_vars)
+  subroutine dynSubgrid_init(bounds, dgvs_vars, glc2lnd_vars)
     !
     ! !DESCRIPTION:
     ! Determine initial subgrid weights for prescribed transient Patches, CNDV, and/or
@@ -68,11 +70,12 @@ contains
     use dynpftFileMod     , only : dynpft_init
     use dynHarvestMod     , only : dynHarvest_init
     use dynCNDVMod        , only : dynCNDV_init
-    use subgridWeightsMod , only : compute_higher_order_weights
+    use dynpftFileMod     , only : dynpft_interp
     !
     ! !ARGUMENTS:
-    type(bounds_type), intent(in)    :: bounds  ! processor-level bounds
-    type(dgvs_type)  , intent(inout) :: dgvs_vars
+    type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
+    type(dgvs_type)   , intent(inout) :: dgvs_vars
+    type(glc2lnd_type), intent(inout) :: glc2lnd_vars
     !
     ! !LOCAL VARIABLES:
     integer           :: nclumps      ! number of clumps on this processor
@@ -101,10 +104,19 @@ contains
        call dynCNDV_init(bounds, dgvs_vars)
     end if
 
+    ! ------------------------------------------------------------------------
+    ! Set initial subgrid weights for aspects that are read from file. This is relevant
+    ! for cold start and use_init_interp-based initialization.
+    ! ------------------------------------------------------------------------
+
+    if (get_do_transient_pfts()) then
+       call dynpft_interp(bounds)
+    end if
+
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
-       call compute_higher_order_weights(bounds_clump)
+       call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
     end do
     !$OMP END PARALLEL DO
     
@@ -134,7 +146,6 @@ contains
     use clm_varctl           , only : use_cndv, use_cn, create_glacier_mec_landunit, use_ed
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
-    use dynLandunitAreaMod   , only : update_landunit_weights
     use dynInitColumnsMod    , only : initialize_new_columns
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
     use dynConsBiogeochemMod , only : dyn_cnbal_patch
@@ -238,13 +249,7 @@ contains
        ! first time step of the run to update filters to reflect state of CISM
        ! (particularly mask that is past through coupler).
 
-       call update_landunit_weights(bounds_clump)
-
-       call compute_higher_order_weights(bounds_clump)
-
-       ! Here: filters are re-made
-       call reweight_wrapup(bounds_clump, &
-            glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+       call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
 
        call set_subgrid_diagnostic_fields(bounds_clump)
 
@@ -269,5 +274,39 @@ contains
     !$OMP END PARALLEL DO
 
   end subroutine dynSubgrid_driver
+
+  !-----------------------------------------------------------------------
+  subroutine dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+    !
+    ! !DESCRIPTION:
+    ! Reconcile various variables after subgrid weights change
+    !
+    ! !USES:
+    use decompMod         , only : bounds_type
+    use subgridWeightsMod , only : compute_higher_order_weights
+    use reweightMod       , only : reweight_wrapup
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)  , intent(in)    :: bounds_clump ! clump-level bounds
+    type(glc2lnd_type) , intent(inout) :: glc2lnd_vars
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'dynSubgrid_wrapup_weight_changes'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(bounds_clump%level == BOUNDS_LEVEL_CLUMP, subname // ': argument must be CLUMP-level bounds')
+
+    call update_landunit_weights(bounds_clump)
+
+    call compute_higher_order_weights(bounds_clump)
+
+    ! Here: filters are re-made
+    !
+    ! This call requires clump-level bounds, which is why we need to ensure that the
+    ! argument to this routine is clump-level bounds
+    call reweight_wrapup(bounds_clump, glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+
+  end subroutine dynSubgrid_wrapup_weight_changes
 
 end module dynSubgridDriverMod
