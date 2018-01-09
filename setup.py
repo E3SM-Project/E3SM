@@ -49,9 +49,9 @@ data_files = [
 
 setup(
     name="acme_diags",
-    version="1.1.0",
+    version="1.1.1",
     author="Chengzhu (Jill) Zhang, Zeshawn Shaheen",
-    author_email="aims@llnl.gov",
+    author_email="zhang40@llnl.gov, shaheen2@llnl.gov",
     description="ACME Diagnostics.",
     scripts=["acme_diags/acme_diags_driver.py"],
     packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
