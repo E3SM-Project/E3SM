@@ -35,6 +35,7 @@ module prim_advance_mod
   use time_mod,           only: timelevel_qdp, timelevel_t
   use test_mod,           only: set_prescribed_wind
   use viscosity_theta,    only: biharmonic_wk_theta
+  use viscosity_mod,      only: make_c0
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -1130,7 +1131,21 @@ contains
   integer :: i,j,k,kptr,ie
 
 
+  real (kind=real_kind) ::  wtemp(np,np,nelemd)
+
   call t_startf('compute_andor_apply_rhs')
+
+  ! w boundary condition.  CLEAN THIS UP
+  do ie=nets,nete
+     phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
+     gradphinh_i(:,:,:,nlevp) = gradient_sphere(phi_i(:,:,nlevp),deriv,elem(ie)%Dinv)   
+     wtemp(:,:,ie) = (elem(ie)%state%v(:,:,1,nlev,n0)*gradphinh_i(:,:,1,nlevp) &
+          +elem(ie)%state%v(:,:,2,nlev,n0)*gradphinh_i(:,:,2,nlevp))/g
+  enddo
+  call make_C0(wtemp,elem,hybrid,nets,nete)
+  do ie=nets,nete
+     elem(ie)%state%w_i(:,:,nlevp,n0)=wtemp(:,:,ie)
+  enddo
 
   do ie=nets,nete
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
@@ -1249,18 +1264,10 @@ contains
               theta_i(:,:,k) = (theta_cp(:,:,k)+theta_cp(:,:,k-1))/2
            enddo
 #else
-           ! average dpnh_dp_i to midpoints, multiply by dphi
-           do k=1,nlev
-              temp(:,:,k)=-(phi_i(:,:,k+1)-phi_i(:,:,k))*&
-                   (dpnh_dp_i(:,:,k+1)+dpnh_dp_i(:,:,k))/2
-           enddo
-           ! average back to interfaces, store in theta_i:   (hvcoord%d_etai(k))
+           ! E conserving average
            do k=2,nlev
-              theta_i(:,:,k) = (temp(:,:,k)+temp(:,:,k-1))/2 
-           enddo
-           ! divide by dexner/deta
-           do k=2,nlev
-              theta_i(:,:,k) = theta_i(:,:,k)/(exner(:,:,k)-exner(:,:,k-1))
+              theta_i(:,:,k) = -dpnh_dp_i(:,:,k)*(phi(:,:,k)-phi(:,:,k-1))/&
+                   (exner(:,:,k)-exner(:,:,k-1))
            enddo
 #endif           
 
@@ -1271,7 +1278,6 @@ contains
            temp(:,:,k) = ( eta_dot_dpdn(:,:,k)+eta_dot_dpdn(:,:,k+1))/2
            ! first compute w,phi term at midpoints, store in "stens" temporarily
            stens(:,:,k,1) = temp(:,:,k)*(elem(ie)%state%w_i(:,:,k+1,n0)-elem(ie)%state%w_i(:,:,k,n0))
-           stens(:,:,k,2) = temp(:,:,k)*(phi_i(:,:,k+1)-phi_i(:,:,k))
            
            ! theta vadv term at midoints
            theta_vadv(:,:,k)= eta_dot_dpdn(:,:,k+1)*theta_i(:,:,k+1) - &
@@ -1280,17 +1286,16 @@ contains
         ! compute ave( ave(etadot) d/dx )
         do k=2,nlev
            w_vadv_i(:,:,k)  =(stens(:,:,k-1,1)+stens(:,:,k,1))/2
-           phi_vadv_i(:,:,k)=(stens(:,:,k-1,2)+stens(:,:,k,2))/2
+           phi_vadv_i(:,:,k)=eta_dot_dpdn(:,:,k)*(phi(:,:,k)-phi(:,:,k-1))
         end do
         w_vadv_i(:,:,1) = stens(:,:,1,1)
         w_vadv_i(:,:,nlevp) = stens(:,:,nlev,1)
-        phi_vadv_i(:,:,1) = stens(:,:,1,2)
-        phi_vadv_i(:,:,nlevp) = stens(:,:,nlev,2)
+        phi_vadv_i(:,:,1) = 0
+        phi_vadv_i(:,:,nlevp) = 0
 
         ! final form of SB81 vertical advection operator:
         w_vadv_i=w_vadv_i/dp3d_i
         phi_vadv_i=phi_vadv_i/dp3d_i
-
      endif
 
 
@@ -1309,13 +1314,17 @@ contains
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
-     ! surface values
-     gradphinh_i(:,:,:,nlevp) = elem(ie)%derived%gradphis(:,:,:)
+     ! surface data
+     gradphinh_i(:,:,:,nlevp) = gradient_sphere(phi_i(:,:,nlevp),deriv,elem(ie)%Dinv)   
      v_gradphinh_i(:,:,nlevp) = v_i(:,:,1,nlevp)*gradphinh_i(:,:,1,nlevp) &
           +v_i(:,:,2,nlevp)*gradphinh_i(:,:,2,nlevp)
+
      gradw_i(:,:,:,nlevp)=gradient_sphere(elem(ie)%state%w_i(:,:,nlevp,n0),deriv,elem(ie)%Dinv)
      v_gradw_i(:,:,nlevp) = v_i(:,:,1,nlevp)*gradw_i(:,:,1,nlevp) +&
           v_i(:,:,2,nlevp)*gradw_i(:,:,2,nlevp)
+
+
+
 
 #if (defined COLUMN_OPENMP)
  !$omp parallel do private(k)
@@ -1528,10 +1537,11 @@ contains
          elem(ie)%accum%IEvert2(:,:)=elem(ie)%accum%IEvert2(:,:)      &
               +(dpnh_dp_i(:,:,k)*dp3d_i(:,:,k))*phi_vadv_i(:,:,k)
       enddo
-      elem(ie)%accum%IEvert2(:,:)=elem(ie)%accum%IEvert2(:,:)      &
-           +(dpnh_dp_i(:,:,1)*dp3d_i(:,:,1))*phi_vadv_i(:,:,1)/2
-      elem(ie)%accum%IEvert2(:,:)=elem(ie)%accum%IEvert2(:,:)      &
-           +(dpnh_dp_i(:,:,nlevp)*dp3d_i(:,:,nlevp))*phi_vadv_i(:,:,nlevp)/2
+      do k =1,nlevp,nlev
+         elem(ie)%accum%IEvert2(:,:)=elem(ie)%accum%IEvert2(:,:)      &
+              +(dpnh_dp_i(:,:,k)*dp3d_i(:,:,k))*phi_vadv_i(:,:,k)/2
+      enddo
+
       
    endif
    
