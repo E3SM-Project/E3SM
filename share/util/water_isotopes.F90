@@ -27,12 +27,12 @@ module water_isotopes
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
 !  use abortutils,    only: endrun
-  use shr_const_mod, only: SHR_CONST_TKTRIP, &
-                           SHR_CONST_RSTD_H2ODEV, &
-                           SHR_CONST_VSMOW_16O, &
-                           SHR_CONST_VSMOW_18O, &
-                           SHR_CONST_VSMOW_D , &
-                           SHR_CONST_VSMOW_H
+  use shr_const_mod, only: SHR_CONST_TKTRIP
+!                           SHR_CONST_RSTD_H2ODEV, &
+!                           SHR_CONST_VSMOW_16O, &
+!                           SHR_CONST_VSMOW_18O, &
+!                           SHR_CONST_VSMOW_D , &
+!                           SHR_CONST_VSMOW_H
 
   implicit none
 
