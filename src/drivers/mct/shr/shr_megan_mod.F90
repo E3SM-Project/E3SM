@@ -203,9 +203,9 @@ contains
           endif
        enddo
        if (len_trim(item%name) .le. len(shr_megan_mechcomps(i)%name)) then
-          shr_megan_mechcomps(i)%name = item%name
+          shr_megan_mechcomps(i)%name = item%name(1:len(shr_megan_mechcomps(i)%name))
        else
-             call shr_sys_abort( 'shr_megan_init : name too long for data structure : '//trim(item%name))
+          call shr_sys_abort( 'shr_megan_init : name too long for data structure : '//trim(item%name))
        endif
        shr_megan_mechcomps(i)%n_megan_comps = item%n_terms
        allocate(shr_megan_mechcomps(i)%megan_comps(item%n_terms))
