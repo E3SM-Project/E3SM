@@ -57,10 +57,11 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_OCN_REF_SAL = 34.7_R8     ! ocn ref salinity (psu)
    real(R8),parameter :: SHR_CONST_ICE_REF_SAL =  4.0_R8     ! ice ref salinity (psu)
 
-   real(R8),parameter :: SHR_CONST_SPVAL      = 1.0e30_R8     ! special missing value
-   real(R8),parameter :: SHR_CONST_SPVAL_TOLMIN = 0.99_R8 * SHR_CONST_SPVAL  ! min spval tolerance
-   real(R8),parameter :: SHR_CONST_SPVAL_TOLMAX = 1.01_R8 * SHR_CONST_SPVAL  ! max spval tolerance
-
+   real(R8),parameter :: SHR_CONST_SPVAL        = 1.0e30_R8                 ! special missing value
+   real(R8),parameter :: SHR_CONST_SPVAL_TOLMIN = 0.99_R8 * SHR_CONST_SPVAL ! min spval tolerance
+   real(R8),parameter :: SHR_CONST_SPVAL_TOLMAX = 1.01_R8 * SHR_CONST_SPVAL ! max spval tolerance
+   real(R8),parameter :: SHR_CONST_SPVAL_AERODEP= 1.e29_r8                  ! special aerosol deposition
+   
    !Water Isotope Ratios in Vienna Standard Mean Ocean Water (VSMOW):
    real(R8),parameter :: SHR_CONST_VSMOW_18O   = 2005.2e-6_R8   ! 18O/16O in VMSOW
    real(R8),parameter :: SHR_CONST_VSMOW_17O   = 379.e-6_R8   ! 18O/16O in VMSOW
