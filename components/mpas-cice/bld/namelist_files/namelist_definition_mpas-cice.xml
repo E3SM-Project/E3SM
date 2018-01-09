@@ -123,21 +123,21 @@ Default: Defined in namelist_defaults.xml
 	category="io" group="io">
 If true write the output streams to disk after model initialization but before time stepping.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_test_case_diag" type="logical"
 	category="io" group="io">
-Perform a test case
+If true output test case diagnostics.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_test_case_diag_type" type="char*1024"
 	category="io" group="io">
-Test case type
+Test case diagnostic type.
 
 Valid values: 'global_velocity', 'square_advection' or 'advection'
 Default: Defined in namelist_defaults.xml
@@ -147,7 +147,7 @@ Default: Defined in namelist_defaults.xml
 	category="io" group="io">
 If true write the abort stream to disk after a critical error for the entire domain, not just failing block.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -174,21 +174,45 @@ Default: Defined in namelist_defaults.xml
 	category="decomposition" group="decomposition">
 Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_proc_decomp_file_prefix" type="char*1024"
 	category="decomposition" group="decomposition">
-Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time.
+Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is true The number of processors is appended to the end of the prefix at run-time.
 
 Valid values: Any path/prefix to a processor decomposition file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_halo_exch" type="logical"
+	category="decomposition" group="decomposition">
+Determines if time integration halo exchanges are performed.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_aggregate_halo_exch" type="logical"
 	category="decomposition" group="decomposition">
 Determines if aggregated halo exchanges are used in some places.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_reuse_halo_exch" type="logical"
+	category="decomposition" group="decomposition">
+Determines if halo exchange lists are reused.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_load_balance_timers" type="logical"
+	category="decomposition" group="decomposition">
+Determines if mpi barriers are used and timed before halo exchanges.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -201,7 +225,7 @@ Default: Defined in namelist_defaults.xml
 	category="restart" group="restart">
 Determines if the initial conditions should be read from a restart file, or an input file.
 
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -343,7 +367,7 @@ Default: Defined in namelist_defaults.xml
 	category="initialize" group="initialize">
 If True calculate the Coriolis parameter at initialization from the latitude.
 
-Valid values: .true. or .false
+Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -354,7 +378,7 @@ Default: Defined in namelist_defaults.xml
 	category="use_sections" group="use_sections">
 If true calculate the sea ice velocity.
 
-Valid values: .true. or .false
+Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -362,7 +386,7 @@ Default: Defined in namelist_defaults.xml
 	category="use_sections" group="use_sections">
 If true perform advection of the sea ice.
 
-Valid values: .true. or .false
+Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -370,7 +394,7 @@ Default: Defined in namelist_defaults.xml
 	category="use_sections" group="use_sections">
 If true calculate input forcing fields.
 
-Valid values: .true. or .false
+Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -378,7 +402,7 @@ Default: Defined in namelist_defaults.xml
 	category="use_sections" group="use_sections">
 If true perform calculations from the column physics package.
 
-Valid values: .true. or .false
+Valid values: true or .false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -387,7 +411,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_atmospheric_forcing_type" type="char*1024"
 	category="forcing" group="forcing">
-
+Atmospheric forcing type.
 
 Valid values: 'CORE'
 Default: Defined in namelist_defaults.xml
@@ -395,7 +419,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_forcing_start_time" type="char*1024"
 	category="forcing" group="forcing">
-
+Forcing time to use at the simulation start time
 
 Valid values: 'YYYY-MM-DD_HH:MM:SS
 Default: Defined in namelist_defaults.xml
@@ -403,7 +427,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_forcing_cycle_start" type="char*1024"
 	category="forcing" group="forcing">
-
+Start time for the forcing cycle.
 
 Valid values: 'YYYY-MM-DD_HH:MM:SS
 Default: Defined in namelist_defaults.xml
@@ -411,7 +435,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_forcing_cycle_duration" type="char*1024"
 	category="forcing" group="forcing">
-
+Duration of the forcing cycle.
 
 Valid values: 'YYYY-MM-DD_HH:MM:SS
 Default: Defined in namelist_defaults.xml
@@ -419,7 +443,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_forcing_precipitation_units" type="char*1024"
 	category="forcing" group="forcing">
-
+Forcing input precipitation units.
 
 Valid values: 'mm_per_month', 'mm_per_day', or 'mm_per_sec'
 Default: Defined in namelist_defaults.xml
@@ -427,7 +451,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_forcing_sst_type" type="char*1024"
 	category="forcing" group="forcing">
-
+Sea surface temperature ocean forcing type.
 
 Valid values: 'ncar'
 Default: Defined in namelist_defaults.xml
@@ -437,15 +461,15 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 
 
-Valid values: .true. or .false
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_include_pond_freshwater_feedback" type="logical"
 	category="forcing" group="forcing">
+Reduce the ocean fresh water flux by the pond fresh water flux for coupling.
 
-
-Valid values: .true. or .false
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -454,41 +478,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_perform_unit_test" type="logical"
 	category="unit_test" group="unit_test">
+If true perform a unit test.
 
-
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_unit_test_type" type="char*1024"
 	category="unit_test" group="unit_test">
+Unit test type.
 
-
-Valid values: 
+Valid values: 'strain rate operator', 'stress divergence operator', or 'constitutive relationship'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_unit_test_subtype" type="char*1024"
 	category="unit_test" group="unit_test">
+Unit test subtype.
 
-
-Valid values: 
+Valid values: ('strain rate operator'): 'all', 'zero', 'zonal', 'meridonal', 'solid_body', 'sinusoidal1', or 'sinusoidal2', (stress divergence operator): 'all', 'zero', 'const11', 'const22', 'const12', 'test1', 'test2', 'test3', or 'test4'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_test_ice_shelf" type="logical"
 	category="unit_test" group="unit_test">
+If true test add a test ice shelf to the ice shelf mask.
 
-
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_testing_system_test" type="logical"
 	category="unit_test" group="unit_test">
+If true initialize variables that will fail the testing system tests.
 
-
-Valid values: .true. or .false.
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -497,7 +521,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_dynamics_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
-
+The number of dynamics subcycles to perform per thermodynamic time step (config_dt)
 
 Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
@@ -505,23 +529,23 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_rotate_cartesian_grid" type="logical"
 	category="velocity_solver" group="velocity_solver">
+Rotate the velocity directions from geographic so their pole lies on the equator.
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_include_metric_terms" type="logical"
 	category="velocity_solver" group="velocity_solver">
+Include metric terms due to Earth curvature in velocity solver horizontal operators.
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_elastic_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
-
+The number of elastic EVP subcycles to perform per dynamics time step.
 
 Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
@@ -529,7 +553,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_stress_divergence_scheme" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-
+Choice of stress divergence scheme to use in the velocity solver.
 
 Valid values: 'weak' or 'variational'
 Default: Defined in namelist_defaults.xml
@@ -537,7 +561,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_variational_basis" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-
+Type of basis functions to use with the variational stress divergence scheme.
 
 Valid values: 'wachspress' or 'pwl'
 Default: Defined in namelist_defaults.xml
@@ -545,7 +569,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_wachspress_integration_type" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-
+Type of integration to perform with the Wachspress variational stress divergence scheme.
 
 Valid values: 'trapezoidal', 'dunavant' or 'fekete'
 Default: Defined in namelist_defaults.xml
@@ -553,7 +577,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_wachspress_integration_order" type="integer"
 	category="velocity_solver" group="velocity_solver">
-
+Order of integration for Wachspress basis integrations.
 
 Valid values: 'trapezoidal': any positive integer, 'dunavant':1-10,12, 'fekete':1-6,8,9
 Default: Defined in namelist_defaults.xml
@@ -561,41 +585,41 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_revised_evp" type="logical"
 	category="velocity_solver" group="velocity_solver">
+If true use the revised EVP rheology (Bouillon et al., Ocean Modelling)
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_air_stress" type="logical"
 	category="velocity_solver" group="velocity_solver">
+If true include the air stress term in the velocity solver calculations.
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_ocean_stress" type="logical"
 	category="velocity_solver" group="velocity_solver">
+If true include the ocean stress term in the velocity solver calculations.
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_surface_tilt" type="logical"
 	category="velocity_solver" group="velocity_solver">
+If true include the sea surface tilt stress term in the velocity solver calculations.
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_geostrophic_surface_tilt" type="logical"
 	category="velocity_solver" group="velocity_solver">
+If true calculate the sea surface tilt stress assuming currents are geostrophic.
 
-
-Valid values: .true. or. false.
+Valid values: true or. false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -604,7 +628,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_advection_type" type="char*1024"
 	category="advection" group="advection">
-Type of advection scheme (upwind or incremental remapping)
+Type of advection scheme (upwind or incremental remapping).
 
 Valid values: 'upwind' and 'incremental_remap'
 Default: Defined in namelist_defaults.xml
@@ -612,7 +636,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_monotonic" type="logical"
 	category="advection" group="advection">
-If true then fluxes are limited to produce a monotonic advection scheme
+If true then fluxes are limited to produce a monotonic advection scheme.
 
 Valid values: true and false
 Default: Defined in namelist_defaults.xml
@@ -620,7 +644,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_conservation_check" type="logical"
 	category="advection" group="advection">
-
+If true test the advection results for tracer conservation (incremental remap only).
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -628,7 +652,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_monotonicity_check" type="logical"
 	category="advection" group="advection">
-
+If true test the advection results for monotonicity (incremental remap only).
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -636,7 +660,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_recover_tracer_means_check" type="logical"
 	category="advection" group="advection">
-
+If true compare mass*tracer products for incremental remapping with analytical values.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -647,7 +671,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_column_shortwave" type="logical"
 	category="column_package" group="column_package">
-
+Run the shortwave radiation column physics calculation.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -655,7 +679,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_column_vertical_thermodynamics" type="logical"
 	category="column_package" group="column_package">
-
+Run the vertical thermodynamics column physics calculation.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -671,7 +695,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_column_itd_thermodynamics" type="logical"
 	category="column_package" group="column_package">
-
+Run the ice thickness distribution thermodynamics column physics calculation.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -679,7 +703,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_column_ridging" type="logical"
 	category="column_package" group="column_package">
-
+Run the ridging column physics calculation.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -690,7 +714,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_ice_age" type="logical"
 	category="column_tracers" group="column_tracers">
-
+If true use the ice age tracer.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -698,7 +722,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_first_year_ice" type="logical"
 	category="column_tracers" group="column_tracers">
-
+If true use the first year ice tracer.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -706,7 +730,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_level_ice" type="logical"
 	category="column_tracers" group="column_tracers">
-
+If true use the level ice tracers.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -714,7 +738,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_cesm_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
-
+If true use the cesm meltponds tracers.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -722,7 +746,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_level_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
-
+If true use the level ice meltponds tracers.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -730,7 +754,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_topo_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
-
+If true use the topo meltpond tracers.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -893,7 +917,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_skeletal_bgc_flux_type" type="char*1024"
 	category="biogeochemistry" group="biogeochemistry">
-Determines the ocean-ice fluxes of biogeochemistry for the bottom1-layer model: in Jin2006,    the piston velocity is a function of ice growth/melt rate, in default, the piston velocity    is constant
+Determines the ocean-ice fluxes of biogeochemistry for the bottom1-layer model: in Jin2006, the piston velocity is a function of ice growth/melt rate, in default, the piston velocity is constant
 
 Valid values: Jin2006 or default
 Default: Defined in namelist_defaults.xml
@@ -901,7 +925,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_scale_initial_vertical_bgc" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-initialize the vertical ice biogeochemistry profile to scale with    the salinity restart/initial profile
+initialize the vertical ice biogeochemistry profile to scale with the salinity restart/initial profile
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -1647,7 +1671,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of diatoms
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1655,7 +1679,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of small plankton
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1663,7 +1687,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of phaeocystis
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1671,7 +1695,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of nitrate
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1679,7 +1703,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of ammonium
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1687,7 +1711,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of silicate
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1695,7 +1719,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of particulate DMSP
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1703,7 +1727,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of dissolved DMSP
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1711,7 +1735,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of humics
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1719,7 +1743,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of poly/saccharids
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1727,7 +1751,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of lipids
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1735,7 +1759,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of proteins
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1743,7 +1767,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of dissolved iron
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1751,7 +1775,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of particulate iron
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1759,7 +1783,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of black carbon 1 pool
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1767,7 +1791,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of black carbon 1 pool
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1775,7 +1799,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of dust pool 1
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1783,7 +1807,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of dust pool 2
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1791,7 +1815,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of dust pool 3
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1799,7 +1823,7 @@ Default: Defined in namelist_defaults.xml
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of dust pool 4
 
-Valid values: -1 = entirely in the mobile phase; 0 = retention dominated;     1 = release dominated; 0.5 = equal but rapid exchange;     2 = equal but slow exchange
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1888,63 +1912,63 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_shortwave_type" type="char*1024"
 	category="shortwave" group="shortwave">
+Shortwave radiation method.
 
-
-Valid values: 
+Valid values: 'ccsm3' or 'dEdd'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_albedo_type" type="char*1024"
 	category="shortwave" group="shortwave">
+Albedo parameterization type.
 
-
-Valid values: 
+Valid values: 'ccsm3' or 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_visible_ice_albedo" type="real"
 	category="shortwave" group="shortwave">
+Visible ice albedo for ice thickness greater than config_variable_albedo_thickness_limit.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_infrared_ice_albedo" type="real"
 	category="shortwave" group="shortwave">
+Near-IR ice albedo for ice thickness greater than config_variable_albedo_thickness_limit.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_visible_snow_albedo" type="real"
 	category="shortwave" group="shortwave">
+Visible cold snow albedo.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_infrared_snow_albedo" type="real"
 	category="shortwave" group="shortwave">
+Near-IR cold snow albedo.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_variable_albedo_thickness_limit" type="real"
 	category="shortwave" group="shortwave">
+Ice thickness above which the ice albedo is constant.
 
-
-Valid values: 
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ice_shortwave_tuning_parameter" type="real"
 	category="shortwave" group="shortwave">
-
+Sea ice tuning parameter; +1 for 1sig increase in albedo.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -1952,7 +1976,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_pond_shortwave_tuning_parameter" type="real"
 	category="shortwave" group="shortwave">
-
+Ponded ice tuning parameter; +1 for 1sig increase in albedo.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -1960,7 +1984,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_snow_shortwave_tuning_parameter" type="real"
 	category="shortwave" group="shortwave">
-
+Snow tuning parameter; +1 for ~.01 change in broadband albedo.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -1968,7 +1992,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_temp_change_snow_grain_radius_change" type="real"
 	category="shortwave" group="shortwave">
-
+Change in temperture for non-melt to melt snow grain radius change.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -1976,7 +2000,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_max_melting_snow_grain_radius" type="real"
 	category="shortwave" group="shortwave">
-
+Maximum melting snow grain radius.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -1984,7 +2008,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_algae_absorption_coefficient" type="real"
 	category="shortwave" group="shortwave">
-
+Algae absorption coefficient for 0.5 m thick layer.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -1995,7 +2019,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_snow_to_ice_transition_depth" type="real"
 	category="meltponds" group="meltponds">
-
+Snow depth for transition to bare sea ice.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2003,15 +2027,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_pond_refreezing_type" type="char*1024"
 	category="meltponds" group="meltponds">
+Pond refreezing parameterization.
 
-
-Valid values: 
+Valid values: 'cesm' or 'hlid'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pond_flushing_timescale" type="real"
 	category="meltponds" group="meltponds">
-
+Alter e-folding time scale for flushing.?????
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2019,23 +2043,23 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_min_meltwater_retained_fraction" type="real"
 	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_max_meltwater_retained_fraction" type="real"
 	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_pond_depth_to_fraction_ratio" type="real"
 	category="meltponds" group="meltponds">
-
+Ratio of pond depth to pond fraction.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2043,7 +2067,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_snow_on_pond_ice_tapering_parameter" type="real"
 	category="meltponds" group="meltponds">
-
+Tapering parameter for snow on pond ice.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2051,7 +2075,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_critical_pond_ice_thickness" type="real"
 	category="meltponds" group="meltponds">
-
+Critical parameter for pond ice thickness.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2062,65 +2086,65 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_thermodynamics_type" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
+Vertical themodynamics type.
 
-
-Valid values: 
+Valid values: 'zero layer', 'BL99', or 'mushy'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_heat_conductivity_type" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
+Thermal conductivity type for BL99 thermodynamics. Options are Maykut and Untersteiner 1971 form (with Wettlaufer 1991 constants), or Pringle et al JGR 2007 'bubbly brine'
 
-
-Valid values: 
+Valid values: 'MU71' or 'bubbly'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_mode_channel_radius" type="real"
 	category="thermodynamics" group="thermodynamics">
+Channel radius for rapid gravity drainage mode.
 
-
-Valid values: 
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_model_critical_Ra" type="real"
 	category="thermodynamics" group="thermodynamics">
+Critical Rayleigh number for rapid gravity drainage mode.
 
-
-Valid values: 
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_rapid_mode_aspect_ratio" type="real"
 	category="thermodynamics" group="thermodynamics">
+Aspect ratio for rapid gravity drainage mode (larger=wider).
 
-
-Valid values: 
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_slow_mode_drainage_strength" type="real"
 	category="thermodynamics" group="thermodynamics">
+Slow gravity drainage mode drainage strength.
 
-
-Valid values: 
+Valid values: Any negative real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_slow_mode_critical_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
+Liquid fraction porosity cutoff for slow gravity drainage mode.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_congelation_ice_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
+Liquid fraction of congelation ice.
 
-
-Valid values: 
+Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2129,17 +2153,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_itd_conversion_type" type="char*1024"
 	category="itd" group="itd">
+Type of ice thickness distribution conversions.
 
-
-Valid values: 
+Valid values: 'delta function' or 'linear remap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_category_bounds_type" type="char*1024"
 	category="itd" group="itd">
+Type of ice thickness category bounds.
 
-
-Valid values: 
+Valid values: 'single category', 'original', 'new', 'WMO', or 'asymptotic'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2148,31 +2172,31 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ice_strength_formulation" type="char*1024"
 	category="ridging" group="ridging">
+Type of ice strength formulation.
 
-
-Valid values: 
+Valid values: 'Hibler79' or 'Rothrock75'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ridging_participation_function" type="char*1024"
 	category="ridging" group="ridging">
+Type of ridging participation function.
 
-
-Valid values: 
+Valid values: 'Thorndike75' or 'exponential'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ridging_redistribution_function" type="char*1024"
 	category="ridging" group="ridging">
+Type of ridging redistribution function.
 
-
-Valid values: 
+Valid values: 'Hibler80' or 'exponential'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ridiging_efolding_scale" type="real"
 	category="ridging" group="ridging">
-
+E-folding scale of ridged ice (krdg_redist = 1)
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2180,7 +2204,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ratio_ridging_work_to_PE" type="real"
 	category="ridging" group="ridging">
-
+Ratio of ridging work to PE change in ridging (kstrength = 1)
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2191,49 +2215,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_atmos_boundary_method" type="char*1024"
 	category="atmosphere" group="atmosphere">
+Atmosphere boundary method.
 
-
-Valid values: 
+Valid values: 'ccsm3' or 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calc_surface_stresses" type="logical"
 	category="atmosphere" group="atmosphere">
+If true calculate wind stress components.
 
-
-Valid values: 
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calc_surface_temperature" type="logical"
 	category="atmosphere" group="atmosphere">
+If true calculate surface temperature. If false surface temperature is computed elsewhere and atmos-ice fluxes are provided.
 
-
-Valid values: 
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_form_drag" type="logical"
 	category="atmosphere" group="atmosphere">
+If true calculate form drag.
 
-
-Valid values: 
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_high_frequency_coupling" type="logical"
 	category="atmosphere" group="atmosphere">
+If true use high frequency coupling.
 
-
-Valid values: 
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_boundary_layer_iteration_number" type="integer"
 	category="atmosphere" group="atmosphere">
+Number of iterations for boundary layer calculations
 
-
-Valid values: 
+Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2242,15 +2266,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_ocean_mixed_layer" type="logical"
 	category="ocean" group="ocean">
+If true use an ocean mixed layer.
 
-
-Valid values: 
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_min_friction_velocity" type="real"
 	category="ocean" group="ocean">
-
+Minimum friction velocity for ice-ocean heat flux.
 
 Valid values: 
 Default: Defined in namelist_defaults.xml
@@ -2258,25 +2282,33 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ocean_heat_transfer_type" type="char*1024"
 	category="ocean" group="ocean">
+Transfer coefficient type for ice-ocean heat flux.
 
-
-Valid values: 
+Valid values: 'constant' or 'Cdn_ocn'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_sea_freezing_temperature_type" type="char*1024"
 	category="ocean" group="ocean">
+Form of ocean freezing temperature.
 
-
-Valid values: 
+Valid values: 'mushy', 'linear_salt', or DEFAULT
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ocean_surface_type" type="char*1024"
 	category="ocean" group="ocean">
-
+Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')
 
 Valid values: 'free' or 'non-free'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_couple_biogeochemistry_fields" type="logical"
+	category="ocean" group="ocean">
+
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2285,9 +2317,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_check_state" type="logical"
 	category="diagnostics" group="diagnostics">
+If true perform a check at runtime of the model state.
 
-
-Valid values: 
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
