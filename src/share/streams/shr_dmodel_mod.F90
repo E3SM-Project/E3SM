@@ -542,7 +542,6 @@ CONTAINS
     character(len=*),optional  ,intent(in)    :: istr
 
     !----- local -----
-    integer(IN)   :: i    ! indices
     integer(IN)   :: my_task, master_task
     integer(IN)   :: ierr       ! error code
     integer(IN)   :: rCode      ! return code
