@@ -1,6 +1,6 @@
 module desp_comp_mod
 
-! !USES:
+  ! !USES:
 
   use shr_sys_mod,     only: shr_sys_abort, shr_sys_flush
   use shr_kind_mod,    only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
@@ -25,24 +25,24 @@ module desp_comp_mod
   implicit none
   private
 
-!--------------------------------------------------------------------------
-! Public interfaces
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public interfaces
+  !--------------------------------------------------------------------------
 
   public                     :: desp_comp_init
   public                     :: desp_comp_run
   public                     :: desp_comp_final
 
-!--------------------------------------------------------------------------
-! Public module data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Public module data
+  !--------------------------------------------------------------------------
   integer,          public, parameter :: desp_num_comps = 8
   character(len=3), public, parameter :: comp_names(desp_num_comps) =         &
        (/ 'atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'drv' /)
 
-!--------------------------------------------------------------------------
-! Private data
-!--------------------------------------------------------------------------
+  !--------------------------------------------------------------------------
+  ! Private data
+  !--------------------------------------------------------------------------
 
   character(len=CS)           :: myModelName = 'esp'    ! user defined model name
   integer(IN)                 :: mpicom
@@ -55,7 +55,7 @@ module desp_comp_mod
   integer                     :: inst_index             ! number of current instance (ie. 1)
   character(len=16)           :: inst_name              ! fullname of current instance (ie. "lnd_0001")
   character(len=16)           :: inst_suffix            ! char string associated with instance
-                                                        ! (ie. "_0001" or "")
+  ! (ie. "_0001" or "")
   character(len=CL)           :: desp_mode              ! mode of operation
   character(len=*), parameter :: rpprefix  = 'rpointer.'
   character(len=*), parameter :: rpfile    = rpprefix//'esp'
@@ -74,31 +74,31 @@ module desp_comp_mod
 
   type(shr_strdata_type)      :: SDESP
 
-!--------------------------------------------------------------------------
-! Private interface
-!--------------------------------------------------------------------------
-interface get_restart_filenames
-  module procedure get_restart_filenames_a
-  module procedure get_restart_filenames_s
-end interface get_restart_filenames
+  !--------------------------------------------------------------------------
+  ! Private interface
+  !--------------------------------------------------------------------------
+  interface get_restart_filenames
+     module procedure get_restart_filenames_a
+     module procedure get_restart_filenames_s
+  end interface get_restart_filenames
 
   SAVE
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-!===============================================================================
-!BOP ===========================================================================
-!
-! !IROUTINE: desp_comp_init
-!
-! !DESCRIPTION:
-!     initialize data esp model
-!
-! !REVISION HISTORY:
-!
-! !INTERFACE: ------------------------------------------------------------------
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: desp_comp_init
+  !
+  ! !DESCRIPTION:
+  !     initialize data esp model
+  !
+  ! !REVISION HISTORY:
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine desp_comp_init(EClock, espid, mpicom_in, phase, read_restart,    &
        esp_present, esp_prognostic)
@@ -142,7 +142,7 @@ CONTAINS
     character(*), parameter :: F00     = "('"//subName//"',8a)"
     character(*), parameter :: F01     = "('"//subName//"',a,5i8)"
     character(*), parameter :: F04     = "('"//subName//"',2a,2i8,'s')"
-!-------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------
 
     call t_startf('DESP_INIT')
 
@@ -163,146 +163,146 @@ CONTAINS
     inst_suffix = seq_comm_suffix(COMPID)
 
     if (phase == 1) then
-      ! Determine communicator groups and sizes
-      call mpi_comm_rank(mpicom, my_task, ierr)
-      call mpi_comm_size(mpicom, npes, ierr)
+       ! Determine communicator groups and sizes
+       call mpi_comm_rank(mpicom, my_task, ierr)
+       call mpi_comm_size(mpicom, npes, ierr)
 
-      !--- open log file ---
-      if (my_task == master_task) then
-        logUnit = shr_file_getUnit()
-        call shr_file_setIO('esp_modelio.nml'//trim(inst_suffix),logUnit)
-      else
-        logUnit = 6
-      end if
+       !--- open log file ---
+       if (my_task == master_task) then
+          logUnit = shr_file_getUnit()
+          call shr_file_setIO('esp_modelio.nml'//trim(inst_suffix),logUnit)
+       else
+          logUnit = 6
+       end if
 
-      !------------------------------------------------------------------------
-      ! Reset shr logging to my log file
-      !------------------------------------------------------------------------
-      call shr_file_getLogUnit (shrlogunit)
-      call shr_file_getLogLevel(shrloglev)
-      call shr_file_setLogUnit (logUnit)
+       !------------------------------------------------------------------------
+       ! Reset shr logging to my log file
+       !------------------------------------------------------------------------
+       call shr_file_getLogUnit (shrlogunit)
+       call shr_file_getLogLevel(shrloglev)
+       call shr_file_setLogUnit (logUnit)
 
-      !------------------------------------------------------------------------
-      ! Read desp_in
-      !------------------------------------------------------------------------
+       !------------------------------------------------------------------------
+       ! Read desp_in
+       !------------------------------------------------------------------------
 
-      call t_startf('desp_readnml')
+       call t_startf('desp_readnml')
 
-      filename   = "desp_in"//trim(inst_suffix)
-      desp_mode  = trim(nullstr)
-      restfilm   = trim(nullstr)
-      if (my_task == master_task) then
-        nunit = shr_file_getUnit() ! get unused unit number
-        open (nunit,file=trim(filename),status="old",action="read")
-        read (nunit,nml=desp_nml,iostat=ierr)
-        close(nunit)
+       filename   = "desp_in"//trim(inst_suffix)
+       desp_mode  = trim(nullstr)
+       restfilm   = trim(nullstr)
+       if (my_task == master_task) then
+          nunit = shr_file_getUnit() ! get unused unit number
+          open (nunit,file=trim(filename),status="old",action="read")
+          read (nunit,nml=desp_nml,iostat=ierr)
+          close(nunit)
 
-        call shr_file_freeUnit(nunit)
-        if (ierr > 0) then
-          write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
-          call shr_sys_abort(subName//': namelist read error '//trim(filename))
-        end if
-        write(logunit,F00) 'restfilm    = ',trim(restfilm)
-        write(logunit,F01) 'inst_index  = ',inst_index
-        write(logunit,F00) 'inst_name   = ',trim(inst_name)
-        write(logunit,F00) 'inst_suffix = ',trim(inst_suffix)
-        call shr_sys_flush(logunit)
-      end if
-      call shr_mpi_bcast(desp_mode,  mpicom, 'desp_mode')
-      call shr_mpi_bcast(restfilm,   mpicom, 'restfilm')
-
-      rest_file = trim(restfilm)
-      loglevel = 1 ! could be shrloglev
-      call shr_file_setLogLevel(loglevel)
-
-      !------------------------------------------------------------------------
-      ! Initialize PIO
-      !------------------------------------------------------------------------
-
-      call shr_strdata_pioinit(SDESP, COMPID)
-
-      call mpi_comm_rank(global_comm, global_mype, ierr)
-      call mpi_comm_size(global_comm, global_numpes, ierr)
-
-      write(logunit,*)'DESP: I am global rank ',global_mype,' of ',global_numpes
-
-
-      !------------------------------------------------------------------------
-      ! Validate mode
-      !------------------------------------------------------------------------
-
-      if ( (trim(desp_mode) == null_mode) .or.                                 &
-           (trim(desp_mode) == noop_mode) .or.                                 &
-           (trim(desp_mode) == test_mode)) then
-
-        if (my_task == master_task) then
-          write(logunit,F00) 'desp mode = ',trim(desp_mode)
+          call shr_file_freeUnit(nunit)
+          if (ierr > 0) then
+             write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
+             call shr_sys_abort(subName//': namelist read error '//trim(filename))
+          end if
+          write(logunit,F00) 'restfilm    = ',trim(restfilm)
+          write(logunit,F01) 'inst_index  = ',inst_index
+          write(logunit,F00) 'inst_name   = ',trim(inst_name)
+          write(logunit,F00) 'inst_suffix = ',trim(inst_suffix)
           call shr_sys_flush(logunit)
-        end if
-        if (trim(desp_mode) /= null_mode) then
-          esp_present = .true.
-        end if
-      else
-        write(logunit,F00) ' ERROR illegal esp mode = ',trim(desp_mode)
-        call shr_sys_abort(subName//' Illegal ESP mode = '//trim(desp_mode))
-      end if
+       end if
+       call shr_mpi_bcast(desp_mode,  mpicom, 'desp_mode')
+       call shr_mpi_bcast(restfilm,   mpicom, 'restfilm')
 
-      call t_stopf('desp_readnml')
+       rest_file = trim(restfilm)
+       loglevel = 1 ! could be shrloglev
+       call shr_file_setLogLevel(loglevel)
 
-      !------------------------------------------------------------------------
-      ! Read restart
-      !------------------------------------------------------------------------
+       !------------------------------------------------------------------------
+       ! Initialize PIO
+       !------------------------------------------------------------------------
 
-      if (read_restart) then
-        if (trim(rest_file) == trim(nullstr)) then
+       call shr_strdata_pioinit(SDESP, COMPID)
+
+       call mpi_comm_rank(global_comm, global_mype, ierr)
+       call mpi_comm_size(global_comm, global_numpes, ierr)
+
+       write(logunit,*)'DESP: I am global rank ',global_mype,' of ',global_numpes
+
+
+       !------------------------------------------------------------------------
+       ! Validate mode
+       !------------------------------------------------------------------------
+
+       if ( (trim(desp_mode) == null_mode) .or.                                 &
+            (trim(desp_mode) == noop_mode) .or.                                 &
+            (trim(desp_mode) == test_mode)) then
+
           if (my_task == master_task) then
-            write(logunit,F00) ' restart filename from rpointer'
-            call shr_sys_flush(logunit)
-            inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-            if (.not. exists) then
-              write(logunit,F00) ' ERROR: rpointer file does not exist'
-              call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
-            end if
-            nu = shr_file_getUnit()
-            open(nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-            read(nu,'(a)') rest_file
-            close(nu)
-            call shr_file_freeUnit(nu)
-            inquire(file=trim(rest_file),exist=exists)
+             write(logunit,F00) 'desp mode = ',trim(desp_mode)
+             call shr_sys_flush(logunit)
           end if
-          call shr_mpi_bcast(rest_file,mpicom,'rest_file')
-        else
-          ! use namelist already read
-          if (my_task == master_task) then
-            write(logunit,F00) ' restart filename from namelist '
-            call shr_sys_flush(logunit)
-            inquire(file=trim(rest_file),exist=exists)
+          if (trim(desp_mode) /= null_mode) then
+             esp_present = .true.
           end if
-        end if
+       else
+          write(logunit,F00) ' ERROR illegal esp mode = ',trim(desp_mode)
+          call shr_sys_abort(subName//' Illegal ESP mode = '//trim(desp_mode))
+       end if
 
-        call shr_mpi_bcast(exists, mpicom, 'exists')
+       call t_stopf('desp_readnml')
 
-        if (exists) then
-          if (my_task == master_task) then
-            write(logunit,F00) ' reading ',trim(rest_file)
-          end if
-          ! Read any restart info here? --XXgoldyXX
-        else
-          if (my_task == master_task) then
-            write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-          end if
-        end if
-        call shr_sys_flush(logunit)
-      end if
+       !------------------------------------------------------------------------
+       ! Read restart
+       !------------------------------------------------------------------------
 
-      if (read_restart) then
-        call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
-      else
-        call seq_timemgr_EClockGetData( EClock, stepno=stepno )
-      end if
+       if (read_restart) then
+          if (trim(rest_file) == trim(nullstr)) then
+             if (my_task == master_task) then
+                write(logunit,F00) ' restart filename from rpointer'
+                call shr_sys_flush(logunit)
+                inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
+                if (.not. exists) then
+                   write(logunit,F00) ' ERROR: rpointer file does not exist'
+                   call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+                end if
+                nu = shr_file_getUnit()
+                open(nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
+                read(nu,'(a)') rest_file
+                close(nu)
+                call shr_file_freeUnit(nu)
+                inquire(file=trim(rest_file),exist=exists)
+             end if
+             call shr_mpi_bcast(rest_file,mpicom,'rest_file')
+          else
+             ! use namelist already read
+             if (my_task == master_task) then
+                write(logunit,F00) ' restart filename from namelist '
+                call shr_sys_flush(logunit)
+                inquire(file=trim(rest_file),exist=exists)
+             end if
+          end if
+
+          call shr_mpi_bcast(exists, mpicom, 'exists')
+
+          if (exists) then
+             if (my_task == master_task) then
+                write(logunit,F00) ' reading ',trim(rest_file)
+             end if
+             ! Read any restart info here? --XXgoldyXX
+          else
+             if (my_task == master_task) then
+                write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+             end if
+          end if
+          call shr_sys_flush(logunit)
+       end if
+
+       if (read_restart) then
+          call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+          call seq_timemgr_EClockGetData( EClock, calendar=calendar )
+       else
+          call seq_timemgr_EClockGetData( EClock, stepno=stepno )
+       end if
     else
-      call shr_sys_abort(trim(subname)//' DESP initialization only has phase 1')
+       call shr_sys_abort(trim(subname)//' DESP initialization only has phase 1')
     end if
 
     !--------------------------------------------------------------------------
@@ -310,7 +310,7 @@ CONTAINS
     !--------------------------------------------------------------------------
 
     if (my_task == master_task) then
-      write(logunit,F00) 'desp_comp_init done'
+       write(logunit,F00) 'desp_comp_init done'
     end if
     call shr_sys_flush(logunit)
 
@@ -341,6 +341,7 @@ CONTAINS
     use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
     use seq_comm_mct, only: num_inst_wav
     use esp_utils,    only: esp_pio_modify_variable
+    use shr_cal_mod, only: shr_cal_ymdtod2string
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -356,7 +357,7 @@ CONTAINS
     character(len=CL), intent(inout) :: wav_resume(num_inst_wav)
     character(len=CL), intent(inout) :: cpl_resume(num_inst_cpl)
 
-                                                              !--- local ---
+    !--- local ---
     integer(IN)                      :: CurrentYMD            ! model date
     integer(IN)                      :: CurrentTOD            ! model sec into model date
     integer(IN)                      :: yy,mm,dd              ! year month day
@@ -374,7 +375,7 @@ CONTAINS
     integer(IN)                      :: stepno                ! step number
     character(len=CL)                :: calendar              ! calendar type
     character(len=CS)                :: varname
-
+    character(len=18)                :: date_str
     character(len=*), parameter      :: F00   = "('(desp_comp_run) ',8a)"
     character(len=*), parameter      :: F04   = "('(desp_comp_run) ',2a,2i8,'s')"
     character(len=*), parameter      :: subName = "(desp_comp_run) "
@@ -421,134 +422,135 @@ CONTAINS
     call t_startf('desp')
 
     if (trim(desp_mode) /= null_mode) then
-      call t_startf('desp_strdata_advance')
-      call shr_strdata_advance(SDESP, currentYMD, currentTOD, mpicom, 'desp')
-      call t_stopf('desp_strdata_advance')
+       call t_startf('desp_strdata_advance')
+       call shr_strdata_advance(SDESP, currentYMD, currentTOD, mpicom, 'desp')
+       call t_stopf('desp_strdata_advance')
     end if
 
     call t_startf('desp_mode')
 
     if (.not. ANY(pause_sig)) then
-      if ( (my_task == master_task) .and.                                     &
-           ((loglevel > 1) .or. (trim(desp_mode) == test_mode))) then
-        write(logunit, '(2a,i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
-             'WARNING: No pause signals found at ',yy,mm,dd,CurrentTOD
-      end if
+       if ( (my_task == master_task) .and.                                     &
+            ((loglevel > 1) .or. (trim(desp_mode) == test_mode))) then
+          write(logunit, '(2a,i6.4,"-",i2.2,"-",i2.2,"-",i5.5)') subname,       &
+               'WARNING: No pause signals found at ',yy,mm,dd,CurrentTOD
+       end if
     end if
 
     ! Find the active components and their restart files
     ! Note hard-coded variable names are just for testing. This could be
     !   changed if this feature comes to regular use
     do ind = 1, desp_num_comps
-      if (pause_sig(ind)) then
-        select case (comp_names(ind))
-        case('atm')
-          call get_restart_filenames(ind, atm_resume, errcode)
-          allocate(rfilenames(size(atm_resume)))
-          rfilenames = atm_resume
-          varname = 'T'
-        case('lnd')
-          call get_restart_filenames(ind, lnd_resume, errcode)
-          allocate(rfilenames(size(lnd_resume)))
-          rfilenames = lnd_resume
-          varname = 'T'
-        case('ice')
-          call get_restart_filenames(ind, ice_resume, errcode)
-          allocate(rfilenames(size(ice_resume)))
-          rfilenames = ice_resume
-          varname = 'T'
-        case('ocn')
-          call get_restart_filenames(ind, ocn_resume, errcode)
-          allocate(rfilenames(size(ocn_resume)))
-          rfilenames = ocn_resume
-          varname = 'PSURF_CUR'
-        case('glc')
-          call get_restart_filenames(ind, glc_resume, errcode)
-          allocate(rfilenames(size(glc_resume)))
-          rfilenames = glc_resume
-          varname = 'T'
-        case('rof')
-          call get_restart_filenames(ind, rof_resume, errcode)
-          allocate(rfilenames(size(rof_resume)))
-          rfilenames = rof_resume
-          varname = 'T'
-        case('wav')
-          call get_restart_filenames(ind, wav_resume, errcode)
-          allocate(rfilenames(size(wav_resume)))
-          rfilenames = wav_resume
-          varname = 'T'
-        case('drv')
-          call get_restart_filenames(ind, cpl_resume, errcode)
-          allocate(rfilenames(size(cpl_resume)))
-          rfilenames = cpl_resume
-          varname = 'x2oacc_ox_Foxx_swnet'
-        case default
-          call shr_sys_abort(subname//'Unrecognized ind')
-        end select
-        ! Just die on errors for now
-        select case (errcode)
-        case(NO_RPOINTER)
-          call shr_sys_abort(subname//'Missing rpointer file for '//comp_names(ind))
-        case(NO_RPREAD)
-          call shr_sys_abort(subname//'Cannot read rpointer file for '//comp_names(ind))
-        case(NO_RFILE)
-          call shr_sys_abort(subname//'Missing restart file for '//comp_names(ind))
-        case(NO_READ)
-          call shr_sys_abort(subname//'No restart read access for '//comp_names(ind))
-        case(NO_WRITE)
-          call shr_sys_abort(subname//'No restart write access for '//comp_names(ind))
-          ! No default case needed, just fall through
-        end select
-        select case (trim(desp_mode))
-        case(noop_mode)
-          ! Find the correct restart files but do not change them.
-          do inst = 1, size(rfilenames)
-            if ((my_task == master_task) .and. (loglevel > 0)) then
-              write(logunit, *) subname, 'Found restart file ',trim(rfilenames(inst))
-            end if
-          end do
-        case(test_mode)
-          ! Find the correct restart files and 'tweak' them
-          do inst = 1, size(rfilenames)
-            if ((my_task == master_task) .and. (loglevel > 0)) then
-              write(logunit, *) subname, 'Found restart file ',trim(rfilenames(inst))
-            end if
-            call esp_pio_modify_variable(COMPID, mpicom, rfilenames(inst), varname, var_found)
-            if (.not. var_found) then
-              call shr_sys_abort(subname//'Variable, '//trim(varname)//', not found on '//rfilenames(inst))
-            end if
-          end do
-        case (null_mode)
-          ! Since DESP is not 'present' for this mode, we should not get here.
-          call shr_sys_abort(subname//'DESP should not run in "NULL" mode')
-        end select
-        if (allocated(rfilenames)) then
-          deallocate(rfilenames)
-        end if
-      end if
+       if (pause_sig(ind)) then
+          select case (comp_names(ind))
+          case('atm')
+             call get_restart_filenames(ind, atm_resume, errcode)
+             allocate(rfilenames(size(atm_resume)))
+             rfilenames = atm_resume
+             varname = 'T'
+          case('lnd')
+             call get_restart_filenames(ind, lnd_resume, errcode)
+             allocate(rfilenames(size(lnd_resume)))
+             rfilenames = lnd_resume
+             varname = 'T'
+          case('ice')
+             call get_restart_filenames(ind, ice_resume, errcode)
+             allocate(rfilenames(size(ice_resume)))
+             rfilenames = ice_resume
+             varname = 'T'
+          case('ocn')
+             call get_restart_filenames(ind, ocn_resume, errcode)
+             allocate(rfilenames(size(ocn_resume)))
+             rfilenames = ocn_resume
+             varname = 'PSURF_CUR'
+          case('glc')
+             call get_restart_filenames(ind, glc_resume, errcode)
+             allocate(rfilenames(size(glc_resume)))
+             rfilenames = glc_resume
+             varname = 'T'
+          case('rof')
+             call get_restart_filenames(ind, rof_resume, errcode)
+             allocate(rfilenames(size(rof_resume)))
+             rfilenames = rof_resume
+             varname = 'T'
+          case('wav')
+             call get_restart_filenames(ind, wav_resume, errcode)
+             allocate(rfilenames(size(wav_resume)))
+             rfilenames = wav_resume
+             varname = 'T'
+          case('drv')
+             call get_restart_filenames(ind, cpl_resume, errcode)
+             allocate(rfilenames(size(cpl_resume)))
+             rfilenames = cpl_resume
+             varname = 'x2oacc_ox_Foxx_swnet'
+          case default
+             call shr_sys_abort(subname//'Unrecognized ind')
+          end select
+          ! Just die on errors for now
+          select case (errcode)
+          case(NO_RPOINTER)
+             call shr_sys_abort(subname//'Missing rpointer file for '//comp_names(ind))
+          case(NO_RPREAD)
+             call shr_sys_abort(subname//'Cannot read rpointer file for '//comp_names(ind))
+          case(NO_RFILE)
+             call shr_sys_abort(subname//'Missing restart file for '//comp_names(ind))
+          case(NO_READ)
+             call shr_sys_abort(subname//'No restart read access for '//comp_names(ind))
+          case(NO_WRITE)
+             call shr_sys_abort(subname//'No restart write access for '//comp_names(ind))
+             ! No default case needed, just fall through
+          end select
+          select case (trim(desp_mode))
+          case(noop_mode)
+             ! Find the correct restart files but do not change them.
+             do inst = 1, size(rfilenames)
+                if ((my_task == master_task) .and. (loglevel > 0)) then
+                   write(logunit, *) subname, 'Found restart file ',trim(rfilenames(inst))
+                end if
+             end do
+          case(test_mode)
+             ! Find the correct restart files and 'tweak' them
+             do inst = 1, size(rfilenames)
+                if ((my_task == master_task) .and. (loglevel > 0)) then
+                   write(logunit, *) subname, 'Found restart file ',trim(rfilenames(inst))
+                end if
+                call esp_pio_modify_variable(COMPID, mpicom, rfilenames(inst), varname, var_found)
+                if (.not. var_found) then
+                   call shr_sys_abort(subname//'Variable, '//trim(varname)//', not found on '//rfilenames(inst))
+                end if
+             end do
+          case (null_mode)
+             ! Since DESP is not 'present' for this mode, we should not get here.
+             call shr_sys_abort(subname//'DESP should not run in "NULL" mode')
+          end select
+          if (allocated(rfilenames)) then
+             deallocate(rfilenames)
+          end if
+       end if
     end do
 
     call t_stopf('desp_mode')
 
     if (write_restart) then
-      call t_startf('desp_restart')
-      write(rest_file,"(2a,i4.4,a,i2.2,a,i2.2,a,i5.5,a)")                     &
-           trim(case_name), '.desp'//trim(inst_suffix)//'.r.',                &
-           yy,'-',mm,'-',dd,'-',currentTOD,'.nc'
-      if (my_task == master_task) then
-        nu = shr_file_getUnit()
-        open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-        write(nu,'(a)') rest_file
-        close(nu)
-        call shr_file_freeUnit(nu)
-      end if
+       call t_startf('desp_restart')
+       call shr_cal_ymdtod2string(date_str, yy,mm,dd,currentTOD)
+       write(rest_file,"(6a)")                     &
+            trim(case_name), '.desp',trim(inst_suffix),'.r.',                &
+            trim(date_str),'.nc'
+       if (my_task == master_task) then
+          nu = shr_file_getUnit()
+          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          write(nu,'(a)') rest_file
+          close(nu)
+          call shr_file_freeUnit(nu)
+       end if
 
-      if (my_task == master_task) then
-        write(logunit,F04) ' writing ',trim(rest_file), currentYMD, currentTOD
-      end if
-      ! Write any restart info here? -- XXgoldyXX
-      call shr_sys_flush(logunit)
-      call t_stopf('desp_restart')
+       if (my_task == master_task) then
+          write(logunit,F04) ' writing ',trim(rest_file), currentYMD, currentTOD
+       end if
+       ! Write any restart info here? -- XXgoldyXX
+       call shr_sys_flush(logunit)
+       call t_stopf('desp_restart')
 
     end if
 
@@ -561,8 +563,8 @@ CONTAINS
 
     call t_startf('desp_run2')
     if ((loglevel > 1) .and. (my_task == master_task)) then
-      write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
-      call shr_sys_flush(logunit)
+       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
+       call shr_sys_flush(logunit)
     end if
 
     call shr_file_setLogUnit (shrlogunit)
@@ -602,9 +604,9 @@ CONTAINS
     call t_startf('DESP_FINAL')
 
     if (my_task == master_task) then
-      write(logunit,F91)
-      write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91)
+       write(logunit,F91)
+       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F91)
     end if
 
     call t_stopf('DESP_FINAL')
@@ -640,74 +642,74 @@ CONTAINS
     num_inst = size(filenames)
     allocate(ids(num_inst))
     select case (comp_names(comp_ind))
-      case('atm')
-        ids = ATMID
-      case('lnd')
-        ids = LNDID
-      case('ice')
-        ids = ICEID
-      case('ocn')
-        ids = OCNID
-      case('glc')
-        ids = GLCID
-      case('rof')
-        ids = ROFID
-      case('wav')
-        ids = WAVID
-      case('drv')
-        ids = CPLID
-      case default
-        call shr_sys_abort(subname//'Unrecognized comp_ind')
+    case('atm')
+       ids = ATMID
+    case('lnd')
+       ids = LNDID
+    case('ice')
+       ids = ICEID
+    case('ocn')
+       ids = OCNID
+    case('glc')
+       ids = GLCID
+    case('rof')
+       ids = ROFID
+    case('wav')
+       ids = WAVID
+    case('drv')
+       ids = CPLID
+    case default
+       call shr_sys_abort(subname//'Unrecognized comp_ind')
     end select
     rpointer_name = rpprefix//comp_names(comp_ind)
 
     do ind = 1, num_inst
-      if (num_inst_cpl > 1) then
-         rpointer_name = rpprefix//comp_names(comp_ind)//trim(cpl_inst_tag)
-      else
-         rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
-      endif
-      if (my_task == master_task) then
-        inquire(file=rpointer_name, EXIST=file_exists)
-        ! POP decided to not follow the convention
-        if ((.not. file_exists) .and. (trim(comp_names(comp_ind)) == 'ocn')) then
-           rpointer_name = rpprefix//comp_names(comp_ind)//".restart"//trim(seq_comm_suffix(ids(ind)))
-           inquire(file=rpointer_name, EXIST=file_exists)
-        end if
-        if (.not. file_exists) then
-          retcode = NO_RPOINTER
-        else
-          unitn = shr_file_getUnit()
-          if (loglevel > 0) then
-            write(logunit,"(3A)") subname,"read rpointer file ", trim(rpointer_name)
+       if (num_inst_cpl > 1) then
+          rpointer_name = rpprefix//comp_names(comp_ind)//trim(cpl_inst_tag)
+       else
+          rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
+       endif
+       if (my_task == master_task) then
+          inquire(file=rpointer_name, EXIST=file_exists)
+          ! POP decided to not follow the convention
+          if ((.not. file_exists) .and. (trim(comp_names(comp_ind)) == 'ocn')) then
+             rpointer_name = rpprefix//comp_names(comp_ind)//".restart"//trim(seq_comm_suffix(ids(ind)))
+             inquire(file=rpointer_name, EXIST=file_exists)
           end if
-          open(unitn, file=rpointer_name, form='FORMATTED', status='old',     &
-               action='READ', iostat=ierr)
-          if (ierr /= 0) then
-            write(errmsg, '(a,i0)') 'rpointer file open returns error condition, ',ierr
-            call shr_sys_abort(subname//trim(errmsg))
-          end if
-          read(unitn,'(a)', iostat=ierr) filenames(ind)
-          if (ierr /= 0) then
-            write(errmsg, '(a,i0)') 'rpointer file read returns error condition, ',ierr
-            call shr_sys_abort(subname//trim(errmsg))
-          end if
-          close(unitn)
-          call shr_file_freeUnit(unitn)
-          inquire(file=filenames(ind), EXIST=file_exists)
           if (.not. file_exists) then
-            retcode = NO_RFILE
-            ! No else
+             retcode = NO_RPOINTER
+          else
+             unitn = shr_file_getUnit()
+             if (loglevel > 0) then
+                write(logunit,"(3A)") subname,"read rpointer file ", trim(rpointer_name)
+             end if
+             open(unitn, file=rpointer_name, form='FORMATTED', status='old',     &
+                  action='READ', iostat=ierr)
+             if (ierr /= 0) then
+                write(errmsg, '(a,i0)') 'rpointer file open returns error condition, ',ierr
+                call shr_sys_abort(subname//trim(errmsg))
+             end if
+             read(unitn,'(a)', iostat=ierr) filenames(ind)
+             if (ierr /= 0) then
+                write(errmsg, '(a,i0)') 'rpointer file read returns error condition, ',ierr
+                call shr_sys_abort(subname//trim(errmsg))
+             end if
+             close(unitn)
+             call shr_file_freeUnit(unitn)
+             inquire(file=filenames(ind), EXIST=file_exists)
+             if (.not. file_exists) then
+                retcode = NO_RFILE
+                ! No else
+             end if
           end if
-        end if
-      end if
-      ! Broadcast what we learned about files
-      call shr_mpi_bcast(retcode,  mpicom, 'rpointer status')
-      call shr_mpi_bcast(filenames(ind),  mpicom, 'filenames(ind)')
+       end if
+       ! Broadcast what we learned about files
+       call shr_mpi_bcast(retcode,  mpicom, 'rpointer status')
+       call shr_mpi_bcast(filenames(ind),  mpicom, 'filenames(ind)')
     end do
 
     if (allocated(ids)) then
-      deallocate(ids)
+       deallocate(ids)
     end if
 
   end subroutine get_restart_filenames_a

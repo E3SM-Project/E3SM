@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<entries>
+<config_pio version="1.0">
 
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_CONFIG_OPTS">
@@ -341,4 +341,4 @@
   </entry>
   -->
 
-</entries>
+</config_pio>

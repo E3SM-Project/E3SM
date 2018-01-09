@@ -186,7 +186,7 @@ def _get_component_archive_entries(case, archive):
     for compname in compset_comps:
         archive_entry = archive.get_entry(compname)
         if archive_entry is not None:
-            yield(archive_entry, compname, archive_entry.get("compclass"))
+            yield(archive_entry, compname, archive.get(archive_entry, "compclass"))
 
 ###############################################################################
 def _archive_rpointer_files(casename, ninst_strings, rundir, save_interim_restart_files, archive,

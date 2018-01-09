@@ -16,7 +16,7 @@ from CIME.XML.grids     import Grids
 #from CIME.XML.machines  import Machines
 import CIME.XML.machines
 
-import re, argparse, doctest
+import re, argparse
 
 def query_grids(long_output):
     """
@@ -202,7 +202,7 @@ def parse_command_line(args, description):
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
     machines = Machines(config_file, machine="Query")
-    machines = machines.get_nodes(nodename="machine")
+    machines = machines.get_children("machine")
     machine_names = ['all', 'current']
     for machine in machines:
         machine_names.append(machine.get("MACH"))
@@ -287,7 +287,7 @@ class Machines(CIME.XML.machines.Machines):
             config_file = files.get_value("MACHINES_SPEC_FILE")
             print("Machine is not listed in config file: {}".format(config_file))
         else:  # write out machines
-            machines = self.get_nodes(nodename="machine")
+            machines = self.get_children("machine")
             print("Machine(s)")
             for machine in machines:
                 name = machine.get("MACH")

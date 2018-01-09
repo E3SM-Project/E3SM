@@ -43,7 +43,7 @@ _TEST_SUITES = {
                              "ERI.f09_g16.X",
                              "ERIO.f09_g16.X",
                              "SEQ_Ln9.f19_g16_rx1.A",
-                             "ERS.ne30_g16_rx1.A",
+                             ("ERS.ne30_g16_rx1.A","drv-y100k"),
                              "IRT_N2.f19_g16_rx1.A",
                              "ERR.f45_g37_rx1.A",
                              "ERP.f45_g37_rx1.A",

@@ -71,6 +71,4 @@ def case_test(case, testname=None, reset=False):
         return True
     success = test.run()
 
-    case.set_value("RUN_WITH_SUBMIT", False)
-
     return success

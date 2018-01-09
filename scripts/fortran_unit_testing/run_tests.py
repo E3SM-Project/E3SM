@@ -180,6 +180,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
             "cmake",
             "-C Macros.cmake",
             test_spec_dir,
+            "-DCIMEROOT="+_CIMEROOT,
             "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN='"+mpirun_command+"'",
@@ -242,8 +243,8 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
     expect(pfunit_path is not None,
            """PFUNIT_PATH not found for this machine and compiler, with MPILIB={} and compile_threaded={}.
 You must specify PFUNIT_PATH in config_compilers.xml, with attributes MPILIB and compile_threaded.""".format(mpilib, attrs['compile_threaded']))
-    logger.info("Using PFUNIT_PATH: {}".format(pfunit_path.text))
-    return pfunit_path.text
+    logger.info("Using PFUNIT_PATH: {}".format(compilerobj.text(pfunit_path)))
+    return compilerobj.text(pfunit_path)
 
 #=================================================
 # Iterate over input suite specs, building the tests.

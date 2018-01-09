@@ -162,7 +162,7 @@ def assert_dashboard_has_build(tester, build_name, expected_count=1):
 
         wget_file = tempfile.mktemp()
 
-        run_cmd_no_fail("wget http://my.cdash.org/index.php?project=ACME_test -O %s" % wget_file)
+        run_cmd_no_fail("wget https://my.cdash.org/index.php?project=ACME_test --no-check-certificate -O %s" % wget_file)
 
         raw_text = open(wget_file, "r").read()
         os.remove(wget_file)
@@ -783,7 +783,7 @@ class TestCreateTestCommon(unittest.TestCase):
             print("Detected failed test or user request no teardown")
             print("Leaving files:")
             for file_to_clean in files_to_clean:
-                print(" ", file_to_clean)
+                print(" " + file_to_clean)
         else:
             # For batch machines need to avoid race condition as batch system
             # finishes I/O for the case.
@@ -1707,6 +1707,21 @@ class K_TestCimeCase(TestCreateTestCommon):
         self.assertEqual(result, "421:32:11")
 
     ###########################################################################
+    def test_cime_case_test_custom_project(self):
+    ###########################################################################
+        test_name = "ERS_P1.f19_g16_rx1.A"
+        machine, compiler = "melvin", "gnu" # have to use a machine both models know and one that doesn't put PROJECT in any key paths
+        self._create_test(["--no-setup", "--machine={}".format(machine), "--project=testproj", test_name], test_id=self._baseline_name,
+                          env_changes="unset CIME_GLOBAL_WALLTIME &&")
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        result = run_cmd_assert_result(self, "./xmlquery --value PROJECT --subgroup=case.test", from_dir=casedir)
+        self.assertEqual(result, "testproj")
+
+    ###########################################################################
     def test_create_test_longname(self):
     ###########################################################################
         self._create_test(["SMS.f19_g16.2000_SATM_XLND_SICE_SOCN_XROF_XGLC_SWAV", "--no-build"])
@@ -1797,7 +1812,8 @@ class MockMachines(object):
         """Assume all MPILIB settings are valid."""
         return True
 
-    def get_default_MPIlib(self):
+# pragma pylint: disable=unused-argument
+    def get_default_MPIlib(self, attributes=None):
         return "mpich2"
 
     def get_default_compiler(self):
@@ -2192,8 +2208,8 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>"""
         xml2 = """<compiler COMPILER="gnu"><SUPPORTS_CXX>TRUE</SUPPORTS_CXX></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("SUPPORTS_CXX", "FALSE")
         tester.assert_variable_equals("SUPPORTS_CXX", "TRUE", env={"COMPILER": "gnu"})
+        tester.assert_variable_equals("SUPPORTS_CXX", "FALSE")
 
     def test_base_flags(self):
         """Test that we get "base" compiler flags."""
@@ -2479,20 +2495,25 @@ def write_provenance_info():
 
 def _main_func():
     global MACHINE
+    global NO_CMAKE
+    global FAST_ONLY
+    global NO_BATCH
+    global TEST_COMPILER
+    global TEST_MPILIB
+    global TEST_ROOT
+    global GLOBAL_TIMEOUT
+    config = CIME.utils.get_cime_config()
 
     if "--fast" in sys.argv:
         sys.argv.remove("--fast")
-        global FAST_ONLY
         FAST_ONLY = True
 
     if "--no-batch" in sys.argv:
         sys.argv.remove("--no-batch")
-        global NO_BATCH
         NO_BATCH = True
 
     if "--no-cmake" in sys.argv:
         sys.argv.remove("--no-cmake")
-        global NO_CMAKE
         NO_CMAKE = True
 
     if "--machine" in sys.argv:
@@ -2505,36 +2526,45 @@ def _main_func():
     elif "CIME_MACHINE" in os.environ:
         mach_name = os.environ["CIME_MACHINE"]
         MACHINE = Machines(machine=mach_name)
+    elif config.has_option("create_test", "MACHINE"):
+        MACHINE = Machines(machine=config.get("create_test", "MACHINE"))
+    elif config.has_option("main", "MACHINE"):
+        MACHINE = Machines(machine=config.get("main", "MACHINE"))
     else:
         MACHINE = Machines()
 
-
     if "--compiler" in sys.argv:
-        global TEST_COMPILER
         midx = sys.argv.index("--compiler")
         TEST_COMPILER = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
+    elif config.has_option("create_test", "COMPILER"):
+        TEST_COMPILER = config.get("create_test", "COMPILER")
+    elif config.has_option("main", "COMPILER"):
+        TEST_COMPILER = config.get("main", "COMPILER")
 
     if "--mpilib" in sys.argv:
-        global TEST_MPILIB
         midx = sys.argv.index("--mpilib")
         TEST_MPILIB = sys.argv[midx + 1]
         del sys.argv[midx + 1]
         del sys.argv[midx]
+    elif config.has_option("create_test", "MPILIB"):
+        TEST_MPILIB = config.get("create_test", "MPILIB")
+    elif config.has_option("main", "MPILIB"):
+        TEST_MPILIB = config.get("main", "MPILIB")
 
     if "--test-root" in sys.argv:
-        global TEST_ROOT
         trindex = sys.argv.index("--test-root")
         TEST_ROOT = sys.argv[trindex +1]
         del sys.argv[trindex+1]
         del sys.argv[trindex]
+    elif config.has_option("create_test", "TEST_ROOT"):
+        TEST_ROOT = config.get("create_test", "TEST_ROOT")
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
 
     if "--timeout" in sys.argv:
-        global GLOBAL_TIMEOUT
         tidx = sys.argv.index("--machine")
         GLOBAL_TIMEOUT = int(sys.argv[tidx + 1])
 

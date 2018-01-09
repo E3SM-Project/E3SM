@@ -45,7 +45,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine map_lnd2glc(l2x_l, landfrac_l, g2x_g, fieldname, &
-                         mapper, l2x_g)
+       mapper, l2x_g)
     !
     ! !DESCRIPTION:
     ! Maps one field from the LND grid to the GLC grid.
@@ -327,7 +327,7 @@ contains
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: toponame = 'Sl_topo'  ! base name for topo fields in l2x_l;
-                                                         ! actual names will have elevation class suffix
+    ! actual names will have elevation class suffix
 
     character(len=GLC_ELEVCLASS_STRLEN), allocatable :: all_elevclass_strings(:)
     character(len=:), allocatable :: elevclass_as_string
@@ -400,12 +400,12 @@ contains
     ! ------------------------------------------------------------------------
 
     call seq_map_map(mapper = mapper, &
-           av_s = l2x_l, &
-	   av_d = l2x_g_temp, &
-           fldlist = totalfieldlist, &
-           norm = .true., &
-           avwts_s = landfrac_l, &
-           avwtsfld_s = 'lfrac')
+         av_s = l2x_l, &
+         av_d = l2x_g_temp, &
+         fldlist = totalfieldlist, &
+         norm = .true., &
+         avwts_s = landfrac_l, &
+         avwtsfld_s = 'lfrac')
 
     ! ------------------------------------------------------------------------
     ! Export all elevation classes out of attribute vector and into local 2D arrays (xy,z)
@@ -454,10 +454,10 @@ contains
                    write(logunit,*) 'Simply using mean of the two elevation classes,'
                    write(logunit,*) 'rather than the weighted mean.'
                    data_g_ice_covered(n) = data_g_EC(n,ec-1) * 0.5_r8 &
-                                         + data_g_EC(n,ec)   * 0.5_r8
+                        + data_g_EC(n,ec)   * 0.5_r8
                 else
                    data_g_ice_covered(n) = data_g_EC(n,ec-1) * (elev_u - topo_g(n)) / d_elev  &
-                                         + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
+                        + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
                 end if
 
                 exit

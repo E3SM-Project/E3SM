@@ -210,8 +210,8 @@ CONTAINS
     call seq_infodata_GetData(infodata, case_name=case_name)
 
     call dlnd_comp_run(EClock, x2l, l2x, &
-       SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, case_name)
+         SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, case_name)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

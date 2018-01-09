@@ -8,7 +8,7 @@ directory trees.
 from standard_script_setup import *
 from CIME.utils import run_cmd, run_cmd_no_fail
 
-import argparse, sys, os, doctest
+import argparse, sys, os
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -17,8 +17,6 @@ def parse_command_line(args, description):
         usage="""\n{0} case1 case2 [skip-files]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     > {0} case1 case2
@@ -121,10 +119,6 @@ def recursive_diff(dir1, dir2, repls, show_binary=False, skip_list=()):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     case1, case2, show_binary, skip_list = parse_command_line(sys.argv, description)
 
     xml_normalize_fields = ["TEST_TESTID", "SRCROOT"]

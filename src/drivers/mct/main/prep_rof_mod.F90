@@ -369,32 +369,32 @@ contains
        index_lfrac = mct_aVect_indexRA(fractions_r,"lfrac")
 
        mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
-          'lfrac*l2x%Flrl_rofsur'
+            'lfrac*l2x%Flrl_rofsur'
        mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
-          'lfrac*l2x%Flrl_rofgwl'
+            'lfrac*l2x%Flrl_rofgwl'
        mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
-          'lfrac*l2x%Flrl_rofsub'
+            'lfrac*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
-          'lfrac*l2x%Flrl_rofdto'
+            'lfrac*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
-          'lfrac*l2x%Flrl_rofi'
+            'lfrac*l2x%Flrl_rofi'
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                'lfrac*l2x%Flrl_irrig'
        end if
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
-             'lfrac*l2x%Flrl_rofl_16O'
+               'lfrac*l2x%Flrl_rofl_16O'
           mrgstr(index_x2r_Flrl_rofi_16O) = trim(mrgstr(index_x2r_Flrl_rofi_16O))//' = '// &
-             'lfrac*l2x%Flrl_rofi_16O'
+               'lfrac*l2x%Flrl_rofi_16O'
           mrgstr(index_x2r_Flrl_rofl_18O) = trim(mrgstr(index_x2r_Flrl_rofl_18O))//' = '// &
-             'lfrac*l2x%Flrl_rofl_18O'
+               'lfrac*l2x%Flrl_rofl_18O'
           mrgstr(index_x2r_Flrl_rofi_18O) = trim(mrgstr(index_x2r_Flrl_rofi_18O))//' = '// &
-             'lfrac*l2x%Flrl_rofi_18O'
+               'lfrac*l2x%Flrl_rofi_18O'
           mrgstr(index_x2r_Flrl_rofl_HDO) = trim(mrgstr(index_x2r_Flrl_rofl_HDO))//' = '// &
-             'lfrac*l2x%Flrl_rofl_HDO'
+               'lfrac*l2x%Flrl_rofl_HDO'
           mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
-             'lfrac*l2x%Flrl_rofi_HDO'
+               'lfrac*l2x%Flrl_rofi_HDO'
        end if
     end if
 
