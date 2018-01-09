@@ -6695,6 +6695,41 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="L">
+        <comment>ne120-wcycl on 825 nodes</comment>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>43200</ntasks_atm>
+          <ntasks_cpl>43200</ntasks_cpl>
+          <ntasks_ice>19200</ntasks_ice>
+          <ntasks_lnd>4800</ntasks_lnd>
+          <ntasks_rof>4800</ntasks_rof>
+          <ntasks_ocn>9600</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_cpl>2</nthrds_cpl>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_lnd>38400</rootpe_lnd>
+          <rootpe_rof>33600</rootpe_rof>
+          <rootpe_ocn>43200</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+        </rootpe>
+      </pes>
     </mach>
   </grid>
   <grid name="any">
