@@ -442,6 +442,10 @@ endif
 ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
+ifndef GLCROOT
+  # Backwards compatibility
+  GLCROOT=$(CIMEROOT)/../components/cism
+endif
 
 INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 
@@ -678,7 +682,7 @@ CMAKE_ENV_VARS += CC=$(CC) \
 .PHONY: $(GLC_DIR)/Makefile
 $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(GLCROOT)/glimmer-cism
 
 $(PIO_LIBDIR)/Makefile:
 	cd $(PIO_LIBDIR); \

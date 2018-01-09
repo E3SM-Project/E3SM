@@ -233,7 +233,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 # we need to make sure run2 is properly staged.
                 if run_type != "startup":
                     check_case(self._case2)
-                self._force_case2_settings()
 
                 self._case_two_custom_prerun_action()
                 self.run_indv(suffix = self._run_two_suffix)
@@ -466,19 +465,6 @@ class SystemTestsCompareTwo(SystemTestsCommon):
 
         # Go back to case 1 to ensure that's where we are for any following code
         self._activate_case1()
-
-    def _force_case2_settings(self):
-        """
-        Sets some settings in case2 that are normally set automatically.
-
-        This is needed because we aren't running case2 via the normal mechanism
-        (i.e., via the submit script).
-        """
-
-        # RUN_WITH_SUBMIT is normally set when you run the case's submit script.
-        # Trick the scripts into thinking that we are running via the submit
-        # script, like we're supposed to
-        self._case2.set_value("RUN_WITH_SUBMIT",True)
 
     def _link_to_case2_output(self):
         """

@@ -968,7 +968,7 @@ class Namelist(object):
         This function is similar to `get_variable_value`, except that it does
         not require a `group_name`, and it requires that the `variable_name` be
         unique across all groups.
-        
+
         >>> parse(text='&foo bar=1 / &bazz bar=1 /').get_value('bar')  # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ...
@@ -1332,7 +1332,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._advance(3)
         >>> (x._pos, x._line, x._col)
         (7, 3, 1)
-        >>> shouldRaise(_NamelistEOF, x._advance, 1) 
+        >>> shouldRaise(_NamelistEOF, x._advance, 1)
 
         >>> shouldRaise(_NamelistEOF, _NamelistParser('abc\n')._advance, 4)
 

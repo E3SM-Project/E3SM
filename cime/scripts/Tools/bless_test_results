@@ -15,7 +15,7 @@ from CIME.utils import expect
 from CIME.XML.machines import Machines
 from CIME.bless_test_results import bless_test_results
 
-import argparse, sys, os, doctest
+import argparse, sys, os
 
 _MACHINE = Machines()
 
@@ -26,8 +26,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [-n] [-r <TESTROOT>] [-b <BRANCH>] [-c <COMPILER>] [<TEST> <TEST> ...] [--verbose]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# From most recent run, bless any namelist changes \033[0m
@@ -97,10 +95,6 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     baseline_name, baseline_root, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests, no_skip_pass = \
         parse_command_line(sys.argv, description)
 

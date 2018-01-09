@@ -16,8 +16,6 @@ def parse_command_line(args, description):
         usage="""\n{0} [<casedir>] [--verbose] [--clean] [--reset]
 OR
 {0} --help
-OR
-{0} --test
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Setup case \033[0m
@@ -52,10 +50,6 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if "--test" in sys.argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
     caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
         case_setup(case, clean=clean, test_mode=test_mode, reset=reset)
