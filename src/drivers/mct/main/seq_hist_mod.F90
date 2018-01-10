@@ -110,8 +110,6 @@ module seq_hist_mod
   integer(IN) :: glc_nx, glc_ny         ! nx,ny of 2d grid, if known
   integer(IN) :: wav_nx, wav_ny         ! nx,ny of 2d grid, if known
 
-  integer(IN) :: info_debug = 0         ! local info_debug level
-
   !--- temporary pointers ---
   type(mct_aVect), pointer :: r2x_ox(:)
   type(mct_aVect), pointer :: x2oacc_ox(:)
@@ -156,13 +154,11 @@ contains
     integer(IN)   :: start_ymd    ! Starting date YYYYMMDD
     integer(IN)   :: start_tod    ! Starting time-of-day (s)
     real(r8)      :: curr_time    ! Time interval since reference time
-    integer(IN)   :: yy,mm,dd     ! year, month, day
     integer(IN)   :: fk           ! index
     character(CL) :: time_units   ! units of time variable
     character(CL) :: calendar     ! calendar type
     character(CL) :: case_name    ! case name
     character(CL) :: hist_file    ! Local path to history filename
-    integer(IN)   :: lsize        ! local size of an aVect
     real(r8)      :: tbnds(2)     ! CF1.0 time bounds
     logical       :: whead,wdata  ! for writing restart/history cdf files
     character(len=18) :: date_str

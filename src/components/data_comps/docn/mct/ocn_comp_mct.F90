@@ -67,7 +67,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: ocn_present               ! flag
     logical           :: ocn_prognostic            ! flag
     logical           :: ocnrof_prognostic         ! flag
@@ -210,7 +209,7 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
-    ! Note that docn_comp_run is already called 
+    ! Note that docn_comp_run is already called
     call docn_comp_run(EClock, x2o, o2x, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, case_name)

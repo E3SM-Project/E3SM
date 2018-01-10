@@ -416,9 +416,9 @@ contains
        fieldname_ec = fieldname // elevclass_as_string
        toponame_ec = toponame // elevclass_as_string
        call mct_aVect_exportRattr(l2x_g_temp, fieldname_ec, tmp_field_g)
-       data_g_EC(:,ec) = tmp_field_g
+       data_g_EC(:,ec) = real(tmp_field_g)
        call mct_aVect_exportRattr(l2x_g_temp, toponame_ec, tmp_field_g)
-       topo_g_EC(:,ec) = tmp_field_g
+       topo_g_EC(:,ec) = real(tmp_field_g)
     enddo
 
     ! ------------------------------------------------------------------------

@@ -65,7 +65,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer           :: phase                     ! phase of method
     logical           :: ice_present               ! flag
     logical           :: ice_prognostic            ! flag
     integer(IN)       :: shrlogunit                ! original log unit

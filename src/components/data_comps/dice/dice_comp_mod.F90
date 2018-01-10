@@ -136,8 +136,6 @@ CONTAINS
     real(R8)               , intent(in)    :: scmLon               ! single column lon
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize       ! local size
     integer(IN)   :: kfld        ! field reference
     logical       :: exists      ! file existance logical
