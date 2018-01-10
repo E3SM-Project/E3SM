@@ -89,8 +89,7 @@ contains
     !
     ! Local Variables
     integer                          :: lsize_a
-    integer                          :: eli, eoi,  eii, eai, emi
-    integer                          :: ka,km,k1,k2,k3 ! aVect field indices
+    integer                          :: eli, eii, emi
     logical                          :: samegrid_ao    ! samegrid atm and ocean
     logical                          :: samegrid_al    ! samegrid atm and land
     logical                          :: esmf_map_flag  ! .true. => use esmf for mapping

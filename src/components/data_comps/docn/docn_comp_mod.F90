@@ -119,15 +119,11 @@ CONTAINS
     real(R8)               , intent(in)    :: scmLon              ! single column lon
 
     !--- local variables ---
-    integer(IN)   :: n,k      ! generic counters
-    integer(IN)   :: ierr     ! error code
     integer(IN)   :: lsize    ! local size
     logical       :: exists   ! file existance
     integer(IN)   :: nu       ! unit number
     integer(IN)   :: kmask    ! field reference
-    integer(IN)   :: kfrac    ! field reference
     character(CL) :: calendar ! model calendar
-    type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
@@ -360,8 +356,6 @@ CONTAINS
     integer(IN)   :: CurrentTOD            ! model sec into model date
     integer(IN)   :: yy,mm,dd              ! year month day
     integer(IN)   :: n                     ! indices
-    integer(IN)   :: nf                    ! fields loop index
-    integer(IN)   :: nl                    ! ocn frac index
     integer(IN)   :: lsize                 ! size of attr vect
     integer(IN)   :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep

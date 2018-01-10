@@ -88,8 +88,6 @@ CONTAINS
     logical                , intent(in)    :: read_restart        ! start from restart
 
     !--- local variables ---
-    integer(IN)   :: n,k         ! generic counters
-    integer(IN)   :: ierr        ! error code
     integer(IN)   :: lsize       ! local size
     logical       :: exists      ! file existance logical
     integer(IN)   :: nu          ! unit number
@@ -282,7 +280,6 @@ CONTAINS
     integer(IN)   :: yy,mm,dd          ! year month day
     integer(IN)   :: n                 ! indices
     integer(IN)   :: nf                ! fields loop index
-    integer(IN)   :: nl                ! land frac index
     integer(IN)   :: lsize             ! size of attr vect
     logical       :: write_restart     ! restart now
     integer(IN)   :: nu                ! unit number

@@ -51,7 +51,6 @@ module datm_comp_mod
 
   character(CS) :: myModelName = 'atm'   ! user defined model name
   logical       :: firstcall = .true.    ! first call logical
-  integer(IN)   :: dbug = 0              ! debug level (higher is more)
   real(R8)      :: tbotmax               ! units detector
   real(R8)      :: tdewmax               ! units detector
   real(R8)      :: anidrmax              ! existance detector
@@ -86,10 +85,7 @@ module datm_comp_mod
   integer(IN) :: krl_18O, krl_HDO
   integer(IN) :: ksc_18O, ksc_HDO
   integer(IN) :: ksl_18O, ksl_HDO
-  integer(IN) :: sshum_16O, sshum_18O, sshum_HDO
   integer(IN) :: srh_16O, srh_18O, srh_HDO
-  integer(IN) :: sprecc_18O, sprecc_HDO
-  integer(IN) :: sprecl_18O, sprecl_HDO
   integer(IN) :: sprecn_16O, sprecn_18O, sprecn_HDO
 
   ! anomaly forcing
@@ -602,7 +598,6 @@ CONTAINS
     character(CL) :: rest_file_strm    ! restart_file
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: stepno            ! step number
-    integer(IN)   :: eday              ! elapsed day
     real(R8)      :: rday              ! elapsed day
     real(R8)      :: cosFactor         ! cosine factor
     real(R8)      :: factor            ! generic/temporary correction factor
@@ -613,7 +608,7 @@ CONTAINS
     character(len=18) :: date_str
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
-    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
 
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
