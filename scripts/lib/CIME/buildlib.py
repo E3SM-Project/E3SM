@@ -81,4 +81,5 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
-    run_cmd_no_fail(cmd, combine_output=True)
+    _, out, _ = run_cmd(cmd, combine_output=True)
+    print(out)

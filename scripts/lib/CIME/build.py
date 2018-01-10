@@ -529,18 +529,20 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
             # in case component build scripts updated the xml files, update the case object
             case.read_xml()
             # Note, doing buildlists will never result in the system thinking the build is complete
-            post_build(case, logs)
+
+    post_build(case, logs, build_complete=not (buildlist or sharedlib_only))
 
     t3 = time.time()
 
-    logger.info("Time spent not building: {:f} sec".format(t2 - t1))
-    logger.info("Time spent building: {:f} sec".format(t3 - t2))
-    logger.info("MODEL BUILD HAS FINISHED SUCCESSFULLY")
+    if not sharedlib_only:
+        logger.info("Time spent not building: {:f} sec".format(t2 - t1))
+        logger.info("Time spent building: {:f} sec".format(t3 - t2))
+        logger.info("MODEL BUILD HAS FINISHED SUCCESSFULLY")
 
     return True
 
 ###############################################################################
-def post_build(case, logs):
+def post_build(case, logs, build_complete=False):
 ###############################################################################
 
     logdir = case.get_value("LOGDIR")
@@ -552,25 +554,28 @@ def post_build(case, logs):
             os.makedirs(bldlogdir)
 
     for log in logs:
-        logger.debug("Copying build log {} to {}".format(log, bldlogdir))
+        logger.info("Copying build log {} to {}".format(log, bldlogdir))
         with open(log, 'rb') as f_in:
             with gzip.open("{}.gz".format(log), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
         if "sharedlibroot" not in log:
             shutil.copy("{}.gz".format(log), os.path.join(bldlogdir, "{}.gz".format(os.path.basename(log))))
+        os.remove(log)
 
-    # Set XML to indicate build complete
-    case.set_value("BUILD_COMPLETE", True)
-    case.set_value("BUILD_STATUS", 0)
-    if "SMP_VALUE" in os.environ:
-        case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
-    case.flush()
+    if build_complete:
 
-    lock_file("env_build.xml")
+        # Set XML to indicate build complete
+        case.set_value("BUILD_COMPLETE", True)
+        case.set_value("BUILD_STATUS", 0)
+        if "SMP_VALUE" in os.environ:
+            case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
+            case.flush()
 
-    # must ensure there's an lid
-    lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
-    save_build_provenance(case, lid=lid)
+        lock_file("env_build.xml")
+
+        # must ensure there's an lid
+        lid = os.environ["LID"] if "LID" in os.environ else get_timestamp("%y%m%d-%H%M%S")
+        save_build_provenance(case, lid=lid)
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None):

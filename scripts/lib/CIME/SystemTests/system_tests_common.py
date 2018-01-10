@@ -477,7 +477,7 @@ class FakeTest(SystemTestsCommon):
 
             os.chmod(modelexe, 0o755)
 
-            build.post_build(self._case, [])
+            build.post_build(self._case, [], build_complete=True)
 
     def run_indv(self, suffix='base', st_archive=False):
         mpilib = self._case.get_value("MPILIB")
@@ -500,7 +500,7 @@ cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
 """.format(rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
-                       sharedlib_only=sharedlib_only, model_only=model_only)
+                             sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
     """
