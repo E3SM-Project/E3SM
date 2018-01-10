@@ -31,9 +31,10 @@ module dynSubgridDriverMod
   use TemperatureType     , only : temperature_type
   use glc2lndMod          , only : glc2lnd_type
   use dynLandunitAreaMod  , only : update_landunit_weights
-
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use PhosphorusFluxType    , only : phosphorusflux_type
+  use CropType            , only : crop_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  use PhosphorusFluxType  , only : phosphorusflux_type
+  use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -52,7 +53,7 @@ module dynSubgridDriverMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynSubgrid_init(bounds, dgvs_vars, glc2lnd_vars)
+  subroutine dynSubgrid_init(bounds, dgvs_vars, glc2lnd_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! Determine initial subgrid weights for prescribed transient Patches, CNDV, and/or
@@ -76,6 +77,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
     type(dgvs_type)   , intent(inout) :: dgvs_vars
     type(glc2lnd_type), intent(inout) :: glc2lnd_vars
+    type(crop_type)   , intent(inout) :: crop_vars
     !
     ! !LOCAL VARIABLES:
     integer           :: nclumps      ! number of clumps on this processor
@@ -104,6 +106,11 @@ contains
        call dynCNDV_init(bounds, dgvs_vars)
     end if
 
+    ! Initialize stuff for prescribed transient crops
+    if (get_do_transient_crops()) then
+       call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
+    end if
+
     ! ------------------------------------------------------------------------
     ! Set initial subgrid weights for aspects that are read from file. This is relevant
     ! for cold start and use_init_interp-based initialization.
@@ -111,6 +118,10 @@ contains
 
     if (get_do_transient_pfts()) then
        call dynpft_interp(bounds)
+    end if
+
+    if (get_do_transient_crops()) then
+       call dyncrop_interp(bounds, crop_vars)
     end if
 
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)

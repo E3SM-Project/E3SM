@@ -57,6 +57,7 @@ module restFileMod
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
+  use CropType             , only : crop_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -101,7 +102,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        ep_betr,                                                                       &
-       alm_fates,                                                                     &
+       alm_fates, crop_vars,                                                          &
        rdate, noptr)
     !
     ! !DESCRIPTION:
@@ -137,6 +138,7 @@ contains
     type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
     class(betr_simulation_alm_type), intent(inout):: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
+    type(crop_type)                , intent(inout) :: crop_vars
     character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                        , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -230,6 +232,8 @@ contains
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+
+       call crop_vars%Restart(bounds, ncid, flag='define')
 
     end if
 
@@ -338,6 +342,7 @@ contains
        call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
 
+       call crop_vars%Restart(bounds, ncid, flag='write')
     end if
 
     if (use_ed) then
@@ -403,7 +408,7 @@ contains
        waterflux_vars, waterstate_vars,                                               &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        ep_betr,                                                                       &
-       alm_fates, glc2lnd_vars)
+       alm_fates, glc2lnd_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -448,6 +453,7 @@ contains
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(glc2lnd_type)             , intent(inout) :: glc2lnd_vars
+    type(crop_type)                , intent(inout) :: crop_vars
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid         ! netcdf id
@@ -544,6 +550,7 @@ contains
        call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
 
+       call crop_vars%Restart(bounds, ncid, flag='read')
     end if
 
     if (use_ed) then

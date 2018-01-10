@@ -31,7 +31,7 @@ contains
          canopystate_vars, soilstate_vars, temperature_vars, &
          ch4_vars, nitrogenflux_vars, nitrogenstate_vars, &
          phosphorusstate_vars, phosphorusflux_vars, &
-         alm_fates)
+         alm_fates, crop_vars)
       
       use clm_varctl             , only : use_c13, use_c14, use_ed
       use decompMod              , only : bounds_type
@@ -56,6 +56,7 @@ contains
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con
       use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
+      use CropType               , only : crop_type
 
     !
     ! !ARGUMENTS:
@@ -80,6 +81,7 @@ contains
     type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
     type(hlm_fates_interface_type),intent(inout) :: alm_fates
+    type(crop_type)          , intent(inout)  :: crop_vars
     
     !
     ! !LOCAL VARIABLES:
@@ -241,7 +243,7 @@ contains
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
     call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars)
 
     call t_stopf('BNGCUpdate1')
 

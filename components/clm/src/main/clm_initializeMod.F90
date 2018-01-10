@@ -631,7 +631,7 @@ contains
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, dgvs_vars, glc2lnd_vars)
+    call dynSubgrid_init(bounds_proc, dgvs_vars, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
 
     ! ------------------------------------------------------------------------
@@ -692,7 +692,7 @@ contains
                waterflux_vars, waterstate_vars,                                               &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr,                                                                       &
-               alm_fates, glc2lnd_vars)
+               alm_fates, glc2lnd_vars, crop_vars)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -708,7 +708,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars)
+            alm_fates, glc2lnd_vars, crop_vars)
 
     end if
        
@@ -744,7 +744,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
-            alm_fates)
+            alm_fates, crop_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -760,7 +760,7 @@ contains
             waterflux_vars, waterstate_vars,                                               &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars)
+            alm_fates, glc2lnd_vars, crop_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)

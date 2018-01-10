@@ -51,7 +51,8 @@ contains
     ! This also calls dynpft_interp for the initial time
     !
     ! !USES:
-    use clm_varpar           , only : numpft, maxpatch_pft, natpft_size
+    use clm_varpar     , only : numpft, maxpatch_pft, natpft_size
+    use dynTimeInfoMod , only : YEAR_POSITION_START_OF_TIMESTEP
     use ncdio_pio
     !
     ! !ARGUMENTS:
@@ -77,7 +78,7 @@ contains
        write(iulog,*) 'Attempting to read pft dynamic landuse data .....'
     end if
 
-    dynpft_file = dyn_file_type(dynpft_filename)
+    dynpft_file = dyn_file_type(dynpft_filename, YEAR_POSITION_START_OF_TIMESTEP)
 
     ! Consistency checks
     call check_dim(dynpft_file, 'natpft', natpft_size)

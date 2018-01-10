@@ -81,7 +81,7 @@ contains
     associate(&
          ivt                    => veg_pp%itype                                   , & ! Input  :  [integer (:)]  pft vegetation type
          pcolumn                => veg_pp%column                                  , & ! Input  :  [integer (:)]  pft's column index
-         croplive               => cnstate_vars%croplive_patch                 , & ! Input  :  [logical (:)]  flag, true if planted, not harvested
+         croplive               => crop_vars%croplive_patch                 , & ! Input  :  [logical (:)]  flag, true if planted, not harvested
          cpool_to_frootc        => carbonflux_vars%cpool_to_frootc_patch       , & ! Input  :  [real(r8) (:)] allocation to fine root C (gC/m2/s)
          frootc_xfer_to_frootc  => carbonflux_vars%frootc_xfer_to_frootc_patch , & ! Input  :  [real(r8) (:)] fine root C growth from storage (gC/m2/s)
          dormant_flag           => cnstate_vars%dormant_flag_patch             , & ! Input  :  [real(r8) (:)]  dormancy flag
