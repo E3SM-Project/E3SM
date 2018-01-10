@@ -552,7 +552,7 @@
 
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
-    <NODENAME_REGEX>(melvin|watson)</NODENAME_REGEX>
+    <NODENAME_REGEX>(melvin|watson|s999964|climate|penn)</NODENAME_REGEX>
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
@@ -572,14 +572,15 @@
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>32</GMAKE_J>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np $TOTALPES</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -617,71 +618,8 @@
     <environment_variables>
       <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
-    </environment_variables>
-</machine>
-
-<machine MACH="sandia-srn-sems">
-    <DESC>Linux workstation at Sandia on SRN with SEMS TPL modules</DESC>
-    <NODENAME_REGEX>(s999964|climate|penn)</NODENAME_REGEX>
-    <PROXY>wwwproxy.sandia.gov:80</PROXY>
-    <TESTS>acme_developer</TESTS>
-    <OS>LINUX</OS>
-    <COMPILERS>gnu,intel</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <BASELINE_ROOT>/sems-data-store/ACME/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
-    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
-    <GMAKE_J>32</GMAKE_J>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-    <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks"> -np $TOTALPES</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <modules>
-        <command name="purge"/>
-        <command name="load">sems-env</command>
-        <command name="load">sems-git</command>
-        <command name="load">sems-python/2.7.9</command>
-      </modules>
-      <modules compiler="gnu">
-        <command name="load">sems-gcc/5.3.0</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">sems-intel/15.0.2</command>
-      </modules>
-      <modules>
-        <command name="load">sems-openmpi/1.8.7</command>
-        <command name="load">sems-cmake/2.8.12</command>
-        <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
-        <command name="load">sems-boost/1.58.0/base</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
@@ -1227,6 +1165,7 @@
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PROJECT>ClimateEnergy_2</PROJECT>
+	 <CHARGE_ACCOUNT>ClimateEnergy</CHARGE_ACCOUNT>
          <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
@@ -1535,8 +1474,8 @@
       <arguments>
         <arg name="num_tasks" >-n $TOTALPES</arg>
         <arg name="tasks_per_node" >-N $MAX_MPITASKS_PER_NODE</arg>
+        <arg name="hyperthreading" >--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
         <arg name="smp_vars">$ENV{SMP_VARS}</arg>
-        <!--arg name="mpi_env" DEBUG="TRUE">-e MPICH_VERSION_DISPLAY=1 -e MPICH_ENV_DISPLAY=1 -e MPICH_CPUMASK_DISPLAY=1</arg-->
       </arguments>
     </mpirun>
     <environment_variables>
@@ -1546,8 +1485,11 @@
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
       <env name="SMP_VARS"></env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <env name="SMP_VARS">--cc depth -d $ENV{OMP_NUM_THREADS} -j $ENV{OMP_NUM_THREADS} -e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
     </environment_variables>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
@@ -2267,15 +2209,15 @@
 	     <command name="load">cmake3/3.2.3</command>
 	     <command name="load">python/2.7.9</command>
 	   </modules>
-	   <environment_variables>
-	     <env name="MPICH_ENV_DISPLAY">1</env>
-	     <env name="MPICH_VERSION_DISPLAY">1</env>
-	     <!-- This increases the stack size, which is necessary
-		  for CICE to run threaded on this machine -->
-	     <env name="OMP_STACKSIZE">64M</env>
-
-	   </environment_variables>
 	 </module_system>
+	 <environment_variables>
+	   <env name="MPICH_ENV_DISPLAY">1</env>
+	   <env name="MPICH_VERSION_DISPLAY">1</env>
+	   <!-- This increases the stack size, which is necessary
+		for CICE to run threaded on this machine -->
+	   <env name="OMP_STACKSIZE">64M</env>
+	   
+	 </environment_variables>
 </machine>
 
 <machine MACH="grizzly">

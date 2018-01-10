@@ -617,6 +617,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl">
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal  -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
@@ -633,6 +634,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl" MPILIB="impi">
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
   <!-- When using Intel MPI, can't use the Cray compiler wrappers. -->
   <MPI_LIB_NAME>impi</MPI_LIB_NAME>
   <MPIFC> mpiifort </MPIFC>
@@ -667,6 +669,7 @@ for mct, etc.
 
 <compiler COMPILER="intel18" MACH="cori-knl">
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS> 
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
   <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
@@ -677,6 +680,7 @@ for mct, etc.
 
 <compiler COMPILER="intel18" MACH="cori-knl" MPILIB="impi">
   <!-- When using Intel MPI, can't use the Cray compiler wrappers. -->
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
   <MPI_LIB_NAME>impi</MPI_LIB_NAME>
   <MPIFC> mpiifort </MPIFC>
   <MPICC> mpiicc </MPICC>
@@ -733,29 +737,6 @@ for mct, etc.
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="gnu" MACH="sandia-srn-sems">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/usr/lib64 -L/usr/lib64/atlas -lblas -llapack</ADD_SLIBS>
-  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-  <ALBANY_PATH>/data/acme/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
-</compiler>
-
-<compiler COMPILER="intel" MACH="sandia-srn-sems">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/usr/lib64 -L/usr/lib64/atlas -lblas -llapack</ADD_SLIBS>
-  <ADD_SLIBS> /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/mic/libmkl_scalapack_lp64.a -Wl,--start-group /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/intel64/libmkl_intel_lp64.a /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/intel64/libmkl_core.a /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/intel64/libmkl_sequential.a -Wl,--end-group /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/mic/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
-  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-  <ALBANY_PATH>/data/acme/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
-</compiler>
-
 <compiler COMPILER="gnu" MACH="anlworkstation">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
@@ -795,13 +776,6 @@ for mct, etc.
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
-</compiler>
-
-<compiler COMPILER="gnu" MACH="penn">
-  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas </ADD_SLIBS>
-  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="cab">
@@ -1069,7 +1043,7 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </ADD_FFLAGS>
   <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
 </compiler>
 
@@ -1082,7 +1056,7 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </ADD_FFLAGS>
   <!-- Specifying cc60 implies cuda8.0, just making sure -->
   <ADD_LDFLAGS>-ta=tesla:cc60,cuda8.0,pinned</ADD_LDFLAGS>
   <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
@@ -1185,6 +1159,8 @@ for mct, etc.
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
+  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="nag" MACH="blues">
