@@ -804,9 +804,9 @@ class TestCreateTestCommon(unittest.TestCase):
         extra_args.append("--baseline-root {}".format(self._baseline_area))
         if NO_BATCH:
             extra_args.append("--no-batch")
-        if TEST_COMPILER:
+        if TEST_COMPILER and ([extra_arg for extra_arg in extra_args if "--compiler" in extra_arg] == []):
             extra_args.append("--compiler={}".format(TEST_COMPILER))
-        if TEST_MPILIB:
+        if TEST_MPILIB and ([extra_arg for extra_arg in extra_args if "--mpilib" in extra_arg] == []):
             extra_args.append("--mpilib={}".format(TEST_MPILIB))
         extra_args.append("--test-root={0} --output-root={0}".format(TEST_ROOT))
 
@@ -1711,7 +1711,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
         test_name = "ERS_P1.f19_g16_rx1.A"
         machine, compiler = "melvin", "gnu" # have to use a machine both models know and one that doesn't put PROJECT in any key paths
-        self._create_test(["--no-setup", "--machine={}".format(machine), "--project=testproj", test_name], test_id=self._baseline_name,
+        self._create_test(["--no-setup", "--machine={}".format(machine), "--compiler={}".format(compiler), "--project=testproj", test_name],
+                          test_id=self._baseline_name,
                           env_changes="unset CIME_GLOBAL_WALLTIME &&")
 
         casedir = os.path.join(self._testroot,
