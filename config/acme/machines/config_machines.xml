@@ -68,7 +68,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-  <SUPPORTED_BY>acme</SUPPORTED_BY>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
@@ -191,7 +191,7 @@
 
 <machine MACH="cori-haswell">
   <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
-  <NODENAME_REGEX>cori</NODENAME_REGEX>
+  <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,intel18,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
@@ -208,7 +208,7 @@
   <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-  <SUPPORTED_BY>acme</SUPPORTED_BY>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
@@ -336,9 +336,9 @@
 <!-- KNL nodes of Cori -->
 <machine MACH="cori-knl">
   <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
-  <NODENAME_REGEX>cori-knl-haswell-is-default</NODENAME_REGEX>
+  <NODENAME_REGEX>cori</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
-  <COMPILERS>intel,intel18,gnu</COMPILERS>
+  <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt,impi</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -353,7 +353,7 @@
   <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-  <SUPPORTED_BY>acme</SUPPORTED_BY>
+  <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -422,13 +422,7 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
-    </modules>
-
-    <modules compiler="intel18">
-      <command name="load">PrgEnv-intel</command>
-      <command name="rm">intel</command>
-      <command name="load">intel/18.0.0.128</command>
+      <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
