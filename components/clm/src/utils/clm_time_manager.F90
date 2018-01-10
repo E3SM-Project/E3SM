@@ -23,6 +23,7 @@ module clm_time_manager
         get_clock,                &! get the clock from the time-manager
         get_curr_ESMF_Time,       &! get current time in terms of the ESMF_Time
         get_step_size,            &! return step size in seconds
+        get_step_size_real,       &! return step size in seconds, real-valued
         get_rad_step_size,        &! return radiation step size in seconds
         get_nstep,                &! return timestep number
         get_curr_date,            &! return date components at end of current timestep
@@ -39,6 +40,7 @@ module clm_time_manager
         get_calendar,             &! return calendar
         get_days_per_year,        &! return the days per year for current year
         get_curr_yearfrac,        &! return the fractional position in the current year
+        get_prev_yearfrac,        &! return the fractional position in the current year, as of the beginning of the current timestep
         get_rest_date,            &! return the date from the restart file
         set_nextsw_cday,          &! set the next radiation calendar day
         is_first_step,            &! return true on first step of initial run
@@ -46,13 +48,15 @@ module clm_time_manager
         is_beg_curr_day,          &! return true on first timestep in current day
         is_end_curr_day,          &! return true on last timestep in current day
         is_end_curr_month,        &! return true on last timestep in current month
+        is_beg_curr_year,         &! return true on first timestep in current year
+        is_end_curr_year,         &! return true on last timestep in current year
         is_last_step,             &! return true on last timestep
         is_perpetual,             &! return true if perpetual calendar is in use
         is_restart,               &! return true if this is a restart run
         update_rad_dtime,         &! track radiation interval via nstep
-        !below used by pflotran
         nsstep,                   &! (re-)start timestep
-        nestep                     ! ending timestep
+        nestep,                   &! ending timestep
+        timemgr_reset              ! reset values to their defaults, and free memory
 
    ! Public parameter data
    character(len=*), public, parameter :: NO_LEAP_C   = 'NO_LEAP'
@@ -116,6 +120,7 @@ module clm_time_manager
    public  :: calc_nestep    !pflotran
    private :: timemgr_print
    private :: TimeGetymd
+   private :: check_timemgr_initialized
 
    !=========================================================================================
 contains
@@ -860,6 +865,16 @@ contains
 
   !=========================================================================================
 
+  real(r8) function get_step_size_real()
+
+    ! Return the step size in seconds, as a real value
+
+    get_step_size_real = real(get_step_size(), r8)
+
+  end function get_step_size_real
+
+  !=========================================================================================
+
   subroutine update_rad_dtime(doalb)
     !---------------------------------------------------------------------------------
     ! called only on doalb timesteps to save off radiation nsteps
@@ -1380,6 +1395,27 @@ contains
 
   !=========================================================================================
 
+  function get_prev_yearfrac()
+
+    !---------------------------------------------------------------------------------
+    ! Get the fractional position in the current year, as of the beginning of the current
+    ! timestep. This is 0 at midnight on Jan 1, and 1 at the end of Dec 31.
+
+    !
+    ! Arguments
+    real(r8) :: get_prev_yearfrac  ! function result
+    
+    character(len=*), parameter :: sub = 'clm::get_curr_yearfrac'
+    
+    call check_timemgr_initialized(sub)
+    
+    get_prev_yearfrac = get_curr_yearfrac(offset = -dtime)
+
+  end function get_prev_yearfrac
+
+
+  !=========================================================================================
+
   subroutine get_rest_date(ncid, yr)
 
     !---------------------------------------------------------------------------------
@@ -1493,6 +1529,52 @@ contains
     is_end_curr_month = (day == 1  .and.  tod == 0)
 
   end function is_end_curr_month
+
+  !-----------------------------------------------------------------------
+  logical function is_beg_curr_year()
+    !
+    ! !DESCRIPTION:
+    ! Return true if current timestep is first timestep in current year.
+    !
+    ! !LOCAL VARIABLES:
+    integer ::&
+         yr,    &! year
+         mon,   &! month
+         day,   &! day of month
+         tod     ! time of day (seconds past 0Z)
+
+    character(len=*), parameter :: subname = 'is_beg_curr_year'
+    !-----------------------------------------------------------------------
+
+    call check_timemgr_initialized(subname)
+
+    call get_curr_date(yr, mon, day, tod)
+    is_beg_curr_year = (mon == 1 .and. day == 1 .and. tod == dtime)
+    
+  end function is_beg_curr_year
+
+  !-----------------------------------------------------------------------
+  logical function is_end_curr_year()
+    !
+    ! !DESCRIPTION:
+    ! Return true if current timestep is last timestep in current year.
+    !
+    ! !LOCAL VARIABLES:
+    integer ::&
+         yr,    &! year
+         mon,   &! month
+         day,   &! day of month
+         tod     ! time of day (seconds past 0Z)
+
+    character(len=*), parameter :: subname = 'is_end_curr_year'
+    !-----------------------------------------------------------------------
+
+    call check_timemgr_initialized(subname)
+
+    call get_curr_date(yr, mon, day, tod)
+    is_end_curr_year = (mon == 1 .and. day == 1 .and. tod == 0)
+    
+  end function is_end_curr_year
 
   !=========================================================================================
 
@@ -1652,5 +1734,153 @@ contains
     call mpi_bcast (dtime    , 1, MPI_INTEGER  , 0, mpicom, ier)
 
   end subroutine timemgr_spmdbcast
+
+  !=========================================================================================
+  
+  subroutine check_timemgr_initialized(caller)
+    !
+    ! !DESCRIPTION:
+    ! Checks if the time manager has been initialized. If not, aborts with an error
+    ! message.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in) :: caller ! name of calling routine
+    !
+    ! !LOCAL VARIABLES:
+    
+    character(len=*), parameter :: subname = 'check_timemgr_initialized'
+    !-----------------------------------------------------------------------
+    
+    if (.not. timemgr_set) then
+       call shr_sys_abort(trim(caller)//":: Time manager has not been initialized")
+    end if
+    
+  end subroutine check_timemgr_initialized
+
+  !-----------------------------------------------------------------------
+  subroutine timemgr_reset()
+    !
+    ! !DESCRIPTION:
+    ! Reset time manager module data to default values.
+    !
+    ! All unit tests that modify the time manager should call this routine in their
+    ! teardown section.
+    !
+    ! Note: we could probably get away with doing much less resetting than is currently
+    ! done here. For example, we could simply set timemgr_set = .false., and deallocate
+    ! anything that needs deallocation. That would provide the benefit of less
+    ! maintenance, at the cost of slightly less robustness (in case some variable isn't
+    ! set in the initialization of a unit test, either because the unit test forgets to
+    ! call the time manager initialization method, or because the initialization method
+    ! does not explicitly initialize all variables).
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    !
+    ! !LOCAL VARIABLES:
+    integer :: rc ! return code
+
+    character(len=*), parameter :: sub = 'timemgr_reset'
+    !-----------------------------------------------------------------------
+    
+    ! ------------------------------------------------------------------------
+    ! The values in the following section should match the initialization values given in
+    ! the variable declarations at the top of the module. 
+    !
+    ! Note: it would be easier to ensure this match if we introduced a time manager
+    ! derived type, which had default initialization of its components. Then this routine
+    ! could simply set to time manager instance to a new instance of the derived type.
+    ! ------------------------------------------------------------------------
+
+    calendar = NO_LEAP_C
+
+    dtime          = uninit_int
+    dtime_rad      = uninit_int
+    nstep_rad_prev = uninit_int
+    
+    nelapse   = uninit_int
+    start_ymd = uninit_int
+    start_tod = 0
+    stop_ymd  = uninit_int
+    stop_tod  = 0
+    ref_ymd   = uninit_int
+    ref_tod   = 0
+
+    rst_step_sec  = uninit_int
+    rst_start_ymd = uninit_int
+    rst_start_tod = uninit_int
+    rst_ref_ymd   = uninit_int
+    rst_ref_tod   = uninit_int
+    rst_curr_ymd  = uninit_int
+    rst_curr_tod  = uninit_int
+
+    ! note that rst_nstep_rad_prev is NOT initialized in its declaration
+    rst_nstep_rad_prev    = uninit_int
+    perpetual_ymd         = uninit_int
+    tm_first_restart_step = .false.
+    tm_perp_calendar      = .false.
+    timemgr_set           = .false.
+    nestep                = uninit_int
+
+    nextsw_cday = uninit_r8
+    
+    ! ------------------------------------------------------------------------
+    ! Reset other module-level variables to some reasonable default, to ensure that they
+    ! don't carry over any state from one unit test to the next.
+    ! ------------------------------------------------------------------------
+
+    ! Reset tm_cal
+    call init_calendar()
+
+    ! Reset portions of the clock. Note that this does not fully reset the clock, and so
+    ! there is still the potential for information in the clock to carry over to the next
+    ! unit test if the next test does not properly initialize things.
+    call ESMF_ClockDestroy(tm_clock, rc=rc)
+    call chkrc(rc, sub//': error return from ESMF_ClockDestroy')
+
+    ! Note that we do NOT currently reset tm_perp_date, because it's unclear what that
+    ! should be reset to. Thus, there is potential for its information to carry over to
+    ! the next unit test if the next test does not properly initialize things.
+
+  end subroutine timemgr_reset
+
+  ! ========================================================================
+  ! The following routines are meant to be used just in unit tests
+  ! ========================================================================
+
+  !-----------------------------------------------------------------------
+  subroutine for_test_set_curr_date(yr, mon, day, tod)
+    !
+    ! !DESCRIPTION:
+    ! Sets the current date - i.e., the date at the end of the time step
+    !
+    ! *** Should only be used in unit tests!!! ***
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    integer, intent(in) :: yr  ! year
+    integer, intent(in) :: mon ! month
+    integer, intent(in) :: day ! day of month
+    integer, intent(in) :: tod ! time of day (seconds past 0Z)
+    !
+    ! !LOCAL VARIABLES:
+    type(ESMF_Time) :: my_time ! ESMF Time corresponding to the inputs
+    integer :: rc ! return code
+
+    character(len=*), parameter :: sub = 'for_test_set_curr_date'
+    !-----------------------------------------------------------------------
+    
+    call ESMF_TimeSet(my_time, yy=yr, mm=mon, dd=day, s=tod, &
+         calendar=tm_cal, rc=rc)
+    call chkrc(rc, sub//': error return from ESMF_TimeSet')
+    
+    call ESMF_ClockSet(tm_clock, CurrTime=my_time, rc=rc)
+    call chkrc(rc, sub//': error return from ESMF_ClockSet')
+
+  end subroutine for_test_set_curr_date
 
 end module clm_time_manager
