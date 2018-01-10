@@ -19,8 +19,15 @@ import xml.etree.ElementTree as ET
 import subprocess
 import ConfigParser
 
-def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir):#{{{
-	dev_null = open('/dev/null', 'a')
+def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir, verbose):#{{{
+	if verbose:
+		stdout = open(work_dir + '/manage_regression_suite.py.out', 'a')
+		stderr  = stdout
+		print '     Script setup outputs to %s'%(work_dir + '/manage_regression_suite.py.out')
+	else:
+		dev_null = open('/dev/null', 'a')
+		stderr = dev_null
+		stdout  = dev_null
 
 	# Process test attributes
 	try:
@@ -66,11 +73,11 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 	if baseline_dir == 'NONE':
 		subprocess.check_call(['./setup_testcase.py', '-q', '-f', config_file, '--work_dir', work_dir,
 								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
-								'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+								'-m', model_runtime], stdout=stdout, stderr=stderr, env=os.environ.copy())
 	else:
 		subprocess.check_call(['./setup_testcase.py', '-q', '-f', config_file, '--work_dir', work_dir,
 								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
-								'-m', model_runtime, '-b', baseline_dir], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+								'-m', model_runtime, '-b', baseline_dir], stdout=stdout, stderr=stderr, env=os.environ.copy())
 	
 	print "   -- Setup case '%s': -o %s -c %s -r %s -t %s"%(test_name, test_core, test_configuration, test_resolution, test_test)
 
@@ -93,7 +100,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 				print 'Exiting...'
 				sys.exit(1)
 
-			command = "subprocess.check_call(['%s/%s/%s/%s/%s/%s']"%(work_dir, test_core, test_configuration, test_resolution, test_test, script_name)
+			command = "subprocess.check_call(['time', '-p', '%s/%s/%s/%s/%s/%s']"%(work_dir, test_core, test_configuration, test_resolution, test_test, script_name)
 			command = '%s, stdout=case_output, stderr=case_output'%(command)
 			command = '%s, env=os.environ.copy())'%(command)
 
@@ -109,7 +116,10 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 	# Finish writing test case output
 	suite_script.write("case_output.close()\n")
 	suite_script.write("\n")
-	dev_null.close()
+	if verbose:
+		stdout.close()
+	else:
+		dev_null.close()
 #}}}
 
 def process_test_clean(test_tag, work_dir, suite_script):#{{{
@@ -162,7 +172,7 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 
 #}}}
 
-def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#{{{
+def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir, verbose):#{{{
 	try:
 		suite_name = suite_tag.attrib['name']
 	except:
@@ -184,6 +194,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 	regression_script.write('\n')
 	regression_script.write('import sys, os\n')
 	regression_script.write('import subprocess\n')
+	regression_script.write('import numpy as np\n')
 	regression_script.write('\n')
 	regression_script.write("os.environ['PYTHONUNBUFFERED'] = '1'\n")
 	regression_script.write("test_failed = False\n")
@@ -193,11 +204,30 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 	regression_script.write('\n')
 	regression_script.write("base_path = '%s'\n"%(work_dir))
 
+	if verbose:
+		# flush existing regression suite output file
+		open(work_dir + '/manage_regression_suite.py.out', 'w').close()
 	for child in suite_tag:
 		# Process <test> tags within the test suite
 		if child.tag == 'test':
-			process_test_setup(child, config_file, work_dir, model_runtime, regression_script, baseline_dir)
+			process_test_setup(child, config_file, work_dir, model_runtime, regression_script, baseline_dir, verbose)
 	
+	regression_script.write("print 'TEST RUNTIMES:'\n")
+	regression_script.write("case_output = '/case_outputs/'\n")
+	regression_script.write("totaltime = 0\n")
+	regression_script.write("for _, _, files in os.walk(base_path + case_output):\n")
+	regression_script.write("\tfor afile in sorted(files):\n")
+	regression_script.write("\t\toutputfile = base_path + case_output + afile\n")
+	regression_script.write("\t\truntime = np.ceil(float(subprocess.check_output(['grep', 'real', outputfile]).split('\\n')[-2].split()[1]))\n")
+	regression_script.write("\t\ttotaltime += runtime\n")
+	regression_script.write("\t\tmins = np.floor(runtime/60.0)\n")
+	regression_script.write("\t\tsecs = np.ceil(runtime - mins*60)\n")
+	regression_script.write("\t\tprint '%02d:%02d %s'%(mins, secs, afile)\n")
+	regression_script.write("mins = np.floor(totaltime/60.0)\n")
+	regression_script.write("secs = np.ceil(totaltime - mins*60)\n")
+	regression_script.write("print 'Total runtime %02d:%02d'%(mins, secs)\n")
+	regression_script.write("\n")
+
 	regression_script.write("if test_failed:\n")
 	regression_script.write("\tsys.exit(1)\n")
 	regression_script.write("else:\n")
@@ -323,6 +353,7 @@ if __name__ == "__main__":
 	parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE")
 	parser.add_argument("-s", "--setup", dest="setup", help="Option to determine if regression suite should be setup or not.", action="store_true")
 	parser.add_argument("-c", "--clean", dest="clean", help="Option to determine if regression suite should be cleaned or not.", action="store_true")
+	parser.add_argument("-v", "--verbose", dest="verbose", help="Use verbose output from setup_testcase.py", action="store_true")
 	parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
 	parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
 	parser.add_argument("--work_dir", dest="work_dir", help="If set, script will setup the test suite in work_dir rather in this script's location.", metavar="PATH")
@@ -368,8 +399,12 @@ if __name__ == "__main__":
 		if args.setup:
 			print "\n"
 			print "Setting Up Test Cases:"
-			setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file, args.baseline_dir)
+			setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file, args.baseline_dir, args.verbose)
 			summarize_suite(suite_root)
+			if args.verbose:
+				cmd = ['cat', args.work_dir + '/manage_regression_suite.py.out']
+				print '\nCase setup output:\n'
+				print subprocess.check_output(cmd, env=os.environ.copy())
 			write_history = True
 
 	# Write the history of this command to the command_history file, for

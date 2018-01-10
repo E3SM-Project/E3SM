@@ -497,6 +497,9 @@ def generate_driver_scripts(config_file, configs):#{{{
 			if child.tag == 'case':
 				case_name = child.attrib['name']
 				case_dict[case_name] = '1'
+			if child.tag == 'template':
+				print " WARNING: use of templates outside of a case in a driver_script is not supported!"
+				print "          (name of template file is %s)"%(child.attrib['file'])
 
 		for case_name in case_dict.keys():
 			script.write('parser.add_argument("--no_%s", dest="no_%s", help="If set, %s case will not be run during execution of this script.", action="store_true")\n'%(case_name, case_name, case_name))
@@ -910,9 +913,9 @@ def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
 	script.write('if os.path.exists("%s") and os.path.exists("%s"):\n'%(basedir, compdir))
 	script.write('\ttry:\n')
 	script.write('\t\t%s\n'%(command))
-	script.write("\t\tprint ' ** PASS Comparision of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
+	script.write("\t\tprint ' ** PASS Comparison of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
 	script.write('\texcept:\n')
-	script.write("\t\tprint ' ** FAIL Comparision of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
+	script.write("\t\tprint ' ** FAIL Comparison of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
 	script.write("\t\terror = True\n")
 #}}}
 #}}}
