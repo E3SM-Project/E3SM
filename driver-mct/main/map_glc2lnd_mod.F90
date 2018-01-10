@@ -101,7 +101,6 @@ contains
     character(len=:), allocatable :: frac_field_ec  ! field name: frac_field with elev class suffix
     character(len=len(extra_fields)+100) :: fields_to_map
     character(len=2*len(extra_fields)+100) :: fields_to_map_ec  ! fields_to_map with elev class suffixes
-    integer :: num_fields_to_map
 
     ! attribute vector holding glc fraction in one elev class, on the glc grid
     type(mct_aVect) :: glc_frac_this_ec_g
