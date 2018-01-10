@@ -534,7 +534,11 @@ def get_current_branch(repo=None):
     """
     Return the name of the current branch for a repository
 
-    >>> get_current_branch() is not None
+    >>> if "GIT_BRANCH" in os.environ:
+    ...     get_current_branch() is not None
+    ... else:
+    ...     os.environ["GIT_BRANCH"] = "foo"
+    ...     get_current_branch() == "foo"
     True
     """
     if ("GIT_BRANCH" in os.environ):
