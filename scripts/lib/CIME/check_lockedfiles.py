@@ -125,15 +125,16 @@ def check_lockedfiles(case):
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")
                 elif objname == "env_build":
-                    logging.warning("Setting build complete to False")
-                    case.set_value("BUILD_COMPLETE", False)
-                    if "PIO_VERSION" in diffs:
-                        case.set_value("BUILD_STATUS", 2)
-                        logging.critical("Changing PIO_VERSION requires running "
-                                         "case.build --clean-all and rebuilding")
-                    elif toggle_build_status:
-                        case.set_value("BUILD_STATUS", 1)
-                    f2obj.set_value("BUILD_COMPLETE", False)
+                    if toggle_build_status:
+                        logging.warning("Setting build complete to False")
+                        case.set_value("BUILD_COMPLETE", False)
+                        if "PIO_VERSION" in diffs:
+                            case.set_value("BUILD_STATUS", 2)
+                            logging.critical("Changing PIO_VERSION requires running "
+                                             "case.build --clean-all and rebuilding")
+                        else:
+                            case.set_value("BUILD_STATUS", 1)
+                        f2obj.set_value("BUILD_COMPLETE", False)
                 elif objname == "env_batch":
                     expect(False, "Batch configuration has changed, please run case.setup --reset")
                 else:
