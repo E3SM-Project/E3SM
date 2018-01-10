@@ -314,34 +314,6 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
-<compiler COMPILER="intel18">
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
-  <FREEFLAGS> -free </FREEFLAGS>
-  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
-  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
-  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
-  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
-  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
-  <SFC> ifort </SFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <MPIFC> mpif90 </MPIFC>
-  <MPICC> mpicc  </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-</compiler>
-
 <compiler COMPILER="intel" OS="Linux">
   <ADD_FFLAGS> -mcmodel medium -shared-intel </ADD_FFLAGS>
 </compiler>
@@ -616,9 +588,10 @@ for mct, etc.
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
+<!-- intel v18 is default on cori-knl -->
 <compiler COMPILER="intel" MACH="cori-knl">
-  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal  -qno-opt-dynamic-align </ADD_FFLAGS>
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
@@ -634,7 +607,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl" MPILIB="impi">
-  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent </FFLAGS>
+  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
   <!-- When using Intel MPI, can't use the Cray compiler wrappers. -->
   <MPI_LIB_NAME>impi</MPI_LIB_NAME>
   <MPIFC> mpiifort </MPIFC>
@@ -644,7 +617,7 @@ for mct, etc.
   <ADD_CFLAGS> -axMIC-AVX512 -xCORE-AVX2 </ADD_CFLAGS>
 </compiler>
 
-<!-- These 3 NERSC machines inherit from intel18 compiler settings above (as well as CNL entry) -->
+<!-- Edison & cori-haswell are NERSC machines inherit from intel18 compiler settings above (as well as CNL entry) -->
 <compiler COMPILER="intel18" MACH="edison">
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
@@ -665,28 +638,6 @@ for mct, etc.
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
-</compiler>
-
-<compiler COMPILER="intel18" MACH="cori-knl">
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS> 
-  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> -mkl -lpthread </ADD_SLIBS>
-  <ADD_CPPDEFS> -DARCH_MIC_KNL </ADD_CPPDEFS>
-  <SFC> ifort </SFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-</compiler>
-
-<compiler COMPILER="intel18" MACH="cori-knl" MPILIB="impi">
-  <!-- When using Intel MPI, can't use the Cray compiler wrappers. -->
-  <FFLAGS> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </FFLAGS>
-  <MPI_LIB_NAME>impi</MPI_LIB_NAME>
-  <MPIFC> mpiifort </MPIFC>
-  <MPICC> mpiicc </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <ADD_FFLAGS> -xMIC-AVX512 </ADD_FFLAGS>
-  <ADD_CFLAGS> -axMIC-AVX512 -xCORE-AVX2 </ADD_CFLAGS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="eos">
