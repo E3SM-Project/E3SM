@@ -106,10 +106,13 @@ contains
      endif
 
      if (rsplit>0) then
-        ! remove hydrostatic phi befor remap
-        !call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
         !removing theta_ref does not help much and will not conserve theta*dp
         !call set_theta_ref(hvcoord,dp_star,theta_ref)
+
+        ! remove hydrostatic phi befor remap
+        call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
+        elem(ie)%state%phinh_i(:,:,:,np1)=&
+             elem(ie)%state%phinh_i(:,:,:,np1)-phi_ref(:,:,:)
  
         !  REMAP u,v,T from levels in dp3d() to REF levels
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
@@ -133,8 +136,6 @@ contains
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
         elem(ie)%state%theta_dp_cp(:,:,:,np1)=ttmp(:,:,:,3) ! + theta_ref*dp*Cp
       
-        ! depends on theta, so do this after updating theta:
-        !call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
         
         do k=nlev,1,-1
            elem(ie)%state%phinh_i(:,:,k,np1)=&
@@ -142,6 +143,12 @@ contains
            elem(ie)%state%w_i(:,:,k,np1)=&
                 elem(ie)%state%w_i(:,:,k+1,np1)-ttmp(:,:,k,5)/dp(:,:,k)
         enddo
+
+        ! depends on theta, so do this after updating theta:
+        call get_dry_phinh(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
+        elem(ie)%state%phinh_i(:,:,:,np1)=&
+             elem(ie)%state%phinh_i(:,:,:,np1)+phi_ref(:,:,:)
+
         ! since u changed, update w b.c.:
         elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g

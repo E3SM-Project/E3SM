@@ -66,7 +66,7 @@ contains
     integer :: ie
 
 !    call initEdgeBuffer(par,edge5,elem,5*nlev)
-    call initEdgeBuffer(par,edge6,elem,6*nlev)
+    call initEdgeBuffer(par,edge6,elem,6*nlev+1)
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
     allocate(ur_weights(qsplit))
@@ -1118,6 +1118,10 @@ contains
   real (kind=real_kind) :: vtens2(np,np,nlev)
   real (kind=real_kind) :: stens(np,np,nlev,3) ! tendencies w,phi,theta
                                                ! w,phi tendencies not computed at nlevp
+  real (kind=real_kind) :: w_tens(np,np,nlevp)  ! need to update w at surface as well
+  real (kind=real_kind) :: theta_tens(np,np,nlev)
+  real (kind=real_kind) :: phi_tens(np,np,nlevp)
+                                               
 
   real (kind=real_kind) :: pi(np,np,nlev)                ! hydrostatic pressure
   real (kind=real_kind) :: pi_i(np,np,nlevp)             ! hydrostatic pressure interfaces
@@ -1133,15 +1137,12 @@ contains
   real (kind=real_kind) ::  wtemp(np,np,nelemd)
 
   call t_startf('compute_andor_apply_rhs')
-#if 0
-  ! w boundary condition. just in case:
-  do ie=nets,nete
-     elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-          elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
-  enddo
-#endif
 
   do ie=nets,nete
+     ! w boundary condition. just in case:
+     elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
+
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
@@ -1269,9 +1270,8 @@ contains
 
         do k=1,nlev
            ! average interface quantity to midpoints:
-           temp(:,:,k) = ( eta_dot_dpdn(:,:,k)+eta_dot_dpdn(:,:,k+1))/2
-           ! first compute w,phi term at midpoints, store in "stens" temporarily
-           stens(:,:,k,1) = temp(:,:,k)*(elem(ie)%state%w_i(:,:,k+1,n0)-elem(ie)%state%w_i(:,:,k,n0))
+           temp(:,:,k) = (( eta_dot_dpdn(:,:,k)+eta_dot_dpdn(:,:,k+1))/2)*&
+                (elem(ie)%state%w_i(:,:,k+1,n0)-elem(ie)%state%w_i(:,:,k,n0))
            
            ! theta vadv term at midoints
            theta_vadv(:,:,k)= eta_dot_dpdn(:,:,k+1)*theta_i(:,:,k+1) - &
@@ -1279,11 +1279,11 @@ contains
         enddo
         ! compute ave( ave(etadot) d/dx )
         do k=2,nlev
-           w_vadv_i(:,:,k)  =(stens(:,:,k-1,1)+stens(:,:,k,1))/2
+           w_vadv_i(:,:,k)  =(temp(:,:,k-1)+temp(:,:,k))/2
            phi_vadv_i(:,:,k)=eta_dot_dpdn(:,:,k)*(phi(:,:,k)-phi(:,:,k-1))
         end do
-        w_vadv_i(:,:,1) = stens(:,:,1,1)
-        w_vadv_i(:,:,nlevp) = stens(:,:,nlev,1)
+        w_vadv_i(:,:,1) = temp(:,:,1)
+        w_vadv_i(:,:,nlevp) = temp(:,:,nlev)
         phi_vadv_i(:,:,1) = 0
         phi_vadv_i(:,:,nlevp) = 0
 
@@ -1308,43 +1308,25 @@ contains
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
-     ! surface data
-     gradphinh_i(:,:,:,nlevp) = gradient_sphere(phi_i(:,:,nlevp),deriv,elem(ie)%Dinv)   
-     v_gradphinh_i(:,:,nlevp) = v_i(:,:,1,nlevp)*gradphinh_i(:,:,1,nlevp) &
-          +v_i(:,:,2,nlevp)*gradphinh_i(:,:,2,nlevp)
-
-     gradw_i(:,:,:,nlevp)=gradient_sphere(elem(ie)%state%w_i(:,:,nlevp,n0),deriv,elem(ie)%Dinv)
-     v_gradw_i(:,:,nlevp) = v_i(:,:,1,nlevp)*gradw_i(:,:,1,nlevp) +&
-          v_i(:,:,2,nlevp)*gradw_i(:,:,2,nlevp)
-
-
-
-
 #if (defined COLUMN_OPENMP)
  !$omp parallel do private(k)
 #endif
      ! ================================================
-     ! w,theta,phi tendencies:  (not needed at surface)
+     ! w,phi tendencies including surface
      ! ================================================  
-     do k=1,nlev
+     do k=1,nlevp
         ! compute gradphi at interfaces and then average to levels
         gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
            
         gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
         v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
         ! w - tendency on interfaces 
-        stens(:,:,k,1) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
+        w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
 
-        ! theta - tendency on levels
-        v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*theta_dp_cp(:,:,k)
-        v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*theta_dp_cp(:,:,k)
-        div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
-        stens(:,:,k,3)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
-    
         ! phi - tendency on interfaces
         v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
              +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
-        stens(:,:,k,2) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
+        phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
      end do
 
@@ -1357,6 +1339,12 @@ contains
      ! v1,v2 tendencies:                                                                                          
      ! ================================================           
      do k=1,nlev
+        ! theta - tendency on levels
+        v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*theta_dp_cp(:,:,k)
+        v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*theta_dp_cp(:,:,k)
+        div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
+        theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
+
         ! w vorticity correction term
         temp(:,:,k) = (elem(ie)%state%w_i(:,:,k,n0)**2 + &
              elem(ie)%state%w_i(:,:,k+1,n0)**2)/4
@@ -1401,6 +1389,8 @@ contains
            end do
         end do     
      end do 
+
+
 
      
 #ifdef ENERGY_DIAGNOSTICS
@@ -1474,9 +1464,13 @@ contains
                !  Form IEvert1
                elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
                     -exner(i,j,k)*theta_vadv(i,j,k)                        
-               ! Form IEvert2 - needs to be computed on interfaces below
-               ! elem(ie)%accum%IEvert2(i,j)=elem(ie)%accum%IEvert2(i,j)      &
-               ! -pnh(i,j,k)*(phi_vadv_i(i,j,k+1)-phi_vadv_i(i,j,k))
+               ! Form IEvert2 
+               ! here use of dpnh_dp_i on boundry (with incorrect data)
+               ! is harmess becuase eta_dot_dpdn=0
+               elem(ie)%accum%IEvert2(i,j)=elem(ie)%accum%IEvert2(i,j)      &
+                    + ( dpnh_dp_i(i,j,k)*eta_dot_dpdn(i,j,k)+ &
+                        dpnh_dp_i(i,j,k+1)*eta_dot_dpdn(i,j,k+1)) &
+                    *(phi_i(i,j,k+1)-phi_i(i,j,k))/2
                
                !  Form PEhoriz1
                elem(ie)%accum%PEhoriz1(i,j)=(elem(ie)%accum%PEhoriz1(i,j))  &
@@ -1503,16 +1497,7 @@ contains
                !  Form S1 
                elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
                     -exner(i,j,k)*div_v_theta(i,j,k)
-               !  Form T2  = -S2 (no reason to compute S2?)
-               elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)-                &
-                    ( (g*elem(ie)%state%w_i(i,j,k+1,n0)-v_gradphinh_i(i,j,k+1)) &
-                    -(g*elem(ie)%state%w_i(i,j,k,n0)-v_gradphinh_i(i,j,k))      &
-                    ) * pnh(i,j,k)                                 
-               !  Form S2
-               elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j) -      &
-                    ( (v_gradphinh_i(i,j,k+1)-g*elem(ie)%state%w_i(i,j,k+1,n0)) &
-                    -(v_gradphinh_i(i,j,k)-g*elem(ie)%state%w_i(i,j,k,n0))      &
-                    ) * pnh(i,j,k)
+
                !  Form P1  = -P2  (no reason to compute P2?)
                elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j) -g*dp3d(i,j,k)* &
                     ( elem(ie)%state%w_i(i,j,k,n0) + &
@@ -1524,22 +1509,29 @@ contains
             enddo
          enddo
       enddo
-      
-      ! this integral is more easily computed on interfaces
-      do k =2,nlev
-         ! Form IEvert2
-         elem(ie)%accum%IEvert2(:,:)=elem(ie)%accum%IEvert2(:,:)      &
-              +(dpnh_dp_i(:,:,k)*dp3d_i(:,:,k))*phi_vadv_i(:,:,k)
-      enddo
-      do k =1,nlevp,nlev
-         elem(ie)%accum%IEvert2(:,:)=elem(ie)%accum%IEvert2(:,:)      &
-              +(dpnh_dp_i(:,:,k)*dp3d_i(:,:,k))*phi_vadv_i(:,:,k)/2
-      enddo
 
-      
+      ! these terms are better easier to compute by summing interfaces
+      do k=2,nlev
+         elem(ie)%accum%T2(:,:)=elem(ie)%accum%T2(:,:)+                &
+              (g*elem(ie)%state%w_i(:,:,k,n0)-v_gradphinh_i(:,:,k)) &
+               * dpnh_dp_i(:,:,k)*dp3d_i(:,:,k)
+      enddo
+      ! boundary terms
+      do k=1,nlevp,nlev
+         elem(ie)%accum%T2(:,:)=elem(ie)%accum%T2(:,:)+                &
+           (g*elem(ie)%state%w_i(:,:,k,n0)-v_gradphinh_i(:,:,k)) &
+           * dpnh_dp_i(:,:,k)*dp3d_i(:,:,k)/2
+      enddo
+      ! boundary term is incorrect.  save the term so we can correct it
+      ! once we have coorect value of dpnh_dp_i:
+      elem(ie)%accum%T2_nlevp_term(:,:)=&
+           (g*elem(ie)%state%w_i(:,:,nlevp,n0)-v_gradphinh_i(:,:,nlevp)) &
+           * dp3d_i(:,:,nlevp)/2
+
    endif
-   
 #endif
+
+
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -1549,16 +1541,19 @@ contains
         elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%v(:,:,2,k,nm1) &
           +  dt2*vtens2(:,:,k) )
         elem(ie)%state%w_i(:,:,k,np1)    = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w_i(:,:,k,nm1)   &
-          + dt2*stens(:,:,k,1))
+          + dt2*w_tens(:,:,k))
         elem(ie)%state%theta_dp_cp(:,:,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%theta_dp_cp(:,:,k,nm1) &
-          + dt2*stens(:,:,k,3))
+          + dt2*theta_tens(:,:,k))
         elem(ie)%state%phinh_i(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%phinh_i(:,:,k,nm1) & 
-          + dt2*stens(:,:,k,2))
+          + dt2*phi_tens(:,:,k))
 
         elem(ie)%state%dp3d(:,:,k,np1) = &
              elem(ie)%spheremp(:,:) * (scale3 * elem(ie)%state%dp3d(:,:,k,nm1) - &
              scale1*dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
      enddo
+     k=nlevp
+     elem(ie)%state%w_i(:,:,k,np1)    = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w_i(:,:,k,nm1)   &
+          + dt2*w_tens(:,:,k))
 
 
      kptr=0
@@ -1566,8 +1561,8 @@ contains
      kptr=kptr+nlev
      call edgeVpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1),nlev,kptr,ie)
      kptr=kptr+nlev
-     call edgeVpack(edge6, elem(ie)%state%w_i(:,:,:,np1),nlev,kptr,ie)
-     kptr=kptr+nlev
+     call edgeVpack(edge6, elem(ie)%state%w_i(:,:,:,np1),nlevp,kptr,ie)
+     kptr=kptr+nlevp
      call edgeVpack(edge6, elem(ie)%state%phinh_i(:,:,:,np1),nlev,kptr,ie)
      kptr=kptr+nlev
      call edgeVpack(edge6, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
@@ -1583,8 +1578,8 @@ contains
      kptr=kptr+nlev
      call edgeVunpack(edge6, elem(ie)%state%theta_dp_cp(:,:,:,np1), nlev, kptr, ie)
      kptr=kptr+nlev
-     call edgeVunpack(edge6, elem(ie)%state%w_i(:,:,:,np1), nlev, kptr, ie)
-     kptr=kptr+nlev
+     call edgeVunpack(edge6, elem(ie)%state%w_i(:,:,:,np1), nlevp, kptr, ie)
+     kptr=kptr+nlevp
      call edgeVunpack(edge6, elem(ie)%state%phinh_i(:,:,:,np1), nlev, kptr, ie)
      kptr=kptr+nlev
      call edgeVunpack(edge6, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
@@ -1604,11 +1599,48 @@ contains
         elem(ie)%state%v(:,:,1,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
         elem(ie)%state%v(:,:,2,k,np1)  =elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
-     ! finally update w at the surface: 
-     elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-          elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
-  end do
+     k=nlevp
+     elem(ie)%state%w_i(:,:,k,np1)    =elem(ie)%rspheremp(:,:)*elem(ie)%state%w_i(:,:,k,np1)
 
+
+     ! now we can compute the correct dphn_dp_i() at the surface:
+     if (.not. theta_hydrostatic_mode) then
+        ! solve for (dpnh_dp_i-1)
+        dpnh_dp_i(:,:,nlevp) = 1 + &
+             ((elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g - &
+             elem(ie)%state%w_i(:,:,nlevp,np1)) / &
+             (g + ( elem(ie)%derived%gradphis(:,:,1)**2 + &
+             elem(ie)%derived%gradphis(:,:,2)**2)/(2*g)) 
+        
+        ! update solution with new dpnh_dp_i value:
+        elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
+             +g*(dpnh_dp_i(:,:,nlevp)-1)
+        elem(ie)%state%v(:,:,1,nlev,np1) =  elem(ie)%state%v(:,:,1,nlev,np1) -&
+             (dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
+        elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
+             (dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
+        
+
+#ifdef ENERGY_DIAGNOSTICS
+        ! add in boundary term to T2 and S2 diagnostics:
+        if (compute_diagnostics) then
+           elem(ie)%accum%T2(:,:)=elem(ie)%accum%T2(:,:)+                &
+                elem(ie)%accum%T2_nlevp_term(:,:)*(dpnh_dp_i(:,:,nlevp)-1)
+           elem(ie)%accum%S2(:,:)=-elem(ie)%accum%T2(:,:)      
+        endif
+#endif
+
+        temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
+        if ( maxval(abs(temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,np1))) >1e-10) then
+           write(iulog,*) 'WARNING: w surface b.c. violated'
+           write(iulog,*) 'val1 = ',temp(:,:,1)
+           write(iulog,*) 'val2 = ',elem(ie)%state%w_i(:,:,nlevp,np1)
+           write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0)
+        endif
+     endif
+  end do
   call t_stopf('compute_andor_apply_rhs')
 
   end subroutine compute_andor_apply_rhs

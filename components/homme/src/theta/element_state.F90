@@ -93,6 +93,7 @@ module element_state
     real (kind=real_kind) :: S2(np,np)
     real (kind=real_kind) :: P1(np,np)
     real (kind=real_kind) :: P2(np,np)
+    real (kind=real_kind) :: T2_nlevp_term(np,np)
 
     real (kind=real_kind) :: CONV(np,np,2,nlev)                       ! dpdn u dot CONV = T1 + T2
 #endif

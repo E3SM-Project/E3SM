@@ -125,9 +125,13 @@ implicit none
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
    pnh_i(:,:,1) = pi_i(:,:,1)   ! hydrostatic ptop    
-   ! at surface we know pi, so only extrapolate (pnh-pi):
-   pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
-   !pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (pnh(:,:,nlev)-pi(:,:,nlev))
+   ! surface boundary condition pnh_i determined by w equation to enforce
+   ! w b.c.  This is computed in the RHS calculation.  Here, we use
+   ! an approximation (hydrostatic) so that dpnh/dpi = 1
+   pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2
+   ! extrapolote NH perturbation:
+   !pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
+
 
    ! compute d(pnh)/d(pi) at interfaces
    ! use one-sided differences at boundaries
