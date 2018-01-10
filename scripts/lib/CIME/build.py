@@ -530,7 +530,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist):
             case.read_xml()
             # Note, doing buildlists will never result in the system thinking the build is complete
 
-    post_build(case, logs, build_complete=not buildlist or shared_lib_only)
+    post_build(case, logs, build_complete=not (buildlist or sharedlib_only))
 
     t3 = time.time()
 
