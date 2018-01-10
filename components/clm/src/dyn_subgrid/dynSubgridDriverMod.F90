@@ -141,7 +141,7 @@ contains
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,&
-       phosphorusstate_vars,phosphorusflux_vars)
+       phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches, CNDV, and/or dynamic
@@ -193,6 +193,7 @@ contains
 
     type(phosphorusstate_type) , intent(inout)    :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    type(crop_type)          , intent(inout) :: crop_vars
 
     !
     ! !LOCAL VARIABLES:
@@ -232,6 +233,10 @@ contains
     end if
 
     if (get_do_transient_crops()) then
+       call dyncrop_interp(bounds_proc,crop_vars)
+    end if
+
+    if (get_do_harvest()) then
        call dynHarvest_interp(bounds_proc)
     end if
 
