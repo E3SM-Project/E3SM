@@ -524,7 +524,7 @@ contains
                TempToHeat(temp = t_soisno(c,j), cv = (h2osno(c)*cpice))
        end if
 
-       !if (col_pp%hydrologically_active(c)) then
+       if (col_pp%hydrologically_active(c)) then
           ! NOTE(wjs, 2017-03-23) Water in the unconfined aquifer currently doesn't have
           ! an explicit temperature; thus, we only add its latent heat of
           ! fusion. However, we still call the standard AccumulateLiquidWaterHeat routine, so
@@ -541,7 +541,7 @@ contains
                cv_liquid = cv_liquid(c), &
                heat_liquid = heat_liquid(c), &
                latent_heat_liquid = latent_heat_liquid(c))
-       !end if
+       end if
 
        if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
             .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
