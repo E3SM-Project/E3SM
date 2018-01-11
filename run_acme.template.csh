@@ -208,7 +208,7 @@ set cpl_hist_num   = 1
 #===========================================
 # VERSION OF THIS SCRIPT
 #===========================================
-set script_ver = 3.0.17
+set script_ver = 3.0.18
 
 #===========================================
 # DEFINE ALIASES
@@ -533,11 +533,11 @@ if ( -f ${create_newcase_exe} ) then
   set acme_exe = acme.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
-  set case_run_exe = $case_scripts_dir/case.run
+  set case_run_exe = $case_scripts_dir/.case.run
   set case_submit_exe = $case_scripts_dir/case.submit
   set xmlchange_exe = $case_scripts_dir/xmlchange
   set xmlquery_exe = $case_scripts_dir/xmlquery
-  set shortterm_archive_script = $case_scripts_dir/case.st_archive
+  set shortterm_archive_script = $case_scripts_dir/.case.st_archive
 else                                                                   # No version of create_newcase found
   acme_print 'ERROR: ${create_newcase_exe} not found'
   acme_print '       This is most likely because fetch_code should be true.'
@@ -1349,6 +1349,7 @@ acme_newline
 # 3.0.15   2017-09-18    Removes long term archiving settings, as they no longer exist in CIME (MD)
 # 3.0.16   2017-10-17    Brings in CGs changes to make branch runs faster and easier. Also adds the machine name to case_name
 # 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
+# 3.0.18   2017-12-07    Update cime script names which have been hidden (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
