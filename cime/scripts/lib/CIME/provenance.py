@@ -132,7 +132,7 @@ def _save_prerun_timing_acme(case, lid):
                 run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename))
         elif mach == "theta":
-            for cmd, filename in [("qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry", "qstatf"), 
+            for cmd, filename in [("qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry", "qstatf"),
                                   ("qstat -lf %s" % job_id, "qstatf_jobid"),
                                   ("xtnodestat", "xtnodestat"),
                                   ("xtprocadmin", "xtprocadmin")]:
@@ -180,6 +180,7 @@ def _save_prerun_timing_acme(case, lid):
     globs_to_copy = [
         "CaseDocs/*",
         "*.run",
+        ".*.run",
         "*.xml",
         "user_nl_*",
         "*env_mach_specific*",
@@ -192,7 +193,7 @@ def _save_prerun_timing_acme(case, lid):
         ]
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
-            copy_umask(item, os.path.join(case_docs, os.path.basename(item) + "." + lid))
+            copy_umask(item, os.path.join(case_docs, "{}.{}".format(os.path.basename(item).lstrip("."), lid)))
 
     # Copy some items from build provenance
     blddir_globs_to_copy = [
