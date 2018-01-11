@@ -1461,8 +1461,9 @@ class K_TestCimeCase(TestCreateTestCommon):
                 jobid_ident = 'jobid'
                 dep_str_fmt = case.get_env('batch').get_value('depend_string', subgroup=None)
                 self.assertTrue(jobid_ident in dep_str_fmt, "dependency string doesn't include the jobid identifier {}".format(jobid_ident))
-                dep_str = dep_str_fmt[:-len(jobid_ident)]
+                dep_str = dep_str_fmt[:dep_str_fmt.index(jobid_ident)]
 
+                prereq_substr = None
                 while dep_str in batch_cmd_args:
                     dep_id_pos = batch_cmd_args.find(dep_str) + len(dep_str)
                     batch_cmd_args = batch_cmd_args[dep_id_pos:]
