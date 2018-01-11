@@ -1823,16 +1823,16 @@ contains
     end do ! end do for the do while loop
 !  the following two if-statements are for debugging/testing purposes to track the number of iterations and error attained
 !  by the Newton iteration
-      if (itercount > itercountmax) then
-        itercountmax=itercount
-      end if
-      if (itererr > itererrmax) then
-        itererrmax = itererr
-      end if
+!      if (itercount > itercountmax) then
+!        itercountmax=itercount
+!      end if
+!      if (itererr > itererrmax) then
+!        itererrmax = itererr
+!      end if
   end do ! end do for the ie=nets,nete loop
-  maxiter=itercountmax
-  itertol=itererrmax
-  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
+!  maxiter=itercountmax
+!  itertol=itererrmax
+!  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
