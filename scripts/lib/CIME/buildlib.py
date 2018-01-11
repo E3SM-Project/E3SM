@@ -82,4 +82,4 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 
     _, out, _ = run_cmd(cmd, combine_output=True)
-    print(out)
+    print(out.encode('utf-8'))
