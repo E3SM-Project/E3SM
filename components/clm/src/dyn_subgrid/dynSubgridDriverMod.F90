@@ -13,6 +13,8 @@ module dynSubgridDriverMod
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
   use dynPriorWeightsMod  , only : prior_weights_type
+  use dynPatchStateUpdaterMod      , only : patch_state_updater_type
+  use dynColumnStateUpdaterMod     , only : column_state_updater_type
   use UrbanParamsType     , only : urbanparams_type
   use CNDVType            , only : dgvs_type
   use CanopyStateType     , only : canopystate_type
@@ -48,7 +50,14 @@ module dynSubgridDriverMod
   public :: dynSubgrid_wrapup_weight_changes ! reconcile various variables after subgrid weights change
   !
   ! !PRIVATE TYPES:
-  type(prior_weights_type) :: prior_weights ! saved weights from before the subgrid weight updates
+  ! saved weights from before the subgrid weight updates
+  type(prior_weights_type) :: prior_weights
+
+  ! object used to update patch-level states after subgrid weight updates
+  type(patch_state_updater_type), target :: patch_state_updater
+
+  ! object used to update column-level states after subgrid weight updates
+  type(column_state_updater_type), target :: column_state_updater
   !---------------------------------------------------------------------------
 
 contains
@@ -91,7 +100,9 @@ contains
 
     nclumps = get_proc_clumps()
 
-    prior_weights = prior_weights_type(bounds)
+    prior_weights        = prior_weights_type(bounds)
+    patch_state_updater  = patch_state_updater_type(bounds)
+    column_state_updater = column_state_updater_type(bounds, nclumps)
 
     ! Initialize stuff for prescribed transient Patches
     if (get_do_transient_pfts()) then
@@ -224,6 +235,8 @@ contains
             waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
 
        call prior_weights%set_prior_weights(bounds_clump)
+       call patch_state_updater%set_old_weights(bounds_clump)
+       call column_state_updater%set_old_weights(bounds_clump)
     end do
     !$OMP END PARALLEL DO
 
