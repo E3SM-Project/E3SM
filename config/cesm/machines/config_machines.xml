@@ -254,8 +254,9 @@
     <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
+    <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
+    <MPILIBS compiler="pgi" >mpt</MPILIBS>
     <MPILIBS compiler="gnu" >openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
@@ -309,6 +310,9 @@
 	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
+      <modules compiler="pgi">
+	<command name="load">pgi/17.9</command>
+      </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
 	<command name="load">esmf-7.0.0-defio-mpi-g</command>
       </modules>
@@ -325,12 +329,18 @@
         <command name="load">gnu/6.3.0</command>
         <command name="load">openblas/0.2.14</command>
       </modules>
-      <modules mpilib="mpt">
+      <modules mpilib="mpt" compiler="gnu">
 	<command name="load">mpt/2.16</command>
 	<command name="load">netcdf-mpi/4.4.1.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
+	<command name="load">mpt/2.16</command>
+	<command name="load">netcdf-mpi/4.4.1.1</command>
 	<command name="load">pnetcdf/1.8.1</command>
+      </modules>
+      <modules mpilib="mpt" compiler="pgi">
+	<command name="load">mpt/2.15f</command>
+	<command name="load">netcdf-mpi/4.5.0</command>
       </modules>
       <modules mpilib="openmpi">
 	<command name="load">openmpi/2.1.0</command>
