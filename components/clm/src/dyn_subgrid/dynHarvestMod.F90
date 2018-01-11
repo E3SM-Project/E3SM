@@ -75,6 +75,7 @@ contains
     use clm_varctl            , only : use_cn
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
+    use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds           ! proc-level bounds
@@ -95,7 +96,8 @@ contains
        call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, __LINE__))
     end if
 
-    dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_START_OF_TIMESTEP)
+    !dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_START_OF_TIMESTEP)
+    dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_END_OF_TIMESTEP)
     
     ! Get initial harvest data
     if (use_cn) then
