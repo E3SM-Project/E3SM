@@ -32,6 +32,10 @@ add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
+add_default($nl, 'config_use_halo_exch');
+add_default($nl, 'config_aggregate_halo_exch');
+add_default($nl, 'config_reuse_halo_exch');
+add_default($nl, 'config_load_balance_timers');
 
 ###########################
 # Namelist group: restart #
@@ -386,6 +390,7 @@ add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
 add_default($nl, 'config_ocean_surface_type');
+add_default($nl, 'config_couple_biogeochemistry_fields');
 
 ###############################
 # Namelist group: diagnostics #
