@@ -177,8 +177,6 @@
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
-      <value compset="_DATM%IAF.*_MPASO%OIECO" >CO2A</value>
-      <value compset="_DATM%IAF.*_MPASO%TOIECO_" >CO2A</value>
       <value compset="_DATM%IAF_SLND_MPASCICE%BGC_MPASO%TOIECO_" >CO2A</value>
       <value compset="_BGC%BCRD">CO2C</value>
       <value compset="_BGC%BDRC">CO2C</value>
