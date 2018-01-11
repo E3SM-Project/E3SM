@@ -76,8 +76,6 @@ def run_diag(parameter):
 
     if getattr(parameter, 'multiprocessing', False):
         # only force mpl when running with multiprocessing
-        print('FORCING MPL')
-        print('FORCING MPL')
         parameter.backend = 'mpl'
 
     for season in seasons:
