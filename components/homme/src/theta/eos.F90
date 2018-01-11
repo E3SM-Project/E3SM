@@ -32,7 +32,6 @@ module eos
 
 contains
 
-
 subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,kappa_star,pnh,exner,&
      dpnh_dp_i,pnh_i_out)
 implicit none
@@ -269,7 +268,7 @@ implicit none
 
   
 
-  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi,phis,kappa_star_i,pnh_i,exact,epsie,hvcoord,dpnh_dp, &
+  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_i,phis,kappa_star_i,pnh_i,exact,epsie,hvcoord,dpnh_dp_i, &
     theta_dp_cp,kappa_star,pnh,exner)
   !================================================================================
   ! This subroutine forms the tridiagonal analytic Jacobian (we actually form the diagonal, sub-, and super-diagonal)
@@ -283,23 +282,23 @@ implicit none
   ! The rule-of-thumb optimal epsie  is epsie = norm(elem)*sqrt(macheps)
   !===================================================================================
     real (kind=real_kind), intent(inout) :: JacD(nlev,np,np), pnh_i(np,np,nlevp)
-    real (kind=real_kind), intent(inout) :: JacL(nlev-1,np,np),JacU(nlev-1,np,np), phi(np,np,nlev)
+    real (kind=real_kind), intent(inout) :: JacL(nlev-1,np,np),JacU(nlev-1,np,np), phi_i(np,np,nlevp)
     real (kind=real_kind), intent(in)    :: dp3d(np,np,nlev), phis(np,np)
-    real (kind=real_kind), intent(in) :: kappa_star_i(np,np,nlevp)
+    real (kind=real_kind), intent(in)    :: kappa_star_i(np,np,nlevp)
     real (kind=real_kind), intent(in)    :: dt2
 
-    real (kind=real_kind), intent(in), optional :: epsie ! epsie is the differencing size in the approx. Jacobian
-    real (kind=real_kind), intent(inout),  optional :: dpnh_dp(np,np,nlev), exner(np,np,nlev)
+    real (kind=real_kind), intent(in), optional     :: epsie ! epsie is the differencing size in the approx. Jacobian
+    real (kind=real_kind), intent(inout),  optional :: dpnh_dp_i(np,np,nlevp), exner(np,np,nlev)
     real (kind=real_kind), intent(inout),  optional :: kappa_star(np,np,nlev),theta_dp_cp(np,np,nlev), pnh(np,np,nlev)
-    type (hvcoord_t)     , intent(in), optional :: hvcoord
+    type (hvcoord_t)     , intent(in),  optional    :: hvcoord
 
 
     integer, intent(in) :: exact
 
     ! local
     real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
-    real (kind=real_kind) :: e(np,np,nlev),phitemp(np,np,nlev)
-    real (kind=real_kind) :: dpnh2(np,np,nlev),dpnh_dpepsie(np,np,nlev)
+    real (kind=real_kind) :: e(np,np,nlev),phi_i_temp(np,np,nlevp)
+    real (kind=real_kind) :: dpnh2(np,np,nlev),dpnh_dp_i_epsie(np,np,nlevp)
     !
     integer :: k,l
 
@@ -311,60 +310,53 @@ implicit none
         ! this code will need to change when the equation of state is changed.
         ! precompute the kappa_star, and add special cases for k==1 and k==nlev+1
         if (k==1) then
-          alpha2(:,:)    = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
-          JacD(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k)-phi(:,:,k+1))* &
-            dp3d(:,:,k))+1.d0
-          JacU(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k)) &
-            *dp3d(:,:,k))
-	    elseif (k==nlev) then
-          alpha1(:,:)    = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
-          JacL(k-1,:,:)  = (dt2*g)**2.d0 *(alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k)))
-          JacD(k,:,:)    = (dt2*g)**2.d0 *(  alpha1(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phis(:,:) ) +  &
-            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)) )/dp3d(:,:,k) + 1.d0
-        else
-          alpha1(:,:)   = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
-          alpha2(:,:)   = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
-          JacL(k-1,:,:) = (dt2*g)**2.d0 *alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k))
-          JacD(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phi(:,:,k+1)) + &
-            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0
-          JacU(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k))*dp3d(:,:,k)))
+!          alpha2(:,:)    = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
+!          JacD(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k)-phi(:,:,k+1))* &
+!            dp3d(:,:,k))+1.d0
+!          JacU(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k)) &
+!            *dp3d(:,:,k))
+!	    elseif (k==nlev) then
+!          alpha1(:,:)    = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
+!          JacL(k-1,:,:)  = (dt2*g)**2.d0 *(alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k)))
+!          JacD(k,:,:)    = (dt2*g)**2.d0 *(  alpha1(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phis(:,:) ) +  &
+!            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)) )/dp3d(:,:,k) + 1.d0
+!        else
+!          alpha1(:,:)   = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
+!          alpha2(:,:)   = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
+!          JacL(k-1,:,:) = (dt2*g)**2.d0 *alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k))
+!          JacD(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phi(:,:,k+1)) + &
+!            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0
+!          JacU(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k))*dp3d(:,:,k)))
         end if
       end do
     else ! use finite difference approximation to Jacobian with differencing size espie
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,phitemp,dpnh_dpepsie)
+!$omp parallel do private(k,phi_i_temp,dpnh_dp_i_epsie)
 #endif
       ! compute Jacobian of F(phi) = phi +const + (dt*g)^2 *(1-dp/dpi) column wise
       ! we only form the tridagonal entries and this code can easily be modified to
       ! accomodate sparse non-tridigonal and dense Jacobians, however, testing only
       ! the tridiagonal of a Jacobian is probably sufficient for testing purpose
       do k=1,nlev
-        e=0.d0
-        e(:,:,k)=1.d0
-        phitemp(:,:,:)=phi(:,:,:)
-        phitemp(:,:,k) = phi(:,:,k)+epsie*e(:,:,k)
+        e=0
+        e(:,:,k)=1
+        phi_i_temp(:,:,:) = phi_i(:,:,:)
+        phi_i_temp(:,:,k) = phi_i(:,:,k) + epsie*e(:,:,k)
         if (theta_hydrostatic_mode) then
-          dpnh_dpepsie(:,:,:)=1.d0
+          dpnh_dp_i_epsie(:,:,:)=1.d0
         else
-
-! THIS FUNCTION CALL NEEDS TO BE UPDATED 
-!
-! 
-!
-!          call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phitemp,phis,&
-!            kappa_star,pnh,dpnh_dpepsie,exner,pnh_i_out=pnh_i)
-!          dpnh_dpepsie(:,:,:)=dpnh_dpepsie(:,:,:)/dp3d(:,:,:)
+         call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i_temp,kappa_star,pnh,exner,dpnh_dp_i_epsie)
         end if
         if (k.eq.1) then
-          JacL(k,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
-          JacD(k,:,:) = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
+          JacL(k,:,:) = (g*dt2)**2 * (dpnh_dp_i(:,:,k+1)-dpnh_dp_i_epsie(:,:,k+1))/epsie
+          JacD(k,:,:) = 1 + (g*dt2)**2 * (dpnh_dp_i(:,:,k)-dpnh_dp_i_epsie(:,:,k))/epsie
         elseif (k.eq.nlev) then
-          JacD(k,:,:)   = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
-          JacU(k-1,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k-1)-dpnh_dpepsie(:,:,k-1))/epsie
+          JacD(k,:,:)   = 1 + (g*dt2)**2 * (dpnh_dp_i(:,:,k)-dpnh_dp_i_epsie(:,:,k))/epsie
+          JacU(k-1,:,:) = (g*dt2)**2 * (dpnh_dp_i(:,:,k-1)-dpnh_dp_i_epsie(:,:,k-1))/epsie
         else
-          JacL(k,:,:)   = (g*dt2)**2.d0 * (dpnh_dp(:,:,k+1)-dpnh_dpepsie(:,:,k+1))/epsie
-          JacD(k,:,:)   = 1.d0 + (g*dt2)**2.d0 * (dpnh_dp(:,:,k)-dpnh_dpepsie(:,:,k))/epsie
-          JacU(k-1,:,:) = (g*dt2)**2.d0 * (dpnh_dp(:,:,k-1)-dpnh_dpepsie(:,:,k-1))/epsie
+          JacL(k,:,:)   = (g*dt2)**2 * (dpnh_dp_i(:,:,k+1)-dpnh_dp_i_epsie(:,:,k+1))/epsie
+          JacD(k,:,:)   = 1 + (g*dt2)**2 * (dpnh_dp_i(:,:,k)-dpnh_dp_i_epsie(:,:,k))/epsie
+          JacU(k-1,:,:) = (g*dt2)**2 * (dpnh_dp_i(:,:,k-1)-dpnh_dp_i_epsie(:,:,k-1))/epsie
         end if
       end do
     end if

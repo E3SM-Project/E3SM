@@ -277,7 +277,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,1,n0,np1,n0,gamma,1.d0,0.d0)
                              
       maxiter=10
-      itertol=1e-15
+      itertol=1e-12
       ! solve g2 = un0 + dt*gamma*n(g1)+dt*gamma*s(g2) for g2 and save at nm1
       call compute_stage_value_dirk(nm1,n0,qn0,gamma*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -306,7 +306,7 @@ contains
       call elemstate_add(elem,statesave,nets,nete,3,nm1,np1,nm1,1.d0-gamma,1.d0-gamma,1.d0)
                        
       maxiter=10
-      itertol=1e-15
+      itertol=1e-12
       !	solve g3 = (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2)+dt*gamma*s(g3)
       ! for g3 using (un0+dt*delta*n(g1))+dt*(1-delta)*n(g2)+dt*(1-gamma)*s(g2) as initial guess
       ! and save at np1
@@ -1685,6 +1685,7 @@ contains
   real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
   real (kind=real_kind) :: kappa_star(np,np,nlev),kappa_star_i(np,np,nlevp)
   real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
+  real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
   real (kind=real_kind) :: Ipiv(nlev,np,np)
@@ -1708,12 +1709,6 @@ contains
   call t_startf('compute_stage_value_dirk')
   do ie=nets,nete
      call copy_state(elem(ie),n0,np1) ! copy n0 into np1
-!    elem(ie)%state%v(:,:,1,:,np1)         = elem(ie)%state%v(:,:,1,:,n0)
-!    elem(ie)%state%v(:,:,2,:,np1)         = elem(ie)%state%v(:,:,2,:,n0)
-!    elem(ie)%state%w(:,:,:,np1)           = elem(ie)%state%w(:,:,:,n0)
-!    elem(ie)%state%phinh(:,:,:,np1)       = elem(ie)%state%phinh(:,:,:,n0)
-!    elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,n0)
-!    elem(ie)%state%dp3d(:,:,:,np1)        = elem(ie)%state%dp3d(:,:,:,n0)
 
     itercount=0
 
@@ -1722,9 +1717,17 @@ contains
     theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,np1)
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
+
     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_np1,&
          kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
+
+    dp3d_i(:,:,1) = dp3d(:,:,1)
+    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+    do k=2,nlev
+       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+    end do
+
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -1740,7 +1743,9 @@ contains
 
      norminfr0=0.d0
      norminfJ0=0.d0
-     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,1)
+     ! inexact jaobian
+     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,0,&
+       1d-4,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
     ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(i,j) collapse(2)
@@ -1748,16 +1753,16 @@ contains
      do i=1,np
      do j=1,np
        do k=1,nlev
-        norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k,1)) *dp3d(i,j,k))
+        norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k,1)) *dp3d_i(i,j,k))
         if (k.eq.1) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(k,i,j))+abs(JacU(k,i,j)))*dp3d(i,j,k))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(k,i,j))+abs(JacU(k,i,j)))*dp3d_i(i,j,k))
         elseif (k.eq.nlev) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j)))*dp3d(i,j,k))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j)))*dp3d_i(i,j,k))
         else
           norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j))+ &
-            abs(JacU(k,i,j)))*dp3d(i,j,k))
+            abs(JacU(k,i,j)))*dp3d_i(i,j,k))
         end if
-        itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k,1)**2.d0 *dp3d(i,j,k)
+        itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k,1)**2.d0 *dp3d_i(i,j,k)
       end do
       itererrtemp(i,j)=sqrt(itererrtemp(i,j))
     end do
@@ -1769,8 +1774,11 @@ contains
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
-      ! compute the analytic Jacobian
-      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,1)
+      ! inexact jacobian
+      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,0,&
+       1d-4,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
+ 
+ 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(i,j) collapse(2)
 #endif
@@ -1803,7 +1811,7 @@ contains
       do i=1,np
       do j=1,np
         do k=1,nlev
-          itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k,1)**2.d0 *dp3d(i,j,k)
+          itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k,1)**2.d0 *dp3d_i(i,j,k)
         end do
         itererrtemp(i,j)=sqrt(itererrtemp(i,j))
       end do
@@ -1815,16 +1823,16 @@ contains
     end do ! end do for the do while loop
 !  the following two if-statements are for debugging/testing purposes to track the number of iterations and error attained
 !  by the Newton iteration
-!      if (itercount > itercountmax) then
-!        itercountmax=itercount
-!      end if
-!      if (itererr > itererrmax) then
-!        itererrmax = itererr
-!      end if
+      if (itercount > itercountmax) then
+        itercountmax=itercount
+      end if
+      if (itererr > itererrmax) then
+        itererrmax = itererr
+      end if
   end do ! end do for the ie=nets,nete loop
-!  maxiter=itercountmax
-!  itertol=itererrmax
-!  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
+  maxiter=itercountmax
+  itertol=itererrmax
+  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
