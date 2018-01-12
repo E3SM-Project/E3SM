@@ -463,7 +463,7 @@ contains
     !     parr = snocan_patch(bounds%begp:bounds%endp), &
     !     carr = snocan_col(bounds%begc:bounds%endc), &
     !     p2c_scale_type = 'unity')
-    snocan_col(:) = 0._r8
+    snocan_col(bounds%begc:bounds%endc) = 0._r8
 
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
@@ -495,7 +495,7 @@ contains
        ! pools.  The energy in the plant water should "bring with it" the internal
        ! energy of the soil-to-root water flux.
 
-       liqcan = h2ocan_col(c) - snocan_col(c) + total_plant_stored_h2o_col(c)
+       liqcan = (h2ocan_col(c) - snocan_col(c) + total_plant_stored_h2o_col(c))*0._r8
        call AccumulateLiquidWaterHeat( &
             temp = heat_base_temp, &
             h2o = liqcan, &

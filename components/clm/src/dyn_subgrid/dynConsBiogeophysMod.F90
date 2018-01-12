@@ -160,12 +160,12 @@ contains
        end do
     end if
 
-    call AdjustDeltaHeatForDeltaLiq( &
-         bounds, &
-         delta_liq = delta_liq(bounds%begg:bounds%endg), &
-         liquid_water_temp1 = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg), &
-         liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
-         delta_heat = delta_heat(bounds%begg:bounds%endg))
+    !call AdjustDeltaHeatForDeltaLiq( &
+    !     bounds, &
+    !     delta_liq = delta_liq(bounds%begg:bounds%endg), &
+    !     liquid_water_temp1 = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg), &
+    !     liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
+    !     delta_heat = delta_heat(bounds%begg:bounds%endg))
 
     call waterflux_vars%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
          delta_liq(begg:endg))
