@@ -971,13 +971,13 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               ! reorder
               field1DIntPointer % array = Array1DIntPointer(orderingVector)
             else
-              LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in nonHalo write!")
+              LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in Halo write!")
             end if
           elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
             ! ignore dimensions for now and have this code so they aren't printed as an error message
           else
             write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
-                              " in nonHalo data for write-- don't know what to do!"
+                              " in Halo data for write-- don't know what to do!"
             LIGHT_DEBUG_ALL_WRITE(message)
           end if
         end do
@@ -3942,11 +3942,11 @@ end subroutine allocate_list_particlelists !}}}
                               " in halo data for read-- don't know what to do!"
             LIGHT_DEBUG_WRITE(message)
             ! false warning for
-            !Different type expected in registry for key on_a_sphere in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key sphere_radius in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key is_periodic in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key x_period in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key y_period in nonHalo data for read, don't know what to do!
+            !Different type expected in registry for key on_a_sphere in Halo data for read, don't know what to do!
+            !Different type expected in registry for key sphere_radius in Halo data for read, don't know what to do!
+            !Different type expected in registry for key is_periodic in Halo data for read, don't know what to do!
+            !Different type expected in registry for key x_period in Halo data for read, don't know what to do!
+            !Different type expected in registry for key y_period in Halo data for read, don't know what to do!
           end if
         end do
 
