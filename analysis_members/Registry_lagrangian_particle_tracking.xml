@@ -350,8 +350,10 @@
 			 description="v velocity of particle - meridional direction"
 		/>
 	</var_struct>
+<!--
 	<var_struct name="lagrPartTrackNonHalo" time_levs="1" packages="lagrPartTrackAMPKG">
 	</var_struct>
+-->
 	<var_struct name="lagrPartTrackScratch" time_levs="1" packages="lagrPartTrackAMPKG">
 		<var name="ucReconstructX" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
 			 description="reconstructed cell center velocity- x component"

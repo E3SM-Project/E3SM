@@ -994,7 +994,8 @@ contains
       ! are ouptut correctly (done separately in each function, could be
       ! pulled out as an optimization)
       call mpas_particle_list_write_halo_data(domain, err)
-      call mpas_particle_list_write_nonhalo_data(domain, err)
+      ! there is not currently any halo data (don't need to communicate for now)
+      !call mpas_particle_list_write_nonhalo_data(domain, err)
 
 #ifdef MPAS_DEBUG
       call mpas_particle_list_test_num_current_particlelist(domain)
