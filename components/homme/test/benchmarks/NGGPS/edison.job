@@ -67,6 +67,12 @@ if (! ${?SLURM_NNODES} ) then
   set PER_NODE=4
 endif
 set NNODES =  $SLURM_NNODES
+
+if ($#argv >= 1) then
+   # override number of nodes with $1
+   set NNODES =  $1
+endif
+
 set NMPI = $NNODES
 @ NMPI *= $PER_NODE
 @ NMPI /= $OMP_NUM_THREADS
@@ -82,7 +88,9 @@ set VC_PER_MPI = 48
 echo NODES =            $NNODES
 echo NMPI_PER_NODE =    $PER_NODE
 echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
-set mpirun = "srun -n $NMPI -c $VC_PER_MPI $bind"
+# note: in tests on 4K nodes,the --bcase and --compress options were much slower. DONT USE:
+#set mpirun = "srun --bcast=/tmp/${SLURM_JOB_ID} --compress=lz4 -n $NMPI -N $NNODES -c $VC_PER_MPI $bind"
+set mpirun = "srun -n $NMPI -N $NNODES -c $VC_PER_MPI $bind"
 echo mpi commnand:
 echo $mpirun
 
