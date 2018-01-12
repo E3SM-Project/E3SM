@@ -67,7 +67,7 @@
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
@@ -125,12 +125,12 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.13</command>
+      <command name="load">craype/2.5.12.3</command>
       <command name="load">craype-ivybridge</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.13</command>
+      <command name="load">pmi/5.0.12</command>
       <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.2</command>
+      <command name="load">cray-mpich/7.6.0</command>
     </modules>
 
     <modules compiler="intel">
@@ -151,7 +151,7 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/7.1.0</command>
+      <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
     </modules>
@@ -160,14 +160,14 @@
       <command name="rm">cray-netcdf-hdf5parallel</command>
       <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="load">cray-hdf5/1.10.0.3</command>
-      <command name="load">cray-netcdf/4.4.1.1.3</command>
+      <command name="load">cray-hdf5/1.8.16</command>
+      <command name="load">cray-netcdf/4.4.0</command>
     </modules>
     <modules mpilib="!mpi-serial">
       <command name="rm">cray-netcdf-hdf5parallel</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.3</command>
-      <command name="load">cray-hdf5-parallel/1.10.0.3</command>
-      <command name="load">cray-parallel-netcdf/1.8.1.3</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+      <command name="load">cray-hdf5-parallel/1.8.16</command>
+      <command name="load">cray-parallel-netcdf/1.6.1</command>
     </modules>
   </module_system>
 
@@ -207,7 +207,7 @@
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -279,7 +279,7 @@
       <command name="rm">PrgEnv-intel</command>
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/7.1.0</command>
+      <command name="load">gcc/6.3.0</command>
       <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
@@ -343,7 +343,7 @@
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -420,7 +420,7 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
       <command name="rm">gcc</command>
-      <command name="load">gcc/7.1.0</command>
+      <command name="load">gcc/6.3.0</command>
       <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
@@ -464,6 +464,7 @@
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
 
+    <!--env name="MPICH_GNI_DYNAMIC_CONN">disabled</env-->
   </environment_variables>
   <environment_variables mpilib="impi">
     <env name="I_MPI_FABRICS">ofi</env>
