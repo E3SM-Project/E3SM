@@ -372,19 +372,21 @@ _WALLTIME_FILE_NAME     = "walltimes"
 _WALLTIME_TOLERANCE     = 1.25
 
 def get_recommended_test_time_based_on_past(baseline_root, test):
-    the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
-    if os.path.exists(the_path):
-        last_line = int(open(the_path, "r").readlines()[-1])
-        last_line = int(float(last_line) * _WALLTIME_TOLERANCE)
-        return convert_to_babylonian_time(last_line)
-    else:
-        return None
+    if baseline_root is not None:
+        the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
+        if os.path.exists(the_path):
+            last_line = int(open(the_path, "r").readlines()[-1])
+            last_line = int(float(last_line) * _WALLTIME_TOLERANCE)
+            return convert_to_babylonian_time(last_line)
+
+    return None
 
 def save_test_time(baseline_root, test, time_seconds):
-    the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
-    if not os.path.exists(the_dir):
-        os.makedirs(the_dir)
+    if baseline_root is not None:
+        the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
+        if not os.path.exists(the_dir):
+            os.makedirs(the_dir)
 
-    the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
-    with open(the_path, "a") as fd:
-        fd.write("{}\n".format(int(time_seconds)))
+        the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
+        with open(the_path, "a") as fd:
+            fd.write("{}\n".format(int(time_seconds)))
