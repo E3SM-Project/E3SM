@@ -222,11 +222,16 @@ def get_model():
                       and model != "xml_schemas"])
     expect(False, msg)
 
-def _convert_to_fd(filearg, from_dir):
+def _get_path(filearg, from_dir):
     if not filearg.startswith("/") and from_dir is not None:
         filearg = os.path.join(from_dir, filearg)
 
-    return open(filearg, "a")
+    return filearg
+
+def _convert_to_fd(filearg, from_dir, mode="a"):
+    filearg = _get_path(filearg, from_dir)
+
+    return open(filearg, mode)
 
 _hack=object()
 
@@ -373,6 +378,17 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
         errput = output if not errput else errput
+        if errput is None:
+            if combine_output:
+                if isinstance(arg_stdout, six.string_types):
+                    errput = "See {}".format(_get_path(arg_stdout, from_dir))
+                else:
+                    errput = ""
+            elif isinstance(arg_stderr, six.string_types):
+                errput = "See {}".format(_get_path(arg_stderr, from_dir))
+            else:
+                errput = ""
+
         expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput.encode('utf-8'), os.getcwd() if from_dir is None else from_dir))
 
     return output
