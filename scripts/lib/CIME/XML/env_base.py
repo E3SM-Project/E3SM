@@ -77,11 +77,11 @@ class EnvBase(EntryID):
             # Non-compliant look up
             return EntryID.get_children(self, name=name, attributes=attributes, root=root)
 
-    def scan_children(self, name, attributes=None, root=None):
-        if self.locked and name == "entry" and attributes is not None and attributes.keys() == ["id"]:
-            return EnvBase.get_children(self, name=name, attributes=attributes, root=root)
+    def scan_children(self, nodename, attributes=None, root=None):
+        if self.locked and nodename == "entry" and attributes is not None and attributes.keys() == ["id"]:
+            return EnvBase.get_children(self, name=nodename, attributes=attributes, root=root)
         else:
-            return EntryID.scan_children(self, name, attributes=attributes, root=root)
+            return EntryID.scan_children(self, nodename, attributes=attributes, root=root)
 
     def set_components(self, components):
         if hasattr(self, '_components'):
