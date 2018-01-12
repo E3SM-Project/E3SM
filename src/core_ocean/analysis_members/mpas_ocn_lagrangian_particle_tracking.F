@@ -300,7 +300,7 @@ contains
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
       real (kind=RKIND), pointer :: sphereRadius
-      integer, pointer :: verticalTreatment, timeIntegration, indexLevel, filterNum
+      integer, pointer :: verticalTreatment, indexLevel, filterNum, timeIntegration
       character(len=StrKIND), pointer :: config_dt
       type (MPAS_timeInterval_type) :: timeStepESMF
       logical :: resetParticle, resetParticleAny
@@ -322,6 +322,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', config_AM_lagrPartTrack_reset_criteria)
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_compute_interval', config_AM_lagrPartTrack_compute_interval)
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_output_stream', config_AM_lagrPartTrack_output_stream)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_timeIntegration', timeIntegration)
 
       if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
         config_AM_lagrPartTrack_reset_particles = .False.
@@ -466,7 +467,6 @@ contains
 
           call mpas_pool_get_array(particle % haloDataPool, 'verticalTreatment', verticalTreatment)
           call mpas_pool_get_array(particle % haloDataPool, 'indexLevel', indexLevel)
-          call mpas_pool_get_array(particle % haloDataPool, 'timeIntegration', timeIntegration)
           call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'buoyancyParticle', buoyancyParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'indexToParticleID', indexToParticleID)
@@ -1685,7 +1685,7 @@ contains
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
       real (kind=RKIND), pointer :: sphereRadius
-      integer, pointer :: verticalTreatment, timeIntegration, indexLevel, filterNum, iCell
+      integer, pointer :: verticalTreatment, indexLevel, filterNum, iCell
 
       err = 0
 
@@ -1754,7 +1754,6 @@ contains
 
           call mpas_pool_get_array(particle % haloDataPool, 'verticalTreatment', verticalTreatment)
           call mpas_pool_get_array(particle % haloDataPool, 'indexLevel', indexLevel)
-          call mpas_pool_get_array(particle % haloDataPool, 'timeIntegration', timeIntegration)
           call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'buoyancyParticle', buoyancyParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'indexToParticleID', indexToParticleID)
