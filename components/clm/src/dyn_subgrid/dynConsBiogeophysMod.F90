@@ -30,6 +30,7 @@ module dynConsBiogeophysMod
   use clm_varcon        , only : tfrz, cpliq
   use subgridAveMod     , only : p2c, c2g
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
+  use clm_varcon      , only : spval
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -500,6 +501,10 @@ contains
     ! Enforce expected array sizes
     SHR_ASSERT_ALL((ubound(heat_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
     SHR_ASSERT_ALL((ubound(liquid_water_temp_grc) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
+
+    heat_col(bounds%begc:bounds%endc)        = spval
+    heat_liquid_col(bounds%begc:bounds%endc) = spval
+    cv_liquid_col(bounds%begc:bounds%endc)   = spval
 
     call ComputeHeatNonLake(bounds, num_nolakec, filter_nolakec, &
          urbanparams_vars, soilstate_vars, &
