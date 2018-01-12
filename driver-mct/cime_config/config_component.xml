@@ -2468,19 +2468,6 @@
     <desc>standard full pathname of the cprnc executable</desc>
   </entry>
 
-  <entry id="CPL_USER_MODS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <values match="last">
-      <value compset="1850_">$SRCROOT/cime_config/usermods_dirs/b1850</value>
-    </values>
-    <group>run_component_cpl</group>
-    <file>env_case.xml</file>
-    <desc>User mods to apply to specific compset matches. </desc>
-  </entry>
-
-
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
