@@ -101,8 +101,6 @@
 			<var name="indexLevel"/>
 			<var name="cellOwnerBlock"/>
 			<var name="transfered"/>
-			<var name="lonVel"/>
-			<var name="latVel"/>
 			<var name="buoyancySurfaceValues"/>
 			<var name="buoyancySurfaceVelocityMeridional"/>
 			<var name="buoyancySurfaceVelocityZonal"/>
@@ -142,11 +140,6 @@
 			<var name="dtParticle"/>
 			<var name="indexLevel"/>
 			<var name="transfered"/>
-			<var name="sumU"/>
-			<var name="sumV"/>
-			<var name="sumUU"/>
-			<var name="sumUV"/>
-			<var name="sumVV"/>
 			<var name="buoyancySurfaceValues"/>
 		</stream>
 
@@ -313,27 +306,6 @@
 		/>
 		<var name="transfered" type ="integer" dimensions="nParticles Time" units="unitless"
 			 description="flag to monitor if the particle was transfered"
-		/>
-		<var name="sumU" type="real" dimensions="nParticles Time" units="m s^{-1}"
-			 description="summed velocity: $\sum_i U_i$"
-		/>
-		<var name="sumV" type="real" dimensions="nParticles Time" units="m s^{-1}"
-			 description="summed velocity: $\sum_i V_i$"
-		/>
-		<var name="sumUU" type="real" dimensions="nParticles Time" units="m^2 s^{-2}"
-			 description="summed energy: $\sum_i U*U$"
-		/>
-		<var name="sumUV" type="real" dimensions="nParticles Time" units="m^2 s^{-2}"
-			 description="summed energy: $\sum_i U*V$"
-		/>
-		<var name="sumVV" type="real" dimensions="nParticles Time" units="m^2 s^{-2}"
-			 description="summed energy: $\sum_i V*V$"
-		/>
-		<var name="lonVel" type="real" dimensions="nParticles Time" units="m s^{-1}"
-			 description="u velocity of particle - zonal direction"
-		/>
-		<var name="latVel" type="real" dimensions="nParticles Time" units="m s^{-1}"
-			 description="v velocity of particle - meridional direction"
 		/>
 	</var_struct>
 <!--
