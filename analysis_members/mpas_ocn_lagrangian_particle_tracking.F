@@ -180,8 +180,8 @@ contains
       LIGHT_DEBUG_WRITE('g_compProcNeighsNearby = ' COMMA g_compProcNeighsNearby)
       !}}}
 
-      ! now set sums for autocorrelation calculation to be zero
-      call zero_autocorrelation_sums(domain)
+!      ! now set sums for autocorrelation calculation to be zero
+!      call zero_autocorrelation_sums(domain)
 
       ! previous compute startup calls
       call intialize_wachspress_coefficients(domain, err)
@@ -260,8 +260,8 @@ contains
       type (mpas_particle_type), pointer :: particle
 
       real (kind=RKIND), dimension(3) :: particlePosition, particleVelocity
-      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle, sumU, sumV, sumUU, &
-                                    sumUV, sumVV
+      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, buoyancyParticle !, &
+!        lonVel, latVel, sumU, sumV, sumUU, sumUV, sumVV
       real (kind=RKIND), dimension(3) :: xSubStep, diffSubStep, diffParticlePosition
       real (kind=RKIND), pointer :: zLevelParticle
       real (kind=RKIND), dimension(:,:), pointer :: zTop, vertVelocityTop, zMid, areaBArray
@@ -472,13 +472,13 @@ contains
           call mpas_pool_get_array(particle % haloDataPool, 'indexToParticleID', indexToParticleID)
           call mpas_pool_get_array(particle % haloDataPool, 'currentCell', iCell)
 
-          call mpas_pool_get_array(particle % haloDataPool, 'lonVel', lonVel)
-          call mpas_pool_get_array(particle % haloDataPool, 'latVel', latVel)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'lonVel', lonVel)
+!          call mpas_pool_get_array(particle % haloDataPool, 'latVel', latVel)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("memtasksLPT")
 #endif
@@ -745,24 +745,24 @@ contains
 #endif
           ! convert horizontal velocity to lat/lon velocity
 
-          ! store velocity for use in computing normalized autocorrelation offline
-#ifdef MPAS_DEBUG
-          call mpas_timer_start("mpas_convert_xyz_velocity_to_latlonLPT")
-#endif
-          call mpas_convert_xyz_velocity_to_latlon(lonVel, latVel, particlePosition, particleVelocity)
-#ifdef MPAS_DEBUG
-          call mpas_timer_stop("mpas_convert_xyz_velocity_to_latlonLPT")
-#endif
+!          ! store velocity for use in computing normalized autocorrelation offline
+!#ifdef MPAS_DEBUG
+!          call mpas_timer_start("mpas_convert_xyz_velocity_to_latlonLPT")
+!#endif
+!          call mpas_convert_xyz_velocity_to_latlon(lonVel, latVel, particlePosition, particleVelocity)
+!#ifdef MPAS_DEBUG
+!          call mpas_timer_stop("mpas_convert_xyz_velocity_to_latlonLPT")
+!#endif
 
-          ! now store components needed to compute integral timescale
-#ifdef MPAS_DEBUG
-          call mpas_timer_start("storeSingleParticleStats")
-#endif
-          sumU = sumU + lonVel
-          sumV = sumV + latVel
-          sumUU = sumUU + lonVel*lonVel
-          sumUV = sumUV + lonVel*latVel
-          sumVV = sumVV + latVel*latVel
+!          ! now store components needed to compute integral timescale
+!#ifdef MPAS_DEBUG
+!          call mpas_timer_start("storeSingleParticleStats")
+!#endif
+!          sumU = sumU + lonVel
+!          sumV = sumV + latVel
+!          sumUU = sumUU + lonVel*lonVel
+!          sumUV = sumUV + lonVel*latVel
+!          sumVV = sumVV + latVel*latVel
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("storeSingleParticleStats")
 #endif
@@ -1646,8 +1646,8 @@ contains
       type (mpas_particle_type), pointer :: particle
 
       real (kind=RKIND), dimension(3) :: particlePosition, particleVelocity
-      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle, sumU, sumV, sumUU, &
-                                    sumUV, sumVV
+      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle !, &
+!        lonVel, latVel, sumU, sumV, sumUU, sumUV, sumVV
       real (kind=RKIND), dimension(3) :: xSubStep, diffSubStep, diffParticlePosition
       real (kind=RKIND), pointer :: zLevelParticle
       real (kind=RKIND), dimension(:,:), pointer :: zTop, vertVelocityTop, zMid, areaBArray
@@ -1746,6 +1746,8 @@ contains
           call mpas_pool_get_array(particle % haloDataPool, 'yParticle', yParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'zParticle', zParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'currentCell', iCell)
+          iCell = -1
+
           particlePosition(1) = xParticle
           particlePosition(2) = yParticle
           particlePosition(3) = zParticle
@@ -1758,13 +1760,13 @@ contains
           call mpas_pool_get_array(particle % haloDataPool, 'buoyancyParticle', buoyancyParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'indexToParticleID', indexToParticleID)
 
-          call mpas_pool_get_array(particle % haloDataPool, 'lonVel', lonVel)
-          call mpas_pool_get_array(particle % haloDataPool, 'latVel', latVel)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
-          call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'lonVel', lonVel)
+!          call mpas_pool_get_array(particle % haloDataPool, 'latVel', latVel)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
 
           !}}}
 
@@ -1818,9 +1820,8 @@ contains
 
           LIGHT_DEBUG_WRITE(iLevel COMMA particleVelocity)
 
-          ! store velocity for use in computing normalized autocorrelation offline
-
-          call mpas_convert_xyz_velocity_to_latlon(lonVel, latVel, particlePosition, particleVelocity)
+!          ! store velocity for use in computing normalized autocorrelation offline
+!          call mpas_convert_xyz_velocity_to_latlon(lonVel, latVel, particlePosition, particleVelocity)
           !}}}
 
           ! get next particle to process on the list
@@ -2129,52 +2130,52 @@ contains
 
   end subroutine velocity_time_interpolation !}}}
 
-  subroutine zero_autocorrelation_sums(domain) !{{{
-    implicit none
-
-    ! input/output variables
-    type (domain_type), intent(inout) :: domain
-    ! local
-    type (block_type), pointer :: block
-    type (mpas_particle_list_type), pointer :: particlelist
-    type (mpas_particle_type), pointer :: particle
-    ! output variables (per particle)
-    real (kind=RKIND), pointer :: sumU, sumV, sumUU, sumUV, sumVV
-    integer, pointer :: currentCell
-
-    ! get the appropriate pools
-      block => domain % blocklist
-      do while (associated(block)) !{{{
-        particlelist => block % particlelist
-        do while(associated(particlelist)) !{{{
-          ! get pointers / option values
-          particle => particlelist % particle
-
-          ! get values (may want a flag for reinitialization in the future)
-          !call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
-          !call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
-          !call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
-          !call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
-          !call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
-          call mpas_pool_get_array(particle % haloDataPool, 'currentCell', currentCell)
-
-          ! initialize the values
-          !sumU = 0.0_RKIND
-          !sumV = 0.0_RKIND
-          !sumUU = 0.0_RKIND
-          !sumUV = 0.0_RKIND
-          !sumVV = 0.0_RKIND
-          currentCell = -1
-
-          ! get next particle to process on the list
-          particlelist => particlelist % next
-        end do !}}}
-
-        ! get next block
-        block => block % next
-      end do !}}}
-
-  end subroutine zero_autocorrelation_sums !}}}
+!  subroutine zero_autocorrelation_sums(domain) !{{{
+!    implicit none
+!
+!    ! input/output variables
+!    type (domain_type), intent(inout) :: domain
+!    ! local
+!    type (block_type), pointer :: block
+!    type (mpas_particle_list_type), pointer :: particlelist
+!    type (mpas_particle_type), pointer :: particle
+!    ! output variables (per particle)
+!    real (kind=RKIND), pointer :: sumU, sumV, sumUU, sumUV, sumVV
+!    integer, pointer :: currentCell
+!
+!    ! get the appropriate pools
+!      block => domain % blocklist
+!      do while (associated(block)) !{{{
+!        particlelist => block % particlelist
+!        do while(associated(particlelist)) !{{{
+!          ! get pointers / option values
+!          particle => particlelist % particle
+!
+!          ! get values (may want a flag for reinitialization in the future)
+!          !call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
+!          !call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
+!          !call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
+!          !call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
+!          !call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
+!          call mpas_pool_get_array(particle % haloDataPool, 'currentCell', currentCell)
+!
+!          ! initialize the values
+!          !sumU = 0.0_RKIND
+!          !sumV = 0.0_RKIND
+!          !sumUU = 0.0_RKIND
+!          !sumUV = 0.0_RKIND
+!          !sumVV = 0.0_RKIND
+!          currentCell = -1
+!
+!          ! get next particle to process on the list
+!          particlelist => particlelist % next
+!        end do !}}}
+!
+!        ! get next block
+!        block => block % next
+!      end do !}}}
+!
+!  end subroutine zero_autocorrelation_sums !}}}
 
 !***********************************************************************
 !
