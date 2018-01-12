@@ -1990,6 +1990,14 @@
 
     </mpirun>
 
+    <mpirun mpilib="mpi-serial">
+      <executable>aprun</executable>
+      <arguments>
+        <arg name="aprun"> {{ aprun }}</arg>
+      </arguments>
+
+    </mpirun>
+
     <module_system type="module">
       <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/opt/modules/default/init/sh</init_path>
