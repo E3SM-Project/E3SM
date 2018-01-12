@@ -907,35 +907,13 @@ contains
       ! do restart if this is a restart step
       if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackRestart', &
           direction=MPAS_STREAM_OUTPUT, ierr=err)) then
+
         call mpas_timer_start("restartLPT")
-
         LIGHT_DEBUG_WRITE('start ocn_restart_lagrangian_particle_tracking')
-        ! transfer particles to their appropriate blocks (ioBlock) via MPI
-        ! note, don't necessarily need to have g_ionSend and g_ionRecv comeout
-        call mpas_timer_start("build_halos_LPT")
-        call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
-        call mpas_timer_stop("build_halos_LPT")
-        call mpas_timer_start("transfer_particles_LPT")
-        call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .True., .True., 'ioBlock', &
-          g_ioProcNeighs)
-        call mpas_timer_stop("transfer_particles_LPT")
-        deallocate(g_ioProcNeighs)
 
-        ! write out all the data, sorting to make sure that shuffled particles
-        ! are ouptut correctly (done separately in each function, could be
-        ! pulled out as an optimization)
-        ! write halo data out, but don't need nonhalo data because it is
-        ! computed for output (diagnostic, not prognostic)
-        call mpas_timer_start("write_halo_LPT")
-        call mpas_particle_list_write_halo_data(domain, err)
-        call mpas_timer_stop("write_halo_LPT")
-        !call mpas_particle_list_write_nonhalo_data(domain, err)
-
-        ! need to now remove the io particles (remove particles that don't have the
-        ! correct currentBlock)
-        call mpas_timer_start("remove_block_particles_LPT")
-        call mpas_particle_list_remove_particles_not_on_current_block(domain,err)
-        call mpas_timer_stop("remove_block_particles_LPT")
+        ! note, difference here is that nonhalo data may not be needed for
+        ! restart, but including here for now for simplity of the code
+        call write_lagrangian_particle_tracking(domain, err)
 
         LIGHT_DEBUG_WRITE('end ocn_restart_lagrangian_particle_tracking')
         call mpas_timer_stop("restartLPT")
