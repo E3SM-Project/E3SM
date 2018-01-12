@@ -300,7 +300,7 @@ contains
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
       real (kind=RKIND), pointer :: sphereRadius
-      integer, pointer :: verticalTreatment, vertexReconstMethod, timeIntegration, indexLevel, filterNum
+      integer, pointer :: verticalTreatment, timeIntegration, indexLevel, filterNum
       character(len=StrKIND), pointer :: config_dt
       type (MPAS_timeInterval_type) :: timeStepESMF
       logical :: resetParticle, resetParticleAny
@@ -465,7 +465,6 @@ contains
           call mpas_pool_get_array(particle % haloDataPool, 'zLevelParticle', zLevelParticle)
 
           call mpas_pool_get_array(particle % haloDataPool, 'verticalTreatment', verticalTreatment)
-          call mpas_pool_get_array(particle % haloDataPool, 'vertexReconstMethod', vertexReconstMethod)
           call mpas_pool_get_array(particle % haloDataPool, 'indexLevel', indexLevel)
           call mpas_pool_get_array(particle % haloDataPool, 'timeIntegration', timeIntegration)
           call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
@@ -1686,7 +1685,7 @@ contains
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
       real (kind=RKIND), pointer :: sphereRadius
-      integer, pointer :: verticalTreatment, vertexReconstMethod, timeIntegration, indexLevel, filterNum, iCell
+      integer, pointer :: verticalTreatment, timeIntegration, indexLevel, filterNum, iCell
 
       err = 0
 
@@ -1754,7 +1753,6 @@ contains
           call mpas_pool_get_array(particle % haloDataPool, 'zLevelParticle', zLevelParticle)
 
           call mpas_pool_get_array(particle % haloDataPool, 'verticalTreatment', verticalTreatment)
-          call mpas_pool_get_array(particle % haloDataPool, 'vertexReconstMethod', vertexReconstMethod)
           call mpas_pool_get_array(particle % haloDataPool, 'indexLevel', indexLevel)
           call mpas_pool_get_array(particle % haloDataPool, 'timeIntegration', timeIntegration)
           call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
