@@ -61,7 +61,7 @@
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,intel18,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
-  <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
+  <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}/acme_scratch/edison/mfu2018s2</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -195,7 +195,7 @@
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
-  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
+  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell/mfu2018s2</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
@@ -331,7 +331,7 @@
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt,impi</MPILIBS>
-  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
+  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl/mfu2018s2</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
@@ -463,8 +463,6 @@
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-
-    <!--env name="MPICH_GNI_DYNAMIC_CONN">disabled</env-->
   </environment_variables>
   <environment_variables mpilib="impi">
     <env name="I_MPI_FABRICS">ofi</env>
