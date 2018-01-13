@@ -75,8 +75,10 @@ subroutine aer_rad_props_init()
    
    !For testing puposes only, the following addfld call should be removed before merging to master
    call addfld ('extinct_lw_bnd7',(/ 'lev' /),    'A','/m','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
-   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','/km','EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
-   call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','/km','Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
+   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','/km',&
+        'EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
+   call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','/km',&
+        'Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
 
    ! Contributions to AEROD_v from individual aerosols (climate species).
 

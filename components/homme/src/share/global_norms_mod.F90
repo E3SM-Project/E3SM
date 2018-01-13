@@ -557,8 +557,10 @@ contains
                                   1.0d0/(4*nu_top*((rrearth*max_normDinv)**2)*lambda_vis),'s'
        end if
 
-      if(dcmip16_mu>0)  write(iulog,'(a,f10.2,a)') 'dcmip16_mu   viscosity CFL: dt < S*', 1.0d0/(4*dcmip16_mu*  ((rrearth*max_normDinv)**2)*lambda_vis),'s'
-      if(dcmip16_mu_s>0)write(iulog,'(a,f10.2,a)') 'dcmip16_mu_s viscosity CFL: dt < S*', 1.0d0/(4*dcmip16_mu_s*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+      if(dcmip16_mu>0)  write(iulog,'(a,f10.2,a)') 'dcmip16_mu   viscosity CFL: dt < S*', &
+           1.0d0/(4*dcmip16_mu*  ((rrearth*max_normDinv)**2)*lambda_vis),'s'
+      if(dcmip16_mu_s>0)write(iulog,'(a,f10.2,a)') 'dcmip16_mu_s viscosity CFL: dt < S*', &
+           1.0d0/(4*dcmip16_mu_s*((rrearth*max_normDinv)**2)*lambda_vis),'s'
 
       if (hypervis_power /= 0) then
         write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &
@@ -950,16 +952,7 @@ contains
        nsize_use = nelemd
     endif
     if (nvars .gt. nrepro_vars) call abortmp('repro_sum_buffer_size exceeded')
-
-! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
-
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-!$OMP MASTER
-#endif
-
 #ifndef CAM
-    ! after all threads have updated global_shared_buf, check for NaNs:
     ! CAM already does this, no need to do it twice
     do n=1,nvars
        do i=1,nsize_use
@@ -968,6 +961,13 @@ contains
        enddo
     enddo
 #endif    
+
+! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
+
+#if (defined HORIZ_OPENMP)
+!$OMP BARRIER
+!$OMP MASTER
+#endif
 
     call repro_sum(global_shared_buf, global_shared_sum, nsize_use, nelemd, nvars, commid=comm)
 

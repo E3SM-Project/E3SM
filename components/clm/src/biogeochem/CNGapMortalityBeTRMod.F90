@@ -179,8 +179,8 @@ contains
          carbonflux_vars%m_livecrootc_to_litter_patch(p)          = carbonstate_vars%livecrootc_patch(p)          * m
          carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = carbonstate_vars%deadcrootc_patch(p)          * m
          if (spinup_state >= 1) then
-           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstemc_patch(p)  * m * spinup_mortality_factor
-           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcrootc_patch(p) * m * spinup_mortality_factor
+           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstemc_patch(p)*m * spinup_mortality_factor
+           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcrootc_patch(p)*m * spinup_mortality_factor
          end if
 
          ! storage pools
@@ -226,8 +226,10 @@ contains
          end if
 
          if (spinup_state >= 1) then
-           nitrogenflux_vars%m_deadstemn_to_litter_patch(p)         = nitrogenflux_vars%m_deadstemn_to_litter_patch(p) * spinup_mortality_factor
-           nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)        = nitrogenflux_vars%m_deadcrootn_to_litter_patch(p) * spinup_mortality_factor
+           nitrogenflux_vars%m_deadstemn_to_litter_patch(p)         = nitrogenflux_vars%m_deadstemn_to_litter_patch(p) &
+                * spinup_mortality_factor
+           nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)        = nitrogenflux_vars%m_deadcrootn_to_litter_patch(p) &
+                * spinup_mortality_factor
          end if
 
          ! storage pools
@@ -274,8 +276,10 @@ contains
          end if
 
          if (spinup_state >= 1) then
-           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m * spinup_mortality_factor
-           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = phosphorusstate_vars%deadcrootp_patch(p) * m * spinup_mortality_factor
+           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m &
+                * spinup_mortality_factor
+           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = phosphorusstate_vars%deadcrootp_patch(p) * m &
+                * spinup_mortality_factor
          end if
 
          ! storage pools

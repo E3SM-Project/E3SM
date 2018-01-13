@@ -1546,7 +1546,8 @@ contains
        write (iulog,*) 'SNICAR: Subset of Mie single scatter albedos for BC: ', &
             ss_alb_bc1(1,1), ss_alb_bc1(1,2), ss_alb_bc1(2,1), ss_alb_bc1(5,1), ss_alb_bc1(1,10), ss_alb_bc2(1,10)
        write (iulog,*) 'SNICAR: Subset of Mie mass extinction coefficients for BC: ', &
-            ext_cff_mss_bc2(1,1), ext_cff_mss_bc2(1,2), ext_cff_mss_bc2(2,1), ext_cff_mss_bc2(5,1), ext_cff_mss_bc2(1,10), ext_cff_mss_bc1(1,10)
+            ext_cff_mss_bc2(1,1), ext_cff_mss_bc2(1,2), ext_cff_mss_bc2(2,1), ext_cff_mss_bc2(5,1), ext_cff_mss_bc2(1,10),&
+            ext_cff_mss_bc1(1,10)
        write (iulog,*) 'SNICAR: Subset of Mie asymmetry parameters for BC: ', &
             asm_prm_bc1(1,1), asm_prm_bc1(1,2), asm_prm_bc1(2,1), asm_prm_bc1(5,1), asm_prm_bc1(1,10), asm_prm_bc2(1,10)
        write (iulog,*) 'SNICAR: Subset of BC absorption enhancement factors: ', &

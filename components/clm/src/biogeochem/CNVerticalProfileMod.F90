@@ -255,7 +255,8 @@ contains
             nfixation_prof_sum = nfixation_prof_sum + nfixation_prof(c,j) *  dzsoi_decomp(j)
             pdep_prof_sum = pdep_prof_sum + pdep_prof(c,j) *  dzsoi_decomp(j)
          end do
-         if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
+         if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. &
+              ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
             write(iulog, *) 'profile sums: ', ndep_prof_sum, nfixation_prof_sum, pdep_prof_sum
             write(iulog, *) 'c: ', c
             write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)

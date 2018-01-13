@@ -660,8 +660,10 @@ contains
     allocate(this%sminn_nh4_input_col         (begc:endc))                   ; this%sminn_nh4_input_col              (:)   = nan
     allocate(this%sminn_no3_input_col         (begc:endc))                   ; this%sminn_no3_input_col              (:)   = nan
     allocate(this%sminn_input_col             (begc:endc))                   ; this%sminn_input_col                  (:)   = nan
-    allocate(this%bgc_npool_ext_inputs_vr_col (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_ext_inputs_vr_col    (:,:,:) = nan
-    allocate(this%bgc_npool_ext_loss_vr_col   (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_ext_loss_vr_col      (:,:,:) = nan
+    allocate(this%bgc_npool_ext_inputs_vr_col (begc:endc,1:nlevdecomp_full,ndecomp_pools)) 
+    this%bgc_npool_ext_inputs_vr_col    (:,:,:) = nan
+    allocate(this%bgc_npool_ext_loss_vr_col   (begc:endc,1:nlevdecomp_full,ndecomp_pools)) 
+    this%bgc_npool_ext_loss_vr_col      (:,:,:) = nan
 
     allocate(this%bgc_npool_inputs_col        (begc:endc,ndecomp_pools))     ;this%bgc_npool_inputs_col              (:,:) = nan
      
@@ -764,10 +766,14 @@ contains
     allocate(this%f_n2o_soil_col              (begc:endc                  )) ; this%f_n2o_soil_col                   (:)    = nan
     allocate(this%f_n2_soil_col               (begc:endc                  )) ; this%f_n2_soil_col                    (:)    = nan
 
-    allocate(this%externaln_to_decomp_npools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externaln_to_decomp_npools_col    (:,:,:) = spval
-    allocate(this%externaln_to_decomp_delta_col     (begc:endc))                                    ; this%externaln_to_decomp_delta_col     (:)     = spval
-    allocate(this%no3_net_transport_vr_col          (begc:endc, 1:nlevdecomp_full))                 ; this%no3_net_transport_vr_col          (:,:)   = spval
-    allocate(this%nh4_net_transport_vr_col          (begc:endc, 1:nlevdecomp_full))                 ; this%nh4_net_transport_vr_col          (:,:)   = spval
+    allocate(this%externaln_to_decomp_npools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools))
+    this%externaln_to_decomp_npools_col    (:,:,:) = spval
+    allocate(this%externaln_to_decomp_delta_col     (begc:endc))
+    this%externaln_to_decomp_delta_col     (:)     = spval
+    allocate(this%no3_net_transport_vr_col          (begc:endc, 1:nlevdecomp_full))
+    this%no3_net_transport_vr_col          (:,:)   = spval
+    allocate(this%nh4_net_transport_vr_col          (begc:endc, 1:nlevdecomp_full))
+    this%nh4_net_transport_vr_col          (:,:)   = spval
     !------------------------------------------------------------------------
 
     allocate(this%smin_no3_to_plant_patch     (begp:endp)) ;             this%smin_no3_to_plant_patch     (:) = nan
