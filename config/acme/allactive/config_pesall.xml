@@ -5903,7 +5903,7 @@
       </pes>
     </mach>
   </grid>
-<grid name="a%ne30np4">
+  <grid name="a%ne30np4">
     <mach name="edison">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>"113-node 12x4 F-compset sypd=10.8"</comment>
