@@ -18,7 +18,7 @@ setenv project       default
 
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
-set eeesm_tag      = master
+set e3sm_tag       = master
 set tag_name       = default
 
 ### CUSTOM CASE_NAME
@@ -47,23 +47,23 @@ set restart_files_dir = none
 
 ### DIRECTORIES
 set code_root_dir               = default
-set eeesm_simulations_dir       = default
+set e3sm_simulations_dir        = default
 set case_build_dir              = default
 set case_run_dir                = default
 set short_term_archive_root_dir = default
 
 ### LENGTH OF SIMULATION, RESTARTS, AND ARCHIVING
-set stop_units       = ndays
-set stop_num         = 1
-set restart_units    = $stop_units
-set restart_num      = $stop_num
-set num_resubmits    = 0
-set do_short_term_archiving      = false
+set stop_units                  = ndays
+set stop_num                    = 1
+set restart_units               = $stop_units
+set restart_num                 = $stop_num
+set num_resubmits               = 0
+set do_short_term_archiving     = false
 
 ### SIMULATION OPTIONS
-set atm_output_freq              = -24
-set records_per_atm_output_file  = 40
-set start_date                   = default
+set atm_output_freq             = -24
+set records_per_atm_output_file = 40
+set start_date                  = default
 
 ### COUPLER HISTORY FILES
 set do_cpl_hist    = true
@@ -77,7 +77,7 @@ set cpl_hist_num   = 1
 ### BASIC INFO ABOUT RUN (1)
 
 #job_name: This is only used to name the job in the batch system. The problem is that batch systems often only
-#    provide the first few letters of the job name when reporting on jobs inthe queue, which may not be enough
+#    provide the first few letters of the job name when reporting on jobs in the queue, which may not be enough
 #    to distinguish simultaneous jobs.
 #compset: indicates which model components and forcings to use. List choices by typing `create_newcase -list compsets`.
 #    An (outdated?) list of options is available at http://www.cesm.ucar.edu/models/cesm1.0/cesm/cesm_doc_1_0_4/a3170.html
@@ -96,10 +96,10 @@ set cpl_hist_num   = 1
 #fetch_code: If True, downloads code from github. If False, code is assumed to exist already.
 #    NOTE: it is assumed that you have access to the E3SM git repository.  To get access, see:
 #    https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
-#eeesm_tag: E3SM tagname in github. Can be 'master', a git hash, a tag, or a branch name. Only used if fetch_code=True.
-#    NOTE: If eeesm_tag=master or master_detached, then this script will provide the latest master version, but detach from the head,
+#e3sm_tag: E3SM tagname in github. Can be 'master', a git hash, a tag, or a branch name. Only used if fetch_code=True.
+#    NOTE: If e3sm_tag=master or master_detached, then this script will provide the latest master version, but detach from the head,
 #          to minimize the risk of a user pushing something to master.
-#tag_name: Short name for the E3SM branch used. If fetch_code=True, this is a shorter replacement for eeesm_tag
+#tag_name: Short name for the E3SM branch used. If fetch_code=True, this is a shorter replacement for e3sm_tag
 #    (which could be a very long hash!). Otherwise, this is a short name for the branch used. You can
 #    choose TAG_NAME to be whatever you want.
 
@@ -217,8 +217,8 @@ set script_ver = 3.0.18
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
 alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercases any strings passed to it.
 
-alias eeesm_print 'echo run_e3sm: \!*'
-alias eeesm_newline "echo ''"
+alias e3sm_print 'echo run_e3sm: \!*'
+alias e3sm_newline "echo ''"
 
 #===========================================
 # ALERT THE USER IF THEY TRY TO PASS ARGUMENTS
@@ -233,9 +233,9 @@ if ( $first_argument != '' ) then
  exit 5
 endif
 
-eeesm_newline
-eeesm_print '++++++++ run_e3sm starting ('`date`'), version '$script_ver' ++++++++'
-eeesm_newline
+e3sm_newline
+e3sm_print '++++++++ run_e3sm starting ('`date`'), version '$script_ver' ++++++++'
+e3sm_newline
 
 #===========================================
 # DETERMINE THE LOCATION AND NAME OF THE SCRIPT
@@ -258,7 +258,7 @@ endif
 if ( `lowercase $tag_name` == default ) then
   set pwd_temp       = `pwd`
   set tag_name       = ${pwd_temp:t}
-  eeesm_print '$tag_name = '$tag_name
+  e3sm_print '$tag_name = '$tag_name
 endif
 
 #===========================================
@@ -269,54 +269,54 @@ set seconds_after_warning = 10
 
 if ( `lowercase $old_executable` == true ) then
   if ( $seconds_before_delete_source_dir >= 0 ) then
-    eeesm_newline
-    eeesm_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
-    eeesm_print '       Hence, this script will abort to avoid making a mistake.'
-    eeesm_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
+    e3sm_newline
+    e3sm_print 'ERROR: It is unlikely that you want to delete the source code and then use the existing compiled executable.'
+    e3sm_print '       Hence, this script will abort to avoid making a mistake.'
+    e3sm_print '       $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir'      $old_executable = '$old_executable
     exit 11
   endif
 
   if ( $seconds_before_delete_bld_dir >= 0 ) then
-    eeesm_newline
-    eeesm_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
-    eeesm_print '       Hence, this script will abort to avoid making a mistake.'
-    eeesm_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
+    e3sm_newline
+    e3sm_print 'ERROR: It makes no sense to delete the source-compiled code and then use the existing compiled executable.'
+    e3sm_print '       Hence, this script will abort to avoid making a mistake.'
+    e3sm_print '       $seconds_before_delete_bld_dir = '$seconds_before_delete_bld_dir'      $old_executable = '$old_executable
     exit 12
   endif
 endif
 
 if ( `lowercase $case_build_dir` == default && $seconds_before_delete_bld_dir >= 0 ) then
-  eeesm_print 'ERROR: run_e3sm cannot delete the build directory when CIME chooses it'
-  eeesm_print '       To remedy this, either set $case_build_dir to the path of the executables or disable deleting the directory'
+  e3sm_print 'ERROR: run_e3sm cannot delete the build directory when CIME chooses it'
+  e3sm_print '       To remedy this, either set $case_build_dir to the path of the executables or disable deleting the directory'
   exit 14
 endif
 
 if ( `lowercase $case_run_dir` == default && $seconds_before_delete_run_dir >= 0 ) then
-  eeesm_print 'ERROR: run_e3sm cannot delete the run directory when CIME chooses it'
-  eeesm_print '       To remedy this, either set $case_run_dir to the path of the executables or disable deleting the directory'
+  e3sm_print 'ERROR: run_e3sm cannot delete the run directory when CIME chooses it'
+  e3sm_print '       To remedy this, either set $case_run_dir to the path of the executables or disable deleting the directory'
   exit 15
 endif
 
 if ( `lowercase $debug_queue` == true && ( $num_resubmits >= 1 || `lowercase $do_short_term_archiving` == true ) ) then
-  eeesm_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
-  eeesm_print '       You should either use a different queue, or submit a single job without archiving.'
-  eeesm_print '       $debug_queue             = '$debug_queue
-  eeesm_print '       $num_resubmits           = '$num_resubmits
-  eeesm_print '       $do_short_term_archiving = '$do_short_term_archiving
+  e3sm_print 'ERROR: Supercomputer centers generally do not allow job chaining in debug queues'
+  e3sm_print '       You should either use a different queue, or submit a single job without archiving.'
+  e3sm_print '       $debug_queue             = '$debug_queue
+  e3sm_print '       $num_resubmits           = '$num_resubmits
+  e3sm_print '       $do_short_term_archiving = '$do_short_term_archiving
   exit 16
 endif
 
 if ( $restart_num != 0 ) then
   @ remaining_periods = $stop_num - ( $stop_num / $restart_num ) * $restart_num
   if ( $num_resubmits >= 1 && ( $stop_units != $restart_units || $remaining_periods != 0 ) ) then
-    eeesm_print 'WARNING: run length is not divisible by the restart write frequency, or the units differ.'
-    eeesm_print 'If restart write frequency doesnt evenly divide the run length, restarts will simulate the same time period multiple times.'
-    eeesm_print '         $stop_units        = '$stop_units
-    eeesm_print '         $stop_num          = '$stop_num
-    eeesm_print '         $restart_units     = '$restart_units
-    eeesm_print '         $restart_num       = '$restart_num
-    eeesm_print '         $remaining_periods = '$remaining_periods
-    eeesm_print '         $num_resubmits     = '$num_resubmits
+    e3sm_print 'WARNING: run length is not divisible by the restart write frequency, or the units differ.'
+    e3sm_print 'If restart write frequency doesnt evenly divide the run length, restarts will simulate the same time period multiple times.'
+    e3sm_print '         $stop_units        = '$stop_units
+    e3sm_print '         $stop_num          = '$stop_num
+    e3sm_print '         $restart_units     = '$restart_units
+    e3sm_print '         $restart_num       = '$restart_num
+    e3sm_print '         $remaining_periods = '$remaining_periods
+    e3sm_print '         $num_resubmits     = '$num_resubmits
     sleep $seconds_after_warning
   endif
 endif
@@ -329,31 +329,31 @@ endif
 ###       https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
 
 if ( `lowercase $fetch_code` == true ) then
-  eeesm_print 'Downloading code from the E3SM git repository.'
+  e3sm_print 'Downloading code from the E3SM git repository.'
   if ( -d $code_root_dir/$tag_name ) then
     if ( $seconds_before_delete_source_dir >= 0 ) then
       set num_seconds_until_delete = $seconds_before_delete_source_dir
-      eeesm_print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
-      eeesm_print 'To abort, press ctrl-C'
+      e3sm_print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
+      e3sm_print 'To abort, press ctrl-C'
       while ( ${num_seconds_until_delete} > 0 )
-         eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+         e3sm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
          sleep 1
          @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
       end
       rm -fr $code_root_dir/$tag_name
-      eeesm_print 'Deleted '$code_root_dir/$tag_name
+      e3sm_print 'Deleted '$code_root_dir/$tag_name
     else
-      eeesm_print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
-      eeesm_print '          You likely want to either set fetch_code=false, change $tag_name, or'
-      eeesm_print '          change seconds_before_delete_source_dir.'
-      eeesm_print '          Note: $fetch_code = '$fetch_code
-      eeesm_print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
-      eeesm_print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
+      e3sm_print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
+      e3sm_print '          You likely want to either set fetch_code=false, change $tag_name, or'
+      e3sm_print '          change seconds_before_delete_source_dir.'
+      e3sm_print '          Note: $fetch_code = '$fetch_code
+      e3sm_print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
+      e3sm_print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
       exit 20
     endif #$seconds_before_delete_source_dir >=0
   endif #$code_root_dir exists
 
-  eeesm_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
+  e3sm_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
   mkdir -p $code_root_dir
   git clone git@github.com:ACME-Climate/ACME.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
   ## Setup git hooks
@@ -365,43 +365,43 @@ if ( `lowercase $fetch_code` == true ) then
   ## Bring in MPAS ocean/ice repo
   git submodule update --init
 
-  if ( `lowercase $eeesm_tag` == master ) then
-    eeesm_newline
-    ##eeesm_print 'Detaching from the master branch to avoid accidental changes to master by user.'
+  if ( `lowercase $e3sm_tag` == master ) then
+    e3sm_newline
+    ##e3sm_print 'Detaching from the master branch to avoid accidental changes to master by user.'
     ##git checkout --detach
     echo 'KLUDGE: git version on anvil (1.7.1) is too old to be able to detach'
     echo 'edison uses git version 1.8.5.6 and it can git checkout --detach'
   else
-    eeesm_newline
-    eeesm_print 'Checking out branch ${eeesm_tag} = '${eeesm_tag}
-    git checkout ${eeesm_tag}
+    e3sm_newline
+    e3sm_print 'Checking out branch ${e3sm_tag} = '${e3sm_tag}
+    git checkout ${e3sm_tag}
   endif
 
 endif
 
-eeesm_newline
-eeesm_print '$case_name        = '$case_name
+e3sm_newline
+e3sm_print '$case_name        = '$case_name
 
 #============================================
 # DETERMINE THE SCRATCH DIRECTORY TO USE
 #============================================
 
-if ( $eeesm_simulations_dir == default ) then
+if ( $e3sm_simulations_dir == default ) then
   ### NOTE: csh doesn't short-circuit; so we can't check whether $SCRATCH exists or whether it's empty in the same condition
   if ( ! $?SCRATCH ) then
-    eeesm_newline
-    eeesm_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
-    eeesm_print '         To avoid any issues, set $eeesm_simulations_dir to a scratch filesystem'
-    set eeesm_simulations_dir = ${HOME}/E3SM_simulations
+    e3sm_newline
+    e3sm_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+    e3sm_print '         To avoid any issues, set $e3sm_simulations_dir to a scratch filesystem'
+    set e3sm_simulations_dir = ${HOME}/E3SM_simulations
   else
     ### Verify that $SCRATCH is not an empty string
     if ( "${SCRATCH}" == "" ) then
-      set eeesm_simulations_dir = ${HOME}/E3SM_simulations
-      eeesm_newline
-      eeesm_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
-      eeesm_print '         To avoid any issues, set $eeesm_simulations_dir to a scratch filesystem'
+      set e3sm_simulations_dir = ${HOME}/E3SM_simulations
+      e3sm_newline
+      e3sm_print 'WARNING: Performing science runs while storing run output in your home directory is likely to exceed your quota'
+      e3sm_print '         To avoid any issues, set $e3sm_simulations_dir to a scratch filesystem'
     else
-      set eeesm_simulations_dir = ${SCRATCH}/E3SM_simulations
+      set e3sm_simulations_dir = ${SCRATCH}/E3SM_simulations
     endif
   endif
 endif
@@ -416,26 +416,26 @@ endif
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
-set case_scripts_dir = ${eeesm_simulations_dir}/${case_name}/case_scripts
+set case_scripts_dir = ${e3sm_simulations_dir}/${case_name}/case_scripts
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_case_dir
-    eeesm_newline
-    eeesm_print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    eeesm_print 'To abort, press ctrl-C'
+    e3sm_newline
+    e3sm_print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    e3sm_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-      eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+      e3sm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
       sleep 1
       @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
     rm -fr $case_scripts_dir
-    eeesm_print ' Deleted $case_scripts_dir directory for : '${case_name}
+    e3sm_print ' Deleted $case_scripts_dir directory for : '${case_name}
   else
-    eeesm_print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
-    eeesm_print '         and is not being removed because seconds_before_delete_case_dir<0.'
-    eeesm_print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
-    eeesm_print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
+    e3sm_print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
+    e3sm_print '         and is not being removed because seconds_before_delete_case_dir<0.'
+    e3sm_print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
+    e3sm_print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
     exit 35
   endif
 endif
@@ -445,19 +445,19 @@ endif
 if ( `lowercase $case_build_dir` != default && -d $case_build_dir ) then
   if ( ${seconds_before_delete_bld_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_bld_dir
-    eeesm_newline
-    eeesm_print 'Removing old $case_build_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    eeesm_print 'To abort, press ctrl-C'
+    e3sm_newline
+    e3sm_print 'Removing old $case_build_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    e3sm_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-      eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+      e3sm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
       sleep 1
       @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
     rm -fr $case_build_dir
-    eeesm_print ' Deleted $case_build_dir directory for '${case_name}
+    e3sm_print ' Deleted $case_build_dir directory for '${case_name}
   else
-    eeesm_print 'NOTE: $case_build_dir='$case_build_dir' exists '
-    eeesm_print '      and is not being removed because seconds_before_delete_bld_dir<0.'
+    e3sm_print 'NOTE: $case_build_dir='$case_build_dir' exists '
+    e3sm_print '      and is not being removed because seconds_before_delete_bld_dir<0.'
   endif
 endif
 
@@ -466,19 +466,19 @@ endif
 if ( `lowercase $case_run_dir` != default &&  -d $case_run_dir ) then
   if ( ${seconds_before_delete_run_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_run_dir
-    eeesm_newline
-    eeesm_print 'Removing old $case_run_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    eeesm_print 'To abort, press ctrl-C'
+    e3sm_newline
+    e3sm_print 'Removing old $case_run_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    e3sm_print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-     eeesm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
+     e3sm_print ' '${num_seconds_until_delete}'  seconds until deletion.'
      sleep 1
      @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
     rm -fr $case_run_dir
-    eeesm_print ' Deleted $case_run_dir directory for '${case_name}
+    e3sm_print ' Deleted $case_run_dir directory for '${case_name}
   else
-    eeesm_print 'NOTE: $case_run_dir='$case_run_dir' exists '
-    eeesm_print '      and is not being removed because seconds_before_delete_run_dir<0.'
+    e3sm_print 'NOTE: $case_run_dir='$case_run_dir' exists '
+    e3sm_print '      and is not being removed because seconds_before_delete_run_dir<0.'
   endif
 endif
 
@@ -514,7 +514,7 @@ switch ( $lower_case )
     set std_proc_configuration = 'M'
     breaksw
   default:
-    eeesm_print 'ERROR: $processor_config='$processor_config' is not recognized'
+    e3sm_print 'ERROR: $processor_config='$processor_config' is not recognized'
     exit 40
     breaksw
 endsw
@@ -530,18 +530,18 @@ umask 022
 set cime_dir = ${code_root_dir}/${tag_name}/cime
 set create_newcase_exe = $cime_dir/scripts/create_newcase
 if ( -f ${create_newcase_exe} ) then
-  set eeesm_exe = e3sm.exe
+  set e3sm_exe = acme.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
   set case_run_exe = $case_scripts_dir/.case.run
   set case_submit_exe = $case_scripts_dir/case.submit
   set xmlchange_exe = $case_scripts_dir/xmlchange
   set xmlquery_exe = $case_scripts_dir/xmlquery
-  set shortterm_archive_script = $case_scripts_dir/.case.st_archive
+  set shortterm_archive_script = $case_scripts_dir/case.st_archive
 else                                                                   # No version of create_newcase found
-  eeesm_print 'ERROR: ${create_newcase_exe} not found'
-  eeesm_print '       This is most likely because fetch_code should be true.'
-  eeesm_print '       At the moment, $fetch_code = '$fetch_code
+  e3sm_print 'ERROR: ${create_newcase_exe} not found'
+  e3sm_print '       This is most likely because fetch_code should be true.'
+  e3sm_print '       At the moment, $fetch_code = '$fetch_code
   exit 45
 endif
 
@@ -556,11 +556,11 @@ if ( `lowercase $machine` != default ) then
 endif
 
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${eeesm_simulations_dir}/${case_name}/build
+  set case_build_dir = ${e3sm_simulations_dir}/${case_name}/build
 endif
 
 if ( `lowercase $case_run_dir` == default ) then
-  set case_run_dir = ${eeesm_simulations_dir}/${case_name}/run
+  set case_run_dir = ${e3sm_simulations_dir}/${case_name}/run
 endif
 
 mkdir -p ${case_build_dir}
@@ -582,18 +582,18 @@ endif
 # CREATE CASE_SCRIPTS DIRECTORY AND POPULATE WITH NEEDED FILES
 #=============================================================
 
-eeesm_newline
-eeesm_print '-------- Starting create_newcase --------'
-eeesm_newline
+e3sm_newline
+e3sm_print '-------- Starting create_newcase --------'
+e3sm_newline
 
-eeesm_print ${create_newcase_exe} ${configure_options}
+e3sm_print ${create_newcase_exe} ${configure_options}
 ${create_newcase_exe} ${configure_options}
 
 cd ${case_scripts_dir}
 
-eeesm_newline
-eeesm_print '-------- Finished create_newcase --------'
-eeesm_newline
+e3sm_newline
+e3sm_print '-------- Finished create_newcase --------'
+e3sm_newline
 
 #================================================
 # UPDATE VARIABLES WHICH REQUIRE A CASE TO BE SET
@@ -606,7 +606,7 @@ endif
 set machine = `lowercase $machine`
 
 if ( `lowercase $case_build_dir` == default ) then
-  set case_build_dir = ${eeesm_simulations_dir}/${case_name}/bld
+  set case_build_dir = ${e3sm_simulations_dir}/${case_name}/bld
 endif
 ${xmlchange_exe} EXEROOT=${case_build_dir}
 
@@ -623,7 +623,7 @@ else
   endif
 endif
 
-eeesm_print "Project used for submission: ${project}"
+e3sm_print "Project used for submission: ${project}"
 
 #================================
 # SET WALLTIME FOR CREATE_NEWCASE
@@ -705,7 +705,7 @@ if ( `lowercase $processor_config` == '1' ) then
 
 else if ( `lowercase $processor_config` == 'customknl' ) then
 
-  eeesm_print 'using custom layout for cori-knl because $processor_config = '$processor_config
+  e3sm_print 'using custom layout for cori-knl because $processor_config = '$processor_config
 
   ${xmlchange_exe} MAX_TASKS_PER_NODE="64"
   ${xmlchange_exe} PES_PER_NODE="256"
@@ -806,13 +806,13 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #NOTE: The xmlchange will fail if CAM is not active, so test whether a data atmosphere (datm) is used.
 
 if ( `$xmlquery_exe --value COMP_ATM` == 'datm'  ) then 
-  eeesm_newline
-  eeesm_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
-  eeesm_newline
+  e3sm_newline
+  e3sm_print 'The specified configuration uses a data atmosphere, so cannot activate COSP simulator.'
+  e3sm_newline
 else
-  eeesm_newline
-  eeesm_print 'Configuring E3SM to use the COSP simulator.'
-  eeesm_newline
+  e3sm_newline
+  e3sm_print 'Configuring E3SM to use the COSP simulator.'
+  e3sm_newline
   $xmlchange_exe --id CAM_CONFIG_OPTS --append --val='-cosp'
 endif
 
@@ -834,17 +834,17 @@ endif
 
 #note configure -case turned into cesm_setup in cam5.2
 
-eeesm_newline
-eeesm_print '-------- Starting case.setup --------'
-eeesm_newline
+e3sm_newline
+e3sm_print '-------- Starting case.setup --------'
+e3sm_newline
 
-eeesm_print ${case_setup_exe}
+e3sm_print ${case_setup_exe}
 
 ${case_setup_exe} --reset
 
-eeesm_newline
-eeesm_print '-------- Finished case.setup  --------'
-eeesm_newline
+e3sm_newline
+e3sm_print '-------- Finished case.setup  --------'
+e3sm_newline
 
 #============================================================
 #MAKE GROUP PERMISSIONS to $PROJECT FOR THIS DIRECTORY
@@ -865,20 +865,20 @@ set run_root_dir = `cd $case_run_dir/..; pwd -P`
 #NOTE: Starting the suffix wit 'a' helps to keep this near the script in ls
 #      (but in practice the behavior depends on the LC_COLLATE system variable).
 
-eeesm_print 'Creating logical links to make navigating easier.'
-eeesm_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
+e3sm_print 'Creating logical links to make navigating easier.'
+e3sm_print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
 
 # Customizations from Chris Golaz
 # Link in this_script_dir case_dir
 set run_dir_link = $this_script_dir/$this_script_name=a_run_link
 
-eeesm_print ${run_dir_link}
+e3sm_print ${run_dir_link}
 
 if ( -l $run_dir_link ) then
   rm -f $run_dir_link
 endif
-eeesm_print "run_root ${run_root_dir}"
-eeesm_print "run_dir ${run_dir_link}"
+e3sm_print "run_root ${run_root_dir}"
+e3sm_print "run_dir ${run_dir_link}"
 
 ln -s $run_root_dir $run_dir_link
 
@@ -887,12 +887,12 @@ ln -s $run_root_dir $run_dir_link
 #============================================
 
 if ( `uppercase $debug_compile` != 'TRUE' && `uppercase $debug_compile` != 'FALSE' ) then
-  eeesm_print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
+  e3sm_print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
   exit 220
 endif
 
 if ( $machine == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
-  eeesm_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
+  e3sm_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
   exit 222
 endif
 
@@ -939,31 +939,31 @@ EOF
 #NOTE: This will either build the code (if needed and $old_executable=false) or copy an existing executable.
 
 if ( `lowercase $old_executable` == false ) then
-  eeesm_newline
-  eeesm_print '-------- Starting Build --------'
-  eeesm_newline
+  e3sm_newline
+  e3sm_print '-------- Starting Build --------'
+  e3sm_newline
 
-  eeesm_print ${case_build_exe}
+  e3sm_print ${case_build_exe}
   ${case_build_exe}
 
-  eeesm_newline
-  eeesm_print '-------- Finished Build --------'
-  eeesm_newline
+  e3sm_newline
+  e3sm_print '-------- Finished Build --------'
+  e3sm_newline
 else if ( `lowercase $old_executable` == true ) then
-  if ( -x $case_build_dir/$eeesm_exe ) then       #use executable previously generated for this case_name.
-    eeesm_print 'Skipping build because $old_executable='$old_executable
-    eeesm_newline
+  if ( -x $case_build_dir/$e3sm_exe ) then       #use executable previously generated for this case_name.
+    e3sm_print 'Skipping build because $old_executable='$old_executable
+    e3sm_newline
     #create_newcase sets BUILD_COMPLETE to FALSE. By using an old executable you're certifying
     #that you're sure the old executable is consistent with the new case... so be sure you're right!
     #NOTE: This is a risk to provenance, so this feature may be removed in the future [PJC].
     #      However the build system currently rebuilds several files every time which takes many minutes.
     #      When this gets fixed the cost of deleting this feature will be minor.
     #      (Also see comments for user options at top of this file.)
-    eeesm_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+    e3sm_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
     $xmlchange_exe --id BUILD_COMPLETE --val TRUE
   else
-    eeesm_print 'ERROR: $old_executable='$old_executable' but no executable exists for this case.'
-    eeesm_print '                Expected to find executable = '$case_build_dir/$eeesm_exe
+    e3sm_print 'ERROR: $old_executable='$old_executable' but no executable exists for this case.'
+    e3sm_print '                Expected to find executable = '$case_build_dir/$e3sm_exe
     exit 297
   endif
 else
@@ -978,11 +978,11 @@ else
     #NOTE: The alternative solution is to set EXEROOT in env_build.xml.
     #      That is cleaner and quicker, but it means that the executable is outside this directory,
     #      which weakens provenance if this directory is captured for provenance.
-    eeesm_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+    e3sm_print 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
     $xmlchange_exe --id BUILD_COMPLETE --val TRUE
     cp -fp $old_executable $case_build_dir/
   else
-    eeesm_print 'ERROR: $old_executable='$old_executable' does not exist or is not an executable file.'
+    e3sm_print 'ERROR: $old_executable='$old_executable' does not exist or is not an executable file.'
     exit 297
   endif
 endif
@@ -1040,8 +1040,8 @@ else if ( $machine == anvil ) then
     endif
 
 else
-    eeesm_print 'WARNING: This script does not have batch directives for $machine='$machine
-    eeesm_print '         Assuming default E3SM values.'
+    e3sm_print 'WARNING: This script does not have batch directives for $machine='$machine
+    e3sm_print '         Assuming default E3SM values.'
 endif
 
 #============================================
@@ -1097,8 +1097,8 @@ $xmlchange_exe --id HIST_N      --val $cpl_hist_num
 # SETUP SIMULATION INITIALIZATION
 #============================================
 
-eeesm_newline
-eeesm_print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
+e3sm_newline
+e3sm_print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
 
 set model_start_type = `lowercase $model_start_type`
 #-----------------------------------------------------------------------------------------------
@@ -1138,24 +1138,24 @@ else if ( $model_start_type == 'branch' ) then
   ### the next lines attempt to automatically extract all needed info for setting up the branch run.
   set rpointer_filename = "${restart_files_dir}/rpointer.drv"
   if ( ! -f $rpointer_filename ) then
-    eeesm_print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
-    eeesm_print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
-    eeesm_print '       ${rpointer_filename} = '{rpointer_filename}
+    e3sm_print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
+    e3sm_print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
+    e3sm_print '       ${rpointer_filename} = '{rpointer_filename}
     exit 370
   endif
   set restart_coupler_filename = `cat $rpointer_filename`
   set restart_case_name = ${restart_coupler_filename:r:r:r:r}         # Extract out the case name for the restart files.
   set restart_filedate = ${restart_coupler_filename:r:e:s/-00000//}   # Extract out the date (yyyy-mm-dd).
-  eeesm_print '$restart_case_name = '$restart_case_name
-  eeesm_print '$restart_filedate  = '$restart_filedate
+  e3sm_print '$restart_case_name = '$restart_case_name
+  e3sm_print '$restart_filedate  = '$restart_filedate
 
   ### the next line gets the YYYY-MM of the month before the restart time. Needed for staging history files.
   ### NOTE: This is broken for cases that have run for less than a month
   set restart_prevdate = `date -d "${restart_filedate} - 1 month" +%Y-%m`
 
-  eeesm_print '$restart_prevdate  = '$restart_prevdate
+  e3sm_print '$restart_prevdate  = '$restart_prevdate
 
-  eeesm_print 'Copying stuff for branch run'
+  e3sm_print 'Copying stuff for branch run'
   cp -s ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
@@ -1180,7 +1180,7 @@ else if ( $model_start_type == 'branch' ) then
 
 else
 
-  eeesm_print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
+  e3sm_print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
   exit 380
 
 endif
@@ -1200,32 +1200,32 @@ endif
 #=================================================
 #note: to run the model in the totalview debugger,
 # cd $case_run_dir
-# totalview srun -a -n <number of procs> -p <name of debug queue> ../bld/$eeesm_exe
+# totalview srun -a -n <number of procs> -p <name of debug queue> ../bld/$e3sm_exe
 # where you may need to change srun to the appropriate submit command for your system, etc.
 
 
-eeesm_newline
-eeesm_print '-------- Starting Submission to Run Queue --------'
-eeesm_newline
+e3sm_newline
+e3sm_print '-------- Starting Submission to Run Queue --------'
+e3sm_newline
 
 if ( ${num_resubmits} > 0 ) then
   ${xmlchange_exe} --id RESUBMIT --val ${num_resubmits}
-  eeesm_print 'Setting number of resubmits to be '${num_resubmits}
+  e3sm_print 'Setting number of resubmits to be '${num_resubmits}
   @ total_submits = ${num_resubmits} + 1
-  eeesm_print 'This job will submit '${total_submits}' times after completion'
+  e3sm_print 'This job will submit '${total_submits}' times after completion'
 endif
 
 if ( `lowercase $submit_run` == 'true' ) then
-  eeesm_print '         SUBMITTING JOB:'
-  eeesm_print ${case_submit_exe} --batch-args " ${batch_options} "
+  e3sm_print '         SUBMITTING JOB:'
+  e3sm_print ${case_submit_exe} --batch-args " ${batch_options} "
   ${case_submit_exe} --batch-args " ${batch_options} "
 else
-    eeesm_print 'Run NOT submitted because $submit_run = '$submit_run
+    e3sm_print 'Run NOT submitted because $submit_run = '$submit_run
 endif
 
-eeesm_newline
-eeesm_print '-------- Finished Submission to Run Queue --------'
-eeesm_newline
+e3sm_newline
+e3sm_print '-------- Finished Submission to Run Queue --------'
+e3sm_newline
 
 #=================================================
 # DO POST-SUBMISSION THINGS (IF ANY)
@@ -1233,9 +1233,9 @@ eeesm_newline
 
 # Actions after the run submission go here.
 
-eeesm_newline
-eeesm_print '++++++++ run_e3sm Completed ('`date`') ++++++++'
-eeesm_newline
+e3sm_newline
+e3sm_print '++++++++ run_e3sm Completed ('`date`') ++++++++'
+e3sm_newline
 
 #**********************************************************************************
 ### --- end of script - there are no commands beyond here, just useful comments ---
@@ -1325,7 +1325,7 @@ eeesm_newline
 #                        Use 'print' and 'newline' for standardized output (MD)
 # 3.0.5    2017-04-07    Restored functionality to delete of run and build directories, and reuse other builds.
 #                        Merged in PMC's changes from 3.0.4. Enabled using CIME defaults for more functionality
-#                        Renamed 'print' and 'newline' to 'eeesm_print' and 'eeesm_newline'
+#                        Renamed 'print' and 'newline' to 'e3sm_print' and 'e3sm_newline'
 #                        to disambiguate them from system commands (MD)
 # 3.0.6    2017-04-27    Implemented PJC's "hack" in a machine independent way to
 #                        restore the run e3sm groups preferred directory structure
@@ -1350,8 +1350,7 @@ eeesm_newline
 # 3.0.16   2017-10-17    Brings in CGs changes to make branch runs faster and easier. Also adds the machine name to case_name
 # 3.0.17   2017-10-31    Trivial bug fix for setting cosp (MD)
 # 3.0.18   2017-12-07    Update cime script names which have been hidden (MD)
-# 3.0.19   2017-12-07    Remove all references to ACME except for online links (MD)
->>>>>>> Remove all references to ACME except for internet links
+# 3.0.19   2017-12-07    Remove all references to ACME except for online links. Also updates the case.st_archive name again (MD)
 #
 # NOTE:  PJC = Philip Cameron-Smith,  PMC = Peter Caldwell, CG = Chris Golaz, MD = Michael Deakin
 
@@ -1362,7 +1361,7 @@ eeesm_newline
 # +) generalize xxdiff commands (for fixing known bugs) to work for other people  (PJC)
 # +) Add a 'default' option, for which REST_OPTION='$STOP_OPTION' and REST_N='$STOP_N'.
 #    This is important if the user subsequently edits STOP_OPTION or STOP_N.      (PJC)
-# +) triggering on $eeesm_tag = master_detached doesn't make sense.  Fix logic. (PJC)
+# +) triggering on $e3sm_tag = master_detached doesn't make sense.  Fix logic. (PJC)
 # +) run_root and run_root_dir are duplicative.  Also, move logical link creation before case.setup (PJC)
 # +) change comments referring to cesm_setup to case.setup (name has changed). (PJC)
 
