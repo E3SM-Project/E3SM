@@ -156,15 +156,11 @@
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> --dependency=afterok:jobid</depend_string>
+    <depend_separator>,</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>--mail-user</batch_mail_flag>
     <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
     <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
     <directives>
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes={{ num_nodes }}</directive>
@@ -272,6 +268,11 @@
   <batch_system MACH="hera" type="slurm">
     <batch_submit>sbatch</batch_submit>
     <batch_directive>#MSUB</batch_directive>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
       <directive>-A ees</directive>
       <directive>-l gres=lscratchd</directive>
@@ -313,6 +314,11 @@
 
   <batch_system MACH="olympus" type="slurm">
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <queues>
       <queue walltimemin="0" walltimemax="00:59:00" nodemin="0" nodemax="312" default="true">queue</queue>
     </queues>
@@ -371,6 +377,11 @@
   <batch_system MACH="sierra" type="slurm">
     <batch_submit>sbatch</batch_submit>
     <batch_directive>#MSUB</batch_directive>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
       <directive> </directive>
       <directive>-A ees </directive>
@@ -381,6 +392,11 @@
 
   <batch_system MACH="eastwind" type="slurm" >
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <queues>
       <queue nodemin="1" nodemax="833" default="true">batch</queue>
     </queues>
@@ -388,6 +404,11 @@
 
   <batch_system MACH="cori-haswell" type="slurm" >
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
       <directive>-C haswell </directive>
     </directives>
@@ -399,6 +420,11 @@
 
   <batch_system MACH="cori-knl" type="slurm" >
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
       <directive>-C knl,quad,cache </directive>
       <directive>-S 2 </directive>
@@ -411,6 +437,11 @@
 
   <batch_system MACH="edison" type="slurm" >
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <queues>
       <queue walltimemax="36:00:00" nodemin="1" nodemax="2712" >regular</queue>
       <queue walltimemax="00:30:00" nodemin="1" nodemax="256" default="true">debug</queue>
@@ -419,6 +450,11 @@
 
   <batch_system MACH="stampede" type="slurm" >
     <batch_submit>ssh stampede.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <queues>
       <queue walltimemax="48:00:00" nodemin="1" nodemax="256" >normal</queue>
       <queue walltimemax="02:00:00" nodemin="1" nodemax="16" default="true">development</queue>
@@ -427,6 +463,11 @@
 
   <batch_system MACH="rosa" type="slurm" >
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <queues>
       <queue default="true">default</queue>
     </queues>
@@ -441,6 +482,11 @@
 
   <batch_system type="slurm" MACH="constance">
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
   </batch_system>
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
@@ -454,6 +500,11 @@
 
   <batch_system MACH="lbl-lr3" type="slurm">
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
        <directive>--qos=lr_normal</directive>
        <directive>--partition=lr3</directive>
@@ -466,6 +517,11 @@
 
   <batch_system MACH="lbl-lr2" type="slurm">
     <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
        <directive>--qos=lr_normal</directive>
        <directive>--partition=lr2</directive>
