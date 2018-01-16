@@ -63,7 +63,7 @@ contains
 
     use physical_constants,     only: dd_pi
 
-    type(element_t),            intent(in) :: elem(:)
+    type(element_t),            intent(inout) :: elem(:)
     type(TimeLevel_t),target,   intent(in) :: tl
     type(hybrid_t),             intent(in) :: hybrid
     type(hvcoord_t),            intent(in) :: hvcoord
@@ -410,13 +410,29 @@ contains
        IEner_wet(n) = IEner_wet(n)*scale
        
        do ie=nets,nete
-          tmp(:,:,ie)=elem(ie)%accum%KEner(:,:,n)
+          do i=1,np
+            do j=1,np
+              ! reset NaNs to 0 prior to global sum
+              if (elem(ie)%accum%KEner(j,i,n) /= elem(ie)%accum%KEner(j,i,n)) then
+                elem(ie)%accum%KEner(j,i,n) = 0
+              endif
+              tmp(j,i,ie)=elem(ie)%accum%KEner(j,i,n)
+            enddo
+          enddo
        enddo
        KEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        KEner(n) = KEner(n)*scale
        
        do ie=nets,nete
-          tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
+          do i=1,np
+            do j=1,np
+              ! reset NaNs to 0 prior to global sum
+              if (elem(ie)%accum%PEner(j,i,n) /= elem(ie)%accum%PEner(j,i,n)) then
+                elem(ie)%accum%PEner(j,i,n) = 0
+              endif
+              tmp(j,i,ie)=elem(ie)%accum%PEner(j,i,n)
+            enddo
+          enddo
        enddo
        PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        PEner(n) = PEner(n)*scale

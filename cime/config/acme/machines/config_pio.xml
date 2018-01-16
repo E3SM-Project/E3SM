@@ -31,6 +31,7 @@
   <entry id="PIO_ROOT">
     <values>
       <value>0</value>
+      <value mach="mira|cetus">1</value>
     </values>
   </entry>
 
