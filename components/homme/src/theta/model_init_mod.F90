@@ -69,8 +69,6 @@ contains
   end subroutine 
 
 
-
-
   subroutine test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
   ! the following code compares the analytic vs exact imex Jacobian
   ! can test over more elements if desired
@@ -94,9 +92,9 @@ contains
   real (kind=real_kind) :: pnh(np,np,nlev),	pnh_i(np,np,nlevp)
   real (kind=real_kind) :: norminfJ0(np,np)
   
-  real (kind=real_kind) :: dt,epsie,maxjacerrorvec(5),maxjacerr
+  real (kind=real_kind) :: dt,epsie,jacerrorvec(6),minjacerr
   integer :: k,ie,qn0,i,j
-  maxjacerr=0
+  minjacerr=0
   if (hybrid%masterthread) write(iulog,*)'Running IMEX Jacobian unit test...'
   do ie=nets,nete
      do k=1,nlev
@@ -110,10 +108,16 @@ contains
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
      call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi_i,&
              kappa_star,pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
-
-     dt=100.d0
-     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,1)
-
+         
+     dt=100.0
+     do k=1,nlev-1
+        kappa_star_i(:,:,k+1) = 0.5D0* (kappa_star(:,:,k+1)+kappa_star(:,:,k))
+     end do
+     kappa_star_i(:,:,1) = kappa_star(:,:,1)
+     kappa_star_i(:,:,nlev+1) = kappa_star(:,:,nlev)
+          
+     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,1,pnh=pnh)
+         
     ! compute infinity norm of the initial Jacobian 
      norminfJ0=0.d0
      do i=1,np
@@ -130,36 +134,45 @@ contains
       end do
     end do
     end do
-
      
-     
-     maxjacerrorvec=0.d0
-     do j=1,5
+     jacerrorvec=0
+     do j=1,6
         ! compute numerical jacobian with 5 different epsilons and take the smallest error
         ! the function that we are trying to estimate the numerical jacobian of
         ! phi + const + (dt*g)^2 (1-dp/dpi)is dt*g^2 dpnh/dpi = O(10,000)
+        ! =================================================================
+        ! PLEASE NOTE:  We take the minimum rather than the maximum error
+        ! since the error of finite difference approximations to the 
+        ! Jacobian in finite precision arithmetic first decrease and then
+        ! increase as the perturbation size decreases due to round-off error.
+        ! So to test the "correctness" of the exact Jacobian, we need to find
+        ! that the sweetspot where the finite difference error is minimized is
+        ! =================================================================
         epsie=10.d0/(10.d0)**(j+1)
         call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi_i,phis,kappa_star_i,pnh_i,0,&
-             epsie,hvcoord,dpnh_dp_i,theta_dp_cp,kappa_star,pnh,exner)
-        if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > maxjacerrorvec(j)) then 
-           maxjacerrorvec(j) = maxval(abs(JacD(:,:,:)-Jac2D(:,:,:)))
+           epsie,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
+    
+        if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > jacerrorvec(j)) then 
+           jacerrorvec(j) = maxval(abs(JacD(:,:,:)-Jac2D(:,:,:)))
         end if
-       	if (maxval(abs(JacL(:,:,:)-Jac2L(:,:,:))) > maxjacerrorvec(j)) then
-           maxjacerrorvec(j) = maxval(abs(JacL(:,:,:)-Jac2L(:,:,:)))
-    	end if
-        if (maxval(abs(JacU(:,:,:)-Jac2U(:,:,:))) > maxjacerrorvec(j)) then
-           maxjacerrorvec(j) = maxval(abs(JacU(:,:,:)-Jac2U(:,:,:)))
+        if (maxval(abs(JacL(:,:,:)-Jac2L(:,:,:))) > jacerrorvec(j)) then
+           jacerrorvec(j) = maxval(abs(JacL(:,:,:)-Jac2L(:,:,:)))
+        end if
+        if (maxval(abs(JacU(:,:,:)-Jac2U(:,:,:))) > jacerrorvec(j)) then
+           jacerrorvec(j) = maxval(abs(JacU(:,:,:)-Jac2U(:,:,:)))
         end if
      end do
-     maxjacerr = max( minval(maxjacerrorvec(:))/maxval(norminfJ0)   ,maxjacerr)
+     minjacerr = max( minval(jacerrorvec(:))/maxval(norminfJ0)   ,minjacerr)
+!     minjacerr = minval(jacerrorvec(:))
   end do
-  if (maxjacerr > 1e-3) then 
-     write(iulog,*)'WARNING:  Analytic and exact Jacobian differ by ', maxjacerr
+  if (minjacerr > 1e-3) then 
+     write(iulog,*)'WARNING:  Analytic and exact Jacobian differ by ', minjacerr
      write(iulog,*)'Please check that the IMEX exact Jacobian in eos.F90 is actually exact'
   else
      if (hybrid%masterthread) write(iulog,*)&
-          'PASS. max error of analytic and exact Jacobian: ',maxjacerr
+          'PASS. max error of analytic and exact Jacobian: ',minjacerr
   end if
+
 end subroutine test_imex_jacobian
 
 

@@ -1615,7 +1615,7 @@ contains
         
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
-             +g*(dpnh_dp_i(:,:,nlevp)-1)
+             g*(dpnh_dp_i(:,:,nlevp)-1)
         elem(ie)%state%v(:,:,1,nlev,np1) =  elem(ie)%state%v(:,:,1,nlev,np1) -&
              (dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
@@ -1743,9 +1743,12 @@ contains
 
      norminfr0=0.d0
      norminfJ0=0.d0
-     ! inexact jaobian
-     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,0,&
-       1d-4,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
+      ! Here's how to call inexact Jacobian
+!     call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,0,&
+!       1d-6,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
+      ! here's the call to the exact Jacobian
+     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,1,pnh=pnh)
+
     ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(i,j) collapse(2)
@@ -1755,12 +1758,12 @@ contains
        do k=1,nlev
         norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k,1)) *dp3d_i(i,j,k))
         if (k.eq.1) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(k,i,j))+abs(JacU(k,i,j)))*dp3d_i(i,j,k))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
         elseif (k.eq.nlev) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j)))*dp3d_i(i,j,k))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
         else
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j))+ &
-            abs(JacU(k,i,j)))*dp3d_i(i,j,k))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+ &
+            dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
         end if
         itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k,1)**2.d0 *dp3d_i(i,j,k)
       end do
@@ -1774,10 +1777,12 @@ contains
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
-      ! inexact jacobian
-      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,0,&
-       1d-4,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner)
- 
+      ! Here's how to call inexact Jacobian
+!      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,0,&
+!       1d-4,hvcoord=hvcoord,dpnh_dp_i=dpnh_dp_i,theta_dp_cp=theta_dp_cp,kappa_star=kappa_star,pnh=pnh,exner=exner) 
+      ! here's the call to the exact Jacobian
+       call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,phis,kappa_star_i,pnh_i,1,pnh=pnh)
+
  
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(i,j) collapse(2)

@@ -299,10 +299,18 @@ implicit none
     real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
     real (kind=real_kind) :: e(np,np,nlev),phi_i_temp(np,np,nlevp)
     real (kind=real_kind) :: dpnh2(np,np,nlev),dpnh_dp_i_epsie(np,np,nlevp)
+    real (kind=real_kind) :: dp3d_i(np,np,nlevp)
     !
     integer :: k,l
 
     if (exact.eq.1) then ! use exact Jacobian
+ 
+       dp3d_i(:,:,1) = dp3d(:,:,1)
+       dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+       do k=2,nlev
+          dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+       end do
+  
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,alpha1,alpha2)
 #endif
@@ -310,28 +318,37 @@ implicit none
         ! this code will need to change when the equation of state is changed.
         ! precompute the kappa_star, and add special cases for k==1 and k==nlev+1
         if (k==1) then
-!          alpha2(:,:)    = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
-!          JacD(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k)-phi(:,:,k+1))* &
-!            dp3d(:,:,k))+1.d0
-!          JacU(k,:,:)    = (dt2*g)**2.d0 *alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k)) &
-!            *dp3d(:,:,k))
-!	    elseif (k==nlev) then
-!          alpha1(:,:)    = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
-!          JacL(k-1,:,:)  = (dt2*g)**2.d0 *(alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k)))
-!          JacD(k,:,:)    = (dt2*g)**2.d0 *(  alpha1(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phis(:,:) ) +  &
-!            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)) )/dp3d(:,:,k) + 1.d0
-!        else
-!          alpha1(:,:)   = 1.d0 + kappa_star_i(:,:,k)/(1.d0-kappa_star_i(:,:,k))
-!          alpha2(:,:)   = 1.d0 + kappa_star_i(:,:,k+1)/(1.d0-kappa_star_i(:,:,k+1))
-!          JacL(k-1,:,:) = (dt2*g)**2.d0 *alpha1(:,:)*pnh_i(:,:,k)/((phi(:,:,k)-phi(:,:,k-1))*dp3d(:,:,k))
-!          JacD(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/(phi(:,:,k)-phi(:,:,k+1)) + &
-!            alpha1(:,:)*pnh_i(:,:,k)/(phi(:,:,k-1)-phi(:,:,k)))/dp3d(:,:,k)+1.d0
-!          JacU(k,:,:)   = (dt2*g)**2.d0 *(alpha2(:,:)*pnh_i(:,:,k+1)/((phi(:,:,k+1)-phi(:,:,k))*dp3d(:,:,k)))
+
+           JacL(k,:,:) = -(dt2*g)**2*pnh(:,:,k)/&
+             ((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))*dp3d_i(:,:,k+1))
+
+           JacU(k,:,:) = -2*(dt2*g)**2 * pnh(:,:,k)/&
+             ((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))*dp3d_i(:,:,k))
+
+           JacD(k,:,:) = 1+2*(dt2*g)**2 *pnh(:,:,k)/&
+             ((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))*dp3d_i(:,:,k))
+          
+        else if (k.eq.nlev) then 
+
+           JacD(k,:,:) = 1+(dt2*g)**2 *(pnh(:,:,k)/((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))) &
+             +pnh(:,:,k-1)/( (phi_i(:,:,k-1)-phi_i(:,:,k))*(1-kappa_star_i(:,:,k-1))))/dp3d_i(:,:,k)
+
+        else ! k =2,...,nlev-1
+
+           JacL(k,:,:) = -(dt2*g)**2*pnh(:,:,k)/&
+             ((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))*dp3d_i(:,:,k+1))
+         
+           JacU(k,:,:) = -(dt2*g)**2 * pnh(:,:,k)/&
+             ((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))*dp3d_i(:,:,k))
+
+           JacD(k,:,:) = 1+(dt2*g)**2 *(pnh(:,:,k)/((phi_i(:,:,k)-phi_i(:,:,k+1))*(1-kappa_star_i(:,:,k))) &
+             +pnh(:,:,k-1)/( (phi_i(:,:,k-1)-phi_i(:,:,k))*(1-kappa_star_i(:,:,k-1))))/dp3d_i(:,:,k)
+
         end if
       end do
     else ! use finite difference approximation to Jacobian with differencing size espie
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,phi_i_temp,dpnh_dp_i_epsie)
+!$omp parallel do private(k,e,phi_i_temp,dpnh_dp_i_epsie)
 #endif
       ! compute Jacobian of F(phi) = phi +const + (dt*g)^2 *(1-dp/dpi) column wise
       ! we only form the tridagonal entries and this code can easily be modified to
@@ -360,7 +377,6 @@ implicit none
         end if
       end do
     end if
-
 
   end subroutine get_dirk_jacobian
 
