@@ -1,5 +1,59 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 01-16-2018
+Tag: cime5.4.0-alpha.19
+Answer Changes: None
+Tests: code_checker, scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - CPL user mods.
+    - Update slurm queueing for NERSC.
+    - Change grid in testlist schema to NMTOKEN.
+    - py3 pylint fix.
+    - Add minimal pgi compiler support cheyenne, fix an output error.
+    - Make doctest for get_current_branch more robust.
+    - Remove stale help section comments.
+    - Fix print statements that were corrupted by py3 changes.
+    - Updates for laramie.
+    - Fix K_TestCimeCase.test_cime_case_prereq for LSF machines.
+    - Fix regression test K_TestCimeCase.test_cime_case_test_custom_project.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+16766d6 Merge pull request #2231 from jedwards4b/CPL_USER_MODS
+0722686 Merge pull request #2233 from ESMCI/fischer/nersc_cori
+45e4895 Merge pull request #2232 from ekluzek/testlistschema
+40a02fa Merge pull request #2230 from ESMCI/jedwards/py3pylintfix
+6b8f1a8 Merge pull request #2229 from jedwards4b/add_pgi
+06d3317 Merge pull request #2220 from ESMCI/jgfouca/make_branch_doctest_more_robust
+7f4951f Merge pull request #2219 from ESMCI/jgfouca/remove_stale_help
+37122e8 Merge pull request #2226 from ESMCI/jgfouca/improve_preview_run
+1920d8b Merge pull request #2225 from jedwards4b/laramie_updates
+c3a1141 Merge pull request #2224 from ESMCI/jgfouca/fix_cime_case_test_for_lsf
+b968e77 Merge pull request #2223 from ESMCI/jgfouca/fix_regr_test
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/allactive/config_compsets.xml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_machines.xml
+M       config/xml_schemas/testlist.xsd
+M       scripts/Tools/preview_run
+M       scripts/lib/CIME/XML/env_base.py
+M       scripts/lib/CIME/buildlib.py
+M       scripts/lib/CIME/utils.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/config_component_acme.xml
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+M       src/drivers/mct/cime_config/config_compsets.xml
+
+======================================================================
+
+======================================================================
+
 Originator: Jim Edwards
 Date: 01-10-2018
 Tag: cime5.4.0-alpha.18
