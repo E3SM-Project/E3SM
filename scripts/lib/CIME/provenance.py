@@ -381,6 +381,7 @@ def get_recommended_test_time_based_on_past(baseline_root, test):
                 for cutoff, tolerance in _WALLTIME_TOLERANCE:
                     if last_line <= cutoff:
                         best_walltime = int(float(last_line) * tolerance)
+                        break
 
                 return convert_to_babylonian_time(best_walltime)
         except:
