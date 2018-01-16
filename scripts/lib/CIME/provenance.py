@@ -7,7 +7,7 @@ Library for saving build/run provenance.
 from CIME.XML.standard_module_setup import *
 from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time
 
-import tarfile, getpass, signal, glob, shutil
+import tarfile, getpass, signal, glob, shutil, sys
 
 logger = logging.getLogger(__name__)
 
@@ -383,10 +383,14 @@ def get_recommended_test_time_based_on_past(baseline_root, test):
 
 def save_test_time(baseline_root, test, time_seconds):
     if baseline_root is not None:
-        the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
-        if not os.path.exists(the_dir):
-            os.makedirs(the_dir)
+        try:
+            the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
+            if not os.path.exists(the_dir):
+                os.makedirs(the_dir)
 
-        the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
-        with open(the_path, "a") as fd:
-            fd.write("{}\n".format(int(time_seconds)))
+            the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
+            with open(the_path, "a") as fd:
+                fd.write("{}\n".format(int(time_seconds)))
+        except:
+            # We NEVER want a failure here to kill the run
+            logger.warning("Failed to store test time: {}".format(sys.exc_info()[0]))
