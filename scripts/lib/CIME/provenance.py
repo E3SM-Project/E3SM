@@ -369,15 +369,23 @@ def save_postrun_provenance(case, lid=None):
 
 _WALLTIME_BASELINE_NAME = "walltimes"
 _WALLTIME_FILE_NAME     = "walltimes"
-_WALLTIME_TOLERANCE     = 1.25
+_WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
 
 def get_recommended_test_time_based_on_past(baseline_root, test):
     if baseline_root is not None:
-        the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
-        if os.path.exists(the_path):
-            last_line = int(open(the_path, "r").readlines()[-1])
-            last_line = int(float(last_line) * _WALLTIME_TOLERANCE)
-            return convert_to_babylonian_time(last_line)
+        try:
+            the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
+            if os.path.exists(the_path):
+                last_line = int(open(the_path, "r").readlines()[-1])
+                best_walltime = None
+                for cutoff, tolerance in _WALLTIME_TOLERANCE:
+                    if last_line <= cutoff:
+                        best_walltime = int(float(last_line) * tolerance)
+
+                return convert_to_babylonian_time(best_walltime)
+        except:
+            # We NEVER want a failure here to kill the run
+            logger.warning("Failed to read test time: {}".format(sys.exc_info()[0]))
 
     return None
 
