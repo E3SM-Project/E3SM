@@ -473,7 +473,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        packages="mocStreamfunctionAMPKG">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '        <var name="xtime"/>' . "\n";
@@ -517,7 +517,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="mpaso.hist.am.surfaceAreaWeightedAverages.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="surfaceAreaWeightedAveragesAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -534,7 +534,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="mpaso.hist.am.waterMassCensus.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="waterMassCensusAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -553,7 +553,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="mpaso.hist.am.layerVolumeWeightedAverage.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="layerVolumeWeightedAverageAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -573,7 +573,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="mpaso.hist.am.zonalMeans.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_10:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        ulobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="zonalMeanAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -617,7 +617,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="eddyProductVariablesAMPKG">' . "\n";
 	print $stream_file '' . "\n";
@@ -664,7 +664,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        filename_template="mpaso.hist.am.mixedLayerDepths.$Y-$M-$D.nc"' . "\n";
 	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
 	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="mixedLayerDepthsAMPKG">' . "\n";
 	print $stream_file '' . "\n";
