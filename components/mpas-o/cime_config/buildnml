@@ -651,6 +651,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="columnIntegratedSpeed"/>' . "\n";
 	print $stream_file '    <var name="barotropicSpeed"/>' . "\n";
 	print $stream_file '    <var name="landIceFreshwaterFlux"/>' . "\n";
+	print $stream_file '    <var name="pressureAdjustedSSH"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="mixedLayerDepthsOutput"' . "\n";
@@ -722,6 +723,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="velocityMeridional"/>' . "\n";
 	print $stream_file '    <var name="velocityZonal"/>' . "\n";
 	print $stream_file '    <var name="layerThickness"/>' . "\n";
+	print $stream_file '    <var name="density"/>' . "\n";
 	print $stream_file '    <var name="potentialDensity"/>' . "\n";
 	print $stream_file '    <var name="windStressZonal"/>' . "\n";
 	print $stream_file '    <var name="windStressMeridional"/>' . "\n";
@@ -786,6 +788,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="mocStreamvalLatAndDepth"/>' . "\n";
 	print $stream_file '    <var name="mocStreamvalLatAndDepthRegion"/>' . "\n";
 	print $stream_file '    <var name="binBoundaryMocStreamfunction"/>' . "\n";
+	print $stream_file '    <var name="surfaceBuoyancyForcing"/>' . "\n";
+	print $stream_file '    <var name="tendLayerThickness"/>' . "\n";
+	print $stream_file '    <var name="boundaryLayerDepthSmooth"/>' . "\n";
+	print $stream_file '    <var name="pressureAdjustedSSH"/>' . "\n";
 	print $stream_file '    <var name="SSHSquared"/>' . "\n";
 	print $stream_file '    <var name="velocityZonalSquared"/>' . "\n";
 	print $stream_file '    <var name="velocityMeridionalSquared"/>' . "\n";
