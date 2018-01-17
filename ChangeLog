@@ -2,6 +2,29 @@
 
 Originator: Chris Fischer 
 Date: 01-16-2018
+Tag: cime5.4.0-alpha.20
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Revert src/share/util/changes in shr_spfn_mod.F90
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b146127 revert changes in this file (failing pgi test)
+
+Modified files: git diff --name-status [previous_tag]
+M       src/share/util/shr_spfn_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 01-16-2018
 Tag: cime5.4.0-alpha.19
 Answer Changes: None
 Tests: code_checker, scripts_regression_tests
