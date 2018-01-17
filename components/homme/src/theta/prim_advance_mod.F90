@@ -117,10 +117,11 @@ contains
     logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) :: itertol,statesave(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) :: statesave0(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) :: statesave2(nets:nete,np,np,nlev,6)
-    real (kind=real_kind) :: statesave3(nets:nete,np,np,nlev,6)
+    real (kind=real_kind) :: itertol
+    real (kind=real_kind) :: statesave(nets:nete,np,np,nlevp,6)
+    real (kind=real_kind) :: statesave0(nets:nete,np,np,nlevp,6)
+    real (kind=real_kind) :: statesave2(nets:nete,np,np,nlevp,6)
+    real (kind=real_kind) :: statesave3(nets:nete,np,np,nlevp,6)
 
     real (kind=real_kind) ::  gamma,delta
 
@@ -1139,9 +1140,19 @@ contains
   call t_startf('compute_andor_apply_rhs')
 
   do ie=nets,nete
+
+     temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
+          elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
+     if ( maxval(abs(temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0))) >1e-10) then
+        write(iulog,*) 'WARNING: w(n0) does not satisfy b.c.'
+        write(iulog,*) 'val1 = ',temp(:,:,1)
+        write(iulog,*) 'val2 = ',elem(ie)%state%w_i(:,:,nlevp,n0)
+        write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0)
+     endif
      ! w boundary condition. just in case:
      elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
           elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
+
 
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
@@ -1651,10 +1662,10 @@ contains
         temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
         if ( maxval(abs(temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,np1))) >1e-10) then
-           write(iulog,*) 'WARNING: w surface b.c. violated'
+           write(iulog,*) 'WARNING: w(np1) surface b.c. violated'
            write(iulog,*) 'val1 = ',temp(:,:,1)
            write(iulog,*) 'val2 = ',elem(ie)%state%w_i(:,:,nlevp,np1)
-           write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0)
+           write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,np1)
         endif
      endif
   end do
