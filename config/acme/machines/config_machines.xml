@@ -690,8 +690,8 @@
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
-  <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
-  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <CIME_OUTPUT_ROOT>/gpfs1/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
+  <RUNDIR>/gscratch/$USER/acme_scratch/sandiatoss3/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
