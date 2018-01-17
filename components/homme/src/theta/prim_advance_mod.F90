@@ -1615,11 +1615,11 @@ contains
         
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
-             g*(dpnh_dp_i(:,:,nlevp)-1)
+             scale1*g*(dpnh_dp_i(:,:,nlevp)-1)
         elem(ie)%state%v(:,:,1,nlev,np1) =  elem(ie)%state%v(:,:,1,nlev,np1) -&
-             (dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
+             scale1*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
-             (dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
+             scale1*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
         
 
 #ifdef ENERGY_DIAGNOSTICS
