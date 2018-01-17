@@ -25,6 +25,7 @@ from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
 from CIME.check_lockedfiles import lock_file
+from CIME.provenance import get_recommended_test_time_based_on_past
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -447,9 +448,14 @@ class TestScheduler(object):
         else:
             # model specific ways of setting time
             if get_model() == "acme":
-                recommended_time = get_recommended_test_time(test)
+                recommended_time = get_recommended_test_time_based_on_past(self._baseline_root, test)
+
+                if recommended_time is None:
+                    recommended_time = get_recommended_test_time(test)
+
                 if recommended_time is not None:
                     create_newcase_cmd += " --walltime {}".format(recommended_time)
+
             else:
                 if test in self._test_data and "options" in self._test_data[test] and \
                         "wallclock" in self._test_data[test]['options']:

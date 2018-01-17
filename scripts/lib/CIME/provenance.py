@@ -5,9 +5,9 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time
 
-import tarfile, getpass, signal, glob, shutil
+import tarfile, getpass, signal, glob, shutil, sys
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ def _save_prerun_timing_acme(case, lid):
                 run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename))
         elif mach == "theta":
-            for cmd, filename in [("qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry", "qstatf"), 
+            for cmd, filename in [("qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry", "qstatf"),
                                   ("qstat -lf %s" % job_id, "qstatf_jobid"),
                                   ("xtnodestat", "xtnodestat"),
                                   ("xtprocadmin", "xtprocadmin")]:
@@ -366,3 +366,40 @@ def save_postrun_provenance(case, lid=None):
             _save_postrun_provenance_acme(case, lid)
         elif model == "cesm":
             _save_postrun_provenance_cesm(case, lid)
+
+_WALLTIME_BASELINE_NAME = "walltimes"
+_WALLTIME_FILE_NAME     = "walltimes"
+_WALLTIME_TOLERANCE     = ( (600, 2.0), (1800, 1.5), (9999999999, 1.25) )
+
+def get_recommended_test_time_based_on_past(baseline_root, test):
+    if baseline_root is not None:
+        try:
+            the_path = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test, _WALLTIME_FILE_NAME)
+            if os.path.exists(the_path):
+                last_line = int(open(the_path, "r").readlines()[-1])
+                best_walltime = None
+                for cutoff, tolerance in _WALLTIME_TOLERANCE:
+                    if last_line <= cutoff:
+                        best_walltime = int(float(last_line) * tolerance)
+                        break
+
+                return convert_to_babylonian_time(best_walltime)
+        except:
+            # We NEVER want a failure here to kill the run
+            logger.warning("Failed to read test time: {}".format(sys.exc_info()[0]))
+
+    return None
+
+def save_test_time(baseline_root, test, time_seconds):
+    if baseline_root is not None:
+        try:
+            the_dir  = os.path.join(baseline_root, _WALLTIME_BASELINE_NAME, test)
+            if not os.path.exists(the_dir):
+                os.makedirs(the_dir)
+
+            the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
+            with open(the_path, "a") as fd:
+                fd.write("{}\n".format(int(time_seconds)))
+        except:
+            # We NEVER want a failure here to kill the run
+            logger.warning("Failed to store test time: {}".format(sys.exc_info()[0]))
