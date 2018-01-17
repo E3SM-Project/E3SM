@@ -48,8 +48,8 @@ def _get_datenames(case):
 
     datenames = []
     for filename in files:
-        date = get_file_date(filename)
-        datenames.append(date)
+        file_date = get_file_date(filename)
+        datenames.append(file_date)
     return datenames
 
 ###############################################################################
@@ -66,19 +66,19 @@ def get_file_date(filename):
     "%Y.%m"
 
     >>> get_file_date("./ne4np4_oQU240.cam.r.0001-01-06-00435.nc")
-    date(1, 1, 6, 435)
+    date(1, 1, 6, 0, 7, 15)
     >>> get_file_date("./ne4np4_oQU240.cam.r.0010-1-06_00435.nc")
-    date(10, 1, 6, 435)
+    date(10, 1, 6, 0, 7, 15)
     >>> get_file_date("./ne4np4_oQU240.cam.r.0010-10.nc")
-    date(10, 10, 1, 0, 0)
+    date(10, 10, 1, 0, 0, 0)
     >>> get_file_date("0064-3-8_10.20.30.nc")
     date(64, 3, 8, 10, 20, 30)
     >>> get_file_date("0140-3-5")
-    date(140, 3, 5, 0, 0)
+    date(140, 3, 5, 0, 0, 0)
     >>> get_file_date("0140-3")
-    date(140, 3, 1, 0, 0)
+    date(140, 3, 1, 0, 0, 0)
     >>> get_file_date("0140.3")
-    date(140, 3, 1, 0, 0)
+    date(140, 3, 1, 0, 0, 0)
     """
 
     #
@@ -110,24 +110,14 @@ def get_file_date(filename):
                 # Then use _get_day_second to get the time of day in seconds
                 second = date.hms_to_second(hour = date_tuple[3],
                                             minute = date_tuple[4],
-                                            second = date_tuple[5]))
-        return date(year, month, day, second = second)
+                                            second = date_tuple[5])
+        return date(year, month, day, 0, 0, second)
 
     # Not a valid filename date format
     logger.debug("{} is a filename without a supported date!".format(filename))
     return None
 
-def _get_day_second(date):
-    """
-    Returns the total seconds that have elapsed since the beginning of the day
-    """
-    SECONDS_PER_HOUR = 3600
-    SECONDS_PER_MINUTE = 60
-    return (date.second
-            + date.minute * SECONDS_PER_MINUTE
-            + date.hour * SECONDS_PER_HOUR)
-
-def _datetime_str(date):
+def _datetime_str(_date):
     """
     Returns the standard format associated with filenames.
     Note unfortunately datetime.datetime.strftime expects years > 1900
@@ -140,12 +130,12 @@ def _datetime_str(date):
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}-{seconds:05d}"
-    return format_string.format(year = date.year(),
-                                month = date.month(),
-                                day = date.day(),
-                                seconds = date.second_of_day())
+    return format_string.format(year = _date.year(),
+                                month = _date.month(),
+                                day = _date.day(),
+                                seconds = _date.second_of_day())
 
-def _datetime_str_mpas(date):
+def _datetime_str_mpas(_date):
     """
     Returns the mpas format associated with filenames.
     Note unfortunately date.strftime expects years > 1900
@@ -158,12 +148,12 @@ def _datetime_str_mpas(date):
     """
 
     format_string = "{year:04d}-{month:02d}-{day:02d}_{hours:02d}:{minutes:02d}:{seconds:02d}"
-    return format_string.format(year = date.year(),
-                                month = date.month(),
-                                day = date.day(),
-                                hours = date.hour(),
-                                minutes = date.minute(),
-                                seconds = date.second())
+    return format_string.format(year = _date.year(),
+                                month = _date.month(),
+                                day = _date.day(),
+                                hours = _date.hour(),
+                                minutes = _date.minute(),
+                                seconds = _date.second())
 
 ###############################################################################
 def _get_ninst_info(case, compclass):

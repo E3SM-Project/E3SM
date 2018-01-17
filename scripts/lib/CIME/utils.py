@@ -1718,18 +1718,18 @@ class date:
                  'second': second % _SECONDS_PER_MINUTE
         }
 
-    def __init__(self, _year=1, _month=1, _day=1, _hour=0, _minute=0, _second=0):
-        self._year = _year
-        self._month = _month
-        self._day = _day
-        self._second = self.hms_to_second(_hour, _minute, _second)
+    def __init__(self, year=1, month=1, day=1, hour=0, minute=0, second=0):
+        self._year = year
+        self._month = month
+        self._day = day
+        self._second = self.hms_to_second(hour, minute, second)
 
     def __str__(self):
         """
-        >>> str(date(4, 5, 7, second=64)
-        "date(4, 5, 7, 0"
+        >>> str(date(4, 5, 7, second=64))
+        'date(4, 5, 7, 0, 1, 4)'
         """
-        fmt_str = "date({year:d}, {month:2d}, {day:2d}, {hour:2d}, {minute:2d}, {second:2d})"
+        fmt_str = "date({year:d}, {month:d}, {day:d}, {hour:d}, {minute:d}, {second:d})"
         return fmt_str.format(year = self.year(),
                               month = self.month(),
                               day = self.day(),
@@ -1785,7 +1785,7 @@ class date:
         elif self.day() > other.day():
             return False
         # self.day = other.day
-        if self.second() < other.second():
+        if self.second_of_day() < other.second_of_day():
             return True
         else:
             # the dates are equal
