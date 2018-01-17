@@ -1314,7 +1314,7 @@ contains
      ! ================================================
      ! w,phi tendencies including surface
      ! ================================================  
-     do k=1,nlevp
+     do k=1,nlev
         ! compute gradphi at interfaces and then average to levels
         gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
            
@@ -1329,6 +1329,23 @@ contains
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
      end do
+
+     ! k =nlevp case, all terms in the imex methods are treated explicitly at the boundary
+     k =nlevp 
+    ! compute gradphi at interfaces and then average to levels
+    gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)
+    gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
+    v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
+    ! w - tendency on interfaces
+    w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
+
+    ! phi - tendency on interfaces
+    v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
+     +v_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+    phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
+    + scale1*g*elem(ie)%state%w_i(:,:,k,n0)
+    
+
 
 
 
