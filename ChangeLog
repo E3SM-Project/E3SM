@@ -1,6 +1,107 @@
 ======================================================================
 
-Originator: Chris Fischer	 
+Originator: Chris Fischer 
+Date: 01-16-2018
+Tag: cime5.4.0-alpha.19
+Answer Changes: None
+Tests: code_checker, scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - CPL user mods.
+    - Update slurm queueing for NERSC.
+    - Change grid in testlist schema to NMTOKEN.
+    - py3 pylint fix.
+    - Add minimal pgi compiler support cheyenne, fix an output error.
+    - Make doctest for get_current_branch more robust.
+    - Remove stale help section comments.
+    - Fix print statements that were corrupted by py3 changes.
+    - Updates for laramie.
+    - Fix K_TestCimeCase.test_cime_case_prereq for LSF machines.
+    - Fix regression test K_TestCimeCase.test_cime_case_test_custom_project.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+16766d6 Merge pull request #2231 from jedwards4b/CPL_USER_MODS
+0722686 Merge pull request #2233 from ESMCI/fischer/nersc_cori
+45e4895 Merge pull request #2232 from ekluzek/testlistschema
+40a02fa Merge pull request #2230 from ESMCI/jedwards/py3pylintfix
+6b8f1a8 Merge pull request #2229 from jedwards4b/add_pgi
+06d3317 Merge pull request #2220 from ESMCI/jgfouca/make_branch_doctest_more_robust
+7f4951f Merge pull request #2219 from ESMCI/jgfouca/remove_stale_help
+37122e8 Merge pull request #2226 from ESMCI/jgfouca/improve_preview_run
+1920d8b Merge pull request #2225 from jedwards4b/laramie_updates
+c3a1141 Merge pull request #2224 from ESMCI/jgfouca/fix_cime_case_test_for_lsf
+b968e77 Merge pull request #2223 from ESMCI/jgfouca/fix_regr_test
+
+Modified files: git diff --name-status [previous_tag]
+M       config/acme/allactive/config_compsets.xml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_machines.xml
+M       config/xml_schemas/testlist.xsd
+M       scripts/Tools/preview_run
+M       scripts/lib/CIME/XML/env_base.py
+M       scripts/lib/CIME/buildlib.py
+M       scripts/lib/CIME/utils.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/config_component_acme.xml
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+M       src/drivers/mct/cime_config/config_compsets.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
+Date: 01-10-2018
+Tag: cime5.4.0-alpha.18
+Answer Changes: Round Off, possibly Climate Changing
+Tests:
+Dependencies:
+
+Brief Summary:
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+18358ce Merge pull request #2212 from ESMCI/jgfouca/branch-for-acme-split-2018-01-09
+ddeb398 Merge pull request #2216 from jedwards4b/correct_bld_output
+7f3c93b Merge pull request #2217 from jedwards4b/more_fortran_cleanup
+f44bca3 Merge pull request #2213 from jedwards4b/more_fortran_cleanup
+559d421 Merge pull request #2211 from jedwards4b/fixforxlf
+d151642 Merge pull request #2179 from billsacks/fix_advdate
+507b9dd Merge pull request #2158 from ESMCI/mvertens/dicemods
+89015ca Merge pull request #2205 from ESMCI/jgfouca/remove_scans
+3eb054d Merge pull request #2202 from jedwards4b/refactor_seq_diag_mod
+cdb7b3f fix doctest for py3
+5872dda Merge pull request #2208 from jedwards4b/py3fix
+8e2319f Merge pull request #2206 from ESMCI/jgfouca/fix_desc_stride
+e3cf1f3 Merge pull request #2198 from jedwards4b/more_atmocn_flux
+cf9e427 Merge pull request #2204 from gold2718/lowresSEgrid
+1bd046f Use https for cdash
+bd9b5f1 Minor fixes for cdash interaction
+a2ef582 Merge pull request #2201 from jedwards4b/fix_long_line
+14176a0 Merge pull request #2192 from jedwards4b/reduce_fortran_warnings1
+a44965e Merge pull request #2196 from ESMCI/jgfouca/remove_run_with_submit
+ef10d62 Minor fix for ACME
+7e28a21 Merge pull request #2148 from ESMCI/jgfouca/hide_xml_interface
+05ba5c5 Merge pull request #2087 from ekluzek/addmachmodex
+1ab0e78 Merge pull request #2193 from jedwards4b/always_set_baselineroot_in_tests
+8a401cb Merge pull request #2189 from ESMCI/jgfouca/fix_melvin
+d5e21de Merge pull request #2188 from ESMCI/jgfouca/fix_create_test_cesm_doc
+7c607cb Merge pull request #2187 from ESMCI/jgfouca/max_task_fixes
+ddb968b Merge pull request #2186 from ESMCI/jgfouca/improve_acme_cime_mgt
+295e91c Merge pull request #2184 from jedwards4b/indent_consistantly
+
+Modified files: git diff --name-status [previous_tag]
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
 Date: 1-4-2018
 Tag: cime5.4.0-alpha.17
 Answer Changes: Round Off allactive
@@ -18,9 +119,9 @@ Brief Summary:
     - Revert to previous cheyenne gnu environment.
     - Y10k fix.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 1b4fa36 Merge pull request #2180 from jedwards4b/flux_convergence
 6a07ef1 Merge pull request #2176 from billsacks/run_tests_pass_cimeroot
 8932a90 Merge pull request #2173 from jedwards4b/srt_use_cimeconfig
@@ -67,7 +168,7 @@ M	src/share/util/shr_flux_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 12-22-2017
 Tag: cime5.4.0-alpha.16
 Answer Changes: None
@@ -90,10 +191,10 @@ Brief Summary:
     - Fix max tasks for homebrew.
     - Use the encoding flag to open in py3 to set utf-8.
 
-User interface changes: 
+User interface changes:
     - Remove dead --test options.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 d1723aa fix pylint issue
 d7d96b5 Merge pull request #2160 from jedwards4b/allowmultiplempilibs
 2a53df8 Merge pull request #2156 from jedwards4b/findtestdir
@@ -183,7 +284,7 @@ M	tools/load_balancing_tool/load_balancing_submit.py
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 12-14-2017
 Tag: cime5.4.0-alpha.15
 Answer Changes: None
@@ -200,9 +301,9 @@ Brief Summary:
     - Avoid continue run if resubmit_sets_continue_run is false.
     - PIO1 update.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 1fec3c1 Merge pull request #2125 from jedwards4b/pio2_update
 851918d replace fancy quotes with standard ones
 fdd3ddf add some debug info and correct PYTHON
@@ -230,7 +331,7 @@ M       src/externals/pio2/src/flib/pio_types.F90
 
 ======================================================================
 
-Originator: Chris Fischer	 
+Originator: Chris Fischer
 Date: 12-11-1017
 Tag: cime5.4.0-alpha.14
 Answer Changes: None
@@ -251,17 +352,17 @@ Brief Summary:
       require a rebuild.
     - Fix processor overflow in create_test.
     - Miscellaneous tool improvement.
-    - Add ability to customize CaseStatus success message for a phase. 
+    - Add ability to customize CaseStatus success message for a phase.
     - DOCN mode fix.
     - Fix bug in compare namelists.
     - Fixes a memory leak in gptl.
 
-User interface changes: 
+User interface changes:
     - simple-py-prof sets PYTHONPATH for you, list_acme_tests assumes you want
       to list tests
     - jobid now added to CaseStatus case_submit entry.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 f48881a Merge pull request #2130 from jedwards4b/py3_compatibility
 90ffcf7 Merge pull request #2129 from ESMCI/jgfouca/fix_pylint_and_cesm_timing
 036ac18 Merge pull request #2127 from ESMCI/jgfouca/xml_bugfix
@@ -330,7 +431,7 @@ M	tools/cprnc/CMakeLists.txt
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 12-04-2017
 Tag: cime5.4.0-alpha.13
 Answer Changes: None
@@ -340,9 +441,9 @@ Dependencies:
 Brief Summary:
     - BUILD_THREADED needs to be set if any nthrds > 1.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 307251e Merge pull request #2106 from jedwards4b/nthrds_sets_build_threaded
 
 
@@ -353,11 +454,11 @@ M       scripts/lib/CIME/case_setup.py
 
 ======================================================================
 
-Originator: Chris Fischer	 
+Originator: Chris Fischer
 Date: 12-03-2017
 Tag: cime5.4.0-alpha.12
 Answer Changes: None
-Tests: scripts_regression_tests.py 
+Tests: scripts_regression_tests.py
 Dependencies:
 
 Brief Summary:
@@ -367,12 +468,12 @@ Brief Summary:
     - Check for unicode in expect().
     - Separate liq and ice in glc2ocn mapping, and fix glc2ocn mapping bug.
 
-User interface changes: 
+User interface changes:
     -Splits GLC2OCN_RMAPNAME xml variable into
      GLC2OCN_LIQ_RMAPNAME and GLC2OCN_ICE_RMAPNAME, and similarly for
      GLC2OCN_RMAPTYPE
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 6dd6f09 Merge pull request #2105 from jedwards4b/gptl_threaded_build_fix
 92f73e3 Merge pull request #2078 from bertinia/master
 5dc7e19 Merge pull request #2101 from jedwards4b/mpiserial_bldfix
@@ -410,11 +511,11 @@ M	src/drivers/mct/shr/seq_flds_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer	 
-Date: 11-22-2017 
+Originator: Chris Fischer
+Date: 11-22-2017
 Tag: cime5.4.0-alpha.11
 Answer Changes: None
-Tests: scripts_regression_tests.pr 
+Tests: scripts_regression_tests.pr
 Dependencies:
 
 Brief Summary:
@@ -423,9 +524,9 @@ Brief Summary:
     - Fix run_sub_or_cmd in the case where a cmd is run and log is None.
     - Enable ldsta case.submit to be run twice.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 5ea8d6b Merge pull request #2092 from jedwards4b/gptl_build_threaded
 4361a51 Merge pull request #2090 from jedwards4b/makefaster
 ca4c1f9 Merge pull request #2086 from ESMCI/jgfouca/run_sub_no_log
@@ -445,7 +546,7 @@ M       src/build_scripts/buildlib.gptl
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 11-17-2017
 Tag: cime5.4.0-alpha.10
 Answer Changes: None
@@ -487,13 +588,13 @@ Brief Summary:
     - Convert line to utf-8.
     - Change paths to case2 rundir and exeroot.
 
-User interface changes: 
+User interface changes:
     - Better defaults for bless_test_results and compare_test_results.
     - New bless_log file in baseline dirs.
     - Allow multiple -m args to case.submit. Allows user to put email settings in .cime/config.
     - New --retry option to create_test.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 6dd002f Merge pull request #2074 from ESMCI/mfdeakin-sandia/cime_developer/ldsta
 0c4ffa7 Merge pull request #2079 from ESMCI/jgfouca/major_baseline_refactor
 5ac2f90 Merge pull request #2069 from ESMCI/jgfouca/add_bless_logs_2
@@ -501,7 +602,7 @@ c80333f Merge pull request #2076 from jedwards4b/clmbuildfix
 09e6061 Merge pull request #2073 from ESMCI/jgfouca/fix_bld_logging
 09aadd0 Merge pull request #2071 from ESMCI/mfdeakin-sandia/test_sta_last_date
 8765c9c Merge pull request #2072 from jedwards4b/rebuildmct
-92f74f8 Merge pull request #2062 from ESMCI/fischer/testtype_doc 
+92f74f8 Merge pull request #2062 from ESMCI/fischer/testtype_doc
 690e7f7 fix MCC test on master
 a3d1554 fix csm_build, remove debug print statement
 71fbd56 Merge pull request #2067 from jedwards4b/rebuildlibs
@@ -625,7 +726,7 @@ M	src/share/timing/private.h
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 11-08-2017
 Tag: cime5.4.0-alpha.09
 Answer Changes: None
@@ -637,9 +738,9 @@ Brief Summary:
     - Allow undated history files to be archived.
     - Convert SEQ to use compare-two.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 ce40669 Merge pull request #2037 from jedwards4b/fix_for_undated_history_file_archiving
 280e006 Merge pull request #2030 from ESMCI/jgfouca/seq_cmpr_two
 
@@ -656,15 +757,15 @@ Originator: Chris Fischer
 Date: 11-07-2017
 Tag: cime5.4.0-alpha.08
 Answer Changes: None
-Tests: Hand test B1850 
+Tests: Hand test B1850
 Dependencies:
 
 Brief Summary:
     - Handle case when cmdargs is not a list
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 fc72203 Merge pull request #2032 from jedwards4b/cmdargs_fix
 
 Modified files: git diff --name-status [previous_tag]
@@ -674,7 +775,7 @@ M       scripts/lib/CIME/utils.py
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 11-06-2017
 Tag: cime5.4.0-alpha.07
 Answer Changes: None
@@ -696,7 +797,7 @@ Brief Summary:
     - Make srt change backward compatible.
     - Allow overrides in config batch.
     - Fix machines option to srt and unitialzed var.
-    - Fix cprnc build on mac.    
+    - Fix cprnc build on mac.
     - Add NLCOMP warning if comparison fails and RUN phase is complete.
     - Remove string formatting from code-path that checks python version.
     - Bluewaters update.
@@ -714,14 +815,14 @@ Brief Summary:
     - Add support for arbitrary prerequisites to case.submit.
     - Updates for NAS pleiades systems.
 
-User interface changes: 
-    - Add --clean-depends to case.build, this argument can take a component list and will 
+User interface changes:
+    - Add --clean-depends to case.build, this argument can take a component list and will
       clean all components if one is not provided.
     - Some additional output from nl comp code in some cases
     - --driver added to create_newcase, new _V$driver testopt.
-    
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
 0027c84 Merge pull request #2005 from jedwards4b/external_process_interface
 a84b875 Merge pull request #2027 from jedwards4b/better_errormsg_for_compsets
 184d7de Merge pull request #2013 from billsacks/runoff_nn_fix_mask
@@ -798,7 +899,7 @@ M       tools/mapping/gen_mapping_files/runoff_to_ocn/src/map_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 10-25-2017
 Tag: cime5.4.0-alpha.06
 Answer Changes: None
@@ -811,9 +912,9 @@ Brief Summary:
     - Fix several data component issues.
     - Resolve compset issue.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 aac772f Merge pull request #1992 from jedwards4b/cheyenne_mpt_update
 4e7bd64 Merge pull request #1987 from ESMCI/mvertens/fix_datacomps
 dd2734a Merge pull request #1981 from jedwards4b/resolve_compset_issue
@@ -849,7 +950,7 @@ A       src/share/streams/shr_tInterp_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 10-25-2017
 Tag: cime5.4.0-alpha.05
 Answer Changes: None
@@ -872,9 +973,9 @@ Brief Summary:
     - Add LBL Machines.
     - Data model documentation edits.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 299f1ab Merge pull request #1991 from ESMCI/fischer/T42_T42_mg17
 a8cd748 Merge pull request #1989 from ESMCI/dqwu/anlworkstation-remove-proxy-tag
 de4df65 Merge pull request #1984 from ESMCI/fischer/TestReporter
@@ -984,7 +1085,7 @@ M	utils/perl5lib/compilers_translation_tool.pl
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 10-16-2017
 Tag: cime5.4.0-alpha.04
 Answer Changes: None
@@ -1001,9 +1102,9 @@ Brief Summary:
     - Load balancing tool mods.
     - Add auto-normalization to case_diff.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 af429bd Merge pull request #1965 from jedwards4b/iscompvar_cleanup
 16adad1 Merge pull request #1950 from ESMCI/mvertens/cplhist_topo
 02cc2fd Fix py3 for erio test
@@ -1880,7 +1981,7 @@ M	utils/perl5lib/Build/Namelist.pm
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 10-9-2017
 Tag: cime5.4.0-alpha.03
 Answer Changes: None
@@ -1892,9 +1993,9 @@ Brief Summary:
     - Fix SE domain files.
     - Use keyword-value pairs for create_clone call.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 55d2dbe Merge pull request #1957 from billsacks/create_clone_args
 443312c Merge pull request #1951 from gold2718/seDomainFiles
 
@@ -1908,11 +2009,11 @@ M       src/drivers/mct/cime_config/config_component_cesm.xml
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 10-6-2017
 Tag: cime5.4.0-alpha.02
 Answer Changes: None
-Tests: scripts_regression_tests.py SMS_Ln9.f19_f19_mg17.F2000_DEV.yellowstone_intel.cam-cosp 
+Tests: scripts_regression_tests.py SMS_Ln9.f19_f19_mg17.F2000_DEV.yellowstone_intel.cam-cosp
        IRT_Ld7.T31_g37.B1850C5L45BGCR.cheyenne_intel
        hand testing tools/load_balancing_tool/test/test_load_balancing_tool.py
        load_balancing_test.py
@@ -1927,7 +2028,7 @@ Brief Summary:
     - Fix tests for small systems.
     - Only run driver build namelist after first day cycle.
     - Load balancing tool mods.
-    - Use local baseline directory for testing. 
+    - Use local baseline directory for testing.
     - Add ability to cancel batch jobs to the system.
     - A port to a generic Linux workstation.
     - Fix pylint issue.
@@ -1937,12 +2038,12 @@ Brief Summary:
     - Rewrite of the load balancing tool.
     - Imported mpi-serial changes from MCSclimate/mpi-serial.
 
-User interface changes: 
+User interface changes:
     - New batch_env optional entry in config_batch.
     - Add --baseline-root argument to case.cmpgen_baselines.
     - new batch_cancel field in config_batch.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 a2f0979 Merge pull request #1947 from jedwards4b/cosp_build_fix
 1655800 Merge pull request #1948 from jedwards4b/pio_update_branch
 d590c55 Merge pull request #1945 from ESMCI/jgfouca/refactor_args_to_submit_scripts
@@ -2135,19 +2236,19 @@ A	tools/load_balancing_tool/tests/timing/timing_3
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 9-25-2017
 Tag: cime5.4.0-alpha.01
 Answer Changes: None
-Tests: 
+Tests:
 Dependencies:
 
 Brief Summary:
     - Update version to cime5.3.0-alpha.01
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 
 Modified files: git diff --name-status [previous_tag]
 
@@ -2155,7 +2256,7 @@ Modified files: git diff --name-status [previous_tag]
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 9-25-2017
 Tag: cime5.3.0-alpha.36
 Answer Changes: None
@@ -2178,12 +2279,12 @@ Brief Summary:
       name (ATM, LND, etc)
     - Don't check_if_comp_var to return a new vid if it's not a comp var.
 
-User interface changes: 
+User interface changes:
     - jobmin and jobmax gone from config_batch.xml
     - All CAM-SE grid aliases for data ocean models require a mask.
 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 6049c79 Merge pull request #1918 from ESMCI/jgfouca/queue_selection_refactor_2
 56d71c5 Merge pull request #1919 from billsacks/compare_two_shorter_path
 e1b549d Merge pull request #1921 from gold2718/atm_ncpl_mods
@@ -2236,7 +2337,7 @@ M	src/drivers/mct/cime_config/config_component_cesm.xml
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 9-19-2017
 Tag: cime5.3.0-alpha.35
 Answer Changes: None
@@ -2250,9 +2351,9 @@ Brief Summary:
     - Rename PES_PER_NODE to MAX_MPITASKS_PER_NODE.
     - New git pelayout doc.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 e1e5e79 Merge pull request #1895 from jedwards4b/test_fixes
 a3349ed Merge pull request #1899 from ESMCI/jgfouca/fix_single_submit
 40e4b7b Merge pull request #1898 from ESMCI/jgfouca/fix_single_submit
@@ -2295,11 +2396,11 @@ M	src/drivers/mct/main/cime_comp_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 9-13-2017
 Tag: cime5.3.0-alpha.34
 Answer Changes: None
-Tests: scripts_regression_tests 
+Tests: scripts_regression_tests
 Dependencies:
 
 Brief Summary:
@@ -2319,13 +2420,13 @@ Brief Summary:
     - Get log file from logdir instead of rundir.
     - Add more unit tests of system_tests_compare_two, fix multisubmit bug.
     - Merge new erp test into new restart_tests abstract class.
-    
-User interface changes: 
+
+User interface changes:
     - New --timeout flag for wait_for_tests
     - New ways to select queue in config_batch.xml
     - New argument to create_clone.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 7efc1f5 Merge pull request #1886 from ESMCI/fischer/T41_g37_fix
 6a6b5e8 Merge pull request #1884 from ESMCI/jgfouca/add_timeout_for_wait_for_tests
 c848b17 Merge pull request #1883 from bertinia/master
@@ -2417,11 +2518,11 @@ M	src/externals/mct/mct/m_MCTWorld.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 9-01-2017
 Tag: cime5.3.0-alpha.33
 Answer Changes: None
-Tests:  scripts_regression_tests.py N_TestUnitTest 
+Tests:  scripts_regression_tests.py N_TestUnitTest
         cime_developer using pio1 and latest pio2 develop code
 Dependencies:
 
@@ -2430,7 +2531,7 @@ Brief Summary:
     - Convert the ERR and ERRI test to the compare2 framework.
     - Get PFUnit working on melvin.
     - Do not print message about leaving case directory if the directory was
-      never created. 
+      never created.
     - Allow user to adjust ulimits.
     - Fix runtime issues with latest pio2 development.
     - Preserve test order in test_scheduler.
@@ -2441,7 +2542,7 @@ Brief Summary:
     - Add irt test.
     - Move inputdata location on pleiades.
     - Fix issue with clone to new user.
-    - Fix for cime_output_root doesnt exist.  
+    - Fix for cime_output_root doesnt exist.
     - Compare two test case names match.
     - Fix Cmake path in fortran unit tests.
     - Fix typo in config_machines.xml.
@@ -2454,10 +2555,10 @@ Brief Summary:
     - Fix issue with update and alternate compiler.
     - Fix use-existing feature for create_test.
 
-    
-User interface changes: 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
 c3459de Merge pull request #1855 from billsacks/erp2systemcomparetwo_refactor
 a3bcaa0 Merge pull request #1852 from jedwards4b/err_2_compare_two
 751fd7a Merge pull request #1844 from ESMCI/jgfouca/get_pfunit_working_on_melvin
@@ -2470,9 +2571,9 @@ dd04e87 Merge pull request #1847 from jedwards4b/user_resource_setting
 fef051e Merge pull request #1840 from jedwards4b/enhance_warning
 fab7ccd Merge pull request #1837 from jedwards4b/add_irt_test
 994d884 Merge pull request #1836 from fvitt/pleiades_inputdata
-8545d9c Merge pull request #1835 from jedwards4b/clone_new_user_fix 
+8545d9c Merge pull request #1835 from jedwards4b/clone_new_user_fix
 3523743 fix for cime_output_root doesnt exist
-00ac08a Merge pull request #1832 from jedwards4b/match_names_in_cases 
+00ac08a Merge pull request #1832 from jedwards4b/match_names_in_cases
 7be7fb3 fix Cmake path in fortran unit tests
 3dcdcb2 fix typo in config_machines.xml
 730ed8b Merge pull request #1829 from ESMCI/jgfouca/fixes_for_test_scheduler_tests
@@ -2618,11 +2719,11 @@ Brief Summary:
     - Allow --compiler and --mpilib
     - Add a --compiler and --mpilib options to scripts_regression_tests.py.
 
-User interface changes: 
+User interface changes:
     - Yes, new case variables controlling spare nodes
     - Yes scripts_regression_tests.py now has --compiler and --mpilibs option.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 1be3c17 Merge pull request #1751 from jedwards4b/tools_cleanup
 30a17eb Merge pull request #1819 from ESMCI/fischer/ADESP_test_fix
 37909bd Merge pull request #1818 from ESMCI/jgfouca/xmlchange_improve_error
@@ -2669,11 +2770,11 @@ M       src/share/test/unit/shr_infnan_test/test_infnan.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 8-08-2017
 Tag: cime5.3.0-alpha.31
 Answer Changes: [None, Round Off, Climate Changing]
-Tests: spcam test, scripts_regression_tests.py 
+Tests: spcam test, scripts_regression_tests.py
        ERP.f09_f09_mg17.F2000_DEV
 Dependencies:
 
@@ -2682,9 +2783,9 @@ Brief Summary:
     - Broadcast comp_layout value from master after namelist read.
     - Update CONTINUE_RUN before case.setup is run in erp test.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 c9c1fb9 Merge pull request #1800 from jedwards4b/cheyenne_updates
 dce137b Merge pull request #1799 from jedwards4b/broadcast_layout
 7b845d2 Merge pull request #1797 from jedwards4b/hybrid_erp_test_fix
@@ -2698,7 +2799,7 @@ M       src/drivers/mct/shr/seq_comm_mct.F90
 
 
 ======================================================================
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 8-07-2017
 Tag: cime5.3.0-alpha.30
 Answer Changes: None
@@ -2774,8 +2875,8 @@ Brief Summary:
     - Description field error check of user compsets.
     - Introduce version 3.0 schema for entry_id files
     - Fix bug in case.run where arg skip-preview-namelist is out of sequence.
-    
-User interface changes: 
+
+User interface changes:
     - New case.qstatus tool.
     - Autodeletion of broken case dirs.
     - Add --mail-user and --mail-type to case.submit.
@@ -2783,7 +2884,7 @@ User interface changes:
     - Remove --user-compset from create_newcase, allow compset longname in
       testname argument to create_test.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 6db1569 Merge pull request #1795 from jedwards4b/stage_refcase
 2815ea6 Merge pull request #1790 from gold2718/PreFix
 c465923 Merge pull request #1791 from jedwards4b/yellowstone_netcdf_revert
@@ -2821,7 +2922,7 @@ ffd327a Merge pull request #1748 from jedwards4b/run_exe_xmlquery
 550ccc9 Couple trivial changes to satisfy pylint
 7a2739f Merge pull request #1719 from ESMCI/erichlf/batch/email
 16070a4 Merge pull request #1738 from jedwards4b/system_tests_compare_two_stage_two
-469156f Merge pull request #1735 from jedwards4b/add_pesfile_to_create_test 
+469156f Merge pull request #1735 from jedwards4b/add_pesfile_to_create_test
 eceeaeb Merge pull request #1740 from ESMCI/jgfouca/update_netcdf_for_sandia_machines
 8c4828b Merge pull request #1739 from ESMCI/jgfouca/update_netcdf_for_sandia_machines
 d5a9d61 hot fix of test IME.tests.SystemTests.test_system_tests_compare_two.TestSystemTestsCompareTwo
@@ -3096,11 +3197,11 @@ M	tools/utils/find_circular_dependency.py
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 6-22-2017
 Tag: cime5.3.0-alpha.29
 Answer Changes: None
-Tests: Hand tested AIAF creation for acme and cesm models  
+Tests: Hand tested AIAF creation for acme and cesm models
 Dependencies:
 
 Brief Summary:
@@ -3109,9 +3210,9 @@ Brief Summary:
     - Correct faq to point to use_cases.
     - Merge doc branch from bjsmith
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 5921fff Merge pull request #1702 from ESMCI/mvertens/fix_datm_tintalgo
 18faea2 Merge pull request #1700 from bertinia/master
 d29cd98 Merge pull request #1698 from bertinia/master
@@ -3141,7 +3242,7 @@ M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 6-15-2017
 Tag: cime5.3.0-alpha.28
 Answer Changes: None
@@ -3158,16 +3259,16 @@ Brief Summary:
     - Merge last 3 months of ACME work.
     - Backward compatible change to allow more than one mach for each grid.
 
-User interface changes: 
+User interface changes:
     - new xml variable, readmode
     - xmlquery --group has been changed go xmlquery --get-group
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 f449794 Merge pull request #1696 from ESMCI/fischer/cplhist
 547f68b Merge pull request #1689 from ESMCI/dqwu/anlworkstation-remove-proxy-tag
 160a6e7 Create PULL_REQUEST_TEMPLATE
 9b5ef51 Merge pull request #1686 from bjsmith2014/master 7efcbcf hot fix for pylint error
-002df11 Merge pull request #1418 from bishtgautam/bishtgautam/data-model c7c79fe 
+002df11 Merge pull request #1418 from bishtgautam/bishtgautam/data-model c7c79fe
 813683d Merge pull request #1684 from ESMCI/mvertens/fixing_xmlquery
 47a559a Merge pull request #1634 from ESMCI/jgfouca/acme_merge_06_01_2017
 b795c3e Merge pull request #1680 from jedwards4b/config_pes_xsd_correction
@@ -3286,9 +3387,9 @@ Brief Summary:
     - Do not add empty user mods
     - Clean up help text for query_testlists
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 d8ae575 Merge pull request #1682 from jedwards4b/config_tests_distribution
 08cfb55 Merge pull request #1681 from bjsmith2014/master
 d0d6648 Merge pull request #1679 from ESMCI/dqwu/fix_xml_schemas_alcf
@@ -3313,7 +3414,7 @@ M       scripts/query_testlists
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 6-10-2017
 Tag: cime5.3.0-alpha.26
 Answer Changes: None
@@ -3328,9 +3429,9 @@ Brief Summary:
       case does not invoke a flush command.
     - User compset fixes.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 f8eb8b4 Merge pull request #1670 from ESMCI/mvertens/fix_ccsm_bgc_desc
 8ea2801 Merge pull request #1666 from jedwards4b/case_instantiate_test
 383c1f5 Merge pull request #1667 from billsacks/user_compset_fixes
@@ -3348,21 +3449,21 @@ M       src/drivers/mct/cime_config/namelist_definition_drv.xml
 
 ======================================================================
 
-Originator: Chris Fischer	 
+Originator: Chris Fischer
 Date: 6-8-2017
 Tag: cime5.3.0-alpha.25
 Answer Changes: None
-Tests:  scripts_regression_tests.py, SMS_D.f19_f19.F1850.cori-knl_intel 
-        create_test cime_developer 
+Tests:  scripts_regression_tests.py, SMS_D.f19_f19.F1850.cori-knl_intel
+        create_test cime_developer
 Dependencies:
 
 Brief Summary:
     - Remove COMP_INTERFACE references to esmf and downcase the value.
     - Make Flgl_qice attname consistent with name.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 aadee35 Merge pull request #1663 from jedwards4b/comp_interface_fix
 f8f6221 Merge pull request #1662 from billsacks/fix_flgl
 
@@ -3380,7 +3481,7 @@ M       src/drivers/mct/shr/seq_flds_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 6-8-2017
 Tag: cime5.3.0-alpha.24
 Answer Changes: None
@@ -3404,10 +3505,10 @@ Brief Summary:
     - New match attribute that can be 'last' or 'first' for values match in
       component.py
 
-User interface changes: 
+User interface changes:
     - New match attribute elements that are children of <entry> nodes.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 72198f2 Merge pull request #1657 from billsacks/usermods_relative_path
 9ae4f31 Merge pull request #1661 from ESMCI/fischer/gnu_cheyenne
 9a43e4b hot fix for issue 1656
@@ -3465,7 +3566,7 @@ M       src/drivers/mct/cime_config/testdefs/testlist_drv.xml
 
 ======================================================================
 
-Originator: Chris Fischer	 
+Originator: Chris Fischer
 Date: 6-4-2017
 Tag: cime5.3.0-alpha.23
 Answer Changes: None
@@ -3482,9 +3583,9 @@ Brief Summary:
     - Copied doc dir into master in order to create a gh-pages orphan branch.
     - Fix race condition with case XML files when using set_file and some other unrelated bugs.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 4525e19 Merge pull request #1639 from ESMCI/mvertens/python3string_fixes
 4775d9a Change run_cmd_no_fail doctest to not match directory
 4db9834 Merge pull request #1632 from ESMCI/jgfouca/generate_baseline_should_include_logs
@@ -3582,7 +3683,7 @@ Tests: Ran gnu TG smoke tests
        scripts_regression_tests.py --fast
        code_checker and scripts_regressions_tests.pr
        CECO.hobart_pgi build
-        
+
 Dependencies:
 
 Brief Summary:
@@ -3598,12 +3699,12 @@ Brief Summary:
     - Update PGI compiler to 17.04 on hobart.
     - Downscale build parellism on small machines.
 
-User interface changes: 
+User interface changes:
     - New drv_in namelist variable: 'glc_renormalize_smb'
     - Contents of TestStatus.log.
     - Automatic downscale of builds.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 2f6e683 Merge pull request #1620 from billsacks/remove_cism_gnu
 4f08bb0 Merge pull request #1618 from billsacks/gnu_debug_flags
 7a5242d Merge pull request #1609 from billsacks/lnd2glc_bilinear
@@ -3774,11 +3875,11 @@ M	tools/utils/find_circular_dependency.py
 ======================================================================
 
 ======================================================================
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 5-24-2017
 Tag: cime5.3.0-alpha.21
 Answer Changes: None
-Tests: scripts_regression_tests.py 
+Tests: scripts_regression_tests.py
 Dependencies:
 
 Brief Summary:
@@ -3786,9 +3887,9 @@ Brief Summary:
     - Don't ignore attributes for Compilers.get_value.
     - Add ability for create_test to infer non-default machine from tests.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 25a7f27 Merge pull request #1604 from jedwards4b/refcase_fix
 56fd28c Merge pull request #1598 from ESMCI/jgfouca/compiler_use_attribute
 7003fe2 Merge pull request #1597 from ESMCI/jgfouca/infer_machine_from_tests
@@ -3806,26 +3907,26 @@ Originator: Chris Fischer
 Date: 5-24-2017
 Tag: cime5.3.0-alpha.20
 Answer Changes: None
-Tests: 
+Tests:
 Dependencies:
 
 Brief Summary:
     - Add the f19_g17 maps, as wall as the ww3 <-> tx1v1 maps.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 0e9a1e0 Merge pull request #1594 from mnlevy1981/maps/update_ocean_maps
 
 Modified files: git diff --name-status [previous_tag]
 M       config/cesm/config_grids.xml
 
 ======================================================================
-Originator: Chris Fischer 
-Date: 5-24-2017 
+Originator: Chris Fischer
+Date: 5-24-2017
 Tag: cime5.3.0-alpha.19
 Answer Changes: None
-Tests: scripts_regression_tests --fast 
+Tests: scripts_regression_tests --fast
 Dependencies:
 
 Brief Summary:
@@ -3835,9 +3936,9 @@ Brief Summary:
       Also, deprecate shell calls to date in favor of python interface to get
       timestamp.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 0817502 Merge pull request #1596 from ESMCI/revert-1585-master
 0ee6cb7 Merge pull request #1595 from ESMCI/jgfouca/improve_build_fail_msg
 
@@ -3850,12 +3951,12 @@ M       src/drivers/mct/cime_config/buildnml
 
 
 ======================================================================
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 5-23-2017
 Tag: cime5.3.0-alpha.18
 Answer Changes: None
 Tests: scripts_regression_tests.py, hand test xmlquery
-       ERS.f19_g16.X.yellowstone_intel 
+       ERS.f19_g16.X.yellowstone_intel
        1850_DATM%CPLHIST_SLND_CICE_POP2%ECO_DROF%CPLHIST_SGLC_WW3
        SMS_D_Mmpi-serial_Ld1.T42_T42.FSCM5A97.hobart_nag
 
@@ -3873,13 +3974,13 @@ Brief Summary:
     - DOCN aquaplanet from file and new A compsets with DOCN modes.
     - Use %CPLHIST for DATM coupler hist forcing.
     - Point to gx1v7 domain files that exist.
-    - Merged recent changes from MCSclimate/mpi-serial into CIME.  
+    - Merged recent changes from MCSclimate/mpi-serial into CIME.
       Includes new hvector functions.
 
-User interface changes: 
+User interface changes:
     - TestStatus changes
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 e9a944c Merge pull request #1585 from alperaltuntas/master
 568938d Merge pull request #1573 from jedwards4b/sta_fix
 a4352db Merge pull request #1591 from ESMCI/jgfouca/improve_baseline_teststatus_comment
@@ -3926,7 +4027,7 @@ M       src/externals/mct/mpi-serial/type.c
 
 
 Originator: Chris Fischer
-Date: 5-18-2017 
+Date: 5-18-2017
 Tag: cime5.3.0-alpha.17
 Answer Changes: None
 Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio
@@ -3938,9 +4039,9 @@ Brief Summary:
     - Undo recent change to land domain.
     - Fix config pes converter.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 d33bc68 Merge pull request #1561 from jedwards4b/lookups_cleanup
 3cc8bac Merge pull request #1560 from jedwards4b/undo_land_domain_change
 c3458a8 Merge pull request #1557 from ESMCI/sarich/fix-config-pes-converter
@@ -3956,7 +4057,7 @@ M       scripts/lib/CIME/case.py
 ======================================================================
 
 ======================================================================
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 5-17-2017
 Tag: cime5.3.0-alpha.16
 Answer Changes: None
@@ -3967,9 +4068,9 @@ Brief Summary:
     - Fix bug which was preventing config_compsets from modifying xml
       variables.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 d4e9285 Merge pull request #1559 from jedwards4b/compset_var_settings
 
 Modified files: git diff --name-status [previous_tag]
