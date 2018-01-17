@@ -274,18 +274,11 @@ class Component(EntryID):
         """
         print values for help and description in target config_component.xml file
         """
-        rootnode = self.get_child("help")
-        helptext = self.text(rootnode)
-
-        rootnode = self.get_child("description")
-        compsets = {}
-        descs = self.get_children("desc", root=rootnode)
-        for desc in descs:
-            attrib = self.get(desc, "compset")
-            text = self.text(desc)
-            compsets[attrib] = text
-
+        helpnode = self.get_child("help")
+        helptext = self.text(helpnode)
         logger.info(" {}".format(helptext))
-        for v in sorted(compsets.items()):
-            label, definition = v
-            logger.info("   {:20s} : {}".format(label, definition))
+        entries = self.get_children("entry")
+        for entry in entries:
+            name = self.get(entry, "id")
+            text = self.text(self.get_child("desc", root=entry))
+            logger.info("   {:20s} : {}".format(name, text))

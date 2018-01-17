@@ -460,7 +460,7 @@ class Grids(GenericXML):
         logger.info("{:10s}  default component grids:\n".format(""))
         logger.info("     component         compset       value " )
         logger.info("{:5s}-------------------------------------------------------------".format(""))
-        default_nodes = self.get_children("model_grid_defaults")
+        default_nodes = self.get_children("model_grid_defaults", root=self.get_child("grids"))
         for default_node in default_nodes:
             grid_nodes = self.get_children("grid", root=default_node)
             for grid_node in grid_nodes:
@@ -472,13 +472,12 @@ class Grids(GenericXML):
 
         domains = {}
         if long_output is not None:
-            domain_nodes = self.get_children("domain")
+            domain_nodes = self.get_children("domain",root=self.get_child("domains"))
             for domain_node in domain_nodes:
-                name = self.get(domain_node, "name")
+                name = self.get(domain_node, 'name')
                 if name == 'null':
                     continue
                 desc = self.text(self.get_child("desc", root=domain_node))
-                #support = self.get_optional_child("support", root=domain_node).text
                 files = ""
                 file_nodes = self.get_children("file", root=domain_node)
                 for file_node in file_nodes:
@@ -496,7 +495,7 @@ class Grids(GenericXML):
                         files += ")"
                 domains[name] = "\n       {} with domain file(s): {} ".format(desc, files)
 
-        model_grid_nodes = self.get_children("model_grid")
+        model_grid_nodes = self.get_children("model_grid", root=self.get_child("grids"))
         for model_grid_node in model_grid_nodes:
             alias = self.get(model_grid_node, "alias")
             compset = self.get(model_grid_node, "compset")
