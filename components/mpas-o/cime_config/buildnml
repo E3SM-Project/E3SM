@@ -768,6 +768,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="rainFlux"/>' . "\n";
 	print $stream_file '    <var name="snowFlux"/>' . "\n";
 	print $stream_file '    <var name="vertNonLocalFlux"/>' . "\n";
+	print $stream_file '    <var_array name="activeTracersTend"/>' . "\n";
 	print $stream_file '    <var name="salinitySurfaceRestoringTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerHorizontalAdvectionTendency"/>' . "\n";
         print $stream_file '    <var_array name="activeTracerVerticalAdvectionTendency"/>' . "\n";
