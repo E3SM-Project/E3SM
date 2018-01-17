@@ -1140,19 +1140,19 @@ contains
   call t_startf('compute_andor_apply_rhs')
 
   do ie=nets,nete
-
-     temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
-          elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
-     if ( maxval(abs(temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0))) >1e-10) then
-        write(iulog,*) 'WARNING: w(n0) does not satisfy b.c.'
-        write(iulog,*) 'val1 = ',temp(:,:,1)
-        write(iulog,*) 'val2 = ',elem(ie)%state%w_i(:,:,nlevp,n0)
-        write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0)
+     if (.not. theta_hydrostatic_mode) then
+        temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
+             elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
+        if ( maxval(abs(temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0))) >1e-10) then
+           write(iulog,*) 'WARNING: w(n0) does not satisfy b.c.'
+           write(iulog,*) 'val1 = ',temp(:,:,1)
+           write(iulog,*) 'val2 = ',elem(ie)%state%w_i(:,:,nlevp,n0)
+           write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0)
+        endif
+        ! w boundary condition. just in case:
+        elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
+             elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
      endif
-     ! w boundary condition. just in case:
-     elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
-          elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
-
 
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
