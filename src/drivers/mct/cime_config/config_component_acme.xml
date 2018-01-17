@@ -230,6 +230,7 @@
     <valid_values></valid_values>
     <default_value></default_value>
     <values match="last">
+      <value/>
     </values>
     <group>run_component_cpl</group>
     <file>env_case.xml</file>
