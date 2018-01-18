@@ -947,11 +947,11 @@ contains
      theta_prime(:,:,:)= elem(ie)%state%theta_dp_cp(:,:,:,nt)-theta_ref(:,:,:)
 
      ! vertical viscosity
-     call laplace_z(u_prime,    vtens(:,:,:,:,ie),2,delz)
-     call laplace_z(dp_prime,   stens(:,:,:,1,ie),1,delz)
-     call laplace_z(theta_prime,stens(:,:,:,2,ie),1,delz)
-     call laplace_z(w_prime,    stens(:,:,:,3,ie),1,delz)
-     call laplace_z(phi_prime,  stens(:,:,:,4,ie),1,delz)
+     call laplace_z(u_prime,    vtens(:,:,:,:,ie),2,nlev,delz)
+     call laplace_z(dp_prime,   stens(:,:,:,1,ie),1,nlev,delz)
+     call laplace_z(theta_prime,stens(:,:,:,2,ie),1,nlev,delz)
+     call laplace_z(w_prime,    stens(:,:,:,3,ie),1,nlev,delz)
+     call laplace_z(phi_prime,  stens(:,:,:,4,ie),1,nlev,delz)
 
      ! add in horizontal viscosity
      ! multiply by mass matrix for DSS
