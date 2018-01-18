@@ -36,13 +36,18 @@ class TaylorDiagram(object):
         rlocs = np.concatenate((np.arange(10)/10.,[0.95,0.99]))
         tlocs = np.arccos(rlocs)        # Conversion to polar angles
         gl1 = GF.FixedLocator(tlocs)    # Positions
-        gl2 = GF.FixedLocator(np.linspace(0,1.5,7))
+        gl2_num = np.linspace(0,1.5,7)
+        gl2 = GF.FixedLocator(gl2_num)
+        gl2_ticks = [(x, str(x)) for x in gl2_num]
+        gl2_ticks[-1] = [gl2_num[-1], '']
+        gl2_ticks[0] = [gl2_num[0], '0']
         tf1 = GF.DictFormatter(dict(zip(tlocs, map(str,rlocs))))
+        tf2 = GF.DictFormatter(dict(gl_ticks))
 
         # Standard deviation axis extent
-        self.smin = 0.0
+        self.smin = min(gl2_num)
         #self.smax = 1.5*self.refstd
-        self.smax = 1.5
+        self.smax = max(gl2_num)
 
         ghelper = FA.GridHelperCurveLinear(tr,
                                            extremes=(0,np.pi/2, # 1st quadrant
@@ -50,6 +55,7 @@ class TaylorDiagram(object):
                                            grid_locator1=gl1,
                                            grid_locator2=gl2,
                                            tick_formatter1=tf1,
+                                           tick_formatter2=tf2
                                            )
 
 #        if fig is None:
@@ -76,6 +82,13 @@ class TaylorDiagram(object):
 
         # Contours along standard deviations
         ax.grid(False)
+
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 0.8])
+
+        # Put a legend to the right of the current axis
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
         self._ax = ax                   # Graphical axes
         self.ax = ax.get_aux_axes(tr)   # Polar coordinates
