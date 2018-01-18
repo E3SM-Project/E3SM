@@ -2011,14 +2011,14 @@
       !  Otherwise the only source of dFe is from remineralization
       !--------------------------------------------------------------------
 
-      if (tr_bgc_C .and. DOCin(1) > c0) then
-         
+      if (tr_bgc_C .and. tr_bgc_Fe) then
+        if (DOCin(1) > c0) then 
         if (Fed_tot/DOCin(1) > max_dfe_doc1) then             
           do n = 1,n_fed                                    ! low saccharid:dFe ratio leads to 
              Fed_r_l(n)  = Fedin(n)/t_iron_conv*dt/secday   ! loss of bioavailable Fe to particulate fraction
              Fep_tot_s   = Fep_tot_s + Fed_r_l(n)
-             Fed_r(n)    = rFed(n) * Fed_tot_r + Fed_r_l(n) ! removal includes uptake and coagulation
-          enddo  
+             Fed_r(n)    = Fed_r_l(n)                        ! removal due to particulate scavenging 
+          enddo
           do n = 1,n_fep
              Fep_s(n) = rFep(n)* Fep_tot_s                  ! source from dissolved Fe 
           enddo
@@ -2029,17 +2029,21 @@
           enddo  
           do n = 1,n_fed
              Fed_s(n) = Fed_s(n) + rFed(n)* Fed_tot_s       ! source from particulate Fe
-             Fed_r(n) = rFed(n)* Fed_tot_r                  ! algal uptake
           enddo    
-       endif         
-      endif
+        endif
+        endif !Docin(1) > c0
+      elseif (tr_bgc_Fe) then
+        do n = 1,n_fed
+           Fed_r(n) = Fed_r(n) + rFed(n)*Fed_tot_r          ! scavenging + uptake
+        enddo 
 
       ! source from algal mortality/grazing and fraction of remineralized nitrogen that does 
       ! not become immediately bioavailable
 
-      do n = 1,n_fep
-         Fep_s(n) = Fep_s(n) + rFep(n)* (Am_s * R_Fe2N(1) * (c1-fr_dFe))   
-      enddo ! losses not direct to Fed 
+         do n = 1,n_fep
+            Fep_s(n) = Fep_s(n) + rFep(n)* (Am_s * R_Fe2N(1) * (c1-fr_dFe))   
+         enddo ! losses not direct to Fed 
+      endif
 
       !--------------------------------------------------------------------
       ! Sulfur cycle begins here

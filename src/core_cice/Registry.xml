@@ -3671,7 +3671,7 @@
 			icepack_name="upNH"
 		/>
 		<var name="primaryProduction"			type="real"	dimensions="nCells Time"				name_in_code="primaryProduction"
-			units="mg carbon/m^2/s"
+			units="mg carbon/m^2/d"
 			description="Average total primary production in a grid cell"
 			icepack_name="PP_net"
 		/>
