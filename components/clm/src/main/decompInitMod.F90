@@ -98,7 +98,7 @@ contains
     procinfo%nclumps = clump_pproc
     procinfo%cid(:)  = -1
     procinfo%ncells  = 0
-    procinfo%ntopos  = 0
+    procinfo%ntopounits  = 0
     procinfo%nlunits = 0
     procinfo%ncols   = 0
     procinfo%npfts   = 0
