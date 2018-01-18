@@ -1,6 +1,6 @@
 # macro for building theta primitive equations executable
 
-macro(theta_setup)
+macro(thetal_setup)
 
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
@@ -15,7 +15,7 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${TEST_SRC_DIR}/*.F90)
 
-SET(THETA_SRCS_F90
+SET(THETAL_SRCS_F90
   ${TARGET_F90}
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
@@ -42,11 +42,11 @@ SET(THETA_SRCS_F90
 
 # If the user specified a file for custom compiler options use those
 IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
-  setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETA_SRCS_F90)
+  setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${THETA_SRCS} ${THETA_SRCS_F90} )
+SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PREQX_NP)
@@ -77,9 +77,9 @@ IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
-endmacro(theta_setup)
+endmacro(thetal_setup)
 
-theta_setup()
+thetal_setup()
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
