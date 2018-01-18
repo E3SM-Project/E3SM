@@ -280,6 +280,7 @@
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
+      <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
@@ -421,6 +422,7 @@
       <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
+      <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
