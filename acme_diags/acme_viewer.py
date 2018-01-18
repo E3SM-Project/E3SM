@@ -192,7 +192,7 @@ def _add_to_lat_lon_metrics_table(metrics_path, season, row_name):
             LAT_LON_TABLE_INFO[season][row_name] = collections.OrderedDict()
         LAT_LON_TABLE_INFO[season][row_name]['metrics'] = metrics_dict
 
-def _create_csv_from_dict(output_dir, season):
+def _create_csv_from_dict(output_dir, season, test_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
     #table_path = os.path.abspath(os.path.join(output_dir, season + '_metrics_table.csv'))
     table_path = os.path.join(output_dir, season + '_metrics_table.csv')
@@ -201,6 +201,7 @@ def _create_csv_from_dict(output_dir, season):
 
     with open(table_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
+        writer.writerow(test_name)
         writer.writerow(col_names)
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             metrics = metrics_dic['metrics']
@@ -284,11 +285,12 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
 
     return taylor_diag_path
 
-def _cvs_to_html(csv_path, season):
+def _cvs_to_html(csv_path, season, test_name):
     """Convert the csv for a season located at csv_path to an HTML, returning the path to the HTML"""
     html_path = csv_path.replace('csv', 'html')
 
     with open(html_path, 'w') as htmlfile:
+        htmlfile.write('<p><th><b>{} Model Name </b></th></p>'.format(test_name))
         htmlfile.write('<p><th><b>{} Mean </b></th></p>'.format(season))
         htmlfile.write('<table>')
 
@@ -399,7 +401,7 @@ def _add_lat_lon_table_to_viewer_index(root_dir):
     with open(index_page, "wb") as f:
         f.write(html)
 
-def generate_lat_lon_metrics_table(viewer, root_dir):
+def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
     table_dir = os.path.join(root_dir, 'table-data')  # output_dir/viewer/table-data
 
@@ -407,8 +409,8 @@ def generate_lat_lon_metrics_table(viewer, root_dir):
         os.mkdir(table_dir)
 
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict(table_dir, season)
-        html_path = _cvs_to_html(csv_path, season)
+        csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name)
+        html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
         LAT_LON_TABLE_INFO[season]['html_path'] = html_path
 
     _create_lat_lon_table_index(viewer, root_dir)
@@ -518,7 +520,7 @@ def create_viewer(root_dir, parameters, ext):
                         viewer.add_col(fnm + '.' + ext, is_file=True,
                                        title=col_season, other_files=formatted_files)
 
-    generate_lat_lon_metrics_table(viewer, root_dir)
-    generate_lat_lon_taylor_diag(viewer, root_dir,parameters)
+    generate_lat_lon_metrics_table(viewer, root_dir, parameters)
+    generate_lat_lon_taylor_diag(viewer, root_dir, parameters)
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
