@@ -53,8 +53,8 @@ SET(PREQX_SRCS_C
 )
 
 SET(PREQX_SRCS_CXX
-  ${SRC_SHARE_DIR}/qlt.cpp
-  ${SRC_SHARE_DIR}/ir.cpp
+  ${SRC_SHARE_DIR}/cedr.cpp
+  ${SRC_SHARE_DIR}/slmm.cpp
 )
 
 IF (${HOMME_USE_TRILINOS})

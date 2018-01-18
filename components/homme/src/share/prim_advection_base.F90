@@ -96,7 +96,7 @@ contains
 
   subroutine Prim_Advec_Init1_rk2(par, elem)
     use dimensions_mod, only : nlev, qsize, nelemd
-    use control_mod, only : use_semi_lagrange_transport
+    use control_mod, only : transport_alg
     use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
     type (element_t) :: elem(:)

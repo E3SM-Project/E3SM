@@ -30,11 +30,10 @@ module namelist_mod
     runtype,       &
     integration,   &       ! integration method
     theta_hydrostatic_mode,       &   
-    use_semi_lagrange_transport , &   ! conservation or non-conservation formulaton
-    use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global
-    use_semi_lagrange_transport_ir, &
-    use_semi_lagrange_transport_qlt, &
-    use_semi_lagrange_transport_qlt_check, &
+    transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
+    semi_lagrange_cdr_alg, &   ! property preservation
+    semi_lagrange_cdr_check, & ! check property preservation
+    use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global if transport_alg = 1
     tstep_type,    &
     cubed_sphere_map, &
     qsplit,        &
@@ -212,11 +211,10 @@ module namelist_mod
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
       theta_hydrostatic_mode,       &   
-      use_semi_lagrange_transport , &
-      use_semi_lagrange_transport_local_conservation , &
-      use_semi_lagrange_transport_ir, &
-      use_semi_lagrange_transport_qlt, &
-      use_semi_lagrange_transport_qlt_check, &
+      transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
+      semi_lagrange_cdr_alg, &   ! property preservation
+      semi_lagrange_cdr_check, & ! check property preservation
+      use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global if transport_alg = 1
       tstep_type,    &
       cubed_sphere_map, &
       qsplit,        &
@@ -368,11 +366,10 @@ module namelist_mod
     initial_total_mass=0
     mesh_file='none'
     ne              = 0
-    use_semi_lagrange_transport   = .false.
+    transport_alg = 0
+    semi_lagrange_cdr_alg = 2
+    semi_lagrange_cdr_check = .false.
     use_semi_lagrange_transport_local_conservation   = .false.
-    use_semi_lagrange_transport_ir = .false.
-    use_semi_lagrange_transport_qlt = .false.
-    use_semi_lagrange_transport_qlt_check = .false.
     disable_diagnostics = .false.
 
 
@@ -678,11 +675,10 @@ module namelist_mod
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(use_semi_lagrange_transport ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(transport_alg ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(use_semi_lagrange_transport_local_conservation ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(use_semi_lagrange_transport_ir ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(use_semi_lagrange_transport_qlt ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(use_semi_lagrange_transport_qlt_check ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -820,7 +816,7 @@ module namelist_mod
     endif
 
     
-    if (use_semi_lagrange_transport .and. rsplit == 0) then
+    if (transport_alg > 0 .and. rsplit == 0) then
        call abortmp('The semi-Lagrange Transport option requires 0 < rsplit')
     end if
 
@@ -911,11 +907,10 @@ module namelist_mod
        if (integration == "runge_kutta"  ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
-       write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport
+       write(iulog,*)"readnl: transport_alg   = ",transport_alg
+       write(iulog,*)"readnl: semi_lagrange_cdr_alg   = ",semi_lagrange_cdr_alg
+       write(iulog,*)"readnl: semi_lagrange_cdr_check   = ",semi_lagrange_cdr_check
        write(iulog,*)"readnl: use_semi_lagrange_transport_local_conservation=",use_semi_lagrange_transport_local_conservation
-       write(iulog,*)"readnl: use_semi_lagrange_transport_ir =",use_semi_lagrange_transport_ir
-       write(iulog,*)"readnl: use_semi_lagrange_transport_qlt =",use_semi_lagrange_transport_qlt
-       write(iulog,*)"readnl: use_semi_lagrange_transport_qlt_check =",use_semi_lagrange_transport_qlt_check
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM

@@ -2535,11 +2535,11 @@ void study (const Int elem_global_id, const Cartesian3D* corners,
 
 static ir::Remapper::Ptr g_remapper;
 
-void ir_init (const Int np, const Int nelem) {
+void slmm_init (const Int np, const Int nelem) {
   g_remapper = std::make_shared<ir::Remapper>(np, nelem);
 }
 
-// On HSW, this demonstrably is not needed; speedup in ir_project_np4 is a
+// On HSW, this demonstrably is not needed; speedup in slmm_project_np4 is a
 // result of loop details and local memory. However, I'll keep this in case it's
 // of use on KNL.
 #define IR_ALIGN(decl) Real decl __attribute__((aligned(64)))
@@ -2554,7 +2554,7 @@ void gll_np4_eval (const Real x, Real y[4]) {
   y[3] = (1.0 + x)*(5.0*x2 - 1.0)*oo8;
 }
 
-void ir_project_np4 (
+void slmm_project_np4 (
   const Int lev, const Int nets, const Int ie,
   const Int nnc, const Int np, const Int nlev, const Int qsize,
   const Real* dep_points_r, const Real* Qj_src_r, const Real* jac_tgt_r,
@@ -2794,7 +2794,7 @@ void ir_project_np4 (
 
 #undef IR_ALIGN
 
-void ir_project (
+void slmm_project (
   const Int lev, const Int nets, const Int ie,
   const Int nnc, const Int np, const Int nlev, const Int qsize,
   // Geometry.
@@ -2812,10 +2812,10 @@ void ir_project (
 {
   ir_assert(g_remapper);
   if (np == 4) {
-    ir_project_np4(lev, nets, ie, nnc, np, nlev, qsize, 
-                   reinterpret_cast<const Real*>(dep_points_r),
-                   Qj_src_r, jac_tgt_r, rho_tgt_r, tl_np1,
-                   q_r, q_min_r, q_max_r);
+    slmm_project_np4(lev, nets, ie, nnc, np, nlev, qsize, 
+                     reinterpret_cast<const Real*>(dep_points_r),
+                     Qj_src_r, jac_tgt_r, rho_tgt_r, tl_np1,
+                     q_r, q_min_r, q_max_r);
     return;
   }
 
@@ -3005,12 +3005,12 @@ void ir_project (
 }
 } // namespace homme
 
-extern "C" void ir_init_ (homme::Int* np, homme::Int* nelem) {
-  homme::ir_init(*np, *nelem);
+extern "C" void slmm_init_ (homme::Int* np, homme::Int* nelem) {
+  homme::slmm_init(*np, *nelem);
 }
 
 // Figure shtuff out.
-extern "C" void ir_study_ (
+extern "C" void slmm_study_ (
   homme::Int* elem_global_id, homme::Cartesian3D* corners,
   homme::Int** desc_global_ids, homme::Cartesian3D** desc_neigh_corners,
   homme::Int* n)
@@ -3021,7 +3021,7 @@ extern "C" void ir_study_ (
   homme::study(*elem_global_id, corners, *desc_global_ids, *desc_neigh_corners, *n + 1);
 }
 
-extern "C" void ir_init_local_mesh_ (
+extern "C" void slmm_init_local_mesh_ (
   homme::Int* ie, homme::Cartesian3D** neigh_corners, homme::Int* nnc)
 {
   homme::g_remapper->init_local_mesh_if_needed(
@@ -3029,13 +3029,13 @@ extern "C" void ir_init_local_mesh_ (
       reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc));
 }
 
-extern "C" void ir_project_ (
+extern "C" void slmm_project_ (
   homme::Int* lev, homme::Int* ie, homme::Int* nnc, homme::Int* np, homme::Int* nlev,
   homme::Int* qsize, homme::Int* nets, homme::Int* nete,
   homme::Cartesian3D* dep_points, homme::Real* neigh_q, homme::Real* J_t,
   homme::Real* dp3d, homme::Int* tl_np1, homme::Real* q, homme::Real* minq,
   homme::Real* maxq)
 {
-  homme::ir_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
-                    dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
+  homme::slmm_project(*lev - 1, *nets - 1, *ie - 1, *nnc, *np, *nlev, *qsize,
+                      dep_points, neigh_q, J_t, dp3d, *tl_np1 - 1, q, minq, maxq);
 }

@@ -14,11 +14,23 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
 ! experimental option for preqx model:
-  logical, public  :: use_semi_lagrange_transport   = .false.
-  logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
-  logical, public  :: use_semi_lagrange_transport_ir = .false.
-  logical, public  :: use_semi_lagrange_transport_qlt = .false.
-  logical, public  :: use_semi_lagrange_transport_qlt_check = .false.
+  ! Tracer transport algorithm type:
+  !     0  spectral-element Eulerian
+  !     1  classical semi-Lagrangian (SL)
+  !     2  cell-integrated remap SL
+  integer, public  :: transport_alg = 0
+  ! Constrained density reconstructor for SL property preservation; not used if
+  ! transport_alg = 0:
+  !     0  none
+  !     1  Cobra
+  !     2  QLT
+  !     3  CAAS
+  integer, public  :: semi_lagrange_cdr_alg = 2
+  ! If true, check mass conservation and shape preservation. The second
+  ! implicitly checks tracer consistency.
+  logical, public  :: semi_lagrange_cdr_check = .false.
+  ! Leftover for transport_alg = 1
+  logical, public  :: use_semi_lagrange_transport_local_conservation  = .false.
 
 ! set to .true. to run the theta nonydrostatic model in hydrostatic mode
   logical, public :: theta_hydrostatic_mode = .false.  

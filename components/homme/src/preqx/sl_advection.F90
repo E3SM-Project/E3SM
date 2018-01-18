@@ -17,7 +17,7 @@ module sl_advection
   use element_mod, only        : element_t
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
-  use control_mod, only        : integration, test_case, hypervis_order, use_semi_lagrange_transport, limiter_option
+  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option
   use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer,&
                                  initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
@@ -47,34 +47,34 @@ contains
 
 subroutine sl_init1(par, elem)
   use interpolate_mod,        only : interpolate_tracers_init
-  use control_mod,            only : use_semi_lagrange_transport_ir, use_semi_lagrange_transport_qlt
+  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg
   use element_state,          only : timelevels
   type(parallel_t) :: par
   type (element_t) :: elem(:)
   integer :: nslots, ie, num_neighbors, need_conservation
   
-  if (use_semi_lagrange_transport) then
+  if (transport_alg > 0) then
      call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
      nslots = nlev*qsize
-     if (use_semi_lagrange_transport_ir) then
+     if (transport_alg > 1) then
         nslots = nslots + nlev
      end if
      call initghostbuffer3D(ghostbuf_tr,nslots,np)
      call interpolate_tracers_init()
-     if (use_semi_lagrange_transport_ir) then
+     if (transport_alg > 1) then
         call initEdgeBuffer(par, edgeQdp, elem, qsize*nlev)
-        call ir_init(np, size(elem))
+        call slmm_init(np, size(elem))
         do ie = 1, size(elem)
            num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
-           call ir_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors)
+           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors)
         end do
      end if
-     if (use_semi_lagrange_transport_qlt) then
+     if (semi_lagrange_cdr_alg > 1) then
         need_conservation = 1
         ! The IR method is locally conservative, so we don't need QLT to handle
         ! conservation.
-        if (use_semi_lagrange_transport_ir) need_conservation = 0
-        call qlt_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
+        if (transport_alg > 1) need_conservation = 0
+        call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
      end if
   endif
 end subroutine
@@ -88,8 +88,8 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   use global_norms_mod,       only : wrap_repro_sum
   use parallel_mod,           only : global_shared_buf, global_shared_sum, syncmp
   use control_mod,            only : use_semi_lagrange_transport_local_conservation
-  use control_mod,            only : use_semi_lagrange_transport_ir, &
-       use_semi_lagrange_transport_qlt, use_semi_lagrange_transport_qlt_check
+  use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, &
+       semi_lagrange_cdr_check
 
 
   implicit none
@@ -131,9 +131,9 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   ! compute displacements for departure grid store in elem%derived%vstar
   call ALE_RKdss (elem, nets, nete, hybrid, deriv, dt, tl)
 
-  if (use_semi_lagrange_transport_ir) then
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-     call t_startf('IR_ghost_pack')
+  if (transport_alg > 1) then
+     if (barrier) call perf_barrier(hybrid)
+     call t_startf('SLMM_ghost_pack')
      n = qsize + 1 ! Number of fields to unpack.
      do ie = nets, nete
 #if (defined COLUMN_OPENMP)
@@ -157,15 +157,15 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
            enddo
         enddo
      end do
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-     call t_stopf('IR_ghost_pack')
+     if (barrier) call perf_barrier(hybrid)
+     call t_stopf('SLMM_ghost_pack')
 
-     call t_startf('IR_ghost_exchange')
+     call t_startf('SLMM_ghost_exchange')
      call ghost_exchangeVfull(hybrid%par, hybrid%ithr, ghostbuf_tr)
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-     call t_stopf('IR_ghost_exchange')
+     if (barrier) call perf_barrier(hybrid)
+     call t_stopf('SLMM_ghost_exchange')
 
-     call t_startf('IR_project')
+     call t_startf('SLMM_project')
      do ie = nets, nete
         num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
 #if (defined COLUMN_OPENMP)
@@ -180,7 +180,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
            u(:,:,2:qsize+1) = elem(ie)%state%Q(:,:,k,1:qsize)
            call amb_ghostVunpack_unoriented(ghostbuf_tr, neigh_q, np, n, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
 
-           call ir_project(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
+           call slmm_project(k, ie, num_neighbors, np, nlev, qsize, nets, nete, &
                 dep_points, &
                 neigh_q, &                     ! (tracer density)*Jacobian[ref elem -> sphere] on source mesh.
                 elem(ie)%metdet, &             ! Jacobian[ref elem -> sphere] on target element.
@@ -188,10 +188,10 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
                 elem(ie)%state%Q, minq, maxq)  ! Outputs are all mixing ratios.
         end do
      end do
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-     call t_stopf('IR_project')
+     if (barrier) call perf_barrier(hybrid)
+     call t_stopf('SLMM_project')
   else
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     if (barrier) call perf_barrier(hybrid)
      call t_startf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
      do ie=nets,nete
         kptr=0
@@ -245,33 +245,33 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
         end do
      end do
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
+     if (barrier) call perf_barrier(hybrid)
      call t_stopf('Prim_Advec_Tracers_remap_ALE_ghost_exchange')
   end if
 
-  ! QLT works with either classical SL or IR.
-  if (use_semi_lagrange_transport_qlt) then
+  ! CEDR works with either classical SL or IR.
+  if (semi_lagrange_cdr_alg > 1) then
      scalar_q_bounds = 0
      ! The IR method has uniform bounds on q throughout a cell.
-     if (use_semi_lagrange_transport_ir) scalar_q_bounds = 1
+     if (transport_alg > 1) scalar_q_bounds = 1
 
-     call qlt_sl_set_pointers_begin(nets, nete)
+     call cedr_sl_set_pointers_begin(nets, nete)
      do ie = nets, nete
-        call qlt_sl_set_spheremp(ie, elem(ie)%spheremp)
-        call qlt_sl_set_Qdp(ie, elem(ie)%state%Qdp, n0_qdp, np1_qdp)
-        call qlt_sl_set_dp3d(ie, elem(ie)%state%dp3d, tl%np1)
-        call qlt_sl_set_Q(ie, elem(ie)%state%Q)
+        call cedr_sl_set_spheremp(ie, elem(ie)%spheremp)
+        call cedr_sl_set_Qdp(ie, elem(ie)%state%Qdp, n0_qdp, np1_qdp)
+        call cedr_sl_set_dp3d(ie, elem(ie)%state%dp3d, tl%np1)
+        call cedr_sl_set_Q(ie, elem(ie)%state%Q)
      end do
-     call qlt_sl_set_pointers_end()
+     call cedr_sl_set_pointers_end()
      if (.true.) then
-        call t_startf('QLT')
-        call qlt_sl_run(minq, maxq, nets, nete)
-        if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-        call t_stopf('QLT')
-        call t_startf('QLT_local')
-        call qlt_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds, limiter_option)
-        if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-        call t_stopf('QLT_local')
+        call t_startf('CEDR')
+        call cedr_sl_run(minq, maxq, nets, nete)
+        if (barrier) call perf_barrier(hybrid)
+        call t_stopf('CEDR')
+        call t_startf('CEDR_local')
+        call cedr_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds, limiter_option)
+        if (barrier) call perf_barrier(hybrid)
+        call t_stopf('CEDR_local')
      else
         do ie = nets, nete
            do k = 1, nlev
@@ -282,19 +282,19 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         end do
      end if
   end if
-  if (use_semi_lagrange_transport_ir) then
-     call t_startf('IR_dss')
-     call ir_dss(elem, nets, nete, hybrid, np1_qdp)
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-     call t_stopf('IR_dss')
+  if (transport_alg > 1) then
+     call t_startf('SLMM_dss')
+     call slmm_dss(elem, nets, nete, hybrid, np1_qdp)
+     if (barrier) call perf_barrier(hybrid)
+     call t_stopf('SLMM_dss')
   end if
-  if (use_semi_lagrange_transport_qlt_check) then
-     call t_startf('QLT_check')
-     call qlt_sl_check(minq, maxq, nets, nete)
-     if (barrier) call mpi_barrier(hybrid%par%comm, ie)
-     call t_stopf('QLT_check')
+  if (semi_lagrange_cdr_alg > 1 .and. semi_lagrange_cdr_check) then
+     call t_startf('CEDR_check')
+     call cedr_sl_check(minq, maxq, nets, nete)
+     if (barrier) call perf_barrier(hybrid)
+     call t_stopf('CEDR_check')
   end if
-  if (use_semi_lagrange_transport_qlt) then
+  if (semi_lagrange_cdr_alg /= 1) then
      call t_stopf('Prim_Advec_Tracers_remap_ALE')
      return
   end if
@@ -1040,7 +1040,7 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
   end do
 end subroutine ALE_parametric_coords
 
-subroutine ir_dss(elem, nets, nete, hybrid, np1_qdp)
+subroutine slmm_dss(elem, nets, nete, hybrid, np1_qdp)
   use edgetype_mod,    only : EdgeBuffer_t
   use bndry_mod,       only : bndry_exchangev
   use hybrid_mod,      only : hybrid_t
@@ -1061,9 +1061,9 @@ subroutine ir_dss(elem, nets, nete, hybrid, np1_qdp)
      call edgeVpack(edgeQdp, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
   enddo
 
-  call t_startf('IR_bexchV')
+  call t_startf('SLMM_bexchV')
   call bndry_exchangeV(hybrid, edgeQdp)
-  call t_stopf('IR_bexchV')
+  call t_stopf('SLMM_bexchV')
 
   do ie = nets, nete
      call edgeVunpack(edgeQdp, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, ie)
@@ -1073,7 +1073,7 @@ subroutine ir_dss(elem, nets, nete, hybrid, np1_qdp)
         end do
      end do
   end do
-end subroutine ir_dss
+end subroutine slmm_dss
 
 ! Replacement for edge_mod_base::ghostvpack_unoriented, which has a strange
 ! 'threadsafe' module variable that causes a race condition when HORIZ and
@@ -1131,5 +1131,20 @@ subroutine amb_ghostvunpack_unoriented(edge,v,nc,vlyr,kptr,desc,GlobalId,u)
      end if
   end do
 end subroutine amb_ghostvunpack_unoriented
+
+subroutine perf_barrier(hybrid)
+  use hybrid_mod, only : hybrid_t
+  implicit none
+  type (hybrid_t), intent(in) :: hybrid
+  integer :: ierr
+
+#ifdef HORIZ_OPENMP
+  !$OMP BARRIER
+#endif
+  if (hybrid%ithr == 0) call mpi_barrier(hybrid%par%comm, ierr)
+#ifdef HORIZ_OPENMP
+  !$OMP BARRIER
+#endif
+end subroutine perf_barrier
 
 end module 

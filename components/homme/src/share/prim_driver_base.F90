@@ -44,8 +44,7 @@ contains
     use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, use_semi_lagrange_transport, z2_map_method, cubed_sphere_map, &
-         use_semi_lagrange_transport_qlt
+         partmethod, transport_alg, semi_lagrange_cdr_alg, z2_map_method, cubed_sphere_map
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -112,7 +111,7 @@ contains
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
 
-    use compose_mod, only: qlt_init, qlt_unittest, qlt_set_ie2gci
+    use compose_mod, only: cedr_init, cedr_unittest, cedr_set_ie2gci
 
     implicit none
 
@@ -479,14 +478,14 @@ contains
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
     call kokkos_init()
-    if (use_semi_lagrange_transport .and. use_semi_lagrange_transport_qlt) then
-       call qlt_init(par%comm, GridVertex)
-       call qlt_unittest(par%comm, ierr)
+    if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 0) then
+       call cedr_init(par%comm, nelemd, GridVertex)
+       call cedr_unittest(par%comm, ierr)
        if (par%masterproc) then
-          write(iulog,*) "QLT unittest returned", ierr
+          write(iulog,*) "CEDR unittest returned", ierr
        end if
        do ie = 1, nelemd
-          call qlt_set_ie2gci(ie, elem(ie)%vertex%number)
+          call cedr_set_ie2gci(ie, elem(ie)%vertex%number)
        end do
     end if
 
@@ -511,7 +510,7 @@ contains
     nets=1
     nete=nelemd
 
-    if (use_semi_lagrange_transport) then
+    if (transport_alg > 0) then
        call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
     end if
 
@@ -1072,7 +1071,7 @@ contains
   !
   !
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
-    use control_mod,        only: use_semi_lagrange_transport
+    use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
@@ -1109,7 +1108,7 @@ contains
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
       endif
-      if (use_semi_lagrange_transport) then
+      if (transport_alg > 0) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
