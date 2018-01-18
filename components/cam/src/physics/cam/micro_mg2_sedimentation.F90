@@ -220,21 +220,6 @@ contains
     fn(0) = 0._r8
     fn(1:nlev) = alphan(1:nlev)*n(i,1:nlev)
 
-    ! Condensate falling from the cell above is assumed to evaporate/sublimate
-    ! instantly if it falls outside cloud or precipitating area in the cell of
-    ! interest. This is handled by computing ratio=(cldfrac in this layer)/(cldfrac 
-    ! of the level above) and passing ratio*q(i,k-1) to this layer as condensate, 
-    ! with the remaining (1-ratio)*q(i,k-1) returned to vapor phase (with corresponding
-    ! evaporative cooling effect). This effect is ignored for rain and snow because 
-    ! precip_area_frac is assumed to be max(cldfrac of layers above) which can never 
-    ! decrease as you move lower in the column. This "max" precip-area fraction assumption
-    ! was used in earlier versions of the model but is no longer necessarily true. As 
-    ! a result, qr and qs should be handled identically to qc and qi with cld_frac replaced
-    ! by precip_area_frac. Not doing so is a BUG. Note also that ratio is calculated 
-    ! assuming maximum overlap between adjoining layers, which is not necessarily the 
-    ! assumption used elsewhere in the code (e.g. in radiation). Comment by P. Caldwell 
-10  ! /2/17.
-
     if (mg_type == MG_ICE .or. mg_type == MG_LIQUID) then
       ratio(1) = 1._r8
       ratio(2:nlev) = cloud_frac(i,2:nlev)/cloud_frac(i,1:(nlev-1))
