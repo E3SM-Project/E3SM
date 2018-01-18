@@ -209,7 +209,7 @@ def _create_csv_from_dict(output_dir, season):
 
     return table_path
 
-def _create_csv_from_dict_taylor_diag(output_dir, season):
+def _create_csv_from_dict_taylor_diag(output_dir, season, test_name):
     """Create a csv for a season in LAT_LON_TABLE_INFO in output_dir and return the path to it"""
     taylor_diag_path = os.path.join(output_dir, season + '_metrics_taylor_diag.csv')
     control_runs_path =  os.path.join(sys.prefix, 'share', 'acme_diags', 'control_runs', season + '_metrics_taylor_diag_B1850_v0.csv')
@@ -275,10 +275,9 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
                 taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+'E3sm_v0 B1850', markerfacecolor = 'None', markeredgecolor = color[1], linestyle = 'None')
 
         baseline_text = 'E3SMv0_B1850'
-        #model_text = parameters[0].test_name
-        model_text = 'model name'
-        ax.text(0.8, 0.9, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
-        ax.text(0.8, 0.95, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
+        model_text = test_name
+        ax.text(0.7, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
+        ax.text(0.7, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
 
         plt.title(season + ': Spatial Variability', y = 1.08)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
@@ -414,7 +413,7 @@ def generate_lat_lon_metrics_table(viewer, root_dir):
 
     _create_lat_lon_table_index(viewer, root_dir)
 
-def generate_lat_lon_taylor_diag(viewer, root_dir):
+def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, plot using taylor diagram  and append that html to the viewer."""
     taylor_diag_dir = os.path.join(root_dir, 'taylor-diagram-data')  # output_dir/viewer/table-data
 
@@ -422,7 +421,7 @@ def generate_lat_lon_taylor_diag(viewer, root_dir):
         os.mkdir(taylor_diag_dir)
 
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season)
+        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name)
         html_path = _cvs_to_html(csv_path, season)
         LAT_LON_TABLE_INFO[season]['html_path'] = html_path
 
@@ -520,6 +519,6 @@ def create_viewer(root_dir, parameters, ext):
                                        title=col_season, other_files=formatted_files)
 
     generate_lat_lon_metrics_table(viewer, root_dir)
-    generate_lat_lon_taylor_diag(viewer, root_dir)
+    generate_lat_lon_taylor_diag(viewer, root_dir,parameters)
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
