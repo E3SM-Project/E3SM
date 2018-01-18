@@ -87,7 +87,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! allocate and initialize procinfo and clumps 
+    ! allocate and initialize procinfo (from decompMod.F90) and clumps 
     ! beg and end indices initialized for simple addition of cells later 
 
     allocate(procinfo%cid(clump_pproc), stat=ier)
@@ -98,16 +98,19 @@ contains
     procinfo%nclumps = clump_pproc
     procinfo%cid(:)  = -1
     procinfo%ncells  = 0
+    procinfo%ntopos  = 0
     procinfo%nlunits = 0
     procinfo%ncols   = 0
     procinfo%npfts   = 0
     procinfo%nCohorts = 0
     procinfo%begg    = 1
+    procinfo%begt    = 1
     procinfo%begl    = 1
     procinfo%begc    = 1
     procinfo%begp    = 1
     procinfo%begCohort    = 1
     procinfo%endg    = 0
+    procinfo%endt    = 0
     procinfo%endl    = 0
     procinfo%endc    = 0
     procinfo%endp    = 0
@@ -120,16 +123,19 @@ contains
     end if
     clumps(:)%owner   = -1
     clumps(:)%ncells  = 0
+    clumps(:)%ntopounits = 0
     clumps(:)%nlunits = 0
     clumps(:)%ncols   = 0
     clumps(:)%npfts   = 0
     clumps(:)%nCohorts = 0
     clumps(:)%begg    = 1
+    clumps(:)%begt    = 1
     clumps(:)%begl    = 1
     clumps(:)%begc    = 1
     clumps(:)%begp    = 1
     clumps(:)%begCohort    = 1
     clumps(:)%endg    = 0
+    clumps(:)%endt    = 0
     clumps(:)%endl    = 0
     clumps(:)%endc    = 0
     clumps(:)%endp    = 0
