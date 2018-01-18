@@ -32,6 +32,8 @@ class _Element(object): # private class, don't want users constructing directly 
 
 class GenericXML(object):
 
+    _FILEMAP = {}
+
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None):
         """
         Initialize an object
@@ -70,15 +72,21 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logger.debug("read: " + infile)
-        file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
-        with file_open(infile) as fd:
-            self.read_fd(fd)
+        if infile in self._FILEMAP:
+            logger.debug("read (cached): " + infile)
+            self.tree, self.root = self._FILEMAP[infile]
+        else:
+            logger.debug("read: " + infile)
+            file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
+            with file_open(infile) as fd:
+                self.read_fd(fd)
 
-        if schema is not None and self.get_version() > 1.0:
-            self.validate_xml_file(infile, schema)
+            if schema is not None and self.get_version() > 1.0:
+                self.validate_xml_file(infile, schema)
 
-        logger.debug("File version is {}".format(str(self.get_version())))
+            logger.debug("File version is {}".format(str(self.get_version())))
+
+            self._FILEMAP[infile] = (self.tree, self.root)
 
     def read_fd(self, fd):
         if self.tree:
