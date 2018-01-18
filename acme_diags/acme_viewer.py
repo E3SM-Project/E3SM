@@ -243,33 +243,42 @@ def _create_csv_from_dict_taylor_diag(output_dir, season):
     print keys_control_runs
    
     # generate taylor diagram plot if there is metrics saved for any variable within the list.
-    marker = ['o', 'd', 's', '>', '<', 'v' , '^'] 
-    color = ['r', 'b', 'g', 'y', 'm']
+    marker = ['o', 'd', '+', 's', '>', '<', 'v' , '^'] 
+    color = ['k', 'r', 'g', 'y', 'm']
  
     if row_count > 0:
         matplotlib.rcParams.update({'font.size': 20})
-        fig = plt.figure(figsize=(7,8))
+        fig = plt.figure(figsize=(9,8))
         refstd =  1.0
-        taylordiag = TaylorDiagram(refstd, fig = fig,rect = 111, label = "Reference")
+        taylordiag = TaylorDiagram(refstd, fig = fig,rect = 111, label = "OBS")
+        ax = taylordiag._ax
         
         # Add samples to taylor diagram
         for irow in range(1,row_count):
             std_norm, correlation = float(data[irow][1])/float(data[irow][2]), float(data[irow][3])
             print std_norm, correlation
-            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = color[0], markeredgecolor = color[0], linestyle = 'None')
+            taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[0],ms = 10, label = data[irow][0], markerfacecolor = 'None', markeredgecolor = color[0], linestyle = 'None')
+        # Add a figure legend
 
-        # Add samples for control:
+        fig.legend(taylordiag.samplePoints,
+                   [ p.get_label() for p in taylordiag.samplePoints],
+                   numpoints=1,  loc='center right', bbox_to_anchor=(1.0, .5), prop={'size':10})
+
+
+        # Add samples for baseline simulation:
         for irow in range(1,row_count):
             if data[irow][0] in keys_control_runs:
                 control_irow = keys_control_runs.index(data[irow][0])
-                print control_irow
+                #print control_irow
                 std_norm, correlation = float(control_runs_data[control_irow][1])/float(control_runs_data[control_irow][2]), float(control_runs_data[control_irow][3])
-                print std_norm, correlation
-                taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+' B1850', markerfacecolor = color[1], markeredgecolor = color[1], linestyle = 'None')
-        # Add a figure legend
-        fig.legend(taylordiag.samplePoints,
-                   [ p.get_label() for p in taylordiag.samplePoints],
-                   numpoints=1,  loc='upper right', bbox_to_anchor=(.9, .9), prop={'size':10})
+                #print std_norm, correlation
+                taylordiag.add_sample(std_norm, correlation, marker = marker[irow], c = color[1],ms = 10, label = data[irow][0]+'E3sm_v0 B1850', markerfacecolor = 'None', markeredgecolor = color[1], linestyle = 'None')
+
+        baseline_text = 'E3SMv0_B1850'
+        #model_text = parameters[0].test_name
+        model_text = 'model name'
+        ax.text(0.8, 0.9, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
+        ax.text(0.8, 0.95, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
 
         plt.title(season + ': Spatial Variability', y = 1.08)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
