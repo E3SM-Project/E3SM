@@ -125,7 +125,6 @@ def query_component(name, all_components=False):
     # and see if there is a match for the the target component in the component attribute
     match_found = False
     valid_components = []
-    cime_model = CIME.utils.get_model()
     for comp in components:
         string = "CONFIG_{}_FILE".format(comp)
 
