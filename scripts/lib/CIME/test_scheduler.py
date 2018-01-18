@@ -930,6 +930,6 @@ class TestScheduler(object):
 
                 logger.info( "    Case dir: {}".format(self._get_test_dir(test)))
 
-            logger.info( "test-scheduler took {} seconds".format(time.time() - start_time))
+        logger.info( "test-scheduler took {} seconds".format(time.time() - start_time))
 
         return rv
