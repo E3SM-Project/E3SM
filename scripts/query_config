@@ -304,7 +304,8 @@ class Machines(CIME.XML.machines.Machines):
                 compilers = self.text(self.get_child("COMPILERS"))
 
                 max_tasks_per_node = self.text(self.get_child("MAX_TASKS_PER_NODE"))
-                max_mpitasks_per_node = self.text(self.get_child("MAX_MPITASKS_PER_NODE"))
+                mpitasks_node = self.get_optional_child("MAX_MPITASKS_PER_NODE")
+                max_mpitasks_per_node = self.text(mpitasks_node) if mpitasks_node else max_tasks_per_node
 
                 current_machine = self.probe_machine_name(warn=False)
                 name += " (current)" if current_machine and current_machine in name else ""
