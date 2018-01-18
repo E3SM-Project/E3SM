@@ -5,9 +5,16 @@
 #SBATCH -N 36
 #SBATCH --time=0:30:00
 #SBATCH -p ec
+#PBS -q acme
+#PBS -l walltime=60:00                                                                                           
+#PBS -l nodes=25    
 
 set OMP_NUM_THREADS = 1
 set NCPU = 640
+if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+  set NCPU = $PBS_NNODES
+  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
+endif
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
     @ NCPU *= 16

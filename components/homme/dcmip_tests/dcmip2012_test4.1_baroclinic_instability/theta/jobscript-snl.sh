@@ -10,6 +10,7 @@
 #PBS -l walltime=60:00
 #PBS -l nodes=20
 #PBS -q acme
+
 #
 #  nonhydro x1:  54 nodes, 7.4h        KG5 dt=.5
 #           x1:  20 nodes, 2.5h        ars232  dt=120
@@ -21,9 +22,9 @@
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
-if ( ${?PBS_NNODES} ) then   # redsky
-    cd $PBS_O_WORKDIR
-    set NCPU = $PBS_NNODES
+if ( ${?PBS_ENVIRONMENT} ) then   # anvil
+  set NCPU = $PBS_NNODES
+  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
 endif
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
