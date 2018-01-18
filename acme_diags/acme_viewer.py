@@ -201,7 +201,6 @@ def _create_csv_from_dict(output_dir, season, test_name):
 
     with open(table_path, 'w') as table_csv:
         writer=csv.writer(table_csv, delimiter=',', lineterminator='\n', quoting=csv.QUOTE_NONE)
-        writer.writerow(test_name)
         writer.writerow(col_names)
         for key, metrics_dic in LAT_LON_TABLE_INFO[season].items():
             metrics = metrics_dic['metrics']
@@ -290,7 +289,7 @@ def _cvs_to_html(csv_path, season, test_name):
     html_path = csv_path.replace('csv', 'html')
 
     with open(html_path, 'w') as htmlfile:
-        htmlfile.write('<p><th><b>{} Model Name </b></th></p>'.format(test_name))
+        htmlfile.write('<p><th><b>Model Name: {}</b></th></p>'.format(test_name))
         htmlfile.write('<p><th><b>{} Mean </b></th></p>'.format(season))
         htmlfile.write('<table>')
 
@@ -424,8 +423,8 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
 
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name)
-        html_path = _cvs_to_html(csv_path, season)
-        LAT_LON_TABLE_INFO[season]['html_path'] = html_path
+        #html_path = _cvs_to_html(csv_path, season, parameters[0].test_name)
+        #LAT_LON_TABLE_INFO[season]['html_path'] = html_path
 
     _create_lat_lon_table_index(viewer, root_dir)
 
