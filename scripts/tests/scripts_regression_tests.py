@@ -1340,6 +1340,19 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         # Basic namelist compare should now pass again
         self._create_test(compargs)
 
+class X_TestQueryConfig(unittest.TestCase):
+    def test_query_compsets(self):
+        run_cmd_no_fail("{}/query_config --compsets".format(SCRIPT_DIR))
+
+    def test_query_components(self):
+        run_cmd_no_fail("{}/query_config --components".format(SCRIPT_DIR))
+
+    def test_query_grids(self):
+        run_cmd_no_fail("{}/query_config --grids".format(SCRIPT_DIR))
+
+    def test_query_machines(self):
+        run_cmd_no_fail("{}/query_config --machines".format(SCRIPT_DIR))
+
 ###############################################################################
 class Z_FullSystemTest(TestCreateTestCommon):
 ###############################################################################
