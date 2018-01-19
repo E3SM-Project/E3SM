@@ -175,18 +175,20 @@
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
     <env name="MPICH_CPUMASK_DISPLAY">1</env>
-
     <env name="OMP_STACKSIZE">64M</env>
-    <env name="OMP_PROC_BIND">spread</env>
-    <env name="OMP_PLACES">threads</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 24 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="intel18">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 24 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
-
+  <environment_variables compiler="!intel">
+    <env name="OMP_PROC_BIND">spread</env>
+    <env name="OMP_PLACES">threads</env>
+  </environment_variables>
 </machine>
 
 <machine MACH="cori-haswell">
@@ -320,16 +322,19 @@
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
     <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
-
     <env name="OMP_STACKSIZE">128M</env>
-    <env name="OMP_PROC_BIND">spread</env>
-    <env name="OMP_PLACES">threads</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 32 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="intel18">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 32 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
+  </environment_variables>
+  <environment_variables compiler="!intel">
+    <env name="OMP_PROC_BIND">spread</env>
+    <env name="OMP_PLACES">threads</env>
   </environment_variables>
 </machine>
 
@@ -467,11 +472,7 @@
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
     <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
-
     <env name="OMP_STACKSIZE">128M</env>
-    <env name="OMP_PROC_BIND">spread</env>
-    <env name="OMP_PLACES">threads</env>
-
   </environment_variables>
   <environment_variables mpilib="impi">
     <env name="I_MPI_FABRICS">ofi</env>
@@ -482,10 +483,16 @@
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 68 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
   </environment_variables>
   <environment_variables compiler="intel18">
     <env name="MPICH_MEMORY_REPORT">1</env>
     <env name="FORT_BUFFERED">yes</env>
+    <env name="KMP_AFFINITY">granularity=$SHELL{if [ 68 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo "core";else echo "thread";fi;},scatter</env>
+  </environment_variables>
+  <environment_variables compiler="!intel">
+    <env name="OMP_PROC_BIND">spread</env>
+    <env name="OMP_PLACES">threads</env>
   </environment_variables>
 </machine>
 
