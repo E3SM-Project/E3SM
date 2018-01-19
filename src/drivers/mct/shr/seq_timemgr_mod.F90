@@ -2413,7 +2413,7 @@ contains
 
     character(len=*), parameter ::  F06 = "(2A,L3)"
     character(len=*), parameter ::  F07 = "(3A)"
-    character(len=*), parameter ::  F08 = "(2A,I8.8,3x,I5.5)"
+    character(len=*), parameter ::  F08 = "(2A,I12.8,3x,I5.5)"
     character(len=*), parameter ::  F09 = "(2A,2I8,I12)"
     character(len=*), parameter ::  F10 = "(2A,I2,2x,A)"
 
