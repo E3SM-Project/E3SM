@@ -1459,15 +1459,15 @@
          <DESC>LLNL Linux Cluster, Linux (pgi), 36 pes/node, batch system is Slurm</DESC>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-         <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
+         <RUNDIR>/p/lscratchh/$USER/ACME/$CASE/run</RUNDIR>
+         <EXEROOT>/p/lscratchh/$USER/ACME/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/p/lscratchh/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines</BASELINE_ROOT>
+         <BASELINE_ROOT>/p/lscratchh/$USER/ccsm_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
