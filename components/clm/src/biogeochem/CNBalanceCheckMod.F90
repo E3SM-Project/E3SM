@@ -24,6 +24,7 @@ module CNBalanceCheckMod
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
 
+  use spmdMod             , only : iam
   use CNDecompCascadeConType , only : decomp_cascade_con
   use clm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c
@@ -86,8 +87,10 @@ contains
 !         if(c==5657 .and. .false.)then
 !           print*,'totbgc blgc',carbonstate_vars%totabgc_col(c),carbonstate_vars%totblgc_col(c)
 !         endif
+!         col_pp%debug_flag(c)=.true.
       end do
-
+      if(iam==129) col_pp%debug_flag(23467)=.true.
+!      if(iam==6)col_pp%debug_flag(17236)=.true.
     end associate
 
   end subroutine BeginCBalance
@@ -220,7 +223,8 @@ contains
          
          col_begcb               =>    carbonstate_vars%begcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          col_endcb               =>    carbonstate_vars%endcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2) 
-         col_errcb               =>    carbonstate_vars%errcb_col                & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         col_errcb               =>    carbonstate_vars%errcb_col              , & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         som_c_runoff_col        =>    carbonflux_vars%som_c_runoff_col          &
          )
 
       ! set time steps
@@ -242,7 +246,7 @@ contains
          col_coutputs = er(c) + col_fire_closs(c) + dwt_closs(c) + product_closs(c) + col_hrv_xsmrpool_to_atm(c)
 
          ! subtract leaching flux
-         col_coutputs = col_coutputs - som_c_leached(c)
+         col_coutputs = col_coutputs - som_c_leached(c) + som_c_runoff_col(c)
 
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
@@ -278,6 +282,7 @@ contains
             write(iulog,*)'product               = ',product_closs(c)*dt
             write(iulog,*)'hrv                   = ',col_hrv_xsmrpool_to_atm(c)*dt
             write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+            write(iulog,*)'runoff som c          = ',som_c_runoff_col(c)*dt
             write(iulog,*)'begcb                 = ',col_begcb(c)
             write(iulog,*)'endcb                 = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
@@ -350,7 +355,8 @@ contains
          col_noutputs        =>    nitrogenflux_vars%noutputs_col            , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb           =>    nitrogenstate_vars%begnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb           =>    nitrogenstate_vars%endnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb           =>    nitrogenstate_vars%errnb_col                & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         col_errnb           =>    nitrogenstate_vars%errnb_col              , & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         som_n_runoff_col    =>    nitrogenflux_vars%som_n_runoff_col          &
          )
 
       ! set time steps
@@ -415,7 +421,7 @@ contains
            end if
          endif
 
-         col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
+         col_noutputs(c) = col_noutputs(c) - som_n_leached(c) + som_n_runoff_col(c)
 
          ! calculate the total column-level nitrogen balance error for this time step
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
@@ -497,6 +503,7 @@ contains
          write(iulog,*)'no3_leach             = ', smin_no3_leached(c)*dt
          write(iulog,*)'no3_runof             = ', smin_no3_runoff(c)*dt
          write(iulog,*)'som_n_leach           = ', -som_n_leached(c)*dt
+         write(iulog,*)'som_n_runoff          = ',som_n_runoff_col(c)*dt
          write(iulog,*)'decompfireloss        = ',nitrogenflux_vars%fire_decomp_nloss_col(c)*dt
          write(iulog,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
          write(iulog,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
@@ -577,7 +584,9 @@ contains
          pf                    =>  phosphorusflux_vars                         , &
          ps                    =>  phosphorusstate_vars                          &
          som_p_leached         =>  phosphorusflux_vars%som_p_leached_col       , &
-         supplement_to_sminp_surf_col => phosphorusflux_vars%supplement_to_sminp_surf_col &
+         supplement_to_sminp_surf_col => phosphorusflux_vars%supplement_to_sminp_surf_col, &
+         sminp_runoff_col      => phosphorusflux_vars%sminp_runoff_col   , &
+         som_p_runoff_col      => phosphorusflux_vars%som_p_runoff_col     &
          )
 
       ! set time steps
@@ -672,10 +681,11 @@ contains
          else
             col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
          end if
+         col_poutputs(c) = col_poutputs(c) +  sminp_runoff_col(c)
 !         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt
 !          col_poutputs(c) = sminp_to_plant(c)
-         col_poutputs(c) = col_poutputs(c) - som_p_leached(c)
+         col_poutputs(c) = col_poutputs(c) - som_p_leached(c) + som_p_runoff_col(c)
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
@@ -736,6 +746,7 @@ contains
          write(iulog,*)'woodpro loss   = ', product_ploss(c) * dt
          write(iulog,*)'plant2bgcp     = ', phosphorusflux_vars%pflx_plant_to_soilbgc_col(c)*dt
          write(iulog,*)'leached som_p  = ', -som_p_leached(c) * dt
+         write(iulog,*)'runoff  som_p  = ', som_p_runoff_col(c)*dt
          write(iulog,*)'soil2plant     = ', phosphorusflux_vars%sminp_to_plant_col(c)*dt
          write(iulog,*)'abgp           = ', phosphorusstate_vars%totabgp_col(c)
          write(iulog,*)'blgp           = ', phosphorusstate_vars%totblgp_col(c)

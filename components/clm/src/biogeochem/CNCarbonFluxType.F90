@@ -414,6 +414,7 @@ module CNCarbonFluxType
      real(r8), pointer :: f_co2_soil_col                            (:)     ! total soil-atm. CO2 exchange (gC/m2/s)
     !------------------------------------------------------------------------
      real(r8), pointer :: cflx_plant_to_soilbgc_col(:)
+     real(r8), pointer :: som_c_runoff_col(:)    => null()
    contains
 
      procedure , public  :: Init   
@@ -827,6 +828,7 @@ contains
      this%f_co2_soil_col                (:)     = nan
      !------------------------------------------------------------------------
      allocate(this%cflx_plant_to_soilbgc_col (begc:endc)); this%cflx_plant_to_soilbgc_col(:) = nan
+     allocate(this%som_c_runoff_col(begc:endc)); this%som_c_runoff_col(:) = nan
   end subroutine InitAllocate; 
 
   !------------------------------------------------------------------------
@@ -907,6 +909,11 @@ contains
           this%hr_col(begc:endc) = spval
           call hist_addfld1d (fname='HR', units='gC/m^2/s', &
                avgflag='A', long_name='total heterotrophic respiration', &
+               ptr_col=this%hr_col)
+
+          this%som_c_runoff_col(begc:endc) = spval
+          call hist_addfld1d (fname='SOMC_RUNOFF', units='gC/m^2/s', &
+               avgflag='A', long_name='loss of organic C through runoff', &
                ptr_col=this%hr_col)
 
        end if
@@ -4333,6 +4340,7 @@ contains
        this%vegfire_col(i)               = value_column       
        this%wood_harvestc_col(i)         = value_column 
        this%hrv_xsmrpool_to_atm_col(i)   = value_column
+       this%som_c_runoff_col(i)          = value_column
     end do
 
     do k = 1, ndecomp_pools

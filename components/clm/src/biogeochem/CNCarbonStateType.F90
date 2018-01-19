@@ -125,6 +125,10 @@ module CNCarbonStateType
      real(r8), pointer :: totsomc_end_col(:)
      real(r8), pointer :: decomp_som2c_vr_col(:,:)
 
+    real(r8), pointer :: som1c_col               (:) => null()
+    real(r8), pointer :: som2c_col               (:) => null()
+    real(r8), pointer :: som3c_col               (:) => null()
+
    contains
 
      procedure , public  :: Init   
@@ -262,6 +266,10 @@ contains
     allocate(this%cwdc_end_col   (begc:endc));  this%cwdc_end_col    (:) = nan
     allocate(this%totlitc_end_col(begc:endc));  this%totlitc_end_col (:) = nan
     allocate(this%totsomc_end_col(begc:endc));  this%totsomc_end_col (:) = nan
+
+    allocate(this%som1c_col(begc:endc)); this%som1c_col(:) = nan
+    allocate(this%som2c_col(begc:endc)); this%som2c_col(:) = nan
+    allocate(this%som3c_col(begc:endc)); this%som3c_col(:) = nan
 
   end subroutine InitAllocate
 
@@ -905,6 +913,20 @@ contains
              avgflag='A', long_name='fuel load', &
              ptr_col=this%fuelc_col, default='inactive')
 
+       this%som1c_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOM1C', units='gC/m^2', &
+             avgflag='A', long_name='SOM1C', &
+             ptr_col=this%som1c_col, default='inactive')
+
+       this%som2c_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOM2C', units='gC/m^2', &
+             avgflag='A', long_name='SOM2C', &
+             ptr_col=this%som2c_col, default='inactive')
+
+       this%som3c_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOM3C', units='gC/m^2', &
+             avgflag='A', long_name='SOM3C', &
+             ptr_col=this%som3c_col, default='inactive')
     end if
 
     !-------------------------------

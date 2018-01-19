@@ -136,6 +136,9 @@ module PhosphorusStateType
      real(r8), pointer :: secondp_end_col              (:)
      real(r8), pointer :: cwdp_end_col                 (:)
      real(r8), pointer :: totsomp_end_col              (:)
+     real(r8), pointer :: som1p_col                    (:) => null()
+     real(r8), pointer :: som2p_col                    (:) => null()
+     real(r8), pointer :: som3p_col                    (:) => null()
      
    contains
 
@@ -295,7 +298,10 @@ contains
     allocate(this%solutionp_end_col  (begc:endc)); this%solutionp_end_col    (:) = nan
     allocate(this%cwdp_end_col       (begc:endc)); this%cwdp_end_col         (:) = nan
     allocate(this%totsomp_end_col    (begc:endc)); this%totsomp_end_col      (:) = nan
-    
+
+    allocate(this%som1p_col(begc:endc)); this%som1p_col(:) = nan
+    allocate(this%som2p_col(begc:endc)); this%som2p_col(:) = nan
+    allocate(this%som3p_col(begc:endc)); this%som3p_col(:) = nan    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -651,6 +657,21 @@ contains
     call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
          avgflag='A', long_name='total wood product P', &
          ptr_col=this%totprodp_col, default='inactive')
+
+    this%som1p_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOM1P', units='gP/m^2', &
+          avgflag='A', long_name='SOM1P', &
+          ptr_col=this%som1p_col, default='inactive')
+
+    this%som2p_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOM2P', units='gP/m^2', &
+          avgflag='A', long_name='SOM2P', &
+          ptr_col=this%som2p_col, default='inactive')
+
+    this%som3p_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOM3P', units='gP/m^2', &
+          avgflag='A', long_name='SOM3P', &
+          ptr_col=this%som3p_col, default='inactive')
 
   end subroutine InitHistory
 

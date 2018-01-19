@@ -401,6 +401,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
 
      real(r8), pointer :: nflx_plant_to_soilbgc_col                 (:)
+     real(r8), pointer :: som_n_runoff_col                          (:) => null()
    contains
 
      procedure , public  :: Init   
@@ -821,6 +822,7 @@ contains
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
     
     allocate(this%nflx_plant_to_soilbgc_col   (begc:endc)) ;             this%nflx_plant_to_soilbgc_col(:)= nan    
+    allocate(this%som_n_runoff_col            (begc:endc)) ;             this%som_n_runoff_col      (:)  = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1532,7 +1534,12 @@ contains
             avgflag='A', long_name='soil NO3 pool loss to runoff', &
             ptr_col=this%smin_no3_runoff_col)
     end if
-       
+
+    this%som_n_runoff_col(begc:endc) = spval    
+    call hist_addfld1d (fname='SOMN_RUNOFF', units='gN/m^2/s', &
+         avgflag='A', long_name='soil organic N pool loss to runoff', &
+         ptr_col=this%som_n_runoff_col) 
+      
     if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
        .or. (use_pflotran .and. pf_cmode)) then
        this%f_nit_vr_col(begc:endc,:) = spval
@@ -2634,6 +2641,8 @@ contains
 
        ! bgc-interface
        this%plant_ndemand_col(i) = value_column
+
+       this%som_n_runoff_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools

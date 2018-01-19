@@ -328,6 +328,9 @@ module PhosphorusFluxType
      real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
 
      real(r8), pointer :: pflx_plant_to_soilbgc_col                 (:)
+     real(r8), pointer :: sminp_runoff_col                          (:)   => null()  !col inorganic P runoff loss, gP/m2/time step
+     real(r8), pointer :: som_p_runoff_col                          (:)   => null()
+
    contains
 
      procedure , public  :: Init   
@@ -691,7 +694,8 @@ contains
     this%sminp_net_transport_delta_col     (:)     = spval
     !------------------------------------------------------------------------
     allocate(this%pflx_plant_to_soilbgc_col   (begc:endc                   )) ; this%pflx_plant_to_soilbgc_col   (:)   = nan
-
+    allocate(this%sminp_runoff_col      (begc:endc              ))      ;this%sminp_runoff_col         (:)    = nan
+    allocate(this%som_p_runoff_col      (begc:endc              ))      ;this%som_p_runoff_col         (:)    = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1286,6 +1290,16 @@ contains
     call hist_addfld1d (fname='SOM_P_LEACHED', units='gP/m^2/s', &
          avgflag='A', long_name='total flux of P from SOM pools due to leaching', &
          ptr_col=this%som_p_leached_col, default='inactive')
+
+    this%sminp_runoff_col(begc:endc) = spval
+    call hist_addfld1d (fname='SMINP_RUNOFF', units='gP/m^2/s', &
+         avgflag='A', long_name='loss of inorganic P through surface runoff', &
+         ptr_col=this%sminp_runoff_col)
+
+    this%som_p_runoff_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOMP_RUNOFF', units='gP/m^2/s', &
+         avgflag='A', long_name='loss of organic P through surface runoff', &
+         ptr_col=this%som_p_runoff_col)
 
     do k = 1, ndecomp_pools
        if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
@@ -2084,6 +2098,8 @@ contains
        this%adsorb_to_labilep_col(i)         = value_column
        this%desorb_to_solutionp_col(i)       = value_column
 
+       this%sminp_runoff_col(i) = value_column
+       this%som_p_runoff_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools
