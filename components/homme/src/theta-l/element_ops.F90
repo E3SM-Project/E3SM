@@ -408,12 +408,14 @@ contains
   end subroutine set_state_i
 
   !_____________________________________________________________________
-  subroutine set_elem_state(u,v,w,T,ps,phis,p,dp,zm,g,elem,n0,n1,ntQ)
-  ! FIX THIS: add zi,wi to argument list
+  subroutine set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
+  !
   ! set element state variables
   ! works for both dry and moist initial conditions
-
+  !
+  !
   real(real_kind), dimension(np,np,nlev), intent(in):: u,v,w,T,p,dp,zm
+  real(real_kind), dimension(np,np,nlevp), intent(in):: w_i,zi
   real(real_kind), dimension(np,np),      intent(in):: ps,phis
   real(real_kind),  intent(in)    :: g
   integer,          intent(in)    :: n0,n1,ntQ
@@ -429,12 +431,13 @@ contains
     ! set prognostic state variables at level midpoints
     elem%state%v   (:,:,1,:,n)        = u
     elem%state%v   (:,:,2,:,n)        = v
-    elem%state%w_i (:,:,1:nlev,  n)   = w
     elem%state%dp3d(:,:,:,  n)        = dp
     elem%state%ps_v(:,:,    n)        = ps
-    elem%state%phinh_i(:,:,1:nlev, n) = g*zm
     elem%state%phis(:,:)              = phis
     elem%state%theta_dp_cp(:,:,:,n)   = T*cp_star*dp*((p/p0)**(-kappa_star))
+
+    elem%state%w_i (:,:,:,  n)   = w_i
+    elem%state%phinh_i(:,:,:, n) = g*zi
   end do
 
   end subroutine set_elem_state

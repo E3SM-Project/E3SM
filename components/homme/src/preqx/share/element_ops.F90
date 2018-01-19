@@ -235,11 +235,12 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_elem_state(u,v,w,T,ps,phis,p,dp,zm,g,elem,n0,n1,ntQ)
+  subroutine set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
 
     ! set state variables for entire element
 
     real(real_kind), dimension(np,np,nlev), intent(in):: u,v,w,T,p,dp,zm
+    real(real_kind), dimension(np,np,nlevp), intent(in):: w_i,zi
     real(real_kind), dimension(np,np),      intent(in):: ps,phis
     real(real_kind),  intent(in)    :: g
     integer,          intent(in)    :: n0,n1,ntQ

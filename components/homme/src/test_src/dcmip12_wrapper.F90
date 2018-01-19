@@ -701,13 +701,19 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
 
   if (nq>qsize) call abortmp('qsize set too small for dcmip test case')
   ! set known tracers to q and the rest to a checkerboard pattern
-  elem%state%Q(i,j,k,:)    = 0.5d0*(1.0d0+sign(1.0d0,sin(lat*360.0/wl)*sin(lon*360.0/wl)))
   elem%state%Q(i,j,k,1:nq) = q
 
   ! compute tracer mass qdp from mixing ratio q
   do qi = 1,nq
     elem%state%Qdp (i,j,k,qi,:) = q(qi)*dp
   enddo
+
+  ! set any remaining tracers to 1
+  do qi = nq+1,qsize
+     elem%state%Q(i,j,k,qi)    = 1
+     elem%state%Qdp (i,j,k,qi,:) = elem%state%Q(i,j,k,qi)*dp
+  enddo
+
 
 end subroutine
 end module dcmip12_wrapper
