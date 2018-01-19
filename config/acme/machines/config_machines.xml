@@ -67,7 +67,7 @@
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
@@ -143,7 +143,7 @@
     <modules compiler="intel18">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/18.0.0.128</command>
+      <command name="load">intel/18.0.1.163</command>
       <command name="rm">cray-libsci</command>
     </modules>
 
@@ -193,7 +193,7 @@
   <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
   <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>
   <TESTS>acme_developer</TESTS>
-  <COMPILERS>intel,intel18,gnu</COMPILERS>
+  <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
   <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -207,7 +207,7 @@
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -262,23 +262,17 @@
 
     <modules>
       <command name="rm">craype</command>
-      <command name="load">craype/2.5.12</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">craype/2.5.13</command>
+      <command name="load">pmi/5.0.13</command>
 
       <command name="rm">cray-mpich</command>
-      <command name="load">cray-mpich/7.6.0</command>
+      <command name="load">cray-mpich/7.6.2</command>
     </modules>
 
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/17.0.2.174</command>
-    </modules>
-
-    <modules compiler="intel18">
-      <command name="load">PrgEnv-intel</command>
-      <command name="rm">intel</command>
-      <command name="load">intel/18.0.0.128</command>
+      <command name="load">intel/18.0.1.163</command>
     </modules>
 
     <modules compiler="gnu">
@@ -286,7 +280,8 @@
       <command name="load">PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
     <modules>
@@ -328,9 +323,6 @@
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
   </environment_variables>
-  <environment_variables compiler="intel18">
-    <env name="FORT_BUFFERED">yes</env>
-  </environment_variables>
 </machine>
 
 <!-- KNL nodes of Cori -->
@@ -352,7 +344,7 @@
   <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
-  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -385,6 +377,7 @@
       <command name="rm">craype-haswell</command>
 
       <command name="rm">PrgEnv-intel</command>
+      <command name="rm">PrgEnv-cray</command>
       <command name="rm">PrgEnv-gnu</command>
       <command name="rm">intel</command>
       <command name="rm">cce</command>
@@ -412,11 +405,11 @@
     </modules>
 
     <modules mpilib="mpt">
-      <command name="swap">cray-mpich cray-mpich/7.6.0</command>
+      <command name="swap">cray-mpich cray-mpich/7.6.2</command>
     </modules>
 
     <modules mpilib="impi">
-      <command name="swap">cray-mpich impi/2017.up2</command>
+      <command name="swap">cray-mpich impi/2018.up1</command>
     </modules>
 
     <modules compiler="intel">
@@ -429,13 +422,14 @@
       <command name="swap">PrgEnv-intel PrgEnv-gnu</command>
       <command name="rm">gcc</command>
       <command name="load">gcc/6.3.0</command>
-      <command name="load">cray-libsci/17.06.1</command>
+      <command name="rm">cray-libsci</command>
+      <command name="load">cray-libsci/17.09.1</command>
     </modules>
 
     <modules>
-      <command name="swap">craype craype/2.5.12</command>
+      <command name="swap">craype craype/2.5.13</command>
       <command name="rm">pmi</command>
-      <command name="load">pmi/5.0.12</command>
+      <command name="load">pmi/5.0.13</command>
       <command name="rm">craype-haswell</command>
       <command name="load">craype-mic-knl</command>
     </modules>
@@ -471,21 +465,17 @@
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
-
   </environment_variables>
   <environment_variables mpilib="impi">
     <env name="I_MPI_FABRICS">ofi</env>
     <env name="I_MPI_OFI_PROVIDER">gni</env>
     <env name="I_MPI_PRINT_VERSION">yes</env>
-    <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.4.2/gnu/lib/libfabric.so</env>
+    <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.5.0/gnu/lib/libfabric.so</env>
     <env name="I_MPI_PMI_LIBRARY">/usr/lib64/slurmpmi/libpmi.so</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
-  </environment_variables>
-  <environment_variables compiler="intel18">
     <env name="MPICH_MEMORY_REPORT">1</env>
-    <env name="FORT_BUFFERED">yes</env>
   </environment_variables>
 </machine>
 

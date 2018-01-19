@@ -24,7 +24,6 @@
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
       <value mach="mira|cetus">128</value>
       <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">-99</value>
-      <value mach="cori-knl">64</value>
     </values>
   </entry>
 
