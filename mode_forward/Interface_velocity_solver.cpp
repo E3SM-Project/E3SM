@@ -2201,9 +2201,9 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
          midLayer += layersRatio[il]/2.0;
        }    
 
-       for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
-         for(int il = 0; il<nLayers; ++il)
-           outfile << temperatureData[i + il * nLayers ]<<"\n";
+       for(int il = 0; il<nLayers; ++il)
+         for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
+           outfile << temperatureData[i + il*nTriangles]<<"\n";
        outfile.close();
        }
     else {
