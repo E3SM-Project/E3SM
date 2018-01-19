@@ -29,6 +29,9 @@ dSFMT.o \
 dSFMT_utils.o \
 kissvec.o
 
+# Note: FFLAGS contains flags such as -fp-model consistent (and -fimf-use-svml for intel version 18)
+# The -fp-model fast flags below will effectively override other -fp-model settings.
+
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3 -fp-model fast -no-prec-div $<
