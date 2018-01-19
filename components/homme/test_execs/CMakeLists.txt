@@ -189,6 +189,10 @@ IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(theta-nlev30)
   ADD_SUBDIRECTORY(theta-nlev40)
   ADD_SUBDIRECTORY(theta-nlev60)
+  ADD_SUBDIRECTORY(theta-l-nlev20)
+  ADD_SUBDIRECTORY(theta-l-nlev30)
+  ADD_SUBDIRECTORY(theta-l-nlev40)
+  ADD_SUBDIRECTORY(theta-l-nlev60)
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
