@@ -455,12 +455,6 @@ contains
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
-          if (SUM(tmp(:,:,ie)) /= SUM(elem(ie)%accum%PEner(:,:,n))) then
-             ! print *,'IAM: ',iam,',n,ie,prim_printstate:SUM(PEner): ',n,ie,SUM(tmp(:,:,ie))
-             ! PEner is NaN, reset to 0
-             elem(ie)%accum%PEner(:,:,n) = 0
-             tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
-          endif
        enddo
        PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        PEner(n) = PEner(n)*scale
@@ -665,17 +659,22 @@ contains
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
-          write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',(T1+PEhorz2),(S1+PEhorz1)
+          write(iulog,'(a,2e22.14)')'KE->I+P,I+P->KE:',(T1+PEhorz2),(S1+PEhorz1)
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+PEhorz2)
-          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
-          
-          ddt_tot =  (IEner(2)-IEner(1))/dt
+          write(iulog,'(a,3E22.14)') " KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+
+          ddt_tot  =  (IEner(2)-IEner(1))/dt
+          write(iulog,'(a,3E22.14)') " IE,d/dt     :",IEner(2),ddt_tot
+          ddt_tot  =  (PEner(2)-PEner(1))/dt
+          write(iulog,'(a,3E22.14)') " PE,d/dt     :",PEner(2),ddt_tot
+
+          ddt_tot =  (PEner(2)+IEner(2)-PEner(1)-IEner(1))/dt
           ddt_diss = ddt_tot - (S1+PEhorz1)
-          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
+          write(iulog,'(a,3E22.14)') "I+P,d/dt,diss:",PEner(2)+IEner(2),ddt_tot,ddt_diss
           ddt_tot = (TOTE(2)-TOTE(1))/dt
-          write(iulog,'(a,3E22.14)') " E,d/dt,diss:",TOTE(2),ddt_tot
+          write(iulog,'(a,3E22.14)') "  E,d/dt,diss:",TOTE(2),ddt_tot
        else
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2
           write(iulog,'(a,3e22.14)')'KEw h-adv,sum=0:',KEwH1+KEwH3,KEwH2
@@ -883,11 +882,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
             pnh_i(:,:,1)* phi_i(:,:,1)
 
-       if (theta_hydrostatic_mode) then
-          ! hydrostatic case: combine IE and PE
-          elem(ie)%accum%IEner(:,:,n)=elem(ie)%accum%IEner(:,:,n) + elem(ie)%accum%PEner(:,:,n)
-          elem(ie)%accum%PEner(:,:,n) = 0
-       endif
        enddo
     
 end subroutine prim_energy_halftimes
