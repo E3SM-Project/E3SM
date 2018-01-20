@@ -24,7 +24,8 @@ if ( ${?SLURM_NNODES} ) then   # skybridge
     @ NCPU /= $OMP_NUM_THREADS
 endif
 
-set EXEC = ../../../test_execs/theta-nlev20/theta-nlev20
+#set EXEC = ../../../test_execs/theta-nlev20/theta-nlev20
+set EXEC = ../../../test_execs/theta-l-nlev20/theta-l-nlev20
 
 #############################################################################
 # theta (hydrostatic

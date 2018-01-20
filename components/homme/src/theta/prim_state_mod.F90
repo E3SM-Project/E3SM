@@ -452,12 +452,6 @@ contains
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
-          if (SUM(tmp(:,:,ie)) /= SUM(elem(ie)%accum%PEner(:,:,n))) then
-             ! print *,'IAM: ',iam,',n,ie,prim_printstate:SUM(PEner): ',n,ie,SUM(tmp(:,:,ie))
-             ! PEner is NaN, reset to 0
-             elem(ie)%accum%PEner(:,:,n) = 0
-             tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
-          endif
        enddo
        PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        PEner(n) = PEner(n)*scale

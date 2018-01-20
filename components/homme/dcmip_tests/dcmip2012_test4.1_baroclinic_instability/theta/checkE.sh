@@ -17,7 +17,7 @@
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
 if ( ${?PBS_NNODES} ) then   # redsky
-    cd $PBS_O_WORKDIR
+    if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
     set NCPU = $PBS_NNODES
 endif
 if ( ${?SLURM_NNODES} ) then   # redsky
