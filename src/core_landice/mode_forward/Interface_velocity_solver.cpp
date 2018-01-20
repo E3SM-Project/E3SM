@@ -2169,7 +2169,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
                     thicknessUncertainty_F,
                     smbUncertainty_F,
                     bmb_F, bmbUncertainty_F,
-                    observedSurfaceVelocityX_F, observedSurfaceVelocityX_F, observedSurfaceVelocityUncertainty_F,
+                    observedSurfaceVelocityX_F, observedSurfaceVelocityY_F, observedSurfaceVelocityUncertainty_F,
                     observedThicknessTendency_F, observedThicknessTendencyUncertainty_F);
 
 
