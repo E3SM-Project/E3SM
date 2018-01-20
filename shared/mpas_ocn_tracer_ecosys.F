@@ -100,7 +100,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_ecosys_compute(activeTracers, ecosysTracers, forcingPool, nTracers, nCellsSolve, &
-      maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, indexSalinity, ecosysTracersTend, err)!{{{
+      latCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, indexSalinity, ecosysTracersTend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -111,6 +111,8 @@ contains
       ! one dimensional arrays
       integer, dimension(:), intent(in) :: &
          maxLevelCell
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         latCell
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -183,6 +185,7 @@ contains
          ecosys_diag_photoC_NO3_TOT_zint,  &
          ecosys_diag_O2_ZMIN,  &
          ecosys_diag_O2_ZMIN_DEPTH,  &
+         ecosys_diag_Chl_TOT_zint_100m,  &
          ecosys_diag_Jint_Ctot,  &
          ecosys_diag_Jint_100m_Ctot,  &
          ecosys_diag_Jint_Ntot,  &
@@ -333,8 +336,11 @@ contains
          ecosys_diag_NO3_RESTORE,  &
          ecosys_diag_SiO3_RESTORE
 
-      ! source/sink wants cm instead of m
-      real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
+      ! source/sink wants CGS units
+      ! then convert back to MKS after
+      real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
+      real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
+      real (kind=RKIND) :: zTop, zBot
 
       integer :: iCell, iLevel, iTracer, numColumns, column, autotroph
 
@@ -371,6 +377,7 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_NO3_TOT_zint', ecosys_diag_photoC_NO3_TOT_zint)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_O2_ZMIN', ecosys_diag_O2_ZMIN)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_O2_ZMIN_DEPTH', ecosys_diag_O2_ZMIN_DEPTH)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Chl_TOT_zint_100m', ecosys_diag_Chl_TOT_zint_100m)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ctot', ecosys_diag_Jint_Ctot)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ctot', ecosys_diag_Jint_100m_Ctot)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ntot', ecosys_diag_Jint_Ntot)
@@ -499,22 +506,25 @@ contains
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
          BGC_input%number_of_active_levels(column) = maxLevelCell(iCell)
+         BGC_input%cell_latitude(column) = latCell(iCell)
          BGC_forcing%dust_FLUX_IN(column) = dust_FLUX_IN(iCell)
          BGC_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
          zTop = 0.0_RKIND
          do iLevel=1,maxLevelCell(iCell)
             BGC_input%PotentialTemperature(iLevel,column) = activeTracers(indexTemperature,iLevel,iCell)
             BGC_input%Salinity(iLevel,column) = activeTracers(indexSalinity,iLevel,iCell)
-            BGC_input%cell_center_depth(iLevel,column) = -1.0_RKIND*zMid(iLevel,iCell)*convertLengthScale
-            BGC_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
+            BGC_input%cell_center_depth(iLevel,column) = -1.0_RKIND*zMid(iLevel,iCell)*convertLengthMKStoCGS
+            BGC_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthMKStoCGS
             zBot = zTop + layerThickness(iLevel,iCell)
-            BGC_input%cell_bottom_depth(iLevel,column) = zBot*convertLengthScale
+            BGC_input%cell_bottom_depth(iLevel,column) = zBot*convertLengthMKStoCGS
             zTop = zBot
 
             BGC_output%PH_PREV_3D(iLevel,column) = PH_PREV_3D(iLevel,iCell)
             BGC_output%PH_PREV_ALT_CO2_3D(iLevel,column) = PH_PREV_ALT_CO2_3D(iLevel,iCell)
 
-            BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthScale
+!maltrud increase FESEDFLUX by factor of 5
+!           BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthMKStoCGS
+            BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthMKStoCGS*5.0_RKIND
             BGC_forcing%NUTR_RESTORE_RTAU(iLevel,column) = 0.0_RKIND
             BGC_forcing%NO3_CLIM(iLevel,column) = 0.0_RKIND
             BGC_forcing%PO4_CLIM(iLevel,column) = 0.0_RKIND
@@ -691,9 +701,9 @@ contains
                ecosys_diag_PAR_avg(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_PAR_avg(iLevel,column)
                ecosys_diag_POC_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_POC_FLUX_IN(iLevel,column)
+                           BGC_diagnostic_fields%diag_POC_FLUX_IN(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_CaCO3_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_CaCO3_FLUX_IN(iLevel,column)
+                           BGC_diagnostic_fields%diag_CaCO3_FLUX_IN(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_auto_graze_TOT(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_auto_graze_TOT(iLevel,column)
                ecosys_diag_zoo_loss(iLevel,iCell) =  &
@@ -707,13 +717,13 @@ contains
                ecosys_diag_DENITRIF(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_DENITRIF(iLevel,column)
                ecosys_diag_calcToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_calcToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_calcToSed(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_pocToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_pocToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_pocToSed(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_pfeToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_pfeToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_pfeToSed(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_SedDenitrif(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_SedDenitrif(iLevel,column)
+                           BGC_diagnostic_fields%diag_SedDenitrif(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_tot_Nfix(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_tot_Nfix(iLevel,column)
             endif  !  config_ecosysTracers_diagnostic_fields_level1
@@ -781,7 +791,7 @@ contains
             !
             if (config_ecosysTracers_diagnostic_fields_level3) then
                ecosys_diag_SiO2_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_SiO2_FLUX_IN(iLevel,column)
+                           BGC_diagnostic_fields%diag_SiO2_FLUX_IN(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_SiO2_PROD(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_SiO2_PROD(iLevel,column)
                ecosys_diag_SiO2_REMIN(iLevel,iCell) =  &
@@ -791,7 +801,7 @@ contains
                ecosys_diag_dust_REMIN(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_dust_REMIN(iLevel,column)
                ecosys_diag_P_iron_FLUX_IN(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_P_iron_FLUX_IN(iLevel,column)
+                           BGC_diagnostic_fields%diag_P_iron_FLUX_IN(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_P_iron_PROD(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_P_iron_PROD(iLevel,column)
                ecosys_diag_P_iron_REMIN(iLevel,iCell) =  &
@@ -821,15 +831,16 @@ contains
                ecosys_diag_DOPr_remin(iLevel,iCell) =  &
                            BGC_diagnostic_fields%diag_DOPr_remin(iLevel,column)
                ecosys_diag_ponToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_ponToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_ponToSed(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_popToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_popToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_popToSed(iLevel,column)*convertLengthCGStoMKS
                ecosys_diag_bsiToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_bsiToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_bsiToSed(iLevel,column)*convertLengthCGStoMKS
+! convert units from g/cm2/s to kg/m2/s
                ecosys_diag_dustToSed(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_dustToSed(iLevel,column)
+                           BGC_diagnostic_fields%diag_dustToSed(iLevel,column)*1.e-7_RKIND
                ecosys_diag_OtherRemin(iLevel,iCell) =  &
-                           BGC_diagnostic_fields%diag_OtherRemin(iLevel,column)
+                           BGC_diagnostic_fields%diag_OtherRemin(iLevel,column)*convertLengthCGStoMKS
 
                do autotroph = 1, autotroph_cnt
                   ecosys_diag_bSi_form(autotroph,iLevel,iCell) =  &
@@ -893,35 +904,37 @@ contains
          !
          if (config_ecosysTracers_diagnostic_fields_level1) then
             ecosys_diag_photoC_TOT_zint(iCell) =  &
-                        BGC_diagnostic_fields%diag_photoC_TOT_zint(column)
+                        BGC_diagnostic_fields%diag_photoC_TOT_zint(column)*convertLengthCGStoMKS
             ecosys_diag_photoC_NO3_TOT_zint(iCell) =  &
-                        BGC_diagnostic_fields%diag_photoC_NO3_TOT_zint(column)
+                        BGC_diagnostic_fields%diag_photoC_NO3_TOT_zint(column)*convertLengthCGStoMKS
             ecosys_diag_O2_ZMIN(iCell) =  &
                         BGC_diagnostic_fields%diag_O2_ZMIN(column)
             ecosys_diag_O2_ZMIN_DEPTH(iCell) =  &
-                        BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(column)
+                        BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(column)*convertLengthCGStoMKS
+            ecosys_diag_Chl_TOT_zint_100m(iCell) =  &
+                        BGC_diagnostic_fields%diag_Chl_TOT_zint_100m(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_Ctot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_Ctot(column)
+                        BGC_diagnostic_fields%diag_Jint_Ctot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_100m_Ctot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_100m_Ctot(column)
+                        BGC_diagnostic_fields%diag_Jint_100m_Ctot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_Ntot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_Ntot(column)
+                        BGC_diagnostic_fields%diag_Jint_Ntot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_100m_Ntot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_100m_Ntot(column)
+                        BGC_diagnostic_fields%diag_Jint_100m_Ntot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_Ptot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_Ptot(column)
+                        BGC_diagnostic_fields%diag_Jint_Ptot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_100m_Ptot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_100m_Ptot(column)
+                        BGC_diagnostic_fields%diag_Jint_100m_Ptot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_Sitot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_Sitot(column)
+                        BGC_diagnostic_fields%diag_Jint_Sitot(column)*convertLengthCGStoMKS
             ecosys_diag_Jint_100m_Sitot(iCell) =  &
-                        BGC_diagnostic_fields%diag_Jint_100m_Sitot(column)
+                        BGC_diagnostic_fields%diag_Jint_100m_Sitot(column)*convertLengthCGStoMKS
 
             do autotroph = 1, autotroph_cnt
                ecosys_diag_photoC_zint(autotroph,iCell) =  &
-                        BGC_diagnostic_fields%diag_photoC_zint(column,autotroph)
+                        BGC_diagnostic_fields%diag_photoC_zint(column,autotroph)*convertLengthCGStoMKS
                ecosys_diag_photoC_NO3_zint(autotroph,iCell) =  &
-                        BGC_diagnostic_fields%diag_photoC_NO3_zint(column,autotroph)
+                        BGC_diagnostic_fields%diag_photoC_NO3_zint(column,autotroph)*convertLengthCGStoMKS
             enddo
 
          endif  !  config_ecosysTracers_diagnostic_fields_level1
@@ -939,15 +952,15 @@ contains
          !
          if (config_ecosysTracers_diagnostic_fields_level4) then
             ecosys_diag_tot_CaCO3_form_zint(iCell) =  &
-                           BGC_diagnostic_fields%diag_tot_CaCO3_form_zint(column)
+                           BGC_diagnostic_fields%diag_tot_CaCO3_form_zint(column)*convertLengthCGStoMKS
             ecosys_diag_zsatcalc(iCell) =  &
-                           BGC_diagnostic_fields%diag_zsatcalc(column)
+                           BGC_diagnostic_fields%diag_zsatcalc(column)*convertLengthCGStoMKS
             ecosys_diag_zsatarag(iCell) =  &
-                           BGC_diagnostic_fields%diag_zsatarag(column)
+                           BGC_diagnostic_fields%diag_zsatarag(column)*convertLengthCGStoMKS
 
             do autotroph = 1, autotroph_cnt
                ecosys_diag_CaCO3_form_zint(autotroph,iCell) =  &
-                           BGC_diagnostic_fields%diag_CaCO3_form_zint(column,autotroph)
+                           BGC_diagnostic_fields%diag_CaCO3_form_zint(column,autotroph)*convertLengthCGStoMKS
             enddo
 
          endif  !  config_ecosysTracers_diagnostic_fields_level4
@@ -1071,16 +1084,45 @@ contains
          PH_PREV,              &
          PH_PREV_ALT_CO2
 
-      real (kind=RKIND) :: &
-         renormFluxes = 0.01_RKIND, &
-         PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND,  &
-         mSquared_to_cmSquared = 1.0e+4_RKIND
-!        PascalsToAtmospheres = 1.0_RKIND,  &
-!        mSquared_to_cmSquared = 1.0_RKIND
-!        PascalsToAtmospheres = 0.0_RKIND,  &
-!        mSquared_to_cmSquared = 1.0_RKIND
+      ! flux routine wants atmospheres
+      real (kind=RKIND) :: PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND
+      ! flux routine wants CGS units
+      ! then convert back to MKS after
+      real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
+      real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
+      real (kind=RKIND) :: convertLengthSquaredMKStoCGS = 1.0e4_RKIND
 
       logical, pointer :: config_use_ecosysTracers_sea_ice_coupling
+
+      !
+      ! level 2 diagnostics
+      !
+
+      type (mpas_pool_type), pointer ::  &
+         ecosysDiagFieldsLevel2
+
+      logical, pointer ::  &
+         config_ecosysTracers_diagnostic_fields_level2
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         ecosys_diag_pistonVel_O2,         &
+         ecosys_diag_pistonVel_CO2,        &
+         ecosys_diag_Schmidt_O2,           &
+         ecosys_diag_Schmidt_CO2,          &
+         ecosys_diag_O2_saturation,        &
+         ecosys_diag_xkw,                  &
+         ecosys_diag_CO2star,              &
+         ecosys_diag_dCO2star,             &
+         ecosys_diag_pCO2surface,          &
+         ecosys_diag_dpCO2,                &
+         ecosys_diag_CO2star_ALT_CO2,      &
+         ecosys_diag_dCO2star_ALT_CO2,     &
+         ecosys_diag_pCO2surface_ALT_CO2,  &
+         ecosys_diag_dpCO2_ALT_CO2
+
+
+
+
 
       call mpas_timer_start("ecosys surface flux")
       err = 0
@@ -1131,6 +1173,27 @@ contains
 
       endif
 
+      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level2', &
+              config_ecosysTracers_diagnostic_fields_level2)
+
+      if (config_ecosysTracers_diagnostic_fields_level2) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel2', ecosysDiagFieldsLevel2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pistonVel_O2', ecosys_diag_pistonVel_O2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pistonVel_CO2', ecosys_diag_pistonVel_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Schmidt_O2', ecosys_diag_Schmidt_O2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Schmidt_CO2', ecosys_diag_Schmidt_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_O2_saturation', ecosys_diag_O2_saturation)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_xkw', ecosys_diag_xkw)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_CO2star', ecosys_diag_CO2star)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_dCO2star', ecosys_diag_dCO2star)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pCO2surface', ecosys_diag_pCO2surface)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_dpCO2', ecosys_diag_dpCO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_CO2star_ALT_CO2', ecosys_diag_CO2star_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_dCO2star_ALT_CO2', ecosys_diag_dCO2star_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pCO2surface_ALT_CO2', ecosys_diag_pCO2surface_ALT_CO2)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_dpCO2_ALT_CO2', ecosys_diag_dpCO2_ALT_CO2)
+      endif
+
       BGC_forcing%lcalc_O2_gas_flux  = .true.
       BGC_forcing%lcalc_CO2_gas_flux = .true.
 
@@ -1140,7 +1203,6 @@ contains
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
-!maltrud we really want sea level pressure for this, but it isnt available so just use 1 atm
 !        BGC_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
@@ -1148,7 +1210,7 @@ contains
          if (associated(landIceFraction)) then
             if (landIceFraction(iCell) > 0.0_RKIND) BGC_forcing%iceFraction(column) = 1.0_RKIND
          endif
-         BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*mSquared_to_cmSquared
+         BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*convertLengthSquaredMKStoCGS
          BGC_forcing%atmCO2(column) = atmosphericCO2(iCell)
          BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(iCell)
          BGC_forcing%surface_pH(column) = PH_PREV(iCell)
@@ -1166,42 +1228,42 @@ contains
 ! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
 !             divide river Fe by bioavail since it is already the available to make it total
 
-         BGC_forcing%depositionFlux(column,BGC_indices%no3_ind) = depositionFluxNO3(iCell)
-         BGC_forcing%depositionFlux(column,BGC_indices%nh4_ind) = depositionFluxNH4(iCell)
-         BGC_forcing%depositionFlux(column,BGC_indices%fe_ind)  = IRON_FLUX_IN(iCell)
+         BGC_forcing%depositionFlux(column,BGC_indices%no3_ind) = depositionFluxNO3(iCell)*convertLengthMKStoCGS
+         BGC_forcing%depositionFlux(column,BGC_indices%nh4_ind) = depositionFluxNH4(iCell)*convertLengthMKStoCGS
+         BGC_forcing%depositionFlux(column,BGC_indices%fe_ind)  = IRON_FLUX_IN(iCell)*convertLengthMKStoCGS
 
-         BGC_forcing%riverFlux(column,BGC_indices%no3_ind)         = riverFluxNO3(iCell)
-         BGC_forcing%riverFlux(column,BGC_indices%po4_ind)         = riverFluxPO4(iCell)
-         BGC_forcing%riverFlux(column,BGC_indices%don_ind)         = riverFluxDON(iCell) * 0.9_BGC_r8
-         BGC_forcing%riverFlux(column,BGC_indices%donr_ind)        = riverFluxDON(iCell) * 0.1_BGC_r8
-         BGC_forcing%riverFlux(column,BGC_indices%dop_ind)         = riverFluxDOP(iCell) * 0.975_BGC_r8
-         BGC_forcing%riverFlux(column,BGC_indices%dopr_ind)        = riverFluxDOP(iCell) * 0.025_BGC_r8
-         BGC_forcing%riverFlux(column,BGC_indices%sio3_ind)        = riverFluxSiO3(iCell)
-         BGC_forcing%riverFlux(column,BGC_indices%fe_ind)          = riverFluxFe(iCell) / parm_Fe_bioavail
-         BGC_forcing%riverFlux(column,BGC_indices%dic_ind)         = riverFluxDIC(iCell)
-         BGC_forcing%riverFlux(column,BGC_indices%dic_alt_co2_ind) = riverFluxDIC(iCell)
-         BGC_forcing%riverFlux(column,BGC_indices%alk_ind)         = riverFluxALK(iCell)
-         BGC_forcing%riverFlux(column,BGC_indices%doc_ind)         = riverFluxDOC(iCell)
+         BGC_forcing%riverFlux(column,BGC_indices%no3_ind)         = riverFluxNO3(iCell)*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%po4_ind)         = riverFluxPO4(iCell)*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%don_ind)         = riverFluxDON(iCell) * 0.9_BGC_r8*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%donr_ind)        = riverFluxDON(iCell) * 0.1_BGC_r8*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%dop_ind)         = riverFluxDOP(iCell) * 0.975_BGC_r8*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%dopr_ind)        = riverFluxDOP(iCell) * 0.025_BGC_r8*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%sio3_ind)        = riverFluxSiO3(iCell)*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%fe_ind)          = riverFluxFe(iCell)*convertLengthMKStoCGS / parm_Fe_bioavail
+         BGC_forcing%riverFlux(column,BGC_indices%dic_ind)         = riverFluxDIC(iCell)*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%dic_alt_co2_ind) = riverFluxDIC(iCell)*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%alk_ind)         = riverFluxALK(iCell)*convertLengthMKStoCGS
+         BGC_forcing%riverFlux(column,BGC_indices%doc_ind)         = riverFluxDOC(iCell)*convertLengthMKStoCGS
 
          if (config_use_ecosysTracers_sea_ice_coupling) then
 
 !maltrud sea ice fluxes are already correct MPAS units, so change to POP units
-            BGC_forcing%seaIceFlux(column,BGC_indices%no3_ind)         = iceFluxNO3(iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%don_ind)         = iceFluxDON(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%no3_ind)         = iceFluxNO3(iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%don_ind)         = iceFluxDON(iCell)*convertLengthMKStoCGS
 !maltrud sea ice BGC doesnt care about C or N--this is just a placeholder--so assume N units
-            BGC_forcing%seaIceFlux(column,BGC_indices%donr_ind)        = iceFluxDOCr(iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%sio3_ind)        = iceFluxSiO3(iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%nh4_ind)         = iceFluxNH4(iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%fe_ind)          = iceFluxFeDissolved(iCell)/renormFluxes/ parm_Fe_bioavail
-            BGC_forcing%seaIceFlux(column,BGC_indices%dic_ind)         = iceFluxDIC(iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%dic_alt_co2_ind) = iceFluxDIC(iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%donr_ind)        = iceFluxDOCr(iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%sio3_ind)        = iceFluxSiO3(iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%nh4_ind)         = iceFluxNH4(iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%fe_ind)          = iceFluxFeDissolved(iCell)*convertLengthMKStoCGS / parm_Fe_bioavail
+            BGC_forcing%seaIceFlux(column,BGC_indices%dic_ind)         = iceFluxDIC(iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%dic_alt_co2_ind) = iceFluxDIC(iCell)*convertLengthMKStoCGS
 
-            BGC_forcing%seaIceFlux(column,BGC_indices%doc_ind)         = iceFluxDOC(1,iCell)/renormFluxes + &
-                                                                         iceFluxDOC(2,iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%doc_ind)         = iceFluxDOC(1,iCell)*convertLengthMKStoCGS + &
+                                                                         iceFluxDOC(2,iCell)*convertLengthMKStoCGS
 
-            BGC_forcing%seaIceFlux(column,BGC_indices%diatC_ind)       = iceFluxPhytoC(1,iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%spC_ind)         = iceFluxPhytoC(2,iCell)/renormFluxes
-            BGC_forcing%seaIceFlux(column,BGC_indices%phaeoC_ind)      = iceFluxPhytoC(3,iCell)/renormFluxes
+            BGC_forcing%seaIceFlux(column,BGC_indices%diatC_ind)       = iceFluxPhytoC(1,iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%spC_ind)         = iceFluxPhytoC(2,iCell)*convertLengthMKStoCGS
+            BGC_forcing%seaIceFlux(column,BGC_indices%phaeoC_ind)      = iceFluxPhytoC(3,iCell)*convertLengthMKStoCGS
 
          endif
 
@@ -1212,24 +1274,24 @@ contains
          PH_PREV(iCell)         = BGC_forcing%surface_pH(column)
          PH_PREV_ALT_CO2(iCell) = BGC_forcing%surface_pH_alt_co2(column)
 
-         ecosysSurfaceFlux(ecosysIndices%no3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%no3_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%po4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%po4_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%sio3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%sio3_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%nh4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%nh4_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%don_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%don_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%donr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%donr_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%dop_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dop_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%dopr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dopr_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%fe_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%fe_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%alk_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%alk_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%doc_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%doc_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%o2_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%o2_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%dic_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%no3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%no3_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%po4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%po4_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%sio3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%sio3_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%nh4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%nh4_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%don_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%don_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%donr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%donr_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%dop_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dop_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%dopr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dopr_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%fe_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%fe_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%alk_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%alk_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%doc_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%doc_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%o2_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%o2_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%dic_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_ind)*convertLengthCGStoMKS
          ecosysSurfaceFlux(ecosysIndices%dic_alt_co2_ind,iCell) =   &
-            BGC_forcing%netFlux(column,BGC_indices%dic_alt_co2_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%diatC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%diatC_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%spC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%spC_ind)*renormFluxes
-         ecosysSurfaceFlux(ecosysIndices%phaeoC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%phaeoC_ind)*renormFluxes
+            BGC_forcing%netFlux(column,BGC_indices%dic_alt_co2_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%diatC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%diatC_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%spC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%spC_ind)*convertLengthCGStoMKS
+         ecosysSurfaceFlux(ecosysIndices%phaeoC_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%phaeoC_ind)*convertLengthCGStoMKS
 
 !explicitly set the rest to 0
          ecosysSurfaceFlux(ecosysIndices%dofe_ind,iCell) = 0.0_RKIND
@@ -1246,8 +1308,25 @@ contains
          ecosysSurfaceFlux(ecosysIndices%phaeoChl_ind,iCell) = 0.0_RKIND
          ecosysSurfaceFlux(ecosysIndices%phaeoFe_ind,iCell) = 0.0_RKIND
 
-         CO2_gas_flux(iCell)     = BGC_forcing%gasFlux(column,BGC_indices%dic_ind)*renormFluxes
-         CO2_alt_gas_flux(iCell) = BGC_forcing%gasFlux(column,BGC_indices%dic_alt_co2_ind)*renormFluxes
+         CO2_gas_flux(iCell)     = BGC_forcing%gasFlux(column,BGC_indices%dic_ind)*convertLengthCGStoMKS
+         CO2_alt_gas_flux(iCell) = BGC_forcing%gasFlux(column,BGC_indices%dic_alt_co2_ind)*convertLengthCGStoMKS
+
+         if (config_ecosysTracers_diagnostic_fields_level2) then
+            ecosys_diag_pistonVel_O2(iCell) = BGC_flux_diagnostic_fields%pistonVel_O2(column)
+            ecosys_diag_pistonVel_CO2(iCell) = BGC_flux_diagnostic_fields%pistonVel_CO2(column)
+            ecosys_diag_Schmidt_O2(iCell) = BGC_flux_diagnostic_fields%SCHMIDT_O2(column)
+            ecosys_diag_Schmidt_CO2(iCell) = BGC_flux_diagnostic_fields%SCHMIDT_CO2(column)
+            ecosys_diag_O2_saturation(iCell) = BGC_flux_diagnostic_fields%O2SAT(column)
+            ecosys_diag_xkw(iCell) = BGC_flux_diagnostic_fields%xkw(column)
+            ecosys_diag_CO2star(iCell) = BGC_flux_diagnostic_fields%co2star(column)
+            ecosys_diag_dCO2star(iCell) = BGC_flux_diagnostic_fields%dco2star(column)
+            ecosys_diag_pCO2surface(iCell) = BGC_flux_diagnostic_fields%pco2surf(column)
+            ecosys_diag_dpCO2(iCell) = BGC_flux_diagnostic_fields%dpco2(column)
+            ecosys_diag_CO2star_ALT_CO2(iCell) = BGC_flux_diagnostic_fields%co2star_alt_co2(column)
+            ecosys_diag_dCO2star_ALT_CO2(iCell) = BGC_flux_diagnostic_fields%dco2star_alt_co2(column)
+            ecosys_diag_pCO2surface_ALT_CO2(iCell) = BGC_flux_diagnostic_fields%pco2surf_alt_co2(column)
+            ecosys_diag_dpCO2_ALT_CO2(iCell) = BGC_flux_diagnostic_fields%dpco2_alt_co2(column)
+         endif
 
       enddo  !  iCell
 
@@ -1503,6 +1582,7 @@ contains
       allocate ( BGC_input%cell_thickness(nVertLevels, numColumnsMax) )
       allocate ( BGC_input%cell_bottom_depth(nVertLevels, numColumnsMax) )
       allocate ( BGC_input%number_of_active_levels(numColumnsMax) )
+      allocate ( BGC_input%cell_latitude(numColumnsMax) )
 
       allocate ( BGC_forcing%FESEDFLUX(nVertLevels, numColumnsMax) )
       allocate ( BGC_forcing%NUTR_RESTORE_RTAU(nVertLevels, numColumnsMax) )
@@ -1654,6 +1734,7 @@ contains
       allocate (BGC_diagnostic_fields%diag_photoC_NO3_TOT_zint(numColumnsMax) )
 
 ! 2D vertical integrals for nutrients
+      allocate (BGC_diagnostic_fields%diag_Chl_TOT_zint_100m(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_Jint_Ctot(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_Jint_100m_Ctot(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_Jint_Ntot(numColumnsMax) )
