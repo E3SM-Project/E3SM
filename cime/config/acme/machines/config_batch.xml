@@ -59,7 +59,7 @@
 
   <batch_system type="cobalt_theta" >
     <batch_query>qstat</batch_query>
-    <batch_submit>qsub</batch_submit>
+    <batch_submit>/projects/ccsm/acme/tools/cobalt/dsub</batch_submit>
     <batch_cancel>qdel</batch_cancel>
     <batch_env>-v</batch_env>
     <batch_directive>#COBALT</batch_directive>
@@ -325,7 +325,7 @@
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
-        <queue walltimemin="00:30:00" walltimemax="02:00:00" nodemin="4" nodemax="1812" default="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="8" nodemax="4392" default="true">default</queue>
         <queue walltimemax="01:00:00" nodemin="1" nodemax="8" strict="true">debug-cache-quad</queue>
       </queues>
     </batch_system>
