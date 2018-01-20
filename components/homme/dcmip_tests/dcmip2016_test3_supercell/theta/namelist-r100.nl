@@ -16,12 +16,13 @@
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5
   rsplit            = 0
-  qsplit            = 10
+  qsplit            = 10                        ! dt_tracer <= 3s  
   nu                = 5.8e8                     ! default= 1e15/(120)^3 *(ne30/ne30)**3.2
-  nu_s              = 5.8e8
+  nu_s              = 0
   nu_p              = 0
   nu_q              = 0
   nu_top            = 0                         ! 2.5e5/(120)^(1)
+  vert_remap_q_alg  = -1
   limiter_option    = 4
   dcmip16_mu        = 500.0d0                   ! additional uniform viscosity
   dcmip16_mu_s      = 1500.0d0

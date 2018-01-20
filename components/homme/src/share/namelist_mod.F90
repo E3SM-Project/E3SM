@@ -542,15 +542,18 @@ module namelist_mod
           if(output_timeunits(i).eq.1) then  ! per_day
              output_frequency(i) = output_frequency(i)*(secpday/tstep)
              output_start_time(i)= output_start_time(i)*(secpday/tstep)
-             output_end_time(i)  = output_end_time(i)*(secpday/tstep)
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)*(secpday/tstep)
           else if(output_timeunits(i).eq.2) then  ! per_hour
              output_frequency(i) = output_frequency(i)*(secphr/tstep)
              output_start_time(i)= output_start_time(i)*(secphr/tstep)
-             output_end_time(i)  = output_end_time(i)*(secphr/tstep)
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)*(secphr/tstep)
           else if(output_timeunits(i).eq.3) then  ! per_seconds
              output_frequency(i) = output_frequency(i)/tstep
              output_start_time(i)= output_start_time(i)/tstep
-             output_end_time(i)  = output_end_time(i)/tstep
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)/tstep
           end if
           if(output_end_time(i)<0) then
              output_end_time(i)=nEndStep
@@ -891,6 +894,7 @@ module namelist_mod
        if (integration == "runge_kutta"  ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
+       write(iulog,*)"readnl: theta_hydrostatic_mode = ",theta_hydrostatic_mode
        write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport
        write(iulog,*)"readnl: use_semi_lagrange_transport_local_conservation=",use_semi_lagrange_transport_local_conservation
        write(iulog,*)"readnl: tstep_type    = ",tstep_type

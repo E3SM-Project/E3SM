@@ -18,10 +18,11 @@
   rsplit            = 0
   qsplit            = 10
   nu                = 1.5e10                    ! default= 1e15/(120)^3 *(ne30/ne8)**3.2 = 4e10
-  nu_s              = 1.5e10 
+  nu_s              = 0
   nu_p              = 0
   nu_q              = 0
   nu_top            = 0                         ! 2.5e5/(120)^(1)
+  vert_remap_q_alg  = -1
   limiter_option    = 4
   dcmip16_mu        = 500.0d0
   dcmip16_mu_s      = 1500.0d0
