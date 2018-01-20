@@ -6437,8 +6437,8 @@ module atm_time_integration
          if( (bdyMaskCell(iCell) > 1) .and. (bdyMaskCell(iCell) <= nRelaxZone) ) then
             rayleigh_damping_coef = (real(bdyMaskCell(iCell)) - 1.)/real(nRelaxZone)/(50.*dt*meshScalingRegionalCell(iCell))
             do k=1, nVertLevels
-               tend_rho(k,iCell) = tend_rho(k,iCell) - rayleigh_damping_coef * (rho_driving_values(k,iCell) - rho_zz(k,iCell))
-               tend_rt(k,iCell)  = tend_rt(k,iCell)  - rayleigh_damping_coef * (rt_driving_values(k,iCell) - rho_zz(k,iCell)*theta_m(k,iCell))
+               tend_rho(k,iCell) = tend_rho(k,iCell) - rayleigh_damping_coef * (rho_zz(k,iCell) - rho_driving_values(k,iCell))
+               tend_rt(k,iCell)  = tend_rt(k,iCell)  - rayleigh_damping_coef * (rho_zz(k,iCell)*theta_m(k,iCell) - rt_driving_values(k,iCell))
             end do
          end if
       end do
@@ -6447,7 +6447,7 @@ module atm_time_integration
          if( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then
             rayleigh_damping_coef = (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(50.*dt*meshScalingRegionalEdge(iEdge))
             do k=1, nVertLevels
-               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iEdge) - ru(k,iEdge))
+               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru(k,iEdge) - ru_driving_values(k,iEdge))
             end do
          end if
       end do
