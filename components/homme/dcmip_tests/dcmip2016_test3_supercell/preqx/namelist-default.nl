@@ -21,7 +21,7 @@
   nu_s              = 2e9 !5.8e8
   nu_p              = 2e9 !5.8e8
   hypervis_order    = 2                         ! 2 = hyperviscosity
-  hypervis_subcycle = 3                         ! 1 = no hyperviz subcycling
+  hypervis_subcycle = 1
   rearth            = 53133                     ! 6.376E6  / 120
   omega             = 0
   se_ftype          = 0
@@ -39,6 +39,7 @@
   output_varnames1  ='T','p','ps','pnh','geo','rho','u','v','omega','Th','Q','Q2','Q3','Q4'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
+  interp_gridtype   = 1
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         

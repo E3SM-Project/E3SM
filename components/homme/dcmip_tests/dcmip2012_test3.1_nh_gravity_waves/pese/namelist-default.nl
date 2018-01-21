@@ -45,6 +45,7 @@
   num_io_procs      = 16         
   interp_nlat       = 128
   interp_nlon       = 256
+  interp_gridtype   = 2                         ! gauss grid
 /
 &prof_inparm
   profile_outpe_num   = 100

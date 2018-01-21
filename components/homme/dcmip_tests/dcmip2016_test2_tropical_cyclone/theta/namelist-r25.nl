@@ -21,7 +21,7 @@
   nu_s              = 1.2e13
   nu_p              = 1.2e13
   nu_top            = 2.5e5                     ! default = 2.5e5
-  limiter_option    = 8
+  limiter_option = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'wet'
@@ -45,6 +45,7 @@
   num_io_procs      = 16
   interp_nlon       = 1440
   interp_nlat       = 721
+  interp_gridtype   = 1
 /
 &prof_inparm
   profile_outpe_num   = 100

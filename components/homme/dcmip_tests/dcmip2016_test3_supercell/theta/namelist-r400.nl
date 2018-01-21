@@ -45,6 +45,7 @@
   output_varnames1  ='T','p','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','precl'   ! variables to write to file
   interp_nlon       = 360
   interp_nlat       = 181
+  interp_gridtype   = 1
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   interp_lon0       = -180.0                    ! shift lon range to [-180,+180)
   output_type       ='netcdf'                   ! netcdf or pnetcdf
