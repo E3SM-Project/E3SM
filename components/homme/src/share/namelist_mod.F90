@@ -555,9 +555,8 @@ module namelist_mod
              if (output_end_time(i)>=0) &
                   output_end_time(i)  = output_end_time(i)/tstep
           end if
-          if(output_end_time(i)<0) then
-             output_end_time(i)=nEndStep
-          endif
+          if(output_end_time(i)<0) output_end_time(i)=nEndStep
+          if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
 
 !=======================================================================================================!
