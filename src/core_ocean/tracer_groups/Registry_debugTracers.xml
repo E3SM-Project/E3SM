@@ -76,11 +76,6 @@
 			 description="Flux of tracer1 that is ignored coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
-			<var_array name="nonLocalSurfaceTracerFlux" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="nonLocalTemperatureSurfaceFlux" array_group="debugNonLocalGRP" units="tracer1 m s^{-1}"
-			description="total flux of tracer1 (including thickness contributions) through ocean surface"
-				/>
-			</var_array>
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="debugTracersPistonVelocity" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">

@@ -156,10 +156,10 @@
 			</var_array>
 			<var_array name="DMSTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="DMSTracersSurfaceRestoringPKG">
 				<var name="DMSSurfaceRestoringValue" array_group="DMSSRVGRP" units="mmol m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DMSPistonVelocity."
+			 description="Tracer is restored toward this field at a rate controlled by DMSPistonVelocity."
 				/>
 				<var name="DMSPSurfaceRestoringValue" array_group="DMSSRVGRP" units="mmol m^{3}"
-			 description="Salinity is restored toward this field at a rate controlled by DMSPPistonVelocity."
+			 description="Tracer is restored toward this field at a rate controlled by DMSPPistonVelocity."
 				/>
 			</var_array>
 		</var_struct>
@@ -174,10 +174,10 @@
 			</var_array>
 			<var_array name="DMSTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersInteriorRestoringPKG">
 				<var name="DMSInteriorRestoringValue" array_group="DMSIRVGRP" units="mmol m^{3}"
-			 description="Temperature is restored toward this field at a rate controlled by DMSInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DMSInteriorRestoringRate."
 				/>
 				<var name="DMSPInteriorRestoringValue" array_group="DMSIRVGRP" units="mmol m^{3}"
-			 description="Salinity is restored toward this field at a rate controlled by DMSPInteriorRestoringRate."
+			 description="Tracer is restored toward this field at a rate controlled by DMSPInteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
