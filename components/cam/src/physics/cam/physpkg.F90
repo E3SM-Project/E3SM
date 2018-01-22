@@ -1918,7 +1918,7 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: qcwat
     real(r8), pointer, dimension(:,:) :: lcwat
     real(r8), pointer, dimension(:,:) :: tcwat
-
+    real(r8), pointer, dimension(:,:) :: qmeold     ! total condensation rate in previous step 
 
 !<songxl 2011-09-20----------------------------
 ! physics buffer fields to compute tendencies for deep convection scheme
@@ -2475,7 +2475,10 @@ end if
                ifld = pbuf_get_index('AST')
                call pbuf_get_field(pbuf, ifld, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-               call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast,  &
+               ifld = pbuf_get_index('QMEOLD')
+               call pbuf_get_field(pbuf, ifld, qmeold, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+               call simple_RKZ_tend( state, ptend, tcwat, qcwat, lcwat, ast, qmeold, &
                                      cld_macmic_ztodt, ixcldliq, &
                                      rkz_cldfrc_opt, &
                                      rkz_term_A_opt, &

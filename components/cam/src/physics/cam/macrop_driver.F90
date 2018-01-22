@@ -67,6 +67,7 @@ module macrop_driver
     ixcldice,     &! cloud ice amount index
     ixnumliq,     &! cloud liquid number index
     ixnumice,     &! cloud ice water index
+    qmeold_idx,   &! qmeold index in physics buffer (simple condensation model,wanh)
     qcwat_idx,    &! qcwat index in physics buffer
     lcwat_idx,    &! lcwat index in physics buffer
     iccwat_idx,   &! iccwat index in physics buffer
@@ -184,7 +185,9 @@ end subroutine macrop_driver_readnl
     call pbuf_add_field('QLST',     'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), qlst_idx)
     call pbuf_add_field('CLD',      'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cld_idx)
     call pbuf_add_field('CONCLD',   'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), concld_idx)
-
+    
+    call pbuf_add_field('QMEOLD',   'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), qmeold_idx)
+     
     call pbuf_add_field('QCWAT',    'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), qcwat_idx)
     call pbuf_add_field('LCWAT',    'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), lcwat_idx)
     call pbuf_add_field('ICCWAT',   'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), iccwat_idx)

@@ -76,7 +76,7 @@ contains
   ! Calculate condensation rate and the resulting tendencies of the model 
   ! state variables
   !------------------------------------------------------------------------
-  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast,  &
+  subroutine simple_RKZ_tend(state, ptend, tcwat, qcwat, lcwat, ast, qmeold, &
                              dtime, ixcldliq, &
                              rkz_cldfrc_opt, &
                              rkz_term_A_opt, &
@@ -110,6 +110,7 @@ contains
   real(r8), intent(inout) :: lcwat(:,:)       ! ql          macro- and microphysics calculation in the previous time step
 
   real(r8), intent(inout) ::   ast(:,:)       ! cloud fraction
+  real(r8), intent(inout) ::   qmeold(:,:)    ! total condensation rate calculation in previous time step 
 
   real(r8), intent(in) :: dtime               ! Set model physics timestep
   integer,  intent(in) :: ixcldliq            ! constituent index 
@@ -336,6 +337,14 @@ contains
         term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver) 
         term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver) 
 
+     case(3) ! df/dt = df/dRH * dRH/dt = df/dRH * (C_alpha * A_V - C_beta * A_T + C_gamma*Qbar_old(in tn-1 step)) 
+        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
+                                -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver) ) &
+                                /qsat(:ncol,:pver) !C_alpha * A_V - C_beta * A_T
+        zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver) !C_gamma
+        term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)* &
+                              (zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver))
+
      case default
          write(iulog,*) "Unrecognized value of rkz_term_C_opt:",rkz_term_C_opt,". Abort."
          call endrun
@@ -364,6 +373,10 @@ contains
   
      case(2)
          dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qme(:ncol,:pver) )
+
+     case(3)
+         dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver) )
+
      end select
      call outfld('RKZ_dfdt', dfdt, pcols, lchnk)
 
@@ -445,6 +458,7 @@ contains
    ptend%q(:ncol,:pver,1)        = -qme(:ncol,:pver)
    ptend%q(:ncol,:pver,ixcldliq) =  qme(:ncol,:pver)
    ptend%s(:ncol,:pver)          =  qme(:ncol,:pver) *latvap
+   qmeold(:ncol,:pver)           =  qme(:ncol,:pver) ! save qme for next step 
 
   end subroutine simple_RKZ_tend
 
