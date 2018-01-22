@@ -478,7 +478,7 @@ contains
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
     call kokkos_init()
-    if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 0) then
+    if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 1) then
        call cedr_init(par%comm, nelemd, GridVertex)
        call cedr_unittest(par%comm, ierr)
        if (par%masterproc) then

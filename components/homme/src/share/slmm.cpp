@@ -1398,10 +1398,6 @@ namespace sqr { // spherical quadrilateral <-> reference square
 */
 
 namespace impl {
-// In the implementation, (a,b) in [0,1] because convex combinations are used
-// throughout; but in the user interface, (a,b) in [-1,1] to agree with the
-// definition of the reference square.
-
 // Compute T(i,:).
 template <typename ConstVec3sT, typename Quad>
 KOKKOS_INLINE_FUNCTION
@@ -1417,7 +1413,9 @@ void calc_T_row (const ConstVec3sT& p, const Quad& e, const Int i,
 template <typename ConstVec3sT, typename Quad>
 KOKKOS_INLINE_FUNCTION
 void calc_ref_to_bilinear (const ConstVec3sT& p, const Quad& e,
-                           const Real a, const Real b, Real q[3]) {
+                           Real a, Real b, Real q[3]) {
+  a = 0.5*(a + 1);
+  b = 0.5*(b + 1);
   for (Int i = 0; i < 3; ++i) {
     Real t1, t2, t3, t4;
     impl::calc_T_row(p, e, i, t1, t2, t3, t4);
@@ -1443,8 +1441,10 @@ void calc_residual (const ConstVec3sT& p, const Quad& e, const Real a,
 // calc_isoparametric_jacobian in slmmir.cpp.
 template <typename ConstVec3sT, typename Quad>
 KOKKOS_INLINE_FUNCTION
-void calc_Jacobian (const ConstVec3sT& p, const Quad& e, const Real a,
-                    const Real b, Real J[6]) {
+void calc_Jacobian (const ConstVec3sT& p, const Quad& e, Real a, Real b,
+                    Real J[6]) {
+  a = 0.5*(a + 1);
+  b = 0.5*(b + 1);  
   Real r[3];
   for (Int i = 0; i < 3; ++i) {
     Real t1, t2, t3, t4;
@@ -1485,8 +1485,8 @@ void solve_Jxr (Real J[6], const Real r[3], Real dx[2]) {
       Qtr[j] += Jj[i]*r[i];
   }
   // dx = R \ (Q' r).
-  dx[1] = Qtr[1] / n2;
-  dx[0] = (Qtr[0] - a*dx[1]) / n1;
+  dx[1] = 2*(Qtr[1] / n2);
+  dx[0] = 2*((Qtr[0] - a*dx[1]) / n1);
 }
 } // namespace impl
 
@@ -1505,7 +1505,7 @@ void calc_ref_to_sphere (
   // The point on the sphere.
   Real q[3])
 {
-  impl::calc_ref_to_bilinear(p, e, 0.5*(a+1), 0.5*(b+1), q);
+  impl::calc_ref_to_bilinear(p, e, a, b, q);
   SphereGeometry::normalize(q);
 }
 
@@ -1527,7 +1527,7 @@ void calc_sphere_to_ref (
 {
   const Real tol2 = square(tol);
   Real rnorm2 = 1;
-  a = b = 0.5;
+  a = b = 0;
   Int it = 0;
   for (it = 1; it <= max_its; ++it) { // Newton's method.
     Real r[3], J[6];
@@ -1540,8 +1540,6 @@ void calc_sphere_to_ref (
     a -= dx[0];
     b -= dx[1];
   }
-  a = 2*a - 1;
-  b = 2*b - 1;
   if (info) {
     info->success = rnorm2 <= tol2;
     info->n_iterations = it;
@@ -1590,7 +1588,7 @@ public:
       ij = k % square(n_a_test),
       i = ij / n_a_test,
       j = ij % n_a_test;
-    const Real a_t = 2*a_test[i]-1, b_t = 2*a_test[j]-1;
+    const Real a_t = a_test[i], b_t = a_test[j];
     Real q[3];
     sqr::calc_ref_to_sphere(p_, slice(e_, ei), a_t, b_t, q);
     Real a, b;
@@ -2151,7 +2149,8 @@ int unittest () {
 
 #include <Kokkos_Core.hpp>
 
-#define ir_assert(condition) do {                                       \
+#ifndef NDEBUG
+# define ir_assert(condition) do {                                      \
     if ( ! (condition)) {                                               \
       std::stringstream _ss_;                                           \
       _ss_ << __FILE__ << ":" << __LINE__ << ": FAIL:\n" << #condition  \
@@ -2159,6 +2158,9 @@ int unittest () {
         throw std::logic_error(_ss_.str());                             \
     }                                                                   \
   } while (0)
+#else
+# define ir_assert(condition)
+#endif
 #define ir_throw_if(condition, message) do {                            \
     if (condition) {                                                    \
       std::stringstream _ss_;                                           \
@@ -2365,7 +2367,6 @@ struct Remapper {
     : np_(np), np2_(np*np), np4_(np2_*np2_), tq_order_(12)
   {
     mass_mix_.resize(np4_);
-    mass_tgt_.resize(np4_);
     local_mesh_.resize(nelem);
   }
 
@@ -2395,6 +2396,53 @@ struct Remapper {
     siqk::test::fill_normals<siqk::SphereGeometry>(m);
   }
 
+  void init_M_tgt_if_needed () {
+    if ( ! mass_tgt_.empty()) return;
+
+    siqk::TriangleQuadrature tq;
+    siqk::RawConstVec3s tq_bary;
+    siqk::RawConstArray tq_w;
+    tq.get_coef(tq_order(), tq_bary, tq_w);
+    const Int nq = ir::len(tq_w);
+
+    mass_tgt_.resize(np4_);
+    Real* M_tgt = mass_tgt_.data();
+    for (Int i = 0; i < np4_; ++i) M_tgt[i] = 0;
+
+    const ir::Basis basis(np_, 0);
+    ir::GLL gll;
+    const Real* const ps = siqk::sqr::get_ref_vertices();
+    Real tgj[ir::GLL::np_max], tgi[ir::GLL::np_max], tvo_coord[2];
+
+    for (Int k = 1; k <= 2; ++k) {
+      const Real t_area = siqk::PlaneGeometry::calc_tri_jacobian(
+        ps, ps+2*k, ps+2*(k+1));
+
+      for (Int qp = 0; qp < nq; ++qp) {
+        siqk::PlaneGeometry::bary2coord(
+          ps, ps+2*k, ps+2*(k+1), slice(tq_bary, qp), tvo_coord);
+        gll.eval(basis, tvo_coord[0], tgi);
+        gll.eval(basis, tvo_coord[1], tgj);
+
+        const Real d0 = 0.5 * t_area * tq_w[qp];
+        for (Int aj = 0, a_basis_idx = 0; aj < np_; ++aj) {
+          const Real d1 = d0 * tgj[aj];
+          for (Int ai = 0; ai < np_; ++ai, ++a_basis_idx) {
+            Real d2 = d1 * tgi[ai];
+            for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2_; ++b_basis_idx) {
+              const Int bj = b_basis_idx / np_;
+              const Int bi = b_basis_idx % np_;
+              M_tgt[np2_*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
+            }
+          }
+        }
+      }
+    }
+
+    int info = ir::dpotrf('L', np2_, M_tgt, np2_);
+    ir_assert(info == 0);
+  }
+
   const Mesh& local_mesh (const Int ie) const {
     ir_assert(ie < static_cast<Int>(local_mesh_.size()));
     return local_mesh_[ie];
@@ -2406,7 +2454,7 @@ struct Remapper {
   }
 
   std::vector<Real>& mass_mix_buffer () { return mass_mix_; }
-  std::vector<Real>& mass_tgt_buffer () { return mass_tgt_; }
+  const Real* M_tgt () { return mass_tgt_.data(); }
 
 private:
 
@@ -2584,7 +2632,7 @@ void slmm_project_np4 (
     q_min(q_min_r, np, np, nlev, qsize, ie0+1),
     q_max(q_max_r, np, np, nlev, qsize, ie0+1);
 
-  IR_ALIGN(M_tgt[my_np4]);
+  const Real* const M_tgt = g_remapper->M_tgt();
   IR_ALIGN(M_mix[my_np4]);
   IR_ALIGN(rhs_r[my_np2*max_qsize]);
   IR_ALIGN(vi_buf[3*max_num_vertices]);
@@ -2611,7 +2659,6 @@ void slmm_project_np4 (
 
   const auto& m = g_remapper->local_mesh(ie);
   bool first = true;
-  for (Int i = 0; i < np4; ++i) M_tgt[i] = 0;
   for (Int sci = 0; sci < nnc; ++sci) { // For each source cell:
     // Intersect.
     const siqk::RawVec3s vi(vi_buf, max_num_vertices, 3);
@@ -2680,39 +2727,6 @@ void slmm_project_np4 (
                                         slice(tq_bary, qp), tvo_coord);
         gll_np4_eval(tvo_coord[0], tgi);
         gll_np4_eval(tvo_coord[1], tgj);
-
-        {
-          Int os = 0;
-          const Real d0 = 0.5 * t_area * tq_w[qp];
-          for (Int aj = 0, a_basis_idx = 0; aj < np; ++aj) {
-            const Real d1 = d0 * tgj[aj];
-            for (Int ai = 0; ai < np; ++ai, ++a_basis_idx) {
-              Real d2 = d1 * tgi[ai];
-              if (a_basis_idx < 4) {
-                const Real d30 = d2 * tgj[0];
-                M_tgt[os   ] += d30 * tgi[0]; M_tgt[os+ 1] += d30 * tgi[1];
-                M_tgt[os+ 2] += d30 * tgi[2]; M_tgt[os+ 3] += d30 * tgi[3];
-              }
-              if (a_basis_idx < 8) {
-                const Real d31 = d2 * tgj[1];
-                M_tgt[os+ 4] += d31 * tgi[0]; M_tgt[os+ 5] += d31 * tgi[1];
-                M_tgt[os+ 6] += d31 * tgi[2]; M_tgt[os+ 7] += d31 * tgi[3];
-              }
-              if (a_basis_idx < 12) {
-                const Real d32 = d2 * tgj[2];
-                M_tgt[os+ 8] += d32 * tgi[0]; M_tgt[os+ 9] += d32 * tgi[1];
-                M_tgt[os+10] += d32 * tgi[2]; M_tgt[os+11] += d32 * tgi[3];
-              }
-              {
-                const Real d33 = d2 * tgj[3];
-                M_tgt[os+12] += d33 * tgi[0]; M_tgt[os+13] += d33 * tgi[1];
-                M_tgt[os+14] += d33 * tgi[2]; M_tgt[os+15] += d33 * tgi[3];
-              }
-              os += 16;
-            }
-          }
-        }
-
         siqk::PlaneGeometry::bary2coord(svo, svo+2*ktri, svo+2*(ktri+1),
                                         slice(tq_bary, qp), svo_coord);
         gll_np4_eval(svo_coord[0], sgi);
@@ -2767,9 +2781,8 @@ void slmm_project_np4 (
   }
 
   // Solve M_tgt Qj_tgt = b.
-  int info = ir::dpotrf('L', np2, M_tgt, np2);
+  int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs_r, np2);
   ir_assert(info == 0);
-  info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs_r, np2);
 
   // Load q with Qj_tgt / (jac_tgt rho_tgt).
   for (Int tq = 0; tq < qsize; ++tq)
@@ -2794,11 +2807,12 @@ void slmm_project_np4 (
 
 #undef IR_ALIGN
 
+// This version is not thread safe.
 void slmm_project (
   const Int lev, const Int nets, const Int ie,
   const Int nnc, const Int np, const Int nlev, const Int qsize,
   // Geometry.
-  const Cartesian3D* dep_points_r,     // dep_points(1:np, 1:np), unit vectors
+  const Cartesian3D* dep_points_r,     // dep_points(1:np, 1:np)
   // Fields.
   const Real* Qj_src_r,                //   Qj_src(1:np, 1:np, 2:qsize+1, 1:nnc) and
                                        // rhoj_src(1:np, 1:np, 1        , 1:nnc)
@@ -2811,7 +2825,9 @@ void slmm_project (
   Real* q_min_r, Real* q_max_r)   // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
 {
   ir_assert(g_remapper);
+
   if (np == 4) {
+    // This version is thread safe.
     slmm_project_np4(lev, nets, ie, nnc, np, nlev, qsize, 
                      reinterpret_cast<const Real*>(dep_points_r),
                      Qj_src_r, jac_tgt_r, rho_tgt_r, tl_np1,
@@ -2853,9 +2869,8 @@ void slmm_project (
   auto& rhs_r = g_remapper->rhs_buffer(qsize);
   for (Int i = 0, n = qsize*np2; i < n; ++i) rhs_r[i] = 0;
   FA3<Real> rhs(rhs_r.data(), np, np, qsize);
+  const Real* const M_tgt = g_remapper->M_tgt();
   auto& M_mix = g_remapper->mass_mix_buffer();
-  auto& M_tgt = g_remapper->mass_tgt_buffer();
-  for (Int i = 0; i < np4; ++i) M_tgt[i] = 0;
 
   const auto& m = g_remapper->local_mesh(ie);
   bool first = true;
@@ -2934,34 +2949,23 @@ void slmm_project (
         gll.eval(basis, tvo_coord[0], tgi);
         gll.eval(basis, tvo_coord[1], tgj);
 
-        Real d0 = 0.5 * t_area * tq_w[qp];
-        for (Int aj = 0, a_basis_idx = 0; aj < np; ++aj) {
-          const Real d1 = d0 * tgj[aj];
-          for (Int ai = 0; ai < np; ++ai, ++a_basis_idx) {
-            Real d2 = d1 * tgi[ai];
-            for (Int b_basis_idx = a_basis_idx; b_basis_idx < np2; ++b_basis_idx) {
-              const Int bj = b_basis_idx / np;
-              const Int bi = b_basis_idx % np;
-              M_tgt[np2*a_basis_idx + b_basis_idx] += d2 * tgi[bi] *tgj[bj];
-            }
-          }
-        }
-
         siqk::PlaneGeometry::bary2coord(svo, svo+2*ktri, svo+2*(ktri+1),
                                         slice(tq_bary, qp), svo_coord);
         gll.eval(basis, svo_coord[0], sgi);
         gll.eval(basis, svo_coord[1], sgj);
 
-        d0 = 0.5 * s_area * tq_w[qp];
-        Int os = 0;
-        for (Int tj = 0; tj < np; ++tj) {
-          const Real d1 = d0 * tgj[tj];
-          for (Int ti = 0; ti < np; ++ti) {
-            Real d2 = d1 * tgi[ti];
-            for (Int sj = 0; sj < np; ++sj) {
-              const Real d3 = d2 * sgj[sj];
-              for (Int si = 0; si < np; ++si)
-                M_mix[os++] += d3 * sgi[si];
+        {
+          const Real d0 = 0.5 * s_area * tq_w[qp];
+          Int os = 0;
+          for (Int tj = 0; tj < np; ++tj) {
+            const Real d1 = d0 * tgj[tj];
+            for (Int ti = 0; ti < np; ++ti) {
+              Real d2 = d1 * tgi[ti];
+              for (Int sj = 0; sj < np; ++sj) {
+                const Real d3 = d2 * sgj[sj];
+                for (Int si = 0; si < np; ++si)
+                  M_mix[os++] += d3 * sgi[si];
+              }
             }
           }
         }
@@ -2983,9 +2987,8 @@ void slmm_project (
   }
 
   // Solve M_tgt Qj_tgt = b.
-  int info = ir::dpotrf('L', np2, M_tgt.data(), np2);
+  int info = ir::dpotrs('L', np2, qsize, M_tgt, np2, rhs.data(), np2);
   ir_assert(info == 0);
-  info = ir::dpotrs('L', np2, qsize, M_tgt.data(), np2, rhs.data(), np2);
 
   // Load q with Qj_tgt / (jac_tgt rho_tgt).
   for (Int tq = 0; tq < qsize; ++tq)
@@ -3027,6 +3030,7 @@ extern "C" void slmm_init_local_mesh_ (
   homme::g_remapper->init_local_mesh_if_needed(
     *ie - 1, homme::FA3<const homme::Real>(
       reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, *nnc));
+  homme::g_remapper->init_M_tgt_if_needed();
 }
 
 extern "C" void slmm_project_ (

@@ -4149,7 +4149,6 @@ struct CDR {
       nsuplev((nlev + nsublev - 1) / nsublev),
       p(p_), inited_tracers_(false)
   {
-    pr0(puf(nsuplev) pu(nsublev));
     if (Alg::is_qlt(alg)) {
       tree = make_tree(p, ncell, sc2gci, sc2rank, nsublev);
       cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree);
