@@ -33,9 +33,9 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_KARMAN  = 0.4_R8          ! Von Karman constant
    real(R8),parameter :: SHR_CONST_PSTD    = 101325.0_R8     ! standard pressure ~ pascals
    real(R8),parameter :: SHR_CONST_PDB     = 0.0112372_R8    ! ratio of 13C/12C in Pee Dee Belemnite (C isotope standard)
-
+ 
    real(R8),parameter :: SHR_CONST_TKTRIP  = 273.16_R8       ! triple point of fresh water        ~ K
-   real(R8),parameter :: SHR_CONST_TKFRZ   = 273.15_R8       ! freezing T of fresh water          ~ K
+   real(R8),parameter :: SHR_CONST_TKFRZ   = 273.15_R8       ! freezing T of fresh water          ~ K 
    real(R8),parameter :: SHR_CONST_TKFRZSW = SHR_CONST_TKFRZ - 1.8_R8 ! freezing T of salt water  ~ K
    real(R8),parameter :: SHR_CONST_ZSRFLYR = 3.0_R8          ! ocn surf layer depth for diurnal SST cal ~ m
 
@@ -54,6 +54,12 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_LATVAP  = 2.501e6_R8      ! latent heat of evaporation ~ J/kg
    real(R8),parameter :: SHR_CONST_LATSUB  = &               ! latent heat of sublimation ~ J/kg
                          SHR_CONST_LATICE + SHR_CONST_LATVAP
+   real(R8),parameter :: SHR_CONST_CONDICE = 2.1_R8          ! thermal conductivity of ice ~ W/m/K
+   real(R8),parameter :: SHR_CONST_KAPPA_LAND_ICE = &        ! Diffusivity of heat in land ice ~ 
+                         SHR_CONST_CONDICE / (SHR_CONST_RHOICE*SHR_CONST_CPICE)
+   real(R8),parameter :: SHR_CONST_DTF_DP = -7.53e-8_R8      !Jer TODO: add on description
+   real(R8),parameter :: SHR_CONST_DTF_DS = -5.73e-2_R8      !Jer TODO: add on description
+   real(R8),parameter :: SHR_CONST_TF0    = 9.39e-2_R8       !Jer TODO: add on description
    real(R8),parameter :: SHR_CONST_OCN_REF_SAL = 34.7_R8     ! ocn ref salinity (psu)
    real(R8),parameter :: SHR_CONST_ICE_REF_SAL =  4.0_R8     ! ice ref salinity (psu)
 
