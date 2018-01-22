@@ -1637,6 +1637,7 @@ contains
 #endif
      do i=1,np
      do j=1,np
+       itererrtemp(i,j)=0 
        do k=1,nlev
         norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k,1)) *dp3d(i,j,k))
         if (k.eq.1) then
