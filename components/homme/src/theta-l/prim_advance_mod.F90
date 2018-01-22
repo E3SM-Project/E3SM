@@ -209,8 +209,8 @@ contains
                - elem(ie)%state%theta_dp_cp(:,:,:,n0) )/4
           elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
                   - elem(ie)%state%dp3d(:,:,:,n0) )/4
-          elem(ie)%state%w_i(:,:,1:nlev,nm1)= (5*elem(ie)%state%w_i(:,:,1:nlev,nm1) &
-                  - elem(ie)%state%w_i(:,:,1:nlev,n0) )/4
+          elem(ie)%state%w_i(:,:,1:nlevp,nm1)= (5*elem(ie)%state%w_i(:,:,1:nlevp,nm1) &
+                  - elem(ie)%state%w_i(:,:,1:nlevp,n0) )/4
           elem(ie)%state%phinh_i(:,:,1:nlev,nm1)= (5*elem(ie)%state%phinh_i(:,:,1:nlev,nm1) &
                   - elem(ie)%state%phinh_i(:,:,1:nlev,n0) )/4
        enddo
