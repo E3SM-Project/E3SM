@@ -62,7 +62,7 @@ class Compilers(GenericXML):
             schema_db = GenericXML(infile=schema)
             compiler_vars = schema_db.get_child("{http://www.w3.org/2001/XMLSchema}group", attributes={"name":"compilerVars"})
             choice  = schema_db.get_child(name="{http://www.w3.org/2001/XMLSchema}choice", root=compiler_vars)
-            self.flag_vars = set(schema_db.get(elem, "name") for elem in schema_db.get_children(root=choice, attributes={"type":"flagsVar"}, no_validate=True))
+            self.flag_vars = set(schema_db.get(elem, "name") for elem in schema_db.get_children(root=choice, attributes={"type":"flagsVar"}))
 
     def get_compiler(self):
         """
@@ -237,7 +237,7 @@ class Compilers(GenericXML):
                 big_append_tree.write_out(writer)
 
 def _add_to_macros(db, node, macros):
-    for child in db.get_children(root=node, no_validate=True):
+    for child in db.get_children(root=node):
         name = db.name(child)
         attrib = db.attrib(child)
         value = db.text(child)

@@ -129,6 +129,7 @@ module seq_flds_mod
   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
   use shr_carma_mod     , only : shr_carma_readnl
   use shr_ndep_mod      , only : shr_ndep_readnl
+  use shr_flds_mod      , only : seq_flds_dom_coord, seq_flds_dom_other
 
   implicit none
   public
@@ -157,13 +158,6 @@ module seq_flds_mod
   integer         ,parameter :: nmax      = 1000        ! maximum number of entries in lookup_entry
   integer                    :: n_entries = 0           ! actual number of entries in lookup_entry
   character(len=CSS), dimension(nmax, 4) :: lookup_entry = undef
-
-  !----------------------------------------------------------------------------
-  ! for the domain
-  !----------------------------------------------------------------------------
-
-  character(CXX) :: seq_flds_dom_coord
-  character(CXX) :: seq_flds_dom_other
 
   !----------------------------------------------------------------------------
   ! state + flux fields

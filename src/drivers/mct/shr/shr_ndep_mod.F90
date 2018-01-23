@@ -47,7 +47,6 @@ CONTAINS
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
-    character(len=8) :: token   ! dry dep field name to add
     integer :: mpicom           ! MPI communicator
 
     integer, parameter :: maxspc = 100             ! Maximum number of species

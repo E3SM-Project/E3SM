@@ -2141,7 +2141,6 @@ CONTAINS
     !EOP
 
     !----- local -----
-    integer :: ind
 
     !-------------------------------------------------------------------------------
     ! Notes:
@@ -2858,8 +2857,8 @@ CONTAINS
     write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
     write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
     write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
-    write(logunit,F0L) subname,'flux_convergence         = ', infodata%flux_convergence
-    write(logunit,F0L) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
+    write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
+    write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
     write(logunit,F0R) subname,'gust_fac                 = ', infodata%gust_fac
     write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)
     write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
