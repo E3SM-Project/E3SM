@@ -31,10 +31,10 @@ module shr_fire_emis_mod
   character(len=CS), public :: shr_fire_emis_fields_token = ''       ! emissions fields token
   character(len=CL), public :: shr_fire_emis_factors_file = ''       ! a table of basic fire emissions compounds
   character(len=CS), public :: shr_fire_emis_ztop_token = 'Sl_fztop' ! token for emissions top of vertical distribution
-
+  integer, parameter :: name_len=16
   ! fire emissions component data structure (or user defined type)
   type shr_fire_emis_comp_t
-     character(len=16)     :: name            ! emissions component name (in fire emissions input table)
+     character(len=name_len)     :: name            ! emissions component name (in fire emissions input table)
      integer               :: index
      real(r8), pointer     :: emis_factors(:) ! function of plant-function-type (PFT)
      real(r8)              :: coeff           ! emissions component coeffecient
@@ -48,7 +48,7 @@ module shr_fire_emis_mod
 
   ! chemical compound in CAM mechanism that has fire emissions
   type shr_fire_emis_mechcomp_t
-     character(len=16)             :: name                  ! compound name
+     character(len=name_len)             :: name                  ! compound name
      type(shr_fire_emis_comp_ptr), pointer :: emis_comps(:) ! an array of pointers to fire emis components
      integer                       :: n_emis_comps          ! number of fire emis compounds that make up the emissions for this mechanis compound
   end type shr_fire_emis_mechcomp_t
@@ -187,8 +187,11 @@ contains
              call shr_sys_abort( 'shr_fire_emis_init : multiple emissions definitions specified for : '//trim(item%name))
           endif
        enddo
-
-       shr_fire_emis_mechcomps(i)%name = item%name
+       if (len_trim(item%name) .le. name_len) then
+          shr_fire_emis_mechcomps(i)%name = item%name(1:name_len)
+       else
+          call shr_sys_abort("shr_file_emis_init : name too long for data structure :"//trim(item%name))
+       endif
        shr_fire_emis_mechcomps(i)%n_emis_comps = item%n_terms
        allocate(shr_fire_emis_mechcomps(i)%emis_comps(item%n_terms))
 

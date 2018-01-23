@@ -199,8 +199,6 @@ module cime_comp_mod
 
   character(len=CL) :: suffix
   logical           :: iamin_id
-  logical           :: iamroot_id
-  integer           :: mpicom
   character(len=seq_comm_namelen) :: compname
 
   !----------------------------------------------------------------------------
@@ -468,11 +466,10 @@ module cime_comp_mod
        &Sa_co2diag:Sa_co2prog'
 
   ! --- other ---
-  integer  :: ka,km,k1,k2,k3         ! aVect field indices
+
   integer  :: ocnrun_count           ! number of times ocn run alarm went on
   logical  :: exists                 ! true if file exists
   integer  :: ierr                   ! MPI error return
-  integer  :: rc                     ! return code
 
   character(*), parameter :: NLFileName = "drv_in"  ! input namelist filename
 
@@ -591,7 +588,7 @@ contains
     integer, dimension(num_inst_total) :: comp_id, comp_comm, comp_comm_iam
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
-    integer :: i, it
+    integer :: it
     integer :: driver_id
     integer :: driver_comm
 
@@ -1134,10 +1131,7 @@ contains
 
   subroutine cime_init()
 
-102 format( A, i10.8, i8, A, 8L3 )
-103 format( 5A )
 104 format( A, i10.8, i8)
-106 format( A, f23.12)
 
   !-----------------------------------------------------------------------------
   !| Component Initialization
@@ -2080,14 +2074,12 @@ contains
     ! Driver pause/resume
     logical            :: drv_pause  ! Driver writes pause restart file
     character(len=CL)  :: drv_resume ! Driver resets state from restart file
-    integer            :: iamroot_ESPID
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
 103 format( 5A )
 104 format( A, i10.8, i8)
 105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i5, A, A)
-106 format( A, f23.12)
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
 
@@ -4071,7 +4063,7 @@ contains
     !
     ! Local variables
     !
-    integer :: ierr, inst_comm, mype, nu, numpes !, pes
+    integer :: ierr, mype, nu, numpes !, pes
     integer :: ninst_driver, drvpes
     character(len=*),    parameter :: subname = '(cime_cpl_init) '
 

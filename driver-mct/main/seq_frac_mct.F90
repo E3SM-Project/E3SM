@@ -257,7 +257,7 @@ contains
     logical :: wav_present   ! .true. => wav is present
     logical :: dead_comps    ! .true. => dead models present
 
-    integer :: j,n            ! indices
+    integer :: n            ! indices
     integer :: ka, ki, kl, ko ! indices
     integer :: kf, kk, kr, kg ! indices
     integer :: lsize          ! local size of ice av
@@ -508,8 +508,8 @@ contains
     logical                  :: atm_present   ! true => atm is present
     logical                  :: ice_present   ! true => ice is present
     logical                  :: ocn_present   ! true => ocn is present
-    integer                  :: j, n
-    integer                  :: ki, kl, ka, ko, kf
+    integer                  :: n
+    integer                  :: ki, kl, ko, kf
     integer                  :: lsize
     real(r8),allocatable :: fcorr(:)
 
